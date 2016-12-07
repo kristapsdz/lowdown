@@ -25,6 +25,10 @@ registration to boot.
 **lowdown** was inspired by the desire for markdown input for
 [sblg(1)](https://kristaps.bsd.lv/sblg).
 
+This is a read-only repository for a CVS repository elsewhere.  But by
+all means do pulls and submit issues: I'll merge them into the CVS
+repository, then push to GitHub afterward.
+
 ## License
 
 All sources use the ISC license.
