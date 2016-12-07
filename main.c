@@ -92,11 +92,17 @@ main(int argc, char *argv[])
 		fclose(file);
 
 	renderer = hoedown_html_renderer_new
-		(HOEDOWN_HTML_USE_XHTML, 0);
+		(HOEDOWN_HTML_USE_XHTML |
+		 HOEDOWN_HTML_ASIDE, 0);
 
 	ob = hoedown_buffer_new(DEF_OUNIT);
 	document = hoedown_document_new
-		(renderer, 0, DEF_MAX_NESTING);
+		(renderer, 
+		 HOEDOWN_EXT_AUTOLINK |
+		 HOEDOWN_EXT_TABLES |
+		 HOEDOWN_EXT_STRIKETHROUGH |
+		 HOEDOWN_EXT_FENCED_CODE,
+		 DEF_MAX_NESTING);
 	hoedown_document_render(document, ob, ib->data, ib->size);
 
 	hoedown_buffer_free(ib);
