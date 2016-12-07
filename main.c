@@ -31,30 +31,21 @@
 #define DEF_MAX_NESTING 16
 
 struct opts {
-	size_t 		 iunit;
-	size_t		 ounit;
-	int 		 toc_level;
-	hoedown_html_flags html_flags;
-	hoedown_extensions extensions;
-	size_t 		 max_nesting;
 };
 
 int
 main(int argc, char *argv[])
 {
-	struct opts	 data;
-	FILE		*file = stdin;
-	const char	*fname = "<stdin>";
-	hoedown_buffer	*ib, *ob;
+	FILE		 *file = stdin;
+	const char	 *fname = "<stdin>";
+	hoedown_buffer	 *ib, *ob;
 	hoedown_renderer *renderer = NULL;
 	hoedown_document *document;
 
-	memset(&data, 0, sizeof(struct opts));
-
-	data.iunit = DEF_IUNIT;
-	data.ounit = DEF_OUNIT;
-	data.max_nesting = DEF_MAX_NESTING;
-	data.html_flags = HOEDOWN_HTML_USE_XHTML;
+#ifdef	__OpenBSD__
+	if (-1 == pledge("stdio rpath", NULL)) 
+		err(EXIT_FAILURE, "pledge");
+#endif
 
 	if (-1 != getopt(argc, argv, ""))
 		goto usage;
@@ -68,7 +59,12 @@ main(int argc, char *argv[])
 			err(EXIT_FAILURE, "%s", fname);
 	}
 
-	ib = hoedown_buffer_new(data.iunit);
+#ifdef	__OpenBSD__
+	if (-1 == pledge("stdio", NULL)) 
+		err(EXIT_FAILURE, "pledge");
+#endif
+
+	ib = hoedown_buffer_new(DEF_IUNIT);
 
 	if (hoedown_buffer_putf(ib, file))
 		err(EXIT_FAILURE, "%s", fname);
@@ -77,11 +73,11 @@ main(int argc, char *argv[])
 		fclose(file);
 
 	renderer = hoedown_html_renderer_new
-		(data.html_flags, data.toc_level);
+		(HOEDOWN_HTML_USE_XHTML, 0);
 
-	ob = hoedown_buffer_new(data.ounit);
+	ob = hoedown_buffer_new(DEF_OUNIT);
 	document = hoedown_document_new
-		(renderer, data.extensions, data.max_nesting);
+		(renderer, 0, DEF_MAX_NESTING);
 	hoedown_document_render(document, ob, ib->data, ib->size);
 
 	hoedown_buffer_free(ib);
