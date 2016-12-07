@@ -20,10 +20,6 @@
 #ifndef EXTERN_H
 #define EXTERN_H
 
-/*********
- * TYPES *
- *********/
-
 typedef	void *(*hoedown_realloc_callback)(void *, size_t);
 typedef	void (*hoedown_free_callback)(void *);
 
