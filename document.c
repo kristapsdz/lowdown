@@ -2545,7 +2545,7 @@ static int
 is_footnote(const uint8_t *data, size_t beg, size_t end, size_t *last, struct footnote_list *list)
 {
 	size_t i = 0;
-	hoedown_buffer *contents = 0;
+	hoedown_buffer *contents = NULL;
 	size_t ind = 0;
 	int in_empty = 0;
 	size_t start = 0;
@@ -2633,14 +2633,18 @@ is_footnote(const uint8_t *data, size_t beg, size_t end, size_t *last, struct fo
 	if (list) {
 		struct footnote_ref *ref;
 		ref = create_footnote_ref(list, data + id_offset, id_end - id_offset);
-		if (!ref)
+		if (!ref) {
+			hoedown_buffer_free(contents);
 			return 0;
+		}
 		if (!add_footnote_ref(list, ref)) {
 			free_footnote_ref(ref);
+			hoedown_buffer_free(contents);
 			return 0;
 		}
 		ref->contents = contents;
-	}
+	} else 
+		hoedown_buffer_free(contents);
 
 	return 1;
 }
