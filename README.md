@@ -18,15 +18,25 @@ For the moment, **lowdown** is the same as
 autolinking, fenced code, and tables (see their [popular
 presets](https://github.com/hoedown/hoedown/wiki/Popular-presets)).
 The only modification is that the first paragraph is wrapped in an
-`<aside>` block.
+`<aside>` block.  Furthermore, the "smartypants" mode is always enabled.
 
-It's been verified to build and run on OpenBSD, Linux, and Mac OS X.  It
-has a [Coverity](https://scan.coverity.com/projects/lowdown)
-registration to boot.
+It builds and runs on OpenBSD, Linux, and Mac OS X.  It has a
+[Coverity](https://scan.coverity.com/projects/lowdown) registration to
+boot.
 
 This is a read-only repository for a CVS repository elsewhere.  But by
 all means do pulls and submit issues: I'll merge them into the CVS
 repository, then push to GitHub afterward.
+
+## Example usage
+
+I usually use **lowdown** when writing
+[sblg(1)](https://kristaps.bsd.lv/sblg) articles when I'm too lazy to
+write in proper HTML5.
+(For those not in the know, [sblg(1)](https://kristaps.bsd.lv/sblg) is a
+simple tool for knitting together blog articles into a blog feed.)
+This basically means wrapping the output of **lowdown** in the elements
+indicating a blog article:
 
 ## License
 
