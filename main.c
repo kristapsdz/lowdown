@@ -42,7 +42,7 @@ main(int argc, char *argv[])
 {
 	FILE		 *file = stdin;
 	const char	 *fname = "<stdin>";
-	hoedown_buffer	 *ib, *ob;
+	hoedown_buffer	 *ib, *ob, *spb;
 	hoedown_renderer *renderer = NULL;
 	hoedown_document *document;
 	const char	 *pname;
@@ -79,7 +79,8 @@ main(int argc, char *argv[])
 	if (-1 == pledge("stdio", NULL)) 
 		err(EXIT_FAILURE, "pledge");
 #elif defined(__APPLE__)
-	if (sandbox_init(kSBXProfilePureComputation, SANDBOX_NAMED, NULL))
+	if (sandbox_init(kSBXProfilePureComputation, 
+	    SANDBOX_NAMED, NULL))
 		err(EXIT_FAILURE, "sandbox_init");
 #endif
 
@@ -109,8 +110,12 @@ main(int argc, char *argv[])
 	hoedown_document_free(document);
 	hoedown_html_renderer_free(renderer);
 
-	fwrite(ob->data, 1, ob->size, stdout);
+	spb = hoedown_buffer_new(DEF_OUNIT);
+	hoedown_html_smartypants(spb, ob->data, ob->size);
 	hoedown_buffer_free(ob);
+
+	fwrite(spb->data, 1, spb->size, stdout);
+	hoedown_buffer_free(spb);
 
 	return(EXIT_SUCCESS);
 usage:
