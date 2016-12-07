@@ -19,6 +19,9 @@
  */
 #include <err.h>
 #include <errno.h>
+#ifdef __APPLE__
+# include <sandbox.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,6 +65,9 @@ main(int argc, char *argv[])
 #if defined(__OpenBSD__) && OpenBSD > 201510
 	if (-1 == pledge("stdio", NULL)) 
 		err(EXIT_FAILURE, "pledge");
+#elif defined(__APPLE__)
+	if (sandbox_init(kSBXProfilePureComputation, SANDBOX_NAMED, NULL))
+		err(EXIT_FAILURE, "sandbox_init");
 #endif
 
 	ib = hoedown_buffer_new(DEF_IUNIT);
