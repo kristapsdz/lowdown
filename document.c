@@ -2961,53 +2961,6 @@ hoedown_document_render(hoedown_document *doc, hoedown_buffer *ob, const uint8_t
 }
 
 void
-hoedown_document_render_inline(hoedown_document *doc, hoedown_buffer *ob, const uint8_t *data, size_t size)
-{
-	size_t i = 0, mark;
-	hoedown_buffer *text = hoedown_buffer_new(64);
-
-	/* reset the references table */
-	memset(&doc->refs, 0x0, REF_TABLE_SIZE * sizeof(void *));
-
-	/* first pass: expand tabs and process newlines */
-	hoedown_buffer_grow(text, size);
-	while (1) {
-		mark = i;
-		while (i < size && data[i] != '\n' && data[i] != '\r')
-			i++;
-
-		expand_tabs(text, data + mark, i - mark);
-
-		if (i >= size)
-			break;
-
-		while (i < size && (data[i] == '\n' || data[i] == '\r')) {
-			/* add one \n per newline */
-			if (data[i] == '\n' || (i + 1 < size && data[i + 1] != '\n'))
-				hoedown_buffer_putc(text, '\n');
-			i++;
-		}
-	}
-
-	/* second pass: actual rendering */
-	hoedown_buffer_grow(ob, text->size + (text->size >> 1));
-
-	if (doc->md.doc_header)
-		doc->md.doc_header(ob, 1, &doc->data);
-
-	parse_inline(ob, doc, text->data, text->size);
-
-	if (doc->md.doc_footer)
-		doc->md.doc_footer(ob, 1, &doc->data);
-
-	/* clean-up */
-	hoedown_buffer_free(text);
-
-	assert(doc->work_bufs[BUFFER_SPAN].size == 0);
-	assert(doc->work_bufs[BUFFER_BLOCK].size == 0);
-}
-
-void
 hoedown_document_free(hoedown_document *doc)
 {
 	size_t i;
