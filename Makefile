@@ -1,3 +1,4 @@
+PREFIX		?= /usr/local
 CFLAGS 		+= -g -W -Wall -Wstrict-prototypes -Wno-unused-parameter -Wwrite-strings
 OBJS		 = autolink.o \
 		   buffer.o \
