@@ -51,7 +51,7 @@ Of course, you can just do so on the shell, assuming "article.md" is the
 filename of our article.
 
 ```sh
-( echo "<!DOCTYPE html> ; \
+( echo "<!DOCTYPE html>" ; \
   echo "<html>" ; \
   echo "<head><title></title</head>" ; \
   echo "<body>" ; \
