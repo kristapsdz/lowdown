@@ -89,5 +89,6 @@ main(int argc, char *argv[])
 
 	return(EXIT_SUCCESS);
 usage:
+	fprintf(stderr, "usage: %s [file]\n", getprogname());
 	return(EXIT_FAILURE);
 }
