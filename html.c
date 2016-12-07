@@ -301,7 +301,7 @@ static void
 rndr_paragraph(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data)
 {
 	hoedown_html_renderer_state *state = data->opaque;
-	size_t i = 0;
+	size_t i = 0, par_count;
 
 	if (ob->size) hoedown_buffer_putc(ob, '\n');
 
@@ -313,6 +313,10 @@ rndr_paragraph(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_
 	if (i == content->size)
 		return;
 
+	par_count = state->par_count++;
+
+	if (0 == par_count && state->flags & HOEDOWN_HTML_ASIDE) 
+		HOEDOWN_BUFPUTSL(ob, "<aside>");
 	HOEDOWN_BUFPUTSL(ob, "<p>");
 	if (state->flags & HOEDOWN_HTML_HARD_WRAP) {
 		size_t org;
@@ -338,6 +342,8 @@ rndr_paragraph(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_
 		hoedown_buffer_put(ob, content->data + i, content->size - i);
 	}
 	HOEDOWN_BUFPUTSL(ob, "</p>\n");
+	if (0 == par_count && state->flags & HOEDOWN_HTML_ASIDE) 
+		HOEDOWN_BUFPUTSL(ob, "</aside>\n");
 }
 
 static void
