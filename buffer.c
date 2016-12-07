@@ -18,6 +18,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 #include <assert.h>
+#include <err.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,12 +29,10 @@
 void *
 hoedown_malloc(size_t size)
 {
-	void *ret = malloc(size);
+	void *ret;
 
-	if (!ret) {
-		fprintf(stderr, "Allocation failed.\n");
-		abort();
-	}
+	if (NULL == (ret = malloc(size)))
+		err(EXIT_FAILURE, NULL);
 
 	return ret;
 }
@@ -41,12 +40,10 @@ hoedown_malloc(size_t size)
 void *
 hoedown_calloc(size_t nmemb, size_t size)
 {
-	void *ret = calloc(nmemb, size);
+	void *ret;
 
-	if (!ret) {
-		fprintf(stderr, "Allocation failed.\n");
-		abort();
-	}
+	if (NULL == (ret = calloc(nmemb, size)))
+		err(EXIT_FAILURE, NULL);
 
 	return ret;
 }
@@ -54,12 +51,10 @@ hoedown_calloc(size_t nmemb, size_t size)
 void *
 hoedown_realloc(void *ptr, size_t size)
 {
-	void *ret = realloc(ptr, size);
+	void *ret;
 
-	if (!ret) {
-		fprintf(stderr, "Allocation failed.\n");
-		abort();
-	}
+	if (NULL == (ret = realloc(ptr, size)))
+		err(EXIT_FAILURE, NULL);
 
 	return ret;
 }
