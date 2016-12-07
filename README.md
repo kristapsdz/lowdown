@@ -36,7 +36,29 @@ write in proper HTML5.
 (For those not in the know, [sblg(1)](https://kristaps.bsd.lv/sblg) is a
 simple tool for knitting together blog articles into a blog feed.)
 This basically means wrapping the output of **lowdown** in the elements
-indicating a blog article:
+indicating a blog article.
+I do this in my Makefiles:
+
+```Makefile
+.md.xml:
+	( echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" ; \
+	  echo "<article data-sblg-article=\"1\">" ; \
+	  lowdown $< ; \
+	  echo "</article>" ; ) >$@
+```
+
+Of course, you can just do so on the shell, assuming "article.md" is the
+filename of our article.
+
+```sh
+( echo "<!DOCTYPE html> ; \
+  echo "<html>" ; \
+  echo "<head><title></title</head>" ; \
+  echo "<body>" ; \
+  lowdown article.md ; \
+  echo "</body>" ; \
+  echo "</html>" ; ) >article.html
+```
 
 ## License
 
