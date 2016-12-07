@@ -42,7 +42,7 @@ main(int argc, char *argv[])
 	hoedown_renderer *renderer = NULL;
 	hoedown_document *document;
 
-#ifdef	__OpenBSD__
+#if defined(__OpenBSD__) && OpenBSD > 201510
 	if (-1 == pledge("stdio rpath", NULL)) 
 		err(EXIT_FAILURE, "pledge");
 #endif
@@ -59,7 +59,7 @@ main(int argc, char *argv[])
 			err(EXIT_FAILURE, "%s", fname);
 	}
 
-#ifdef	__OpenBSD__
+#if defined(__OpenBSD__) && OpenBSD > 201510
 	if (-1 == pledge("stdio", NULL)) 
 		err(EXIT_FAILURE, "pledge");
 #endif
