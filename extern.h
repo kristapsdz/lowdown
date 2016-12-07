@@ -109,7 +109,6 @@ typedef enum hoedown_autolink_type {
 	HOEDOWN_AUTOLINK_EMAIL		/* e-mail link without explit mailto: */
 } hoedown_autolink_type;
 
-
 struct hoedown_document;
 
 typedef struct hoedown_document hoedown_document;
