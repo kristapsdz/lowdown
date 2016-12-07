@@ -11,10 +11,15 @@ The fork is simply to make the code readable:
    sandbox, if applicable.
 6. Add manpage.
 
-It's functionally equivalent to running
-[hoedown](https://github.com/hoedown/hoedown) in XHTML mode.  It's been
-verified to build and run on OpenBSD, Linux, and Mac OS X.
-It has a [Coverity](https://scan.coverity.com/projects/lowdown)
+For the moment, **lowdown** is the same as
+[hoedown](https://github.com/hoedown/hoedown) in XHTML mode with
+autolinking, fenced code, and tables (see their [popular
+presets](https://github.com/hoedown/hoedown/wiki/Popular-presets).
+The only modification is that the first paragraph is wrapped in an
+`<aside>` block.
+
+It's been verified to build and run on OpenBSD, Linux, and Mac OS X.  It
+has a [Coverity](https://scan.coverity.com/projects/lowdown)
 registration to boot.
 
 **lowdown** was inspired by the desire for markdown input for
