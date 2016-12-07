@@ -7,7 +7,8 @@ The fork is simply to make the code readable:
 2. Remove all macro cruft (Microsoft checks and builtins).
 3. Remove all option handling.
 4. Use [err(3)](http://man.openbsd.org/err.3).
-4. Use [pledge(2)](http://man.openbsd.org/pledge.2) (if applicable).
+4. Use [pledge(2)](http://man.openbsd.org/pledge.2) or Mac OS X's
+   sandbox, if applicable.
 
 It's functionally equivalent to running
 [hoedown](https://github.com/hoedown/hoedown) in XHTML mode.
