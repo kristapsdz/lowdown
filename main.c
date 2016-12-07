@@ -17,6 +17,12 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+#include <sys/param.h>
+#ifdef __FreeBSD__
+# include <sys/resource.h>
+# include <sys/capability.h>
+#endif
+
 #include <err.h>
 #include <errno.h>
 #ifdef __APPLE__
@@ -34,8 +40,104 @@
 #define DEF_OUNIT 64
 #define DEF_MAX_NESTING 16
 
-struct opts {
-};
+/*
+ * Start with all of the sandboxes.
+ * The sandbox_pre() happens before we open our input file for reading,
+ * while the sandbox_post() happens afterward.
+ */
+
+#if defined(__OpenBSD__) && OpenBSD > 201510
+
+static void
+sandbox_post(void)
+{
+
+	if (-1 == pledge("stdio", NULL)) 
+		err(EXIT_FAILURE, "pledge");
+}
+
+static void
+sandbox_pre(void)
+{
+
+	if (-1 == pledge("stdio rpath", NULL)) 
+		err(EXIT_FAILURE, "pledge");
+}
+
+#elif defined(__APPLE__)
+
+static void
+sandbox_post(void)
+{
+	char	*ep;
+	int	 rc;
+
+	rc = sandbox_init
+		(kSBXProfilePureComputation, 
+		 SANDBOX_NAMED, &ep);
+	if (0 != rc)
+		errx(EXIT_FAILURE, "sandbox_init: %s", ep);
+}
+
+static void
+sandbox_pre(void)
+{
+
+	/* Do nothing. */
+}
+
+#elif defined(__FreeBSD__)
+
+static void
+sandbox_post(void)
+{
+	int		 rc;
+	struct rlimit	 rl_zero;
+	cap_rights_t	 rights;
+
+	cap_rights_init(&rights);
+
+	cap_rights_init(&rights, CAP_EVENT, CAP_READ, CAP_FSTAT);
+	if (cap_rights_limit(STDIN_FILENO, &rights) < 0) 
+ 		err(EXIT_FAILURE, "cap_rights_limit");
+
+	cap_rights_init(&rights, CAP_EVENT, CAP_WRITE, CAP_FSTAT);
+	if (cap_rights_limit(STDERR_FILENO, &rights) < 0)
+ 		err(EXIT_FAILURE, "cap_rights_limit");
+
+	cap_rights_init(&rights, CAP_EVENT, CAP_WRITE, CAP_FSTAT);
+	if (cap_rights_limit(STDOUT_FILENO, &rights) < 0)
+ 		err(EXIT_FAILURE, "cap_rights_limit");
+
+	if (cap_enter())
+		err(EXIT_FAILURE, "cap_enter");
+}
+
+static void
+sandbox_pre(void)
+{
+
+	/* Do nothing. */
+}
+
+#else /* No sandbox. */
+
+#warning Compiling without sandbox support.
+static void
+sandbox_post(void)
+{
+
+	/* Do nothing. */
+}
+
+static void
+sandbox_pre(void)
+{
+
+	/* Do nothing. */
+}
+
+#endif
 
 int
 main(int argc, char *argv[])
@@ -58,10 +160,7 @@ main(int argc, char *argv[])
 		++pname;
 #endif
 
-#if defined(__OpenBSD__) && OpenBSD > 201510
-	if (-1 == pledge("stdio rpath", NULL)) 
-		err(EXIT_FAILURE, "pledge");
-#endif
+	sandbox_pre();
 
 	if (-1 != getopt(argc, argv, ""))
 		goto usage;
@@ -75,14 +174,7 @@ main(int argc, char *argv[])
 			err(EXIT_FAILURE, "%s", fname);
 	}
 
-#if defined(__OpenBSD__) && OpenBSD > 201510
-	if (-1 == pledge("stdio", NULL)) 
-		err(EXIT_FAILURE, "pledge");
-#elif defined(__APPLE__)
-	if (sandbox_init(kSBXProfilePureComputation, 
-	    SANDBOX_NAMED, NULL))
-		err(EXIT_FAILURE, "sandbox_init");
-#endif
+	sandbox_post();
 
 	ib = hoedown_buffer_new(DEF_IUNIT);
 
