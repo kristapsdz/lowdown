@@ -45,6 +45,18 @@ main(int argc, char *argv[])
 	hoedown_buffer	 *ib, *ob;
 	hoedown_renderer *renderer = NULL;
 	hoedown_document *document;
+	const char	 *pname;
+
+#ifdef __linux__
+	pname = argv[0];
+#else
+	if (argc < 1)
+		pname = "lowdown";
+	else if (NULL == (pname = strrchr(argv[0], '/')))
+		pname = argv[0];
+	else
+		++pname;
+#endif
 
 #if defined(__OpenBSD__) && OpenBSD > 201510
 	if (-1 == pledge("stdio rpath", NULL)) 
@@ -96,6 +108,6 @@ main(int argc, char *argv[])
 
 	return(EXIT_SUCCESS);
 usage:
-	fprintf(stderr, "usage: %s [file]\n", getprogname());
+	fprintf(stderr, "usage: %s [file]\n", pname);
 	return(EXIT_FAILURE);
 }
