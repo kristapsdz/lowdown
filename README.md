@@ -9,8 +9,10 @@ code readable:
 2. Remove all macro cruft (Microsoft checks and builtins).
 3. Remove all option handling.
 4. Use [err(3)](http://man.openbsd.org/err.3).
-5. Use [pledge(2)](http://man.openbsd.org/pledge.2) or Mac OS X's
-   sandbox, if applicable.
+5. Use [pledge(2)](http://man.openbsd.org/pledge.2), Mac OS X's sandbox,
+   or FreeBDS's
+   [capsicum(4)](https://www.freebsd.org/cgi/man.cgi?query=capsicum),
+   if applicable.
 6. Add manpage.
 
 For the moment, **lowdown** is the same as
@@ -20,7 +22,8 @@ presets](https://github.com/hoedown/hoedown/wiki/Popular-presets)).
 The only modification is that the first paragraph is wrapped in an
 `<aside>` block.  Furthermore, the "smartypants" mode is always enabled.
 
-It builds and runs on OpenBSD, Linux, and Mac OS X.  It has a
+It builds and runs on OpenBSD, Linux, and Mac OS X.  (FreeBSD is
+experimental.)  It has a
 [Coverity](https://scan.coverity.com/projects/lowdown) registration to
 boot.
 
