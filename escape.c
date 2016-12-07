@@ -24,9 +24,6 @@
 
 #include "extern.h"
 
-#define likely(x)       __builtin_expect((x),1)
-#define unlikely(x)     __builtin_expect((x),0)
-
 /*
  * The following characters will not be escaped:
  *
@@ -90,7 +87,7 @@ hoedown_escape_href(hoedown_buffer *ob, const uint8_t *data, size_t size)
 			return;
 		}
 
-		if (likely(i > mark)) {
+		if (i > mark) {
 			hoedown_buffer_put(ob, data + mark, i - mark);
 		}
 
@@ -189,7 +186,7 @@ hoedown_escape_html(hoedown_buffer *ob, const uint8_t *data, size_t size, int se
 			return;
 		}
 
-		if (likely(i > mark))
+		if (i > mark)
 			hoedown_buffer_put(ob, data + mark, i - mark);
 
 		if (i >= size) break;
