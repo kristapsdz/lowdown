@@ -327,11 +327,6 @@ void	 hoedown_document_render(hoedown_document *doc,
 		hoedown_buffer *ob, const uint8_t *data, 
 		size_t size);
 
-/* hoedown_document_render_inline: render inline Markdown using the document processor */
-void	 hoedown_document_render_inline(hoedown_document *doc, 
-		hoedown_buffer *ob, const uint8_t *data, 
-		size_t size);
-
 /* hoedown_document_free: deallocate a document processor instance */
 void	 hoedown_document_free(hoedown_document *doc);
 
