@@ -6,6 +6,7 @@ OBJS		 = autolink.o \
 		   escape.o \
 		   html.o \
 		   html_blocks.o \
+		   html_smartypants.o \
 		   main.o \
 		   stack.o
 BINDIR 		 = $(PREFIX)/bin

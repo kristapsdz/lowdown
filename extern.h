@@ -347,6 +347,9 @@ hoedown_renderer *hoedown_html_renderer_new(hoedown_html_flags render_flags,
 /* hoedown_html_renderer_free: deallocate an HTML renderer */
 void	 hoedown_html_renderer_free(hoedown_renderer *renderer);
 
+/* hoedown_html_smartypants: process an HTML snippet using SmartyPants for smart punctuation */
+void	 hoedown_html_smartypants(hoedown_buffer *ob, const uint8_t *data, size_t size);
+
 __END_DECLS
 
 #endif /* !EXTERN_H */
