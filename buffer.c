@@ -31,7 +31,7 @@ void
 hoedown_buffer_init(
 	hoedown_buffer *buf,
 	size_t unit,
-	hoedown_free_callback buffer_free)
+	int buffer_free)
 {
 	assert(buf);
 
@@ -52,7 +52,7 @@ hoedown_buffer *
 hoedown_buffer_new(size_t unit)
 {
 	hoedown_buffer *ret = xmalloc(sizeof (hoedown_buffer));
-	hoedown_buffer_init(ret, unit, free);
+	hoedown_buffer_init(ret, unit, 1);
 	return ret;
 }
 
@@ -65,7 +65,7 @@ hoedown_buffer_free(hoedown_buffer *buf)
 	free(buf->data);
 
 	if (buf->buffer_free)
-		buf->buffer_free(buf);
+		free(buf);
 }
 
 void

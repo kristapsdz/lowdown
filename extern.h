@@ -35,14 +35,12 @@
 # endif
 #endif
 
-typedef	void (*hoedown_free_callback)(void *);
-
 typedef struct hoedown_buffer {
 	uint8_t *data;	/* actual character data */
 	size_t size;	/* size of the string */
 	size_t asize;	/* allocated size (0 = volatile buffer) */
 	size_t unit;	/* reallocation unit size (0 = read-only buffer) */
-	hoedown_free_callback buffer_free;
+	int buffer_free;
 } hoedown_buffer;
 
 typedef enum hoedown_autolink_flags {
@@ -218,7 +216,7 @@ void	*xrealloc(void *ptr, size_t size);
 
 /* hoedown_buffer_init: initialize a buffer with custom allocators */
 void	 hoedown_buffer_init(hoedown_buffer *buffer,
-		size_t unit, hoedown_free_callback buffer_free);
+		size_t unit, int buffer_free);
 
 /* hoedown_buffer_uninit: uninitialize an existing buffer */
 void	 hoedown_buffer_uninit(hoedown_buffer *buf);
