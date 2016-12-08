@@ -191,6 +191,7 @@ main(int argc, char *argv[])
 	ob = hoedown_buffer_new(DEF_OUNIT);
 	document = hoedown_document_new
 		(renderer, 
+		 HOEDOWN_EXT_FOOTNOTES |
 		 HOEDOWN_EXT_AUTOLINK |
 		 HOEDOWN_EXT_TABLES |
 		 HOEDOWN_EXT_STRIKETHROUGH |
