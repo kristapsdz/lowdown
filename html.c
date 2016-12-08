@@ -630,14 +630,14 @@ hoedown_html_renderer_new(hoedown_html_flags render_flags, int nesting_level)
 	hoedown_renderer *renderer;
 
 	/* Prepare the state pointer */
-	state = hoedown_malloc(sizeof(hoedown_html_renderer_state));
+	state = xmalloc(sizeof(hoedown_html_renderer_state));
 	memset(state, 0x0, sizeof(hoedown_html_renderer_state));
 
 	state->flags = render_flags;
 	state->toc_data.nesting_level = nesting_level;
 
 	/* Prepare the renderer */
-	renderer = hoedown_malloc(sizeof(hoedown_renderer));
+	renderer = xmalloc(sizeof(hoedown_renderer));
 	memcpy(renderer, &cb_default, sizeof(hoedown_renderer));
 
 	if (render_flags & HOEDOWN_HTML_SKIP_HTML || render_flags & HOEDOWN_HTML_ESCAPE)
