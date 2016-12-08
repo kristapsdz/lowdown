@@ -32,8 +32,8 @@ The following modifications have been made:
 - "smartypants" emits Unicode codepoints instead of HTML entities to
   make the output XML-friendly
 
-It builds and runs on OpenBSD, Linux ([musl](https://www.musl-libc.org/) and glibc), and Mac OS X.  (FreeBSD is
-experimental.)  It has a
+It builds and runs on OpenBSD, Linux ([musl](https://www.musl-libc.org/)
+and glibc), and Mac OS X.  It has a
 [Coverity](https://scan.coverity.com/projects/lowdown) registration to
 boot.
 
