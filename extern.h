@@ -35,7 +35,6 @@
 # endif
 #endif
 
-typedef	void *(*hoedown_realloc_callback)(void *, size_t);
 typedef	void (*hoedown_free_callback)(void *);
 
 typedef struct hoedown_buffer {
@@ -43,8 +42,6 @@ typedef struct hoedown_buffer {
 	size_t size;	/* size of the string */
 	size_t asize;	/* allocated size (0 = volatile buffer) */
 	size_t unit;	/* reallocation unit size (0 = read-only buffer) */
-
-	hoedown_free_callback data_free;
 	hoedown_free_callback buffer_free;
 } hoedown_buffer;
 
@@ -221,9 +218,7 @@ void	*xrealloc(void *ptr, size_t size);
 
 /* hoedown_buffer_init: initialize a buffer with custom allocators */
 void	 hoedown_buffer_init(hoedown_buffer *buffer,
-		size_t unit,
-		hoedown_free_callback data_free,
-		hoedown_free_callback buffer_free);
+		size_t unit, hoedown_free_callback buffer_free);
 
 /* hoedown_buffer_uninit: uninitialize an existing buffer */
 void	 hoedown_buffer_uninit(hoedown_buffer *buf);

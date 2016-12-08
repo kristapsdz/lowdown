@@ -31,7 +31,6 @@ void
 hoedown_buffer_init(
 	hoedown_buffer *buf,
 	size_t unit,
-	hoedown_free_callback data_free,
 	hoedown_free_callback buffer_free)
 {
 	assert(buf);
@@ -39,7 +38,6 @@ hoedown_buffer_init(
 	buf->data = NULL;
 	buf->size = buf->asize = 0;
 	buf->unit = unit;
-	buf->data_free = data_free;
 	buf->buffer_free = buffer_free;
 }
 
@@ -47,14 +45,14 @@ void
 hoedown_buffer_uninit(hoedown_buffer *buf)
 {
 	assert(buf && buf->unit);
-	buf->data_free(buf->data);
+	free(buf->data);
 }
 
 hoedown_buffer *
 hoedown_buffer_new(size_t unit)
 {
 	hoedown_buffer *ret = xmalloc(sizeof (hoedown_buffer));
-	hoedown_buffer_init(ret, unit, free, free);
+	hoedown_buffer_init(ret, unit, free);
 	return ret;
 }
 
@@ -64,7 +62,7 @@ hoedown_buffer_free(hoedown_buffer *buf)
 	if (!buf) return;
 	assert(buf && buf->unit);
 
-	buf->data_free(buf->data);
+	free(buf->data);
 
 	if (buf->buffer_free)
 		buf->buffer_free(buf);
@@ -75,7 +73,7 @@ hoedown_buffer_reset(hoedown_buffer *buf)
 {
 	assert(buf && buf->unit);
 
-	buf->data_free(buf->data);
+	free(buf->data);
 	buf->data = NULL;
 	buf->size = buf->asize = 0;
 }
