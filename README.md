@@ -16,13 +16,21 @@ code readable:
 6. Add manpage.
 
 For the moment, **lowdown** is the same as
-[hoedown](https://github.com/hoedown/hoedown) in XHTML mode with
-autolinking, fenced code, and tables (see their [popular
-presets](https://github.com/hoedown/hoedown/wiki/Popular-presets)).
-The only modification is that the first paragraph is wrapped in an
-`<aside>` block.  Furthermore, the "smartypants" mode is always enabled.
-(This code has also been modified to emit Unicode codepoints instead of
-HTML entities, to make the output XML-friendly.)
+[hoedown](https://github.com/hoedown/hoedown) with the following presets:
+
+- XHTML mode
+- autolinking
+- fenced code
+- tables
+- footnotes
+- "smartypants" enabled
+
+The following modifications have been made:
+
+- the first paragraph is wrapped in an `<aside>` block (for integration
+  with [sblg(1)](https://kristaps.bsd.lv/sblg)
+- "smartypants" emits Unicode codepoints instead of HTML entities to
+  make the output XML-friendly
 
 It builds and runs on OpenBSD, Linux, and Mac OS X.  (FreeBSD is
 experimental.)  It has a
