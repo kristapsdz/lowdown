@@ -23,6 +23,7 @@
 .Sh SYNOPSIS
 .Nm lowdown
 .Op Fl s
+.Op Fl o Ar file
 .Op Ar file
 .Sh DESCRIPTION
 The
@@ -45,6 +46,12 @@ Its arguments are as follows:
 Standalone mode.
 This emits a minimal HTML5 document surrounding the output.
 You will probably need to hand-edit it.
+.It Fl o Ar file
+Send output to
+.Ar file
+unless it's
+.Dq - ,
+in which case fall back to the default of standard output.
 .El
 .Sh EXIT STATUS
 .Ex -std
