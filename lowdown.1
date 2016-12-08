@@ -22,18 +22,30 @@
 .Nd simple markdown translator
 .Sh SYNOPSIS
 .Nm lowdown
+.Op Fl s
 .Op Ar file
 .Sh DESCRIPTION
 The
 .Nm
 utility translates from markdown into HTML5 in XML mode.
-Specifically, it outputs an XML fragment \(em the page contents without
-leading HTML context or document type declaration.
+Specifically, it outputs the translated page contents without leading
+HTML context or document type declaration.
 If not given a
 .Ar file ,
+or if
+.Ar file
+is
+.Dq - ,
 .Nm
 reads from standard input.
 The results are written to standard output.
+Its arguments are as follows:
+.Bl -tag -width Ds
+.It Fl s
+Standalone mode.
+This emits a minimal HTML5 document surrounding the output.
+You will probably need to hand-edit it.
+.El
 .Sh EXIT STATUS
 .Ex -std
 .Sh STANDARDS
