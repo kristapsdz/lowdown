@@ -17,6 +17,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+#include <assert.h>
 #include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -107,7 +108,6 @@ squote_len(const uint8_t *text, size_t size)
 static int
 smartypants_quotes(hoedown_buffer *ob, uint8_t previous_char, uint8_t next_char, uint8_t quote, int *is_open)
 {
-	char ent[8];
 
 	if (*is_open && !word_boundary(next_char))
 		return 0;
@@ -115,9 +115,14 @@ smartypants_quotes(hoedown_buffer *ob, uint8_t previous_char, uint8_t next_char,
 	if (!(*is_open) && !word_boundary(previous_char))
 		return 0;
 
-	snprintf(ent, sizeof(ent), "&%c%cquo;", (*is_open) ? 'r' : 'l', quote);
+	assert('d' == quote || 's' == quote);
+
+	if ('d' == quote)
+		hoedown_buffer_puts(ob, *is_open ? "&#8221;" : "&#8220;");
+	else
+		hoedown_buffer_puts(ob, *is_open ? "&#8217;" : "&#8216;");
+
 	*is_open = !(*is_open);
-	hoedown_buffer_puts(ob, ent);
 	return 1;
 }
 
@@ -145,7 +150,7 @@ smartypants_squote(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t pr
 		/* Tom's, isn't, I'm, I'd */
 		if ((t1 == 's' || t1 == 't' || t1 == 'm' || t1 == 'd') &&
 			(size == 3 || word_boundary(text[2]))) {
-			HOEDOWN_BUFPUTSL(ob, "&rsquo;");
+			HOEDOWN_BUFPUTSL(ob, "&#8217;");
 			return 0;
 		}
 
@@ -157,7 +162,7 @@ smartypants_squote(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t pr
 				(t1 == 'l' && t2 == 'l') ||
 				(t1 == 'v' && t2 == 'e')) &&
 				(size == 4 || word_boundary(text[3]))) {
-				HOEDOWN_BUFPUTSL(ob, "&rsquo;");
+				HOEDOWN_BUFPUTSL(ob, "&#8217;");
 				return 0;
 			}
 		}
@@ -186,17 +191,17 @@ smartypants_cb__parens(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_
 		uint8_t t2 = tolower(text[2]);
 
 		if (t1 == 'c' && t2 == ')') {
-			HOEDOWN_BUFPUTSL(ob, "&copy;");
+			HOEDOWN_BUFPUTSL(ob, "&#169;");
 			return 2;
 		}
 
 		if (t1 == 'r' && t2 == ')') {
-			HOEDOWN_BUFPUTSL(ob, "&reg;");
+			HOEDOWN_BUFPUTSL(ob, "&#174;");
 			return 2;
 		}
 
 		if (size >= 4 && t1 == 't' && t2 == 'm' && text[3] == ')') {
-			HOEDOWN_BUFPUTSL(ob, "&trade;");
+			HOEDOWN_BUFPUTSL(ob, "&#8482;");
 			return 3;
 		}
 	}
@@ -210,12 +215,12 @@ static size_t
 smartypants_cb__dash(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
 {
 	if (size >= 3 && text[1] == '-' && text[2] == '-') {
-		HOEDOWN_BUFPUTSL(ob, "&mdash;");
+		HOEDOWN_BUFPUTSL(ob, "&#8212;");
 		return 2;
 	}
 
 	if (size >= 2 && text[1] == '-') {
-		HOEDOWN_BUFPUTSL(ob, "&ndash;");
+		HOEDOWN_BUFPUTSL(ob, "&#8211;");
 		return 1;
 	}
 
@@ -283,7 +288,7 @@ smartypants_cb__number(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_
 	if (word_boundary(previous_char) && size >= 3) {
 		if (text[0] == '1' && text[1] == '/' && text[2] == '2') {
 			if (size == 3 || word_boundary(text[3])) {
-				HOEDOWN_BUFPUTSL(ob, "&frac12;");
+				HOEDOWN_BUFPUTSL(ob, "&#189;");
 				return 2;
 			}
 		}
@@ -291,7 +296,7 @@ smartypants_cb__number(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_
 		if (text[0] == '1' && text[1] == '/' && text[2] == '4') {
 			if (size == 3 || word_boundary(text[3]) ||
 				(size >= 5 && tolower(text[3]) == 't' && tolower(text[4]) == 'h')) {
-				HOEDOWN_BUFPUTSL(ob, "&frac14;");
+				HOEDOWN_BUFPUTSL(ob, "&#188;");
 				return 2;
 			}
 		}
@@ -299,7 +304,7 @@ smartypants_cb__number(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_
 		if (text[0] == '3' && text[1] == '/' && text[2] == '4') {
 			if (size == 3 || word_boundary(text[3]) ||
 				(size >= 6 && tolower(text[3]) == 't' && tolower(text[4]) == 'h' && tolower(text[5]) == 's')) {
-				HOEDOWN_BUFPUTSL(ob, "&frac34;");
+				HOEDOWN_BUFPUTSL(ob, "&#190;");
 				return 2;
 			}
 		}
@@ -314,7 +319,7 @@ static size_t
 smartypants_cb__dquote(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
 {
 	if (!smartypants_quotes(ob, previous_char, size > 0 ? text[1] : 0, 'd', &smrt->in_dquote))
-		HOEDOWN_BUFPUTSL(ob, "&quot;");
+		HOEDOWN_BUFPUTSL(ob, "&#34;");
 
 	return 0;
 }
