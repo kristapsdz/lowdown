@@ -490,7 +490,7 @@ static void
 parse_inline(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t size)
 {
 	size_t i = 0, end = 0, consumed = 0;
-	hoedown_buffer work = { 0, 0, 0, 0, NULL, NULL };
+	hoedown_buffer work = { 0, 0, 0, 0, NULL };
 	uint8_t *active_char = doc->active_char;
 
 	if (doc->work_bufs[BUFFER_SPAN].size +
@@ -635,7 +635,7 @@ static size_t
 parse_emph1(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t size, uint8_t c)
 {
 	size_t i = 0, len;
-	hoedown_buffer *work = 0;
+	hoedown_buffer *work = NULL;
 	int r;
 
 	/* skipping one symbol if coming from emph3 */
@@ -748,7 +748,7 @@ parse_emph3(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t siz
 static size_t
 parse_math(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offset, size_t size, const char *end, size_t delimsz, int displaymode)
 {
-	hoedown_buffer text = { NULL, 0, 0, 0, NULL, NULL };
+	hoedown_buffer text = { NULL, 0, 0, 0, NULL };
 	size_t i = delimsz;
 
 	if (!doc->md.math)
@@ -844,7 +844,7 @@ char_linebreak(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t 
 static size_t
 char_codespan(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offset, size_t size)
 {
-	hoedown_buffer work = { NULL, 0, 0, 0, NULL, NULL };
+	hoedown_buffer work = { NULL, 0, 0, 0, NULL };
 	size_t end, nb = 0, i, f_begin, f_end;
 
 	/* counting the number of backticks in the delimiter */
@@ -937,7 +937,7 @@ static size_t
 char_escape(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offset, size_t size)
 {
 	static const char *escape_chars = "\\`*_{}[]()#+-.!:|&<>^~=\"$";
-	hoedown_buffer work = { 0, 0, 0, 0, NULL, NULL };
+	hoedown_buffer work = { 0, 0, 0, 0, NULL };
 	size_t w;
 
 	if (size > 1) {
@@ -975,7 +975,7 @@ static size_t
 char_entity(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offset, size_t size)
 {
 	size_t end = 1;
-	hoedown_buffer work = { 0, 0, 0, 0, NULL, NULL };
+	hoedown_buffer work = { 0, 0, 0, 0, NULL };
 
 	if (end < size && data[end] == '#')
 		end++;
@@ -1002,7 +1002,7 @@ char_entity(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t off
 static size_t
 char_langle_tag(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offset, size_t size)
 {
-	hoedown_buffer work = { NULL, 0, 0, 0, NULL, NULL };
+	hoedown_buffer work = { NULL, 0, 0, 0, NULL };
 	hoedown_autolink_type altype = HOEDOWN_AUTOLINK_NONE;
 	size_t end = tag_length(data, size, &altype);
 	int ret = 0;
@@ -1150,7 +1150,7 @@ char_link(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offse
 
 	/* footnote link */
 	if (is_footnote) {
-		hoedown_buffer id = { NULL, 0, 0, 0, NULL, NULL };
+		hoedown_buffer id = { NULL, 0, 0, 0, NULL };
 		struct footnote_ref *fr;
 
 		if (txt_e < 3)
@@ -1693,7 +1693,7 @@ parse_htmlblock(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t
 static size_t
 parse_paragraph(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t size)
 {
-	hoedown_buffer work = { NULL, 0, 0, 0, NULL, NULL };
+	hoedown_buffer work = { NULL, 0, 0, 0, NULL };
 	size_t i = 0, end = 0;
 	int level = 0;
 
@@ -1773,8 +1773,8 @@ parse_paragraph(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t
 static size_t
 parse_fencedcode(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t size)
 {
-	hoedown_buffer text = { 0, 0, 0, 0, NULL, NULL };
-	hoedown_buffer lang = { 0, 0, 0, 0, NULL, NULL };
+	hoedown_buffer text = { 0, 0, 0, 0, NULL };
+	hoedown_buffer lang = { 0, 0, 0, 0, NULL };
 	size_t i = 0, text_start, line_start;
 	size_t w, w2;
 	size_t width, width2;
@@ -2169,7 +2169,7 @@ htmlblock_find_end_strict(
 static size_t
 parse_htmlblock(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t size, int do_render)
 {
-	hoedown_buffer work = { NULL, 0, 0, 0, NULL, NULL };
+	hoedown_buffer work = { NULL, 0, 0, 0, NULL };
 	size_t i, j = 0, tag_len, tag_end;
 	const char *curtag = NULL;
 
@@ -2307,7 +2307,7 @@ parse_table_row(
 	}
 
 	for (; col < columns; ++col) {
-		hoedown_buffer empty_cell = { 0, 0, 0, 0, NULL, NULL };
+		hoedown_buffer empty_cell = { 0, 0, 0, 0, NULL };
 		doc->md.table_cell(row_work, &empty_cell, col_data[col] | header_flag, &doc->data);
 	}
 
