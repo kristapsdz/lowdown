@@ -14,6 +14,7 @@ code readable:
    [capsicum(4)](https://www.freebsd.org/cgi/man.cgi?query=capsicum),
    if applicable.
 6. Add manpage.
+7. Strip use of externally-defined memory management.
 
 For the moment, **lowdown** is the same as
 [hoedown](https://github.com/hoedown/hoedown) with the following presets:
