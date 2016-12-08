@@ -49,7 +49,7 @@
 #if defined(__OpenBSD__) && OpenBSD > 201510
 
 static void
-sandbox_post(int fd)
+sandbox_post(int fdin, int fdout)
 {
 
 	if (-1 == pledge("stdio", NULL)) 
@@ -60,14 +60,14 @@ static void
 sandbox_pre(void)
 {
 
-	if (-1 == pledge("stdio rpath", NULL)) 
+	if (-1 == pledge("stdio rpath wpath cpath", NULL)) 
 		err(EXIT_FAILURE, "pledge");
 }
 
 #elif defined(__APPLE__)
 
 static void
-sandbox_post(int fd)
+sandbox_post(int fdin, int fdout)
 {
 	char	*ep;
 	int	 rc;
@@ -89,14 +89,14 @@ sandbox_pre(void)
 #elif defined(__FreeBSD__)
 
 static void
-sandbox_post(int fd)
+sandbox_post(int fdin, int fdout)
 {
 	cap_rights_t	 rights;
 
 	cap_rights_init(&rights);
 
 	cap_rights_init(&rights, CAP_EVENT, CAP_READ, CAP_FSTAT);
-	if (cap_rights_limit(fd, &rights) < 0) 
+	if (cap_rights_limit(fdin, &rights) < 0) 
  		err(EXIT_FAILURE, "cap_rights_limit");
 
 	cap_rights_init(&rights, CAP_EVENT, CAP_WRITE, CAP_FSTAT);
@@ -104,7 +104,7 @@ sandbox_post(int fd)
  		err(EXIT_FAILURE, "cap_rights_limit");
 
 	cap_rights_init(&rights, CAP_EVENT, CAP_WRITE, CAP_FSTAT);
-	if (cap_rights_limit(STDOUT_FILENO, &rights) < 0)
+	if (cap_rights_limit(fdout, &rights) < 0)
  		err(EXIT_FAILURE, "cap_rights_limit");
 
 	if (cap_enter())
@@ -122,7 +122,7 @@ sandbox_pre(void)
 
 #warning Compiling without sandbox support.
 static void
-sandbox_post(int fd)
+sandbox_post(int fdin, int fdout)
 {
 
 	/* Do nothing. */
@@ -141,12 +141,14 @@ int
 main(int argc, char *argv[])
 {
 	FILE		 *fin = stdin, *fout = stdout;
-	const char	 *fname = "<stdin>";
+	const char	 *fnin = "<stdin>", *fnout = NULL;
 	hoedown_buffer	 *ib, *ob, *spb;
 	hoedown_renderer *renderer = NULL;
 	hoedown_document *document;
 	const char	 *pname;
 	int		  c, standalone = 0;
+
+	sandbox_pre();
 
 #ifdef __linux__
 	pname = argv[0];
@@ -159,12 +161,13 @@ main(int argc, char *argv[])
 		++pname;
 #endif
 
-	sandbox_pre();
-
-	while (-1 != (c = getopt(argc, argv, "s")))
+	while (-1 != (c = getopt(argc, argv, "so:")))
 		switch (c) {
 		case ('s'):
 			standalone = 1;
+			break;
+		case ('o'):
+			fnout = optarg;
 			break;
 		default:
 			goto usage;
@@ -174,12 +177,17 @@ main(int argc, char *argv[])
 	argv += optind;
 
 	if (argc > 0 && strcmp(argv[0], "-")) {
-		fname = argv[0];
-		if (NULL == (fin = fopen(fname, "r")))
-			err(EXIT_FAILURE, "%s", fname);
+		fnin = argv[0];
+		if (NULL == (fin = fopen(fnin, "r")))
+			err(EXIT_FAILURE, "%s", fnin);
 	}
 
-	sandbox_post(fileno(fin));
+	if (NULL != fnout && strcmp(fnout, "-")) {
+		if (NULL == (fout = fopen(fnout, "w")))
+			err(EXIT_FAILURE, "%s", fnout);
+	}
+
+	sandbox_post(fileno(fin), fileno(fout));
 
 	/* 
 	 * We're now completely sandboxed.
@@ -206,7 +214,7 @@ main(int argc, char *argv[])
 	/* Read from our input and close out the input .*/
 
 	if (hoedown_buffer_putf(ib, fin))
-		err(EXIT_FAILURE, "%s", fname);
+		err(EXIT_FAILURE, "%s", fnin);
 	if (fin != stdin) 
 		fclose(fin);
 
@@ -240,9 +248,11 @@ main(int argc, char *argv[])
 		fputs("</body>\n"
 		      "</html>\n", fout);
 
+	if (fout != stdout)
+		fclose(fout);
 	hoedown_buffer_free(spb);
 	return(EXIT_SUCCESS);
 usage:
-	fprintf(stderr, "usage: %s [-s] [file]\n", pname);
+	fprintf(stderr, "usage: %s [-s] [-o output] [file]\n", pname);
 	return(EXIT_FAILURE);
 }
