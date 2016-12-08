@@ -216,9 +216,9 @@ typedef struct hoedown_html_renderer_state {
 __BEGIN_DECLS
 
 /* allocation wrappers */
-void	*hoedown_malloc(size_t size) __attribute__((malloc));
-void	*hoedown_calloc(size_t nmemb, size_t size) __attribute__((malloc));
-void	*hoedown_realloc(void *ptr, size_t size) __attribute__((malloc));
+void	*xmalloc(size_t size) __attribute__((malloc));
+void	*xcalloc(size_t nmemb, size_t size) __attribute__((malloc));
+void	*xrealloc(void *ptr, size_t size);
 
 /* hoedown_buffer_init: initialize a buffer with custom allocators */
 void	 hoedown_buffer_init(hoedown_buffer *buffer,

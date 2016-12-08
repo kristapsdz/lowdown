@@ -210,7 +210,7 @@ add_link_ref(
 	struct link_ref **references,
 	const uint8_t *name, size_t name_size)
 {
-	struct link_ref *ref = hoedown_calloc(1, sizeof(struct link_ref));
+	struct link_ref *ref = xcalloc(1, sizeof(struct link_ref));
 
 	ref->id = hash_link_ref(name, name_size);
 	ref->next = references[ref->id % REF_TABLE_SIZE];
@@ -259,7 +259,7 @@ free_link_refs(struct link_ref **references)
 static struct footnote_ref *
 create_footnote_ref(struct footnote_list *list, const uint8_t *name, size_t name_size)
 {
-	struct footnote_ref *ref = hoedown_calloc(1, sizeof(struct footnote_ref));
+	struct footnote_ref *ref = xcalloc(1, sizeof(struct footnote_ref));
 
 	ref->id = hash_link_ref(name, name_size);
 
@@ -269,7 +269,7 @@ create_footnote_ref(struct footnote_list *list, const uint8_t *name, size_t name
 static int
 add_footnote_ref(struct footnote_list *list, struct footnote_ref *ref)
 {
-	struct footnote_item *item = hoedown_calloc(1, sizeof(struct footnote_item));
+	struct footnote_item *item = xcalloc(1, sizeof(struct footnote_item));
 	if (!item)
 		return 0;
 	item->ref = ref;
@@ -2351,7 +2351,7 @@ parse_table_header(
 		return 0;
 
 	*columns = pipes + 1;
-	*column_data = hoedown_calloc(*columns, sizeof(hoedown_table_flags));
+	*column_data = xcalloc(*columns, sizeof(hoedown_table_flags));
 
 	/* Parse the header underline */
 	i++;
@@ -2813,7 +2813,7 @@ hoedown_document_new(
 
 	assert(max_nesting > 0 && renderer);
 
-	doc = hoedown_malloc(sizeof(hoedown_document));
+	doc = xmalloc(sizeof(hoedown_document));
 	memcpy(&doc->md, renderer, sizeof(hoedown_renderer));
 
 	doc->data.opaque = renderer->opaque;

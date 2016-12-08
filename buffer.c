@@ -27,39 +27,6 @@
 
 #include "extern.h"
 
-void *
-hoedown_malloc(size_t size)
-{
-	void *ret;
-
-	if (NULL == (ret = malloc(size)))
-		err(EXIT_FAILURE, NULL);
-
-	return ret;
-}
-
-void *
-hoedown_calloc(size_t nmemb, size_t size)
-{
-	void *ret;
-
-	if (NULL == (ret = calloc(nmemb, size)))
-		err(EXIT_FAILURE, NULL);
-
-	return ret;
-}
-
-void *
-hoedown_realloc(void *ptr, size_t size)
-{
-	void *ret;
-
-	if (NULL == (ret = realloc(ptr, size)))
-		err(EXIT_FAILURE, NULL);
-
-	return ret;
-}
-
 void
 hoedown_buffer_init(
 	hoedown_buffer *buf,
@@ -88,8 +55,8 @@ hoedown_buffer_uninit(hoedown_buffer *buf)
 hoedown_buffer *
 hoedown_buffer_new(size_t unit)
 {
-	hoedown_buffer *ret = hoedown_malloc(sizeof (hoedown_buffer));
-	hoedown_buffer_init(ret, unit, hoedown_realloc, free, free);
+	hoedown_buffer *ret = xmalloc(sizeof (hoedown_buffer));
+	hoedown_buffer_init(ret, unit, xrealloc, free, free);
 	return ret;
 }
 
