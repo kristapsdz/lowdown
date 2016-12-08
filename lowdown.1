@@ -36,6 +36,17 @@ reads from standard input.
 The results are written to standard output.
 .Sh EXIT STATUS
 .Ex -std
+.Sh STANDARDS
+Not exactly a standard, but
+.Nm
+implements the
+.Lk Markdown http://daringfireball.net/projects/markdown/syntax
+specification.
+It deviates from the specification in stripping inline HTML and that the
+first paragraph is contained within an <aside> element.
+It augments the specification in adding support for autolinking, fenced
+code, tables, footnotes, and
+.Dq smartypants .
 .Sh AUTHORS
 The
 .Nm
