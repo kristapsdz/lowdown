@@ -49,7 +49,7 @@
 #if defined(__OpenBSD__) && OpenBSD > 201510
 
 static void
-sandbox_post(void)
+sandbox_post(int fd)
 {
 
 	if (-1 == pledge("stdio", NULL)) 
@@ -67,7 +67,7 @@ sandbox_pre(void)
 #elif defined(__APPLE__)
 
 static void
-sandbox_post(void)
+sandbox_post(int fd)
 {
 	char	*ep;
 	int	 rc;
@@ -89,16 +89,14 @@ sandbox_pre(void)
 #elif defined(__FreeBSD__)
 
 static void
-sandbox_post(void)
+sandbox_post(int fd)
 {
-	int		 rc;
-	struct rlimit	 rl_zero;
 	cap_rights_t	 rights;
 
 	cap_rights_init(&rights);
 
 	cap_rights_init(&rights, CAP_EVENT, CAP_READ, CAP_FSTAT);
-	if (cap_rights_limit(STDIN_FILENO, &rights) < 0) 
+	if (cap_rights_limit(fd, &rights) < 0) 
  		err(EXIT_FAILURE, "cap_rights_limit");
 
 	cap_rights_init(&rights, CAP_EVENT, CAP_WRITE, CAP_FSTAT);
@@ -124,7 +122,7 @@ sandbox_pre(void)
 
 #warning Compiling without sandbox support.
 static void
-sandbox_post(void)
+sandbox_post(int fd)
 {
 
 	/* Do nothing. */
@@ -174,7 +172,7 @@ main(int argc, char *argv[])
 			err(EXIT_FAILURE, "%s", fname);
 	}
 
-	sandbox_post();
+	sandbox_post(fileno(file));
 
 	ib = hoedown_buffer_new(DEF_IUNIT);
 
