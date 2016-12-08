@@ -21,6 +21,8 @@ autolinking, fenced code, and tables (see their [popular
 presets](https://github.com/hoedown/hoedown/wiki/Popular-presets)).
 The only modification is that the first paragraph is wrapped in an
 `<aside>` block.  Furthermore, the "smartypants" mode is always enabled.
+(This code has also been modified to emit Unicode codepoints instead of
+HTML entities, to make the output XML-friendly.)
 
 It builds and runs on OpenBSD, Linux, and Mac OS X.  (FreeBSD is
 experimental.)  It has a
