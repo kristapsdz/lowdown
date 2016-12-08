@@ -31,7 +31,6 @@ void
 hoedown_buffer_init(
 	hoedown_buffer *buf,
 	size_t unit,
-	hoedown_realloc_callback data_realloc,
 	hoedown_free_callback data_free,
 	hoedown_free_callback buffer_free)
 {
@@ -40,7 +39,6 @@ hoedown_buffer_init(
 	buf->data = NULL;
 	buf->size = buf->asize = 0;
 	buf->unit = unit;
-	buf->data_realloc = data_realloc;
 	buf->data_free = data_free;
 	buf->buffer_free = buffer_free;
 }
@@ -56,7 +54,7 @@ hoedown_buffer *
 hoedown_buffer_new(size_t unit)
 {
 	hoedown_buffer *ret = xmalloc(sizeof (hoedown_buffer));
-	hoedown_buffer_init(ret, unit, xrealloc, free, free);
+	hoedown_buffer_init(ret, unit, free, free);
 	return ret;
 }
 
@@ -95,7 +93,7 @@ hoedown_buffer_grow(hoedown_buffer *buf, size_t neosz)
 	while (neoasz < neosz)
 		neoasz += buf->unit;
 
-	buf->data = buf->data_realloc(buf->data, neoasz);
+	buf->data = xrealloc(buf->data, neoasz);
 	buf->asize = neoasz;
 }
 
