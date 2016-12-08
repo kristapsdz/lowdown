@@ -1198,13 +1198,15 @@ char_link(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t offse
 		nb_p = 0;
 
 		while (i < size) {
-			if (data[i] == '\\') i += 2;
+			if (data[i] == '\\') 
+				i += 2;
 			else if (data[i] == '(' && i != 0) {
 				nb_p++; i++;
 			}
 			else if (data[i] == ')') {
 				if (nb_p == 0) break;
-				else nb_p--; i++;
+				else nb_p--; 
+				i++;
 			} else if (i >= 1 && _isspace(data[i-1]) && (data[i] == '\'' || data[i] == '"')) break;
 			else i++;
 		}
