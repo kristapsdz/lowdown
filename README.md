@@ -34,9 +34,7 @@ The following modifications have been made:
   make the output XML-friendly
 
 It builds and runs on OpenBSD, Linux ([musl](https://www.musl-libc.org/)
-and glibc), and Mac OS X.  It has a
-[Coverity](https://scan.coverity.com/projects/lowdown) registration to
-boot.
+and glibc), and Mac OS X.
 
 This is a read-only repository for a CVS repository elsewhere.  But by
 all means do pulls and submit issues: I'll merge them into the CVS
@@ -73,6 +71,24 @@ filename of our article.
   echo "</body>" ; \
   echo "</html>" ; ) >article.html
 ```
+
+## Testing
+
+The canonical Markdown test, such as found in the original
+[hoedown](https://github.com/hoedown/hoedown) sources, will not
+currently work with **lowdown** because of it automatically runs
+"smartypants" and several extension modes.
+
+I've extensively run [AFL](http://lcamtuf.coredump.cx/afl/) against the
+compiled sources, however, with no failures --- definitely a credit to
+the [hoedown](https://github.com/hoedown/hoedown) authors (and those
+from who they forked their own sources).
+
+I'll also regularly run the system through
+[valgrind](http://valgrind.org/), also without issue.
+
+**lowdown** has a [Coverity](https://scan.coverity.com/projects/lowdown)
+registration for static analysis.
 
 ## License
 
