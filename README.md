@@ -72,6 +72,16 @@ filename of our article.
   echo "</html>" ; ) >article.html
 ```
 
+Or failing all that, just use the standalone mode.
+
+```sh
+lowdown -s -o article.html article.md
+```
+
+Read the shipped
+[manpage](https://github.com/kristapsdz/lowdown/blob/master/lowdown.1)
+for details on running the system.
+
 ## Testing
 
 The canonical Markdown test, such as found in the original
