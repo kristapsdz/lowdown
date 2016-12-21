@@ -191,18 +191,14 @@ typedef enum hoedown_html_tag {
 
 typedef struct hoedown_html_renderer_state {
 	void *opaque;
-
 	struct {
 		int header_count;
 		int current_level;
 		int level_offset;
 		int nesting_level;
 	} toc_data;
-
 	hoedown_html_flags flags;
-
 	size_t par_count;
-
 	/* extra callbacks */
 	void (*link_attributes)(hoedown_buffer *ob, const hoedown_buffer *url, const hoedown_renderer_data *data);
 } hoedown_html_renderer_state;
@@ -342,6 +338,9 @@ void	 hoedown_escape_href(hoedown_buffer *ob, const uint8_t *data, size_t size);
 /* hoedown_escape_html: escape HTML */
 void	 hoedown_escape_html(hoedown_buffer *ob, const uint8_t *data, size_t size, int secure);
 
+/* hoedown_escape_nroff: escape HTML */
+void	 hoedown_escape_nroff(hoedown_buffer *ob, const uint8_t *data, size_t size, int secure);
+
 /* hoedown_html_is_tag: checks if data starts with a specific tag, returns the tag type or NONE */
 hoedown_html_tag hoedown_html_is_tag(const uint8_t *data, 
 		size_t size, const char *tagname);
@@ -352,6 +351,10 @@ hoedown_renderer *hoedown_html_renderer_new(hoedown_html_flags render_flags,
 
 /* hoedown_html_renderer_free: deallocate an HTML renderer */
 void	 hoedown_html_renderer_free(hoedown_renderer *renderer);
+
+hoedown_renderer *hoedown_nroff_renderer_new(hoedown_html_flags render_flags,
+		int nesting_level) __attribute__ ((malloc));
+void	 hoedown_nroff_renderer_free(hoedown_renderer *renderer);
 
 /* hoedown_html_smartypants: process an HTML snippet using SmartyPants for smart punctuation */
 void	 hoedown_html_smartypants(hoedown_buffer *ob, const uint8_t *data, size_t size);
