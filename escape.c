@@ -172,6 +172,32 @@ static const char *HTML_ESCAPES[] = {
 };
 
 void
+hoedown_escape_nroff(hoedown_buffer *ob, const uint8_t *data, size_t size, int secure)
+{
+	size_t	 i = 0, mark;
+
+	while (1) {
+		mark = i;
+		while (i < size && data[i] != '\\') 
+			i++;
+
+		if (mark == 0 && i >= size) {
+			hoedown_buffer_put(ob, data, size);
+			return;
+		}
+
+		if (i > mark)
+			hoedown_buffer_put(ob, data + mark, i - mark);
+
+		if (i >= size) 
+			break;
+
+		hoedown_buffer_puts(ob, "\\e");
+		i++;
+	}
+}
+
+void
 hoedown_escape_html(hoedown_buffer *ob, const uint8_t *data, size_t size, int secure)
 {
 	size_t i = 0, mark;

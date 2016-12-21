@@ -40,6 +40,11 @@
 #define DEF_OUNIT 64
 #define DEF_MAX_NESTING 16
 
+enum	out {
+	OUT_HTML,
+	OUT_NROFF
+};
+
 /*
  * Start with all of the sandboxes.
  * The sandbox_pre() happens before we open our input file for reading,
@@ -147,6 +152,7 @@ main(int argc, char *argv[])
 	hoedown_document *document;
 	const char	 *pname;
 	int		  c, standalone = 0;
+	enum out	  outm = OUT_HTML;
 
 	sandbox_pre();
 
@@ -161,8 +167,16 @@ main(int argc, char *argv[])
 		++pname;
 #endif
 
-	while (-1 != (c = getopt(argc, argv, "so:")))
+	while (-1 != (c = getopt(argc, argv, "sT:o:")))
 		switch (c) {
+		case ('T'):
+			if (0 == strcasecmp(optarg, "nroff"))
+				outm = OUT_NROFF;
+			else if (0 == strcasecmp(optarg, "html"))
+				outm = OUT_HTML;
+			else
+				goto usage;
+			break;
 		case ('s'):
 			standalone = 1;
 			break;
@@ -199,9 +213,12 @@ main(int argc, char *argv[])
 	ob = hoedown_buffer_new(DEF_OUNIT);
 	spb = hoedown_buffer_new(DEF_OUNIT);
 
-	renderer = hoedown_html_renderer_new
+	renderer = OUT_HTML == outm ?
+		hoedown_html_renderer_new
 		(HOEDOWN_HTML_USE_XHTML |
-		 HOEDOWN_HTML_ASIDE, 0);
+		 HOEDOWN_HTML_ASIDE, 0) :
+		hoedown_nroff_renderer_new(0, 0);
+
 	document = hoedown_document_new
 		(renderer, 
 		 HOEDOWN_EXT_FOOTNOTES |
@@ -221,36 +238,40 @@ main(int argc, char *argv[])
 	/* Parse the output and free resources. */
 
 	hoedown_document_render(document, ob, ib->data, ib->size);
-
 	hoedown_buffer_free(ib);
 	hoedown_document_free(document);
-	hoedown_html_renderer_free(renderer);
 
 	/* Reprocess the HTML as smartypants. */
 
-	hoedown_html_smartypants(spb, ob->data, ob->size);
-	hoedown_buffer_free(ob);
-
-	/* Push to output. */
-
-	if (standalone)
-		fputs("<!DOCTYPE html>\n"
-		      "<html>\n"
-		      "<head>\n"
-		      "<meta charset=\"utf-8\">\n"
-		      "<meta name=\"viewport\" content=\""
-		       "width=device-width,initial-scale=1\">\n"
-		      "<title></title>\n"
-		      "</head>\n"
-		      "<body>\n", fout);
-	fwrite(spb->data, 1, spb->size, fout);
-	if (standalone)
-		fputs("</body>\n"
-		      "</html>\n", fout);
+	if (OUT_HTML == outm) {
+		hoedown_html_renderer_free(renderer);
+		hoedown_html_smartypants(spb, ob->data, ob->size);
+		hoedown_buffer_free(ob);
+		if (standalone)
+			fputs("<!DOCTYPE html>\n"
+			      "<html>\n"
+			      "<head>\n"
+			      "<meta charset=\"utf-8\">\n"
+			      "<meta name=\"viewport\" content=\""
+			       "width=device-width,initial-scale=1\">\n"
+			      "<title></title>\n"
+			      "</head>\n"
+			      "<body>\n", fout);
+		fwrite(spb->data, 1, spb->size, fout);
+		hoedown_buffer_free(spb);
+		if (standalone)
+			fputs("</body>\n"
+			      "</html>\n", fout);
+	} else {
+		hoedown_nroff_renderer_free(renderer);
+		if (standalone)
+			fputs(".TL A Document\n", fout);
+		fwrite(ob->data, 1, ob->size, fout);
+		hoedown_buffer_free(ob);
+	}
 
 	if (fout != stdout)
 		fclose(fout);
-	hoedown_buffer_free(spb);
 	return(EXIT_SUCCESS);
 usage:
 	fprintf(stderr, "usage: %s [-s] [-o output] [file]\n", pname);
