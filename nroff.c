@@ -79,8 +79,10 @@ rndr_blockcode(hbuf *ob, const hbuf *content, const hbuf *lang, void *data)
 		return;
 
 	HOEDOWN_BUFPUTSL(ob, ".DS\n");
+	HOEDOWN_BUFPUTSL(ob, ".ft CR\n");
 	escape_buffer(ob, content->data, content->size);
 	BUFFER_NEWLINE(content->data, content->size, ob);
+	HOEDOWN_BUFPUTSL(ob, ".ft\n");
 	HOEDOWN_BUFPUTSL(ob, ".DE\n");
 }
 
@@ -104,7 +106,9 @@ rndr_codespan(hbuf *ob, const hbuf *content, void *data)
 	if (NULL == content || 0 == content->size)
 		return(0);
 
+	HOEDOWN_BUFPUTSL(ob, "\\f[CW]");
 	escape_buffer(ob, content->data, content->size);
+	HOEDOWN_BUFPUTSL(ob, "\\fR");
 	return 1;
 }
 
