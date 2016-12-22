@@ -220,8 +220,10 @@ main(int argc, char *argv[])
 	renderer = OUT_HTML == outm ?
 		hoedown_html_renderer_new
 		(HOEDOWN_HTML_USE_XHTML |
+		 HOEDOWN_HTML_ESCAPE | 
 		 HOEDOWN_HTML_ASIDE, 0) :
-		hoedown_nroff_renderer_new(0, 0);
+		hoedown_nroff_renderer_new
+		(HOEDOWN_HTML_ESCAPE, 0);
 
 	document = hoedown_document_new
 		(renderer, 
