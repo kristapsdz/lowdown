@@ -20,6 +20,10 @@
 #ifndef EXTERN_H
 #define EXTERN_H
 
+/*
+ * We need this for compilation on musl systems.
+ */
+
 #ifndef __BEGIN_DECLS
 # ifdef __cplusplus
 #  define       __BEGIN_DECLS           extern "C" {
@@ -187,7 +191,6 @@ typedef enum hoedown_html_tag {
 
 __BEGIN_DECLS
 
-/* allocation wrappers */
 void	*xmalloc(size_t size) __attribute__((malloc));
 void	*xcalloc(size_t nmemb, size_t size) __attribute__((malloc));
 void	*xrealloc(void *ptr, size_t size);
@@ -197,51 +200,15 @@ void	 hbuf_grow(hbuf *, size_t);
 void	 hbuf_put(hbuf *, const uint8_t *, size_t);
 void	 hbuf_puts(hbuf *, const char *);
 void	 hbuf_putc(hbuf *, uint8_t);
+int	 hbuf_putf(hbuf *, FILE *);
+int	 hbuf_prefix(const hbuf *, const char *);
+void	 hbuf_printf(hbuf *, const char *, ...) 
+		__attribute__((format (printf, 2, 3)));
+void	 hbuf_free(hbuf *);
 
-/* hoedown_buffer_putf: read from a file and append to a buffer, until EOF or error */
-int	 hoedown_buffer_putf(hbuf *buf, FILE* file);
-
-/* hoedown_buffer_set: replace the buffer's contents with raw data */
-void	 hoedown_buffer_set(hbuf *buf, const uint8_t *data, size_t size);
-
-/* hoedown_buffer_sets: replace the buffer's contents with a NUL-terminated string */
-void	 hoedown_buffer_sets(hbuf *buf, const char *str);
-
-/* hoedown_buffer_eq: compare a buffer's data with other data for equality */
-int	 hoedown_buffer_eq(const hbuf *buf, const uint8_t *data, size_t size);
-
-/* hoedown_buffer_eq: compare a buffer's data with NUL-terminated string for equality */
-int	 hoedown_buffer_eqs(const hbuf *buf, const char *str);
-
-/* hoedown_buffer_prefix: compare the beginning of a buffer with a string */
-int	 hoedown_buffer_prefix(const hbuf *buf, const char *prefix);
-
-/* hoedown_buffer_slurp: remove a given number of bytes from the head of the buffer */
-void	 hoedown_buffer_slurp(hbuf *buf, size_t size);
-
-/* hoedown_buffer_cstr: NUL-termination of the string array (making a C-string) */
-const char *hoedown_buffer_cstr(hbuf *buf);
-
-/* hoedown_buffer_printf: formatted printing to a buffer */
-void	 hoedown_buffer_printf(hbuf *buf, const char *fmt, ...) __attribute__((format (printf, 2, 3)));
-
-/* hoedown_buffer_put_utf8: put a Unicode character encoded as UTF-8 */
-void	 hoedown_buffer_put_utf8(hbuf *buf, unsigned int codepoint);
-
-/* hoedown_buffer_free: free the buffer */
-void	 hoedown_buffer_free(hbuf *buf);
-
-/* HOEDOWN_BUFPUTSL: optimized hbuf_puts of a string literal */
-#define HOEDOWN_BUFPUTSL(output, literal) \
+/* HBUF_PUTSL: optimized hbuf_puts of a string literal */
+#define HBUF_PUTSL(output, literal) \
 	hbuf_put(output, (const uint8_t *)literal, sizeof(literal) - 1)
-
-/* HOEDOWN_BUFSETSL: optimized hoedown_buffer_sets of a string literal */
-#define HOEDOWN_BUFSETSL(output, literal) \
-	hoedown_buffer_set(output, (const uint8_t *)literal, sizeof(literal) - 1)
-
-/* HOEDOWN_BUFEQSL: optimized hoedown_buffer_eqs of a string literal */
-#define HOEDOWN_BUFEQSL(output, literal) \
-	hoedown_buffer_eq(output, (const uint8_t *)literal, sizeof(literal) - 1)
 
 /* hoedown_autolink_is_safe: verify that a URL has a safe protocol */
 int	 hoedown_autolink_is_safe(const uint8_t *data, size_t size);
