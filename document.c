@@ -2258,8 +2258,8 @@ parse_table_row(
 	uint8_t *data,
 	size_t size,
 	size_t columns,
-	hoedown_table_flags *col_data,
-	hoedown_table_flags header_flag)
+	htbl_flags *col_data,
+	htbl_flags header_flag)
 {
 	size_t i = 0, col, len;
 	hbuf *row_work = NULL;
@@ -2323,7 +2323,7 @@ parse_table_header(
 	uint8_t *data,
 	size_t size,
 	size_t *columns,
-	hoedown_table_flags **column_data)
+	htbl_flags **column_data)
 {
 	int pipes;
 	size_t i = 0, col, header_end, under_end;
@@ -2351,7 +2351,7 @@ parse_table_header(
 		return 0;
 
 	*columns = pipes + 1;
-	*column_data = xcalloc(*columns, sizeof(hoedown_table_flags));
+	*column_data = xcalloc(*columns, sizeof(htbl_flags));
 
 	/* Parse the header underline */
 	i++;
@@ -2422,7 +2422,7 @@ parse_table(
 	hbuf *body_work = NULL;
 
 	size_t columns;
-	hoedown_table_flags *col_data = NULL;
+	htbl_flags *col_data = NULL;
 
 	work = newbuf(doc, BUFFER_BLOCK);
 	header_work = newbuf(doc, BUFFER_SPAN);
@@ -2459,7 +2459,7 @@ parse_table(
 		}
 
         if (doc->md.table_header)
-            doc->md.table_header(work, header_work, doc->data);
+            doc->md.table_header(work, header_work, doc->data, columns);
 
         if (doc->md.table_body)
             doc->md.table_body(work, body_work, doc->data);
