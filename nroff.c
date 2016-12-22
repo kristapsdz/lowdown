@@ -332,9 +332,14 @@ rndr_raw_block(hbuf *ob, const hbuf *content, void *data)
 static void
 rndr_hrule(hbuf *ob, void *data)
 {
-	nroff_state *state = data;
-	if (ob->size) hbuf_putc(ob, '\n');
-	hbuf_puts(ob, USE_XHTML(state) ? "<hr/>\n" : "<hr>\n");
+
+	/* 
+	 * FIXME: over-complicated. 
+	 * I'm not sure how else to do horizontal lines.
+	 */
+
+	HBUF_PUTSL(ob, ".br\n");
+	HBUF_PUTSL(ob, "\\l\'\\n(.l/1\'\n");
 }
 
 static int
@@ -382,21 +387,32 @@ rndr_table(hbuf *ob, const hbuf *content, void *data)
 {
 
 	HBUF_PUTSL(ob, ".TS\n");
-	HBUF_PUTSL(ob, "tab(|);\n");
+	HBUF_PUTSL(ob, "tab(|) allbox;\n");
 	hbuf_put(ob, content->data, content->size);
 	BUFFER_NEWLINE(content->data, content->size, ob);
 	HBUF_PUTSL(ob, ".TE\n");
 }
 
 static void
-rndr_table_header(hbuf *ob, const hbuf *content, void *data, size_t columns)
+rndr_table_header(hbuf *ob, const hbuf *content, 
+	void *data, const htbl_flags *fl, size_t columns)
 {
 	size_t	 i;
 
 	for (i = 0; i < columns; i++) {
 		if (i > 0)
 			HBUF_PUTSL(ob, " ");
-		HBUF_PUTSL(ob, "c");
+		switch (fl[i] & HTBL_ALIGNMASK) {
+		case (HTBL_ALIGN_CENTER):
+			HBUF_PUTSL(ob, "c");
+			break;
+		case (HTBL_ALIGN_RIGHT):
+			HBUF_PUTSL(ob, "r");
+			break;
+		default:
+			HBUF_PUTSL(ob, "l");
+			break;
+		}
 	}
 	HBUF_PUTSL(ob, ".\n");
 	hbuf_put(ob, content->data, content->size);
