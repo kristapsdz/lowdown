@@ -18,6 +18,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 #include <ctype.h>
+#include <err.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -345,21 +346,8 @@ rndr_hrule(hbuf *ob, void *data)
 static int
 rndr_image(hbuf *ob, const hbuf *link, const hbuf *title, const hbuf *alt, void *data)
 {
-	nroff_state *state = data;
-	if (!link || !link->size) return 0;
 
-	HBUF_PUTSL(ob, "<img src=\"");
-	hbuf_put(ob, link->data, link->size);
-	HBUF_PUTSL(ob, "\" alt=\"");
-
-	if (alt && alt->size)
-		escape_buffer(ob, alt->data, alt->size);
-
-	if (title && title->size) {
-		HBUF_PUTSL(ob, "\" title=\"");
-		escape_buffer(ob, title->data, title->size); }
-
-	hbuf_puts(ob, USE_XHTML(state) ? "\"/>" : "\">");
+	warnx("warning: graphics not supported");
 	return 1;
 }
 
@@ -368,9 +356,11 @@ rndr_raw_html(hbuf *ob, const hbuf *text, void *data)
 {
 	nroff_state *state = data;
 
-	/* ESCAPE overrides SKIP_HTML. It doesn't look to see if
-	 * there are any valid tags, just escapes all of them. */
-	if((state->flags & HOEDOWN_HTML_ESCAPE) != 0) {
+	/* 
+	 * ESCAPE overrides SKIP_HTML. It doesn't look to see if
+	 * there are any valid tags, just escapes all of them. 
+	 */
+	if ((state->flags & HOEDOWN_HTML_ESCAPE) != 0) {
 		escape_buffer(ob, text->data, text->size);
 		return 1;
 	}
