@@ -26,8 +26,6 @@
 
 #include "extern.h"
 
-#define USE_XHTML(opt) (opt->flags & HOEDOWN_HTML_USE_XHTML)
-
 #define	BUFFER_NEWLINE(_buf, _sz, _ob) \
 	do if ((_sz) > 0 && '\n' != (_buf)[(_sz) - 1]) \
 		hbuf_putc((_ob), '\n'); \
@@ -455,61 +453,40 @@ rndr_normal_text(hbuf *ob, const hbuf *content, void *data)
 static void
 rndr_footnotes(hbuf *ob, const hbuf *content, void *data)
 {
-	nroff_state *state = data;
 
-	if (ob->size) hbuf_putc(ob, '\n');
-	HBUF_PUTSL(ob, "<div class=\"footnotes\">\n");
-	hbuf_puts(ob, USE_XHTML(state) ? "<hr/>\n" : "<hr>\n");
-	HBUF_PUTSL(ob, "<ol>\n");
+	if (NULL == content || 0 == content->size) 
+		return;
 
-	if (content) hbuf_put(ob, content->data, content->size);
-
-	HBUF_PUTSL(ob, "\n</ol>\n</div>\n");
+	HBUF_PUTSL(ob, ".br\n");
+	HBUF_PUTSL(ob, "\\l\'\\n(.l/1.5\'\n");
+	hbuf_put(ob, content->data, content->size);
 }
 
 static void
 rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num, void *data)
 {
-	size_t i = 0;
-	int pfound = 0;
 
-	/* insert anchor at the end of first paragraph block */
-	if (content) {
-		while ((i+3) < content->size) {
-			if (content->data[i++] != '<') continue;
-			if (content->data[i++] != '/') continue;
-			if (content->data[i++] != 'p' && content->data[i] != 'P') continue;
-			if (content->data[i] != '>') continue;
-			i -= 3;
-			pfound = 1;
-			break;
-		}
-	}
-
-	hbuf_printf(ob, "\n<li id=\"fn%d\">\n", num);
-	if (pfound) {
-		hbuf_put(ob, content->data, i);
-		hbuf_printf(ob, "&nbsp;<a href=\"#fnref%d\" rev=\"footnote\">&#8617;</a>", num);
-		hbuf_put(ob, content->data + i, content->size - i);
-	} else if (content) {
-		hbuf_put(ob, content->data, content->size);
-	}
-	HBUF_PUTSL(ob, "</li>\n");
+	HBUF_PUTSL(ob, ".LP\n");
+	hbuf_printf(ob, "\\fIFootnote [%u]\\fP\n", num);
+	HBUF_PUTSL(ob, ".RS\n");
+	hbuf_put(ob, content->data, content->size);
+	BUFFER_NEWLINE(content->data, content->size, ob);
+	HBUF_PUTSL(ob, ".RE\n");
 }
 
 static int
 rndr_footnote_ref(hbuf *ob, unsigned int num, void *data)
 {
-	hbuf_printf(ob, "<sup id=\"fnref%d\"><a href=\"#fn%d\" rel=\"footnote\">%d</a></sup>", num, num, num);
+
+	hbuf_printf(ob, " [%u]", num);
 	return 1;
 }
 
 static int
 rndr_math(hbuf *ob, const hbuf *text, int displaymode, void *data)
 {
-	hbuf_put(ob, (const uint8_t *)(displaymode ? "\\[" : "\\("), 2);
-	escape_buffer(ob, text->data, text->size);
-	hbuf_put(ob, (const uint8_t *)(displaymode ? "\\]" : "\\)"), 2);
+
+	warnx("warning: math not supported");
 	return 1;
 }
 
