@@ -9,6 +9,7 @@ OBJS		 = autolink.o \
 		   html_smartypants.o \
 		   main.o \
 		   nroff.o \
+		   nroff_smartypants.o \
 		   stack.o \
 		   xmalloc.o
 BINDIR 		 = $(PREFIX)/bin
