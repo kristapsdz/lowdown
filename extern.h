@@ -35,13 +35,13 @@
 # endif
 #endif
 
-typedef struct hoedown_buffer {
-	uint8_t *data;	/* actual character data */
-	size_t size;	/* size of the string */
-	size_t asize;	/* allocated size (0 = volatile buffer) */
-	size_t unit;	/* reallocation unit size (0 = read-only buffer) */
-	int buffer_free;
-} hoedown_buffer;
+typedef struct hbuf {
+	uint8_t		*data;	/* actual character data */
+	size_t		 size;	/* size of the string */
+	size_t		 asize;	/* allocated size (0 = volatile) */
+	size_t		 unit;	/* realloc unit size (0 = read-only) */
+	int 		 buffer_free; /* obj should be freed */
+} hbuf;
 
 typedef enum hoedown_autolink_flags {
 	HOEDOWN_AUTOLINK_SHORT_DOMAINS = (1 << 0)
@@ -122,57 +122,53 @@ struct hoedown_document;
 
 typedef struct hoedown_document hoedown_document;
 
-typedef struct hoedown_renderer_data {
-	void *opaque;
-} hoedown_renderer_data;
-
 /* hoedown_renderer - functions for rendering parsed data */
 typedef struct hoedown_renderer {
 	/* state object */
 	void *opaque;
 
 	/* block level callbacks - NULL skips the block */
-	void (*blockcode)(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_buffer *lang, const hoedown_renderer_data *data);
-	void (*blockquote)(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data);
-	void (*header)(hoedown_buffer *ob, const hoedown_buffer *content, int level, const hoedown_renderer_data *data);
-	void (*hrule)(hoedown_buffer *ob, const hoedown_renderer_data *data);
-	void (*list)(hoedown_buffer *ob, const hoedown_buffer *content, hoedown_list_flags flags, const hoedown_renderer_data *data);
-	void (*listitem)(hoedown_buffer *ob, const hoedown_buffer *content, hoedown_list_flags flags, const hoedown_renderer_data *data);
-	void (*paragraph)(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data);
-	void (*table)(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data);
-	void (*table_header)(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data);
-	void (*table_body)(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data);
-	void (*table_row)(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data);
-	void (*table_cell)(hoedown_buffer *ob, const hoedown_buffer *content, hoedown_table_flags flags, const hoedown_renderer_data *data);
-	void (*footnotes)(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data);
-	void (*footnote_def)(hoedown_buffer *ob, const hoedown_buffer *content, unsigned int num, const hoedown_renderer_data *data);
-	void (*blockhtml)(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_renderer_data *data);
+	void (*blockcode)(hbuf *ob, const hbuf *text, const hbuf *lang, void *data);
+	void (*blockquote)(hbuf *ob, const hbuf *content, void *data);
+	void (*header)(hbuf *ob, const hbuf *content, int level, void *data);
+	void (*hrule)(hbuf *ob, void *data);
+	void (*list)(hbuf *ob, const hbuf *content, hoedown_list_flags flags, void *data);
+	void (*listitem)(hbuf *ob, const hbuf *content, hoedown_list_flags flags, void *data);
+	void (*paragraph)(hbuf *ob, const hbuf *content, void *data);
+	void (*table)(hbuf *ob, const hbuf *content, void *data);
+	void (*table_header)(hbuf *ob, const hbuf *content, void *data);
+	void (*table_body)(hbuf *ob, const hbuf *content, void *data);
+	void (*table_row)(hbuf *ob, const hbuf *content, void *data);
+	void (*table_cell)(hbuf *ob, const hbuf *content, hoedown_table_flags flags, void *data, size_t, size_t);
+	void (*footnotes)(hbuf *ob, const hbuf *content, void *data);
+	void (*footnote_def)(hbuf *ob, const hbuf *content, unsigned int num, void *data);
+	void (*blockhtml)(hbuf *ob, const hbuf *text, void *data);
 
 	/* span level callbacks - NULL or return 0 prints the span verbatim */
-	int (*autolink)(hoedown_buffer *ob, const hoedown_buffer *link, hoedown_autolink_type type, const hoedown_renderer_data *data);
-	int (*codespan)(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_renderer_data *data);
-	int (*double_emphasis)(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data);
-	int (*emphasis)(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data);
-	int (*underline)(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data);
-	int (*highlight)(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data);
-	int (*quote)(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data);
-	int (*image)(hoedown_buffer *ob, const hoedown_buffer *link, const hoedown_buffer *title, const hoedown_buffer *alt, const hoedown_renderer_data *data);
-	int (*linebreak)(hoedown_buffer *ob, const hoedown_renderer_data *data);
-	int (*link)(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_buffer *link, const hoedown_buffer *title, const hoedown_renderer_data *data);
-	int (*triple_emphasis)(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data);
-	int (*strikethrough)(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data);
-	int (*superscript)(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data);
-	int (*footnote_ref)(hoedown_buffer *ob, unsigned int num, const hoedown_renderer_data *data);
-	int (*math)(hoedown_buffer *ob, const hoedown_buffer *text, int displaymode, const hoedown_renderer_data *data);
-	int (*raw_html)(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_renderer_data *data);
+	int (*autolink)(hbuf *ob, const hbuf *link, hoedown_autolink_type type, void *data);
+	int (*codespan)(hbuf *ob, const hbuf *text, void *data);
+	int (*double_emphasis)(hbuf *ob, const hbuf *content, void *data);
+	int (*emphasis)(hbuf *ob, const hbuf *content, void *data);
+	int (*underline)(hbuf *ob, const hbuf *content, void *data);
+	int (*highlight)(hbuf *ob, const hbuf *content, void *data);
+	int (*quote)(hbuf *ob, const hbuf *content, void *data);
+	int (*image)(hbuf *ob, const hbuf *link, const hbuf *title, const hbuf *alt, void *data);
+	int (*linebreak)(hbuf *ob, void *data);
+	int (*link)(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title, void *data);
+	int (*triple_emphasis)(hbuf *ob, const hbuf *content, void *data);
+	int (*strikethrough)(hbuf *ob, const hbuf *content, void *data);
+	int (*superscript)(hbuf *ob, const hbuf *content, void *data);
+	int (*footnote_ref)(hbuf *ob, unsigned int num, void *data);
+	int (*math)(hbuf *ob, const hbuf *text, int displaymode, void *data);
+	int (*raw_html)(hbuf *ob, const hbuf *text, void *data);
 
 	/* low level callbacks - NULL copies input directly into the output */
-	void (*entity)(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_renderer_data *data);
-	void (*normal_text)(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_renderer_data *data);
+	void (*entity)(hbuf *ob, const hbuf *text, void *data);
+	void (*normal_text)(hbuf *ob, const hbuf *text, void *data);
 
 	/* miscellaneous callbacks */
-	void (*doc_header)(hoedown_buffer *ob, int inline_render, const hoedown_renderer_data *data);
-	void (*doc_footer)(hoedown_buffer *ob, int inline_render, const hoedown_renderer_data *data);
+	void (*doc_header)(hbuf *ob, int inline_render, void *data);
+	void (*doc_footer)(hbuf *ob, int inline_render, void *data);
 } hoedown_renderer;
 
 typedef enum hoedown_html_flags {
@@ -189,20 +185,6 @@ typedef enum hoedown_html_tag {
 	HOEDOWN_HTML_TAG_CLOSE
 } hoedown_html_tag;
 
-typedef struct hoedown_html_renderer_state {
-	void *opaque;
-	struct {
-		int header_count;
-		int current_level;
-		int level_offset;
-		int nesting_level;
-	} toc_data;
-	hoedown_html_flags flags;
-	size_t par_count;
-	/* extra callbacks */
-	void (*link_attributes)(hoedown_buffer *ob, const hoedown_buffer *url, const hoedown_renderer_data *data);
-} hoedown_html_renderer_state;
-
 __BEGIN_DECLS
 
 /* allocation wrappers */
@@ -210,67 +192,48 @@ void	*xmalloc(size_t size) __attribute__((malloc));
 void	*xcalloc(size_t nmemb, size_t size) __attribute__((malloc));
 void	*xrealloc(void *ptr, size_t size);
 
-/* hoedown_buffer_init: initialize a buffer with custom allocators */
-void	 hoedown_buffer_init(hoedown_buffer *buffer,
-		size_t unit, int buffer_free);
-
-/* hoedown_buffer_uninit: uninitialize an existing buffer */
-void	 hoedown_buffer_uninit(hoedown_buffer *buf);
-
-/* hoedown_buffer_new: allocate a new buffer */
-hoedown_buffer *hoedown_buffer_new(size_t unit) __attribute__((malloc));
-
-/* hoedown_buffer_reset: free internal data of the buffer */
-void	 hoedown_buffer_reset(hoedown_buffer *buf);
-
-/* hoedown_buffer_grow: increase the allocated size to the given value */
-void	 hoedown_buffer_grow(hoedown_buffer *buf, size_t neosz);
-
-/* hoedown_buffer_put: append raw data to a buffer */
-void	 hoedown_buffer_put(hoedown_buffer *buf, const uint8_t *data, size_t size);
-
-/* hoedown_buffer_puts: append a NUL-terminated string to a buffer */
-void	 hoedown_buffer_puts(hoedown_buffer *buf, const char *str);
-
-/* hoedown_buffer_putc: append a single char to a buffer */
-void	 hoedown_buffer_putc(hoedown_buffer *buf, uint8_t c);
+hbuf	*hbuf_new(size_t) __attribute__((malloc));
+void	 hbuf_grow(hbuf *, size_t);
+void	 hbuf_put(hbuf *, const uint8_t *, size_t);
+void	 hbuf_puts(hbuf *, const char *);
+void	 hbuf_putc(hbuf *, uint8_t);
 
 /* hoedown_buffer_putf: read from a file and append to a buffer, until EOF or error */
-int	 hoedown_buffer_putf(hoedown_buffer *buf, FILE* file);
+int	 hoedown_buffer_putf(hbuf *buf, FILE* file);
 
 /* hoedown_buffer_set: replace the buffer's contents with raw data */
-void	 hoedown_buffer_set(hoedown_buffer *buf, const uint8_t *data, size_t size);
+void	 hoedown_buffer_set(hbuf *buf, const uint8_t *data, size_t size);
 
 /* hoedown_buffer_sets: replace the buffer's contents with a NUL-terminated string */
-void	 hoedown_buffer_sets(hoedown_buffer *buf, const char *str);
+void	 hoedown_buffer_sets(hbuf *buf, const char *str);
 
 /* hoedown_buffer_eq: compare a buffer's data with other data for equality */
-int	 hoedown_buffer_eq(const hoedown_buffer *buf, const uint8_t *data, size_t size);
+int	 hoedown_buffer_eq(const hbuf *buf, const uint8_t *data, size_t size);
 
 /* hoedown_buffer_eq: compare a buffer's data with NUL-terminated string for equality */
-int	 hoedown_buffer_eqs(const hoedown_buffer *buf, const char *str);
+int	 hoedown_buffer_eqs(const hbuf *buf, const char *str);
 
 /* hoedown_buffer_prefix: compare the beginning of a buffer with a string */
-int	 hoedown_buffer_prefix(const hoedown_buffer *buf, const char *prefix);
+int	 hoedown_buffer_prefix(const hbuf *buf, const char *prefix);
 
 /* hoedown_buffer_slurp: remove a given number of bytes from the head of the buffer */
-void	 hoedown_buffer_slurp(hoedown_buffer *buf, size_t size);
+void	 hoedown_buffer_slurp(hbuf *buf, size_t size);
 
 /* hoedown_buffer_cstr: NUL-termination of the string array (making a C-string) */
-const char *hoedown_buffer_cstr(hoedown_buffer *buf);
+const char *hoedown_buffer_cstr(hbuf *buf);
 
 /* hoedown_buffer_printf: formatted printing to a buffer */
-void	 hoedown_buffer_printf(hoedown_buffer *buf, const char *fmt, ...) __attribute__((format (printf, 2, 3)));
+void	 hoedown_buffer_printf(hbuf *buf, const char *fmt, ...) __attribute__((format (printf, 2, 3)));
 
 /* hoedown_buffer_put_utf8: put a Unicode character encoded as UTF-8 */
-void	 hoedown_buffer_put_utf8(hoedown_buffer *buf, unsigned int codepoint);
+void	 hoedown_buffer_put_utf8(hbuf *buf, unsigned int codepoint);
 
 /* hoedown_buffer_free: free the buffer */
-void	 hoedown_buffer_free(hoedown_buffer *buf);
+void	 hoedown_buffer_free(hbuf *buf);
 
-/* HOEDOWN_BUFPUTSL: optimized hoedown_buffer_puts of a string literal */
+/* HOEDOWN_BUFPUTSL: optimized hbuf_puts of a string literal */
 #define HOEDOWN_BUFPUTSL(output, literal) \
-	hoedown_buffer_put(output, (const uint8_t *)literal, sizeof(literal) - 1)
+	hbuf_put(output, (const uint8_t *)literal, sizeof(literal) - 1)
 
 /* HOEDOWN_BUFSETSL: optimized hoedown_buffer_sets of a string literal */
 #define HOEDOWN_BUFSETSL(output, literal) \
@@ -285,19 +248,19 @@ int	 hoedown_autolink_is_safe(const uint8_t *data, size_t size);
 
 /* hoedown_autolink__www: search for the next www link in data */
 size_t	 hoedown_autolink__www(size_t *rewind_p, 
-		hoedown_buffer *link, uint8_t *data, 
+		hbuf *link, uint8_t *data, 
 		size_t offset, size_t size, 
 		hoedown_autolink_flags flags);
 
 /* hoedown_autolink__email: search for the next email in data */
 size_t	 hoedown_autolink__email(size_t *rewind_p, 
-		hoedown_buffer *link, uint8_t *data, 
+		hbuf *link, uint8_t *data, 
 		size_t offset, size_t size, 
 		hoedown_autolink_flags flags);
 
 /* hoedown_autolink__url: search for the next URL in data */
 size_t	 hoedown_autolink__url(size_t *rewind_p, 
-		hoedown_buffer *link, uint8_t *data, 
+		hbuf *link, uint8_t *data, 
 		size_t offset, size_t size, 
 		hoedown_autolink_flags flags);
 
@@ -326,20 +289,20 @@ hoedown_document *hoedown_document_new(const hoedown_renderer *renderer,
 
 /* hoedown_document_render: render regular Markdown using the document processor */
 void	 hoedown_document_render(hoedown_document *doc, 
-		hoedown_buffer *ob, const uint8_t *data, 
+		hbuf *ob, const uint8_t *data, 
 		size_t size);
 
 /* hoedown_document_free: deallocate a document processor instance */
 void	 hoedown_document_free(hoedown_document *doc);
 
 /* hoedown_escape_href: escape (part of) a URL inside HTML */
-void	 hoedown_escape_href(hoedown_buffer *ob, const uint8_t *data, size_t size);
+void	 hoedown_escape_href(hbuf *ob, const uint8_t *data, size_t size);
 
 /* hoedown_escape_html: escape HTML */
-void	 hoedown_escape_html(hoedown_buffer *ob, const uint8_t *data, size_t size, int secure);
+void	 hoedown_escape_html(hbuf *ob, const uint8_t *data, size_t size, int secure);
 
 /* hoedown_escape_nroff: escape HTML */
-void	 hoedown_escape_nroff(hoedown_buffer *ob, const uint8_t *data, size_t size, int secure);
+void	 hoedown_escape_nroff(hbuf *ob, const uint8_t *data, size_t size, int secure);
 
 /* hoedown_html_is_tag: checks if data starts with a specific tag, returns the tag type or NONE */
 hoedown_html_tag hoedown_html_is_tag(const uint8_t *data, 
@@ -357,7 +320,10 @@ hoedown_renderer *hoedown_nroff_renderer_new(hoedown_html_flags render_flags,
 void	 hoedown_nroff_renderer_free(hoedown_renderer *renderer);
 
 /* hoedown_html_smartypants: process an HTML snippet using SmartyPants for smart punctuation */
-void	 hoedown_html_smartypants(hoedown_buffer *ob, const uint8_t *data, size_t size);
+void	 hoedown_html_smartypants(hbuf *ob, const uint8_t *data, size_t size);
+
+/* hoedown_html_smartypants: process an HTML snippet using SmartyPants for smart punctuation */
+void	 hoedown_nroff_smartypants(hbuf *ob, const uint8_t *data, size_t size);
 
 __END_DECLS
 

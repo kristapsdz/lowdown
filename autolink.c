@@ -160,7 +160,7 @@ check_domain(uint8_t *data, size_t size, int allow_short)
 size_t
 hoedown_autolink__www(
 	size_t *rewind_p,
-	hoedown_buffer *link,
+	hbuf *link,
 	uint8_t *data,
 	size_t max_rewind,
 	size_t size,
@@ -187,7 +187,7 @@ hoedown_autolink__www(
 	if (link_end == 0)
 		return 0;
 
-	hoedown_buffer_put(link, data, link_end);
+	hbuf_put(link, data, link_end);
 	*rewind_p = 0;
 
 	return (int)link_end;
@@ -196,7 +196,7 @@ hoedown_autolink__www(
 size_t
 hoedown_autolink__email(
 	size_t *rewind_p,
-	hoedown_buffer *link,
+	hbuf *link,
 	uint8_t *data,
 	size_t max_rewind,
 	size_t size,
@@ -243,7 +243,7 @@ hoedown_autolink__email(
 	if (link_end == 0)
 		return 0;
 
-	hoedown_buffer_put(link, data - rewind, link_end + rewind);
+	hbuf_put(link, data - rewind, link_end + rewind);
 	*rewind_p = rewind;
 
 	return link_end;
@@ -252,7 +252,7 @@ hoedown_autolink__email(
 size_t
 hoedown_autolink__url(
 	size_t *rewind_p,
-	hoedown_buffer *link,
+	hbuf *link,
 	uint8_t *data,
 	size_t max_rewind,
 	size_t size,
@@ -288,7 +288,7 @@ hoedown_autolink__url(
 	if (link_end == 0)
 		return 0;
 
-	hoedown_buffer_put(link, data - rewind, link_end + rewind);
+	hbuf_put(link, data - rewind, link_end + rewind);
 	*rewind_p = rewind;
 
 	return link_end;
