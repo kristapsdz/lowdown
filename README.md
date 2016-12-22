@@ -66,7 +66,7 @@ I do this in my Makefiles:
 	  echo "</article>" ; ) >$@
 ```
 
-Of course, you can just do so on the shell, assuming "article.md" is the
+Of course, you can just do so on the shell, assuming "README.md" is the
 filename of our article.
 
 ```sh
@@ -74,22 +74,22 @@ filename of our article.
   echo "<html>" ; \
   echo "<head><title></title</head>" ; \
   echo "<body>" ; \
-  lowdown article.md ; \
+  lowdown README.md ; \
   echo "</body>" ; \
-  echo "</html>" ; ) >article.html
+  echo "</html>" ; ) >README.html
 ```
 
 Or failing all that, just use the standalone mode.
 
 ```sh
-lowdown -s -o article.html article.md
+lowdown -s -o README.html README.md
 ```
 
 Using the nroff output mode works well when making PS or PDF files.
 (Note: this feature is still under development!)
 
 ```sh
-lowdown -s -Tnroff article.md | groff -ms > README.ps
+lowdown -s -Tnroff README.md | groff -t -ms > README.ps
 ```
 
 Read the shipped
