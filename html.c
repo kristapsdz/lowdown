@@ -457,7 +457,7 @@ rndr_table(hbuf *ob, const hbuf *content, void *data)
 }
 
 static void
-rndr_table_header(hbuf *ob, const hbuf *content, void *data)
+rndr_table_header(hbuf *ob, const hbuf *content, void *data, size_t columns)
 {
     if (ob->size) hbuf_putc(ob, '\n');
     HBUF_PUTSL(ob, "<thead>\n");
@@ -483,7 +483,7 @@ rndr_tablerow(hbuf *ob, const hbuf *content, void *data)
 }
 
 static void
-rndr_tablecell(hbuf *ob, const hbuf *content, hoedown_table_flags flags, void *data, size_t col, size_t columns)
+rndr_tablecell(hbuf *ob, const hbuf *content, htbl_flags flags, void *data, size_t col, size_t columns)
 {
 	if (flags & HOEDOWN_TABLE_HEADER) {
 		HBUF_PUTSL(ob, "<th");

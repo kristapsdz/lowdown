@@ -108,13 +108,13 @@ typedef enum hoedown_list_flags {
 	HOEDOWN_LI_BLOCK = (1 << 1)	/* <li> containing block data */
 } hoedown_list_flags;
 
-typedef enum hoedown_table_flags {
+typedef enum htbl_flags {
 	HOEDOWN_TABLE_ALIGN_LEFT = 1,
 	HOEDOWN_TABLE_ALIGN_RIGHT = 2,
 	HOEDOWN_TABLE_ALIGN_CENTER = 3,
 	HOEDOWN_TABLE_ALIGNMASK = 3,
 	HOEDOWN_TABLE_HEADER = 4
-} hoedown_table_flags;
+} htbl_flags;
 
 typedef enum hoedown_autolink_type {
 	HOEDOWN_AUTOLINK_NONE,		/* used internally when it is not an autolink*/
@@ -140,10 +140,10 @@ typedef struct hoedown_renderer {
 	void (*listitem)(hbuf *ob, const hbuf *content, hoedown_list_flags flags, void *data);
 	void (*paragraph)(hbuf *ob, const hbuf *content, void *data);
 	void (*table)(hbuf *ob, const hbuf *content, void *data);
-	void (*table_header)(hbuf *ob, const hbuf *content, void *data);
+	void (*table_header)(hbuf *ob, const hbuf *content, void *data, size_t);
 	void (*table_body)(hbuf *ob, const hbuf *content, void *data);
 	void (*table_row)(hbuf *ob, const hbuf *content, void *data);
-	void (*table_cell)(hbuf *ob, const hbuf *content, hoedown_table_flags flags, void *data, size_t, size_t);
+	void (*table_cell)(hbuf *ob, const hbuf *content, htbl_flags flags, void *data, size_t, size_t);
 	void (*footnotes)(hbuf *ob, const hbuf *content, void *data);
 	void (*footnote_def)(hbuf *ob, const hbuf *content, unsigned int num, void *data);
 	void (*blockhtml)(hbuf *ob, const hbuf *text, void *data);

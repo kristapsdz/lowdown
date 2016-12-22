@@ -381,8 +381,6 @@ static void
 rndr_table(hbuf *ob, const hbuf *content, void *data)
 {
 
-	if (NULL == content || 0 == content->size)
-		return;
 	HBUF_PUTSL(ob, ".TS\n");
 	HBUF_PUTSL(ob, "tab(|);\n");
 	hbuf_put(ob, content->data, content->size);
@@ -391,24 +389,37 @@ rndr_table(hbuf *ob, const hbuf *content, void *data)
 }
 
 static void
-rndr_table_header(hbuf *ob, const hbuf *content, void *data)
+rndr_table_header(hbuf *ob, const hbuf *content, void *data, size_t columns)
 {
+	size_t	 i;
+
+	for (i = 0; i < columns; i++) {
+		if (i > 0)
+			HBUF_PUTSL(ob, " ");
+		HBUF_PUTSL(ob, "c");
+	}
+	HBUF_PUTSL(ob, ".\n");
+	hbuf_put(ob, content->data, content->size);
 }
 
 static void
 rndr_table_body(hbuf *ob, const hbuf *content, void *data)
 {
+
+	hbuf_put(ob, content->data, content->size);
 }
 
 static void
 rndr_tablerow(hbuf *ob, const hbuf *content, void *data)
 {
 
+	hbuf_put(ob, content->data, content->size);
 	HBUF_PUTSL(ob, "\n");
 }
 
 static void
-rndr_tablecell(hbuf *ob, const hbuf *content, hoedown_table_flags flags, void *data, size_t col, size_t columns)
+rndr_tablecell(hbuf *ob, const hbuf *content, 
+	htbl_flags flags, void *data, size_t col, size_t columns)
 {
 
 	if (col > 0)
