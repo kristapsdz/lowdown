@@ -2369,7 +2369,7 @@ parse_table_header(
 			i++;
 
 		if (data[i] == ':') {
-			i++; (*column_data)[col] |= HOEDOWN_TABLE_ALIGN_LEFT;
+			i++; (*column_data)[col] |= HTBL_ALIGN_LEFT;
 			dashes++;
 		}
 
@@ -2378,7 +2378,7 @@ parse_table_header(
 		}
 
 		if (i < under_end && data[i] == ':') {
-			i++; (*column_data)[col] |= HOEDOWN_TABLE_ALIGN_RIGHT;
+			i++; (*column_data)[col] |= HTBL_ALIGN_RIGHT;
 			dashes++;
 		}
 
@@ -2402,7 +2402,7 @@ parse_table_header(
 		header_end,
 		*columns,
 		*column_data,
-		HOEDOWN_TABLE_HEADER
+		HTBL_HEADER
 	);
 
 	return under_end + 1;
@@ -2459,7 +2459,7 @@ parse_table(
 		}
 
         if (doc->md.table_header)
-            doc->md.table_header(work, header_work, doc->data, columns);
+            doc->md.table_header(work, header_work, doc->data, col_data, columns);
 
         if (doc->md.table_body)
             doc->md.table_body(work, body_work, doc->data);

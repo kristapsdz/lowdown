@@ -457,7 +457,7 @@ rndr_table(hbuf *ob, const hbuf *content, void *data)
 }
 
 static void
-rndr_table_header(hbuf *ob, const hbuf *content, void *data, size_t columns)
+rndr_table_header(hbuf *ob, const hbuf *content, void *data, const htbl_flags *fl, size_t columns)
 {
     if (ob->size) hbuf_putc(ob, '\n');
     HBUF_PUTSL(ob, "<thead>\n");
@@ -485,22 +485,22 @@ rndr_tablerow(hbuf *ob, const hbuf *content, void *data)
 static void
 rndr_tablecell(hbuf *ob, const hbuf *content, htbl_flags flags, void *data, size_t col, size_t columns)
 {
-	if (flags & HOEDOWN_TABLE_HEADER) {
+	if (flags & HTBL_HEADER) {
 		HBUF_PUTSL(ob, "<th");
 	} else {
 		HBUF_PUTSL(ob, "<td");
 	}
 
-	switch (flags & HOEDOWN_TABLE_ALIGNMASK) {
-	case HOEDOWN_TABLE_ALIGN_CENTER:
+	switch (flags & HTBL_ALIGNMASK) {
+	case HTBL_ALIGN_CENTER:
 		HBUF_PUTSL(ob, " style=\"text-align: center\">");
 		break;
 
-	case HOEDOWN_TABLE_ALIGN_LEFT:
+	case HTBL_ALIGN_LEFT:
 		HBUF_PUTSL(ob, " style=\"text-align: left\">");
 		break;
 
-	case HOEDOWN_TABLE_ALIGN_RIGHT:
+	case HTBL_ALIGN_RIGHT:
 		HBUF_PUTSL(ob, " style=\"text-align: right\">");
 		break;
 
@@ -511,7 +511,7 @@ rndr_tablecell(hbuf *ob, const hbuf *content, htbl_flags flags, void *data, size
 	if (content)
 		hbuf_put(ob, content->data, content->size);
 
-	if (flags & HOEDOWN_TABLE_HEADER) {
+	if (flags & HTBL_HEADER) {
 		HBUF_PUTSL(ob, "</th>\n");
 	} else {
 		HBUF_PUTSL(ob, "</td>\n");
