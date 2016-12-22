@@ -32,10 +32,11 @@ The following modifications have been made:
   with [sblg(1)](https://kristaps.bsd.lv/sblg)
 - "smartypants" emits Unicode codepoints instead of HTML entities to
   make the output XML-friendly
+- renaming of internal API (for brevity)
 
 The following major feature additions have been added:
 
-- output mode for nroff (via the *-me* package) (**experimental**)
+- output mode for nroff (via the *-ms* package) (**experimental**)
 - "smartypants" mode for the nroff output
 
 It builds and runs on OpenBSD, Linux ([musl](https://www.musl-libc.org/)
@@ -83,7 +84,8 @@ Or failing all that, just use the standalone mode.
 lowdown -s -o article.html article.md
 ```
 
-Using the nroff output mode works well when making PS or PDF files:
+Using the nroff output mode works well when making PS or PDF files.
+(Note: this feature is still under development!)
 
 ```sh
 lowdown -s -Tnroff article.md | groff -ms > README.ps
