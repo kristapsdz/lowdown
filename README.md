@@ -26,6 +26,7 @@ For the moment, **lowdown** output is the same as
 - fenced code
 - tables
 - footnotes
+- disabled inline HTML (truly an **evil** feature)
 - "smartypants" enabled
 
 The following modifications have been made:
