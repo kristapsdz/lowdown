@@ -146,8 +146,9 @@ int
 main(int argc, char *argv[])
 {
 	FILE		 *fin = stdin, *fout = stdout;
-	const char	 *fnin = "<stdin>", *fnout = NULL;
-	hoedown_buffer	 *ib, *ob, *spb;
+	const char	 *fnin = "<stdin>", *fnout = NULL,
+	      		 *title = NULL;
+	hbuf	 *ib, *ob, *spb;
 	hoedown_renderer *renderer = NULL;
 	hoedown_document *document;
 	const char	 *pname;
@@ -167,7 +168,7 @@ main(int argc, char *argv[])
 		++pname;
 #endif
 
-	while (-1 != (c = getopt(argc, argv, "sT:o:")))
+	while (-1 != (c = getopt(argc, argv, "st:T:o:")))
 		switch (c) {
 		case ('T'):
 			if (0 == strcasecmp(optarg, "nroff"))
@@ -176,6 +177,9 @@ main(int argc, char *argv[])
 				outm = OUT_HTML;
 			else
 				goto usage;
+			break;
+		case ('t'):
+			title = optarg;
 			break;
 		case ('s'):
 			standalone = 1;
@@ -209,9 +213,9 @@ main(int argc, char *argv[])
 	 * Begin by creating our buffers, renderer, and document.
 	 */
 
-	ib = hoedown_buffer_new(DEF_IUNIT);
-	ob = hoedown_buffer_new(DEF_OUNIT);
-	spb = hoedown_buffer_new(DEF_OUNIT);
+	ib = hbuf_new(DEF_IUNIT);
+	ob = hbuf_new(DEF_OUNIT);
+	spb = hbuf_new(DEF_OUNIT);
 
 	renderer = OUT_HTML == outm ?
 		hoedown_html_renderer_new
@@ -248,15 +252,16 @@ main(int argc, char *argv[])
 		hoedown_html_smartypants(spb, ob->data, ob->size);
 		hoedown_buffer_free(ob);
 		if (standalone)
-			fputs("<!DOCTYPE html>\n"
+			fprintf(fout, "<!DOCTYPE html>\n"
 			      "<html>\n"
 			      "<head>\n"
 			      "<meta charset=\"utf-8\">\n"
 			      "<meta name=\"viewport\" content=\""
 			       "width=device-width,initial-scale=1\">\n"
-			      "<title></title>\n"
+			      "<title>%s</title>\n"
 			      "</head>\n"
-			      "<body>\n", fout);
+			      "<body>\n", NULL == title ?
+			      "Untitled article" : title);
 		fwrite(spb->data, 1, spb->size, fout);
 		hoedown_buffer_free(spb);
 		if (standalone)
@@ -264,16 +269,24 @@ main(int argc, char *argv[])
 			      "</html>\n", fout);
 	} else {
 		hoedown_nroff_renderer_free(renderer);
-		if (standalone)
-			fputs(".TL A Document\n", fout);
-		fwrite(ob->data, 1, ob->size, fout);
+		hoedown_nroff_smartypants(spb, ob->data, ob->size);
 		hoedown_buffer_free(ob);
+		if (standalone)
+			fprintf(fout, ".TL\n%s\n", NULL == title ?
+				"Untitled article" : title);
+		fwrite(spb->data, 1, spb->size, fout);
+		hoedown_buffer_free(spb);
 	}
 
 	if (fout != stdout)
 		fclose(fout);
 	return(EXIT_SUCCESS);
 usage:
-	fprintf(stderr, "usage: %s [-s] [-o output] [file]\n", pname);
+	fprintf(stderr, "usage: %s "
+		"[-s] "
+		"[-o output] "
+		"[-t title] "
+		"[-T mode] "
+		"[file]\n", pname);
 	return(EXIT_FAILURE);
 }
