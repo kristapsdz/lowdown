@@ -223,9 +223,9 @@ static int
 rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title, void *data)
 {
 
-	if (NULL == content && 0 == content->size &&
-	    NULL == title && 0 == title->size &&
-	    NULL == link && 0 == link->size)
+	if ((NULL == content || 0 == content->size) &&
+	    (NULL == title || 0 == title->size) &&
+	    (NULL == link || 0 == link->size))
 		return 0;
 
 	HBUF_PUTSL(ob, "\\fI");
@@ -252,7 +252,7 @@ static void
 rndr_listitem(hbuf *ob, const hbuf *content, hoedown_list_flags flags, void *data)
 {
 
-	if (NULL == content && 0 == content->size) 
+	if (NULL == content || 0 == content->size) 
 		return;
 
 	HBUF_PUTSL(ob, ".IP -\n");
