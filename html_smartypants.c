@@ -31,19 +31,19 @@ struct smartypants_data {
 	int in_dquote;
 };
 
-static size_t smartypants_cb__ltag(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
-static size_t smartypants_cb__dquote(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
-static size_t smartypants_cb__amp(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
-static size_t smartypants_cb__period(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
-static size_t smartypants_cb__number(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
-static size_t smartypants_cb__dash(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
-static size_t smartypants_cb__parens(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
-static size_t smartypants_cb__squote(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
-static size_t smartypants_cb__backtick(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
-static size_t smartypants_cb__escape(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
+static size_t smartypants_cb__ltag(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
+static size_t smartypants_cb__dquote(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
+static size_t smartypants_cb__amp(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
+static size_t smartypants_cb__period(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
+static size_t smartypants_cb__number(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
+static size_t smartypants_cb__dash(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
+static size_t smartypants_cb__parens(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
+static size_t smartypants_cb__squote(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
+static size_t smartypants_cb__backtick(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
+static size_t smartypants_cb__escape(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
 
 static size_t (*smartypants_cb_ptrs[])
-	(hoedown_buffer *, struct smartypants_data *, uint8_t, const uint8_t *, size_t) =
+	(hbuf *, struct smartypants_data *, uint8_t, const uint8_t *, size_t) =
 {
 	NULL,					/* 0 */
 	smartypants_cb__dash,	/* 1 */
@@ -106,7 +106,7 @@ squote_len(const uint8_t *text, size_t size)
 
 /* Converts " or ' at very beginning or end of a word to left or right quote */
 static int
-smartypants_quotes(hoedown_buffer *ob, uint8_t previous_char, uint8_t next_char, uint8_t quote, int *is_open)
+smartypants_quotes(hbuf *ob, uint8_t previous_char, uint8_t next_char, uint8_t quote, int *is_open)
 {
 
 	if (*is_open && !word_boundary(next_char))
@@ -118,9 +118,9 @@ smartypants_quotes(hoedown_buffer *ob, uint8_t previous_char, uint8_t next_char,
 	assert('d' == quote || 's' == quote);
 
 	if ('d' == quote)
-		hoedown_buffer_puts(ob, *is_open ? "&#8221;" : "&#8220;");
+		hbuf_puts(ob, *is_open ? "&#8221;" : "&#8220;");
 	else
-		hoedown_buffer_puts(ob, *is_open ? "&#8217;" : "&#8216;");
+		hbuf_puts(ob, *is_open ? "&#8217;" : "&#8216;");
 
 	*is_open = !(*is_open);
 	return 1;
@@ -133,7 +133,7 @@ smartypants_quotes(hoedown_buffer *ob, uint8_t previous_char, uint8_t next_char,
 	'text' points at the last character of the single-quote, e.g. ' or ;
 */
 static size_t
-smartypants_squote(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size,
+smartypants_squote(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size,
 				   const uint8_t *squote_text, size_t squote_size)
 {
 	if (size >= 2) {
@@ -171,20 +171,20 @@ smartypants_squote(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t pr
 	if (smartypants_quotes(ob, previous_char, size > 0 ? text[1] : 0, 's', &smrt->in_squote))
 		return 0;
 
-	hoedown_buffer_put(ob, squote_text, squote_size);
+	hbuf_put(ob, squote_text, squote_size);
 	return 0;
 }
 
 /* Converts ' to left or right single quote. */
 static size_t
-smartypants_cb__squote(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
+smartypants_cb__squote(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
 {
 	return smartypants_squote(ob, smrt, previous_char, text, size, text, 1);
 }
 
 /* Converts (c), (r), (tm) */
 static size_t
-smartypants_cb__parens(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
+smartypants_cb__parens(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
 {
 	if (size >= 3) {
 		uint8_t t1 = tolower(text[1]);
@@ -206,13 +206,13 @@ smartypants_cb__parens(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_
 		}
 	}
 
-	hoedown_buffer_putc(ob, text[0]);
+	hbuf_putc(ob, text[0]);
 	return 0;
 }
 
 /* Converts "--" to em-dash, etc. */
 static size_t
-smartypants_cb__dash(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
+smartypants_cb__dash(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
 {
 	if (size >= 3 && text[1] == '-' && text[2] == '-') {
 		HOEDOWN_BUFPUTSL(ob, "&#8212;");
@@ -224,13 +224,13 @@ smartypants_cb__dash(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t 
 		return 1;
 	}
 
-	hoedown_buffer_putc(ob, text[0]);
+	hbuf_putc(ob, text[0]);
 	return 0;
 }
 
 /* Converts &quot; etc. */
 static size_t
-smartypants_cb__amp(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
+smartypants_cb__amp(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
 {
 	size_t len;
 	if (size >= 6 && memcmp(text, "&quot;", 6) == 0) {
@@ -246,13 +246,13 @@ smartypants_cb__amp(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t p
 	if (size >= 4 && memcmp(text, "&#0;", 4) == 0)
 		return 3;
 
-	hoedown_buffer_putc(ob, '&');
+	hbuf_putc(ob, '&');
 	return 0;
 }
 
 /* Converts "..." to ellipsis */
 static size_t
-smartypants_cb__period(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
+smartypants_cb__period(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
 {
 	if (size >= 3 && text[1] == '.' && text[2] == '.') {
 		HOEDOWN_BUFPUTSL(ob, "&#8230;");
@@ -264,26 +264,26 @@ smartypants_cb__period(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_
 		return 4;
 	}
 
-	hoedown_buffer_putc(ob, text[0]);
+	hbuf_putc(ob, text[0]);
 	return 0;
 }
 
 /* Converts `` to opening double quote */
 static size_t
-smartypants_cb__backtick(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
+smartypants_cb__backtick(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
 {
 	if (size >= 2 && text[1] == '`') {
 		if (smartypants_quotes(ob, previous_char, size >= 3 ? text[2] : 0, 'd', &smrt->in_dquote))
 			return 1;
 	}
 
-	hoedown_buffer_putc(ob, text[0]);
+	hbuf_putc(ob, text[0]);
 	return 0;
 }
 
 /* Converts 1/2, 1/4, 3/4 */
 static size_t
-smartypants_cb__number(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
+smartypants_cb__number(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
 {
 	if (word_boundary(previous_char) && size >= 3) {
 		if (text[0] == '1' && text[1] == '/' && text[2] == '2') {
@@ -310,13 +310,13 @@ smartypants_cb__number(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_
 		}
 	}
 
-	hoedown_buffer_putc(ob, text[0]);
+	hbuf_putc(ob, text[0]);
 	return 0;
 }
 
 /* Converts " to left or right double quote */
 static size_t
-smartypants_cb__dquote(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
+smartypants_cb__dquote(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
 {
 	if (!smartypants_quotes(ob, previous_char, size > 0 ? text[1] : 0, 'd', &smrt->in_dquote))
 		HOEDOWN_BUFPUTSL(ob, "&#34;");
@@ -325,7 +325,7 @@ smartypants_cb__dquote(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_
 }
 
 static size_t
-smartypants_cb__ltag(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
+smartypants_cb__ltag(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
 {
 	static const char *skip_tags[] = {
 	  "pre", "code", "var", "samp", "kbd", "math", "script", "style"
@@ -340,7 +340,7 @@ smartypants_cb__ltag(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t 
 		while (i + 3 < size && memcmp(text + i, "-->",  3) != 0)
 			i++;
 		i += 3;
-		hoedown_buffer_put(ob, text, i + 1);
+		hbuf_put(ob, text, i + 1);
 		return i;
 	}
 
@@ -370,12 +370,12 @@ smartypants_cb__ltag(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t 
 			i++;
 	}
 
-	hoedown_buffer_put(ob, text, i + 1);
+	hbuf_put(ob, text, i + 1);
 	return i;
 }
 
 static size_t
-smartypants_cb__escape(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
+smartypants_cb__escape(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
 {
 	if (size < 2)
 		return 0;
@@ -387,11 +387,11 @@ smartypants_cb__escape(hoedown_buffer *ob, struct smartypants_data *smrt, uint8_
 	case '.':
 	case '-':
 	case '`':
-		hoedown_buffer_putc(ob, text[1]);
+		hbuf_putc(ob, text[1]);
 		return 1;
 
 	default:
-		hoedown_buffer_putc(ob, '\\');
+		hbuf_putc(ob, '\\');
 		return 0;
 	}
 }
@@ -427,7 +427,7 @@ static struct {
 #endif
 
 void
-hoedown_html_smartypants(hoedown_buffer *ob, const uint8_t *text, size_t size)
+hoedown_html_smartypants(hbuf *ob, const uint8_t *text, size_t size)
 {
 	size_t i;
 	struct smartypants_data smrt = {0, 0};
@@ -435,7 +435,7 @@ hoedown_html_smartypants(hoedown_buffer *ob, const uint8_t *text, size_t size)
 	if (!text)
 		return;
 
-	hoedown_buffer_grow(ob, size);
+	hbuf_grow(ob, size);
 
 	for (i = 0; i < size; ++i) {
 		size_t org;
@@ -446,7 +446,7 @@ hoedown_html_smartypants(hoedown_buffer *ob, const uint8_t *text, size_t size)
 			i++;
 
 		if (i > org)
-			hoedown_buffer_put(ob, text + org, i - org);
+			hbuf_put(ob, text + org, i - org);
 
 		if (i < size) {
 			i += smartypants_cb_ptrs[(int)action]
