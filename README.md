@@ -15,8 +15,10 @@ code readable and add some desired features:
    if applicable.
 6. Add manpage.
 7. Strip use of externally-defined memory management.
+8. Rename internal API (for brevity).
+9. Prune dead code and de-obfuscate some internal structures.
 
-For the moment, **lowdown** is the same as
+For the moment, **lowdown** output is the same as
 [hoedown](https://github.com/hoedown/hoedown) with the following presets:
 
 - XHTML mode
@@ -32,7 +34,6 @@ The following modifications have been made:
   with [sblg(1)](https://kristaps.bsd.lv/sblg)
 - "smartypants" emits Unicode codepoints instead of HTML entities to
   make the output XML-friendly
-- renaming of internal API (for brevity)
 
 The following major feature additions have been added:
 
