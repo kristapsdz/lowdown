@@ -62,12 +62,12 @@ rndr_autolink(hbuf *ob, const hbuf *link, hoedown_autolink_type type, void *data
 	 * want to print the `mailto:` prefix
 	 */
 
-	HOEDOWN_BUFPUTSL(ob, "\\fI");
-	if (hoedown_buffer_prefix(link, "mailto:") == 0)
+	HBUF_PUTSL(ob, "\\fI");
+	if (hbuf_prefix(link, "mailto:") == 0)
 		hbuf_put(ob, link->data + 7, link->size - 7);
 	else
 		hbuf_put(ob, link->data, link->size);
-	HOEDOWN_BUFPUTSL(ob, "\\fR");
+	HBUF_PUTSL(ob, "\\fR");
 	return 1;
 }
 
@@ -78,12 +78,12 @@ rndr_blockcode(hbuf *ob, const hbuf *content, const hbuf *lang, void *data)
 	if (NULL == content || 0 == content->size)
 		return;
 
-	HOEDOWN_BUFPUTSL(ob, ".DS\n");
-	HOEDOWN_BUFPUTSL(ob, ".ft CR\n");
+	HBUF_PUTSL(ob, ".DS\n");
+	HBUF_PUTSL(ob, ".ft CR\n");
 	escape_buffer(ob, content->data, content->size);
 	BUFFER_NEWLINE(content->data, content->size, ob);
-	HOEDOWN_BUFPUTSL(ob, ".ft\n");
-	HOEDOWN_BUFPUTSL(ob, ".DE\n");
+	HBUF_PUTSL(ob, ".ft\n");
+	HBUF_PUTSL(ob, ".DE\n");
 }
 
 static void
@@ -93,10 +93,10 @@ rndr_blockquote(hbuf *ob, const hbuf *content, void *data)
 	if (NULL == content || 0 == content->size)
 		return;
 
-	HOEDOWN_BUFPUTSL(ob, ".RS\n");
+	HBUF_PUTSL(ob, ".RS\n");
 	hbuf_put(ob, content->data, content->size);
 	BUFFER_NEWLINE(content->data, content->size, ob);
-	HOEDOWN_BUFPUTSL(ob, ".RE\n");
+	HBUF_PUTSL(ob, ".RE\n");
 }
 
 static int
@@ -106,9 +106,9 @@ rndr_codespan(hbuf *ob, const hbuf *content, void *data)
 	if (NULL == content || 0 == content->size)
 		return(0);
 
-	HOEDOWN_BUFPUTSL(ob, "\\f[CW]");
+	HBUF_PUTSL(ob, "\\f[CW]");
 	escape_buffer(ob, content->data, content->size);
-	HOEDOWN_BUFPUTSL(ob, "\\fR");
+	HBUF_PUTSL(ob, "\\fR");
 	return 1;
 }
 
@@ -130,9 +130,9 @@ rndr_double_emphasis(hbuf *ob, const hbuf *content, void *data)
 	if (NULL == content || 0 == content->size)
 		return(0);
 
-	HOEDOWN_BUFPUTSL(ob, "\\fB");
+	HBUF_PUTSL(ob, "\\fB");
 	hbuf_put(ob, content->data, content->size);
-	HOEDOWN_BUFPUTSL(ob, "\\fR");
+	HBUF_PUTSL(ob, "\\fR");
 	return 1;
 }
 
@@ -143,9 +143,9 @@ rndr_triple_emphasis(hbuf *ob, const hbuf *content, void *data)
 	if (NULL == content || 0 == content->size)
 		return(0);
 
-	HOEDOWN_BUFPUTSL(ob, "\\f(BI");
+	HBUF_PUTSL(ob, "\\f(BI");
 	hbuf_put(ob, content->data, content->size);
-	HOEDOWN_BUFPUTSL(ob, "\\fR");
+	HBUF_PUTSL(ob, "\\fR");
 	return 1;
 }
 
@@ -157,9 +157,9 @@ rndr_emphasis(hbuf *ob, const hbuf *content, void *data)
 	if (NULL == content || 0 == content->size)
 		return(0);
 
-	HOEDOWN_BUFPUTSL(ob, "\\fI");
+	HBUF_PUTSL(ob, "\\fI");
 	hbuf_put(ob, content->data, content->size);
-	HOEDOWN_BUFPUTSL(ob, "\\fR");
+	HBUF_PUTSL(ob, "\\fR");
 	return 1;
 }
 
@@ -181,9 +181,9 @@ rndr_highlight(hbuf *ob, const hbuf *content, void *data)
 	if (NULL == content || 0 == content->size)
 		return(0);
 
-	HOEDOWN_BUFPUTSL(ob, "\\fB");
+	HBUF_PUTSL(ob, "\\fB");
 	hbuf_put(ob, content->data, content->size);
-	HOEDOWN_BUFPUTSL(ob, "\\fR");
+	HBUF_PUTSL(ob, "\\fR");
 	return 1;
 }
 
@@ -194,9 +194,9 @@ rndr_quote(hbuf *ob, const hbuf *content, void *data)
 	if (NULL == content || 0 == content->size)
 		return(0);
 
-	HOEDOWN_BUFPUTSL(ob, "\\(lq");
+	HBUF_PUTSL(ob, "\\(lq");
 	hbuf_put(ob, content->data, content->size);
-	HOEDOWN_BUFPUTSL(ob, "\\(rq");
+	HBUF_PUTSL(ob, "\\(rq");
 	return 1;
 }
 
@@ -204,7 +204,7 @@ static int
 rndr_linebreak(hbuf *ob, void *data)
 {
 
-	HOEDOWN_BUFPUTSL(ob, ".br\n");
+	HBUF_PUTSL(ob, ".br\n");
 	return 1;
 }
 
@@ -215,7 +215,7 @@ rndr_header(hbuf *ob, const hbuf *content, int level, void *data)
 	if (NULL == content || 0 == content->size)
 		return;
 
-	HOEDOWN_BUFPUTSL(ob, ".SH\n");
+	HBUF_PUTSL(ob, ".SH\n");
 	hbuf_put(ob, content->data, content->size);
 	BUFFER_NEWLINE(content->data, content->size, ob);
 }
@@ -229,14 +229,14 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title, vo
 	    NULL == link && 0 == link->size)
 		return 0;
 
-	HOEDOWN_BUFPUTSL(ob, "\\fI");
+	HBUF_PUTSL(ob, "\\fI");
 	if (NULL != content && 0 != content->size)
 		hbuf_put(ob, content->data, content->size);
 	else if (NULL != title && 0 != title->size)
 		hbuf_put(ob, title->data, title->size);
 	else
 		hbuf_put(ob, link->data, link->size);
-	HOEDOWN_BUFPUTSL(ob, "\\fR");
+	HBUF_PUTSL(ob, "\\fR");
 
 	return 1;
 }
@@ -256,7 +256,7 @@ rndr_listitem(hbuf *ob, const hbuf *content, hoedown_list_flags flags, void *dat
 	if (NULL == content && 0 == content->size) 
 		return;
 
-	HOEDOWN_BUFPUTSL(ob, ".IP -\n");
+	HBUF_PUTSL(ob, ".IP -\n");
 	hbuf_put(ob, content->data, content->size);
 	BUFFER_NEWLINE(content->data, content->size, ob);
 }
@@ -274,7 +274,7 @@ rndr_paragraph(hbuf *ob, const hbuf *content, void *data)
 	if (i == content->size)
 		return;
 
-	HOEDOWN_BUFPUTSL(ob, ".LP\n");
+	HBUF_PUTSL(ob, ".LP\n");
 
 	if (state->flags & HOEDOWN_HTML_HARD_WRAP) {
 		while (i < content->size) {
@@ -343,15 +343,15 @@ rndr_image(hbuf *ob, const hbuf *link, const hbuf *title, const hbuf *alt, void 
 	nroff_state *state = data;
 	if (!link || !link->size) return 0;
 
-	HOEDOWN_BUFPUTSL(ob, "<img src=\"");
+	HBUF_PUTSL(ob, "<img src=\"");
 	hbuf_put(ob, link->data, link->size);
-	HOEDOWN_BUFPUTSL(ob, "\" alt=\"");
+	HBUF_PUTSL(ob, "\" alt=\"");
 
 	if (alt && alt->size)
 		escape_buffer(ob, alt->data, alt->size);
 
 	if (title && title->size) {
-		HOEDOWN_BUFPUTSL(ob, "\" title=\"");
+		HBUF_PUTSL(ob, "\" title=\"");
 		escape_buffer(ob, title->data, title->size); }
 
 	hbuf_puts(ob, USE_XHTML(state) ? "\"/>" : "\">");
@@ -383,11 +383,11 @@ rndr_table(hbuf *ob, const hbuf *content, void *data)
 
 	if (NULL == content || 0 == content->size)
 		return;
-	HOEDOWN_BUFPUTSL(ob, ".TS\n");
-	HOEDOWN_BUFPUTSL(ob, "tab(|);\n");
+	HBUF_PUTSL(ob, ".TS\n");
+	HBUF_PUTSL(ob, "tab(|);\n");
 	hbuf_put(ob, content->data, content->size);
 	BUFFER_NEWLINE(content->data, content->size, ob);
-	HOEDOWN_BUFPUTSL(ob, ".TE\n");
+	HBUF_PUTSL(ob, ".TE\n");
 }
 
 static void
@@ -404,7 +404,7 @@ static void
 rndr_tablerow(hbuf *ob, const hbuf *content, void *data)
 {
 
-	HOEDOWN_BUFPUTSL(ob, "\n");
+	HBUF_PUTSL(ob, "\n");
 }
 
 static void
@@ -412,7 +412,7 @@ rndr_tablecell(hbuf *ob, const hbuf *content, hoedown_table_flags flags, void *d
 {
 
 	if (col > 0)
-		HOEDOWN_BUFPUTSL(ob, "|");
+		HBUF_PUTSL(ob, "|");
 	if (NULL != content && content->size)
 		hbuf_put(ob, content->data, content->size);
 }
@@ -421,9 +421,9 @@ static int
 rndr_superscript(hbuf *ob, const hbuf *content, void *data)
 {
 	if (!content || !content->size) return 0;
-	HOEDOWN_BUFPUTSL(ob, "<sup>");
+	HBUF_PUTSL(ob, "<sup>");
 	hbuf_put(ob, content->data, content->size);
-	HOEDOWN_BUFPUTSL(ob, "</sup>");
+	HBUF_PUTSL(ob, "</sup>");
 	return 1;
 }
 
@@ -441,13 +441,13 @@ rndr_footnotes(hbuf *ob, const hbuf *content, void *data)
 	nroff_state *state = data;
 
 	if (ob->size) hbuf_putc(ob, '\n');
-	HOEDOWN_BUFPUTSL(ob, "<div class=\"footnotes\">\n");
+	HBUF_PUTSL(ob, "<div class=\"footnotes\">\n");
 	hbuf_puts(ob, USE_XHTML(state) ? "<hr/>\n" : "<hr>\n");
-	HOEDOWN_BUFPUTSL(ob, "<ol>\n");
+	HBUF_PUTSL(ob, "<ol>\n");
 
 	if (content) hbuf_put(ob, content->data, content->size);
 
-	HOEDOWN_BUFPUTSL(ob, "\n</ol>\n</div>\n");
+	HBUF_PUTSL(ob, "\n</ol>\n</div>\n");
 }
 
 static void
@@ -469,21 +469,21 @@ rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num, void *data)
 		}
 	}
 
-	hoedown_buffer_printf(ob, "\n<li id=\"fn%d\">\n", num);
+	hbuf_printf(ob, "\n<li id=\"fn%d\">\n", num);
 	if (pfound) {
 		hbuf_put(ob, content->data, i);
-		hoedown_buffer_printf(ob, "&nbsp;<a href=\"#fnref%d\" rev=\"footnote\">&#8617;</a>", num);
+		hbuf_printf(ob, "&nbsp;<a href=\"#fnref%d\" rev=\"footnote\">&#8617;</a>", num);
 		hbuf_put(ob, content->data + i, content->size - i);
 	} else if (content) {
 		hbuf_put(ob, content->data, content->size);
 	}
-	HOEDOWN_BUFPUTSL(ob, "</li>\n");
+	HBUF_PUTSL(ob, "</li>\n");
 }
 
 static int
 rndr_footnote_ref(hbuf *ob, unsigned int num, void *data)
 {
-	hoedown_buffer_printf(ob, "<sup id=\"fnref%d\"><a href=\"#fn%d\" rel=\"footnote\">%d</a></sup>", num, num, num);
+	hbuf_printf(ob, "<sup id=\"fnref%d\"><a href=\"#fn%d\" rel=\"footnote\">%d</a></sup>", num, num, num);
 	return 1;
 }
 

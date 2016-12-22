@@ -234,7 +234,7 @@ main(int argc, char *argv[])
 
 	/* Read from our input and close out the input .*/
 
-	if (hoedown_buffer_putf(ib, fin))
+	if (hbuf_putf(ib, fin))
 		err(EXIT_FAILURE, "%s", fnin);
 	if (fin != stdin) 
 		fclose(fin);
@@ -242,7 +242,7 @@ main(int argc, char *argv[])
 	/* Parse the output and free resources. */
 
 	hoedown_document_render(document, ob, ib->data, ib->size);
-	hoedown_buffer_free(ib);
+	hbuf_free(ib);
 	hoedown_document_free(document);
 
 	/* Reprocess the HTML as smartypants. */
@@ -250,7 +250,7 @@ main(int argc, char *argv[])
 	if (OUT_HTML == outm) {
 		hoedown_html_renderer_free(renderer);
 		hoedown_html_smartypants(spb, ob->data, ob->size);
-		hoedown_buffer_free(ob);
+		hbuf_free(ob);
 		if (standalone)
 			fprintf(fout, "<!DOCTYPE html>\n"
 			      "<html>\n"
@@ -263,19 +263,19 @@ main(int argc, char *argv[])
 			      "<body>\n", NULL == title ?
 			      "Untitled article" : title);
 		fwrite(spb->data, 1, spb->size, fout);
-		hoedown_buffer_free(spb);
+		hbuf_free(spb);
 		if (standalone)
 			fputs("</body>\n"
 			      "</html>\n", fout);
 	} else {
 		hoedown_nroff_renderer_free(renderer);
 		hoedown_nroff_smartypants(spb, ob->data, ob->size);
-		hoedown_buffer_free(ob);
+		hbuf_free(ob);
 		if (standalone)
 			fprintf(fout, ".TL\n%s\n", NULL == title ?
 				"Untitled article" : title);
 		fwrite(spb->data, 1, spb->size, fout);
-		hoedown_buffer_free(spb);
+		hbuf_free(spb);
 	}
 
 	if (fout != stdout)

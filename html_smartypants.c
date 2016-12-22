@@ -150,7 +150,7 @@ smartypants_squote(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_cha
 		/* Tom's, isn't, I'm, I'd */
 		if ((t1 == 's' || t1 == 't' || t1 == 'm' || t1 == 'd') &&
 			(size == 3 || word_boundary(text[2]))) {
-			HOEDOWN_BUFPUTSL(ob, "&#8217;");
+			HBUF_PUTSL(ob, "&#8217;");
 			return 0;
 		}
 
@@ -162,7 +162,7 @@ smartypants_squote(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_cha
 				(t1 == 'l' && t2 == 'l') ||
 				(t1 == 'v' && t2 == 'e')) &&
 				(size == 4 || word_boundary(text[3]))) {
-				HOEDOWN_BUFPUTSL(ob, "&#8217;");
+				HBUF_PUTSL(ob, "&#8217;");
 				return 0;
 			}
 		}
@@ -191,17 +191,17 @@ smartypants_cb__parens(hbuf *ob, struct smartypants_data *smrt, uint8_t previous
 		uint8_t t2 = tolower(text[2]);
 
 		if (t1 == 'c' && t2 == ')') {
-			HOEDOWN_BUFPUTSL(ob, "&#169;");
+			HBUF_PUTSL(ob, "&#169;");
 			return 2;
 		}
 
 		if (t1 == 'r' && t2 == ')') {
-			HOEDOWN_BUFPUTSL(ob, "&#174;");
+			HBUF_PUTSL(ob, "&#174;");
 			return 2;
 		}
 
 		if (size >= 4 && t1 == 't' && t2 == 'm' && text[3] == ')') {
-			HOEDOWN_BUFPUTSL(ob, "&#8482;");
+			HBUF_PUTSL(ob, "&#8482;");
 			return 3;
 		}
 	}
@@ -215,12 +215,12 @@ static size_t
 smartypants_cb__dash(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
 {
 	if (size >= 3 && text[1] == '-' && text[2] == '-') {
-		HOEDOWN_BUFPUTSL(ob, "&#8212;");
+		HBUF_PUTSL(ob, "&#8212;");
 		return 2;
 	}
 
 	if (size >= 2 && text[1] == '-') {
-		HOEDOWN_BUFPUTSL(ob, "&#8211;");
+		HBUF_PUTSL(ob, "&#8211;");
 		return 1;
 	}
 
@@ -255,12 +255,12 @@ static size_t
 smartypants_cb__period(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
 {
 	if (size >= 3 && text[1] == '.' && text[2] == '.') {
-		HOEDOWN_BUFPUTSL(ob, "&#8230;");
+		HBUF_PUTSL(ob, "&#8230;");
 		return 2;
 	}
 
 	if (size >= 5 && text[1] == ' ' && text[2] == '.' && text[3] == ' ' && text[4] == '.') {
-		HOEDOWN_BUFPUTSL(ob, "&#8230;");
+		HBUF_PUTSL(ob, "&#8230;");
 		return 4;
 	}
 
@@ -288,7 +288,7 @@ smartypants_cb__number(hbuf *ob, struct smartypants_data *smrt, uint8_t previous
 	if (word_boundary(previous_char) && size >= 3) {
 		if (text[0] == '1' && text[1] == '/' && text[2] == '2') {
 			if (size == 3 || word_boundary(text[3])) {
-				HOEDOWN_BUFPUTSL(ob, "&#189;");
+				HBUF_PUTSL(ob, "&#189;");
 				return 2;
 			}
 		}
@@ -296,7 +296,7 @@ smartypants_cb__number(hbuf *ob, struct smartypants_data *smrt, uint8_t previous
 		if (text[0] == '1' && text[1] == '/' && text[2] == '4') {
 			if (size == 3 || word_boundary(text[3]) ||
 				(size >= 5 && tolower(text[3]) == 't' && tolower(text[4]) == 'h')) {
-				HOEDOWN_BUFPUTSL(ob, "&#188;");
+				HBUF_PUTSL(ob, "&#188;");
 				return 2;
 			}
 		}
@@ -304,7 +304,7 @@ smartypants_cb__number(hbuf *ob, struct smartypants_data *smrt, uint8_t previous
 		if (text[0] == '3' && text[1] == '/' && text[2] == '4') {
 			if (size == 3 || word_boundary(text[3]) ||
 				(size >= 6 && tolower(text[3]) == 't' && tolower(text[4]) == 'h' && tolower(text[5]) == 's')) {
-				HOEDOWN_BUFPUTSL(ob, "&#190;");
+				HBUF_PUTSL(ob, "&#190;");
 				return 2;
 			}
 		}
@@ -319,7 +319,7 @@ static size_t
 smartypants_cb__dquote(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
 {
 	if (!smartypants_quotes(ob, previous_char, size > 0 ? text[1] : 0, 'd', &smrt->in_dquote))
-		HOEDOWN_BUFPUTSL(ob, "&#34;");
+		HBUF_PUTSL(ob, "&#34;");
 
 	return 0;
 }
