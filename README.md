@@ -1,9 +1,9 @@
 ## Synopsis
 
 **lowdown** is a fork of [hoedown](https://github.com/hoedown/hoedown).
-It's inspired by the desire for markdown input for
+It's inspired by the desire for lightweight markdown input for
 [sblg(1)](https://kristaps.bsd.lv/sblg).  The fork is simply to make the
-code readable:
+code readable and add some desired features:
 
 1. Put all header files into one and clean up source layout.
 2. Remove all macro cruft (Microsoft checks and builtins).
@@ -32,6 +32,11 @@ The following modifications have been made:
   with [sblg(1)](https://kristaps.bsd.lv/sblg)
 - "smartypants" emits Unicode codepoints instead of HTML entities to
   make the output XML-friendly
+
+The following major feature additions have been added:
+
+- output mode for nroff (via the *-me* package) (**experimental**)
+- "smartypants" mode for the nroff output
 
 It builds and runs on OpenBSD, Linux ([musl](https://www.musl-libc.org/)
 and glibc), and Mac OS X.
@@ -76,6 +81,12 @@ Or failing all that, just use the standalone mode.
 
 ```sh
 lowdown -s -o article.html article.md
+```
+
+Using the nroff output mode works well when making PS or PDF files:
+
+```sh
+lowdown -s -Tnroff article.md | groff -ms > README.ps
 ```
 
 Read the shipped
