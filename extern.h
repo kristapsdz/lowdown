@@ -109,11 +109,11 @@ typedef enum hoedown_list_flags {
 } hoedown_list_flags;
 
 typedef enum htbl_flags {
-	HOEDOWN_TABLE_ALIGN_LEFT = 1,
-	HOEDOWN_TABLE_ALIGN_RIGHT = 2,
-	HOEDOWN_TABLE_ALIGN_CENTER = 3,
-	HOEDOWN_TABLE_ALIGNMASK = 3,
-	HOEDOWN_TABLE_HEADER = 4
+	HTBL_ALIGN_LEFT = 1,
+	HTBL_ALIGN_RIGHT = 2,
+	HTBL_ALIGN_CENTER = 3,
+	HTBL_ALIGNMASK = 3,
+	HTBL_HEADER = 4
 } htbl_flags;
 
 typedef enum hoedown_autolink_type {
@@ -140,7 +140,7 @@ typedef struct hoedown_renderer {
 	void (*listitem)(hbuf *ob, const hbuf *content, hoedown_list_flags flags, void *data);
 	void (*paragraph)(hbuf *ob, const hbuf *content, void *data);
 	void (*table)(hbuf *ob, const hbuf *content, void *data);
-	void (*table_header)(hbuf *ob, const hbuf *content, void *data, size_t);
+	void (*table_header)(hbuf *ob, const hbuf *content, void *data, const htbl_flags *, size_t);
 	void (*table_body)(hbuf *ob, const hbuf *content, void *data);
 	void (*table_row)(hbuf *ob, const hbuf *content, void *data);
 	void (*table_cell)(hbuf *ob, const hbuf *content, htbl_flags flags, void *data, size_t, size_t);
