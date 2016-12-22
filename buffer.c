@@ -47,8 +47,9 @@ hbuf_new(size_t unit)
 	return ret;
 }
 
+/* free the buffer */
 void
-hoedown_buffer_free(hbuf *buf)
+hbuf_free(hbuf *buf)
 {
 	if (!buf) return;
 	assert(buf && buf->unit);
@@ -111,8 +112,9 @@ hbuf_putc(hbuf *buf, uint8_t c)
 	buf->size += 1;
 }
 
+/* read from a file and append to a buffer, until EOF or error */
 int
-hoedown_buffer_putf(hbuf *buf, FILE *file)
+hbuf_putf(hbuf *buf, FILE *file)
 {
 	assert(buf && buf->unit);
 
@@ -124,39 +126,9 @@ hoedown_buffer_putf(hbuf *buf, FILE *file)
 	return ferror(file);
 }
 
-void
-hoedown_buffer_set(hbuf *buf, const uint8_t *data, size_t size)
-{
-	assert(buf && buf->unit);
-
-	if (size > buf->asize)
-		hbuf_grow(buf, size);
-
-	memcpy(buf->data, data, size);
-	buf->size = size;
-}
-
-void
-hoedown_buffer_sets(hbuf *buf, const char *str)
-{
-	hoedown_buffer_set(buf, (const uint8_t *)str, strlen(str));
-}
-
+/* compare the beginning of a buffer with a string */
 int
-hoedown_buffer_eq(const hbuf *buf, const uint8_t *data, size_t size)
-{
-	if (buf->size != size) return 0;
-	return memcmp(buf->data, data, size) == 0;
-}
-
-int
-hoedown_buffer_eqs(const hbuf *buf, const char *str)
-{
-	return hoedown_buffer_eq(buf, (const uint8_t *)str, strlen(str));
-}
-
-int
-hoedown_buffer_prefix(const hbuf *buf, const char *prefix)
+hbuf_prefix(const hbuf *buf, const char *prefix)
 {
 	size_t i;
 
@@ -171,36 +143,9 @@ hoedown_buffer_prefix(const hbuf *buf, const char *prefix)
 	return 0;
 }
 
+/* formatted printing to a buffer */
 void
-hoedown_buffer_slurp(hbuf *buf, size_t size)
-{
-	assert(buf && buf->unit);
-
-	if (size >= buf->size) {
-		buf->size = 0;
-		return;
-	}
-
-	buf->size -= size;
-	memmove(buf->data, buf->data + size, buf->size);
-}
-
-const char *
-hoedown_buffer_cstr(hbuf *buf)
-{
-	assert(buf && buf->unit);
-
-	if (buf->size < buf->asize && buf->data[buf->size] == 0)
-		return (char *)buf->data;
-
-	hbuf_grow(buf, buf->size + 1);
-	buf->data[buf->size] = 0;
-
-	return (char *)buf->data;
-}
-
-void
-hoedown_buffer_printf(hbuf *buf, const char *fmt, ...)
+hbuf_printf(hbuf *buf, const char *fmt, ...)
 {
 	va_list ap;
 	int n;
@@ -229,38 +174,4 @@ hoedown_buffer_printf(hbuf *buf, const char *fmt, ...)
 		return;
 
 	buf->size += n;
-}
-
-void hoedown_buffer_put_utf8(hbuf *buf, unsigned int c) {
-	unsigned char unichar[4];
-
-	assert(buf && buf->unit);
-
-	if (c < 0x80) {
-		hbuf_putc(buf, c);
-	}
-	else if (c < 0x800) {
-		unichar[0] = 192 + (c / 64);
-		unichar[1] = 128 + (c % 64);
-		hbuf_put(buf, unichar, 2);
-	}
-	else if (c - 0xd800u < 0x800) {
-		HOEDOWN_BUFPUTSL(buf, "\xef\xbf\xbd");
-	}
-	else if (c < 0x10000) {
-		unichar[0] = 224 + (c / 4096);
-		unichar[1] = 128 + (c / 64) % 64;
-		unichar[2] = 128 + (c % 64);
-		hbuf_put(buf, unichar, 3);
-	}
-	else if (c < 0x110000) {
-		unichar[0] = 240 + (c / 262144);
-		unichar[1] = 128 + (c / 4096) % 64;
-		unichar[2] = 128 + (c / 64) % 64;
-		unichar[3] = 128 + (c % 64);
-		hbuf_put(buf, unichar, 4);
-	}
-	else {
-		HOEDOWN_BUFPUTSL(buf, "\xef\xbf\xbd");
-	}
 }

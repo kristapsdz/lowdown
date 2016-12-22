@@ -158,7 +158,7 @@ smartypants_squote(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const u
 		if ((t1 == 's' || t1 == 't' || t1 == 'm' || 
 		     t1 == 'd') && (size == 3 || 
 		    word_boundary(text[2]))) {
-			HOEDOWN_BUFPUTSL(ob, "\\(cq");
+			HBUF_PUTSL(ob, "\\(cq");
 			return 0;
 		}
 
@@ -169,7 +169,7 @@ smartypants_squote(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const u
 		   	     (t1 == 'l' && t2 == 'l') ||
 			     (t1 == 'v' && t2 == 'e')) &&
 			    (size == 4 || word_boundary(text[3]))) {
-				HOEDOWN_BUFPUTSL(ob, "\\(cq");
+				HBUF_PUTSL(ob, "\\(cq");
 				return 0;
 			}
 		}
@@ -206,18 +206,18 @@ sm_cb_parens(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const uint8_t
 		t2 = tolower((int)text[2]);
 
 		if (t1 == 'c' && t2 == ')') {
-			HOEDOWN_BUFPUTSL(ob, "\\(co");
+			HBUF_PUTSL(ob, "\\(co");
 			return 2;
 		}
 
 		if (t1 == 'r' && t2 == ')') {
-			HOEDOWN_BUFPUTSL(ob, "\\(rg");
+			HBUF_PUTSL(ob, "\\(rg");
 			return 2;
 		}
 
 		if (size >= 4 && t1 == 't' && 
 		    t2 == 'm' && text[3] == ')') {
-			HOEDOWN_BUFPUTSL(ob, "\\(tm");
+			HBUF_PUTSL(ob, "\\(tm");
 			return 3;
 		}
 	}
@@ -234,12 +234,12 @@ sm_cb_dash(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const uint8_t *
 {
 
 	if (size >= 3 && text[1] == '-' && text[2] == '-') {
-		HOEDOWN_BUFPUTSL(ob, "\\(em");
+		HBUF_PUTSL(ob, "\\(em");
 		return 2;
 	}
 
 	if (size >= 2 && text[1] == '-') {
-		HOEDOWN_BUFPUTSL(ob, "\\(en");
+		HBUF_PUTSL(ob, "\\(en");
 		return 1;
 	}
 
@@ -323,7 +323,7 @@ sm_cb_number(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const uint8_t
 		if (text[0] == '1' && 
 		    text[1] == '/' && text[2] == '2') {
 			if (size == 3 || word_boundary(text[3])) {
-				HOEDOWN_BUFPUTSL(ob, "\\[12]");
+				HBUF_PUTSL(ob, "\\[12]");
 				return 2;
 			}
 		}
@@ -334,7 +334,7 @@ sm_cb_number(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const uint8_t
 			    (size >= 5 && 
 			     tolower((int)text[3]) == 't' && 
 			     tolower((int)text[4]) == 'h')) {
-				HOEDOWN_BUFPUTSL(ob, "\\[14]");
+				HBUF_PUTSL(ob, "\\[14]");
 				return 2;
 			}
 		}
@@ -346,7 +346,7 @@ sm_cb_number(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const uint8_t
 			     tolower((int)text[3]) == 't' && 
 			     tolower((int)text[4]) == 'h' && 
 			     tolower((int)text[5]) == 's')) {
-				HOEDOWN_BUFPUTSL(ob, "\\[34]");
+				HBUF_PUTSL(ob, "\\[34]");
 				return 2;
 			}
 		}
@@ -365,7 +365,7 @@ sm_cb_dquote(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const uint8_t
 
 	if ( ! smartypants_quotes(ob, previous_char, 
 	    size > 0 ? text[1] : 0, 'd', &smrt->in_dquote))
-		HOEDOWN_BUFPUTSL(ob, "\\(dq");
+		HBUF_PUTSL(ob, "\\(dq");
 
 	return 0;
 }

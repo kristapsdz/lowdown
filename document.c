@@ -248,8 +248,8 @@ free_link_refs(struct link_ref **references)
 
 		while (r) {
 			next = r->next;
-			hoedown_buffer_free(r->link);
-			hoedown_buffer_free(r->title);
+			hbuf_free(r->link);
+			hbuf_free(r->title);
 			free(r);
 			r = next;
 		}
@@ -305,7 +305,7 @@ find_footnote_ref(struct footnote_list *list, uint8_t *name, size_t length)
 static void
 free_footnote_ref(struct footnote_ref *ref)
 {
-	hoedown_buffer_free(ref->contents);
+	hbuf_free(ref->contents);
 	free(ref);
 }
 
@@ -1040,7 +1040,7 @@ char_autolink_www(hbuf *ob, hoedown_document *doc, uint8_t *data, size_t offset,
 
 	if ((link_len = hoedown_autolink__www(&rewind, link, data, offset, size, HOEDOWN_AUTOLINK_SHORT_DOMAINS)) > 0) {
 		link_url = newbuf(doc, BUFFER_SPAN);
-		HOEDOWN_BUFPUTSL(link_url, "http://");
+		HBUF_PUTSL(link_url, "http://");
 		hbuf_put(link_url, link->data, link->size);
 
 		if (ob->size > rewind)
@@ -2636,17 +2636,17 @@ is_footnote(const uint8_t *data, size_t beg, size_t end, size_t *last, struct fo
 		struct footnote_ref *ref;
 		ref = create_footnote_ref(list, data + id_offset, id_end - id_offset);
 		if (!ref) {
-			hoedown_buffer_free(contents);
+			hbuf_free(contents);
 			return 0;
 		}
 		if (!add_footnote_ref(list, ref)) {
 			free_footnote_ref(ref);
-			hoedown_buffer_free(contents);
+			hbuf_free(contents);
 			return 0;
 		}
 		ref->contents = contents;
 	} else 
-		hoedown_buffer_free(contents);
+		hbuf_free(contents);
 
 	return 1;
 }
@@ -2955,7 +2955,7 @@ hoedown_document_render(hoedown_document *doc, hbuf *ob, const uint8_t *data, si
 		doc->md.doc_footer(ob, 0, doc->data);
 
 	/* clean-up */
-	hoedown_buffer_free(text);
+	hbuf_free(text);
 	free_link_refs(doc->refs);
 	if (footnotes_enabled) {
 		free_footnote_list(&doc->footnotes_found, 1);
@@ -2972,10 +2972,10 @@ hoedown_document_free(hoedown_document *doc)
 	size_t i;
 
 	for (i = 0; i < (size_t)doc->work_bufs[BUFFER_SPAN].asize; ++i)
-		hoedown_buffer_free(doc->work_bufs[BUFFER_SPAN].item[i]);
+		hbuf_free(doc->work_bufs[BUFFER_SPAN].item[i]);
 
 	for (i = 0; i < (size_t)doc->work_bufs[BUFFER_BLOCK].asize; ++i)
-		hoedown_buffer_free(doc->work_bufs[BUFFER_BLOCK].item[i]);
+		hbuf_free(doc->work_bufs[BUFFER_BLOCK].item[i]);
 
 	hoedown_stack_uninit(&doc->work_bufs[BUFFER_SPAN]);
 	hoedown_stack_uninit(&doc->work_bufs[BUFFER_BLOCK]);
