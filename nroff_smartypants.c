@@ -280,6 +280,8 @@ sm_cb_dot(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const uint8_t *t
 	size_t	 	 i = 0;
 	const uint8_t	*cp;
 
+	/* FIXME: code span */
+
 	if ((0 == previous_char || '\n' == previous_char) && 
 	    (size >= 3 && 0 == memcmp(text + 1, "DS\n", 3))) {
 		i = 3;
