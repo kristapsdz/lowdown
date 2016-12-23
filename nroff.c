@@ -73,7 +73,7 @@ rndr_autolink(hbuf *ob, const hbuf *link, halink_type type, void *data)
 static void
 rndr_blockcode(hbuf *ob, const hbuf *content, const hbuf *lang, void *data)
 {
-	struct nroff_state *st = data;
+	nroff_state 	*st = data;
 
 	if (NULL == content || 0 == content->size)
 		return;
@@ -220,11 +220,18 @@ rndr_linebreak(hbuf *ob, void *data)
 static void
 rndr_header(hbuf *ob, const hbuf *content, int level, void *data)
 {
+	nroff_state	*st = data;
 
 	if (NULL == content || 0 == content->size)
 		return;
 
-	HBUF_PUTSL(ob, ".SH\n");
+	if (st->mdoc && 1 == level)
+		HBUF_PUTSL(ob, ".SH ");
+	else if (st->mdoc)
+		HBUF_PUTSL(ob, ".SS ");
+	else
+		HBUF_PUTSL(ob, ".SH\n");
+
 	hbuf_put(ob, content->data, content->size);
 	BUFFER_NEWLINE(content->data, content->size, ob);
 }
@@ -273,8 +280,8 @@ rndr_listitem(hbuf *ob, const hbuf *content, hlist_fl flags, void *data)
 static void
 rndr_paragraph(hbuf *ob, const hbuf *content, void *data)
 {
-	nroff_state *state = data;
-	size_t	 i = 0, org;
+	nroff_state	*state = data;
+	size_t	 	 i = 0, org;
 
 	if (NULL == content || 0 == content->size)
 		return;
@@ -362,7 +369,7 @@ rndr_image(hbuf *ob, const hbuf *link, const hbuf *title, const hbuf *alt, void 
 static int
 rndr_raw_html(hbuf *ob, const hbuf *text, void *data)
 {
-	nroff_state *state = data;
+	nroff_state 	*state = data;
 
 	/* 
 	 * ESCAPE overrides SKIP_HTML. It doesn't look to see if
@@ -546,8 +553,8 @@ hrend_nroff_new(hhtml_fl render_flags, int mdoc)
 		NULL
 	};
 
-	nroff_state *state;
-	hrend *renderer;
+	nroff_state 	*state;
+	hrend 		*renderer;
 
 	/* Prepare the state pointer */
 	state = xmalloc(sizeof(nroff_state));
