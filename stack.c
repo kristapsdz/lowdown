@@ -25,9 +25,11 @@
 
 #include "extern.h"
 
+/* initialize a stack */
 void
-hoedown_stack_init(hoedown_stack *st, size_t initial_size)
+hstack_init(hstack *st, size_t initial_size)
 {
+
 	assert(st);
 
 	st->item = NULL;
@@ -36,19 +38,21 @@ hoedown_stack_init(hoedown_stack *st, size_t initial_size)
 	if (!initial_size)
 		initial_size = 8;
 
-	hoedown_stack_grow(st, initial_size);
+	hstack_grow(st, initial_size);
 }
 
+/* free internal data of the stack */
 void
-hoedown_stack_uninit(hoedown_stack *st)
+hstack_uninit(hstack *st)
 {
 	assert(st);
 
 	free(st->item);
 }
 
+/* increase the allocated size to the given value */
 void
-hoedown_stack_grow(hoedown_stack *st, size_t neosz)
+hstack_grow(hstack *st, size_t neosz)
 {
 	assert(st);
 
@@ -64,19 +68,21 @@ hoedown_stack_grow(hoedown_stack *st, size_t neosz)
 		st->size = neosz;
 }
 
+/* push an item to the top of the stack */
 void
-hoedown_stack_push(hoedown_stack *st, void *item)
+hstack_push(hstack *st, void *item)
 {
 	assert(st);
 
 	if (st->size >= st->asize)
-		hoedown_stack_grow(st, st->size * 2);
+		hstack_grow(st, st->size * 2);
 
 	st->item[st->size++] = item;
 }
 
+/* retrieve and remove the item at the top of the stack */
 void *
-hoedown_stack_pop(hoedown_stack *st)
+hstack_pop(hstack *st)
 {
 	assert(st);
 
@@ -86,8 +92,9 @@ hoedown_stack_pop(hoedown_stack *st)
 	return st->item[--st->size];
 }
 
+/* retrieve the item at the top of the stack */
 void *
-hoedown_stack_top(const hoedown_stack *st)
+hstack_top(const hstack *st)
 {
 	assert(st);
 

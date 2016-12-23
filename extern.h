@@ -51,11 +51,11 @@ typedef enum hoedown_autolink_flags {
 	HOEDOWN_AUTOLINK_SHORT_DOMAINS = (1 << 0)
 } hoedown_autolink_flags;
 
-typedef struct hoedown_stack {
+typedef struct hstack {
 	void **item;
 	size_t size;
 	size_t asize;
-} hoedown_stack;
+} hstack;
 
 typedef enum hoedown_extensions {
 	/* block-level extensions */
@@ -231,23 +231,12 @@ size_t	 hoedown_autolink__url(size_t *rewind_p,
 		size_t offset, size_t size, 
 		hoedown_autolink_flags flags);
 
-/* hoedown_stack_init: initialize a stack */
-void	 hoedown_stack_init(hoedown_stack *st, size_t initial_size);
-
-/* hoedown_stack_uninit: free internal data of the stack */
-void	 hoedown_stack_uninit(hoedown_stack *st);
-
-/* hoedown_stack_grow: increase the allocated size to the given value */
-void	 hoedown_stack_grow(hoedown_stack *st, size_t neosz);
-
-/* hoedown_stack_push: push an item to the top of the stack */
-void	 hoedown_stack_push(hoedown_stack *st, void *item);
-
-/* hoedown_stack_pop: retrieve and remove the item at the top of the stack */
-void	*hoedown_stack_pop(hoedown_stack *st);
-
-/* hoedown_stack_top: retrieve the item at the top of the stack */
-void	*hoedown_stack_top(const hoedown_stack *st);
+void	 hstack_init(hstack *, size_t);
+void	 hstack_uninit(hstack *);
+void	 hstack_grow(hstack *, size_t);
+void	 hstack_push(hstack *, void *);
+void	*hstack_pop(hstack *);
+void	*hstack_top(const hstack *);
 
 /* hoedown_document_new: allocate a new document processor instance */
 hoedown_document *hoedown_document_new(const hoedown_renderer *renderer,
