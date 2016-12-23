@@ -32,11 +32,11 @@
 	while (/* CONSTCOND */ 0)
 
 typedef struct nroff_state {
+	int mdoc;
 	struct {
 		int header_count;
 		int current_level;
 		int level_offset;
-		int nesting_level;
 	} toc_data;
 	hhtml_fl flags;
 } nroff_state;
@@ -73,16 +73,26 @@ rndr_autolink(hbuf *ob, const hbuf *link, halink_type type, void *data)
 static void
 rndr_blockcode(hbuf *ob, const hbuf *content, const hbuf *lang, void *data)
 {
+	struct nroff_state *st = data;
 
 	if (NULL == content || 0 == content->size)
 		return;
 
-	HBUF_PUTSL(ob, ".DS\n");
+	if (st->mdoc) {
+		HBUF_PUTSL(ob, ".sp 1\n");
+		HBUF_PUTSL(ob, ".RS 0\n");
+	} else
+		HBUF_PUTSL(ob, ".DS\n");
+
 	HBUF_PUTSL(ob, ".ft CR\n");
 	escape_buffer(ob, content->data, content->size);
 	BUFFER_NEWLINE(content->data, content->size, ob);
 	HBUF_PUTSL(ob, ".ft\n");
-	HBUF_PUTSL(ob, ".DE\n");
+
+	if (st->mdoc)
+		HBUF_PUTSL(ob, ".RE\n");
+	else
+		HBUF_PUTSL(ob, ".DE\n");
 }
 
 static void
@@ -491,7 +501,7 @@ rndr_math(hbuf *ob, const hbuf *text, int displaymode, void *data)
 }
 
 hrend *
-hrend_nroff_new(hhtml_fl render_flags, int nesting_level)
+hrend_nroff_new(hhtml_fl render_flags, int mdoc)
 {
 	static const hrend cb_default = {
 		NULL,
@@ -544,7 +554,7 @@ hrend_nroff_new(hhtml_fl render_flags, int nesting_level)
 	memset(state, 0x0, sizeof(nroff_state));
 
 	state->flags = render_flags;
-	state->toc_data.nesting_level = nesting_level;
+	state->mdoc = mdoc;
 
 	/* Prepare the renderer */
 	renderer = xmalloc(sizeof(hrend));
