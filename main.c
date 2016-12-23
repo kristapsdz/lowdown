@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "extern.h"
 
@@ -42,6 +43,7 @@
 
 enum	out {
 	OUT_HTML,
+	OUT_MAN,
 	OUT_NROFF
 };
 
@@ -154,6 +156,11 @@ main(int argc, char *argv[])
 	const char	*pname;
 	int		 c, standalone = 0;
 	enum out	 outm = OUT_HTML;
+	struct tm	*tm;
+	char		 buf[32];
+	time_t		 t = time(NULL);
+
+	tm = localtime(&t);
 
 	sandbox_pre();
 
@@ -175,6 +182,8 @@ main(int argc, char *argv[])
 				outm = OUT_NROFF;
 			else if (0 == strcasecmp(optarg, "html"))
 				outm = OUT_HTML;
+			else if (0 == strcasecmp(optarg, "man"))
+				outm = OUT_MAN;
 			else
 				goto usage;
 			break;
@@ -223,7 +232,8 @@ main(int argc, char *argv[])
 		 HOEDOWN_HTML_ESCAPE | 
 		 HOEDOWN_HTML_ASIDE, 0) :
 		hrend_nroff_new
-		(HOEDOWN_HTML_ESCAPE, 0);
+		(HOEDOWN_HTML_ESCAPE, 
+		 OUT_MAN == outm);
 
 	document = hdoc_new
 		(renderer, 
@@ -270,12 +280,18 @@ main(int argc, char *argv[])
 			fputs("</body>\n"
 			      "</html>\n", fout);
 	} else {
+		strftime(buf, sizeof(buf), "%F", tm);
 		hrend_nroff_free(renderer);
 		hsmrt_nroff(spb, ob->data, ob->size);
 		hbuf_free(ob);
-		if (standalone)
-			fprintf(fout, ".TL\n%s\n", NULL == title ?
+		if (standalone && OUT_NROFF == outm)
+			fprintf(fout, ".TL\n%s\n", 
+				NULL == title ?
 				"Untitled article" : title);
+		else if (standalone && OUT_MAN == outm)
+			fprintf(fout, ".TH \"%s\" 7 %s\n", 
+				NULL == title ?  
+				"UNTITLED ARTICLE" : title, buf);
 		fwrite(spb->data, 1, spb->size, fout);
 		hbuf_free(spb);
 	}
