@@ -81,10 +81,10 @@ typedef enum hdoc_ext {
 	HDOC_EXT_DISABLE_INDENTED_CODE = (1 << 14)
 } hdoc_ext;
 
-typedef enum hoedown_list_flags {
+typedef enum hlist_fl {
 	HOEDOWN_LIST_ORDERED = (1 << 0),
 	HOEDOWN_LI_BLOCK = (1 << 1) /* <li> containing block data */
-} hoedown_list_flags;
+} hlist_fl;
 
 typedef enum htbl_flags {
 	HTBL_ALIGN_LEFT = 1,
@@ -107,7 +107,7 @@ typedef struct hdoc hdoc;
 /* 
  * Functions callbacks for rendering parsed data.
  */
-typedef struct hoedown_renderer {
+typedef struct hrend {
 	/* Private object passed as void argument. */
 
 	void *opaque;
@@ -118,8 +118,8 @@ typedef struct hoedown_renderer {
 	void (*blockquote)(hbuf *, const hbuf *, void *);
 	void (*header)(hbuf *, const hbuf *, int, void *);
 	void (*hrule)(hbuf *, void *);
-	void (*list)(hbuf *, const hbuf *, hoedown_list_flags, void *);
-	void (*listitem)(hbuf *, const hbuf *, hoedown_list_flags, void *);
+	void (*list)(hbuf *, const hbuf *, hlist_fl, void *);
+	void (*listitem)(hbuf *, const hbuf *, hlist_fl, void *);
 	void (*paragraph)(hbuf *, const hbuf *, void *);
 	void (*table)(hbuf *, const hbuf *, void *);
 	void (*table_header)(hbuf *, const hbuf *, 
@@ -169,21 +169,21 @@ typedef struct hoedown_renderer {
 
 	void (*doc_header)(hbuf *, int, void *);
 	void (*doc_footer)(hbuf *, int, void *);
-} hoedown_renderer;
+} hrend;
 
-typedef enum hoedown_html_flags {
+typedef enum hhtml_fl {
 	HOEDOWN_HTML_SKIP_HTML = (1 << 0),
 	HOEDOWN_HTML_ESCAPE = (1 << 1),
 	HOEDOWN_HTML_HARD_WRAP = (1 << 2),
 	HOEDOWN_HTML_USE_XHTML = (1 << 3),
 	HOEDOWN_HTML_ASIDE = (1 << 4)
-} hoedown_html_flags;
+} hhtml_fl;
 
-typedef enum hoedown_html_tag {
+typedef enum hhtml_tag {
 	HOEDOWN_HTML_TAG_NONE = 0,
 	HOEDOWN_HTML_TAG_OPEN,
 	HOEDOWN_HTML_TAG_CLOSE
-} hoedown_html_tag;
+} hhtml_tag;
 
 __BEGIN_DECLS
 
@@ -220,7 +220,7 @@ void	 hstack_push(hstack *, void *);
 void	*hstack_top(const hstack *);
 void	 hstack_uninit(hstack *);
 
-hdoc 	*hdoc_new(const hoedown_renderer *, hdoc_ext, size_t) __attribute__((malloc));
+hdoc 	*hdoc_new(const hrend *, hdoc_ext, size_t) __attribute__((malloc));
 void	 hdoc_render(hdoc *, hbuf *, const uint8_t *, size_t );
 void	 hdoc_free(hdoc *);
 
@@ -228,26 +228,17 @@ void	 hesc_href(hbuf *, const uint8_t *, size_t);
 void	 hesc_html(hbuf *, const uint8_t *, size_t, int);
 void	 hesc_nroff(hbuf *, const uint8_t *, size_t, int);
 
-/* hoedown_html_is_tag: checks if data starts with a specific tag, returns the tag type or NONE */
-hoedown_html_tag hoedown_html_is_tag(const uint8_t *data, 
-		size_t size, const char *tagname);
+hhtml_tag hhtml_get_tag(const uint8_t *, size_t, const char *);
+const char *hhtml_find_block(const char *, unsigned int);
 
-/* hoedown_html_renderer_new: allocates a regular HTML renderer */
-hoedown_renderer *hoedown_html_renderer_new(hoedown_html_flags render_flags,
-		int nesting_level) __attribute__ ((malloc));
+void	 hrend_html_free(hrend *);
+hrend	*hrend_html_new(hhtml_fl, int) __attribute__ ((malloc));
 
-/* hoedown_html_renderer_free: deallocate an HTML renderer */
-void	 hoedown_html_renderer_free(hoedown_renderer *renderer);
+hrend	*hrend_nroff_new(hhtml_fl, int) __attribute__ ((malloc));
+void	 hrend_nroff_free(hrend *);
 
-hoedown_renderer *hoedown_nroff_renderer_new(hoedown_html_flags render_flags,
-		int nesting_level) __attribute__ ((malloc));
-void	 hoedown_nroff_renderer_free(hoedown_renderer *renderer);
-
-/* hoedown_html_smartypants: process an HTML snippet using SmartyPants for smart punctuation */
-void	 hoedown_html_smartypants(hbuf *ob, const uint8_t *data, size_t size);
-
-/* hoedown_html_smartypants: process an HTML snippet using SmartyPants for smart punctuation */
-void	 hoedown_nroff_smartypants(hbuf *ob, const uint8_t *data, size_t size);
+void	 hsmrt_html(hbuf *, const uint8_t *, size_t);
+void	 hsmrt_nroff(hbuf *, const uint8_t *, size_t);
 
 __END_DECLS
 
