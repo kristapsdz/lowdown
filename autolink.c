@@ -25,8 +25,9 @@
 
 #include "extern.h"
 
+/* verify that a URL has a safe protocol */
 int
-hoedown_autolink_is_safe(const uint8_t *data, size_t size)
+halink_is_safe(const uint8_t *data, size_t size)
 {
 	static const size_t valid_uris_count = 6;
 	static const char *valid_uris[] = {
@@ -48,7 +49,8 @@ hoedown_autolink_is_safe(const uint8_t *data, size_t size)
 }
 
 static size_t
-autolink_delim(uint8_t *data, size_t link_end, size_t max_rewind, size_t size)
+autolink_delim(uint8_t *data, 
+	size_t link_end, size_t max_rewind, size_t size)
 {
 	uint8_t cclose, copen = 0;
 	size_t i;
@@ -157,14 +159,10 @@ check_domain(uint8_t *data, size_t size, int allow_short)
 	}
 }
 
+/* search for the next www link in data */
 size_t
-hoedown_autolink__www(
-	size_t *rewind_p,
-	hbuf *link,
-	uint8_t *data,
-	size_t max_rewind,
-	size_t size,
-	unsigned int flags)
+halink_www(size_t *rewind_p, hbuf *link, uint8_t *data,
+	size_t max_rewind, size_t size, unsigned int flags)
 {
 	size_t link_end;
 
@@ -193,14 +191,10 @@ hoedown_autolink__www(
 	return (int)link_end;
 }
 
+/* search for the next email in data */
 size_t
-hoedown_autolink__email(
-	size_t *rewind_p,
-	hbuf *link,
-	uint8_t *data,
-	size_t max_rewind,
-	size_t size,
-	unsigned int flags)
+halink_email(size_t *rewind_p, hbuf *link, uint8_t *data,
+	size_t max_rewind, size_t size, unsigned int flags)
 {
 	size_t link_end, rewind;
 	int nb = 0, np = 0;
@@ -249,14 +243,10 @@ hoedown_autolink__email(
 	return link_end;
 }
 
+/* search for the next URL in data */
 size_t
-hoedown_autolink__url(
-	size_t *rewind_p,
-	hbuf *link,
-	uint8_t *data,
-	size_t max_rewind,
-	size_t size,
-	unsigned int flags)
+halink_url(size_t *rewind_p, hbuf *link, uint8_t *data,
+	size_t max_rewind, size_t size, unsigned int flags)
 {
 	size_t link_end, rewind = 0, domain_len;
 
@@ -266,7 +256,7 @@ hoedown_autolink__url(
 	while (rewind < max_rewind && isalpha(data[-1 - rewind]))
 		rewind++;
 
-	if (!hoedown_autolink_is_safe(data - rewind, size + rewind))
+	if (!halink_is_safe(data - rewind, size + rewind))
 		return 0;
 
 	link_end = strlen("://");
@@ -274,7 +264,7 @@ hoedown_autolink__url(
 	domain_len = check_domain(
 		data + link_end,
 		size - link_end,
-		flags & HOEDOWN_AUTOLINK_SHORT_DOMAINS);
+		flags & HALINK_SHORT_DOMAINS);
 
 	if (domain_len == 0)
 		return 0;
