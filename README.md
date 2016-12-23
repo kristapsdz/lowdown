@@ -38,7 +38,7 @@ The following modifications have been made:
 
 The following major feature additions have been added:
 
-- output mode for nroff (via the *-ms* package) (**experimental**)
+- output mode for nroff (via the *-ms* or *-man* package)
 - "smartypants" mode for the nroff output
 
 It builds and runs on OpenBSD, Linux ([musl](https://www.musl-libc.org/)
@@ -86,11 +86,20 @@ Or failing all that, just use the standalone mode.
 lowdown -s -o README.html README.md
 ```
 
-Using the nroff output mode works well when making PS or PDF files.
-(Note: this feature is still under development!)
+Using the nroff output mode works well when making PS or PDF files,
+although it will omit graphics and equations.
+(There is a possibility to later add support for PIC, but even then, it
+will only support specific types of graphics.)
 
 ```sh
 lowdown -s -Tnroff README.md | groff -t -ms > README.ps
+```
+
+On OpenBSD or other BSD systems, you can run **lowdown** within the base
+system to produce PDF or PS files via [mandoc](http://mdocml.bsd.lv):
+
+```sh
+lowdown -s -Tman README.md | mandoc -Tpdf > README.pdf
 ```
 
 Read the shipped

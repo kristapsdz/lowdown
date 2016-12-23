@@ -71,12 +71,25 @@ in roff mode.
 The output mode.
 This may be
 .Ar html
-for HTML5 output or
+for HTML5 output ,
 .Ar nroff
 for roff output using the classic (i.e., no-extension)
 .Fl ms
-package and needing table support.
+package and needing table support, or
+.Ar man
+for roff ouput using the classical
+.Fl man
+package.
 .El
+.Pp
+For best results, use the
+.Fl T Ar html
+output, as it includes graphics and equations.
+The
+.Ar nroff
+and
+.Ar man
+modes will elide graphics and equations.
 .Sh EXAMPLE
 To emit a standalone HTML5 document from a file
 .Pa foo.md :
@@ -88,6 +101,11 @@ To do the same but using
 to format as a PS file:
 .Pp
 .Dl lowdown -s -T nroff foo.md | groff -t -ms > foo.ps
+.Pp
+Alternatively, using only
+.Xr mandoc 1 :
+.Pp
+.Dl lowdown -s -T man foo.md | mandoc -Tps > foo.ps
 .Sh EXIT STATUS
 .Ex -std
 .Sh STANDARDS
