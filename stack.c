@@ -80,18 +80,6 @@ hstack_push(hstack *st, void *item)
 	st->item[st->size++] = item;
 }
 
-/* retrieve and remove the item at the top of the stack */
-void *
-hstack_pop(hstack *st)
-{
-	assert(st);
-
-	if (!st->size)
-		return NULL;
-
-	return st->item[--st->size];
-}
-
 /* retrieve the item at the top of the stack */
 void *
 hstack_top(const hstack *st)
