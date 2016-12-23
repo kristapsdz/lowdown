@@ -138,7 +138,7 @@ struct hoedown_document {
 	struct footnote_list footnotes_found;
 	struct footnote_list footnotes_used;
 	uint8_t active_char[256];
-	hoedown_stack work_bufs[2];
+	hstack work_bufs[2];
 	hoedown_extensions ext_flags;
 	size_t max_nesting;
 	int in_link_body;
@@ -153,7 +153,7 @@ newbuf(hoedown_document *doc, int type)
 {
 	static const size_t buf_size[2] = {256, 64};
 	hbuf *work = NULL;
-	hoedown_stack *pool = &doc->work_bufs[type];
+	hstack *pool = &doc->work_bufs[type];
 
 	if (pool->size < pool->asize &&
 		pool->item[pool->size] != NULL) {
@@ -161,7 +161,7 @@ newbuf(hoedown_document *doc, int type)
 		work->size = 0;
 	} else {
 		work = hbuf_new(buf_size[type]);
-		hoedown_stack_push(pool, work);
+		hstack_push(pool, work);
 	}
 
 	return work;
@@ -2818,8 +2818,8 @@ hoedown_document_new(
 
 	doc->data = renderer->opaque;
 
-	hoedown_stack_init(&doc->work_bufs[BUFFER_BLOCK], 4);
-	hoedown_stack_init(&doc->work_bufs[BUFFER_SPAN], 8);
+	hstack_init(&doc->work_bufs[BUFFER_BLOCK], 4);
+	hstack_init(&doc->work_bufs[BUFFER_SPAN], 8);
 
 	memset(doc->active_char, 0x0, 256);
 
@@ -2977,8 +2977,8 @@ hoedown_document_free(hoedown_document *doc)
 	for (i = 0; i < (size_t)doc->work_bufs[BUFFER_BLOCK].asize; ++i)
 		hbuf_free(doc->work_bufs[BUFFER_BLOCK].item[i]);
 
-	hoedown_stack_uninit(&doc->work_bufs[BUFFER_SPAN]);
-	hoedown_stack_uninit(&doc->work_bufs[BUFFER_BLOCK]);
+	hstack_uninit(&doc->work_bufs[BUFFER_SPAN]);
+	hstack_uninit(&doc->work_bufs[BUFFER_BLOCK]);
 
 	free(doc);
 }
