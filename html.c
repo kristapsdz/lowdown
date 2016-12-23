@@ -75,21 +75,21 @@ static void
 escape_html(hbuf *ob, const uint8_t *source, size_t length)
 {
 
-	hoedown_escape_html(ob, source, length, 0);
+	hesc_html(ob, source, length, 0);
 }
 
 static void 
 escape_href(hbuf *ob, const uint8_t *source, size_t length)
 {
 
-	hoedown_escape_href(ob, source, length);
+	hesc_href(ob, source, length);
 }
 
 /********************
  * GENERIC RENDERER *
  ********************/
 static int
-rndr_autolink(hbuf *ob, const hbuf *link, hoedown_autolink_type type, void *data)
+rndr_autolink(hbuf *ob, const hbuf *link, halink_type type, void *data)
 {
 	html_state *state = data;
 
@@ -97,7 +97,7 @@ rndr_autolink(hbuf *ob, const hbuf *link, hoedown_autolink_type type, void *data
 		return 0;
 
 	HBUF_PUTSL(ob, "<a href=\"");
-	if (type == HOEDOWN_AUTOLINK_EMAIL)
+	if (type == HALINK_EMAIL)
 		HBUF_PUTSL(ob, "mailto:");
 	escape_href(ob, link->data, link->size);
 

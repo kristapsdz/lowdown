@@ -68,8 +68,9 @@ static const uint8_t HREF_SAFE[UINT8_MAX+1] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 };
 
+/* escape (part of) a URL inside HTML */
 void
-hoedown_escape_href(hbuf *ob, const uint8_t *data, size_t size)
+hesc_href(hbuf *ob, const uint8_t *data, size_t size)
 {
 	static const char hex_chars[] = "0123456789ABCDEF";
 	size_t  i = 0, mark;
@@ -171,8 +172,9 @@ static const char *HTML_ESCAPES[] = {
         "&gt;"
 };
 
+/* escape nroff */
 void
-hoedown_escape_nroff(hbuf *ob, const uint8_t *data, size_t size, int secure)
+hesc_nroff(hbuf *ob, const uint8_t *data, size_t size, int secure)
 {
 	size_t	 i = 0, mark;
 
@@ -197,8 +199,9 @@ hoedown_escape_nroff(hbuf *ob, const uint8_t *data, size_t size, int secure)
 	}
 }
 
+/* escape HTML */
 void
-hoedown_escape_html(hbuf *ob, const uint8_t *data, size_t size, int secure)
+hesc_html(hbuf *ob, const uint8_t *data, size_t size, int secure)
 {
 	size_t i = 0, mark;
 

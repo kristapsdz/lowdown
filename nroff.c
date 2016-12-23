@@ -45,11 +45,11 @@ static void
 escape_buffer(hbuf *ob, const uint8_t *source, size_t length)
 {
 
-	hoedown_escape_nroff(ob, source, length, 0);
+	hesc_nroff(ob, source, length, 0);
 }
 
 static int
-rndr_autolink(hbuf *ob, const hbuf *link, hoedown_autolink_type type, void *data)
+rndr_autolink(hbuf *ob, const hbuf *link, halink_type type, void *data)
 {
 
 	if (NULL == link || 0 == link->size)

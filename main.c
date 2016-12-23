@@ -150,7 +150,7 @@ main(int argc, char *argv[])
 	      		 *title = NULL;
 	hbuf	 *ib, *ob, *spb;
 	hoedown_renderer *renderer = NULL;
-	hoedown_document *document;
+	hdoc 		 *document;
 	const char	 *pname;
 	int		  c, standalone = 0;
 	enum out	  outm = OUT_HTML;
@@ -225,13 +225,13 @@ main(int argc, char *argv[])
 		hoedown_nroff_renderer_new
 		(HOEDOWN_HTML_ESCAPE, 0);
 
-	document = hoedown_document_new
+	document = hdoc_new
 		(renderer, 
-		 HOEDOWN_EXT_FOOTNOTES |
-		 HOEDOWN_EXT_AUTOLINK |
-		 HOEDOWN_EXT_TABLES |
-		 HOEDOWN_EXT_STRIKETHROUGH |
-		 HOEDOWN_EXT_FENCED_CODE,
+		 HDOC_EXT_FOOTNOTES |
+		 HDOC_EXT_AUTOLINK |
+		 HDOC_EXT_TABLES |
+		 HDOC_EXT_STRIKETHROUGH |
+		 HDOC_EXT_FENCED_CODE,
 		 DEF_MAX_NESTING);
 
 	/* Read from our input and close out the input .*/
@@ -243,9 +243,9 @@ main(int argc, char *argv[])
 
 	/* Parse the output and free resources. */
 
-	hoedown_document_render(document, ob, ib->data, ib->size);
+	hdoc_render(document, ob, ib->data, ib->size);
 	hbuf_free(ib);
-	hoedown_document_free(document);
+	hdoc_free(document);
 
 	/* Reprocess the HTML as smartypants. */
 

@@ -47,65 +47,43 @@ typedef struct hbuf {
 	int 		 buffer_free; /* obj should be freed */
 } hbuf;
 
-typedef enum hoedown_autolink_flags {
-	HOEDOWN_AUTOLINK_SHORT_DOMAINS = (1 << 0)
-} hoedown_autolink_flags;
+typedef enum halink_flags {
+	HALINK_SHORT_DOMAINS = (1 << 0)
+} halink_flags;
 
 typedef struct hstack {
-	void **item;
-	size_t size;
-	size_t asize;
+	void		**item;
+	size_t		  size;
+	size_t		  asize;
 } hstack;
 
-typedef enum hoedown_extensions {
-	/* block-level extensions */
-	HOEDOWN_EXT_TABLES = (1 << 0),
-	HOEDOWN_EXT_FENCED_CODE = (1 << 1),
-	HOEDOWN_EXT_FOOTNOTES = (1 << 2),
+typedef enum hdoc_ext {
+	/* Block-level extensions. */
+	HDOC_EXT_TABLES = (1 << 0),
+	HDOC_EXT_FENCED_CODE = (1 << 1),
+	HDOC_EXT_FOOTNOTES = (1 << 2),
 
-	/* span-level extensions */
-	HOEDOWN_EXT_AUTOLINK = (1 << 3),
-	HOEDOWN_EXT_STRIKETHROUGH = (1 << 4),
-	HOEDOWN_EXT_UNDERLINE = (1 << 5),
-	HOEDOWN_EXT_HIGHLIGHT = (1 << 6),
-	HOEDOWN_EXT_QUOTE = (1 << 7),
-	HOEDOWN_EXT_SUPERSCRIPT = (1 << 8),
-	HOEDOWN_EXT_MATH = (1 << 9),
+	/* Span-level extensions. */
+	HDOC_EXT_AUTOLINK = (1 << 3),
+	HDOC_EXT_STRIKETHROUGH = (1 << 4),
+	HDOC_EXT_UNDERLINE = (1 << 5),
+	HDOC_EXT_HIGHLIGHT = (1 << 6),
+	HDOC_EXT_QUOTE = (1 << 7),
+	HDOC_EXT_SUPERSCRIPT = (1 << 8),
+	HDOC_EXT_MATH = (1 << 9),
 
-	/* other flags */
-	HOEDOWN_EXT_NO_INTRA_EMPHASIS = (1 << 11),
-	HOEDOWN_EXT_SPACE_HEADERS = (1 << 12),
-	HOEDOWN_EXT_MATH_EXPLICIT = (1 << 13),
+	/* Other flags. */
+	HDOC_EXT_NO_INTRA_EMPHASIS = (1 << 11),
+	HDOC_EXT_SPACE_HEADERS = (1 << 12),
+	HDOC_EXT_MATH_EXPLICIT = (1 << 13),
 
-	/* negative flags */
-	HOEDOWN_EXT_DISABLE_INDENTED_CODE = (1 << 14)
-} hoedown_extensions;
-
-#define HOEDOWN_EXT_BLOCK (\
-	HOEDOWN_EXT_TABLES |\
-	HOEDOWN_EXT_FENCED_CODE |\
-	HOEDOWN_EXT_FOOTNOTES )
-
-#define HOEDOWN_EXT_SPAN (\
-	HOEDOWN_EXT_AUTOLINK |\
-	HOEDOWN_EXT_STRIKETHROUGH |\
-	HOEDOWN_EXT_UNDERLINE |\
-	HOEDOWN_EXT_HIGHLIGHT |\
-	HOEDOWN_EXT_QUOTE |\
-	HOEDOWN_EXT_SUPERSCRIPT |\
-	HOEDOWN_EXT_MATH )
-
-#define HOEDOWN_EXT_FLAGS (\
-	HOEDOWN_EXT_NO_INTRA_EMPHASIS |\
-	HOEDOWN_EXT_SPACE_HEADERS |\
-	HOEDOWN_EXT_MATH_EXPLICIT )
-
-#define HOEDOWN_EXT_NEGATIVE (\
-	HOEDOWN_EXT_DISABLE_INDENTED_CODE )
+	/* Negative flags. */
+	HDOC_EXT_DISABLE_INDENTED_CODE = (1 << 14)
+} hdoc_ext;
 
 typedef enum hoedown_list_flags {
 	HOEDOWN_LIST_ORDERED = (1 << 0),
-	HOEDOWN_LI_BLOCK = (1 << 1)	/* <li> containing block data */
+	HOEDOWN_LI_BLOCK = (1 << 1) /* <li> containing block data */
 } hoedown_list_flags;
 
 typedef enum htbl_flags {
@@ -116,63 +94,81 @@ typedef enum htbl_flags {
 	HTBL_HEADER = 4
 } htbl_flags;
 
-typedef enum hoedown_autolink_type {
-	HOEDOWN_AUTOLINK_NONE,		/* used internally when it is not an autolink*/
-	HOEDOWN_AUTOLINK_NORMAL,	/* normal http/http/ftp/mailto/etc link */
-	HOEDOWN_AUTOLINK_EMAIL		/* e-mail link without explit mailto: */
-} hoedown_autolink_type;
+typedef enum halink_type {
+	HALINK_NONE, /* used internally when it is not an autolink */
+	HALINK_NORMAL, /* normal http/http/ftp/mailto/etc link */
+	HALINK_EMAIL /* e-mail link without explit mailto: */
+} halink_type;
 
-struct hoedown_document;
+struct hdoc;
 
-typedef struct hoedown_document hoedown_document;
+typedef struct hdoc hdoc;
 
-/* hoedown_renderer - functions for rendering parsed data */
+/* 
+ * Functions callbacks for rendering parsed data.
+ */
 typedef struct hoedown_renderer {
-	/* state object */
+	/* Private object passed as void argument. */
+
 	void *opaque;
 
-	/* block level callbacks - NULL skips the block */
-	void (*blockcode)(hbuf *ob, const hbuf *text, const hbuf *lang, void *data);
-	void (*blockquote)(hbuf *ob, const hbuf *content, void *data);
-	void (*header)(hbuf *ob, const hbuf *content, int level, void *data);
-	void (*hrule)(hbuf *ob, void *data);
-	void (*list)(hbuf *ob, const hbuf *content, hoedown_list_flags flags, void *data);
-	void (*listitem)(hbuf *ob, const hbuf *content, hoedown_list_flags flags, void *data);
-	void (*paragraph)(hbuf *ob, const hbuf *content, void *data);
-	void (*table)(hbuf *ob, const hbuf *content, void *data);
-	void (*table_header)(hbuf *ob, const hbuf *content, void *data, const htbl_flags *, size_t);
-	void (*table_body)(hbuf *ob, const hbuf *content, void *data);
-	void (*table_row)(hbuf *ob, const hbuf *content, void *data);
-	void (*table_cell)(hbuf *ob, const hbuf *content, htbl_flags flags, void *data, size_t, size_t);
-	void (*footnotes)(hbuf *ob, const hbuf *content, void *data);
-	void (*footnote_def)(hbuf *ob, const hbuf *content, unsigned int num, void *data);
-	void (*blockhtml)(hbuf *ob, const hbuf *text, void *data);
+	/* Block level callbacks: NULL skips the block. */
 
-	/* span level callbacks - NULL or return 0 prints the span verbatim */
-	int (*autolink)(hbuf *ob, const hbuf *link, hoedown_autolink_type type, void *data);
-	int (*codespan)(hbuf *ob, const hbuf *text, void *data);
-	int (*double_emphasis)(hbuf *ob, const hbuf *content, void *data);
-	int (*emphasis)(hbuf *ob, const hbuf *content, void *data);
-	int (*underline)(hbuf *ob, const hbuf *content, void *data);
-	int (*highlight)(hbuf *ob, const hbuf *content, void *data);
-	int (*quote)(hbuf *ob, const hbuf *content, void *data);
-	int (*image)(hbuf *ob, const hbuf *link, const hbuf *title, const hbuf *alt, void *data);
-	int (*linebreak)(hbuf *ob, void *data);
-	int (*link)(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title, void *data);
-	int (*triple_emphasis)(hbuf *ob, const hbuf *content, void *data);
-	int (*strikethrough)(hbuf *ob, const hbuf *content, void *data);
-	int (*superscript)(hbuf *ob, const hbuf *content, void *data);
-	int (*footnote_ref)(hbuf *ob, unsigned int num, void *data);
-	int (*math)(hbuf *ob, const hbuf *text, int displaymode, void *data);
-	int (*raw_html)(hbuf *ob, const hbuf *text, void *data);
+	void (*blockcode)(hbuf *, const hbuf *, const hbuf *, void *);
+	void (*blockquote)(hbuf *, const hbuf *, void *);
+	void (*header)(hbuf *, const hbuf *, int, void *);
+	void (*hrule)(hbuf *, void *);
+	void (*list)(hbuf *, const hbuf *, hoedown_list_flags, void *);
+	void (*listitem)(hbuf *, const hbuf *, hoedown_list_flags, void *);
+	void (*paragraph)(hbuf *, const hbuf *, void *);
+	void (*table)(hbuf *, const hbuf *, void *);
+	void (*table_header)(hbuf *, const hbuf *, 
+		void *, const htbl_flags *, size_t);
+	void (*table_body)(hbuf *, const hbuf *, void *);
+	void (*table_row)(hbuf *, const hbuf *, void *);
+	void (*table_cell)(hbuf *, const hbuf *, 
+		htbl_flags, void *, size_t, size_t);
+	void (*footnotes)(hbuf *, const hbuf *, void *);
+	void (*footnote_def)(hbuf *, 
+		const hbuf *, unsigned int, void *);
+	void (*blockhtml)(hbuf *, const hbuf *, void *);
 
-	/* low level callbacks - NULL copies input directly into the output */
-	void (*entity)(hbuf *ob, const hbuf *text, void *data);
-	void (*normal_text)(hbuf *ob, const hbuf *text, void *data);
+	/* 
+	 * Span level callbacks: NULL or return 0 prints the span
+	 * verbatim.
+	 */
 
-	/* miscellaneous callbacks */
-	void (*doc_header)(hbuf *ob, int inline_render, void *data);
-	void (*doc_footer)(hbuf *ob, int inline_render, void *data);
+	int (*autolink)(hbuf *, const hbuf *, halink_type, void *);
+	int (*codespan)(hbuf *, const hbuf *, void *);
+	int (*double_emphasis)(hbuf *, const hbuf *, void *);
+	int (*emphasis)(hbuf *, const hbuf *, void *);
+	int (*underline)(hbuf *, const hbuf *, void *);
+	int (*highlight)(hbuf *, const hbuf *, void *);
+	int (*quote)(hbuf *, const hbuf *, void *);
+	int (*image)(hbuf *, const hbuf *, 
+		const hbuf *, const hbuf *, void *);
+	int (*linebreak)(hbuf *, void *);
+	int (*link)(hbuf *, const hbuf *, 
+		const hbuf *, const hbuf *, void *);
+	int (*triple_emphasis)(hbuf *, const hbuf *, void *);
+	int (*strikethrough)(hbuf *, const hbuf *, void *);
+	int (*superscript)(hbuf *, const hbuf *, void *);
+	int (*footnote_ref)(hbuf *, unsigned int num, void *);
+	int (*math)(hbuf *, const hbuf *, int, void *);
+	int (*raw_html)(hbuf *, const hbuf *, void *);
+
+	/* 
+	 * Low level callbacks: NULL copies input directly into the
+	 * output.
+	 */
+
+	void (*entity)(hbuf *, const hbuf *, void *);
+	void (*normal_text)(hbuf *, const hbuf *, void *);
+
+	/* Miscellaneous callbacks. */
+
+	void (*doc_header)(hbuf *, int, void *);
+	void (*doc_footer)(hbuf *, int, void *);
 } hoedown_renderer;
 
 typedef enum hoedown_html_flags {
@@ -195,70 +191,42 @@ void	*xmalloc(size_t size) __attribute__((malloc));
 void	*xcalloc(size_t nmemb, size_t size) __attribute__((malloc));
 void	*xrealloc(void *ptr, size_t size);
 
-hbuf	*hbuf_new(size_t) __attribute__((malloc));
+void	 hbuf_free(hbuf *);
 void	 hbuf_grow(hbuf *, size_t);
-void	 hbuf_put(hbuf *, const uint8_t *, size_t);
-void	 hbuf_puts(hbuf *, const char *);
-void	 hbuf_putc(hbuf *, uint8_t);
-int	 hbuf_putf(hbuf *, FILE *);
+hbuf	*hbuf_new(size_t) __attribute__((malloc));
 int	 hbuf_prefix(const hbuf *, const char *);
 void	 hbuf_printf(hbuf *, const char *, ...) 
 		__attribute__((format (printf, 2, 3)));
-void	 hbuf_free(hbuf *);
+void	 hbuf_put(hbuf *, const uint8_t *, size_t);
+void	 hbuf_putc(hbuf *, uint8_t);
+int	 hbuf_putf(hbuf *, FILE *);
+void	 hbuf_puts(hbuf *, const char *);
 
-/* HBUF_PUTSL: optimized hbuf_puts of a string literal */
+/* Optimized hbuf_puts of a string literal. */
 #define HBUF_PUTSL(output, literal) \
 	hbuf_put(output, (const uint8_t *)literal, sizeof(literal) - 1)
 
-/* hoedown_autolink_is_safe: verify that a URL has a safe protocol */
-int	 hoedown_autolink_is_safe(const uint8_t *data, size_t size);
+size_t	 halink_email(size_t *, hbuf *, uint8_t *, 
+		size_t, size_t, halink_flags);
+int	 halink_is_safe(const uint8_t *data, size_t size);
+size_t	 halink_url(size_t *, hbuf *, uint8_t *, 
+		size_t, size_t, halink_flags);
+size_t	 halink_www(size_t *, hbuf *, uint8_t *, 
+		size_t, size_t, halink_flags);
 
-/* hoedown_autolink__www: search for the next www link in data */
-size_t	 hoedown_autolink__www(size_t *rewind_p, 
-		hbuf *link, uint8_t *data, 
-		size_t offset, size_t size, 
-		hoedown_autolink_flags flags);
-
-/* hoedown_autolink__email: search for the next email in data */
-size_t	 hoedown_autolink__email(size_t *rewind_p, 
-		hbuf *link, uint8_t *data, 
-		size_t offset, size_t size, 
-		hoedown_autolink_flags flags);
-
-/* hoedown_autolink__url: search for the next URL in data */
-size_t	 hoedown_autolink__url(size_t *rewind_p, 
-		hbuf *link, uint8_t *data, 
-		size_t offset, size_t size, 
-		hoedown_autolink_flags flags);
-
-void	 hstack_init(hstack *, size_t);
-void	 hstack_uninit(hstack *);
 void	 hstack_grow(hstack *, size_t);
+void	 hstack_init(hstack *, size_t);
 void	 hstack_push(hstack *, void *);
-void	*hstack_pop(hstack *);
 void	*hstack_top(const hstack *);
+void	 hstack_uninit(hstack *);
 
-/* hoedown_document_new: allocate a new document processor instance */
-hoedown_document *hoedown_document_new(const hoedown_renderer *renderer,
-		hoedown_extensions extensions, size_t max_nesting) 
-		__attribute__((malloc));
+hdoc 	*hdoc_new(const hoedown_renderer *, hdoc_ext, size_t) __attribute__((malloc));
+void	 hdoc_render(hdoc *, hbuf *, const uint8_t *, size_t );
+void	 hdoc_free(hdoc *);
 
-/* hoedown_document_render: render regular Markdown using the document processor */
-void	 hoedown_document_render(hoedown_document *doc, 
-		hbuf *ob, const uint8_t *data, 
-		size_t size);
-
-/* hoedown_document_free: deallocate a document processor instance */
-void	 hoedown_document_free(hoedown_document *doc);
-
-/* hoedown_escape_href: escape (part of) a URL inside HTML */
-void	 hoedown_escape_href(hbuf *ob, const uint8_t *data, size_t size);
-
-/* hoedown_escape_html: escape HTML */
-void	 hoedown_escape_html(hbuf *ob, const uint8_t *data, size_t size, int secure);
-
-/* hoedown_escape_nroff: escape HTML */
-void	 hoedown_escape_nroff(hbuf *ob, const uint8_t *data, size_t size, int secure);
+void	 hesc_href(hbuf *, const uint8_t *, size_t);
+void	 hesc_html(hbuf *, const uint8_t *, size_t, int);
+void	 hesc_nroff(hbuf *, const uint8_t *, size_t, int);
 
 /* hoedown_html_is_tag: checks if data starts with a specific tag, returns the tag type or NONE */
 hoedown_html_tag hoedown_html_is_tag(const uint8_t *data, 
