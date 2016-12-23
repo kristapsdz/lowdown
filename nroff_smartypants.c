@@ -370,8 +370,9 @@ sm_cb_dquote(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const uint8_t
 	return 0;
 }
 
+/* process an HTML snippet using SmartyPants for smart punctuation */
 void
-hoedown_nroff_smartypants(hbuf *ob, const uint8_t *text, size_t size)
+hsmrt_nroff(hbuf *ob, const uint8_t *text, size_t size)
 {
 	size_t 		 i, org;
 	struct sm_dat	 smrt;
