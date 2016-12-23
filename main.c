@@ -145,15 +145,15 @@ sandbox_pre(void)
 int
 main(int argc, char *argv[])
 {
-	FILE		 *fin = stdin, *fout = stdout;
-	const char	 *fnin = "<stdin>", *fnout = NULL,
-	      		 *title = NULL;
-	hbuf	 *ib, *ob, *spb;
-	hoedown_renderer *renderer = NULL;
-	hdoc 		 *document;
-	const char	 *pname;
-	int		  c, standalone = 0;
-	enum out	  outm = OUT_HTML;
+	FILE		*fin = stdin, *fout = stdout;
+	const char	*fnin = "<stdin>", *fnout = NULL,
+	      		*title = NULL;
+	hbuf	 	*ib, *ob, *spb;
+	hrend 		*renderer = NULL;
+	hdoc 		*document;
+	const char	*pname;
+	int		 c, standalone = 0;
+	enum out	 outm = OUT_HTML;
 
 	sandbox_pre();
 
@@ -218,11 +218,11 @@ main(int argc, char *argv[])
 	spb = hbuf_new(DEF_OUNIT);
 
 	renderer = OUT_HTML == outm ?
-		hoedown_html_renderer_new
+		hrend_html_new
 		(HOEDOWN_HTML_USE_XHTML |
 		 HOEDOWN_HTML_ESCAPE | 
 		 HOEDOWN_HTML_ASIDE, 0) :
-		hoedown_nroff_renderer_new
+		hrend_nroff_new
 		(HOEDOWN_HTML_ESCAPE, 0);
 
 	document = hdoc_new
@@ -250,8 +250,8 @@ main(int argc, char *argv[])
 	/* Reprocess the HTML as smartypants. */
 
 	if (OUT_HTML == outm) {
-		hoedown_html_renderer_free(renderer);
-		hoedown_html_smartypants(spb, ob->data, ob->size);
+		hrend_html_free(renderer);
+		hsmrt_html(spb, ob->data, ob->size);
 		hbuf_free(ob);
 		if (standalone)
 			fprintf(fout, "<!DOCTYPE html>\n"
@@ -270,8 +270,8 @@ main(int argc, char *argv[])
 			fputs("</body>\n"
 			      "</html>\n", fout);
 	} else {
-		hoedown_nroff_renderer_free(renderer);
-		hoedown_nroff_smartypants(spb, ob->data, ob->size);
+		hrend_nroff_free(renderer);
+		hsmrt_nroff(spb, ob->data, ob->size);
 		hbuf_free(ob);
 		if (standalone)
 			fprintf(fout, ".TL\n%s\n", NULL == title ?

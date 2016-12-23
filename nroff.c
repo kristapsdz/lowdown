@@ -38,7 +38,7 @@ typedef struct nroff_state {
 		int level_offset;
 		int nesting_level;
 	} toc_data;
-	hoedown_html_flags flags;
+	hhtml_fl flags;
 } nroff_state;
 
 static void
@@ -241,7 +241,7 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title, vo
 }
 
 static void
-rndr_list(hbuf *ob, const hbuf *content, hoedown_list_flags flags, void *data)
+rndr_list(hbuf *ob, const hbuf *content, hlist_fl flags, void *data)
 {
 
 	if (NULL != content && content->size) 
@@ -249,7 +249,7 @@ rndr_list(hbuf *ob, const hbuf *content, hoedown_list_flags flags, void *data)
 }
 
 static void
-rndr_listitem(hbuf *ob, const hbuf *content, hoedown_list_flags flags, void *data)
+rndr_listitem(hbuf *ob, const hbuf *content, hlist_fl flags, void *data)
 {
 
 	if (NULL == content || 0 == content->size) 
@@ -490,10 +490,10 @@ rndr_math(hbuf *ob, const hbuf *text, int displaymode, void *data)
 	return 1;
 }
 
-hoedown_renderer *
-hoedown_nroff_renderer_new(hoedown_html_flags render_flags, int nesting_level)
+hrend *
+hrend_nroff_new(hhtml_fl render_flags, int nesting_level)
 {
-	static const hoedown_renderer cb_default = {
+	static const hrend cb_default = {
 		NULL,
 
 		rndr_blockcode,
@@ -537,7 +537,7 @@ hoedown_nroff_renderer_new(hoedown_html_flags render_flags, int nesting_level)
 	};
 
 	nroff_state *state;
-	hoedown_renderer *renderer;
+	hrend *renderer;
 
 	/* Prepare the state pointer */
 	state = xmalloc(sizeof(nroff_state));
@@ -547,8 +547,8 @@ hoedown_nroff_renderer_new(hoedown_html_flags render_flags, int nesting_level)
 	state->toc_data.nesting_level = nesting_level;
 
 	/* Prepare the renderer */
-	renderer = xmalloc(sizeof(hoedown_renderer));
-	memcpy(renderer, &cb_default, sizeof(hoedown_renderer));
+	renderer = xmalloc(sizeof(hrend));
+	memcpy(renderer, &cb_default, sizeof(hrend));
 
 	if (render_flags & HOEDOWN_HTML_SKIP_HTML || render_flags & HOEDOWN_HTML_ESCAPE)
 		renderer->blockhtml = NULL;
@@ -558,7 +558,7 @@ hoedown_nroff_renderer_new(hoedown_html_flags render_flags, int nesting_level)
 }
 
 void
-hoedown_nroff_renderer_free(hoedown_renderer *renderer)
+hrend_nroff_free(hrend *renderer)
 {
 	free(renderer->opaque);
 	free(renderer);

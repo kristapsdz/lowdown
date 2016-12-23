@@ -33,12 +33,6 @@
 
 #define HOEDOWN_LI_END 8	/* internal list flag */
 
-const char *hoedown_find_block_tag(const char *str, unsigned int len);
-
-/***************
- * LOCAL TYPES *
- ***************/
-
 /* link_ref: reference to a link */
 struct link_ref {
 	unsigned int id;
@@ -131,7 +125,7 @@ static char_trigger markdown_char_ptrs[] = {
 };
 
 struct hdoc {
-	hoedown_renderer md;
+	hrend md;
 	void *data;
 
 	struct link_ref *refs[REF_TABLE_SIZE];
@@ -1856,7 +1850,7 @@ parse_blockcode(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 /* parse_listitem • parsing of a single list item */
 /*	assuming initial prefix is already removed */
 static size_t
-parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hoedown_list_flags *flags)
+parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hlist_fl *flags)
 {
 	hbuf *work = NULL, *inter = NULL;
 	size_t beg = 0, end, pre, sublist = 0, orgpre = 0, i;
@@ -1993,7 +1987,7 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hoedown_list_fla
 
 /* parse_list • parsing ordered or unordered list block */
 static size_t
-parse_list(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hoedown_list_flags flags)
+parse_list(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hlist_fl flags)
 {
 	hbuf *work = NULL;
 	size_t i = 0, j;
@@ -2184,7 +2178,7 @@ parse_htmlblock(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int do_render)
 		i++;
 
 	if (i < size)
-		curtag = hoedown_find_block_tag((char *)data + 1, (int)i - 1);
+		curtag = hhtml_find_block((char *)data + 1, (int)i - 1);
 
 	/* handling of special cases */
 	if (!curtag) {
@@ -2802,7 +2796,7 @@ static void expand_tabs(hbuf *ob, const uint8_t *line, size_t size)
 /* allocate a new document processor instance */
 hdoc *
 hdoc_new(
-	const hoedown_renderer *renderer,
+	const hrend *renderer,
 	hdoc_ext extensions,
 	size_t max_nesting)
 {
@@ -2811,7 +2805,7 @@ hdoc_new(
 	assert(max_nesting > 0 && renderer);
 
 	doc = xmalloc(sizeof(hdoc));
-	memcpy(&doc->md, renderer, sizeof(hoedown_renderer));
+	memcpy(&doc->md, renderer, sizeof(hrend));
 
 	doc->data = renderer->opaque;
 

@@ -32,14 +32,29 @@ typedef struct html_state {
 		int level_offset;
 		int nesting_level;
 	} toc_data;
-	hoedown_html_flags flags;
+	hhtml_fl flags;
 	size_t par_count;
 	/* extra callbacks */
 	void (*link_attributes)(hbuf *ob, const hbuf *url, const void *data);
 } html_state;
 
-hoedown_html_tag
-hoedown_html_is_tag(const uint8_t *data, size_t size, const char *tagname)
+static void 
+escape_html(hbuf *ob, const uint8_t *source, size_t length)
+{
+
+	hesc_html(ob, source, length, 0);
+}
+
+static void 
+escape_href(hbuf *ob, const uint8_t *source, size_t length)
+{
+
+	hesc_href(ob, source, length);
+}
+
+/* checks if data starts with a specific tag, returns the tag type or NONE */
+hhtml_tag
+hhtml_get_tag(const uint8_t *data, size_t size, const char *tagname)
 {
 	size_t i;
 	int closed = 0;
@@ -71,23 +86,6 @@ hoedown_html_is_tag(const uint8_t *data, size_t size, const char *tagname)
 	return HOEDOWN_HTML_TAG_NONE;
 }
 
-static void 
-escape_html(hbuf *ob, const uint8_t *source, size_t length)
-{
-
-	hesc_html(ob, source, length, 0);
-}
-
-static void 
-escape_href(hbuf *ob, const uint8_t *source, size_t length)
-{
-
-	hesc_href(ob, source, length);
-}
-
-/********************
- * GENERIC RENDERER *
- ********************/
 static int
 rndr_autolink(hbuf *ob, const hbuf *link, halink_type type, void *data)
 {
@@ -290,7 +288,7 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title, vo
 }
 
 static void
-rndr_list(hbuf *ob, const hbuf *content, hoedown_list_flags flags, void *data)
+rndr_list(hbuf *ob, const hbuf *content, hlist_fl flags, void *data)
 {
 	if (ob->size) hbuf_putc(ob, '\n');
 	hbuf_put(ob, (const uint8_t *)(flags & HOEDOWN_LIST_ORDERED ? "<ol>\n" : "<ul>\n"), 5);
@@ -299,7 +297,7 @@ rndr_list(hbuf *ob, const hbuf *content, hoedown_list_flags flags, void *data)
 }
 
 static void
-rndr_listitem(hbuf *ob, const hbuf *content, hoedown_list_flags flags, void *data)
+rndr_listitem(hbuf *ob, const hbuf *content, hlist_fl flags, void *data)
 {
 	HBUF_PUTSL(ob, "<li>");
 	if (content) {
@@ -597,10 +595,11 @@ rndr_math(hbuf *ob, const hbuf *text, int displaymode, void *data)
 	return 1;
 }
 
-hoedown_renderer *
-hoedown_html_renderer_new(hoedown_html_flags render_flags, int nesting_level)
+/* allocates a regular HTML renderer */
+hrend *
+hrend_html_new(hhtml_fl render_flags, int nesting_level)
 {
-	static const hoedown_renderer cb_default = {
+	static const hrend cb_default = {
 		NULL,
 
 		rndr_blockcode,
@@ -644,7 +643,7 @@ hoedown_html_renderer_new(hoedown_html_flags render_flags, int nesting_level)
 	};
 
 	html_state *state;
-	hoedown_renderer *renderer;
+	hrend *renderer;
 
 	/* Prepare the state pointer */
 	state = xmalloc(sizeof(html_state));
@@ -654,8 +653,8 @@ hoedown_html_renderer_new(hoedown_html_flags render_flags, int nesting_level)
 	state->toc_data.nesting_level = nesting_level;
 
 	/* Prepare the renderer */
-	renderer = xmalloc(sizeof(hoedown_renderer));
-	memcpy(renderer, &cb_default, sizeof(hoedown_renderer));
+	renderer = xmalloc(sizeof(hrend));
+	memcpy(renderer, &cb_default, sizeof(hrend));
 
 	if (render_flags & HOEDOWN_HTML_SKIP_HTML || render_flags & HOEDOWN_HTML_ESCAPE)
 		renderer->blockhtml = NULL;
@@ -664,8 +663,9 @@ hoedown_html_renderer_new(hoedown_html_flags render_flags, int nesting_level)
 	return renderer;
 }
 
+/* deallocate an HTML renderer */
 void
-hoedown_html_renderer_free(hoedown_renderer *renderer)
+hrend_html_free(hrend *renderer)
 {
 	free(renderer->opaque);
 	free(renderer);
