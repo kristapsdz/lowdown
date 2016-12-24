@@ -330,14 +330,12 @@ sm_cb_dot(hbuf *ob, struct sm_dat *smrt,
 	size_t	 	 i = 0;
 	const uint8_t	*cp;
 
-	/* FIXME: code span */
-
 	if ((0 == previous_char || '\n' == previous_char) && 
-	    (size >= 3 && 0 == memcmp(text + 1, "DS\n", 3))) {
-		i = 3;
+	    (size >= 6 && 0 == memcmp(text + 1, "ft CR\n", 6))) {
+		i = 6;
 		hbuf_put(ob, text, i);
 		/* FIXME: check size - i >= 4 */
-		cp = memmem(text + i, size - i, "\n.DE\n", 4);
+		cp = memmem(text + i, size - i, "\n.ft\n", 4);
 		assert(NULL != cp);
 		hbuf_put(ob, text + i, cp - (text + i));
 		i += cp - (text + i) - 1;
