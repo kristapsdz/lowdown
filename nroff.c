@@ -115,7 +115,7 @@ rndr_codespan(hbuf *ob, const hbuf *content, void *data)
 	if (NULL == content || 0 == content->size)
 		return(0);
 
-	HBUF_PUTSL(ob, "\\f[CW]");
+	HBUF_PUTSL(ob, "\\f[CR]");
 	escape_buffer(ob, content->data, content->size);
 	HBUF_PUTSL(ob, "\\fR");
 	return 1;
