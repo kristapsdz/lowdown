@@ -1588,9 +1588,9 @@ prefix_code(uint8_t *data, size_t size)
 
 /* prefix_oli • returns ordered list item prefix */
 static size_t
-prefix_oli(uint8_t *data, size_t size)
+prefix_oli(uint8_t *data, size_t size, uint8_t **num, size_t *numsz)
 {
-	size_t i = 0;
+	size_t i = 0, st;
 
 	if (i < size && data[i] == ' ') i++;
 	if (i < size && data[i] == ' ') i++;
@@ -1599,8 +1599,15 @@ prefix_oli(uint8_t *data, size_t size)
 	if (i >= size || data[i] < '0' || data[i] > '9')
 		return 0;
 
+	st = i;
+	if (NULL != num)
+		*num = &data[i];
+
 	while (i < size && data[i] >= '0' && data[i] <= '9')
 		i++;
+
+	if (NULL != numsz)
+		*numsz = i - st;
 
 	if (i + 1 >= size || data[i] != '.' || data[i + 1] != ' ')
 		return 0;
@@ -1850,7 +1857,7 @@ parse_blockcode(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 /* parse_listitem • parsing of a single list item */
 /*	assuming initial prefix is already removed */
 static size_t
-parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hlist_fl *flags)
+parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hlist_fl *flags, size_t num)
 {
 	hbuf *work = NULL, *inter = NULL;
 	size_t beg = 0, end, pre, sublist = 0, orgpre = 0, i;
@@ -1862,7 +1869,7 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hlist_fl *flags)
 
 	beg = prefix_uli(data, size);
 	if (!beg)
-		beg = prefix_oli(data, size);
+		beg = prefix_oli(data, size, NULL, NULL);
 
 	if (!beg)
 		return 0;
@@ -1912,7 +1919,7 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hlist_fl *flags)
 		 * a fenced code block */
 		if (!in_fence) {
 			has_next_uli = prefix_uli(data + beg + i, end - beg - i);
-			has_next_oli = prefix_oli(data + beg + i, end - beg - i);
+			has_next_oli = prefix_oli(data + beg + i, end - beg - i, NULL, NULL);
 		}
 
 		/* checking for a new item */
@@ -1924,8 +1931,8 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hlist_fl *flags)
 			if (pre <= orgpre) {
 				/* if the following item has different list type, we end this list */
 				if (in_empty && (
-					((*flags & HOEDOWN_LIST_ORDERED) && has_next_uli) ||
-					(!(*flags & HOEDOWN_LIST_ORDERED) && has_next_oli)))
+					((*flags & HLIST_ORDERED) && has_next_uli) ||
+					(!(*flags & HLIST_ORDERED) && has_next_oli)))
 					*flags |= HOEDOWN_LI_END;
 
 				break;
@@ -1955,9 +1962,9 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hlist_fl *flags)
 
 	/* render of li contents */
 	if (has_inside_empty)
-		*flags |= HOEDOWN_LI_BLOCK;
+		*flags |= HLIST_BLOCK;
 
-	if (*flags & HOEDOWN_LI_BLOCK) {
+	if (*flags & HLIST_BLOCK) {
 		/* intermediate render of block li */
 		if (sublist && sublist < work->size) {
 			parse_block(inter, doc, work->data, sublist);
@@ -1977,7 +1984,7 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hlist_fl *flags)
 
 	/* render of li itself */
 	if (doc->md.listitem)
-		doc->md.listitem(ob, inter, *flags, doc->data);
+		doc->md.listitem(ob, inter, *flags, doc->data, num);
 
 	popbuf(doc, BUFFER_SPAN);
 	popbuf(doc, BUFFER_SPAN);
@@ -1990,12 +1997,12 @@ static size_t
 parse_list(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hlist_fl flags)
 {
 	hbuf *work = NULL;
-	size_t i = 0, j;
+	size_t i = 0, j, k = 1;
 
 	work = newbuf(doc, BUFFER_BLOCK);
 
 	while (i < size) {
-		j = parse_listitem(work, doc, data + i, size - i, &flags);
+		j = parse_listitem(work, doc, data + i, size - i, &flags, k++);
 		i += j;
 
 		if (!j || (flags & HOEDOWN_LI_END))
@@ -2522,8 +2529,8 @@ parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 		else if (prefix_uli(txt_data, end))
 			beg += parse_list(ob, doc, txt_data, end, 0);
 
-		else if (prefix_oli(txt_data, end))
-			beg += parse_list(ob, doc, txt_data, end, HOEDOWN_LIST_ORDERED);
+		else if (prefix_oli(txt_data, end, NULL, NULL))
+			beg += parse_list(ob, doc, txt_data, end, HLIST_ORDERED);
 
 		else
 			beg += parse_paragraph(ob, doc, txt_data, end);
