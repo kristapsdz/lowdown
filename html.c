@@ -291,13 +291,13 @@ static void
 rndr_list(hbuf *ob, const hbuf *content, hlist_fl flags, void *data)
 {
 	if (ob->size) hbuf_putc(ob, '\n');
-	hbuf_put(ob, (const uint8_t *)(flags & HOEDOWN_LIST_ORDERED ? "<ol>\n" : "<ul>\n"), 5);
+	hbuf_put(ob, (const uint8_t *)(flags & HLIST_ORDERED ? "<ol>\n" : "<ul>\n"), 5);
 	if (content) hbuf_put(ob, content->data, content->size);
-	hbuf_put(ob, (const uint8_t *)(flags & HOEDOWN_LIST_ORDERED ? "</ol>\n" : "</ul>\n"), 6);
+	hbuf_put(ob, (const uint8_t *)(flags & HLIST_ORDERED ? "</ol>\n" : "</ul>\n"), 6);
 }
 
 static void
-rndr_listitem(hbuf *ob, const hbuf *content, hlist_fl flags, void *data)
+rndr_listitem(hbuf *ob, const hbuf *content, hlist_fl flags, void *data, size_t num)
 {
 	HBUF_PUTSL(ob, "<li>");
 	if (content) {

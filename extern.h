@@ -82,8 +82,8 @@ typedef enum hdoc_ext {
 } hdoc_ext;
 
 typedef enum hlist_fl {
-	HOEDOWN_LIST_ORDERED = (1 << 0),
-	HOEDOWN_LI_BLOCK = (1 << 1) /* <li> containing block data */
+	HLIST_ORDERED = (1 << 0),
+	HLIST_BLOCK = (1 << 1) /* <li> containing block data */
 } hlist_fl;
 
 typedef enum htbl_flags {
@@ -119,7 +119,7 @@ typedef struct hrend {
 	void (*header)(hbuf *, const hbuf *, int, void *);
 	void (*hrule)(hbuf *, void *);
 	void (*list)(hbuf *, const hbuf *, hlist_fl, void *);
-	void (*listitem)(hbuf *, const hbuf *, hlist_fl, void *);
+	void (*listitem)(hbuf *, const hbuf *, hlist_fl, void *, size_t);
 	void (*paragraph)(hbuf *, const hbuf *, void *);
 	void (*table)(hbuf *, const hbuf *, void *);
 	void (*table_header)(hbuf *, const hbuf *, 
