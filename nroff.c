@@ -266,13 +266,16 @@ rndr_list(hbuf *ob, const hbuf *content, hlist_fl flags, void *data)
 }
 
 static void
-rndr_listitem(hbuf *ob, const hbuf *content, hlist_fl flags, void *data)
+rndr_listitem(hbuf *ob, const hbuf *content, hlist_fl flags, void *data, size_t num)
 {
 
 	if (NULL == content || 0 == content->size) 
 		return;
 
-	HBUF_PUTSL(ob, ".IP -\n");
+	if (HLIST_ORDERED & flags)
+		hbuf_printf(ob, ".IP %zu.\n", num);
+	else
+		HBUF_PUTSL(ob, ".IP -\n");
 	hbuf_put(ob, content->data, content->size);
 	BUFFER_NEWLINE(content->data, content->size, ob);
 }
