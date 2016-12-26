@@ -145,17 +145,21 @@ rndr_blockcode(hbuf *ob, const hbuf *text, const hbuf *lang, void *data)
 static void
 rndr_blockquote(hbuf *ob, const hbuf *content, void *data)
 {
-	if (ob->size) hbuf_putc(ob, '\n');
+	if (ob->size) 
+		hbuf_putc(ob, '\n');
 	HBUF_PUTSL(ob, "<blockquote>\n");
-	if (content) hbuf_put(ob, content->data, content->size);
+	if (content) 
+		hbuf_put(ob, content->data, content->size);
 	HBUF_PUTSL(ob, "</blockquote>\n");
 }
 
 static int
 rndr_codespan(hbuf *ob, const hbuf *text, void *data)
 {
+
 	HBUF_PUTSL(ob, "<code>");
-	if (text) escape_html(ob, text->data, text->size);
+	if (text) 
+		escape_html(ob, text->data, text->size);
 	HBUF_PUTSL(ob, "</code>");
 	return 1;
 }
@@ -282,7 +286,8 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title, vo
 		HBUF_PUTSL(ob, "\">");
 	}
 
-	if (content && content->size) hbuf_put(ob, content->data, content->size);
+	if (content && content->size) 
+		hbuf_put(ob, content->data, content->size);
 	HBUF_PUTSL(ob, "</a>");
 	return 1;
 }
@@ -290,18 +295,25 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title, vo
 static void
 rndr_list(hbuf *ob, const hbuf *content, hlist_fl flags, void *data)
 {
-	if (ob->size) hbuf_putc(ob, '\n');
-	hbuf_put(ob, (const uint8_t *)(flags & HLIST_ORDERED ? "<ol>\n" : "<ul>\n"), 5);
-	if (content) hbuf_put(ob, content->data, content->size);
-	hbuf_put(ob, (const uint8_t *)(flags & HLIST_ORDERED ? "</ol>\n" : "</ul>\n"), 6);
+
+	if (ob->size) 
+		hbuf_putc(ob, '\n');
+	hbuf_put(ob, (const uint8_t *)(flags & HLIST_ORDERED ? 
+		"<ol>\n" : "<ul>\n"), 5);
+	if (content) 
+		hbuf_put(ob, content->data, content->size);
+	hbuf_put(ob, (const uint8_t *)(flags & HLIST_ORDERED ? 
+		"</ol>\n" : "</ul>\n"), 6);
 }
 
 static void
 rndr_listitem(hbuf *ob, const hbuf *content, hlist_fl flags, void *data, size_t num)
 {
+	size_t	 size;
+
 	HBUF_PUTSL(ob, "<li>");
 	if (content) {
-		size_t size = content->size;
+		size = content->size;
 		while (size && content->data[size - 1] == '\n')
 			size--;
 
@@ -389,7 +401,10 @@ rndr_raw_block(hbuf *ob, const hbuf *text, void *data)
 static int
 rndr_triple_emphasis(hbuf *ob, const hbuf *content, void *data)
 {
-	if (!content || !content->size) return 0;
+
+	if (!content || !content->size) 
+		return 0;
+
 	HBUF_PUTSL(ob, "<strong><em>");
 	hbuf_put(ob, content->data, content->size);
 	HBUF_PUTSL(ob, "</em></strong>");
@@ -448,60 +463,65 @@ rndr_raw_html(hbuf *ob, const hbuf *text, void *data)
 static void
 rndr_table(hbuf *ob, const hbuf *content, void *data)
 {
-    if (ob->size) hbuf_putc(ob, '\n');
-    HBUF_PUTSL(ob, "<table>\n");
-    hbuf_put(ob, content->data, content->size);
-    HBUF_PUTSL(ob, "</table>\n");
+
+	if (ob->size) 
+		hbuf_putc(ob, '\n');
+	HBUF_PUTSL(ob, "<table>\n");
+	hbuf_put(ob, content->data, content->size);
+	HBUF_PUTSL(ob, "</table>\n");
 }
 
 static void
 rndr_table_header(hbuf *ob, const hbuf *content, void *data, const htbl_flags *fl, size_t columns)
 {
-    if (ob->size) hbuf_putc(ob, '\n');
-    HBUF_PUTSL(ob, "<thead>\n");
-    hbuf_put(ob, content->data, content->size);
-    HBUF_PUTSL(ob, "</thead>\n");
+
+	if (ob->size) 
+		hbuf_putc(ob, '\n');
+	HBUF_PUTSL(ob, "<thead>\n");
+	hbuf_put(ob, content->data, content->size);
+	HBUF_PUTSL(ob, "</thead>\n");
 }
 
 static void
 rndr_table_body(hbuf *ob, const hbuf *content, void *data)
 {
-    if (ob->size) hbuf_putc(ob, '\n');
-    HBUF_PUTSL(ob, "<tbody>\n");
-    hbuf_put(ob, content->data, content->size);
-    HBUF_PUTSL(ob, "</tbody>\n");
+
+	if (ob->size) 
+		hbuf_putc(ob, '\n');
+	HBUF_PUTSL(ob, "<tbody>\n");
+	hbuf_put(ob, content->data, content->size);
+	HBUF_PUTSL(ob, "</tbody>\n");
 }
 
 static void
 rndr_tablerow(hbuf *ob, const hbuf *content, void *data)
 {
+
 	HBUF_PUTSL(ob, "<tr>\n");
-	if (content) hbuf_put(ob, content->data, content->size);
+	if (content) 
+		hbuf_put(ob, content->data, content->size);
 	HBUF_PUTSL(ob, "</tr>\n");
 }
 
 static void
 rndr_tablecell(hbuf *ob, const hbuf *content, htbl_flags flags, void *data, size_t col, size_t columns)
 {
-	if (flags & HTBL_HEADER) {
+
+	if (flags & HTBL_HEADER)
 		HBUF_PUTSL(ob, "<th");
-	} else {
+	else
 		HBUF_PUTSL(ob, "<td");
-	}
 
 	switch (flags & HTBL_ALIGNMASK) {
 	case HTBL_ALIGN_CENTER:
 		HBUF_PUTSL(ob, " style=\"text-align: center\">");
 		break;
-
 	case HTBL_ALIGN_LEFT:
 		HBUF_PUTSL(ob, " style=\"text-align: left\">");
 		break;
-
 	case HTBL_ALIGN_RIGHT:
 		HBUF_PUTSL(ob, " style=\"text-align: right\">");
 		break;
-
 	default:
 		HBUF_PUTSL(ob, ">");
 	}
@@ -509,17 +529,19 @@ rndr_tablecell(hbuf *ob, const hbuf *content, htbl_flags flags, void *data, size
 	if (content)
 		hbuf_put(ob, content->data, content->size);
 
-	if (flags & HTBL_HEADER) {
+	if (flags & HTBL_HEADER)
 		HBUF_PUTSL(ob, "</th>\n");
-	} else {
+	else
 		HBUF_PUTSL(ob, "</td>\n");
-	}
 }
 
 static int
 rndr_superscript(hbuf *ob, const hbuf *content, void *data)
 {
-	if (!content || !content->size) return 0;
+
+	if (!content || !content->size) 
+		return 0;
+
 	HBUF_PUTSL(ob, "<sup>");
 	hbuf_put(ob, content->data, content->size);
 	HBUF_PUTSL(ob, "</sup>");
@@ -529,6 +551,7 @@ rndr_superscript(hbuf *ob, const hbuf *content, void *data)
 static void
 rndr_normal_text(hbuf *ob, const hbuf *content, void *data)
 {
+
 	if (content)
 		escape_html(ob, content->data, content->size);
 }
