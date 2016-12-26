@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<articles>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.1.0</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2016-12-26">2016-12-26</time>
+		</header>
+		<aside>
+			<p>
+				Initial public download of a stable release.
+			</p>
+		</aside>
+	</article>
+</articles>
