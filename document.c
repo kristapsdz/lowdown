@@ -1731,18 +1731,27 @@ parse_blockquote(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 static size_t
 parse_htmlblock(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int do_render);
 
-/* parse_blockquote • handles parsing of a regular paragraph */
+/* 
+ * handles parsing of a regular paragraph 
+ */
 static size_t
 parse_paragraph(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 {
-	hbuf work = { NULL, 0, 0, 0, 0 };
-	size_t i = 0, end = 0;
-	int level = 0;
+	hbuf		 work;
+	hbuf		*tmp, *header_work;
+	size_t		 i = 0, end = 0, beg;
+	int		 level = 0;
+	const uint8_t	*sv;
+
+	memset(&work, 0, sizeof(hbuf));
 
 	work.data = data;
 
 	while (i < size) {
-		for (end = i + 1; end < size && data[end - 1] != '\n'; end++) /* empty */;
+		for (end = i + 1; 
+		     end < size && data[end - 1] != '\n'; 
+		     end++) 
+			/* empty */;
 
 		if (is_empty(data + i, size - i))
 			break;
@@ -1764,17 +1773,19 @@ parse_paragraph(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 	while (work.size && data[work.size - 1] == '\n')
 		work.size--;
 
-	if (!level) {
-		hbuf *tmp = newbuf(doc, BUFFER_BLOCK);
+	if ( ! level) {
+		tmp = newbuf(doc, BUFFER_BLOCK);
+
+		sv = doc->start;
+		doc->start = work.data;
 		parse_inline(tmp, doc, work.data, work.size);
+		doc->start = sv;
+
 		if (doc->md.paragraph)
 			doc->md.paragraph(ob, tmp, doc->data);
 		popbuf(doc, BUFFER_BLOCK);
 	} else {
-		hbuf *header_work;
-
 		if (work.size) {
-			size_t beg;
 			i = work.size;
 			work.size -= 1;
 
@@ -1800,10 +1811,14 @@ parse_paragraph(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 		}
 
 		header_work = newbuf(doc, BUFFER_SPAN);
+
+		sv = doc->start;
+		doc->start = work.data;
 		parse_inline(header_work, doc, work.data, work.size);
+		doc->start = sv;
 
 		if (doc->md.header)
-			doc->md.header(ob, header_work, (int)level, doc->data);
+			doc->md.header(ob, header_work, level, doc->data);
 
 		popbuf(doc, BUFFER_SPAN);
 	}
