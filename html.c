@@ -549,7 +549,7 @@ rndr_superscript(hbuf *ob, const hbuf *content, void *data)
 }
 
 static void
-rndr_normal_text(hbuf *ob, const hbuf *content, void *data)
+rndr_normal_text(hbuf *ob, const hbuf *content, void *data, int nl)
 {
 
 	if (content)
