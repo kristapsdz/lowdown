@@ -361,14 +361,16 @@ rndr_raw_block(hbuf *ob, const hbuf *content, void *data)
 static void
 rndr_hrule(hbuf *ob, void *data)
 {
+	nroff_state 	*st = data;
 
 	/* 
-	 * FIXME: over-complicated. 
 	 * I'm not sure how else to do horizontal lines.
+	 * The LP is to reset the margins. 
 	 */
 
-	HBUF_PUTSL(ob, ".br\n");
-	HBUF_PUTSL(ob, "\\l\'\\n(.l/1\'\n");
+	HBUF_PUTSL(ob, ".LP\n");
+	if ( ! st->mdoc)
+		HBUF_PUTSL(ob, "\\l\'\\n(.lu-\\n(\\n[.in]u\'\n");
 }
 
 static int
@@ -491,12 +493,18 @@ rndr_normal_text(hbuf *ob, const hbuf *content, void *data, int nl)
 static void
 rndr_footnotes(hbuf *ob, const hbuf *content, void *data)
 {
+	nroff_state 	*st = data;
 
 	if (NULL == content || 0 == content->size) 
 		return;
 
-	HBUF_PUTSL(ob, ".br\n");
-	HBUF_PUTSL(ob, "\\l\'\\n(.l/1.5\'\n");
+	/* The LP is to reset the margins. */
+
+	HBUF_PUTSL(ob, ".LP\n");
+	if ( ! st->mdoc) {
+		HBUF_PUTSL(ob, ".sp 2\n");
+		HBUF_PUTSL(ob, "\\l\'\\n(.lu-\\n(\\n[.in]u\'\n");
+	}
 	hbuf_put(ob, content->data, content->size);
 }
 
@@ -505,7 +513,7 @@ rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num, void *data)
 {
 
 	HBUF_PUTSL(ob, ".LP\n");
-	hbuf_printf(ob, "\\fIFootnote [%u]\\fP\n", num);
+	hbuf_printf(ob, "\\fI%u.\\fP\n", num);
 	HBUF_PUTSL(ob, ".RS\n");
 	hbuf_put(ob, content->data, content->size);
 	BUFFER_NEWLINE(content->data, content->size, ob);
@@ -516,7 +524,7 @@ static int
 rndr_footnote_ref(hbuf *ob, unsigned int num, void *data)
 {
 
-	hbuf_printf(ob, " [%u]", num);
+	hbuf_printf(ob, "\\u\\s-2%u\\s+2\\d", num);
 	return 1;
 }
 
