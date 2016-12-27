@@ -476,12 +476,15 @@ rndr_superscript(hbuf *ob, const hbuf *content, void *data)
 }
 
 static void
-rndr_normal_text(hbuf *ob, const hbuf *content, void *data)
+rndr_normal_text(hbuf *ob, const hbuf *content, void *data, int nl)
 {
 
-	/* FIXME: leading dot. */
+	if (NULL == content || 0 == content->size)
+		return;
 
-	if (NULL != content && content->size)
+	if (nl)
+		escape_block(ob, content->data, content->size);
+	else
 		escape_span(ob, content->data, content->size);
 }
 
