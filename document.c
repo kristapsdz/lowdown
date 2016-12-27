@@ -1895,76 +1895,96 @@ parse_blockcode(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 	return beg;
 }
 
-/* parse_listitem • parsing of a single list item */
-/*	assuming initial prefix is already removed */
+/* 
+ * Parsing of a single list item assuming initial prefix is already
+ * removed.
+ */
 static size_t
-parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hlist_fl *flags, size_t num)
+parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data, 
+	size_t size, hlist_fl *flags, size_t num)
 {
-	hbuf *work = NULL, *inter = NULL;
-	size_t beg = 0, end, pre, sublist = 0, orgpre = 0, i;
-	int in_empty = 0, has_inside_empty = 0, in_fence = 0;
+	hbuf		*work = NULL, *inter = NULL;
+	size_t		 beg = 0, end, pre, sublist = 0, orgpre = 0, i;
+	int		 in_empty = 0, has_inside_empty = 0, 
+			 in_fence = 0;
+	const uint8_t	*sv;
+	size_t 		 has_next_uli = 0, has_next_oli = 0;
 
-	/* keeping track of the first indentation prefix */
+	/* Keeping track of the first indentation prefix. */
+
 	while (orgpre < 3 && orgpre < size && data[orgpre] == ' ')
 		orgpre++;
 
 	beg = prefix_uli(data, size);
-	if (!beg)
-		beg = prefix_oli(data, size, NULL, NULL);
 
-	if (!beg)
+	if ( ! beg)
+		beg = prefix_oli(data, size, NULL, NULL);
+	if ( ! beg)
 		return 0;
 
-	/* skipping to the beginning of the following line */
+	/* Skipping to the beginning of the following line. */
+
 	end = beg;
 	while (end < size && data[end - 1] != '\n')
 		end++;
 
-	/* getting working buffers */
+	/* Getting working buffers. */
+
 	work = newbuf(doc, BUFFER_SPAN);
 	inter = newbuf(doc, BUFFER_SPAN);
 
-	/* putting the first line into the working buffer */
+	/* Putting the first line into the working buffer. */
+
 	hbuf_put(work, data + beg, end - beg);
 	beg = end;
 
-	/* process the following lines */
-	while (beg < size) {
-		size_t has_next_uli = 0, has_next_oli = 0;
+	/* Process the following lines. */
 
+	while (beg < size) {
+		has_next_uli = has_next_oli = 0;
 		end++;
 
 		while (end < size && data[end - 1] != '\n')
 			end++;
 
-		/* process an empty line */
+		/* Process an empty line. */
+
 		if (is_empty(data + beg, end - beg)) {
 			in_empty = 1;
 			beg = end;
 			continue;
 		}
 
-		/* calculating the indentation */
+		/* Calculating the indentation. */
+
 		i = 0;
 		while (i < 4 && beg + i < end && data[beg + i] == ' ')
 			i++;
-
 		pre = i;
 
-		if (doc->ext_flags & HDOC_EXT_FENCED_CODE) {
-			if (is_codefence(data + beg + i, end - beg - i, NULL, NULL))
+		if (doc->ext_flags & HDOC_EXT_FENCED_CODE) 
+			if (is_codefence(data + beg + i, 
+			    end - beg - i, NULL, NULL))
 				in_fence = !in_fence;
-		}
 
-		/* Only check for new list items if we are **not** inside
-		 * a fenced code block */
+		/* 
+		 * Only check for new list items if we are **not**
+		 * inside a fenced code block.
+		 */
+
 		if (!in_fence) {
-			has_next_uli = prefix_uli(data + beg + i, end - beg - i);
-			has_next_oli = prefix_oli(data + beg + i, end - beg - i, NULL, NULL);
+			has_next_uli = prefix_uli
+				(data + beg + i, end - beg - i);
+			has_next_oli = prefix_oli
+				(data + beg + i, end - beg - i, 
+				 NULL, NULL);
 		}
 
-		/* checking for a new item */
-		if ((has_next_uli && !is_hrule(data + beg + i, end - beg - i)) || has_next_oli) {
+		/* Checking for a new item. */
+
+		if ((has_next_uli && 
+		     ! is_hrule(data + beg + i, end - beg - i)) || 
+		    has_next_oli) {
 			if (in_empty)
 				has_inside_empty = 1;
 
@@ -1981,11 +2001,10 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hlist_fl *flags,
 
 			if (!sublist)
 				sublist = work->size;
-		}
-		/* joining only indented stuff after empty lines;
-		 * note that now we only require 1 space of indentation
-		 * to continue a list */
-		else if (in_empty && pre == 0) {
+		} else if (in_empty && pre == 0) {
+			/* joining only indented stuff after empty lines;
+			 * note that now we only require 1 space of indentation
+			 * to continue a list */
 			*flags |= HOEDOWN_LI_END;
 			break;
 		}
@@ -2005,13 +2024,15 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hlist_fl *flags,
 	if (has_inside_empty)
 		*flags |= HLIST_BLOCK;
 
+	sv = doc->start;
+	doc->start = work->data;
+
 	if (*flags & HLIST_BLOCK) {
 		/* intermediate render of block li */
 		if (sublist && sublist < work->size) {
 			parse_block(inter, doc, work->data, sublist);
 			parse_block(inter, doc, work->data + sublist, work->size - sublist);
-		}
-		else
+		} else
 			parse_block(inter, doc, work->data, work->size);
 	} else {
 		/* intermediate render of inline li */
@@ -2022,6 +2043,8 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hlist_fl *flags,
 		else
 			parse_inline(inter, doc, work->data, work->size);
 	}
+
+	doc->start = sv;
 
 	/* render of li itself */
 	if (doc->md.listitem)
