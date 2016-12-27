@@ -42,7 +42,14 @@ typedef struct nroff_state {
 } nroff_state;
 
 static void
-escape_buffer(hbuf *ob, const uint8_t *source, size_t length)
+escape_span(hbuf *ob, const uint8_t *source, size_t length)
+{
+
+	hesc_nroff(ob, source, length, 1);
+}
+
+static void
+escape_block(hbuf *ob, const uint8_t *source, size_t length)
 {
 
 	hesc_nroff(ob, source, length, 0);
@@ -80,17 +87,17 @@ rndr_blockcode(hbuf *ob, const hbuf *content, const hbuf *lang, void *data)
 
 	if (st->mdoc) {
 		HBUF_PUTSL(ob, ".sp 1\n");
-		HBUF_PUTSL(ob, ".RS 0\n");
+		HBUF_PUTSL(ob, ".nf\n");
 	} else
 		HBUF_PUTSL(ob, ".DS\n");
 
 	HBUF_PUTSL(ob, ".ft CR\n");
-	escape_buffer(ob, content->data, content->size);
+	escape_block(ob, content->data, content->size);
 	BUFFER_NEWLINE(content->data, content->size, ob);
 	HBUF_PUTSL(ob, ".ft\n");
 
 	if (st->mdoc)
-		HBUF_PUTSL(ob, ".RE\n");
+		HBUF_PUTSL(ob, ".fi\n");
 	else
 		HBUF_PUTSL(ob, ".DE\n");
 }
@@ -116,7 +123,7 @@ rndr_codespan(hbuf *ob, const hbuf *content, void *data)
 		return(0);
 
 	HBUF_PUTSL(ob, "\\f[CR]");
-	escape_buffer(ob, content->data, content->size);
+	escape_span(ob, content->data, content->size);
 	HBUF_PUTSL(ob, "\\fR");
 	return 1;
 }
@@ -275,7 +282,7 @@ rndr_listitem(hbuf *ob, const hbuf *content, hlist_fl flags, void *data, size_t 
 	if (HLIST_ORDERED & flags)
 		hbuf_printf(ob, ".IP %zu.\n", num);
 	else
-		HBUF_PUTSL(ob, ".IP -\n");
+		HBUF_PUTSL(ob, ".IP \\[bu]\n");
 	hbuf_put(ob, content->data, content->size);
 	BUFFER_NEWLINE(content->data, content->size, ob);
 }
@@ -328,7 +335,10 @@ rndr_raw_block(hbuf *ob, const hbuf *content, void *data)
 	if ( ! content)
 		return;
 
-	/* FIXME: Do we *really* need to trim the HTML? How does that make a difference? */
+	/* 
+	 * FIXME: Do we *really* need to trim the HTML? How does that
+	 * make a difference? 
+	 */
 
 	sz = content->size;
 	while (sz > 0 && content->data[sz - 1] == '\n')
@@ -379,7 +389,7 @@ rndr_raw_html(hbuf *ob, const hbuf *text, void *data)
 	 * there are any valid tags, just escapes all of them. 
 	 */
 	if ((state->flags & HOEDOWN_HTML_ESCAPE) != 0) {
-		escape_buffer(ob, text->data, text->size);
+		escape_block(ob, text->data, text->size);
 		return 1;
 	}
 
@@ -455,10 +465,13 @@ rndr_tablecell(hbuf *ob, const hbuf *content,
 static int
 rndr_superscript(hbuf *ob, const hbuf *content, void *data)
 {
-	if (!content || !content->size) return 0;
-	HBUF_PUTSL(ob, "<sup>");
+
+	if (NULL == content || 0 == content->size) 
+		return 0;
+
+	HBUF_PUTSL(ob, "\\u\\s-2");
 	hbuf_put(ob, content->data, content->size);
-	HBUF_PUTSL(ob, "</sup>");
+	HBUF_PUTSL(ob, "\\s+2\\d");
 	return 1;
 }
 
@@ -466,8 +479,10 @@ static void
 rndr_normal_text(hbuf *ob, const hbuf *content, void *data)
 {
 
-	if (NULL != content)
-		escape_buffer(ob, content->data, content->size);
+	/* FIXME: leading dot. */
+
+	if (NULL != content && content->size)
+		escape_span(ob, content->data, content->size);
 }
 
 static void
@@ -555,22 +570,23 @@ hrend_nroff_new(hhtml_fl render_flags, int mdoc)
 		NULL,
 		NULL
 	};
-
 	nroff_state 	*state;
 	hrend 		*renderer;
 
-	/* Prepare the state pointer */
-	state = xmalloc(sizeof(nroff_state));
-	memset(state, 0x0, sizeof(nroff_state));
+	/* Prepare the state pointer. */
+
+	state = xcalloc(1, sizeof(nroff_state));
 
 	state->flags = render_flags;
 	state->mdoc = mdoc;
 
-	/* Prepare the renderer */
+	/* Prepare the renderer. */
+
 	renderer = xmalloc(sizeof(hrend));
 	memcpy(renderer, &cb_default, sizeof(hrend));
 
-	if (render_flags & HOEDOWN_HTML_SKIP_HTML || render_flags & HOEDOWN_HTML_ESCAPE)
+	if (render_flags & HOEDOWN_HTML_SKIP_HTML || 
+	    render_flags & HOEDOWN_HTML_ESCAPE)
 		renderer->blockhtml = NULL;
 
 	renderer->opaque = state;
@@ -580,6 +596,7 @@ hrend_nroff_new(hhtml_fl render_flags, int mdoc)
 void
 hrend_nroff_free(hrend *renderer)
 {
+
 	free(renderer->opaque);
 	free(renderer);
 }
