@@ -102,6 +102,11 @@ to format as a PS file:
 .Pp
 .Dl lowdown -s -T nroff foo.md | groff -t -ms > foo.ps
 .Pp
+Note the
+.Fl t :
+since
+.Nm
+may emit tables, you'll need it.
 Alternatively, using only
 .Xr mandoc 1 :
 .Pp
