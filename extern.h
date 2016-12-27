@@ -163,7 +163,7 @@ typedef struct hrend {
 	 */
 
 	void (*entity)(hbuf *, const hbuf *, void *);
-	void (*normal_text)(hbuf *, const hbuf *, void *);
+	void (*normal_text)(hbuf *, const hbuf *, void *, int);
 
 	/* Miscellaneous callbacks. */
 
