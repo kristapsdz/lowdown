@@ -172,16 +172,35 @@ static const char *HTML_ESCAPES[] = {
         "&gt;"
 };
 
-/* escape nroff */
+/* 
+ * Escape nroff.
+ * There are two ways to do this: block and span (controlled by the
+ * "span" variable).
+ * If "span" is non-zero, then we only escape characters following the
+ * first.
+ * If "span" is zero, then we also check the first character.
+ * The intuition is that a "block" has its initial character after a
+ * newline, and thus needs the newline check.
+ */
 void
-hesc_nroff(hbuf *ob, const uint8_t *data, size_t size, int secure)
+hesc_nroff(hbuf *ob, const uint8_t *data, size_t size, int span)
 {
-	size_t	 i = 0, mark;
+	size_t	 i = 0, mark, slash;
 
 	while (1) {
 		mark = i;
-		while (i < size && data[i] != '\\') 
-			i++;
+		slash = 0;
+		for (mark = i; i < size; i++) {
+			if ('\\' == data[i]) {
+				slash = 1;
+				break;
+			}
+			if (i > 0 && '.' == data[i] && 
+			    '\n' == data[i - 1])
+				break;
+			if (0 == span && i == 0 && '.' == data[i])
+				break;
+		}
 
 		if (mark == 0 && i >= size) {
 			hbuf_put(ob, data, size);
@@ -194,7 +213,10 @@ hesc_nroff(hbuf *ob, const uint8_t *data, size_t size, int secure)
 		if (i >= size) 
 			break;
 
-		hbuf_puts(ob, "\\e");
+		if (slash)
+			hbuf_puts(ob, "\\e");
+		else
+			hbuf_puts(ob, "\\&.");
 		i++;
 	}
 }
