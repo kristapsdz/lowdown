@@ -32,7 +32,7 @@
 #define BUFFER_SPAN	1
 #define HOEDOWN_LI_END	8 /* internal list flag */
 
-/* link_ref: reference to a link */
+/* Reference to a link. */
 struct link_ref {
 	unsigned int	 id;
 	hbuf		*link;
@@ -40,7 +40,7 @@ struct link_ref {
 	struct link_ref	*next;
 };
 
-/* footnote_ref: reference to a footnote */
+/* Feference to a footnote. */
 struct footnote_ref {
 	unsigned int	 id;
 	int		 is_used;
@@ -48,39 +48,42 @@ struct footnote_ref {
 	hbuf		*contents;
 };
 
-/* footnote_item: an item in a footnote_list */
+/* An item in a footnote_list. */
 struct footnote_item {
 	struct footnote_ref *ref;
 	struct footnote_item *next;
 };
 
-/* footnote_list: linked list of footnote_item */
+/* Linked list of footnote_item. */
 struct footnote_list {
 	unsigned int count;
 	struct footnote_item *head;
 	struct footnote_item *tail;
 };
 
-/* char_trigger: function pointer to render active chars */
-/*   returns the number of chars taken care of */
-/*   data is the pointer of the beginning of the span */
-/*   offset is the number of valid chars before data */
-typedef size_t (*char_trigger)(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size);
+/* 
+ * Function pointer to render active chars.
+ * Returns the number of chars taken care of.
+ * "data" is the pointer of the beginning of the span.
+ * "offset" is the number of valid chars before data.
+ */
+typedef size_t (*char_trigger)(hbuf *ob, hdoc *doc, 
+	uint8_t *data, size_t offset, size_t size);
 
-static size_t char_emphasis(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size);
-static size_t char_quote(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size);
-static size_t char_linebreak(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size);
-static size_t char_codespan(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size);
-static size_t char_escape(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size);
-static size_t char_entity(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size);
-static size_t char_langle_tag(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size);
-static size_t char_autolink_url(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size);
-static size_t char_autolink_email(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size);
-static size_t char_autolink_www(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size);
-static size_t char_link(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size);
-static size_t char_image(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size);
-static size_t char_superscript(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size);
-static size_t char_math(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size);
+static size_t char_emphasis(hbuf *, hdoc *, uint8_t *, size_t, size_t);
+static size_t char_quote(hbuf *, hdoc *, uint8_t *, size_t, size_t);
+static size_t char_linebreak(hbuf *, hdoc *, uint8_t *, size_t, size_t);
+static size_t char_codespan(hbuf *, hdoc *, uint8_t *, size_t, size_t);
+static size_t char_escape(hbuf *, hdoc *, uint8_t *, size_t, size_t);
+static size_t char_entity(hbuf *, hdoc *, uint8_t *, size_t, size_t);
+static size_t char_langle_tag(hbuf *, hdoc *, uint8_t *, size_t, size_t);
+static size_t char_autolink_url(hbuf *, hdoc *, uint8_t *, size_t, size_t);
+static size_t char_autolink_email(hbuf *, hdoc *, uint8_t *, size_t, size_t);
+static size_t char_autolink_www(hbuf *, hdoc *, uint8_t *, size_t, size_t);
+static size_t char_link(hbuf *, hdoc *, uint8_t *, size_t, size_t);
+static size_t char_image(hbuf *, hdoc *, uint8_t *, size_t, size_t);
+static size_t char_superscript(hbuf *, hdoc *, uint8_t *, size_t, size_t);
+static size_t char_math(hbuf *, hdoc *, uint8_t *, size_t, size_t);
 
 enum markdown_char_t {
 	MD_CHAR_NONE = 0,
@@ -132,10 +135,6 @@ struct hdoc {
 	int		 in_link_body;
 };
 
-/***************************
- * HELPER FUNCTIONS *
- ***************************/
-
 static hbuf *
 newbuf(hdoc *doc, int type)
 {
@@ -158,6 +157,7 @@ newbuf(hdoc *doc, int type)
 static void
 popbuf(hdoc *doc, int type)
 {
+
 	doc->work_bufs[type].size--;
 }
 
@@ -165,6 +165,7 @@ static void
 unscape_text(hbuf *ob, hbuf *src)
 {
 	size_t i = 0, org;
+
 	while (i < src->size) {
 		org = i;
 		while (i < src->size && src->data[i] != '\\')
@@ -188,32 +189,32 @@ hash_link_ref(const uint8_t *link_ref, size_t length)
 	unsigned int hash = 0;
 
 	for (i = 0; i < length; ++i)
-		hash = tolower(link_ref[i]) + (hash << 6) + (hash << 16) - hash;
+		hash = tolower(link_ref[i]) + 
+			(hash << 6) + (hash << 16) - hash;
 
 	return hash;
 }
 
 static struct link_ref *
-add_link_ref(
-	struct link_ref **references,
+add_link_ref(struct link_ref **refs, 
 	const uint8_t *name, size_t name_size)
 {
 	struct link_ref *ref = xcalloc(1, sizeof(struct link_ref));
 
 	ref->id = hash_link_ref(name, name_size);
-	ref->next = references[ref->id % REF_TABLE_SIZE];
+	ref->next = refs[ref->id % REF_TABLE_SIZE];
 
-	references[ref->id % REF_TABLE_SIZE] = ref;
+	refs[ref->id % REF_TABLE_SIZE] = ref;
 	return ref;
 }
 
 static struct link_ref *
-find_link_ref(struct link_ref **references, uint8_t *name, size_t length)
+find_link_ref(struct link_ref **refs, uint8_t *name, size_t length)
 {
 	unsigned int hash = hash_link_ref(name, length);
 	struct link_ref *ref = NULL;
 
-	ref = references[hash % REF_TABLE_SIZE];
+	ref = refs[hash % REF_TABLE_SIZE];
 
 	while (ref != NULL) {
 		if (ref->id == hash)
@@ -226,14 +227,13 @@ find_link_ref(struct link_ref **references, uint8_t *name, size_t length)
 }
 
 static void
-free_link_refs(struct link_ref **references)
+free_link_refs(struct link_ref **refs)
 {
 	size_t i;
+	struct link_ref *r, *next;
 
 	for (i = 0; i < REF_TABLE_SIZE; ++i) {
-		struct link_ref *r = references[i];
-		struct link_ref *next;
-
+		r = refs[i];
 		while (r) {
 			next = r->next;
 			hbuf_free(r->link);
@@ -245,21 +245,23 @@ free_link_refs(struct link_ref **references)
 }
 
 static struct footnote_ref *
-create_footnote_ref(struct footnote_list *list, const uint8_t *name, size_t name_size)
+create_footnote_ref(struct footnote_list *list, 
+	const uint8_t *name, size_t name_size)
 {
-	struct footnote_ref *ref = xcalloc(1, sizeof(struct footnote_ref));
+	struct footnote_ref *ref;
 
+	ref = xcalloc(1, sizeof(struct footnote_ref));
 	ref->id = hash_link_ref(name, name_size);
 
 	return ref;
 }
 
-static int
+static void
 add_footnote_ref(struct footnote_list *list, struct footnote_ref *ref)
 {
-	struct footnote_item *item = xcalloc(1, sizeof(struct footnote_item));
-	if (!item)
-		return 0;
+	struct footnote_item *item;
+
+	item = xcalloc(1, sizeof(struct footnote_item));
 	item->ref = ref;
 
 	if (list->head == NULL) {
@@ -269,8 +271,6 @@ add_footnote_ref(struct footnote_list *list, struct footnote_ref *ref)
 		list->tail = item;
 	}
 	list->count++;
-
-	return 1;
 }
 
 static struct footnote_ref *
@@ -293,6 +293,7 @@ find_footnote_ref(struct footnote_list *list, uint8_t *name, size_t length)
 static void
 free_footnote_ref(struct footnote_ref *ref)
 {
+
 	hbuf_free(ref->contents);
 	free(ref);
 }
@@ -315,18 +316,17 @@ free_footnote_list(struct footnote_list *list, int free_refs)
 
 /*
  * Check whether a char is a Markdown spacing char.
-
- * Right now we only consider spaces the actual
- * space and a newline: tabs and carriage returns
- * are filtered out during the preprocessing phase.
- *
- * If we wanted to actually be UTF-8 compliant, we
- * should instead extract an Unicode codepoint from
- * this character and check for space properties.
+ * Right now we only consider spaces the actual space and a newline:
+ * tabs and carriage returns are filtered out during the preprocessing
+ * phase.
+ * If we wanted to actually be UTF-8 compliant, we should instead
+ * extract an Unicode codepoint from this character and check for space
+ * properties.
  */
 static int
-_isspace(int c)
+xisspace(int c)
 {
+
 	return c == ' ' || c == '\n';
 }
 
@@ -335,7 +335,7 @@ static int
 is_empty_all(const uint8_t *data, size_t size)
 {
 	size_t i = 0;
-	while (i < size && _isspace(data[i])) i++;
+	while (i < size && xisspace(data[i])) i++;
 	return i == size;
 }
 
@@ -609,7 +609,7 @@ find_emph_char(uint8_t *data, size_t size, uint8_t c)
 			}
 
 			i++;
-			while (i < size && _isspace(data[i]))
+			while (i < size && xisspace(data[i]))
 				i++;
 
 			if (i >= size)
@@ -663,7 +663,7 @@ parse_emph1(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 		i += len;
 		if (i >= size) return 0;
 
-		if (data[i] == c && !_isspace(data[i - 1])) {
+		if (data[i] == c && !xisspace(data[i - 1])) {
 
 			if (doc->ext_flags & HDOC_EXT_NO_INTRA_EMPHASIS) {
 				if (i + 1 < size && isalnum(data[i + 1]))
@@ -699,7 +699,7 @@ parse_emph2(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 		if (!len) return 0;
 		i += len;
 
-		if (i + 1 < size && data[i] == c && data[i + 1] == c && i && !_isspace(data[i - 1])) {
+		if (i + 1 < size && data[i] == c && data[i + 1] == c && i && !xisspace(data[i - 1])) {
 			work = newbuf(doc, BUFFER_SPAN);
 			parse_inline(work, doc, data, i);
 
@@ -732,7 +732,7 @@ parse_emph3(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 		i += len;
 
 		/* skip spacing preceded symbols */
-		if (data[i] != c || _isspace(data[i - 1]))
+		if (data[i] != c || xisspace(data[i - 1]))
 			continue;
 
 		if (i + 2 < size && data[i + 1] == c && data[i + 2] == c && doc->md.triple_emphasis) {
@@ -810,28 +810,28 @@ char_emphasis(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 	size_t ret;
 
 	if (doc->ext_flags & HDOC_EXT_NO_INTRA_EMPHASIS) {
-		if (offset > 0 && !_isspace(data[-1]) && data[-1] != '>' && data[-1] != '(')
+		if (offset > 0 && !xisspace(data[-1]) && data[-1] != '>' && data[-1] != '(')
 			return 0;
 	}
 
 	if (size > 2 && data[1] != c) {
 		/* spacing cannot follow an opening emphasis;
 		 * strikethrough and highlight only takes two characters '~~' */
-		if (c == '~' || c == '=' || _isspace(data[1]) || (ret = parse_emph1(ob, doc, data + 1, size - 1, c)) == 0)
+		if (c == '~' || c == '=' || xisspace(data[1]) || (ret = parse_emph1(ob, doc, data + 1, size - 1, c)) == 0)
 			return 0;
 
 		return ret + 1;
 	}
 
 	if (size > 3 && data[1] == c && data[2] != c) {
-		if (_isspace(data[2]) || (ret = parse_emph2(ob, doc, data + 2, size - 2, c)) == 0)
+		if (xisspace(data[2]) || (ret = parse_emph2(ob, doc, data + 2, size - 2, c)) == 0)
 			return 0;
 
 		return ret + 2;
 	}
 
 	if (size > 4 && data[1] == c && data[2] == c && data[3] != c) {
-		if (c == '~' || c == '=' || _isspace(data[3]) || (ret = parse_emph3(ob, doc, data + 3, size - 3, c)) == 0)
+		if (c == '~' || c == '=' || xisspace(data[3]) || (ret = parse_emph3(ob, doc, data + 3, size - 3, c)) == 0)
 			return 0;
 
 		return ret + 3;
@@ -1198,8 +1198,7 @@ char_link(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 
 		/* mark footnote used */
 		if (fr && !fr->is_used) {
-			if(!add_footnote_ref(&doc->footnotes_used, fr))
-				goto cleanup;
+			add_footnote_ref(&doc->footnotes_used, fr);
 			fr->is_used = 1;
 			fr->num = doc->footnotes_used.count;
 
@@ -1213,7 +1212,7 @@ char_link(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 
 	/* skip any amount of spacing */
 	/* (this is much more laxist than original markdown syntax) */
-	while (i < size && _isspace(data[i]))
+	while (i < size && xisspace(data[i]))
 		i++;
 
 	/* inline style link */
@@ -1223,7 +1222,7 @@ char_link(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 		/* skipping initial spacing */
 		i++;
 
-		while (i < size && _isspace(data[i]))
+		while (i < size && xisspace(data[i]))
 			i++;
 
 		link_b = i;
@@ -1242,7 +1241,7 @@ char_link(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 				if (nb_p == 0) break;
 				else nb_p--; 
 				i++;
-			} else if (i >= 1 && _isspace(data[i-1]) && (data[i] == '\'' || data[i] == '"')) break;
+			} else if (i >= 1 && xisspace(data[i-1]) && (data[i] == '\'' || data[i] == '"')) break;
 			else i++;
 		}
 
@@ -1267,7 +1266,7 @@ char_link(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 
 			/* skipping spacing after title */
 			title_e = i - 1;
-			while (title_e > title_b && _isspace(data[title_e]))
+			while (title_e > title_b && xisspace(data[title_e]))
 				title_e--;
 
 			/* checking for closing quote presence */
@@ -1278,7 +1277,7 @@ char_link(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 		}
 
 		/* remove spacing at the end of the link */
-		while (link_e > link_b && _isspace(data[link_e - 1]))
+		while (link_e > link_b && xisspace(data[link_e - 1]))
 			link_e--;
 
 		/* remove optional angle brackets around the link */
@@ -1403,7 +1402,7 @@ char_superscript(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 	} else {
 		sup_start = sup_len = 1;
 
-		while (sup_len < size && !_isspace(data[sup_len]))
+		while (sup_len < size && !xisspace(data[sup_len]))
 			sup_len++;
 	}
 
@@ -1524,12 +1523,12 @@ parse_codefence(uint8_t *data, size_t size, hbuf *lang, size_t *width, uint8_t *
 	if (i == 0)
 		return 0;
 
-	while (i < size && _isspace(data[i]))
+	while (i < size && xisspace(data[i]))
 		i++;
 
 	lang_start = i;
 
-	while (i < size && !_isspace(data[i]))
+	while (i < size && !xisspace(data[i]))
 		i++;
 
 	lang->data = data + lang_start;
@@ -2363,7 +2362,7 @@ parse_table_row(
 
 		cell_work = newbuf(doc, BUFFER_SPAN);
 
-		while (i < size && _isspace(data[i]))
+		while (i < size && xisspace(data[i]))
 			i++;
 
 		cell_start = i;
@@ -2381,7 +2380,7 @@ parse_table_row(
 
 		cell_end = i - 1;
 
-		while (cell_end > cell_start && _isspace(data[cell_end]))
+		while (cell_end > cell_start && xisspace(data[cell_end]))
 			cell_end--;
 
 		parse_inline(cell_work, doc, data + cell_start, 1 + cell_end - cell_start);
@@ -2423,7 +2422,7 @@ parse_table_header(
 
 	header_end = i;
 
-	while (header_end > 0 && _isspace(data[header_end - 1]))
+	while (header_end > 0 && xisspace(data[header_end - 1]))
 		header_end--;
 
 	if (data[0] == '|')
@@ -2724,11 +2723,7 @@ is_footnote(const uint8_t *data, size_t beg, size_t end, size_t *last, struct fo
 			hbuf_free(contents);
 			return 0;
 		}
-		if (!add_footnote_ref(list, ref)) {
-			free_footnote_ref(ref);
-			hbuf_free(contents);
-			return 0;
-		}
+		add_footnote_ref(list, ref);
 		ref->contents = contents;
 	} else 
 		hbuf_free(contents);
