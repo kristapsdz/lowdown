@@ -482,7 +482,7 @@ last_newline(const hdoc *doc, const uint8_t *data)
 	assert(data >= doc->start);
 
 	if (doc->start == data)
-		return(0);
+		return(1);
 
 	return('\n' == doc->start[data - doc->start - 1]);
 }
