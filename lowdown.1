@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate: December 23 2016 $
+.Dd $Mdocdate: December 27 2016 $
 .Dt LOWDOWN 1
 .Os
 .Sh NAME
@@ -102,6 +102,11 @@ to format as a PS file:
 .Pp
 .Dl lowdown -s -T nroff foo.md | groff -t -ms > foo.ps
 .Pp
+Note the
+.Fl t :
+since
+.Nm
+may emit tables, you'll need it.
 Alternatively, using only
 .Xr mandoc 1 :
 .Pp
