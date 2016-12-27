@@ -20,37 +20,32 @@
 #include <assert.h>
 #include <ctype.h>
 #include <stdint.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "extern.h"
 
-#define REF_TABLE_SIZE 8
-
-#define BUFFER_BLOCK 0
-#define BUFFER_SPAN 1
-
-#define HOEDOWN_LI_END 8	/* internal list flag */
+#define REF_TABLE_SIZE	8
+#define BUFFER_BLOCK	0
+#define BUFFER_SPAN	1
+#define HOEDOWN_LI_END	8 /* internal list flag */
 
 /* link_ref: reference to a link */
 struct link_ref {
-	unsigned int id;
-
-	hbuf *link;
-	hbuf *title;
-
-	struct link_ref *next;
+	unsigned int	 id;
+	hbuf		*link;
+	hbuf		*title;
+	struct link_ref	*next;
 };
 
 /* footnote_ref: reference to a footnote */
 struct footnote_ref {
-	unsigned int id;
-
-	int is_used;
-	unsigned int num;
-
-	hbuf *contents;
+	unsigned int	 id;
+	int		 is_used;
+	unsigned int	 num;
+	hbuf		*contents;
 };
 
 /* footnote_item: an item in a footnote_list */
@@ -70,8 +65,7 @@ struct footnote_list {
 /*   returns the number of chars taken care of */
 /*   data is the pointer of the beginning of the span */
 /*   offset is the number of valid chars before data */
-typedef size_t
-(*char_trigger)(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size);
+typedef size_t (*char_trigger)(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size);
 
 static size_t char_emphasis(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size);
 static size_t char_quote(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size);
@@ -125,17 +119,17 @@ static char_trigger markdown_char_ptrs[] = {
 };
 
 struct hdoc {
-	hrend md;
-	void *data;
-
-	struct link_ref *refs[REF_TABLE_SIZE];
+	hrend		 md;
+	void		*data;
+	const uint8_t	*start;
+	struct link_ref	*refs[REF_TABLE_SIZE];
 	struct footnote_list footnotes_found;
 	struct footnote_list footnotes_used;
-	uint8_t active_char[256];
-	hstack work_bufs[2];
-	hdoc_ext ext_flags;
-	size_t max_nesting;
-	int in_link_body;
+	uint8_t		 active_char[256];
+	hstack		 work_bufs[2];
+	hdoc_ext	 ext_flags;
+	size_t		 max_nesting;
+	int		 in_link_body;
 };
 
 /***************************
@@ -479,36 +473,64 @@ tag_length(uint8_t *data, size_t size, halink_type *autolink)
 	return i + 1;
 }
 
-/* parse_inline • parses inline markdown elements */
+/*
+ * Detect whether this input byte (at "data") follows a newline.
+ */
+static int
+last_newline(const hdoc *doc, const uint8_t *data)
+{
+	assert(data >= doc->start);
+
+	if (doc->start == data)
+		return(0);
+
+	return('\n' == doc->start[data - doc->start - 1]);
+}
+
+/* 
+ * Parses inline markdown elements. 
+ * This function is important because it handles "raw" input that we
+ * pass directly to the output formatter.
+ * It subsequently needs escaping according to the output formatter.
+ */
 static void
 parse_inline(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 {
-	size_t i = 0, end = 0, consumed = 0;
-	hbuf work = { NULL, 0, 0, 0, 0 };
-	uint8_t *active_char = doc->active_char;
+	size_t	 i = 0, end = 0, consumed = 0;
+	hbuf	 work;
+	int	 nl;
+	uint8_t	*active_char = doc->active_char;
+
+	memset(&work, 0, sizeof(hbuf));
 
 	if (doc->work_bufs[BUFFER_SPAN].size +
-		doc->work_bufs[BUFFER_BLOCK].size > doc->max_nesting)
+	    doc->work_bufs[BUFFER_BLOCK].size > doc->max_nesting)
 		return;
 
 	while (i < size) {
-		/* copying inactive chars into the output */
+		/* Copying inactive chars into the output. */
+
 		while (end < size && active_char[data[end]] == 0)
 			end++;
 
 		if (doc->md.normal_text) {
+			nl = last_newline(doc, data + i);
 			work.data = data + i;
 			work.size = end - i;
-			doc->md.normal_text(ob, &work, doc->data);
-		}
-		else
+			doc->md.normal_text(ob, &work, doc->data, nl);
+		} else
 			hbuf_put(ob, data + i, end - i);
 
-		if (end >= size) break;
+		if (end >= size) 
+			break;
 		i = end;
 
-		end = markdown_char_ptrs[ (int)active_char[data[end]] ](ob, doc, data + i, i - consumed, size - i);
-		if (!end) /* no action from the callback */
+		end = markdown_char_ptrs[(int)active_char[data[end]]]
+			(ob, doc, data + i, i - consumed, size - i);
+
+		/* Check if no action from the callback. */
+
+		if (!end) 
 			end = i + 1;
 		else {
 			i += end;
@@ -926,38 +948,52 @@ char_quote(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 }
 
 
-/* char_escape • '\\' backslash escape */
+/* 
+ * '\\' backslash escape 
+ */
 static size_t
-char_escape(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
+char_escape(hbuf *ob, hdoc *doc, 
+	uint8_t *data, size_t offset, size_t size)
 {
-	static const char *escape_chars = "\\`*_{}[]()#+-.!:|&<>^~=\"$";
-	hbuf work = { NULL, 0, 0, 0, 0 };
-	size_t w;
+	static const char *escape_chars = 
+		"\\`*_{}[]()#+-.!:|&<>^~=\"$";
+	hbuf		 work;
+	size_t		 w;
+	const char	*end;
+	int		 nl;
+
+	memset(&work, 0, sizeof(hbuf));
 
 	if (size > 1) {
-		if (data[1] == '\\' && (doc->ext_flags & HDOC_EXT_MATH) &&
-			size > 2 && (data[2] == '(' || data[2] == '[')) {
-			const char *end = (data[2] == '[') ? "\\\\]" : "\\\\)";
-			w = parse_math(ob, doc, data, offset, size, end, 3, data[2] == '[');
-			if (w) return w;
+		if (data[1] == '\\' && 
+		    (doc->ext_flags & HDOC_EXT_MATH) &&
+		    size > 2 && 
+		    (data[2] == '(' || data[2] == '[')) {
+			end = (data[2] == '[') ? "\\\\]" : "\\\\)";
+			w = parse_math(ob, doc, data, offset, 
+				size, end, 3, data[2] == '[');
+			if (w) 
+				return w;
 		}
 
 		if (strchr(escape_chars, data[1]) == NULL)
 			return 0;
-
+		
 		if (doc->md.normal_text) {
+			nl = last_newline(doc, data + 1);
 			work.data = data + 1;
 			work.size = 1;
-			doc->md.normal_text(ob, &work, doc->data);
-		}
-		else hbuf_putc(ob, data[1]);
+			doc->md.normal_text(ob, &work, doc->data, nl);
+		} else 
+			hbuf_putc(ob, data[1]);
 	} else if (size == 1) {
 		if (doc->md.normal_text) {
+			nl = last_newline(doc, data);
 			work.data = data;
 			work.size = 1;
-			doc->md.normal_text(ob, &work, doc->data);
-		}
-		else hbuf_putc(ob, data[0]);
+			doc->md.normal_text(ob, &work, doc->data, nl);
+		} else 
+			hbuf_putc(ob, data[0]);
 	}
 
 	return 2;
@@ -1022,17 +1058,20 @@ char_langle_tag(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 }
 
 static size_t
-char_autolink_www(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
+char_autolink_www(hbuf *ob, hdoc *doc, 
+	uint8_t *data, size_t offset, size_t size)
 {
-	hbuf *link, *link_url, *link_text;
-	size_t link_len, rewind;
+	hbuf	*link, *link_url, *link_text;
+	size_t	 link_len, rewind;
 
-	if (!doc->md.link || doc->in_link_body)
+	if (NULL == doc->md.link || doc->in_link_body)
 		return 0;
 
 	link = newbuf(doc, BUFFER_SPAN);
+	link_len = halink_www(&rewind, link, data, 
+		offset, size, HALINK_SHORT_DOMAINS);
 
-	if ((link_len = halink_www(&rewind, link, data, offset, size, HALINK_SHORT_DOMAINS)) > 0) {
+	if (link_len > 0) {
 		link_url = newbuf(doc, BUFFER_SPAN);
 		HBUF_PUTSL(link_url, "http://");
 		hbuf_put(link_url, link->data, link->size);
@@ -1044,12 +1083,14 @@ char_autolink_www(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size
 
 		if (doc->md.normal_text) {
 			link_text = newbuf(doc, BUFFER_SPAN);
-			doc->md.normal_text(link_text, link, doc->data);
-			doc->md.link(ob, link_text, link_url, NULL, doc->data);
+			doc->md.normal_text
+				(link_text, link, doc->data, 0);
+			doc->md.link(ob, link_text, 
+				link_url, NULL, doc->data);
 			popbuf(doc, BUFFER_SPAN);
-		} else {
+		} else
 			doc->md.link(ob, link, link_url, NULL, doc->data);
-		}
+
 		popbuf(doc, BUFFER_SPAN);
 	}
 
@@ -2877,10 +2918,8 @@ void
 hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
 {
 	static const uint8_t UTF8_BOM[] = {0xEF, 0xBB, 0xBF};
-
 	hbuf *text;
 	size_t beg, end;
-
 	int footnotes_enabled;
 
 	text = hbuf_new(64);
@@ -2937,6 +2976,8 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
 	/* second pass: actual rendering */
 	if (doc->md.doc_header)
 		doc->md.doc_header(ob, 0, doc->data);
+
+	doc->start = text->data;
 
 	if (text->size) {
 		/* adding a final newline if not already present */
