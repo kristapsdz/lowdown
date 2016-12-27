@@ -9,7 +9,12 @@ XSLT, Python, or even Perl -- it's just clean, [open
 source](http://opensource.org/licenses/ISC) C code.  Its canonical
 documentation is the [lowdown(1)](lowdown.1.html) manpage.
 
-I wrote *lowdown* to provide a secure Markdown formatter on
+I wrote *lowdown* to provide a secure (using 
+[pledge(2)](http://man.openbsd.org/pledge),
+[capsicum(4)](https://www.freebsd.org/cgi/man.cgi?query=capsicum&sektion=4),
+or
+[sandbox\_init(3)](https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man3/sandbox_init.3.html))
+Markdown formatter on
 [OpenBSD](http://www.openbsd.org), compiling into both HTML and PDF (the
 latter via [mandoc(1)](http://man.openbsd.org/mandoc) or groff from
 ports).  In the former case, I usually use it with
@@ -68,3 +73,65 @@ following Markdown features:
 The only additional non-canonical Markdown feature is wrapping the
 initial paragraph of XHTML output in an `<aside>` block.  This is for
 integration with [sblg(1)](https://kristaps.bsd.lv/sblg).
+
+## Example usage
+
+I usually use **lowdown** when writing
+[sblg(1)](https://kristaps.bsd.lv/sblg) articles when I'm too lazy to
+write in proper HTML5.
+(For those not in the know, [sblg(1)](https://kristaps.bsd.lv/sblg) is a
+simple tool for knitting together blog articles into a blog feed.)
+This basically means wrapping the output of **lowdown** in the elements
+indicating a blog article.
+I do this in my Makefiles:
+
+```Makefile
+.md.xml:
+	( echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" ; \
+	  echo "<article data-sblg-article=\"1\">" ; \
+	  lowdown $< ; \
+	  echo "</article>" ; ) >$@
+```
+
+If you just want a straight-up HTML5 file, use standalone mode:
+
+```sh
+lowdown -s -o README.html README.md
+```
+
+Using the nroff output mode works well when making PS or PDF files,
+although it will omit graphics and equations.
+(There is a possibility to later add support for PIC, but even then, it
+will only support specific types of graphics.)
+
+```sh
+lowdown -s -Tnroff README.md | groff -t -ms > README.ps
+```
+
+On OpenBSD or other BSD systems, you can run **lowdown** within the base
+system to produce PDF or PS files via [mandoc](http://mdocml.bsd.lv):
+
+```sh
+lowdown -s -Tman README.md | mandoc -Tpdf > README.pdf
+```
+
+Read [lowdown(1)](lowdown.1.html) for details on running the system.
+
+## Testing
+
+The canonical Markdown test, such as found in the original
+[hoedown](https://github.com/hoedown/hoedown) sources, will not
+currently work with **lowdown** because of it automatically runs
+"smartypants" and several extension modes.
+
+I've extensively run [AFL](http://lcamtuf.coredump.cx/afl/) against the
+compiled sources, however, with no failures --- definitely a credit to
+the [hoedown](https://github.com/hoedown/hoedown) authors (and those
+from who they forked their own sources).
+
+I'll also regularly run the system through
+[valgrind](http://valgrind.org/), also without issue.
+
+**lowdown** has a [Coverity](https://scan.coverity.com/projects/lowdown)
+registration for static analysis.
+
