@@ -330,12 +330,17 @@ xisspace(int c)
 	return c == ' ' || c == '\n';
 }
 
-/* is_empty_all: verify that all the data is spacing */
+/* 
+ * Verify that all the data is spacing.
+ */
 static int
 is_empty_all(const uint8_t *data, size_t size)
 {
 	size_t i = 0;
-	while (i < size && xisspace(data[i])) i++;
+
+	while (i < size && xisspace(data[i])) 
+		i++;
+
 	return i == size;
 }
 
@@ -347,13 +352,17 @@ static void
 replace_spacing(hbuf *ob, const uint8_t *data, size_t size)
 {
 	size_t i = 0, mark;
+
 	hbuf_grow(ob, size);
+
 	while (1) {
 		mark = i;
-		while (i < size && data[i] != '\n') i++;
+		while (i < size && data[i] != '\n') 
+			i++;
 		hbuf_put(ob, data + mark, i - mark);
 
-		if (i >= size) break;
+		if (i >= size) 
+			break;
 
 		if (!(i > 0 && data[i-1] == ' '))
 			hbuf_putc(ob, ' ');
@@ -361,115 +370,131 @@ replace_spacing(hbuf *ob, const uint8_t *data, size_t size)
 	}
 }
 
-/****************************
- * INLINE PARSING FUNCTIONS *
- ****************************/
-
-/* is_mail_autolink • looks for the address part of a mail autolink and '>' */
-/* this is less strict than the original markdown e-mail address matching */
+/* 
+ * Looks for the address part of a mail autolink and '>'.
+ * This is less strict than the original markdown e-mail address matching.
+ */
 static size_t
 is_mail_autolink(uint8_t *data, size_t size)
 {
 	size_t i = 0, nb = 0;
 
-	/* address is assumed to be: [-@._a-zA-Z0-9]+ with exactly one '@' */
+	/* Assumed to be: [-@._a-zA-Z0-9]+ with exactly one '@'. */
+
 	for (i = 0; i < size; ++i) {
 		if (isalnum(data[i]))
 			continue;
 
 		switch (data[i]) {
-			case '@':
-				nb++;
-
-			case '-':
-			case '.':
-			case '_':
-				break;
-
-			case '>':
-				return (nb == 1) ? i + 1 : 0;
-
-			default:
-				return 0;
+		case '@':
+			nb++;
+		case '-':
+		case '.':
+		case '_':
+			break;
+		case '>':
+			return (nb == 1) ? i + 1 : 0;
+		default:
+			return 0;
 		}
 	}
 
 	return 0;
 }
 
-/* tag_length • returns the length of the given tag, or 0 is it's not valid */
+/* 
+ * Returns the length of the given tag, or 0 is it's not valid.
+ */
 static size_t
 tag_length(uint8_t *data, size_t size, halink_type *autolink)
 {
 	size_t i, j;
 
-	/* a valid tag can't be shorter than 3 chars */
-	if (size < 3) return 0;
+	/* A valid tag can't be shorter than 3 chars. */
 
-	if (data[0] != '<') return 0;
+	if (size < 3) 
+		return 0;
 
-        /* HTML comment, laxist form */
-        if (size > 5 && data[1] == '!' && data[2] == '-' && data[3] == '-') {
+	if (data[0] != '<') 
+		return 0;
+
+        /* HTML comment, laxist form. */
+
+        if (size > 5 && data[1] == '!' && 
+	    data[2] == '-' && data[3] == '-') {
 		i = 5;
-
-		while (i < size && !(data[i - 2] == '-' && data[i - 1] == '-' && data[i] == '>'))
+		while (i < size && !(data[i - 2] == '-' && 
+		       data[i - 1] == '-' && data[i] == '>'))
 			i++;
-
 		i++;
-
 		if (i <= size)
 			return i;
         }
 
-	/* begins with a '<' optionally followed by '/', followed by letter or number */
+	/* 
+	 * Begins with a '<' optionally followed by '/', followed by letter or
+	 * number.
+	 */
+
         i = (data[1] == '/') ? 2 : 1;
 
 	if (!isalnum(data[i]))
 		return 0;
 
-	/* scheme test */
+	/* Scheme test. */
+
 	*autolink = HALINK_NONE;
 
-	/* try to find the beginning of an URI */
-	while (i < size && (isalnum(data[i]) || data[i] == '.' || data[i] == '+' || data[i] == '-'))
+	/* Try to find the beginning of an URI. */
+
+	while (i < size && (isalnum(data[i]) || 
+	       data[i] == '.' || data[i] == '+' || data[i] == '-'))
 		i++;
 
-	if (i > 1 && data[i] == '@') {
+	if (i > 1 && data[i] == '@')
 		if ((j = is_mail_autolink(data + i, size - i)) != 0) {
 			*autolink = HALINK_EMAIL;
 			return i + j;
 		}
-	}
 
 	if (i > 2 && data[i] == ':') {
 		*autolink = HALINK_NORMAL;
 		i++;
 	}
 
-	/* completing autolink test: no spacing or ' or " */
+	/* Completing autolink test: no spacing or ' or ". */
+
 	if (i >= size)
 		*autolink = HALINK_NONE;
-
 	else if (*autolink) {
 		j = i;
-
 		while (i < size) {
-			if (data[i] == '\\') i += 2;
+			if (data[i] == '\\') 
+				i += 2;
 			else if (data[i] == '>' || data[i] == '\'' ||
-					data[i] == '"' || data[i] == ' ' || data[i] == '\n')
-					break;
-			else i++;
+				 data[i] == '"' || data[i] == ' ' || 
+				 data[i] == '\n')
+				break;
+			else 
+				i++;
 		}
 
-		if (i >= size) return 0;
-		if (i > j && data[i] == '>') return i + 1;
-		/* one of the forbidden chars has been found */
+		if (i >= size) 
+			return 0;
+		if (i > j && data[i] == '>') 
+			return i + 1;
+
+		/* One of the forbidden chars has been found. */
+
 		*autolink = HALINK_NONE;
 	}
 
-	/* looking for something looking like a tag end */
-	while (i < size && data[i] != '>') i++;
-	if (i >= size) return 0;
+	/* Looking for something looking like a tag end. */
+
+	while (i < size && data[i] != '>') 
+		i++;
+	if (i >= size) 
+		return 0;
 	return i + 1;
 }
 
@@ -479,6 +504,7 @@ tag_length(uint8_t *data, size_t size, halink_type *autolink)
 static int
 last_newline(const hdoc *doc, const uint8_t *data)
 {
+
 	assert(data >= doc->start);
 
 	if (doc->start == data)
@@ -540,71 +566,94 @@ parse_inline(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 	}
 }
 
-/* is_escaped • returns whether special char at data[loc] is escaped by '\\' */
+/* 
+ * Returns whether special char at data[loc] is escaped by '\\'.
+ */
 static int
 is_escaped(uint8_t *data, size_t loc)
 {
 	size_t i = loc;
+
 	while (i >= 1 && data[i - 1] == '\\')
 		i--;
 
-	/* odd numbers of backslashes escapes data[loc] */
+	/* Odd numbers of backslashes escapes data[loc]. */
+
 	return (loc - i) % 2;
 }
 
-/* find_emph_char • looks for the next emph uint8_t, skipping other constructs */
+/* 
+ * Looks for the next emph uint8_t, skipping other constructs.
+  */
 static size_t
 find_emph_char(uint8_t *data, size_t size, uint8_t c)
 {
 	size_t i = 0;
 
 	while (i < size) {
-		while (i < size && data[i] != c && data[i] != '[' && data[i] != '`')
+		while (i < size && data[i] != c && 
+		       data[i] != '[' && data[i] != '`')
 			i++;
 
 		if (i == size)
 			return 0;
 
-		/* not counting escaped chars */
+		/* Not counting escaped chars. */
+
 		if (is_escaped(data, i)) {
-			i++; continue;
+			i++; 
+			continue;
 		}
 
 		if (data[i] == c)
 			return i;
 
-		/* skipping a codespan */
+		/* Skipping a codespan. */
+
 		if (data[i] == '`') {
 			size_t span_nb = 0, bt;
 			size_t tmp_i = 0;
 
-			/* counting the number of opening backticks */
+			/* Counting the number of opening backticks. */
+
 			while (i < size && data[i] == '`') {
-				i++; span_nb++;
+				i++; 
+				span_nb++;
 			}
 
-			if (i >= size) return 0;
+			if (i >= size) 
+				return 0;
 
-			/* finding the matching closing sequence */
+			/* Finding the matching closing sequence. */
+
 			bt = 0;
 			while (i < size && bt < span_nb) {
-				if (!tmp_i && data[i] == c) tmp_i = i;
-				if (data[i] == '`') bt++;
-				else bt = 0;
+				if (!tmp_i && data[i] == c) 
+					tmp_i = i;
+
+				if (data[i] == '`') 
+					bt++;
+				else 
+					bt = 0;
 				i++;
 			}
 
-			/* not a well-formed codespan; use found matching emph char */
-			if (bt < span_nb && i >= size) return tmp_i;
-		}
-		/* skipping a link */
-		else if (data[i] == '[') {
+			/* 
+			 * Not a well-formed codespan; use found
+			 * matching emph char.
+			 */
+			if (bt < span_nb && i >= size) 
+				return tmp_i;
+		} else if (data[i] == '[') {
 			size_t tmp_i = 0;
 			uint8_t cc;
 
+			/* Skipping a link. */
+
 			i++;
 			while (i < size && data[i] != ']') {
-				if (!tmp_i && data[i] == c) tmp_i = i;
+				if (!tmp_i && data[i] == c) 
+					tmp_i = i;
 				i++;
 			}
 
@@ -617,11 +666,11 @@ find_emph_char(uint8_t *data, size_t size, uint8_t c)
 
 			switch (data[i]) {
 			case '[':
-				cc = ']'; break;
-
+				cc = ']'; 
+				break;
 			case '(':
-				cc = ')'; break;
-
+				cc = ')'; 
+				break;
 			default:
 				if (tmp_i)
 					return tmp_i;
@@ -631,7 +680,8 @@ find_emph_char(uint8_t *data, size_t size, uint8_t c)
 
 			i++;
 			while (i < size && data[i] != cc) {
-				if (!tmp_i && data[i] == c) tmp_i = i;
+				if (!tmp_i && data[i] == c) 
+					tmp_i = i;
 				i++;
 			}
 
@@ -645,8 +695,11 @@ find_emph_char(uint8_t *data, size_t size, uint8_t c)
 	return 0;
 }
 
-/* parse_emph1 • parsing single emphase */
-/* closed by a symbol not preceded by spacing and not followed by symbol */
+/* 
+ * Parsing single emphase.
+ * Closed by a symbol not preceded by spacing and not followed by
+ * symbol.
+ */
 static size_t
 parse_emph1(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 {
@@ -659,24 +712,27 @@ parse_emph1(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 
 	while (i < size) {
 		len = find_emph_char(data + i, size - i, c);
-		if (!len) return 0;
+		if (!len) 
+			return 0;
 		i += len;
-		if (i >= size) return 0;
+		if (i >= size) 
+			return 0;
 
 		if (data[i] == c && !xisspace(data[i - 1])) {
-
-			if (doc->ext_flags & HDOC_EXT_NO_INTRA_EMPHASIS) {
+			if (doc->ext_flags & HDOC_EXT_NO_INTRA_EMPHASIS)
 				if (i + 1 < size && isalnum(data[i + 1]))
 					continue;
-			}
 
 			work = newbuf(doc, BUFFER_SPAN);
 			parse_inline(work, doc, data, i);
 
-			if (doc->ext_flags & HDOC_EXT_UNDERLINE && c == '_')
-				r = doc->md.underline(ob, work, doc->data);
+			if (doc->ext_flags & HDOC_EXT_UNDERLINE && 
+			    c == '_')
+				r = doc->md.underline
+					(ob, work, doc->data);
 			else
-				r = doc->md.emphasis(ob, work, doc->data);
+				r = doc->md.emphasis
+					(ob, work, doc->data);
 
 			popbuf(doc, BUFFER_SPAN);
 			return r ? i + 1 : 0;
@@ -686,7 +742,9 @@ parse_emph1(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 	return 0;
 }
 
-/* parse_emph2 • parsing single emphase */
+/* 
+ * Parsing single emphase. 
+ */
 static size_t
 parse_emph2(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 {
