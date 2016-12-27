@@ -25,6 +25,7 @@ For the moment, **lowdown** output is the same as
 - autolinking
 - fenced code
 - tables
+- superscripts
 - footnotes
 - disabled inline HTML (truly an **evil** feature)
 - "smartypants" enabled
