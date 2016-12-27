@@ -33,6 +33,9 @@ it as [index.pdf](index.pdf), generated from
 example is the GitHub [README.md](README.md) generated as
 [README.html](README.html) or [README.pdf](README.pdf).
 
+To get *lowdown*, just download, unpack, verify, then run `doas make
+install` (or use `sudo`).
+
 ## Output
 
 Of course, *lowdown* supports the usual HTML output. Specifically, it
@@ -74,7 +77,7 @@ The only additional non-canonical Markdown feature is wrapping the
 initial paragraph of XHTML output in an `<aside>` block.  This is for
 integration with [sblg(1)](https://kristaps.bsd.lv/sblg).
 
-## Example usage
+## Examples
 
 I usually use **lowdown** when writing
 [sblg(1)](https://kristaps.bsd.lv/sblg) articles when I'm too lazy to
@@ -134,4 +137,3 @@ I'll also regularly run the system through
 
 **lowdown** has a [Coverity](https://scan.coverity.com/projects/lowdown)
 registration for static analysis.
-
