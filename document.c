@@ -2147,9 +2147,10 @@ parse_footnote_def(hbuf *ob, hdoc *doc, unsigned int num, uint8_t *data, size_t 
 static void
 parse_footnote_list(hbuf *ob, hdoc *doc, struct footnote_list *footnotes)
 {
-	hbuf *work = NULL;
-	struct footnote_item *item;
-	struct footnote_ref *ref;
+	hbuf			*work = NULL;
+	struct footnote_item	*item;
+	struct footnote_ref	*ref;
+	const uint8_t		*sv;
 
 	if (footnotes->count == 0)
 		return;
@@ -2159,7 +2160,11 @@ parse_footnote_list(hbuf *ob, hdoc *doc, struct footnote_list *footnotes)
 	item = footnotes->head;
 	while (item) {
 		ref = item->ref;
-		parse_footnote_def(work, doc, ref->num, ref->contents->data, ref->contents->size);
+		sv = doc->start;
+		doc->start = ref->contents->data;
+		parse_footnote_def(work, doc, ref->num, 
+			ref->contents->data, ref->contents->size);
+		doc->start = sv;
 		item = item->next;
 	}
 
@@ -2956,9 +2961,10 @@ void
 hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
 {
 	static const uint8_t UTF8_BOM[] = {0xEF, 0xBB, 0xBF};
-	hbuf *text;
-	size_t beg, end;
-	int footnotes_enabled;
+	hbuf		*text;
+	size_t		 beg, end;
+	int		 footnotes_enabled;
+	const uint8_t	*sv;
 
 	text = hbuf_new(64);
 
@@ -3022,7 +3028,10 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
 		if (text->data[text->size - 1] != '\n' &&  text->data[text->size - 1] != '\r')
 			hbuf_putc(text, '\n');
 
+		sv = doc->start;
+		doc->start = text->data;
 		parse_block(ob, doc, text->data, text->size);
+		doc->start = sv;
 	}
 
 	/* footnotes */
