@@ -40,8 +40,8 @@ The following modifications to the HTML5 output have been made:
 
 The following major feature additions have been added:
 
-- output mode for nroff (via either the *-ms* or *-man* package)
-- "smartypants" mode for the nroff output
+- output mode for troff (via either the *-ms* or *-man* package)
+- "smartypants" mode for the troff outputs
 
 It builds and runs on OpenBSD, Linux ([musl](https://www.musl-libc.org/)
 and glibc), and Mac OS X.

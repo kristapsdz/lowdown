@@ -102,13 +102,13 @@ If you just want a straight-up HTML5 file, use standalone mode:
 lowdown -s -o README.html README.md
 ```
 
-Using the nroff output mode works well when making PS or PDF files,
-although it will omit graphics and equations.
+The troff output modes work well to make PS or PDF files, although they
+will omit graphics and equations.
 (There is a possibility to later add support for PIC, but even then, it
 will only support specific types of graphics.)
 
 ```sh
-lowdown -s -Tnroff README.md | groff -t -ms > README.ps
+lowdown -s -Tms README.md | groff -t -ms > README.ps
 ```
 
 On OpenBSD or other BSD systems, you can run *lowdown* within the base
@@ -179,7 +179,7 @@ with its own regular text child, "world".
 
 Both of these subcomponents would be appended into a buffer, which would
 then be passed back into the subsection parser.  It would paste the
-buffer into `<h2>` blocks (in HTML5) or a `.SH` block (nroff).
+buffer into `<h2>` blocks (in HTML5) or a `.SH` block (troff outputs).
 
 Finally, the subsection block would be fitted into whatever context it
 was invoked within.
