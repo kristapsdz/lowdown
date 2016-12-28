@@ -8,7 +8,8 @@
 		</header>
 		<aside>
 			<p>
-				Initial public download of a stable release.
+				Initial public download of a stable
+				release.
 			</p>
 		</aside>
 	</article>
@@ -20,8 +21,11 @@
 		</header>
 		<aside>
 			<p>
-				Fix escaping of <b>-Tman</b> and <b>-Tnroff</b> output.
-				Add documentation to index page regarding hacking.
+				Fix escaping of <b>-Tman</b> and
+				<b>-Tnroff</b> output, then rename
+				<b>-Tnroff</b> to <b>-Tms</b>.  Add
+				documentation to index page regarding
+				hacking.
 			</p>
 		</aside>
 	</article>

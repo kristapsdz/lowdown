@@ -18,7 +18,7 @@ OBJS		 = autolink.o \
 BINDIR 		 = $(PREFIX)/bin
 MANDIR 		 = $(PREFIX)/man
 WWWDIR		 = /var/www/vhosts/kristaps.bsd.lv/htdocs/lowdown
-HTMLS		 = index.html lowdown.1.html README.html
+HTMLS		 = archive.html index.html lowdown.1.html README.html
 PDFS		 = index.pdf README.pdf
 MDS		 = index.md README.md
 CSSS		 = template.css mandoc.css
@@ -53,6 +53,9 @@ index.html README.html: template.xml
 
 .xml.html:
 	sblg -t template.xml -o $@ -C $< $< versions.xml
+
+archive.html: archive.xml versions.xml
+	sblg -t archive.xml -o $@ versions.xml
 
 $(HTMLS): versions.xml
 

@@ -14,6 +14,19 @@ pre, code			{ font-size: 12pt; }
 nav				{ padding: 48pt 20% 12pt 20%; 
 				  font-size: 15pt;
 				  background-color: #aaa; }
+nav#versions			{ background-color: inherit; 
+				  padding: 12pt 20% 12pt 20%;
+				  font-size: inherit; }
+nav#versions ul			{ list-style-type: none;
+				  padding: 0;
+				  margin: 0; }
+nav#versions li > div:last-child
+				{ color: #444; }
+				{ font-size: 15pt; }
+nav#versions li > div:first-child
+				{ font-size: 15pt; }
+nav#versions li > div:first-child > p:last-child
+				{ margin-bottom: 0.2em; }
 nav a				{ color: blue; }
 nav span			{ color: #444; }
 footer				{ margin: 24pt 0;
