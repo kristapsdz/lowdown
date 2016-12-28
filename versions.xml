@@ -12,4 +12,17 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.1.1</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2016-12-28">2016-12-28</time>
+		</header>
+		<aside>
+			<p>
+				Fix escaping of <b>-Tman</b> and <b>-Tnroff</b> output.
+				Add documentation to index page regarding hacking.
+			</p>
+		</aside>
+	</article>
 </articles>
