@@ -71,7 +71,7 @@ tags if in
 mode,
 .Dq .Tl
 in
-.Ar nroff
+.Ar ms
 mode, or
 .Dq .TH
 in
@@ -82,7 +82,7 @@ The output mode.
 This may be
 .Ar html
 for HTML5 output ,
-.Ar nroff
+.Ar ms
 for roff output using the classic (i.e., no-extension)
 .Fl ms
 package and needing table support, or
@@ -96,7 +96,7 @@ For best results, use the
 .Fl T Ar html
 output, as it includes graphics and equations.
 The
-.Ar nroff
+.Ar ms
 and
 .Ar man
 modes will elide graphics and equations.
@@ -110,7 +110,7 @@ To do the same but using
 .Xr groff 1
 to format as a PS file:
 .Pp
-.Dl lowdown -s -T nroff foo.md | groff -t -ms > foo.ps
+.Dl lowdown -s -T ms foo.md | groff -t -ms > foo.ps
 .Pp
 Note the
 .Fl t :
@@ -126,7 +126,7 @@ If your document uses UTF-8 without the byte-order mark, you may need to
 specifically set the encoding in either formatter:
 .Pp
 .Dl lowdown -s -T man foo.md | mandoc -Tps -K utf-8 > foo.ps
-.Dl lowdown -s -T nroff foo.md | groff -k -D utf8 -t -ms > foo.ps
+.Dl lowdown -s -T ms foo.md | groff -k -D utf8 -t -ms > foo.ps
 .Sh EXIT STATUS
 .Ex -std
 .Sh STANDARDS
