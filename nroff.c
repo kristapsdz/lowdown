@@ -220,7 +220,9 @@ static int
 rndr_linebreak(hbuf *ob, void *data)
 {
 
-	HBUF_PUTSL(ob, ".br\n");
+	/* FIXME: should this always have a newline? */
+
+	HBUF_PUTSL(ob, "\n.br\n");
 	return 1;
 }
 
