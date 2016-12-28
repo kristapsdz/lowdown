@@ -13,7 +13,8 @@
 			<span>lowdown</span>
 			<nav class="cur" data-sblg-nav="1" data-sblg-navsz="1" data-sblg-navcontent="1" data-sblg-navtag="version">${sblg-title}</nav>:
 			<a href="https://github.com/kristapsdz/lowdown">GitHub</a>,
-			<a href="#">Download</a>
+			<a href="snapshots/lowdown.tar.gz">Download</a>,
+			<a href="snapshots">Archive</a>
 		</nav>
 		<article data-sblg-article="1" data-sblg-permlink="0"></article>
 		<footer>
