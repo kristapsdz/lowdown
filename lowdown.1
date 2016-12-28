@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate: December 27 2016 $
+.Dd $Mdocdate: December 28 2016 $
 .Dt LOWDOWN 1
 .Os
 .Sh NAME
@@ -33,7 +33,9 @@ The
 utility translates from markdown into HTML5 in XML mode (the default) or
 roff using the
 .Fl ms
-macro package.
+or
+.Fl man
+macro packages.
 If not given a
 .Ar file ,
 or if
@@ -85,7 +87,7 @@ for roff output using the classic (i.e., no-extension)
 .Fl ms
 package and needing table support, or
 .Ar man
-for roff ouput using the classical
+for roff ouput using the classic
 .Fl man
 package.
 .El
@@ -119,20 +121,29 @@ Alternatively, using only
 .Xr mandoc 1 :
 .Pp
 .Dl lowdown -s -T man foo.md | mandoc -Tps > foo.ps
+.Pp
+If your document uses UTF-8 without the byte-order mark, you may need to
+specifically set the encoding in either formatter:
+.Pp
+.Dl lowdown -s -T man foo.md | mandoc -Tps -K utf-8 > foo.ps
+.Dl lowdown -s -T nroff foo.md | groff -k -D utf8 -t -ms > foo.ps
 .Sh EXIT STATUS
 .Ex -std
 .Sh STANDARDS
-Not exactly a standard, but
 .Nm
 implements the
-.Lk Markdown http://daringfireball.net/projects/markdown/syntax
+.Lk http://daringfireball.net/projects/markdown/syntax Markdown 
 specification.
-It deviates from the specification in stripping inline HTML and that the
-first paragraph is contained within an <aside> element.
-It augments the specification in adding support for autolinking, fenced
+.Pp
+It extends the specification in adding support for autolinking, fenced
 code, tables, footnotes, superscripts (hoedown format), disabled inline
 HTML, and
 .Dq smartypants .
+.Pp
+It deviates from the specification in stripping inline HTML and that the
+first HTML output paragraph is contained within an
+.Li <aside>
+element.
 .Sh AUTHORS
 The
 .Nm
