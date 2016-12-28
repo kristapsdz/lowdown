@@ -31,6 +31,7 @@ example is the GitHub [README.md](README.md) generated as
 
 To get *lowdown*, just download, unpack, verify, then run `doas make
 install` (or use `sudo`).
+*lowdown* is a [BSD.lv](https://bsd.lv) project.
 
 ## Output
 
