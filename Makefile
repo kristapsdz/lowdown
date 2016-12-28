@@ -1,6 +1,6 @@
 .SUFFIXES: .xml .md .html .pdf
 
-VERSION		 = 0.1.0
+VERSION		 = 0.1.1
 PREFIX		?= /usr/local
 CFLAGS 		+= -g -W -Wall -Wstrict-prototypes -Wno-unused-parameter -Wwrite-strings
 OBJS		 = autolink.o \
