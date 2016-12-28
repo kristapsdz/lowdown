@@ -8,30 +8,32 @@ troff](http://heirloom.sourceforge.net/doctools.html), or even
 XSLT, Python, or even Perl -- it's just clean, secure, [open
 source](http://opensource.org/licenses/ISC) C code with no dependencies.
 Its canonical documentation is the [lowdown(1)](lowdown.1.html) manpage.
-So I guess it's not like most other Markdown translators.
 
 *lowdown* started as a fork of
-*[hoedown](https://github.com/hoedown/hoedown)* to add sandboxing (using
-[pledge(2)](http://man.openbsd.org/pledge),
+*[hoedown](https://github.com/hoedown/hoedown)* to add sandboxing
+([pledge(2)](http://man.openbsd.org/pledge),
 [capsicum(4)](https://www.freebsd.org/cgi/man.cgi?query=capsicum&sektion=4),
 or
-[sandbox\_init(3)](https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man3/sandbox_init.3.html)),
-and *troff* output.
-This ballooned into a larger task (as described on the [GitHub
-page](https://github.com/kristapsdz/lowdown)) due to the high amounts of cruft
-in the code.
+[sandbox\_init(3)](https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man3/sandbox_init.3.html))
+and *troff* output to securely generate PDFs on
+[OpenBSD](http://www.openbsd.org) with just
+[mandoc(1)](http://man.openbsd.org/mandoc).  This ballooned into a
+larger task (as described on the [GitHub
+page](https://github.com/kristapsdz/lowdown)) due to the high amounts of
+cruft in the code.
 
 Want an example?  For starters: this page, [index.md](index.md).  The
-Markdown input is translated into XML using *lowdown*, then further into
+Markdown input is rendered into XML using *lowdown*, then further into
 HTML5 using [sblg(1)](https://kristaps.bsd.lv/sblg).  You can also see
 it as [index.pdf](index.pdf), generated from
 [groff(1)](https://www.gnu.org/s/groff/) in **-ms** mode.  Another
-example is the GitHub [README.md](README.md) generated as
+example is the GitHub [README.md](README.md) rendered as
 [README.html](README.html) or [README.pdf](README.pdf).
 
-To get *lowdown*, just download, unpack, verify, then run `doas make
-install` (or use `sudo`).
-*lowdown* is a [BSD.lv](https://bsd.lv) project.
+To get *lowdown*, just [download](snapshots/lowdown.tar.gz),
+[verify](snapshots/lowdown.tar.gz.sha512), unpack, then run `doas make
+install` (or use `sudo`).  *lowdown* is a [BSD.lv](https://bsd.lv)
+project.
 
 ## Output
 
@@ -122,40 +124,39 @@ Read [lowdown(1)](lowdown.1.html) for details on running the system.
 
 The canonical Markdown test, such as found in the original
 [hoedown](https://github.com/hoedown/hoedown) sources, will not
-currently work with *lowdown* because of it automatically runs
-"smartypants" and several extension modes.
+currently work with *lowdown* because of the mandatory "smartypants" and
+other extensions.
 
 I've extensively run [AFL](http://lcamtuf.coredump.cx/afl/) against the
-compiled sources, however, with no failures --- definitely a credit to
+compiled sources with no failures --- definitely a credit to
 the [hoedown](https://github.com/hoedown/hoedown) authors (and those
-from who they forked their own sources).
-
-I'll also regularly run the system through
-[valgrind](http://valgrind.org/), also without issue.
+from who they forked their own sources).  I'll also regularly run the system
+through [valgrind](http://valgrind.org/), also without issue.
 
 *lowdown* has a [Coverity](https://scan.coverity.com/projects/lowdown)
 registration for static analysis.
 
 ## Hacking
 
-Want to hack on *lowdown*?  Of course you do.  It's not too difficult
---- don't worry.
+Want to hack on *lowdown*?  Of course you do.  (Or maybe you should
+focus on better PS and PDF output for
+[mandoc(1)](http://mdocml.bsd.lv).)
 
 First, start in
 [main.c](https://github.com/kristapsdz/lowdown/blob/master/main.c).
 Both the renderer (which renders the parsed document contents in the
 output format) and the document (which invokes the renderer as it parses
-the document) are initialised.
-
-There are two renderers supported:
+the document) are initialised.  There are two renderers supported:
 [html.c](https://github.com/kristapsdz/lowdown/blob/master/html.c) for
 HTML5 output and
 [nroff.c](https://github.com/kristapsdz/lowdown/blob/master/nroff.c) for
 **-ms** and **-man** output.
+Input and output buffers are defined in
+[buffer.c](https://github.com/kristapsdz/lowdown/blob/master/buffer.c).
 
 The parse is then started in
 [document.c](https://github.com/kristapsdz/lowdown/blob/master/document.c).
-This is the cruddiest part of the existing code, although I've made some
+This is the cruddiest part of the imported code, although I've made some
 efforts to clean it up whenever I touch it.  *lowdown* parses
 recursively, building the output document bottom-up.  It looks something
 like this:
@@ -185,8 +186,9 @@ was invoked within.
 
 The only time that "real text" is passed directly from the input buffer
 into the output renderer is when then `normal_text` callback is invoked,
-blockcode or codespan, raw HTML, or hyperlink components.  (In both
-renderers, you can see how the input is properly escaped.)
+blockcode or codespan, raw HTML, or hyperlink components.  In both
+renderers, you can see how the input is properly escaped by passing into
+[escape.c](https://github.com/kristapsdz/lowdown/blob/master/escape.c).
 
 After being fully parsed into an output buffer, the output buffer is
-passed into a "smartypants" file, one for each renderer type.
+passed into a "smartypants" rendering, one for each renderer type.
