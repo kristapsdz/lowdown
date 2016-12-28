@@ -10,7 +10,7 @@ article[data-sblg-article]	{ width: 60%;
 				  margin-left: auto;
 				  margin-right: auto; }
 aside				{ font-size: 16pt; }
-code				{ font-size: 12pt; }
+pre, code			{ font-size: 12pt; }
 nav				{ padding: 48pt 20% 12pt 20%; 
 				  font-size: 15pt;
 				  background-color: #aaa; }
