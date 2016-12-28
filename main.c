@@ -178,7 +178,7 @@ main(int argc, char *argv[])
 	while (-1 != (c = getopt(argc, argv, "st:T:o:")))
 		switch (c) {
 		case ('T'):
-			if (0 == strcasecmp(optarg, "nroff"))
+			if (0 == strcasecmp(optarg, "ms"))
 				outm = OUT_NROFF;
 			else if (0 == strcasecmp(optarg, "html"))
 				outm = OUT_HTML;
