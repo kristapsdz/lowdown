@@ -1,8 +1,5 @@
 /*	$Id$ */
 /*
- * Copyright (c) 2008, Natacha Porté
- * Copyright (c) 2011, Vicent Martí
- * Copyright (c) 2014, Xavier Mendez, Devin Torres and the Hoedown authors
  * Copyright (c) 2016, Kristaps Dzonsons
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -35,17 +32,7 @@
 #include <unistd.h>
 #include <time.h>
 
-#include "extern.h"
-
-#define DEF_IUNIT 1024
-#define DEF_OUNIT 64
-#define DEF_MAX_NESTING 16
-
-enum	out {
-	OUT_HTML,
-	OUT_MAN,
-	OUT_NROFF
-};
+#include "lowdown.h"
 
 /*
  * Start with all of the sandboxes.
@@ -150,15 +137,18 @@ main(int argc, char *argv[])
 	FILE		*fin = stdin, *fout = stdout;
 	const char	*fnin = "<stdin>", *fnout = NULL,
 	      		*title = NULL;
-	hbuf	 	*ib, *ob, *spb;
-	hrend 		*renderer = NULL;
-	hdoc 		*document;
+	struct lowdown_opts opts;
 	const char	*pname;
 	int		 c, standalone = 0;
-	enum out	 outm = OUT_HTML;
 	struct tm	*tm;
 	char		 buf[32];
+	unsigned char	*ret = NULL;
+	size_t		 retsz = 0;
 	time_t		 t = time(NULL);
+
+	memset(&opts, 0, sizeof(struct lowdown_opts));
+
+	opts.type = LOWDOWN_HTML;
 
 	tm = localtime(&t);
 
@@ -179,11 +169,11 @@ main(int argc, char *argv[])
 		switch (c) {
 		case ('T'):
 			if (0 == strcasecmp(optarg, "ms"))
-				outm = OUT_NROFF;
+				opts.type = LOWDOWN_NROFF;
 			else if (0 == strcasecmp(optarg, "html"))
-				outm = OUT_HTML;
+				opts.type = LOWDOWN_HTML;
 			else if (0 == strcasecmp(optarg, "man"))
-				outm = OUT_MAN;
+				opts.type = LOWDOWN_MAN;
 			else
 				goto usage;
 			break;
@@ -219,51 +209,15 @@ main(int argc, char *argv[])
 	/* 
 	 * We're now completely sandboxed.
 	 * Nothing more is allowed to happen.
-	 * Begin by creating our buffers, renderer, and document.
 	 */
 
-	ib = hbuf_new(DEF_IUNIT);
-	ob = hbuf_new(DEF_OUNIT);
-	spb = hbuf_new(DEF_OUNIT);
-
-	renderer = OUT_HTML == outm ?
-		hrend_html_new
-		(HOEDOWN_HTML_USE_XHTML |
-		 HOEDOWN_HTML_ESCAPE | 
-		 HOEDOWN_HTML_ASIDE, 0) :
-		hrend_nroff_new
-		(HOEDOWN_HTML_ESCAPE, 
-		 OUT_MAN == outm);
-
-	document = hdoc_new
-		(renderer, 
-		 HDOC_EXT_FOOTNOTES |
-		 HDOC_EXT_AUTOLINK |
-		 HDOC_EXT_TABLES |
-		 HDOC_EXT_SUPERSCRIPT |
-		 HDOC_EXT_STRIKETHROUGH |
-		 HDOC_EXT_FENCED_CODE,
-		 DEF_MAX_NESTING);
-
-	/* Read from our input and close out the input .*/
-
-	if (hbuf_putf(ib, fin))
+	if ( ! lowdown_file(&opts, fin, &ret, &retsz))
 		err(EXIT_FAILURE, "%s", fnin);
+
 	if (fin != stdin) 
 		fclose(fin);
 
-	/* Parse the output and free resources. */
-
-	hdoc_render(document, ob, ib->data, ib->size);
-	hbuf_free(ib);
-	hdoc_free(document);
-
-	/* Reprocess the HTML as smartypants. */
-
-	if (OUT_HTML == outm) {
-		hrend_html_free(renderer);
-		hsmrt_html(spb, ob->data, ob->size);
-		hbuf_free(ob);
+	if (LOWDOWN_HTML == opts.type) {
 		if (standalone)
 			fprintf(fout, "<!DOCTYPE html>\n"
 			      "<html>\n"
@@ -275,28 +229,24 @@ main(int argc, char *argv[])
 			      "</head>\n"
 			      "<body>\n", NULL == title ?
 			      "Untitled article" : title);
-		fwrite(spb->data, 1, spb->size, fout);
-		hbuf_free(spb);
+		fwrite(ret, 1, retsz, fout);
 		if (standalone)
 			fputs("</body>\n"
 			      "</html>\n", fout);
 	} else {
 		strftime(buf, sizeof(buf), "%F", tm);
-		hrend_nroff_free(renderer);
-		hsmrt_nroff(spb, ob->data, ob->size);
-		hbuf_free(ob);
-		if (standalone && OUT_NROFF == outm)
+		if (standalone && LOWDOWN_NROFF == opts.type)
 			fprintf(fout, ".TL\n%s\n", 
 				NULL == title ?
 				"Untitled article" : title);
-		else if (standalone && OUT_MAN == outm)
+		else if (standalone && LOWDOWN_MAN == opts.type)
 			fprintf(fout, ".TH \"%s\" 7 %s\n", 
 				NULL == title ?  
 				"UNTITLED ARTICLE" : title, buf);
-		fwrite(spb->data, 1, spb->size, fout);
-		hbuf_free(spb);
+		fwrite(ret, 1, retsz, fout);
 	}
 
+	free(ret);
 	if (fout != stdout)
 		fclose(fout);
 	return(EXIT_SUCCESS);
