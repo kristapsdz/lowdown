@@ -1,7 +1,7 @@
 .SUFFIXES: .xml .md .html .pdf
 
 VERSION		 = 0.1.1
-PREFIX		?= /usr/local
+PREFIX		 = /usr/local
 CFLAGS 		+= -g -W -Wall -Wstrict-prototypes -Wno-unused-parameter -Wwrite-strings
 OBJS		 = autolink.o \
 		   buffer.o \
@@ -10,12 +10,13 @@ OBJS		 = autolink.o \
 		   html.o \
 		   html_blocks.o \
 		   html_smartypants.o \
-		   main.o \
+		   library.o \
 		   nroff.o \
 		   nroff_smartypants.o \
 		   stack.o \
 		   xmalloc.o
 BINDIR 		 = $(PREFIX)/bin
+BINDIR 		 = $(PREFIX)/lib
 MANDIR 		 = $(PREFIX)/man
 WWWDIR		 = /var/www/vhosts/kristaps.bsd.lv/htdocs/lowdown
 HTMLS		 = archive.html index.html lowdown.1.html README.html
@@ -35,14 +36,21 @@ installwww: www
 	install -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots
 	install -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots
 
-lowdown: $(OBJS)
-	$(CC) -o $@ $(OBJS)
+lowdown: liblowdown.a main.o
+	$(CC) -o $@ main.o liblowdown.a
+
+liblowdown.a: $(OBJS)
+	$(AR) rs $@ $(OBJS)
 
 install: all
 	mkdir -p $(DESTDIR)$(BINDIR)
+	mkdir -p $(DESTDIR)$(LIBDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
+	mkdir -p $(DESTDIR)$(MANDIR)/man3
 	install -m 0755 lowdown $(DESTDIR)$(BINDIR)
-	install -m 0444 lowdown.1 $(DESTDIR)$(MANDIR)/man1
+	install -m 0644 liblowdown.a $(DESTDIR)$(BINDIR)
+	install -m 0644 lowdown.1 $(DESTDIR)$(MANDIR)/man1
+	install -m 0644 lowdown.3 $(DESTDIR)$(MANDIR)/man3
 
 index.xml README.xml index.pdf README.pdf: lowdown
 
@@ -77,8 +85,10 @@ lowdown.tar.gz:
 	( cd .dist/ && tar zcf ../$@ ./ )
 	rm -rf .dist/
 
-$(OBJS): extern.h
+$(OBJS): extern.h lowdown.h
+
+main.o: lowdown.h
 
 clean:
-	rm -f $(OBJS) $(PDFS) $(HTMLS) 
-	rm -f lowdown index.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
+	rm -f $(OBJS) $(PDFS) $(HTMLS) main.o
+	rm -f lowdown lowdown.a index.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
