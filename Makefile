@@ -2,7 +2,7 @@
 
 VERSION		 = 0.1.1
 PREFIX		?= /usr/local
-CFLAGS 		+= -g -W -Wall -Wstrict-prototypes -Wno-unused-parameter -Wwrite-strings
+CFLAGS 		+= -g -W -Wall -Wstrict-prototypes -Wno-unused-parameter -Wwrite-strings -fPIC
 OBJS		 = autolink.o \
 		   buffer.o \
 		   document.o \
@@ -10,12 +10,14 @@ OBJS		 = autolink.o \
 		   html.o \
 		   html_blocks.o \
 		   html_smartypants.o \
-		   main.o \
 		   nroff.o \
 		   nroff_smartypants.o \
 		   stack.o \
 		   xmalloc.o
+POBJS		 = $(OBJS) main.o
 BINDIR 		 = $(PREFIX)/bin
+INCDIR		 = $(PREFIX)/include
+LIBDIR		 = $(PREFIX)/lib
 MANDIR 		 = $(PREFIX)/man
 WWWDIR		 = /var/www/vhosts/kristaps.bsd.lv/htdocs/lowdown
 HTMLS		 = archive.html index.html lowdown.1.html README.html
@@ -23,7 +25,7 @@ PDFS		 = index.pdf README.pdf
 MDS		 = index.md README.md
 CSSS		 = template.css mandoc.css
 
-all: lowdown
+all: lowdown liblowdown
 
 www: $(HTMLS) $(PDFS) lowdown.tar.gz lowdown.tar.gz.sha512
 
@@ -35,14 +37,23 @@ installwww: www
 	install -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots
 	install -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots
 
-lowdown: $(OBJS)
-	$(CC) -o $@ $(OBJS)
+lowdown: $(POBJS)
+	$(CC) -o $@ $(POBJS)
+
+liblowdown: lowdown
+	$(CC) -shared -fPIC -o $@.so.$(VERSION) $(OBJS)
+	$(AR) cq $@.a $(OBJS)
 
 install: all
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
+	mkdir -p $(DESTDIR)$(INCDIR)
+	mkdir -p $(DESTDIR)$(LIBDIR)
 	install -m 0755 lowdown $(DESTDIR)$(BINDIR)
 	install -m 0444 lowdown.1 $(DESTDIR)$(MANDIR)/man1
+	install -m 0644 lowdown.h $(DESTDIR)$(INCDIR)
+	install -m 0644 liblowdown.a $(DESTDIR)$(LIBDIR)
+	install -m 0755 liblowdown.so.$(VERSION) $(DESTDIR)$(LIBDIR)
 
 index.xml README.xml index.pdf README.pdf: lowdown
 
@@ -77,8 +88,8 @@ lowdown.tar.gz:
 	( cd .dist/ && tar zcf ../$@ ./ )
 	rm -rf .dist/
 
-$(OBJS): extern.h
+$(POBJS): extern.h
 
 clean:
-	rm -f $(OBJS) $(PDFS) $(HTMLS) 
-	rm -f lowdown index.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
+	rm -f $(POBJS) $(PDFS) $(HTMLS) 
+	rm -f lowdown index.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz liblowdown.so.$(VERSION) liblowdown.a
