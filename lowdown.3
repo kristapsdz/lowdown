@@ -1,0 +1,100 @@
+.\"	$Id$
+.\"
+.\" Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
+.\"
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\"
+.Dd $Mdocdate$
+.Dt LOWDOWN 3
+.Os
+.Sh NAME
+.Nm lowdown ,
+.Nm lowdown_buf ,
+.Nm lowdown_file
+.Nd simple markdown translator library
+.Sh LIBRARY
+.Lb liblowdown
+.Sh SYNOPSIS
+.In lowdown.h
+.Ft void
+.Fo lowdown_buf
+.Fa "const struct lowdown_opts *opts"
+.Fa "const unsigned char *buf"
+.Fa "size_t bufsz"
+.Fa "unsigned char **ret"
+.Fa "size_t *retsz"
+.Fc
+.Ft int
+.Fo lowdown_file
+.Fa "const struct lowdown_opts *opts"
+.Fa "FILE *f"
+.Fa "unsigned char **ret"
+.Fa "size_t *retsz"
+.Fc
+.Sh DESCRIPTION
+The
+.Nm lowdown
+library parses Markdown into HTML or roff
+.Pq Fl ms No or Fl man No macro sets .
+See
+.Xr lowdown 1
+for a list of supported Markdown features.
+.Pp
+There are two forms of invocation.
+The first,
+.Nm lowdown_file ,
+operates from an already-opened
+.Vt FILE
+stream.
+The results are stored in
+.Fa ret ,
+which must later be passed to
+.Xr free 3 ,
+of size
+.Fa retsz .
+.Pp
+The second,
+.Nm lowdown_buf ,
+operates directly on an input buffer
+.Fa buf
+of size
+.Fa bufsz .
+.Pp
+Both accept a configuration structure,
+.Fa opts .
+The only field of value is
+.Va type ,
+which may be set to
+.Dv LOWDOWN_HTML
+for HTML5 output,
+.Dv LOWDOWN_MAN
+for
+.Fl man
+macros, or
+.Dv LOWDOWN_NROFF
+for
+.Fl ms
+macros.
+.Sh RETURN VALUES
+The
+.Nm lowdown_file
+returns zero if the file-reading sequenced failed, non-zero otherwise.
+.Sh SEE ALSO
+.Xr lowdown 1
+.Sh AUTHORS
+The
+.Nm
+library was forked by
+.An Kristaps Dzonsons Aq Mt kristaps@bsd.lv
+from
+.Lk https://github.com/hoedown/hoedown hoedown .
