@@ -16,7 +16,8 @@ OBJS		 = autolink.o \
 		   stack.o \
 		   xmalloc.o
 BINDIR 		 = $(PREFIX)/bin
-BINDIR 		 = $(PREFIX)/lib
+LIBDIR 		 = $(PREFIX)/lib
+INCLUDEDIR	 = $(PREFIX)/include
 MANDIR 		 = $(PREFIX)/man
 WWWDIR		 = /var/www/vhosts/kristaps.bsd.lv/htdocs/lowdown
 HTMLS		 = archive.html index.html lowdown.1.html README.html
@@ -45,10 +46,12 @@ liblowdown.a: $(OBJS)
 install: all
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(LIBDIR)
+	mkdir -p $(DESTDIR)$(INCLUDEDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
 	mkdir -p $(DESTDIR)$(MANDIR)/man3
 	install -m 0755 lowdown $(DESTDIR)$(BINDIR)
-	install -m 0644 liblowdown.a $(DESTDIR)$(BINDIR)
+	install -m 0644 liblowdown.a $(DESTDIR)$(LIBDIR)
+	install -m 0644 lowdown.h $(DESTDIR)$(INCLUDEDIR)
 	install -m 0644 lowdown.1 $(DESTDIR)$(MANDIR)/man1
 	install -m 0644 lowdown.3 $(DESTDIR)$(MANDIR)/man3
 
