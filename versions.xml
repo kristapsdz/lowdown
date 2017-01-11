@@ -8,8 +8,7 @@
 		</header>
 		<aside>
 			<p>
-				Initial public download of a stable
-				release.
+				Initial public download of a stable release.
 			</p>
 		</aside>
 	</article>
@@ -21,11 +20,22 @@
 		</header>
 		<aside>
 			<p>
-				Fix escaping of <b>-Tman</b> and
-				<b>-Tnroff</b> output, then rename
-				<b>-Tnroff</b> to <b>-Tms</b>.  Add
-				documentation to index page regarding
-				hacking.
+				Fix escaping of <b>-Tman</b> and <b>-Tnroff</b> output, then rename <b>-Tnroff</b> to <b>-Tms</b>.  Add
+				documentation to index page regarding hacking.
+			</p>
+		</aside>
+	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.1.2</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2017-01-11">2017-01-11</time>
+		</header>
+		<aside>
+			<p>
+				Produce a library version of the system as documented in <a href="lowdown.3.html">lowdown(3)</a>.
+				Super easy to use!
+				As suggested in <a href="https://github.com/kristapsdz/lowdown/pull/1">lowdown/pull/1</a>.
 			</p>
 		</aside>
 	</article>
