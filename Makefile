@@ -1,4 +1,4 @@
-.SUFFIXES: .xml .md .html .pdf
+.SUFFIXES: .xml .md .html .pdf .1 .1.html .3 .3.html
 
 VERSION		 = 0.1.2
 PREFIX		 = /usr/local
@@ -20,7 +20,7 @@ LIBDIR 		 = $(PREFIX)/lib
 INCLUDEDIR	 = $(PREFIX)/include
 MANDIR 		 = $(PREFIX)/man
 WWWDIR		 = /var/www/vhosts/kristaps.bsd.lv/htdocs/lowdown
-HTMLS		 = archive.html index.html lowdown.1.html README.html
+HTMLS		 = archive.html index.html lowdown.1.html lowdown.3.html README.html
 PDFS		 = index.pdf README.pdf
 MDS		 = index.md README.md
 CSSS		 = template.css mandoc.css
@@ -76,8 +76,8 @@ $(HTMLS): versions.xml
 	  ./lowdown $< ; \
 	  echo "</article>" ; ) >$@
 
-lowdown.1.html: lowdown.1
-	mandoc -Thtml -Ostyle=mandoc.css lowdown.1 >$@
+.1.1.html .3.3.html:
+	mandoc -Thtml -Ostyle=mandoc.css $< >$@
 
 lowdown.tar.gz.sha512: lowdown.tar.gz
 	sha512 lowdown.tar.gz >$@
