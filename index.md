@@ -120,6 +120,13 @@ lowdown -s -Tman README.md | mandoc -Tpdf > README.pdf
 
 Read [lowdown(1)](lowdown.1.html) for details on running the system.
 
+## Library
+
+*lowdown* is also available as a library, [lowdown(3)](lowdown.3.html).
+This effectively wraps around everything invoked by
+[lowdown(1)](lowdown.1.html), so it's basically the same but... a
+library.
+
 ## Testing
 
 The canonical Markdown test, such as found in the original
