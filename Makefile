@@ -11,6 +11,7 @@ OBJS		 = autolink.o \
 		   html_blocks.o \
 		   html_smartypants.o \
 		   library.o \
+		   log.o \
 		   nroff.o \
 		   nroff_smartypants.o \
 		   stack.o \
