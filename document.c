@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "lowdown.h"
 #include "extern.h"
 
 #define REF_TABLE_SIZE	8
@@ -125,6 +126,7 @@ struct hdoc {
 	hrend		 md;
 	void		*data;
 	const uint8_t	*start;
+	const struct lowdown_opts *opts;
 	struct link_ref	*refs[REF_TABLE_SIZE];
 	struct footnote_list footnotes_found;
 	struct footnote_list footnotes_used;
@@ -1268,8 +1270,13 @@ char_link(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 		goto cleanup;
 	}
 
-	/* skip any amount of spacing */
-	/* (this is much more laxist than original markdown syntax) */
+	/* 
+	 * Skip any amount of spacing.
+	 * (This is much more laxist than original markdown syntax.) 
+	 * Note that we're doing so.
+	 */
+	if (i < size && xisspace(data[i])) 
+		lmsg(doc->opts, LOWDOWN_ERR_SPACE_BEFORE_LINK, NULL);
 	while (i < size && xisspace(data[i]))
 		i++;
 
@@ -2937,12 +2944,12 @@ static void expand_tabs(hbuf *ob, const uint8_t *line, size_t size)
 	}
 }
 
-/* allocate a new document processor instance */
+/* 
+ * Allocate a new document processor instance.
+ */
 hdoc *
-hdoc_new(
-	const hrend *renderer,
-	hdoc_ext extensions,
-	size_t max_nesting)
+hdoc_new(const hrend *renderer, const struct lowdown_opts *opts,
+	hdoc_ext extensions, size_t max_nesting)
 {
 	hdoc *doc = NULL;
 
@@ -2951,6 +2958,7 @@ hdoc_new(
 	doc = xmalloc(sizeof(hdoc));
 	memcpy(&doc->md, renderer, sizeof(hrend));
 
+	doc->opts = opts;
 	doc->data = renderer->opaque;
 
 	hstack_init(&doc->work_bufs[BUFFER_BLOCK], 4);

@@ -1,6 +1,6 @@
+/*	$Id$ */
 /*
- * Copyright (c) 2004 Marius Aamodt Eriksen <marius@monkey.org>
- * Copyright (c) 2016 Kristaps Dzonsons <kristaps@bsd.l>
+ * Copyright (c) 2016, Kristaps Dzonsons
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,48 +14,32 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-#include <err.h>
 #include <stdarg.h>
-#include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "lowdown.h"
 #include "extern.h"
 
-void *
-xmalloc(size_t siz)
+void
+lmsg(const struct lowdown_opts *opts, 
+	enum lowdown_err err, const char *fmt, ...)
 {
-	void	*p;
+	char	 buf[1024];
+	va_list	 ap;
 
-	if (siz == 0)
-		errx(EXIT_FAILURE, "xmalloc: zero size");
-	if ((p = malloc(siz)) == NULL)
-		err(EXIT_FAILURE, "malloc");
+	if (NULL == opts->msg)
+		return;
 
-	return (p);
-}
+	if (NULL == fmt) {
+		opts->msg(err, opts->arg, NULL);
+		return;
+	}
 
-void *
-xcalloc(size_t no, size_t siz)
-{
-	void	*p;
+	va_start(ap, fmt);
+	vsnprintf(buf, sizeof(buf), fmt, ap);
+	va_end(ap);
 
-	if (siz == 0 || no == 0)
-		errx(EXIT_FAILURE, "xcalloc: zero size");
-	if ((p = calloc(no, siz)) == NULL)
-		err(EXIT_FAILURE, "calloc");
-
-	return (p);
-}
-
-void *
-xrealloc(void *p, size_t sz)
-{
-
-	if ((p = realloc(p, sz)) == NULL)
-		err(EXIT_FAILURE, "realloc");
-
-	return (p);
+	opts->msg(err, opts->arg, buf);
 }

@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "lowdown.h"
 #include "extern.h"
 
 struct smartypants_data {

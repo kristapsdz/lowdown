@@ -42,17 +42,27 @@ enum	lowdown_type {
 	LOWDOWN_NROFF
 };
 
+enum	lowdown_err {
+	LOWDOWN_ERR_SPACE_BEFORE_LINK = 0,
+	LOWDOWN_ERR__MAX
+};
+
+typedef	void (*lowdown_msg)(enum lowdown_err, void *, const char *);
+
 struct	lowdown_opts {
+	lowdown_msg	  msg;
 	enum lowdown_type type;
+	void		 *arg;
 };
 
 __BEGIN_DECLS
 
-int	lowdown_file(const struct lowdown_opts *, 
-		FILE *, unsigned char **, size_t *);
-void	lowdown_buf(const struct lowdown_opts *, 
-		const unsigned char *, size_t,
-		unsigned char **, size_t *);
+int		lowdown_file(const struct lowdown_opts *, 
+			FILE *, unsigned char **, size_t *);
+void		lowdown_buf(const struct lowdown_opts *, 
+			const unsigned char *, size_t,
+			unsigned char **, size_t *);
+const char	*lowdown_errstr(enum lowdown_err);
 
 __END_DECLS
 
