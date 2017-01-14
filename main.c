@@ -162,7 +162,6 @@ main(int argc, char *argv[])
 	memset(&opts, 0, sizeof(struct lowdown_opts));
 
 	opts.type = LOWDOWN_HTML;
-	opts.msg = message;
 
 	tm = localtime(&t);
 
@@ -179,7 +178,7 @@ main(int argc, char *argv[])
 		++pname;
 #endif
 
-	while (-1 != (c = getopt(argc, argv, "st:T:o:")))
+	while (-1 != (c = getopt(argc, argv, "st:T:o:v")))
 		switch (c) {
 		case ('T'):
 			if (0 == strcasecmp(optarg, "ms"))
@@ -199,6 +198,9 @@ main(int argc, char *argv[])
 			break;
 		case ('o'):
 			fnout = optarg;
+			break;
+		case ('v'):
+			opts.msg = message;
 			break;
 		default:
 			goto usage;
@@ -268,7 +270,7 @@ main(int argc, char *argv[])
 	return(EXIT_SUCCESS);
 usage:
 	fprintf(stderr, "usage: %s "
-		"[-s] "
+		"[-sv] "
 		"[-o output] "
 		"[-t title] "
 		"[-T mode] "

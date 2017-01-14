@@ -22,7 +22,7 @@
 .Nd simple markdown translator
 .Sh SYNOPSIS
 .Nm lowdown
-.Op Fl s
+.Op Fl sv
 .Op Fl o Ar file
 .Op Fl t title
 .Op Fl T mode
@@ -47,6 +47,12 @@ reads from standard input.
 The results are written to standard output.
 Its arguments are as follows:
 .Bl -tag -width Ds
+.It Fl o Ar file
+Send output to
+.Ar file
+unless it's
+.Dq - ,
+in which case fall back to the default of standard output.
 .It Fl s
 Standalone mode.
 This emits a minimal HTML5 or roff document surrounding the output.
@@ -54,12 +60,19 @@ You will probably need to hand-edit it.
 You probably want to use
 .Fl t
 as well.
-.It Fl o Ar file
-Send output to
-.Ar file
-unless it's
-.Dq - ,
-in which case fall back to the default of standard output.
+.It Fl T Ar mode
+The output mode.
+This may be
+.Ar html
+for HTML5 output ,
+.Ar ms
+for roff output using the classic (i.e., no-extension)
+.Fl ms
+package and needing table support, or
+.Ar man
+for roff ouput using the classic
+.Fl man
+package.
 .It Fl t Ar title
 If used with
 .Fl s ,
@@ -77,19 +90,9 @@ mode, or
 in
 .Ar man
 mode.
-.It Fl T Ar mode
-The output mode.
-This may be
-.Ar html
-for HTML5 output ,
-.Ar ms
-for roff output using the classic (i.e., no-extension)
-.Fl ms
-package and needing table support, or
-.Ar man
-for roff ouput using the classic
-.Fl man
-package.
+.It Fl v
+Verbose mode.
+Prints out warnings regarding Markdown syntax conformity.
 .El
 .Pp
 For best results, use the
