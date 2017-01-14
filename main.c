@@ -131,6 +131,19 @@ sandbox_pre(void)
 
 #endif
 
+static void
+message(enum lowdown_err er, void *arg, const char *buf)
+{
+
+	if (NULL != buf) 
+		fprintf(stderr, "%s: %s: %s\n", (const char *)arg, 
+			buf, lowdown_errstr(er));
+	else
+		fprintf(stderr, "%s: %s\n", (const char *)arg, 
+			lowdown_errstr(er));
+
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -149,6 +162,7 @@ main(int argc, char *argv[])
 	memset(&opts, 0, sizeof(struct lowdown_opts));
 
 	opts.type = LOWDOWN_HTML;
+	opts.msg = message;
 
 	tm = localtime(&t);
 
@@ -210,6 +224,8 @@ main(int argc, char *argv[])
 	 * We're now completely sandboxed.
 	 * Nothing more is allowed to happen.
 	 */
+
+	opts.arg = (void *)fnin;
 
 	if ( ! lowdown_file(&opts, fin, &ret, &retsz))
 		err(EXIT_FAILURE, "%s", fnin);

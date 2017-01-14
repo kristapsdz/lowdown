@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "lowdown.h"
 #include "extern.h"
 
 /* verify that a URL has a safe protocol */

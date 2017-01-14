@@ -220,7 +220,7 @@ void	 hstack_push(hstack *, void *);
 void	*hstack_top(const hstack *);
 void	 hstack_uninit(hstack *);
 
-hdoc 	*hdoc_new(const hrend *, hdoc_ext, size_t) __attribute__((malloc));
+hdoc 	*hdoc_new(const hrend *, const struct lowdown_opts *, hdoc_ext, size_t) __attribute__((malloc));
 void	 hdoc_render(hdoc *, hbuf *, const uint8_t *, size_t );
 void	 hdoc_free(hdoc *);
 
@@ -239,6 +239,9 @@ void	 hrend_nroff_free(hrend *);
 
 void	 hsmrt_html(hbuf *, const uint8_t *, size_t);
 void	 hsmrt_nroff(hbuf *, const uint8_t *, size_t);
+
+void	 lmsg(const struct lowdown_opts *, enum lowdown_err, const char *, ...)
+		__attribute__ ((format(printf, 3, 4)));
 
 __END_DECLS
 

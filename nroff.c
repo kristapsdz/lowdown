@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "lowdown.h"
 #include "extern.h"
 
 #define	BUFFER_NEWLINE(_buf, _sz, _ob) \
