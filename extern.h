@@ -96,7 +96,7 @@ typedef struct hrend {
 	void (*hrule)(hbuf *, void *);
 	void (*list)(hbuf *, const hbuf *, hlist_fl, void *);
 	void (*listitem)(hbuf *, const hbuf *, hlist_fl, void *, size_t);
-	void (*paragraph)(hbuf *, const hbuf *, void *);
+	void (*paragraph)(hbuf *, const hbuf *, void *, size_t);
 	void (*table)(hbuf *, const hbuf *, void *);
 	void (*table_header)(hbuf *, const hbuf *, 
 		void *, const htbl_flags *, size_t);
