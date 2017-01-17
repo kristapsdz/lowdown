@@ -64,9 +64,13 @@ void *
 xreallocarray(void *p, size_t nm, size_t sz)
 {
 
-	/* FIXME */
+#if defined(__OpenBSD__) || defined(__FreeBSD__)
+	if ((p = reallocarray(p, nm, sz)) == NULL)
+		err(EXIT_FAILURE, NULL);
+#else
 	if ((p = realloc(p, nm * sz)) == NULL)
 		err(EXIT_FAILURE, NULL);
+#endif
 
 	return (p);
 }
@@ -76,7 +80,6 @@ xstrndup(const char *p, size_t sz)
 {
 	char	*pp;
 
-	/* FIXME */
 	if ((pp = strndup(p, sz)) == NULL)
 		err(EXIT_FAILURE, NULL);
 
