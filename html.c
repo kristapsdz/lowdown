@@ -38,14 +38,14 @@ typedef struct html_state {
 	void (*link_attributes)(hbuf *ob, const hbuf *url, const void *data);
 } html_state;
 
-static void 
+static void
 escape_html(hbuf *ob, const uint8_t *source, size_t length)
 {
 
 	hesc_html(ob, source, length, 0);
 }
 
-static void 
+static void
 escape_href(hbuf *ob, const uint8_t *source, size_t length)
 {
 
@@ -145,10 +145,10 @@ rndr_blockcode(hbuf *ob, const hbuf *text, const hbuf *lang, void *data)
 static void
 rndr_blockquote(hbuf *ob, const hbuf *content, void *data)
 {
-	if (ob->size) 
+	if (ob->size)
 		hbuf_putc(ob, '\n');
 	HBUF_PUTSL(ob, "<blockquote>\n");
-	if (content) 
+	if (content)
 		hbuf_put(ob, content->data, content->size);
 	HBUF_PUTSL(ob, "</blockquote>\n");
 }
@@ -158,7 +158,7 @@ rndr_codespan(hbuf *ob, const hbuf *text, void *data)
 {
 
 	HBUF_PUTSL(ob, "<code>");
-	if (text) 
+	if (text)
 		escape_html(ob, text->data, text->size);
 	HBUF_PUTSL(ob, "</code>");
 	return 1;
@@ -286,7 +286,7 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title, vo
 		HBUF_PUTSL(ob, "\">");
 	}
 
-	if (content && content->size) 
+	if (content && content->size)
 		hbuf_put(ob, content->data, content->size);
 	HBUF_PUTSL(ob, "</a>");
 	return 1;
@@ -296,13 +296,13 @@ static void
 rndr_list(hbuf *ob, const hbuf *content, hlist_fl flags, void *data)
 {
 
-	if (ob->size) 
+	if (ob->size)
 		hbuf_putc(ob, '\n');
-	hbuf_put(ob, (const uint8_t *)(flags & HLIST_ORDERED ? 
+	hbuf_put(ob, (const uint8_t *)(flags & HLIST_ORDERED ?
 		"<ol>\n" : "<ul>\n"), 5);
-	if (content) 
+	if (content)
 		hbuf_put(ob, content->data, content->size);
-	hbuf_put(ob, (const uint8_t *)(flags & HLIST_ORDERED ? 
+	hbuf_put(ob, (const uint8_t *)(flags & HLIST_ORDERED ?
 		"</ol>\n" : "</ul>\n"), 6);
 }
 
@@ -338,7 +338,7 @@ rndr_paragraph(hbuf *ob, const hbuf *content, void *data, size_t par_count)
 	if (i == content->size)
 		return;
 
-	if (0 == par_count && state->flags & HOEDOWN_HTML_ASIDE) 
+	if (0 == par_count && state->flags & HOEDOWN_HTML_ASIDE)
 		HBUF_PUTSL(ob, "<aside>");
 	HBUF_PUTSL(ob, "<p>");
 	if (state->flags & HOEDOWN_HTML_HARD_WRAP) {
@@ -365,7 +365,7 @@ rndr_paragraph(hbuf *ob, const hbuf *content, void *data, size_t par_count)
 		hbuf_put(ob, content->data + i, content->size - i);
 	}
 	HBUF_PUTSL(ob, "</p>\n");
-	if (0 == par_count && state->flags & HOEDOWN_HTML_ASIDE) 
+	if (0 == par_count && state->flags & HOEDOWN_HTML_ASIDE)
 		HBUF_PUTSL(ob, "</aside>\n");
 }
 
@@ -400,7 +400,7 @@ static int
 rndr_triple_emphasis(hbuf *ob, const hbuf *content, void *data)
 {
 
-	if (!content || !content->size) 
+	if (!content || !content->size)
 		return 0;
 
 	HBUF_PUTSL(ob, "<strong><em>");
@@ -413,7 +413,7 @@ static void
 rndr_hrule(hbuf *ob, void *data)
 {
 
-	if (ob->size) 
+	if (ob->size)
 		hbuf_putc(ob, '\n');
 	hbuf_puts(ob, "<hr/>\n");
 }
@@ -462,7 +462,7 @@ static void
 rndr_table(hbuf *ob, const hbuf *content, void *data)
 {
 
-	if (ob->size) 
+	if (ob->size)
 		hbuf_putc(ob, '\n');
 	HBUF_PUTSL(ob, "<table>\n");
 	hbuf_put(ob, content->data, content->size);
@@ -473,7 +473,7 @@ static void
 rndr_table_header(hbuf *ob, const hbuf *content, void *data, const htbl_flags *fl, size_t columns)
 {
 
-	if (ob->size) 
+	if (ob->size)
 		hbuf_putc(ob, '\n');
 	HBUF_PUTSL(ob, "<thead>\n");
 	hbuf_put(ob, content->data, content->size);
@@ -484,7 +484,7 @@ static void
 rndr_table_body(hbuf *ob, const hbuf *content, void *data)
 {
 
-	if (ob->size) 
+	if (ob->size)
 		hbuf_putc(ob, '\n');
 	HBUF_PUTSL(ob, "<tbody>\n");
 	hbuf_put(ob, content->data, content->size);
@@ -496,7 +496,7 @@ rndr_tablerow(hbuf *ob, const hbuf *content, void *data)
 {
 
 	HBUF_PUTSL(ob, "<tr>\n");
-	if (content) 
+	if (content)
 		hbuf_put(ob, content->data, content->size);
 	HBUF_PUTSL(ob, "</tr>\n");
 }
@@ -537,7 +537,7 @@ static int
 rndr_superscript(hbuf *ob, const hbuf *content, void *data)
 {
 
-	if (!content || !content->size) 
+	if (!content || !content->size)
 		return 0;
 
 	HBUF_PUTSL(ob, "<sup>");
@@ -558,13 +558,13 @@ static void
 rndr_footnotes(hbuf *ob, const hbuf *content, void *data)
 {
 
-	if (ob->size) 
+	if (ob->size)
 		hbuf_putc(ob, '\n');
 	HBUF_PUTSL(ob, "<div class=\"footnotes\">\n");
 	hbuf_puts(ob, "<hr/>\n");
 	HBUF_PUTSL(ob, "<ol>\n");
 
-	if (content) 
+	if (content)
 		hbuf_put(ob, content->data, content->size);
 
 	HBUF_PUTSL(ob, "\n</ol>\n</div>\n");

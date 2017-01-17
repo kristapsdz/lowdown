@@ -46,7 +46,7 @@ static void
 sandbox_post(int fdin, int fdout)
 {
 
-	if (-1 == pledge("stdio", NULL)) 
+	if (-1 == pledge("stdio", NULL))
 		err(EXIT_FAILURE, "pledge");
 }
 
@@ -54,7 +54,7 @@ static void
 sandbox_pre(void)
 {
 
-	if (-1 == pledge("stdio rpath wpath cpath", NULL)) 
+	if (-1 == pledge("stdio rpath wpath cpath", NULL))
 		err(EXIT_FAILURE, "pledge");
 }
 
@@ -67,7 +67,7 @@ sandbox_post(int fdin, int fdout)
 	int	 rc;
 
 	rc = sandbox_init
-		(kSBXProfilePureComputation, 
+		(kSBXProfilePureComputation,
 		 SANDBOX_NAMED, &ep);
 	if (0 != rc)
 		errx(EXIT_FAILURE, "sandbox_init: %s", ep);
@@ -90,7 +90,7 @@ sandbox_post(int fdin, int fdout)
 	cap_rights_init(&rights);
 
 	cap_rights_init(&rights, CAP_EVENT, CAP_READ, CAP_FSTAT);
-	if (cap_rights_limit(fdin, &rights) < 0) 
+	if (cap_rights_limit(fdin, &rights) < 0)
  		err(EXIT_FAILURE, "cap_rights_limit");
 
 	cap_rights_init(&rights, CAP_EVENT, CAP_WRITE, CAP_FSTAT);
@@ -135,11 +135,11 @@ static void
 message(enum lowdown_err er, void *arg, const char *buf)
 {
 
-	if (NULL != buf) 
-		fprintf(stderr, "%s: %s: %s\n", (const char *)arg, 
+	if (NULL != buf)
+		fprintf(stderr, "%s: %s: %s\n", (const char *)arg,
 			lowdown_errstr(er), buf);
 	else
-		fprintf(stderr, "%s: %s\n", (const char *)arg, 
+		fprintf(stderr, "%s: %s\n", (const char *)arg,
 			lowdown_errstr(er));
 
 }
@@ -196,8 +196,9 @@ main(int argc, char *argv[])
 	struct tm	*tm;
 	char		 buf[32];
 	unsigned char	*ret = NULL;
-	size_t		 retsz = 0;
+	size_t		 retsz = 0, msz;
 	time_t		 t = time(NULL);
+	struct lowdown_meta *m;
 
 	memset(&opts, 0, sizeof(struct lowdown_opts));
 
@@ -274,17 +275,17 @@ main(int argc, char *argv[])
 
 	sandbox_post(fileno(fin), fileno(fout));
 
-	/* 
+	/*
 	 * We're now completely sandboxed.
 	 * Nothing more is allowed to happen.
 	 */
 
 	opts.arg = (void *)fnin;
 
-	if ( ! lowdown_file(&opts, fin, &ret, &retsz))
+	if ( ! lowdown_file(&opts, fin, &ret, &retsz, &m, &msz))
 		err(EXIT_FAILURE, "%s", fnin);
 
-	if (fin != stdin) 
+	if (fin != stdin)
 		fclose(fin);
 
 	if (LOWDOWN_HTML == opts.type) {
@@ -306,12 +307,12 @@ main(int argc, char *argv[])
 	} else {
 		strftime(buf, sizeof(buf), "%F", tm);
 		if (standalone && LOWDOWN_NROFF == opts.type)
-			fprintf(fout, ".TL\n%s\n", 
+			fprintf(fout, ".TL\n%s\n",
 				NULL == title ?
 				"Untitled article" : title);
 		else if (standalone && LOWDOWN_MAN == opts.type)
-			fprintf(fout, ".TH \"%s\" 7 %s\n", 
-				NULL == title ?  
+			fprintf(fout, ".TH \"%s\" 7 %s\n",
+				NULL == title ?
 				"UNTITLED ARTICLE" : title, buf);
 		fwrite(ret, 1, retsz, fout);
 	}

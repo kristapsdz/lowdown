@@ -83,10 +83,12 @@ struct	lowdown_opts {
 __BEGIN_DECLS
 
 int		lowdown_file(const struct lowdown_opts *, 
-			FILE *, unsigned char **, size_t *);
+			FILE *, unsigned char **, size_t *,
+			struct lowdown_meta **, size_t *);
 void		lowdown_buf(const struct lowdown_opts *, 
 			const unsigned char *, size_t,
-			unsigned char **, size_t *);
+			unsigned char **, size_t *,
+			struct lowdown_meta **, size_t *);
 const char	*lowdown_errstr(enum lowdown_err);
 
 __END_DECLS

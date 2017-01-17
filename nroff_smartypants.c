@@ -36,26 +36,26 @@ struct 	sm_dat {
 	int 	 in_dquote;
 };
 
-typedef	size_t (*sm_cb_ptr)(hbuf *, struct sm_dat *, 
+typedef	size_t (*sm_cb_ptr)(hbuf *, struct sm_dat *,
 	uint8_t, const uint8_t *, size_t);
 
-static size_t sm_cb_amp(hbuf *, struct sm_dat *, 
+static size_t sm_cb_amp(hbuf *, struct sm_dat *,
 	uint8_t, const uint8_t *, size_t);
-static size_t sm_cb_backtick(hbuf *, struct sm_dat *, 
+static size_t sm_cb_backtick(hbuf *, struct sm_dat *,
 	uint8_t, const uint8_t *, size_t);
-static size_t sm_cb_dash(hbuf *, struct sm_dat *, 
+static size_t sm_cb_dash(hbuf *, struct sm_dat *,
 	uint8_t, const uint8_t *, size_t);
 static size_t sm_cb_dot(hbuf *, struct sm_dat *,
 	uint8_t, const uint8_t *, size_t);
-static size_t sm_cb_dquote(hbuf *, struct sm_dat *, 
+static size_t sm_cb_dquote(hbuf *, struct sm_dat *,
 	uint8_t, const uint8_t *, size_t);
 static size_t sm_cb_esc(hbuf *, struct sm_dat *,
 	uint8_t, const uint8_t *, size_t);
-static size_t sm_cb_number(hbuf *, struct sm_dat *, 
+static size_t sm_cb_number(hbuf *, struct sm_dat *,
 	uint8_t, const uint8_t *, size_t);
-static size_t sm_cb_parens(hbuf *, struct sm_dat *, 
+static size_t sm_cb_parens(hbuf *, struct sm_dat *,
 	uint8_t, const uint8_t *, size_t);
-static size_t sm_cb_squote(hbuf *, struct sm_dat *, 
+static size_t sm_cb_squote(hbuf *, struct sm_dat *,
 	uint8_t, const uint8_t *, size_t);
 
 static	sm_cb_ptr sm_cb_ptrs[] = {
@@ -81,7 +81,7 @@ static const uint8_t sm_cb_chars[UINT8_MAX+1] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, /* P -- _ */
 	9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* ` -- o */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* p -- del */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -108,8 +108,8 @@ squote_len(const uint8_t *text, size_t size)
 {
 	const char	 **p;
 	size_t		   len;
-	static const char *single_quote_list[] = { 
-		"'", "&#39;", "&#x27;", "&apos;", NULL 
+	static const char *single_quote_list[] = {
+		"'", "&#39;", "&#x27;", "&apos;", NULL
 	};
 
 	for (p = single_quote_list; *p; ++p) {
@@ -121,12 +121,12 @@ squote_len(const uint8_t *text, size_t size)
 	return 0;
 }
 
-/* 
+/*
  * Converts " or ' at very beginning or end of a word to left or right
  * quote.
  */
 static int
-sm_quotes(hbuf *ob, uint8_t previous_char, 
+sm_quotes(hbuf *ob, uint8_t previous_char,
 	uint8_t next_char, uint8_t quote, int *is_open)
 {
 
@@ -155,8 +155,8 @@ sm_quotes(hbuf *ob, uint8_t previous_char,
  * single-quote, e.g. "'" or ";".
  */
 static size_t
-sm_squote(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, 
-	const uint8_t *text, size_t size, 
+sm_squote(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char,
+	const uint8_t *text, size_t size,
 	const uint8_t *squote_text, size_t squote_size)
 {
 	uint8_t	 t1, t2, next_char;
@@ -168,16 +168,16 @@ sm_squote(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char,
 
 		/* convert '' to &ldquo; or &rdquo; */
 		if (next_squote_len > 0) {
-			next_char = (size > 1+next_squote_len) ? 
+			next_char = (size > 1+next_squote_len) ?
 				text[1+next_squote_len] : 0;
-			if (sm_quotes(ob, previous_char, 
+			if (sm_quotes(ob, previous_char,
 			    next_char, 'd', &smrt->in_dquote))
 				return next_squote_len;
 		}
 
 		/* Tom's, isn't, I'm, I'd */
-		if ((t1 == 's' || t1 == 't' || t1 == 'm' || 
-		     t1 == 'd') && (size == 3 || 
+		if ((t1 == 's' || t1 == 't' || t1 == 'm' ||
+		     t1 == 'd') && (size == 3 ||
 		    word_boundary(text[2]))) {
 			HBUF_PUTSL(ob, "\\(cq");
 			return 0;
@@ -196,7 +196,7 @@ sm_squote(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char,
 		}
 	}
 
-	if (sm_quotes(ob, previous_char, 
+	if (sm_quotes(ob, previous_char,
 	    size > 0 ? text[1] : 0, 's', &smrt->in_squote))
 		return 0;
 
@@ -204,17 +204,17 @@ sm_squote(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char,
 	return 0;
 }
 
-/* 
- * Converts ' to left or right single quote. 
+/*
+ * Converts ' to left or right single quote.
  */
 static size_t
 sm_cb_squote(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
 {
-	return sm_squote(ob, smrt, 
+	return sm_squote(ob, smrt,
 		previous_char, text, size, text, 1);
 }
 
-/* 
+/*
  * Converts (c), (r), (tm).
  */
 static size_t
@@ -236,7 +236,7 @@ sm_cb_parens(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const uint8_t
 			return 2;
 		}
 
-		if (size >= 4 && t1 == 't' && 
+		if (size >= 4 && t1 == 't' &&
 		    t2 == 'm' && text[3] == ')') {
 			HBUF_PUTSL(ob, "\\(tm");
 			return 3;
@@ -247,8 +247,8 @@ sm_cb_parens(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const uint8_t
 	return 0;
 }
 
-/* 
- * Converts "--" to em-dash, etc. 
+/*
+ * Converts "--" to em-dash, etc.
  */
 static size_t
 sm_cb_dash(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
@@ -268,25 +268,25 @@ sm_cb_dash(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const uint8_t *
 	return 0;
 }
 
-/* 
- * Converts &quot; etc. 
+/*
+ * Converts &quot; etc.
  */
 static size_t
-sm_cb_amp(hbuf *ob, struct sm_dat *smrt, 
+sm_cb_amp(hbuf *ob, struct sm_dat *smrt,
 	uint8_t previous_char, const uint8_t *text, size_t size)
 {
 	size_t	len;
 
 	if (size >= 6 && memcmp(text, "&quot;", 6) == 0) {
-		if (sm_quotes(ob, previous_char, 
+		if (sm_quotes(ob, previous_char,
 		    size >= 7 ? text[6] : 0, 'd', &smrt->in_dquote))
 			return 5;
 	}
 
 	len = squote_len(text, size);
 	if (len > 0)
-		return (len-1) + sm_squote(ob, smrt, 
-			previous_char, text+(len-1), 
+		return (len-1) + sm_squote(ob, smrt,
+			previous_char, text+(len-1),
 			size-(len-1), text, len);
 
 	if (size >= 4 && memcmp(text, "&#0;", 4) == 0)
@@ -300,7 +300,7 @@ sm_cb_amp(hbuf *ob, struct sm_dat *smrt,
  * A code span (within \f[CR]) shouldn't be escaped.
  */
 static size_t
-sm_cb_esc(hbuf *ob, struct sm_dat *smrt, 
+sm_cb_esc(hbuf *ob, struct sm_dat *smrt,
 	uint8_t previous_char, const uint8_t *text, size_t size)
 {
 	size_t	 	 i = 0;
@@ -325,13 +325,13 @@ sm_cb_esc(hbuf *ob, struct sm_dat *smrt,
  * inside of that.
  */
 static size_t
-sm_cb_dot(hbuf *ob, struct sm_dat *smrt, 
+sm_cb_dot(hbuf *ob, struct sm_dat *smrt,
 	uint8_t previous_char, const uint8_t *text, size_t size)
 {
 	size_t	 	 i = 0;
 	const uint8_t	*cp;
 
-	if ((0 == previous_char || '\n' == previous_char) && 
+	if ((0 == previous_char || '\n' == previous_char) &&
 	    (size >= 6 && 0 == memcmp(text + 1, "ft CR\n", 6))) {
 		i = 6;
 		hbuf_put(ob, text, i);
@@ -346,16 +346,16 @@ sm_cb_dot(hbuf *ob, struct sm_dat *smrt,
 	return i;
 }
 
-/* 
+/*
  * Converts `` to opening double quote.
  */
 static size_t
-sm_cb_backtick(hbuf *ob, struct sm_dat *smrt, 
+sm_cb_backtick(hbuf *ob, struct sm_dat *smrt,
 	uint8_t previous_char, const uint8_t *text, size_t size)
 {
 
 	if (size >= 2 && text[1] == '`') {
-		if (sm_quotes(ob, previous_char, 
+		if (sm_quotes(ob, previous_char,
 		    size >= 3 ? text[2] : 0, 'd', &smrt->in_dquote))
 			return 1;
 	}
@@ -364,17 +364,17 @@ sm_cb_backtick(hbuf *ob, struct sm_dat *smrt,
 	return 0;
 }
 
-/* 
+/*
  * Converts 1/2, 1/4, 3/4.
  */
 static size_t
-sm_cb_number(hbuf *ob, struct sm_dat *smrt, 
+sm_cb_number(hbuf *ob, struct sm_dat *smrt,
 	uint8_t previous_char, const uint8_t *text, size_t size)
 {
 
 	if (word_boundary(previous_char) && size >= 3) {
 		/* 1/2 */
-		if (text[0] == '1' && 
+		if (text[0] == '1' &&
 		    text[1] == '/' && text[2] == '2') {
 			if (size == 3 || word_boundary(text[3])) {
 				HBUF_PUTSL(ob, "\\[12]");
@@ -382,23 +382,23 @@ sm_cb_number(hbuf *ob, struct sm_dat *smrt,
 			}
 		}
 		/* 1/4 */
-		if (text[0] == '1' && 
+		if (text[0] == '1' &&
 		    text[1] == '/' && text[2] == '4') {
 			if (size == 3 || word_boundary(text[3]) ||
-			    (size >= 5 && 
-			     tolower((int)text[3]) == 't' && 
+			    (size >= 5 &&
+			     tolower((int)text[3]) == 't' &&
 			     tolower((int)text[4]) == 'h')) {
 				HBUF_PUTSL(ob, "\\[14]");
 				return 2;
 			}
 		}
 		/* 3/4 */
-		if (text[0] == '3' && 
+		if (text[0] == '3' &&
 		    text[1] == '/' && text[2] == '4') {
 			if (size == 3 || word_boundary(text[3]) ||
-			    (size >= 6 && 
-			     tolower((int)text[3]) == 't' && 
-			     tolower((int)text[4]) == 'h' && 
+			    (size >= 6 &&
+			     tolower((int)text[3]) == 't' &&
+			     tolower((int)text[4]) == 'h' &&
 			     tolower((int)text[5]) == 's')) {
 				HBUF_PUTSL(ob, "\\[34]");
 				return 2;
@@ -410,22 +410,22 @@ sm_cb_number(hbuf *ob, struct sm_dat *smrt,
 	return 0;
 }
 
-/* 
+/*
  * Converts " to left or right double quote.
  */
 static size_t
-sm_cb_dquote(hbuf *ob, struct sm_dat *smrt, 
+sm_cb_dquote(hbuf *ob, struct sm_dat *smrt,
 	uint8_t previous_char, const uint8_t *text, size_t size)
 {
 
-	if ( ! sm_quotes(ob, previous_char, 
+	if ( ! sm_quotes(ob, previous_char,
 	    size > 0 ? text[1] : 0, 'd', &smrt->in_dquote))
 		HBUF_PUTSL(ob, "\\(dq");
 
 	return 0;
 }
 
-/* 
+/*
  * Process a nroff snippet using SmartyPants for smart punctuation.
  */
 void
@@ -453,8 +453,8 @@ hsmrt_nroff(hbuf *ob, const uint8_t *text, size_t size)
 			hbuf_put(ob, text + org, i - org);
 
 		if (i < size)
-			i += sm_cb_ptrs[(int)action](ob, 
-				&smrt, i ? text[i - 1] : 0, 
+			i += sm_cb_ptrs[(int)action](ob,
+				&smrt, i ? text[i - 1] : 0,
 				text + i, size - i);
 	}
 }

@@ -173,7 +173,7 @@ static const char *HTML_ESCAPES[] = {
         "&gt;"
 };
 
-/* 
+/*
  * Escape nroff.
  * There are two ways to do this: block and span (controlled by the
  * "span" variable).
@@ -196,7 +196,7 @@ hesc_nroff(hbuf *ob, const uint8_t *data, size_t size, int span)
 				slash = 1;
 				break;
 			}
-			if (i > 0 && '.' == data[i] && 
+			if (i > 0 && '.' == data[i] &&
 			    '\n' == data[i - 1])
 				break;
 			if (0 == span && i == 0 && '.' == data[i])
@@ -211,7 +211,7 @@ hesc_nroff(hbuf *ob, const uint8_t *data, size_t size, int span)
 		if (i > mark)
 			hbuf_put(ob, data + mark, i - mark);
 
-		if (i >= size) 
+		if (i >= size)
 			break;
 
 		if (slash)
