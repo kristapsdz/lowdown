@@ -132,7 +132,7 @@ struct hdoc {
 	struct footnote_list footnotes_used;
 	uint8_t		 active_char[256];
 	hstack		 work_bufs[2];
-	hdoc_ext	 ext_flags;
+	unsigned int	 ext_flags;
 	size_t		 max_nesting;
 	int		 in_link_body;
 };
@@ -2949,7 +2949,7 @@ static void expand_tabs(hbuf *ob, const uint8_t *line, size_t size)
  */
 hdoc *
 hdoc_new(const hrend *renderer, const struct lowdown_opts *opts,
-	hdoc_ext extensions, size_t max_nesting)
+	unsigned int extensions, size_t max_nesting)
 {
 	hdoc *doc = NULL;
 

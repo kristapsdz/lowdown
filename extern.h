@@ -57,30 +57,6 @@ typedef struct hstack {
 	size_t		  asize;
 } hstack;
 
-typedef enum hdoc_ext {
-	/* Block-level extensions. */
-	HDOC_EXT_TABLES = (1 << 0),
-	HDOC_EXT_FENCED_CODE = (1 << 1),
-	HDOC_EXT_FOOTNOTES = (1 << 2),
-
-	/* Span-level extensions. */
-	HDOC_EXT_AUTOLINK = (1 << 3),
-	HDOC_EXT_STRIKETHROUGH = (1 << 4),
-	HDOC_EXT_UNDERLINE = (1 << 5),
-	HDOC_EXT_HIGHLIGHT = (1 << 6),
-	HDOC_EXT_QUOTE = (1 << 7),
-	HDOC_EXT_SUPERSCRIPT = (1 << 8),
-	HDOC_EXT_MATH = (1 << 9),
-
-	/* Other flags. */
-	HDOC_EXT_NO_INTRA_EMPHASIS = (1 << 11),
-	HDOC_EXT_SPACE_HEADERS = (1 << 12),
-	HDOC_EXT_MATH_EXPLICIT = (1 << 13),
-
-	/* Negative flags. */
-	HDOC_EXT_DISABLE_INDENTED_CODE = (1 << 14)
-} hdoc_ext;
-
 typedef enum hlist_fl {
 	HLIST_ORDERED = (1 << 0),
 	HLIST_BLOCK = (1 << 1) /* <li> containing block data */
@@ -220,7 +196,7 @@ void	 hstack_push(hstack *, void *);
 void	*hstack_top(const hstack *);
 void	 hstack_uninit(hstack *);
 
-hdoc 	*hdoc_new(const hrend *, const struct lowdown_opts *, hdoc_ext, size_t) __attribute__((malloc));
+hdoc 	*hdoc_new(const hrend *, const struct lowdown_opts *, unsigned int, size_t) __attribute__((malloc));
 void	 hdoc_render(hdoc *, hbuf *, const uint8_t *, size_t );
 void	 hdoc_free(hdoc *);
 

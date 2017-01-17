@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate: January 11 2017 $
+.Dd $Mdocdate: January 17 2017 $
 .Dt LOWDOWN 3
 .Os
 .Sh NAME
@@ -77,10 +77,78 @@ of size
 .Fa bufsz .
 .Pp
 Both accept a configuration structure,
-.Fa opts .
-The most significant field is
-.Va type ,
-which may be set to
+.Fa opts ,
+which has the following fields:
+.Bl -tag -width Ds
+.It Va arg
+Pointer passed to
+.Va msg ,
+if not
+.Dv NULL .
+.It Va feat
+Features used during the parse.
+This bit-field may have the following bits OR'd:
+.Pp
+.Bl -tag -width Ds -compact
+.It Dv LOWDOWN_TABLES
+Allow for GFM tables.
+.It Dv LOWDOWN_FENCED
+Allow for GFM fenced (language-specific) code blocks.
+.It Dv LOWDOWN_FOOTNOTES
+MMD style footnotes.
+This only supports one-liner footnotes on the same line as the footnote
+definition (not the in-line referent).
+.It Dv LOWDOWN_AUTOLINK
+Autolink
+.Li http ,
+.Li https ,
+.Li ftp ,
+.Li mailto ,
+and relative links or link fragments.
+.It Dv LOWDOWN_STRIKE
+Strikethrough support.
+.It Dv LOWDOWN_UNDER
+Underline instead of emphasise.
+.It Dv LOWDOWN_HILITE
+Highlight.
+Do not use this option.
+.It Dv LOWDOWN_QUOTE
+Recognise quotes.
+You probably don't want this.
+.It Dv LOWDOWN_SUPER
+Allow for super-scripts.
+This accepts foo^bar, which puts the parts following the caret until
+whitespace in superscripts; or foo^(bar), which puts only the parts in
+parenthesis.
+.It Dv LOWDOWN_MATH
+Recognise single-dollar math mode.
+.It Dv LOWDOWN_NOINTEM
+Disable emphasis with links.
+.It Dv LOWDOWN_SPHD
+Require a space between hash marks and header.
+.It Dv LOWDOWN_MATHEXP
+Recognise double-dollar math mode.
+This only works if
+.Dv LOWDOWN_MATH
+has also been set.
+.It Dv LOWDOWN_NOCODEIND
+Do not indent code blocks.
+.El
+.Pp
+If set to zero, or if the structure is not specified, the defaults are
+.Dv LOWDOWN_FOOTNOTES |
+.Dv LOWDOWN_AUTOLINK |
+.Dv LOWDOWN_TABLES |
+.Dv LOWDOWN_SUPER |
+.Dv LOWDOWN_STRIKE |
+.Dv LOWDOWN_FENCED .
+.It Va msg
+Message function for logging messages.
+If
+.Dv NULL ,
+messages are not logged.
+.It Va type
+May be set to
 .Dv LOWDOWN_HTML
 for HTML5 output,
 .Dv LOWDOWN_MAN
@@ -91,16 +159,7 @@ macros, or
 for
 .Fl ms
 macros.
-Another pair of fields manage how messages are logged:
-.Va msg ,
-for the message function; and
-.Va arg ,
-passed opaquely to the message function.
-If the
-.Va msg
-is
-.Dv NULL ,
-no messages are logged.
+.El
 .Pp
 The
 .Nm lowdown_errstr
