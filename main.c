@@ -196,9 +196,9 @@ main(int argc, char *argv[])
 	struct tm	*tm;
 	char		 buf[32];
 	unsigned char	*ret = NULL;
-	size_t		 retsz = 0, msz;
+	size_t		 i, retsz = 0, msz = 0;
 	time_t		 t = time(NULL);
-	struct lowdown_meta *m;
+	struct lowdown_meta *m = NULL;
 
 	memset(&opts, 0, sizeof(struct lowdown_opts));
 
@@ -208,7 +208,8 @@ main(int argc, char *argv[])
 		LOWDOWN_TABLES |
 		LOWDOWN_SUPER |
 		LOWDOWN_STRIKE |
-		LOWDOWN_FENCED;
+		LOWDOWN_FENCED |
+		LOWDOWN_METADATA;
 
 	tm = localtime(&t);
 
@@ -320,6 +321,11 @@ main(int argc, char *argv[])
 	free(ret);
 	if (fout != stdout)
 		fclose(fout);
+	for (i = 0; i < msz; i++) {
+		free(m[i].key);
+		free(m[i].value);
+	}
+	free(m);
 	return(EXIT_SUCCESS);
 usage:
 	fprintf(stderr, "usage: %s "
