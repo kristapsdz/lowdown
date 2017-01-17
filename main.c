@@ -178,6 +178,8 @@ feature(const char *v)
 		return(LOWDOWN_MATHEXP);
 	if (0 == strcasecmp(v, "nocodeind"))
 		return(LOWDOWN_NOCODEIND);
+	if (0 == strcasecmp(v, "metadata"))
+		return(LOWDOWN_METADATA);
 
 	return(0);
 }

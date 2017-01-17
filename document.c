@@ -122,7 +122,7 @@ static char_trigger markdown_char_ptrs[] = {
 	&char_math
 };
 
-struct hdoc {
+struct 	hdoc {
 	hrend		 md;
 	void		*data;
 	const uint8_t	*start;
@@ -136,6 +136,8 @@ struct hdoc {
 	size_t		 max_nesting;
 	size_t	 	 cur_par;
 	int		 in_link_body;
+	struct lowdown_meta *meta;
+	size_t		 metasz;
 };
 
 static hbuf *
@@ -2961,6 +2963,8 @@ hdoc_new(const hrend *renderer, const struct lowdown_opts *opts,
 	doc = xmalloc(sizeof(hdoc));
 	memcpy(&doc->md, renderer, sizeof(hrend));
 
+	doc->metasz = 0;
+	doc->meta = NULL;
 	doc->opts = opts;
 	doc->data = renderer->opaque;
 
@@ -3020,7 +3024,55 @@ hdoc_new(const hrend *renderer, const struct lowdown_opts *opts,
 	return doc;
 }
 
-/* render regular Markdown using the document processor */
+/*
+ * Parse MMD meta-data.
+ * This consists of key-value pairs.
+ */
+static void
+parse_metadata(hdoc *doc, const uint8_t *data, size_t sz)
+{
+	size_t	 	 i, pos = 0;
+	const uint8_t	*key, *val;
+	struct lowdown_meta *m;
+
+	if (0 == sz || '\n' != data[sz - 1])
+		return;
+
+	while (pos < sz) {
+		key = &data[pos];
+		for (i = pos; i < sz; i++)
+			if (':' == data[i])
+				break;
+
+		doc->meta = xreallocarray
+			(doc->meta, doc->metasz + 1,
+			 sizeof(struct lowdown_meta));
+		m = &doc->meta[doc->metasz++];
+		memset(m, 0, sizeof(struct lowdown_meta));
+
+		m->key = xstrndup(key, i - pos);
+		if (i == sz) {
+			m->value = xstrndup(key, 0);
+			break;
+		}
+
+		val = &data[++i];
+		pos = i;
+
+		for ( ; i < sz; i++)
+			if ('\n' == data[i] &&
+			    (i == sz - 1 || ! isspace((int)data[i + 1])))
+				break;
+
+		assert(i < sz);
+		m->value = xstrndup(val, i - pos);
+		pos = i + 1;
+	}
+}
+
+/* 
+ * Render regular Markdown using the document processor.
+ */
 void
 hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
 {
@@ -3032,45 +3084,83 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
 
 	text = hbuf_new(64);
 
-	/* Preallocate enough space for our buffer to avoid expanding while copying */
+	/* 
+	 * Preallocate enough space for our buffer to avoid expanding
+	 * while copying.
+	 */
+
 	hbuf_grow(text, size);
 
-	/* reset the references table */
+	/* Reset the references table. */
+
 	memset(&doc->refs, 0x0, REF_TABLE_SIZE * sizeof(void *));
 
 	footnotes_enabled = doc->ext_flags & LOWDOWN_FOOTNOTES;
 
-	/* reset the footnotes lists */
+	/* Reset the footnotes lists. */
+
 	if (footnotes_enabled) {
-		memset(&doc->footnotes_found, 0x0, sizeof(doc->footnotes_found));
-		memset(&doc->footnotes_used, 0x0, sizeof(doc->footnotes_used));
+		memset(&doc->footnotes_found, 0x0, 
+			sizeof(doc->footnotes_found));
+		memset(&doc->footnotes_used, 0x0, 
+			sizeof(doc->footnotes_used));
 	}
 
-	/* first pass: looking for references, copying everything else */
-	beg = 0;
+	/* 
+	 * Skip a possible UTF-8 BOM, even though the Unicode standard
+	 * discourages having these in UTF-8 documents.
+	 */
 
-	/* Skip a possible UTF-8 BOM, even though the Unicode standard
-	 * discourages having these in UTF-8 documents */
+	beg = 0;
 	if (size >= 3 && memcmp(data, UTF8_BOM, 3) == 0)
 		beg += 3;
 
-	while (beg < size) /* iterating over lines */
-		if (footnotes_enabled && is_footnote(data, beg, size, &end, &doc->footnotes_found))
+	/* 
+	 * Zeroth pass: see if we should collect metadata. 
+	 * Only do so if we're toggled to look for metadata.
+	 */
+
+	if (LOWDOWN_METADATA & doc->ext_flags &&
+	    beg < size - 1 && isalnum((int)data[beg])) {
+		size_t i;
+		sv = &data[beg];
+		for (end = beg + 1; end < size; end++) {
+			if ('\n' == data[end] &&
+			    '\n' == data[end - 1])
+				break;
+		}
+		parse_metadata(doc, sv, end - beg);
+		beg = end + 1;
+
+		for (i = 0; i < doc->metasz; i++) {
+			warnx("META: [%s]: [%s]", doc->meta[i].key, doc->meta[i].value);
+		}
+	}
+
+	/* First pass: looking for references, copying everything else. */
+
+	while (beg < size) 
+		if (footnotes_enabled && 
+		    is_footnote(data, beg, size, &end, &doc->footnotes_found))
 			beg = end;
 		else if (is_ref(data, beg, size, &end, doc->refs))
 			beg = end;
-		else { /* skipping to the next line */
+		else { 
+			/* Skipping to the next line. */
 			end = beg;
-			while (end < size && data[end] != '\n' && data[end] != '\r')
+			while (end < size && data[end] != '\n' && 
+			       data[end] != '\r')
 				end++;
 
-			/* adding the line body if present */
+			/* Adding the line body if present. */
 			if (end > beg)
 				expand_tabs(text, data + beg, end - beg);
 
-			while (end < size && (data[end] == '\n' || data[end] == '\r')) {
-				/* add one \n per newline */
-				if (data[end] == '\n' || (end + 1 < size && data[end + 1] != '\n'))
+			while (end < size && (data[end] == '\n' || 
+			       data[end] == '\r')) {
+				/* Add one \n per newline. */
+				if (data[end] == '\n' || 
+				    (end + 1 < size && data[end + 1] != '\n'))
 					hbuf_putc(text, '\n');
 				end++;
 			}
@@ -3078,18 +3168,21 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
 			beg = end;
 		}
 
-	/* pre-grow the output buffer to minimize allocations */
+	/* Pre-grow the output buffer to minimize allocations. */
+
 	hbuf_grow(ob, text->size + (text->size >> 1));
 
-	/* second pass: actual rendering */
+	/* Second pass: actual rendering. */
+
 	if (doc->md.doc_header)
 		doc->md.doc_header(ob, 0, doc->data);
 
 	doc->start = text->data;
 
 	if (text->size) {
-		/* adding a final newline if not already present */
-		if (text->data[text->size - 1] != '\n' &&  text->data[text->size - 1] != '\r')
+		/* Adding a final newline if not already present. */
+		if (text->data[text->size - 1] != '\n' &&  
+		    text->data[text->size - 1] != '\r')
 			hbuf_putc(text, '\n');
 
 		sv = doc->start;
@@ -3098,14 +3191,16 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
 		doc->start = sv;
 	}
 
-	/* footnotes */
+	/* Footnotes. */
+
 	if (footnotes_enabled)
 		parse_footnote_list(ob, doc, &doc->footnotes_used);
 
 	if (doc->md.doc_footer)
 		doc->md.doc_footer(ob, 0, doc->data);
 
-	/* clean-up */
+	/* Clean-up. */
+
 	hbuf_free(text);
 	free_link_refs(doc->refs);
 	if (footnotes_enabled) {
@@ -3117,11 +3212,13 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
 	assert(doc->work_bufs[BUFFER_BLOCK].size == 0);
 }
 
-/* deallocate a document processor instance */
+/* 
+ * Deallocate a document processor instance. 
+ */
 void
 hdoc_free(hdoc *doc)
 {
-	size_t i;
+	size_t	 i;
 
 	for (i = 0; i < (size_t)doc->work_bufs[BUFFER_SPAN].asize; ++i)
 		hbuf_free(doc->work_bufs[BUFFER_SPAN].item[i]);
@@ -3132,5 +3229,11 @@ hdoc_free(hdoc *doc)
 	hstack_uninit(&doc->work_bufs[BUFFER_SPAN]);
 	hstack_uninit(&doc->work_bufs[BUFFER_BLOCK]);
 
+	for (i = 0; i < doc->metasz; i++) {
+		free(doc->meta[i].key);
+		free(doc->meta[i].value);
+	}
+
+	free(doc->meta);
 	free(doc);
 }

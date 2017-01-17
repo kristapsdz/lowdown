@@ -53,6 +53,11 @@ enum	lowdown_err {
 
 typedef	void (*lowdown_msg)(enum lowdown_err, void *, const char *);
 
+struct	lowdown_meta {
+	char		*key;
+	char		*value;
+};
+
 struct	lowdown_opts {
 	lowdown_msg	  msg;
 	enum lowdown_type type;
@@ -72,6 +77,7 @@ struct	lowdown_opts {
 #define LOWDOWN_SPHD	  0x800
 #define LOWDOWN_MATHEXP	  0x1000
 #define LOWDOWN_NOCODEIND 0x2000
+#define	LOWDOWN_METADATA  0x4000
 };
 
 __BEGIN_DECLS
