@@ -271,7 +271,7 @@ static void
 rndr_list(hbuf *ob, const hbuf *content, hlist_fl flags, void *data)
 {
 
-	if (NULL != content && content->size) 
+	if (NULL != content && content->size)
 		hbuf_put(ob, content->data, content->size);
 }
 
@@ -279,7 +279,7 @@ static void
 rndr_listitem(hbuf *ob, const hbuf *content, hlist_fl flags, void *data, size_t num)
 {
 
-	if (NULL == content || 0 == content->size) 
+	if (NULL == content || 0 == content->size)
 		return;
 
 	if (HLIST_ORDERED & flags)
@@ -298,7 +298,7 @@ rndr_paragraph(hbuf *ob, const hbuf *content, void *data, size_t par_count)
 
 	if (NULL == content || 0 == content->size)
 		return;
-	while (i < content->size && isspace((int)content->data[i])) 
+	while (i < content->size && isspace((int)content->data[i]))
 		i++;
 	if (i == content->size)
 		return;
@@ -324,7 +324,7 @@ rndr_paragraph(hbuf *ob, const hbuf *content, void *data, size_t par_count)
 			rndr_linebreak(ob, data);
 			i++;
 		}
-	} else 
+	} else
 		hbuf_put(ob, content->data + i, content->size - i);
 
 	BUFFER_NEWLINE(content->data + i, content->size - i, ob);
@@ -338,9 +338,9 @@ rndr_raw_block(hbuf *ob, const hbuf *content, void *data)
 	if ( ! content)
 		return;
 
-	/* 
+	/*
 	 * FIXME: Do we *really* need to trim the HTML? How does that
-	 * make a difference? 
+	 * make a difference?
 	 */
 
 	sz = content->size;
@@ -366,9 +366,9 @@ rndr_hrule(hbuf *ob, void *data)
 {
 	nroff_state 	*st = data;
 
-	/* 
+	/*
 	 * I'm not sure how else to do horizontal lines.
-	 * The LP is to reset the margins. 
+	 * The LP is to reset the margins.
 	 */
 
 	HBUF_PUTSL(ob, ".LP\n");
@@ -389,9 +389,9 @@ rndr_raw_html(hbuf *ob, const hbuf *text, void *data)
 {
 	nroff_state 	*state = data;
 
-	/* 
+	/*
 	 * ESCAPE overrides SKIP_HTML. It doesn't look to see if
-	 * there are any valid tags, just escapes all of them. 
+	 * there are any valid tags, just escapes all of them.
 	 */
 	if ((state->flags & HOEDOWN_HTML_ESCAPE) != 0) {
 		escape_block(ob, text->data, text->size);
@@ -417,7 +417,7 @@ rndr_table(hbuf *ob, const hbuf *content, void *data)
 }
 
 static void
-rndr_table_header(hbuf *ob, const hbuf *content, 
+rndr_table_header(hbuf *ob, const hbuf *content,
 	void *data, const htbl_flags *fl, size_t columns)
 {
 	size_t	 i;
@@ -457,7 +457,7 @@ rndr_tablerow(hbuf *ob, const hbuf *content, void *data)
 }
 
 static void
-rndr_tablecell(hbuf *ob, const hbuf *content, 
+rndr_tablecell(hbuf *ob, const hbuf *content,
 	htbl_flags flags, void *data, size_t col, size_t columns)
 {
 
@@ -471,7 +471,7 @@ static int
 rndr_superscript(hbuf *ob, const hbuf *content, void *data)
 {
 
-	if (NULL == content || 0 == content->size) 
+	if (NULL == content || 0 == content->size)
 		return 0;
 
 	HBUF_PUTSL(ob, "\\u\\s-2");
@@ -498,7 +498,7 @@ rndr_footnotes(hbuf *ob, const hbuf *content, void *data)
 {
 	nroff_state 	*st = data;
 
-	if (NULL == content || 0 == content->size) 
+	if (NULL == content || 0 == content->size)
 		return;
 
 	/* The LP is to reset the margins. */
@@ -599,7 +599,7 @@ hrend_nroff_new(hhtml_fl render_flags, int mdoc)
 	renderer = xmalloc(sizeof(hrend));
 	memcpy(renderer, &cb_default, sizeof(hrend));
 
-	if (render_flags & HOEDOWN_HTML_SKIP_HTML || 
+	if (render_flags & HOEDOWN_HTML_SKIP_HTML ||
 	    render_flags & HOEDOWN_HTML_ESCAPE)
 		renderer->blockhtml = NULL;
 

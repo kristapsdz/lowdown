@@ -23,7 +23,7 @@
 #include "extern.h"
 
 void
-lmsg(const struct lowdown_opts *opts, 
+lmsg(const struct lowdown_opts *opts,
 	enum lowdown_err err, const char *fmt, ...)
 {
 	char	 buf[1024];

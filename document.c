@@ -62,13 +62,13 @@ struct footnote_list {
 	struct footnote_item *tail;
 };
 
-/* 
+/*
  * Function pointer to render active chars.
  * Returns the number of chars taken care of.
  * "data" is the pointer of the beginning of the span.
  * "offset" is the number of valid chars before data.
  */
-typedef size_t (*char_trigger)(hbuf *ob, hdoc *doc, 
+typedef size_t (*char_trigger)(hbuf *ob, hdoc *doc,
 	uint8_t *data, size_t offset, size_t size);
 
 static size_t char_emphasis(hbuf *, hdoc *, uint8_t *, size_t, size_t);
@@ -136,8 +136,6 @@ struct 	hdoc {
 	size_t		 max_nesting;
 	size_t	 	 cur_par;
 	int		 in_link_body;
-	struct lowdown_meta *meta;
-	size_t		 metasz;
 };
 
 static hbuf *
@@ -194,14 +192,14 @@ hash_link_ref(const uint8_t *link_ref, size_t length)
 	unsigned int hash = 0;
 
 	for (i = 0; i < length; ++i)
-		hash = tolower(link_ref[i]) + 
+		hash = tolower(link_ref[i]) +
 			(hash << 6) + (hash << 16) - hash;
 
 	return hash;
 }
 
 static struct link_ref *
-add_link_ref(struct link_ref **refs, 
+add_link_ref(struct link_ref **refs,
 	const uint8_t *name, size_t name_size)
 {
 	struct link_ref *ref = xcalloc(1, sizeof(struct link_ref));
@@ -250,7 +248,7 @@ free_link_refs(struct link_ref **refs)
 }
 
 static struct footnote_ref *
-create_footnote_ref(struct footnote_list *list, 
+create_footnote_ref(struct footnote_list *list,
 	const uint8_t *name, size_t name_size)
 {
 	struct footnote_ref *ref;
@@ -335,7 +333,7 @@ xisspace(int c)
 	return c == ' ' || c == '\n';
 }
 
-/* 
+/*
  * Verify that all the data is spacing.
  */
 static int
@@ -343,7 +341,7 @@ is_empty_all(const uint8_t *data, size_t size)
 {
 	size_t i = 0;
 
-	while (i < size && xisspace(data[i])) 
+	while (i < size && xisspace(data[i]))
 		i++;
 
 	return i == size;
@@ -362,11 +360,11 @@ replace_spacing(hbuf *ob, const uint8_t *data, size_t size)
 
 	while (1) {
 		mark = i;
-		while (i < size && data[i] != '\n') 
+		while (i < size && data[i] != '\n')
 			i++;
 		hbuf_put(ob, data + mark, i - mark);
 
-		if (i >= size) 
+		if (i >= size)
 			break;
 
 		if (!(i > 0 && data[i-1] == ' '))
@@ -375,7 +373,7 @@ replace_spacing(hbuf *ob, const uint8_t *data, size_t size)
 	}
 }
 
-/* 
+/*
  * Looks for the address part of a mail autolink and '>'.
  * This is less strict than the original markdown e-mail address matching.
  */
@@ -407,7 +405,7 @@ is_mail_autolink(uint8_t *data, size_t size)
 	return 0;
 }
 
-/* 
+/*
  * Returns the length of the given tag, or 0 is it's not valid.
  */
 static size_t
@@ -417,18 +415,18 @@ tag_length(uint8_t *data, size_t size, halink_type *autolink)
 
 	/* A valid tag can't be shorter than 3 chars. */
 
-	if (size < 3) 
+	if (size < 3)
 		return 0;
 
-	if (data[0] != '<') 
+	if (data[0] != '<')
 		return 0;
 
         /* HTML comment, laxist form. */
 
-        if (size > 5 && data[1] == '!' && 
+        if (size > 5 && data[1] == '!' &&
 	    data[2] == '-' && data[3] == '-') {
 		i = 5;
-		while (i < size && !(data[i - 2] == '-' && 
+		while (i < size && !(data[i - 2] == '-' &&
 		       data[i - 1] == '-' && data[i] == '>'))
 			i++;
 		i++;
@@ -436,7 +434,7 @@ tag_length(uint8_t *data, size_t size, halink_type *autolink)
 			return i;
         }
 
-	/* 
+	/*
 	 * Begins with a '<' optionally followed by '/', followed by letter or
 	 * number.
 	 */
@@ -452,7 +450,7 @@ tag_length(uint8_t *data, size_t size, halink_type *autolink)
 
 	/* Try to find the beginning of an URI. */
 
-	while (i < size && (isalnum(data[i]) || 
+	while (i < size && (isalnum(data[i]) ||
 	       data[i] == '.' || data[i] == '+' || data[i] == '-'))
 		i++;
 
@@ -474,19 +472,19 @@ tag_length(uint8_t *data, size_t size, halink_type *autolink)
 	else if (*autolink) {
 		j = i;
 		while (i < size) {
-			if (data[i] == '\\') 
+			if (data[i] == '\\')
 				i += 2;
 			else if (data[i] == '>' || data[i] == '\'' ||
-				 data[i] == '"' || data[i] == ' ' || 
+				 data[i] == '"' || data[i] == ' ' ||
 				 data[i] == '\n')
 				break;
-			else 
+			else
 				i++;
 		}
 
-		if (i >= size) 
+		if (i >= size)
 			return 0;
-		if (i > j && data[i] == '>') 
+		if (i > j && data[i] == '>')
 			return i + 1;
 
 		/* One of the forbidden chars has been found. */
@@ -496,9 +494,9 @@ tag_length(uint8_t *data, size_t size, halink_type *autolink)
 
 	/* Looking for something looking like a tag end. */
 
-	while (i < size && data[i] != '>') 
+	while (i < size && data[i] != '>')
 		i++;
-	if (i >= size) 
+	if (i >= size)
 		return 0;
 	return i + 1;
 }
@@ -518,8 +516,8 @@ last_newline(const hdoc *doc, const uint8_t *data)
 	return('\n' == doc->start[data - doc->start - 1]);
 }
 
-/* 
- * Parses inline markdown elements. 
+/*
+ * Parses inline markdown elements.
  * This function is important because it handles "raw" input that we
  * pass directly to the output formatter.
  * It subsequently needs escaping according to the output formatter.
@@ -552,7 +550,7 @@ parse_inline(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 		} else
 			hbuf_put(ob, data + i, end - i);
 
-		if (end >= size) 
+		if (end >= size)
 			break;
 		i = end;
 
@@ -561,7 +559,7 @@ parse_inline(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 
 		/* Check if no action from the callback. */
 
-		if (!end) 
+		if (!end)
 			end = i + 1;
 		else {
 			i += end;
@@ -571,7 +569,7 @@ parse_inline(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 	}
 }
 
-/* 
+/*
  * Returns whether special char at data[loc] is escaped by '\\'.
  */
 static int
@@ -587,7 +585,7 @@ is_escaped(uint8_t *data, size_t loc)
 	return (loc - i) % 2;
 }
 
-/* 
+/*
  * Looks for the next emph uint8_t, skipping other constructs.
   */
 static size_t
@@ -596,7 +594,7 @@ find_emph_char(uint8_t *data, size_t size, uint8_t c)
 	size_t i = 0;
 
 	while (i < size) {
-		while (i < size && data[i] != c && 
+		while (i < size && data[i] != c &&
 		       data[i] != '[' && data[i] != '`')
 			i++;
 
@@ -606,7 +604,7 @@ find_emph_char(uint8_t *data, size_t size, uint8_t c)
 		/* Not counting escaped chars. */
 
 		if (is_escaped(data, i)) {
-			i++; 
+			i++;
 			continue;
 		}
 
@@ -622,32 +620,32 @@ find_emph_char(uint8_t *data, size_t size, uint8_t c)
 			/* Counting the number of opening backticks. */
 
 			while (i < size && data[i] == '`') {
-				i++; 
+				i++;
 				span_nb++;
 			}
 
-			if (i >= size) 
+			if (i >= size)
 				return 0;
 
 			/* Finding the matching closing sequence. */
 
 			bt = 0;
 			while (i < size && bt < span_nb) {
-				if (!tmp_i && data[i] == c) 
+				if (!tmp_i && data[i] == c)
 					tmp_i = i;
 
-				if (data[i] == '`') 
+				if (data[i] == '`')
 					bt++;
-				else 
+				else
 					bt = 0;
 				i++;
 			}
 
-			/* 
+			/*
 			 * Not a well-formed codespan; use found
 			 * matching emph char.
 			 */
-			if (bt < span_nb && i >= size) 
+			if (bt < span_nb && i >= size)
 				return tmp_i;
 		} else if (data[i] == '[') {
 			size_t tmp_i = 0;
@@ -657,7 +655,7 @@ find_emph_char(uint8_t *data, size_t size, uint8_t c)
 
 			i++;
 			while (i < size && data[i] != ']') {
-				if (!tmp_i && data[i] == c) 
+				if (!tmp_i && data[i] == c)
 					tmp_i = i;
 				i++;
 			}
@@ -671,10 +669,10 @@ find_emph_char(uint8_t *data, size_t size, uint8_t c)
 
 			switch (data[i]) {
 			case '[':
-				cc = ']'; 
+				cc = ']';
 				break;
 			case '(':
-				cc = ')'; 
+				cc = ')';
 				break;
 			default:
 				if (tmp_i)
@@ -685,7 +683,7 @@ find_emph_char(uint8_t *data, size_t size, uint8_t c)
 
 			i++;
 			while (i < size && data[i] != cc) {
-				if (!tmp_i && data[i] == c) 
+				if (!tmp_i && data[i] == c)
 					tmp_i = i;
 				i++;
 			}
@@ -700,7 +698,7 @@ find_emph_char(uint8_t *data, size_t size, uint8_t c)
 	return 0;
 }
 
-/* 
+/*
  * Parsing single emphase.
  * Closed by a symbol not preceded by spacing and not followed by
  * symbol.
@@ -717,10 +715,10 @@ parse_emph1(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 
 	while (i < size) {
 		len = find_emph_char(data + i, size - i, c);
-		if (!len) 
+		if (!len)
 			return 0;
 		i += len;
-		if (i >= size) 
+		if (i >= size)
 			return 0;
 
 		if (data[i] == c && !xisspace(data[i - 1])) {
@@ -731,7 +729,7 @@ parse_emph1(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 			work = newbuf(doc, BUFFER_SPAN);
 			parse_inline(work, doc, data, i);
 
-			if (doc->ext_flags & LOWDOWN_UNDER && 
+			if (doc->ext_flags & LOWDOWN_UNDER &&
 			    c == '_')
 				r = doc->md.underline
 					(ob, work, doc->data);
@@ -747,8 +745,8 @@ parse_emph1(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 	return 0;
 }
 
-/* 
- * Parsing single emphase. 
+/*
+ * Parsing single emphase.
  */
 static size_t
 parse_emph2(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, uint8_t c)
@@ -1011,14 +1009,14 @@ char_quote(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 }
 
 
-/* 
- * '\\' backslash escape 
+/*
+ * '\\' backslash escape
  */
 static size_t
-char_escape(hbuf *ob, hdoc *doc, 
+char_escape(hbuf *ob, hdoc *doc,
 	uint8_t *data, size_t offset, size_t size)
 {
-	static const char *escape_chars = 
+	static const char *escape_chars =
 		"\\`*_{}[]()#+-.!:|&<>^~=\"$";
 	hbuf		 work;
 	size_t		 w;
@@ -1028,26 +1026,26 @@ char_escape(hbuf *ob, hdoc *doc,
 	memset(&work, 0, sizeof(hbuf));
 
 	if (size > 1) {
-		if (data[1] == '\\' && 
+		if (data[1] == '\\' &&
 		    (doc->ext_flags & LOWDOWN_MATH) &&
-		    size > 2 && 
+		    size > 2 &&
 		    (data[2] == '(' || data[2] == '[')) {
 			end = (data[2] == '[') ? "\\\\]" : "\\\\)";
-			w = parse_math(ob, doc, data, offset, 
+			w = parse_math(ob, doc, data, offset,
 				size, end, 3, data[2] == '[');
-			if (w) 
+			if (w)
 				return w;
 		}
 
 		if (strchr(escape_chars, data[1]) == NULL)
 			return 0;
-		
+
 		if (doc->md.normal_text) {
 			nl = last_newline(doc, data + 1);
 			work.data = data + 1;
 			work.size = 1;
 			doc->md.normal_text(ob, &work, doc->data, nl);
-		} else 
+		} else
 			hbuf_putc(ob, data[1]);
 	} else if (size == 1) {
 		if (doc->md.normal_text) {
@@ -1055,7 +1053,7 @@ char_escape(hbuf *ob, hdoc *doc,
 			work.data = data;
 			work.size = 1;
 			doc->md.normal_text(ob, &work, doc->data, nl);
-		} else 
+		} else
 			hbuf_putc(ob, data[0]);
 	}
 
@@ -1121,7 +1119,7 @@ char_langle_tag(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 }
 
 static size_t
-char_autolink_www(hbuf *ob, hdoc *doc, 
+char_autolink_www(hbuf *ob, hdoc *doc,
 	uint8_t *data, size_t offset, size_t size)
 {
 	hbuf	*link, *link_url, *link_text;
@@ -1131,7 +1129,7 @@ char_autolink_www(hbuf *ob, hdoc *doc,
 		return 0;
 
 	link = newbuf(doc, BUFFER_SPAN);
-	link_len = halink_www(&rewind, link, data, 
+	link_len = halink_www(&rewind, link, data,
 		offset, size, HALINK_SHORT_DOMAINS);
 
 	if (link_len > 0) {
@@ -1148,7 +1146,7 @@ char_autolink_www(hbuf *ob, hdoc *doc,
 			link_text = newbuf(doc, BUFFER_SPAN);
 			doc->md.normal_text
 				(link_text, link, doc->data, 0);
-			doc->md.link(ob, link_text, 
+			doc->md.link(ob, link_text,
 				link_url, NULL, doc->data);
 			popbuf(doc, BUFFER_SPAN);
 		} else
@@ -1273,12 +1271,12 @@ char_link(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 		goto cleanup;
 	}
 
-	/* 
+	/*
 	 * Skip any amount of spacing.
-	 * (This is much more laxist than original markdown syntax.) 
+	 * (This is much more laxist than original markdown syntax.)
 	 * Note that we're doing so.
 	 */
-	if (i < size && xisspace(data[i])) 
+	if (i < size && xisspace(data[i]))
 		lmsg(doc->opts, LOWDOWN_ERR_SPACE_BEFORE_LINK, NULL);
 	while (i < size && xisspace(data[i]))
 		i++;
@@ -1300,14 +1298,14 @@ char_link(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 		nb_p = 0;
 
 		while (i < size) {
-			if (data[i] == '\\') 
+			if (data[i] == '\\')
 				i += 2;
 			else if (data[i] == '(' && i != 0) {
 				nb_p++; i++;
 			}
 			else if (data[i] == ')') {
 				if (nb_p == 0) break;
-				else nb_p--; 
+				else nb_p--;
 				i++;
 			} else if (i >= 1 && xisspace(data[i-1]) && (data[i] == '\'' || data[i] == '"')) break;
 			else i++;
@@ -1798,8 +1796,8 @@ parse_blockquote(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 static size_t
 parse_htmlblock(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int do_render);
 
-/* 
- * handles parsing of a regular paragraph 
+/*
+ * handles parsing of a regular paragraph
  */
 static size_t
 parse_paragraph(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
@@ -1815,9 +1813,9 @@ parse_paragraph(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 	work.data = data;
 
 	while (i < size) {
-		for (end = i + 1; 
-		     end < size && data[end - 1] != '\n'; 
-		     end++) 
+		for (end = i + 1;
+		     end < size && data[end - 1] != '\n';
+		     end++)
 			/* empty */;
 
 		if (is_empty(data + i, size - i))
@@ -1979,17 +1977,17 @@ parse_blockcode(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 	return beg;
 }
 
-/* 
+/*
  * Parsing of a single list item assuming initial prefix is already
  * removed.
  */
 static size_t
-parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data, 
+parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 	size_t size, hlist_fl *flags, size_t num)
 {
 	hbuf		*work = NULL, *inter = NULL;
 	size_t		 beg = 0, end, pre, sublist = 0, orgpre = 0, i;
-	int		 in_empty = 0, has_inside_empty = 0, 
+	int		 in_empty = 0, has_inside_empty = 0,
 			 in_fence = 0;
 	const uint8_t	*sv;
 	size_t 		 has_next_uli = 0, has_next_oli = 0;
@@ -2046,12 +2044,12 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 			i++;
 		pre = i;
 
-		if (doc->ext_flags & LOWDOWN_FENCED) 
-			if (is_codefence(data + beg + i, 
+		if (doc->ext_flags & LOWDOWN_FENCED)
+			if (is_codefence(data + beg + i,
 			    end - beg - i, NULL, NULL))
 				in_fence = !in_fence;
 
-		/* 
+		/*
 		 * Only check for new list items if we are **not**
 		 * inside a fenced code block.
 		 */
@@ -2060,14 +2058,14 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 			has_next_uli = prefix_uli
 				(data + beg + i, end - beg - i);
 			has_next_oli = prefix_oli
-				(data + beg + i, end - beg - i, 
+				(data + beg + i, end - beg - i,
 				 NULL, NULL);
 		}
 
 		/* Checking for a new item. */
 
-		if ((has_next_uli && 
-		     ! is_hrule(data + beg + i, end - beg - i)) || 
+		if ((has_next_uli &&
+		     ! is_hrule(data + beg + i, end - beg - i)) ||
 		    has_next_oli) {
 			if (in_empty)
 				has_inside_empty = 1;
@@ -2231,7 +2229,7 @@ parse_footnote_list(hbuf *ob, hdoc *doc, struct footnote_list *footnotes)
 		ref = item->ref;
 		sv = doc->start;
 		doc->start = ref->contents->data;
-		parse_footnote_def(work, doc, ref->num, 
+		parse_footnote_def(work, doc, ref->num,
 			ref->contents->data, ref->contents->size);
 		doc->start = sv;
 		item = item->next;
@@ -2795,7 +2793,7 @@ is_footnote(const uint8_t *data, size_t beg, size_t end, size_t *last, struct fo
 		}
 		add_footnote_ref(list, ref);
 		ref->contents = contents;
-	} else 
+	} else
 		hbuf_free(contents);
 
 	return 1;
@@ -2949,7 +2947,7 @@ static void expand_tabs(hbuf *ob, const uint8_t *line, size_t size)
 	}
 }
 
-/* 
+/*
  * Allocate a new document processor instance.
  */
 hdoc *
@@ -2963,8 +2961,6 @@ hdoc_new(const hrend *renderer, const struct lowdown_opts *opts,
 	doc = xmalloc(sizeof(hdoc));
 	memcpy(&doc->md, renderer, sizeof(hrend));
 
-	doc->metasz = 0;
-	doc->meta = NULL;
 	doc->opts = opts;
 	doc->data = renderer->opaque;
 
@@ -3029,7 +3025,8 @@ hdoc_new(const hrend *renderer, const struct lowdown_opts *opts,
  * This consists of key-value pairs.
  */
 static void
-parse_metadata(hdoc *doc, const uint8_t *data, size_t sz)
+parse_metadata(hdoc *doc, const uint8_t *data, size_t sz,
+	struct lowdown_meta **meta, size_t *metasz)
 {
 	size_t	 	 i, pos = 0;
 	const uint8_t	*key, *val;
@@ -3044,10 +3041,10 @@ parse_metadata(hdoc *doc, const uint8_t *data, size_t sz)
 			if (':' == data[i])
 				break;
 
-		doc->meta = xreallocarray
-			(doc->meta, doc->metasz + 1,
+		*meta = xreallocarray
+			(*meta, *metasz + 1,
 			 sizeof(struct lowdown_meta));
-		m = &doc->meta[doc->metasz++];
+		m = &(*meta)[(*metasz)++];
 		memset(m, 0, sizeof(struct lowdown_meta));
 
 		m->key = xstrndup(key, i - pos);
@@ -3070,11 +3067,12 @@ parse_metadata(hdoc *doc, const uint8_t *data, size_t sz)
 	}
 }
 
-/* 
+/*
  * Render regular Markdown using the document processor.
  */
 void
-hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
+hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size,
+	struct lowdown_meta **m, size_t *msz)
 {
 	static const uint8_t UTF8_BOM[] = {0xEF, 0xBB, 0xBF};
 	hbuf		*text;
@@ -3084,7 +3082,7 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
 
 	text = hbuf_new(64);
 
-	/* 
+	/*
 	 * Preallocate enough space for our buffer to avoid expanding
 	 * while copying.
 	 */
@@ -3100,13 +3098,13 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
 	/* Reset the footnotes lists. */
 
 	if (footnotes_enabled) {
-		memset(&doc->footnotes_found, 0x0, 
+		memset(&doc->footnotes_found, 0x0,
 			sizeof(doc->footnotes_found));
-		memset(&doc->footnotes_used, 0x0, 
+		memset(&doc->footnotes_used, 0x0,
 			sizeof(doc->footnotes_used));
 	}
 
-	/* 
+	/*
 	 * Skip a possible UTF-8 BOM, even though the Unicode standard
 	 * discourages having these in UTF-8 documents.
 	 */
@@ -3115,9 +3113,10 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
 	if (size >= 3 && memcmp(data, UTF8_BOM, 3) == 0)
 		beg += 3;
 
-	/* 
-	 * Zeroth pass: see if we should collect metadata. 
+	/*
+	 * Zeroth pass: see if we should collect metadata.
 	 * Only do so if we're toggled to look for metadata.
+	 * (Only parse if we must.)
 	 */
 
 	if (LOWDOWN_METADATA & doc->ext_flags &&
@@ -3128,22 +3127,23 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
 			    '\n' == data[end - 1])
 				break;
 		}
-		parse_metadata(doc, sv, end - beg);
+		if (NULL != m && NULL != msz)
+			parse_metadata(doc, sv, end - beg, m, msz);
 		beg = end + 1;
 	}
 
 	/* First pass: looking for references, copying everything else. */
 
-	while (beg < size) 
-		if (footnotes_enabled && 
+	while (beg < size)
+		if (footnotes_enabled &&
 		    is_footnote(data, beg, size, &end, &doc->footnotes_found))
 			beg = end;
 		else if (is_ref(data, beg, size, &end, doc->refs))
 			beg = end;
-		else { 
+		else {
 			/* Skipping to the next line. */
 			end = beg;
-			while (end < size && data[end] != '\n' && 
+			while (end < size && data[end] != '\n' &&
 			       data[end] != '\r')
 				end++;
 
@@ -3151,10 +3151,10 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
 			if (end > beg)
 				expand_tabs(text, data + beg, end - beg);
 
-			while (end < size && (data[end] == '\n' || 
+			while (end < size && (data[end] == '\n' ||
 			       data[end] == '\r')) {
 				/* Add one \n per newline. */
-				if (data[end] == '\n' || 
+				if (data[end] == '\n' ||
 				    (end + 1 < size && data[end + 1] != '\n'))
 					hbuf_putc(text, '\n');
 				end++;
@@ -3176,7 +3176,7 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
 
 	if (text->size) {
 		/* Adding a final newline if not already present. */
-		if (text->data[text->size - 1] != '\n' &&  
+		if (text->data[text->size - 1] != '\n' &&
 		    text->data[text->size - 1] != '\r')
 			hbuf_putc(text, '\n');
 
@@ -3207,8 +3207,8 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
 	assert(doc->work_bufs[BUFFER_BLOCK].size == 0);
 }
 
-/* 
- * Deallocate a document processor instance. 
+/*
+ * Deallocate a document processor instance.
  */
 void
 hdoc_free(hdoc *doc)
@@ -3223,12 +3223,5 @@ hdoc_free(hdoc *doc)
 
 	hstack_uninit(&doc->work_bufs[BUFFER_SPAN]);
 	hstack_uninit(&doc->work_bufs[BUFFER_BLOCK]);
-
-	for (i = 0; i < doc->metasz; i++) {
-		free(doc->meta[i].key);
-		free(doc->meta[i].value);
-	}
-
-	free(doc->meta);
 	free(doc);
 }
