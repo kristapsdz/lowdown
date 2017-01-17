@@ -144,6 +144,44 @@ message(enum lowdown_err er, void *arg, const char *buf)
 
 }
 
+static unsigned int
+feature(const char *v)
+{
+
+	if (NULL == v)
+		return(0);
+	if (0 == strcasecmp(v, "tables"))
+		return(LOWDOWN_TABLES);
+	if (0 == strcasecmp(v, "fenced"))
+		return(LOWDOWN_TABLES);
+	if (0 == strcasecmp(v, "footnotes"))
+		return(LOWDOWN_FOOTNOTES);
+	if (0 == strcasecmp(v, "autolink"))
+		return(LOWDOWN_AUTOLINK);
+	if (0 == strcasecmp(v, "strike"))
+		return(LOWDOWN_STRIKE);
+	if (0 == strcasecmp(v, "under"))
+		return(LOWDOWN_UNDER);
+	if (0 == strcasecmp(v, "hilite"))
+		return(LOWDOWN_HILITE);
+	if (0 == strcasecmp(v, "quote"))
+		return(LOWDOWN_QUOTE);
+	if (0 == strcasecmp(v, "super"))
+		return(LOWDOWN_SUPER);
+	if (0 == strcasecmp(v, "math"))
+		return(LOWDOWN_MATH);
+	if (0 == strcasecmp(v, "nointem"))
+		return(LOWDOWN_NOINTEM);
+	if (0 == strcasecmp(v, "sphd"))
+		return(LOWDOWN_SPHD);
+	if (0 == strcasecmp(v, "mathexp"))
+		return(LOWDOWN_MATHEXP);
+	if (0 == strcasecmp(v, "nocodeind"))
+		return(LOWDOWN_NOCODEIND);
+
+	return(0);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -162,6 +200,12 @@ main(int argc, char *argv[])
 	memset(&opts, 0, sizeof(struct lowdown_opts));
 
 	opts.type = LOWDOWN_HTML;
+	opts.feat = LOWDOWN_FOOTNOTES |
+		LOWDOWN_AUTOLINK |
+		LOWDOWN_TABLES |
+		LOWDOWN_SUPER |
+		LOWDOWN_STRIKE |
+		LOWDOWN_FENCED;
 
 	tm = localtime(&t);
 
@@ -178,8 +222,14 @@ main(int argc, char *argv[])
 		++pname;
 #endif
 
-	while (-1 != (c = getopt(argc, argv, "st:T:o:v")))
+	while (-1 != (c = getopt(argc, argv, "d:e:st:T:o:v")))
 		switch (c) {
+		case ('d'):
+			opts.feat &= ~feature(optarg);
+			break;
+		case ('e'):
+			opts.feat |= feature(optarg);
+			break;
 		case ('T'):
 			if (0 == strcasecmp(optarg, "ms"))
 				opts.type = LOWDOWN_NROFF;
@@ -271,6 +321,8 @@ main(int argc, char *argv[])
 usage:
 	fprintf(stderr, "usage: %s "
 		"[-sv] "
+		"[-d feature] "
+		"[-e feature] "
 		"[-o output] "
 		"[-t title] "
 		"[-T mode] "
