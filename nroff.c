@@ -291,7 +291,7 @@ rndr_listitem(hbuf *ob, const hbuf *content, hlist_fl flags, void *data, size_t 
 }
 
 static void
-rndr_paragraph(hbuf *ob, const hbuf *content, void *data)
+rndr_paragraph(hbuf *ob, const hbuf *content, void *data, size_t par_count)
 {
 	nroff_state	*state = data;
 	size_t	 	 i = 0, org;

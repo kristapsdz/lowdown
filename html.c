@@ -34,7 +34,6 @@ typedef struct html_state {
 		int nesting_level;
 	} toc_data;
 	hhtml_fl flags;
-	size_t par_count;
 	/* extra callbacks */
 	void (*link_attributes)(hbuf *ob, const hbuf *url, const void *data);
 } html_state;
@@ -324,10 +323,10 @@ rndr_listitem(hbuf *ob, const hbuf *content, hlist_fl flags, void *data, size_t 
 }
 
 static void
-rndr_paragraph(hbuf *ob, const hbuf *content, void *data)
+rndr_paragraph(hbuf *ob, const hbuf *content, void *data, size_t par_count)
 {
 	html_state *state = data;
-	size_t i = 0, par_count;
+	size_t i = 0;
 
 	if (ob->size) hbuf_putc(ob, '\n');
 
@@ -338,8 +337,6 @@ rndr_paragraph(hbuf *ob, const hbuf *content, void *data)
 
 	if (i == content->size)
 		return;
-
-	par_count = state->par_count++;
 
 	if (0 == par_count && state->flags & HOEDOWN_HTML_ASIDE) 
 		HBUF_PUTSL(ob, "<aside>");
