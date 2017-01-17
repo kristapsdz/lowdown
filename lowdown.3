@@ -14,12 +14,13 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate: January 10 2017 $
+.Dd $Mdocdate: January 11 2017 $
 .Dt LOWDOWN 3
 .Os
 .Sh NAME
 .Nm lowdown ,
 .Nm lowdown_buf ,
+.Nm lowdown_errstr ,
 .Nm lowdown_file
 .Nd simple markdown translator library
 .Sh LIBRARY
@@ -34,6 +35,10 @@
 .Fa "size_t bufsz"
 .Fa "unsigned char **ret"
 .Fa "size_t *retsz"
+.Fc
+.Ft "const char *"
+.Fo lowdown_errstr
+.Fa "enum lowdown_err"
 .Fc
 .Ft int
 .Fo lowdown_file
@@ -73,7 +78,7 @@ of size
 .Pp
 Both accept a configuration structure,
 .Fa opts .
-The only field of value is
+The most significant field is
 .Va type ,
 which may be set to
 .Dv LOWDOWN_HTML
@@ -86,6 +91,22 @@ macros, or
 for
 .Fl ms
 macros.
+Another pair of fields manage how messages are logged:
+.Va msg ,
+for the message function; and
+.Va arg ,
+passed opaquely to the message function.
+If the
+.Va msg
+is
+.Dv NULL ,
+no messages are logged.
+.Pp
+The
+.Nm lowdown_errstr
+is provided to return a human-readable version of
+.Vt "enum lowdown_err" .
+It returns a generic (en_GB) description.
 .Sh RETURN VALUES
 The
 .Nm lowdown_file
