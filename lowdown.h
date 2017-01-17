@@ -53,6 +53,21 @@ struct	lowdown_opts {
 	lowdown_msg	  msg;
 	enum lowdown_type type;
 	void		 *arg;
+	unsigned int	  feat;
+#define LOWDOWN_TABLES	  0x01
+#define LOWDOWN_FENCED	  0x02
+#define LOWDOWN_FOOTNOTES 0x04
+#define LOWDOWN_AUTOLINK  0x08
+#define LOWDOWN_STRIKE	  0x10
+#define LOWDOWN_UNDER	  0x20
+#define LOWDOWN_HILITE	  0x40
+#define LOWDOWN_QUOTE	  0x80
+#define LOWDOWN_SUPER	  0x100
+#define LOWDOWN_MATH	  0x200
+#define LOWDOWN_NOINTEM	  0x400
+#define LOWDOWN_SPHD	  0x800
+#define LOWDOWN_MATHEXP	  0x1000
+#define LOWDOWN_NOCODEIND 0x2000
 };
 
 __BEGIN_DECLS
