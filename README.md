@@ -18,6 +18,7 @@ The fork features the following modifications to its predecessor:
 7. Strip use of externally-defined memory management.
 8. Rename internal API (for brevity).
 9. Prune dead code and de-obfuscate some internal structures.
+10. Create a usable library interface.
 
 For the moment, **lowdown** output is the same as
 [hoedown](https://github.com/hoedown/hoedown) with the following presets:
