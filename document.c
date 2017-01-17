@@ -134,6 +134,7 @@ struct hdoc {
 	hstack		 work_bufs[2];
 	unsigned int	 ext_flags;
 	size_t		 max_nesting;
+	size_t	 	 cur_par;
 	int		 in_link_body;
 };
 
@@ -1846,7 +1847,8 @@ parse_paragraph(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 		doc->start = sv;
 
 		if (doc->md.paragraph)
-			doc->md.paragraph(ob, tmp, doc->data);
+			doc->md.paragraph(ob, tmp, doc->data, doc->cur_par);
+		doc->cur_par++;
 		popbuf(doc, BUFFER_BLOCK);
 	} else {
 		if (work.size) {
@@ -1865,7 +1867,8 @@ parse_paragraph(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 				parse_inline(tmp, doc, work.data, work.size);
 
 				if (doc->md.paragraph)
-					doc->md.paragraph(ob, tmp, doc->data);
+					doc->md.paragraph(ob, tmp, doc->data, doc->cur_par);
+				doc->cur_par++;
 
 				popbuf(doc, BUFFER_BLOCK);
 				work.data += beg;
