@@ -18,8 +18,12 @@
 #define LOWDOWN_H
 
 /*
- * We need this for compilation on musl systems.
+ * All of this is documented in lowdown.3.
+ * If it's not documented, don't use it.
+ * Or report it as a bug.
  */
+
+/* We need this for compilation on musl systems. */
 
 #ifndef __BEGIN_DECLS
 # ifdef __cplusplus
