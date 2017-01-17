@@ -3069,16 +3069,21 @@ parse_metadata(hdoc *doc, const uint8_t *data, size_t sz,
 
 /*
  * Render regular Markdown using the document processor.
+ * If both mp and mszp are not NULL, set them with the meta information
+ * instead of locally destroying it.
+ * (Obviously only applicable if LOWDOWN_METADATA has been set.)
  */
 void
-hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size,
-	struct lowdown_meta **m, size_t *msz)
+hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data,
+	size_t size, struct lowdown_meta **mp, size_t *mszp)
 {
 	static const uint8_t UTF8_BOM[] = {0xEF, 0xBB, 0xBF};
 	hbuf		*text;
 	size_t		 beg, end;
 	int		 footnotes_enabled;
 	const uint8_t	*sv;
+	struct lowdown_meta *m = NULL;
+	size_t		 i, msz = 0;
 
 	text = hbuf_new(64);
 
@@ -3127,8 +3132,7 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size,
 			    '\n' == data[end - 1])
 				break;
 		}
-		if (NULL != m && NULL != msz)
-			parse_metadata(doc, sv, end - beg, m, msz);
+		parse_metadata(doc, sv, end - beg, &m, &msz);
 		beg = end + 1;
 	}
 
@@ -3205,6 +3209,22 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size,
 
 	assert(doc->work_bufs[BUFFER_SPAN].size == 0);
 	assert(doc->work_bufs[BUFFER_BLOCK].size == 0);
+
+	/* Only if both. */
+
+	if (NULL != mp && NULL != mszp) {
+		*mp = m;
+		*mszp = msz;
+		m = NULL;
+		msz = 0;
+	}
+
+	for (i = 0; i < msz; i++) {
+		free(m[i].key);
+		free(m[i].value);
+	}
+
+	free(m);
 }
 
 /*
