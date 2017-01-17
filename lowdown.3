@@ -35,6 +35,8 @@
 .Fa "size_t bufsz"
 .Fa "unsigned char **ret"
 .Fa "size_t *retsz"
+.Fa "struct lowdown_meta **meta"
+.Fa "size_t *metasz"
 .Fc
 .Ft "const char *"
 .Fo lowdown_errstr
@@ -46,6 +48,8 @@
 .Fa "FILE *f"
 .Fa "unsigned char **ret"
 .Fa "size_t *retsz"
+.Fa "struct lowdown_meta **meta"
+.Fa "size_t *metasz"
 .Fc
 .Sh DESCRIPTION
 The
@@ -156,6 +160,21 @@ for
 .Fl ms
 macros.
 .El
+.Pp
+Both also accept the
+.Fa meta
+and
+.Fa metasz
+pointers.
+If
+.Em both
+of these are not
+.Dv NULL ,
+they are set to any meta tags that have been parsed.
+It is the caller's job to free the meta structure resources.
+Obviously, the meta tags are parsed only if
+.Dv LOWDOWN_METADATA
+has been provided.
 .Pp
 The
 .Nm lowdown_errstr
