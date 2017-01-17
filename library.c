@@ -26,14 +26,6 @@
 #define DEF_OUNIT 64
 #define DEF_MAX_NESTING 16
 
-static	const unsigned int deffeats = 
-	LOWDOWN_FOOTNOTES |
-	LOWDOWN_AUTOLINK |
-	LOWDOWN_TABLES |
-	LOWDOWN_SUPER |
-	LOWDOWN_STRIKE |
-	LOWDOWN_FENCED;
-
 static	const char *const errs[LOWDOWN_ERR__MAX] = {
 	"space before link (CommonMark violation)",
 };
@@ -71,8 +63,8 @@ lowdown_buf(const struct lowdown_opts *opts,
 		 LOWDOWN_MAN == opts->type);
 
 	document = hdoc_new
-		(renderer, opts, NULL == opts || 0 == opts->feat ? 
-		 deffeats : opts->feat, DEF_MAX_NESTING);
+		(renderer, opts, NULL == opts ? 
+		 0 : opts->feat, DEF_MAX_NESTING);
 
 	/* Parse the output and free resources. */
 
