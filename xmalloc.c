@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2004 Marius Aamodt Eriksen <marius@monkey.org>
- * Copyright (c) 2016 Kristaps Dzonsons <kristaps@bsd.l>
+ * Copyright (c) 2016--2017 Kristaps Dzonsons <kristaps@bsd.l>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -32,7 +32,7 @@ xmalloc(size_t siz)
 	if (siz == 0)
 		errx(EXIT_FAILURE, "xmalloc: zero size");
 	if ((p = malloc(siz)) == NULL)
-		err(EXIT_FAILURE, "malloc");
+		err(EXIT_FAILURE, NULL);
 
 	return (p);
 }
@@ -45,7 +45,7 @@ xcalloc(size_t no, size_t siz)
 	if (siz == 0 || no == 0)
 		errx(EXIT_FAILURE, "xcalloc: zero size");
 	if ((p = calloc(no, siz)) == NULL)
-		err(EXIT_FAILURE, "calloc");
+		err(EXIT_FAILURE, NULL);
 
 	return (p);
 }
@@ -55,7 +55,30 @@ xrealloc(void *p, size_t sz)
 {
 
 	if ((p = realloc(p, sz)) == NULL)
-		err(EXIT_FAILURE, "realloc");
+		err(EXIT_FAILURE, NULL);
 
 	return (p);
+}
+
+void *
+xreallocarray(void *p, size_t nm, size_t sz)
+{
+
+	/* FIXME */
+	if ((p = realloc(p, nm * sz)) == NULL)
+		err(EXIT_FAILURE, NULL);
+
+	return (p);
+}
+
+char *
+xstrndup(const char *p, size_t sz)
+{
+	char	*pp;
+
+	/* FIXME */
+	if ((pp = strndup(p, sz)) == NULL)
+		err(EXIT_FAILURE, NULL);
+
+	return(pp);
 }
