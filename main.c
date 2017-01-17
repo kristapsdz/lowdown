@@ -137,7 +137,7 @@ message(enum lowdown_err er, void *arg, const char *buf)
 
 	if (NULL != buf) 
 		fprintf(stderr, "%s: %s: %s\n", (const char *)arg, 
-			buf, lowdown_errstr(er));
+			lowdown_errstr(er), buf);
 	else
 		fprintf(stderr, "%s: %s\n", (const char *)arg, 
 			lowdown_errstr(er));
