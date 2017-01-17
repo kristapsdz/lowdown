@@ -160,7 +160,7 @@ hbuf_printf(hbuf *buf, const char *fmt, ...)
 	n = vsnprintf((char *)buf->data + buf->size, buf->asize - buf->size, fmt, ap);
 	va_end(ap);
 
-	if (n < 0) 
+	if (n < 0)
 		return;
 
 	if ((size_t)n >= buf->asize - buf->size) {

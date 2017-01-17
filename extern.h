@@ -198,8 +198,10 @@ void	 hstack_push(hstack *, void *);
 void	*hstack_top(const hstack *);
 void	 hstack_uninit(hstack *);
 
-hdoc 	*hdoc_new(const hrend *, const struct lowdown_opts *, unsigned int, size_t) __attribute__((malloc));
-void	 hdoc_render(hdoc *, hbuf *, const uint8_t *, size_t );
+hdoc 	*hdoc_new(const hrend *, const struct lowdown_opts *, 
+		unsigned int, size_t) __attribute__((malloc));
+void	 hdoc_render(hdoc *, hbuf *, const uint8_t *, size_t, 
+		struct lowdown_meta **, size_t *);
 void	 hdoc_free(hdoc *);
 
 void	 hesc_href(hbuf *, const uint8_t *, size_t);

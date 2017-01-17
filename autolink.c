@@ -50,7 +50,7 @@ halink_is_safe(const uint8_t *data, size_t size)
 }
 
 static size_t
-autolink_delim(uint8_t *data, 
+autolink_delim(uint8_t *data,
 	size_t link_end, size_t max_rewind, size_t size)
 {
 	uint8_t cclose, copen = 0;

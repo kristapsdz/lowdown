@@ -38,15 +38,16 @@ lowdown_errstr(enum lowdown_err err)
 }
 
 void
-lowdown_buf(const struct lowdown_opts *opts, 
+lowdown_buf(const struct lowdown_opts *opts,
 	const unsigned char *data, size_t datasz,
-	unsigned char **res, size_t *rsz) 
+	unsigned char **res, size_t *rsz,
+	struct lowdown_meta **m, size_t *msz)
 {
 	hbuf	 	*ob, *spb;
 	hrend 		*renderer = NULL;
 	hdoc 		*document;
 
-	/* 
+	/*
 	 * Begin by creating our buffers, renderer, and document.
 	 */
 
@@ -56,19 +57,20 @@ lowdown_buf(const struct lowdown_opts *opts,
 	renderer = NULL == opts || LOWDOWN_HTML == opts->type ?
 		hrend_html_new
 		(HOEDOWN_HTML_USE_XHTML |
-		 HOEDOWN_HTML_ESCAPE | 
+		 HOEDOWN_HTML_ESCAPE |
 		 HOEDOWN_HTML_ASIDE, 0) :
 		hrend_nroff_new
-		(HOEDOWN_HTML_ESCAPE, 
+		(HOEDOWN_HTML_ESCAPE,
 		 LOWDOWN_MAN == opts->type);
 
 	document = hdoc_new
-		(renderer, opts, NULL == opts ? 
+		(renderer, opts, NULL == opts ?
 		 0 : opts->feat, DEF_MAX_NESTING);
 
 	/* Parse the output and free resources. */
 
-	hdoc_render(document, ob, data, datasz);
+	hdoc_render(document, ob, data, datasz, m, msz);
+
 	hdoc_free(document);
 
 	/* Reprocess the output as smartypants. */
@@ -89,8 +91,9 @@ lowdown_buf(const struct lowdown_opts *opts,
 }
 
 int
-lowdown_file(const struct lowdown_opts *opts, 
-	FILE *fin, unsigned char **res, size_t *rsz) 
+lowdown_file(const struct lowdown_opts *opts,
+	FILE *fin, unsigned char **res, size_t *rsz,
+	struct lowdown_meta **m, size_t *msz)
 {
 	hbuf *ib = NULL;
 
@@ -101,7 +104,7 @@ lowdown_file(const struct lowdown_opts *opts,
 		return(0);
 	}
 
-	lowdown_buf(opts, ib->data, ib->size, res, rsz);
+	lowdown_buf(opts, ib->data, ib->size, res, rsz, m, msz);
 	hbuf_free(ib);
 	return(1);
 }
