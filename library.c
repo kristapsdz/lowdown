@@ -64,12 +64,12 @@ lowdown_buf(const struct lowdown_opts *opts,
 
 	document = hdoc_new
 		(renderer, opts,
-		 HDOC_EXT_FOOTNOTES |
-		 HDOC_EXT_AUTOLINK |
-		 HDOC_EXT_TABLES |
-		 HDOC_EXT_SUPERSCRIPT |
-		 HDOC_EXT_STRIKETHROUGH |
-		 HDOC_EXT_FENCED_CODE,
+		 LOWDOWN_FOOTNOTES |
+		 LOWDOWN_AUTOLINK |
+		 LOWDOWN_TABLES |
+		 LOWDOWN_SUPER |
+		 LOWDOWN_STRIKE |
+		 LOWDOWN_FENCED,
 		 DEF_MAX_NESTING);
 
 	/* Parse the output and free resources. */

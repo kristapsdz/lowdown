@@ -721,14 +721,14 @@ parse_emph1(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 			return 0;
 
 		if (data[i] == c && !xisspace(data[i - 1])) {
-			if (doc->ext_flags & HDOC_EXT_NO_INTRA_EMPHASIS)
+			if (doc->ext_flags & LOWDOWN_NOINTEM)
 				if (i + 1 < size && isalnum(data[i + 1]))
 					continue;
 
 			work = newbuf(doc, BUFFER_SPAN);
 			parse_inline(work, doc, data, i);
 
-			if (doc->ext_flags & HDOC_EXT_UNDERLINE && 
+			if (doc->ext_flags & LOWDOWN_UNDER && 
 			    c == '_')
 				r = doc->md.underline
 					(ob, work, doc->data);
@@ -852,7 +852,7 @@ parse_math(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size, const
 	/* if this is a $$ and MATH_EXPLICIT is not active,
 	 * guess whether displaymode should be enabled from the context */
 	i += delimsz;
-	if (delimsz == 2 && !(doc->ext_flags & HDOC_EXT_MATH_EXPLICIT))
+	if (delimsz == 2 && !(doc->ext_flags & LOWDOWN_MATHEXP))
 		displaymode = is_empty_all(data - offset, offset) && is_empty_all(data + i, size - i);
 
 	/* call callback */
@@ -869,7 +869,7 @@ char_emphasis(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 	uint8_t c = data[0];
 	size_t ret;
 
-	if (doc->ext_flags & HDOC_EXT_NO_INTRA_EMPHASIS) {
+	if (doc->ext_flags & LOWDOWN_NOINTEM) {
 		if (offset > 0 && !xisspace(data[-1]) && data[-1] != '>' && data[-1] != '(')
 			return 0;
 	}
@@ -1026,7 +1026,7 @@ char_escape(hbuf *ob, hdoc *doc,
 
 	if (size > 1) {
 		if (data[1] == '\\' && 
-		    (doc->ext_flags & HDOC_EXT_MATH) &&
+		    (doc->ext_flags & LOWDOWN_MATH) &&
 		    size > 2 && 
 		    (data[2] == '(' || data[2] == '[')) {
 			end = (data[2] == '[') ? "\\\\]" : "\\\\)";
@@ -1222,7 +1222,7 @@ static size_t
 char_link(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 {
 	int is_img = (offset && data[-1] == '!' && !is_escaped(data - offset, offset - 1));
-	int is_footnote = (doc->ext_flags & HDOC_EXT_FOOTNOTES && data[1] == '^');
+	int is_footnote = (doc->ext_flags & LOWDOWN_FOOTNOTES && data[1] == '^');
 	size_t i = 1, txt_e, link_b = 0, link_e = 0, title_b = 0, title_e = 0;
 	hbuf *content = NULL;
 	hbuf *link = NULL;
@@ -1490,7 +1490,7 @@ char_math(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 		return parse_math(ob, doc, data, offset, size, "$$", 2, 1);
 
 	/* single dollar allowed only with MATH_EXPLICIT flag */
-	if (doc->ext_flags & HDOC_EXT_MATH_EXPLICIT)
+	if (doc->ext_flags & LOWDOWN_MATHEXP)
 		return parse_math(ob, doc, data, offset, size, "$", 1, 0);
 
 	return 0;
@@ -1614,7 +1614,7 @@ is_atxheader(hdoc *doc, uint8_t *data, size_t size)
 	if (data[0] != '#')
 		return 0;
 
-	if (doc->ext_flags & HDOC_EXT_SPACE_HEADERS) {
+	if (doc->ext_flags & LOWDOWN_SPHD) {
 		size_t level = 0;
 
 		while (level < size && level < 6 && data[level] == '#')
@@ -2041,7 +2041,7 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 			i++;
 		pre = i;
 
-		if (doc->ext_flags & HDOC_EXT_FENCED_CODE) 
+		if (doc->ext_flags & LOWDOWN_FENCED) 
 			if (is_codefence(data + beg + i, 
 			    end - beg - i, NULL, NULL))
 				in_fence = !in_fence;
@@ -2660,18 +2660,18 @@ parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 			beg++;
 		}
 
-		else if ((doc->ext_flags & HDOC_EXT_FENCED_CODE) != 0 &&
+		else if ((doc->ext_flags & LOWDOWN_FENCED) != 0 &&
 			(i = parse_fencedcode(ob, doc, txt_data, end)) != 0)
 			beg += i;
 
-		else if ((doc->ext_flags & HDOC_EXT_TABLES) != 0 &&
+		else if ((doc->ext_flags & LOWDOWN_TABLES) != 0 &&
 			(i = parse_table(ob, doc, txt_data, end)) != 0)
 			beg += i;
 
 		else if (prefix_quote(txt_data, end))
 			beg += parse_blockquote(ob, doc, txt_data, end);
 
-		else if (!(doc->ext_flags & HDOC_EXT_DISABLE_INDENTED_CODE) && prefix_code(txt_data, end))
+		else if (!(doc->ext_flags & LOWDOWN_NOCODEIND) && prefix_code(txt_data, end))
 			beg += parse_blockcode(ob, doc, txt_data, end);
 
 		else if (prefix_uli(txt_data, end))
@@ -2966,16 +2966,16 @@ hdoc_new(const hrend *renderer, const struct lowdown_opts *opts,
 
 	memset(doc->active_char, 0x0, 256);
 
-	if (extensions & HDOC_EXT_UNDERLINE && doc->md.underline) {
+	if (extensions & LOWDOWN_UNDER && doc->md.underline) {
 		doc->active_char['_'] = MD_CHAR_EMPHASIS;
 	}
 
 	if (doc->md.emphasis || doc->md.double_emphasis || doc->md.triple_emphasis) {
 		doc->active_char['*'] = MD_CHAR_EMPHASIS;
 		doc->active_char['_'] = MD_CHAR_EMPHASIS;
-		if (extensions & HDOC_EXT_STRIKETHROUGH)
+		if (extensions & LOWDOWN_STRIKE)
 			doc->active_char['~'] = MD_CHAR_EMPHASIS;
-		if (extensions & HDOC_EXT_HIGHLIGHT)
+		if (extensions & LOWDOWN_HILITE)
 			doc->active_char['='] = MD_CHAR_EMPHASIS;
 	}
 
@@ -2994,19 +2994,19 @@ hdoc_new(const hrend *renderer, const struct lowdown_opts *opts,
 	doc->active_char['\\'] = MD_CHAR_ESCAPE;
 	doc->active_char['&'] = MD_CHAR_ENTITY;
 
-	if (extensions & HDOC_EXT_AUTOLINK) {
+	if (extensions & LOWDOWN_AUTOLINK) {
 		doc->active_char[':'] = MD_CHAR_AUTOLINK_URL;
 		doc->active_char['@'] = MD_CHAR_AUTOLINK_EMAIL;
 		doc->active_char['w'] = MD_CHAR_AUTOLINK_WWW;
 	}
 
-	if (extensions & HDOC_EXT_SUPERSCRIPT)
+	if (extensions & LOWDOWN_SUPER)
 		doc->active_char['^'] = MD_CHAR_SUPERSCRIPT;
 
-	if (extensions & HDOC_EXT_QUOTE)
+	if (extensions & LOWDOWN_QUOTE)
 		doc->active_char['"'] = MD_CHAR_QUOTE;
 
-	if (extensions & HDOC_EXT_MATH)
+	if (extensions & LOWDOWN_MATH)
 		doc->active_char['$'] = MD_CHAR_MATH;
 
 	/* Extension data */
@@ -3035,7 +3035,7 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
 	/* reset the references table */
 	memset(&doc->refs, 0x0, REF_TABLE_SIZE * sizeof(void *));
 
-	footnotes_enabled = doc->ext_flags & HDOC_EXT_FOOTNOTES;
+	footnotes_enabled = doc->ext_flags & LOWDOWN_FOOTNOTES;
 
 	/* reset the footnotes lists */
 	if (footnotes_enabled) {
