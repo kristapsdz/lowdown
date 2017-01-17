@@ -3122,7 +3122,6 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
 
 	if (LOWDOWN_METADATA & doc->ext_flags &&
 	    beg < size - 1 && isalnum((int)data[beg])) {
-		size_t i;
 		sv = &data[beg];
 		for (end = beg + 1; end < size; end++) {
 			if ('\n' == data[end] &&
@@ -3131,10 +3130,6 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data, size_t size)
 		}
 		parse_metadata(doc, sv, end - beg);
 		beg = end + 1;
-
-		for (i = 0; i < doc->metasz; i++) {
-			warnx("META: [%s]: [%s]", doc->meta[i].key, doc->meta[i].value);
-		}
 	}
 
 	/* First pass: looking for references, copying everything else. */
