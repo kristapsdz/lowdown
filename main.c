@@ -263,6 +263,9 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
+	if (argc > 1)
+		goto usage;
+
 	if (argc > 0 && strcmp(argv[0], "-")) {
 		fnin = argv[0];
 		if (NULL == (fin = fopen(fnin, "r")))
