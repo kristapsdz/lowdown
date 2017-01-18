@@ -89,10 +89,18 @@ I do this in my Makefiles:
 
 ```Makefile
 .md.xml:
-	( echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" ; \
-	  echo "<article data-sblg-article=\"1\">" ; \
-	  lowdown $< ; \
-	  echo "</article>" ; ) >$@
+     ( echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" ; \
+       echo "<article data-sblg-article=\"1\">" ; \
+       echo "<header>" ; \
+       echo "<h1>" ; \
+       lowdown -E title $< ; \
+       echo "</h1>" ; \
+       echo "<aside>" ; \
+       lowdown -E htmlaside $< ; \
+       echo "</aside>" ; \
+       echo "</header>" ; \
+       lowdown $< ; \
+       echo "</article>" ; ) >$@
 ```
 
 If you just want a straight-up HTML5 file, use standalone mode:
