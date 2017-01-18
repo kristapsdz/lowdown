@@ -54,12 +54,17 @@
 				Third, implement MultiMarkdown meta-data with the <i>metadata</i> feature, enabled by default.
 				Lastly, deprecate the title argument, <b>-t</b>, in favour of the metadata.
 				The <a href="lowdown.3.html">lowdown(3)</a> interface has changed to accommodate for the new metadata features.
+				Add a <b>-E</b> flag to extract metadata directly, too.
 			</p>
 			<p>
 				<strong>Note</strong>: metadata values are still not used within the document.
 				So you can't <q>fill in</q> metadata keys within the text.
 				The metadata tags, for now, are informational except in that they provide a title.
 				This will be expanded upon in later versions.
+			</p>
+			<p>
+				Lastly, remove the behaviour of printing the first HTML paragraph within an <code>&lt;aside&gt;</code>.
+				This is now deprecated by metadata parsing.
 			</p>
 		</aside>
 	</article>
