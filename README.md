@@ -34,8 +34,6 @@ For the moment, **lowdown** output is the same as
 
 The following modifications to the HTML5 output have been made:
 
-- the first paragraph is wrapped in an `<aside>` block (for integration
-  with [sblg(1)](https://kristaps.bsd.lv/sblg)
 - "smartypants" emits Unicode codepoints instead of HTML entities to
   make the output XML-friendly
 
@@ -43,6 +41,7 @@ The following major feature additions have been added:
 
 - output mode for troff (via either the *-ms* or *-man* package)
 - "smartypants" mode for the troff outputs
+- metadata support
 
 It builds and runs on OpenBSD, Linux ([musl](https://www.musl-libc.org/)
 and glibc), and Mac OS X.
