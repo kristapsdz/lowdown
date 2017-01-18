@@ -189,13 +189,15 @@ main(int argc, char *argv[])
 {
 	FILE		*fin = stdin, *fout = stdout;
 	const char	*fnin = "<stdin>", *fnout = NULL,
-	      		*title = "Untitled article";
+	      		*title = "Untitled article",
+			*extract = NULL;
 	struct lowdown_opts opts;
 	const char	*pname;
 	int		 c, standalone = 0;
 	struct tm	*tm;
 	char		 buf[32];
 	unsigned char	*ret = NULL;
+	unsigned int	 feat;
 	size_t		 i, retsz = 0, msz = 0;
 	time_t		 t = time(NULL);
 	struct lowdown_meta *m = NULL;
@@ -226,13 +228,26 @@ main(int argc, char *argv[])
 		++pname;
 #endif
 
-	while (-1 != (c = getopt(argc, argv, "d:e:sT:o:v")))
+	while (-1 != (c = getopt(argc, argv, "d:e:E:sT:o:v")))
 		switch (c) {
 		case ('d'):
-			opts.feat &= ~feature(optarg);
+			if (0 == (feat = feature(optarg)))
+				goto usage;
+			opts.feat &= ~feat;
+			break;
+		case ('E'):
+			extract = optarg;
 			break;
 		case ('e'):
-			opts.feat |= feature(optarg);
+			if (0 == (feat = feature(optarg)))
+				goto usage;
+			opts.feat |= feat;
+			break;
+		case ('o'):
+			fnout = optarg;
+			break;
+		case ('s'):
+			standalone = 1;
 			break;
 		case ('T'):
 			if (0 == strcasecmp(optarg, "ms"))
@@ -243,12 +258,6 @@ main(int argc, char *argv[])
 				opts.type = LOWDOWN_MAN;
 			else
 				goto usage;
-			break;
-		case ('s'):
-			standalone = 1;
-			break;
-		case ('o'):
-			fnout = optarg;
 			break;
 		case ('v'):
 			opts.msg = message;
@@ -283,12 +292,24 @@ main(int argc, char *argv[])
 
 	opts.arg = (void *)fnin;
 
+	/* Require metadata when extracting. */
+
+	if (extract)
+		opts.feat |= LOWDOWN_METADATA;
+
+
 	if ( ! lowdown_file(&opts, fin, &ret, &retsz, &m, &msz))
 		err(EXIT_FAILURE, "%s", fnin);
 	if (fin != stdin)
 		fclose(fin);
 
-	if (LOWDOWN_HTML == opts.type) {
+	if (NULL != extract) {
+		for (i = 0; i < msz; i++) 
+			if (0 == strcasecmp(m[i].key, extract))
+				break;
+		if (i < msz)
+			fprintf(fout, "%s\n", m[i].value);
+	} else if (LOWDOWN_HTML == opts.type) {
 		for (i = 0; i < msz; i++) 
 			if (0 == strcmp(m[i].key, "title"))
 				title = m[i].value;
@@ -331,6 +352,7 @@ usage:
 	fprintf(stderr, "usage: %s "
 		"[-sv] "
 		"[-d feature] "
+		"[-E keyword] "
 		"[-e feature] "
 		"[-o output] "
 		"[-T mode] "

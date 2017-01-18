@@ -28,6 +28,11 @@
 .Op Fl o Ar file
 .Op Fl T mode
 .Op Ar file
+.Nm lowdown
+.Op Fl v
+.Op Fl E Ar keyword
+.Op Fl o Ar file
+.Op Ar file
 .Sh DESCRIPTION
 The
 .Nm
@@ -55,6 +60,14 @@ Disable the given
 See
 .Fl e .
 You can specify this multiple times for different features.
+.It Fl E Ar keyword
+Instead of converting the file, extract the given metadata keyword and
+exit.
+Only the
+.Fl v
+and
+.Fl o
+flags are recognised.
 .It Fl e Ar feature
 Enable the given
 .Ar feature
@@ -203,6 +216,10 @@ specifically set the encoding in either formatter:
 .Pp
 .Dl lowdown -s -T man foo.md | mandoc -Tps -K utf-8 > foo.ps
 .Dl lowdown -s -T ms foo.md | groff -k -D utf8 -t -ms > foo.ps
+.Pp
+To extract the title from a file's metadata:
+.Pp
+.Dl lowdown -E title foo.md
 .Sh EXIT STATUS
 .Ex -std
 .Sh STANDARDS
