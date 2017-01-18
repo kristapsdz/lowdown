@@ -76,11 +76,6 @@ following Markdown features and extensions:
 - "smartypants"
 - metadata (**experimental**)
 
-The only additional non-canonical Markdown feature is wrapping the
-initial paragraph of XHTML output in an `<aside>` block.  This is for
-integration with [sblg(1)](https://kristaps.bsd.lv/sblg).
-(This is **deprecated** and will be replaced with the metadata handler.)
-
 ## Examples
 
 I usually use *lowdown* when writing
