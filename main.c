@@ -189,7 +189,7 @@ main(int argc, char *argv[])
 {
 	FILE		*fin = stdin, *fout = stdout;
 	const char	*fnin = "<stdin>", *fnout = NULL,
-	      		*title = NULL;
+	      		*title = "Untitled article";
 	struct lowdown_opts opts;
 	const char	*pname;
 	int		 c, standalone = 0;
@@ -226,7 +226,7 @@ main(int argc, char *argv[])
 		++pname;
 #endif
 
-	while (-1 != (c = getopt(argc, argv, "d:e:st:T:o:v")))
+	while (-1 != (c = getopt(argc, argv, "d:e:sT:o:v")))
 		switch (c) {
 		case ('d'):
 			opts.feat &= ~feature(optarg);
@@ -243,9 +243,6 @@ main(int argc, char *argv[])
 				opts.type = LOWDOWN_MAN;
 			else
 				goto usage;
-			break;
-		case ('t'):
-			title = optarg;
 			break;
 		case ('s'):
 			standalone = 1;
@@ -288,11 +285,13 @@ main(int argc, char *argv[])
 
 	if ( ! lowdown_file(&opts, fin, &ret, &retsz, &m, &msz))
 		err(EXIT_FAILURE, "%s", fnin);
-
 	if (fin != stdin)
 		fclose(fin);
 
 	if (LOWDOWN_HTML == opts.type) {
+		for (i = 0; i < msz; i++) 
+			if (0 == strcmp(m[i].key, "title"))
+				title = m[i].value;
 		if (standalone)
 			fprintf(fout, "<!DOCTYPE html>\n"
 			      "<html>\n"
@@ -302,22 +301,20 @@ main(int argc, char *argv[])
 			       "width=device-width,initial-scale=1\">\n"
 			      "<title>%s</title>\n"
 			      "</head>\n"
-			      "<body>\n", NULL == title ?
-			      "Untitled article" : title);
+			      "<body>\n", title);
 		fwrite(ret, 1, retsz, fout);
 		if (standalone)
 			fputs("</body>\n"
 			      "</html>\n", fout);
 	} else {
+		for (i = 0; i < msz; i++) 
+			if (0 == strcmp(m[i].key, "title"))
+				title = m[i].value;
 		strftime(buf, sizeof(buf), "%F", tm);
 		if (standalone && LOWDOWN_NROFF == opts.type)
-			fprintf(fout, ".TL\n%s\n",
-				NULL == title ?
-				"Untitled article" : title);
+			fprintf(fout, ".TL\n%s\n", title);
 		else if (standalone && LOWDOWN_MAN == opts.type)
-			fprintf(fout, ".TH \"%s\" 7 %s\n",
-				NULL == title ?
-				"UNTITLED ARTICLE" : title, buf);
+			fprintf(fout, ".TH \"%s\" 7 %s\n", title, buf);
 		fwrite(ret, 1, retsz, fout);
 	}
 
@@ -336,7 +333,6 @@ usage:
 		"[-d feature] "
 		"[-e feature] "
 		"[-o output] "
-		"[-t title] "
 		"[-T mode] "
 		"[file]\n", pname);
 	return(EXIT_FAILURE);
