@@ -28,6 +28,7 @@
 
 static	const char *const errs[LOWDOWN_ERR__MAX] = {
 	"space before link (CommonMark violation)",
+	"bad character in metadata key (MultiMarkdown violation)",
 };
 
 const char *

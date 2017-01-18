@@ -3028,12 +3028,12 @@ static void
 parse_metadata(hdoc *doc, const uint8_t *data, size_t sz,
 	struct lowdown_meta **meta, size_t *metasz)
 {
-	size_t	 	 i, pos = 0;
+	size_t	 	 i, len, pos = 0;
 	const uint8_t	*key, *val;
 	struct lowdown_meta *m;
+	char		*cp;
 
-	if (0 == sz || '\n' != data[sz - 1])
-		return;
+	assert(sz && '\n' == data[sz - 1]);
 
 	while (pos < sz) {
 		key = &data[pos];
@@ -3064,6 +3064,30 @@ parse_metadata(hdoc *doc, const uint8_t *data, size_t sz,
 		assert(i < sz);
 		m->value = xstrndup(val, i - pos);
 		pos = i + 1;
+	}
+
+	/*
+	 * Convert metadata keys into normalised form: alphanumerics,
+	 * hyphen, underscore, with spaces stripped.
+	 */
+
+	for (i = 0; i < *metasz; i++) {
+		cp = (*meta)[i].key;
+		while ('\0' != *cp) {
+			if (isalnum((int)*cp) ||
+			    '-' == *cp || '_' == *cp) {
+				cp++;
+				continue;
+			} else if (isspace((int)*cp)) {
+				len = strlen(cp + 1) + 1;
+				memmove(cp, cp + 1, len);
+				continue;
+			} 
+			lmsg(doc->opts, 
+				LOWDOWN_ERR_METADATA_BAD_CHAR, 
+				NULL);
+			*cp++ = '?';
+		}
 	}
 }
 
