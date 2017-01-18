@@ -1,3 +1,5 @@
+title: lowdown --- simple markdown translator
+
 # lowdown --- simple Markdown translator
 
 *lowdown* is just another Markdown translator.  It can output
@@ -63,7 +65,7 @@ complexity of converting LaTeX to [eqn(7)](http://man.openbsd.org/eqn).
 ## Input
 
 Beyond the basic Markdown syntax support, *lowdown* supports the
-following Markdown features:
+following Markdown features and extensions:
 
 - autolinking
 - fenced code
@@ -72,10 +74,12 @@ following Markdown features:
 - footnotes
 - disabled inline HTML
 - "smartypants"
+- metadata (**experimental**)
 
 The only additional non-canonical Markdown feature is wrapping the
 initial paragraph of XHTML output in an `<aside>` block.  This is for
 integration with [sblg(1)](https://kristaps.bsd.lv/sblg).
+(This is **deprecated** and will be replaced with the metadata handler.)
 
 ## Examples
 
