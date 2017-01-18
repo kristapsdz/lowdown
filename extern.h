@@ -152,7 +152,6 @@ typedef enum hhtml_fl {
 	HOEDOWN_HTML_ESCAPE = (1 << 1),
 	HOEDOWN_HTML_HARD_WRAP = (1 << 2),
 	HOEDOWN_HTML_USE_XHTML = (1 << 3),
-	HOEDOWN_HTML_ASIDE = (1 << 4)
 } hhtml_fl;
 
 typedef enum hhtml_tag {
