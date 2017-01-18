@@ -149,7 +149,10 @@ focus on better PS and PDF output for
 [mandoc(1)](http://mdocml.bsd.lv).)
 
 First, start in
-[main.c](https://github.com/kristapsdz/lowdown/blob/master/main.c).
+[library.c](https://github.com/kristapsdz/lowdown/blob/master/library.c).
+(The [main.c](https://github.com/kristapsdz/lowdown/blob/master/main.c)
+file is just a caller to the library interface.)
+
 Both the renderer (which renders the parsed document contents in the
 output format) and the document (which invokes the renderer as it parses
 the document) are initialised.  There are two renderers supported:
@@ -162,10 +165,13 @@ Input and output buffers are defined in
 
 The parse is then started in
 [document.c](https://github.com/kristapsdz/lowdown/blob/master/document.c).
-This is the cruddiest part of the imported code, although I've made some
-efforts to clean it up whenever I touch it.  *lowdown* parses
-recursively, building the output document bottom-up.  It looks something
-like this:
+It is preceded by meta-data parsing, if applicable, which occurs before
+document parsing but after the BOM.
+
+Document parsing is the cruddiest part of the imported code, although
+I've made some efforts to clean it up whenever I touch it.  *lowdown*
+parses recursively, building the output document bottom-up.  It looks
+something like this:
 
 1. Begin parsing a component.
 2. Parse out subcomponents, creating a recursive step.
