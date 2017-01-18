@@ -39,4 +39,28 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.1.3</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2017-01-18">2017-01-18</time>
+		</header>
+		<aside>
+			<p>
+				First, add warnings with <b>-v</b>.
+				This reports MultiMarkdown and CommonMark violations.
+				Second, add the <b>-e</b> and <b>-d</b> flags to enable and disable, respectively, Markdown features.
+				For a list of Markdown features, see <a href="lowdown.1.html">lowdown(1)</a>.
+				Third, implement MultiMarkdown meta-data with the <i>metadata</i> feature, enabled by default.
+				Lastly, deprecate the title argument, <b>-t</b>, in favour of the metadata.
+				The <a href="lowdown.3.html">lowdown(3)</a> interface has changed to accommodate for the new metadata features.
+			</p>
+			<p>
+				<strong>Note</strong>: metadata values are still not used within the document.
+				So you can't <q>fill in</q> metadata keys within the text.
+				The metadata tags, for now, are informational except in that they provide a title.
+				This will be expanded upon in later versions.
+			</p>
+		</aside>
+	</article>
 </articles>
