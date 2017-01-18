@@ -48,6 +48,7 @@ enum	lowdown_type {
 
 enum	lowdown_err {
 	LOWDOWN_ERR_SPACE_BEFORE_LINK = 0,
+	LOWDOWN_ERR_METADATA_BAD_CHAR,
 	LOWDOWN_ERR__MAX
 };
 
