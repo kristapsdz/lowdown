@@ -338,8 +338,6 @@ rndr_paragraph(hbuf *ob, const hbuf *content, void *data, size_t par_count)
 	if (i == content->size)
 		return;
 
-	if (0 == par_count && state->flags & HOEDOWN_HTML_ASIDE)
-		HBUF_PUTSL(ob, "<aside>");
 	HBUF_PUTSL(ob, "<p>");
 	if (state->flags & HOEDOWN_HTML_HARD_WRAP) {
 		size_t org;
@@ -365,8 +363,6 @@ rndr_paragraph(hbuf *ob, const hbuf *content, void *data, size_t par_count)
 		hbuf_put(ob, content->data + i, content->size - i);
 	}
 	HBUF_PUTSL(ob, "</p>\n");
-	if (0 == par_count && state->flags & HOEDOWN_HTML_ASIDE)
-		HBUF_PUTSL(ob, "</aside>\n");
 }
 
 static void
