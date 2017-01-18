@@ -3023,8 +3023,9 @@ hdoc_new(const hrend *renderer, const struct lowdown_opts *opts,
 /*
  * Parse MMD meta-data.
  * This consists of key-value pairs.
+ * Returns zero if this is not metadata, non-zero of it is.
  */
-static void
+static int
 parse_metadata(hdoc *doc, const uint8_t *data, size_t sz,
 	struct lowdown_meta **meta, size_t *metasz)
 {
@@ -3035,7 +3036,21 @@ parse_metadata(hdoc *doc, const uint8_t *data, size_t sz,
 
 	assert(sz && '\n' == data[sz - 1]);
 
-	while (pos < sz) {
+	/* 
+	 * Check the first line for a colon to see if we should do
+	 * metadata parsing at all.
+	 * This is a convenience for regular markdown so that initial
+	 * lines (not headers) don't get sucked into metadata.
+	 */
+
+	for (pos = 0; pos < sz; pos++)
+		if ('\n' == data[pos] || ':' == data[pos])
+			break;
+
+	if (pos == sz || '\n' == data[pos])
+		return(0);
+
+	for (pos = 0; pos < sz; ) {
 		key = &data[pos];
 		for (i = pos; i < sz; i++)
 			if (':' == data[i])
@@ -3089,6 +3104,8 @@ parse_metadata(hdoc *doc, const uint8_t *data, size_t sz,
 			*cp++ = '?';
 		}
 	}
+
+	return(1);
 }
 
 /*
@@ -3156,8 +3173,8 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data,
 			    '\n' == data[end - 1])
 				break;
 		}
-		parse_metadata(doc, sv, end - beg, &m, &msz);
-		beg = end + 1;
+		if (parse_metadata(doc, sv, end - beg, &m, &msz))
+			beg = end + 1;
 	}
 
 	/* First pass: looking for references, copying everything else. */
