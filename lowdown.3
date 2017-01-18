@@ -56,23 +56,13 @@ The
 .Nm lowdown
 library parses Markdown into HTML or roff
 .Pq Fl ms No or Fl man No macro sets .
-See
-.Xr lowdown 1
-for a list of supported Markdown features.
-.Pp
 There are two forms of invocation.
+.Pp
 The first,
 .Nm lowdown_file ,
 operates from an already-opened
 .Vt FILE
 stream.
-The results are stored in
-.Fa ret ,
-which must later be passed to
-.Xr free 3 ,
-of size
-.Fa retsz .
-.Pp
 The second,
 .Nm lowdown_buf ,
 operates directly on an input buffer
@@ -161,7 +151,13 @@ for
 macros.
 .El
 .Pp
-Both also accept the
+The results for both functions are stored in
+.Fa ret ,
+which must later be passed to
+.Xr free 3 ,
+of size
+.Fa retsz .
+Both functions also accept the
 .Fa meta
 and
 .Fa metasz
@@ -194,3 +190,10 @@ library was forked by
 .An Kristaps Dzonsons Aq Mt kristaps@bsd.lv
 from
 .Lk https://github.com/hoedown/hoedown hoedown .
+.Sh CAVEATS
+The
+.Nm
+library functions will invoke
+.Xr exit 3
+if internal memory allocation fails.
+There is no way to catch these conditions.
