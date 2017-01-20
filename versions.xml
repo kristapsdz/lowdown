@@ -68,4 +68,16 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.1.4</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2017-01-20">2017-01-20</time>
+		</header>
+		<aside>
+			<p>
+				Fix for compiling on FreeBSD.  No other change.
+			</p>
+		</aside>
+	</article>
 </articles>
