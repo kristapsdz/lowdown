@@ -110,10 +110,10 @@ rndr_blockquote(hbuf *ob, const hbuf *content, void *data)
 	if (NULL == content || 0 == content->size)
 		return;
 
-	HBUF_PUTSL(ob, ".RS\n");
+	HBUF_PUTSL(ob, ".B1\n");
 	hbuf_put(ob, content->data, content->size);
 	BUFFER_NEWLINE(content->data, content->size, ob);
-	HBUF_PUTSL(ob, ".RE\n");
+	HBUF_PUTSL(ob, ".B2\n");
 }
 
 static int
@@ -239,8 +239,9 @@ rndr_header(hbuf *ob, const hbuf *content, int level, void *data)
 		HBUF_PUTSL(ob, ".SH ");
 	else if (st->mdoc)
 		HBUF_PUTSL(ob, ".SS ");
-	else
-		HBUF_PUTSL(ob, ".SH\n");
+	else {
+		hbuf_printf(ob, ".SH %d\n", level);
+	}
 
 	hbuf_put(ob, content->data, content->size);
 	BUFFER_NEWLINE(content->data, content->size, ob);
@@ -271,8 +272,10 @@ static void
 rndr_list(hbuf *ob, const hbuf *content, hlist_fl flags, void *data)
 {
 
+	HBUF_PUTSL(ob, ".RS\n");
 	if (NULL != content && content->size)
 		hbuf_put(ob, content->data, content->size);
+	HBUF_PUTSL(ob, ".RE\n");
 }
 
 static void
@@ -285,7 +288,7 @@ rndr_listitem(hbuf *ob, const hbuf *content, hlist_fl flags, void *data, size_t 
 	if (HLIST_ORDERED & flags)
 		hbuf_printf(ob, ".IP %zu.\n", num);
 	else
-		HBUF_PUTSL(ob, ".IP \\[bu]\n");
+		HBUF_PUTSL(ob, ".IP \\(bu\n");
 	hbuf_put(ob, content->data, content->size);
 	BUFFER_NEWLINE(content->data, content->size, ob);
 }
@@ -463,8 +466,11 @@ rndr_tablecell(hbuf *ob, const hbuf *content,
 
 	if (col > 0)
 		HBUF_PUTSL(ob, "|");
-	if (NULL != content && content->size)
+	if (NULL != content && content->size) {
+		HBUF_PUTSL(ob, "T{\n");
 		hbuf_put(ob, content->data, content->size);
+		HBUF_PUTSL(ob, "\nT}");
+	}
 }
 
 static int
