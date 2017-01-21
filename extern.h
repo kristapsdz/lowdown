@@ -154,6 +154,13 @@ typedef enum hhtml_fl {
 	HOEDOWN_HTML_USE_XHTML = (1 << 3),
 } hhtml_fl;
 
+typedef enum hnroff_fl {
+	HOEDOWN_NROFF_SKIP_HTML = (1 << 0),
+	HOEDOWN_NROFF_ESCAPE = (1 << 1),
+	HOEDOWN_NROFF_HARD_WRAP = (1 << 2),
+	HOEDOWN_NROFF_GROFF = (1 << 3),
+} hnroff_fl;
+
 typedef enum hhtml_tag {
 	HOEDOWN_HTML_TAG_NONE = 0,
 	HOEDOWN_HTML_TAG_OPEN,
@@ -213,7 +220,7 @@ const char *hhtml_find_block(const char *, unsigned int);
 void	 hrend_html_free(hrend *);
 hrend	*hrend_html_new(hhtml_fl, int) __attribute__ ((malloc));
 
-hrend	*hrend_nroff_new(hhtml_fl, int) __attribute__ ((malloc));
+hrend	*hrend_nroff_new(hnroff_fl, int) __attribute__ ((malloc));
 void	 hrend_nroff_free(hrend *);
 
 void	 hsmrt_html(hbuf *, const uint8_t *, size_t);
