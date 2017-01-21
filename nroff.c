@@ -239,9 +239,10 @@ rndr_header(hbuf *ob, const hbuf *content, int level, void *data)
 		HBUF_PUTSL(ob, ".SH ");
 	else if (st->mdoc)
 		HBUF_PUTSL(ob, ".SS ");
-	else {
+	else if (st->flags & HOEDOWN_NROFF_GROFF) 
 		hbuf_printf(ob, ".SH %d\n", level);
-	}
+	else
+		hbuf_printf(ob, ".SH\n");
 
 	hbuf_put(ob, content->data, content->size);
 	BUFFER_NEWLINE(content->data, content->size, ob);
