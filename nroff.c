@@ -393,19 +393,10 @@ rndr_raw_html(hbuf *ob, const hbuf *text, void *data)
 {
 	nroff_state 	*state = data;
 
-	/*
-	 * ESCAPE overrides SKIP_HTML. It doesn't look to see if
-	 * there are any valid tags, just escapes all of them.
-	 */
-	if ((state->flags & LOWDOWN_NROFF_ESCAPE) != 0) {
-		escape_block(ob, text->data, text->size);
-		return 1;
-	}
-
 	if ((state->flags & LOWDOWN_NROFF_SKIP_HTML) != 0)
 		return 1;
 
-	hbuf_put(ob, text->data, text->size);
+	escape_block(ob, text->data, text->size);
 	return 1;
 }
 
@@ -606,8 +597,7 @@ hrend_nroff_new(unsigned int render_flags, int mdoc)
 	renderer = xmalloc(sizeof(hrend));
 	memcpy(renderer, &cb_default, sizeof(hrend));
 
-	if (render_flags & LOWDOWN_NROFF_SKIP_HTML ||
-	    render_flags & LOWDOWN_NROFF_ESCAPE)
+	if (render_flags & LOWDOWN_NROFF_SKIP_HTML)
 		renderer->blockhtml = NULL;
 
 	renderer->opaque = state;
