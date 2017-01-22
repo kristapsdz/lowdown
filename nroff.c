@@ -39,7 +39,7 @@ typedef struct nroff_state {
 		int current_level;
 		int level_offset;
 	} toc_data;
-	hnroff_fl flags;
+	unsigned int flags;
 } nroff_state;
 
 static void
@@ -547,7 +547,7 @@ rndr_math(hbuf *ob, const hbuf *text, int displaymode, void *data)
 }
 
 hrend *
-hrend_nroff_new(hnroff_fl render_flags, int mdoc)
+hrend_nroff_new(unsigned int render_flags, int mdoc)
 {
 	static const hrend cb_default = {
 		NULL,

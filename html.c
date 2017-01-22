@@ -33,7 +33,7 @@ typedef struct html_state {
 		int level_offset;
 		int nesting_level;
 	} toc_data;
-	hhtml_fl flags;
+	unsigned int flags;
 } html_state;
 
 static void
@@ -597,7 +597,7 @@ rndr_math(hbuf *ob, const hbuf *text, int displaymode, void *data)
 
 /* allocates a regular HTML renderer */
 hrend *
-hrend_html_new(hhtml_fl render_flags, int nesting_level)
+hrend_html_new(unsigned int render_flags, int nesting_level)
 {
 	static const hrend cb_default = {
 		NULL,
