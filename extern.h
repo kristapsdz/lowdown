@@ -147,18 +147,14 @@ typedef struct hrend {
 	void (*doc_footer)(hbuf *, int, void *);
 } hrend;
 
-typedef enum hhtml_fl {
-	LOWDOWN_HTML_SKIP_HTML = (1 << 0),
-	LOWDOWN_HTML_ESCAPE = (1 << 1),
-	LOWDOWN_HTML_HARD_WRAP = (1 << 2),
-} hhtml_fl;
+#define LOWDOWN_HTML_SKIP_HTML (1 << 0)
+#define LOWDOWN_HTML_ESCAPE (1 << 1)
+#define LOWDOWN_HTML_HARD_WRAP (1 << 2)
 
-typedef enum hnroff_fl {
-	LOWDOWN_NROFF_SKIP_HTML = (1 << 0),
-	LOWDOWN_NROFF_ESCAPE = (1 << 1),
-	LOWDOWN_NROFF_HARD_WRAP = (1 << 2),
-	LOWDOWN_NROFF_GROFF = (1 << 3),
-} hnroff_fl;
+#define LOWDOWN_NROFF_SKIP_HTML (1 << 0)
+#define LOWDOWN_NROFF_ESCAPE (1 << 1)
+#define LOWDOWN_NROFF_HARD_WRAP (1 << 2)
+#define LOWDOWN_NROFF_GROFF (1 << 3)
 
 typedef enum hhtml_tag {
 	HOEDOWN_HTML_TAG_NONE = 0,
@@ -217,9 +213,9 @@ hhtml_tag hhtml_get_tag(const uint8_t *, size_t, const char *);
 const char *hhtml_find_block(const char *, unsigned int);
 
 void	 hrend_html_free(hrend *);
-hrend	*hrend_html_new(hhtml_fl, int) __attribute__ ((malloc));
+hrend	*hrend_html_new(unsigned int, int) __attribute__ ((malloc));
 
-hrend	*hrend_nroff_new(hnroff_fl, int) __attribute__ ((malloc));
+hrend	*hrend_nroff_new(unsigned int, int) __attribute__ ((malloc));
 void	 hrend_nroff_free(hrend *);
 
 void	 hsmrt_html(hbuf *, const uint8_t *, size_t);
