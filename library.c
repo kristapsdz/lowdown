@@ -58,10 +58,9 @@ lowdown_buf(const struct lowdown_opts *opts,
 
 	renderer = NULL == opts || LOWDOWN_HTML == opts->type ?
 		hrend_html_new
-		(LOWDOWN_HTML_ESCAPE, 0) :
-		hrend_nroff_new
-		(LOWDOWN_NROFF_ESCAPE,
-		 LOWDOWN_MAN == opts->type);
+		(NULL == opts ? 0 : opts->oflags, 0) :
+		hrend_nroff_new(opts->oflags, 
+			LOWDOWN_MAN == opts->type);
 
 	document = hdoc_new
 		(renderer, opts, NULL == opts ?
