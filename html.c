@@ -656,7 +656,8 @@ hrend_html_new(unsigned int render_flags, int nesting_level)
 	renderer = xmalloc(sizeof(hrend));
 	memcpy(renderer, &cb_default, sizeof(hrend));
 
-	if (render_flags & LOWDOWN_HTML_SKIP_HTML || render_flags & LOWDOWN_HTML_ESCAPE)
+	if (render_flags & LOWDOWN_HTML_SKIP_HTML || 
+	    render_flags & LOWDOWN_HTML_ESCAPE)
 		renderer->blockhtml = NULL;
 
 	renderer->opaque = state;
