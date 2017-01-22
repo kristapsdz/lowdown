@@ -140,6 +140,46 @@ Message function for logging messages.
 If
 .Dv NULL ,
 messages are not logged.
+.It Va ofeat
+Features used by the output generators.
+This bit-field may have the following enabled.
+Note that bits are by definition specific to an output
+.Va type .
+.Pp
+For
+.Dv LOWDOWN_HTML :
+.Pp
+.Bl -tag -width Ds -compact
+.It Dv LOWDOWN_HTML_SKIP_HTML
+Do not render in-document HTML at all.
+Note that
+.Dv LOWDOWN_HTML_ESCAPE
+takes priority if both are specified.
+Also note that text within the HTML tags will remain!
+.It Dv LOWDOWN_HTML_ESCAPE
+Leaves in-line HTML in its source form as if it were opaque text.
+Takes precedence over
+.Dv LOWDOWN_HTML_ESCAPE .
+.It Dv LOWDOWN_HTML_HARD_WRAP
+Retain line-breaks within paragraphs.
+.El
+.Pp
+And for
+.Dv LOWDOWN_MAN
+and
+.Dv LOWDOWN_NROFF :
+.Pp
+.Bl -tag -width Ds -compact
+.It Dv LOWDOWN_NROFF_SKIP_HTML
+Do not render in-document HTML at all.
+Text within HTML elements remains.
+.It Dv LOWDOWN_NROFF_HARD_WRAP
+Retain line-breaks within paragraphs.
+.It Dv LOWDOWN_NROFF_GROFF
+Use GNU extensions (i.e., for
+.Xr groff 1 )
+when rendering output.
+.El
 .It Va type
 May be set to
 .Dv LOWDOWN_HTML
@@ -185,6 +225,7 @@ The
 .Nm lowdown_file
 returns zero if the file-reading sequenced failed, non-zero otherwise.
 .Sh SEE ALSO
+.Xr groff 1 ,
 .Xr lowdown 1
 .Sh AUTHORS
 The
