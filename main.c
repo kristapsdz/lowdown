@@ -212,6 +212,10 @@ main(int argc, char *argv[])
 		LOWDOWN_STRIKE |
 		LOWDOWN_FENCED |
 		LOWDOWN_METADATA;
+	opts.oflags = 
+		LOWDOWN_NROFF_SKIP_HTML |
+		LOWDOWN_HTML_SKIP_HTML |
+		LOWDOWN_NROFF_GROFF;
 
 	tm = localtime(&t);
 
