@@ -58,8 +58,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 
 	renderer = NULL == opts || LOWDOWN_HTML == opts->type ?
 		hrend_html_new
-		(HOEDOWN_HTML_USE_XHTML |
-		 HOEDOWN_HTML_ESCAPE, 0) :
+		(LOWDOWN_HTML_ESCAPE, 0) :
 		hrend_nroff_new
 		(LOWDOWN_NROFF_ESCAPE,
 		 LOWDOWN_MAN == opts->type);
