@@ -144,8 +144,33 @@ message(enum lowdown_err er, void *arg, const char *buf)
 
 }
 
+#if 0
 static unsigned int
-feature(const char *v)
+feature_out(const char *v)
+{
+
+	if (NULL == v)
+		return(0);
+	if (0 == strcasecmp(v, "html-skiphtml"))
+		return(LOWDOWN_HTML_SKIP_HTML);
+	if (0 == strcasecmp(v, "html-escape"))
+		return(LOWDOWN_HTML_ESCAPE);
+	if (0 == strcasecmp(v, "html-hardwrap"))
+		return(LOWDOWN_HTML_HARD_WRAP);
+	if (0 == strcasecmp(v, "nroff-skiphtml"))
+		return(LOWDOWN_NROFF_SKIP_HTML);
+	if (0 == strcasecmp(v, "nroff-hardwrap"))
+		return(LOWDOWN_NROFF_HARD_WRAP);
+	if (0 == strcasecmp(v, "nroff-groff"))
+		return(LOWDOWN_NROFF_GROFF);
+
+	warnx("%s: unknown feature", v);
+	return(0);
+}
+#endif
+
+static unsigned int
+feature_in(const char *v)
 {
 
 	if (NULL == v)
@@ -181,6 +206,7 @@ feature(const char *v)
 	if (0 == strcasecmp(v, "metadata"))
 		return(LOWDOWN_METADATA);
 
+	warnx("%s: unknown feature", v);
 	return(0);
 }
 
@@ -232,18 +258,15 @@ main(int argc, char *argv[])
 		++pname;
 #endif
 
-	while (-1 != (c = getopt(argc, argv, "d:e:E:sT:o:v")))
+	while (-1 != (c = getopt(argc, argv, "d:e:X:sT:o:v")))
 		switch (c) {
 		case ('d'):
-			if (0 == (feat = feature(optarg)))
+			if (0 == (feat = feature_in(optarg)))
 				goto usage;
 			opts.feat &= ~feat;
 			break;
-		case ('E'):
-			extract = optarg;
-			break;
 		case ('e'):
-			if (0 == (feat = feature(optarg)))
+			if (0 == (feat = feature_in(optarg)))
 				goto usage;
 			opts.feat |= feat;
 			break;
@@ -265,6 +288,9 @@ main(int argc, char *argv[])
 			break;
 		case ('v'):
 			opts.msg = message;
+			break;
+		case ('X'):
+			extract = optarg;
 			break;
 		default:
 			goto usage;
@@ -356,10 +382,10 @@ usage:
 	fprintf(stderr, "usage: %s "
 		"[-sv] "
 		"[-d feature] "
-		"[-E keyword] "
 		"[-e feature] "
 		"[-o output] "
 		"[-T mode] "
+		"[-X keyword] "
 		"[file]\n", pname);
 	return(EXIT_FAILURE);
 }
