@@ -147,15 +147,6 @@ typedef struct hrend {
 	void (*doc_footer)(hbuf *, int, void *);
 } hrend;
 
-#define LOWDOWN_HTML_SKIP_HTML (1 << 0)
-#define LOWDOWN_HTML_ESCAPE (1 << 1)
-#define LOWDOWN_HTML_HARD_WRAP (1 << 2)
-
-#define LOWDOWN_NROFF_SKIP_HTML (1 << 0)
-#define LOWDOWN_NROFF_ESCAPE (1 << 1)
-#define LOWDOWN_NROFF_HARD_WRAP (1 << 2)
-#define LOWDOWN_NROFF_GROFF (1 << 3)
-
 typedef enum hhtml_tag {
 	HOEDOWN_HTML_TAG_NONE = 0,
 	HOEDOWN_HTML_TAG_OPEN,
