@@ -239,7 +239,7 @@ rndr_header(hbuf *ob, const hbuf *content, int level, void *data)
 		HBUF_PUTSL(ob, ".SH ");
 	else if (st->mdoc)
 		HBUF_PUTSL(ob, ".SS ");
-	else if (st->flags & HOEDOWN_NROFF_GROFF) 
+	else if (st->flags & LOWDOWN_NROFF_GROFF) 
 		hbuf_printf(ob, ".SH %d\n", level);
 	else
 		hbuf_printf(ob, ".SH\n");
@@ -309,7 +309,7 @@ rndr_paragraph(hbuf *ob, const hbuf *content, void *data, size_t par_count)
 
 	HBUF_PUTSL(ob, ".LP\n");
 
-	if (state->flags & HOEDOWN_NROFF_HARD_WRAP) {
+	if (state->flags & LOWDOWN_NROFF_HARD_WRAP) {
 		while (i < content->size) {
 			org = i;
 			while (i < content->size && content->data[i] != '\n')
@@ -397,12 +397,12 @@ rndr_raw_html(hbuf *ob, const hbuf *text, void *data)
 	 * ESCAPE overrides SKIP_HTML. It doesn't look to see if
 	 * there are any valid tags, just escapes all of them.
 	 */
-	if ((state->flags & HOEDOWN_NROFF_ESCAPE) != 0) {
+	if ((state->flags & LOWDOWN_NROFF_ESCAPE) != 0) {
 		escape_block(ob, text->data, text->size);
 		return 1;
 	}
 
-	if ((state->flags & HOEDOWN_NROFF_SKIP_HTML) != 0)
+	if ((state->flags & LOWDOWN_NROFF_SKIP_HTML) != 0)
 		return 1;
 
 	hbuf_put(ob, text->data, text->size);
@@ -606,8 +606,8 @@ hrend_nroff_new(hnroff_fl render_flags, int mdoc)
 	renderer = xmalloc(sizeof(hrend));
 	memcpy(renderer, &cb_default, sizeof(hrend));
 
-	if (render_flags & HOEDOWN_NROFF_SKIP_HTML ||
-	    render_flags & HOEDOWN_NROFF_ESCAPE)
+	if (render_flags & LOWDOWN_NROFF_SKIP_HTML ||
+	    render_flags & LOWDOWN_NROFF_ESCAPE)
 		renderer->blockhtml = NULL;
 
 	renderer->opaque = state;
