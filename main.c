@@ -144,7 +144,6 @@ message(enum lowdown_err er, void *arg, const char *buf)
 
 }
 
-#if 0
 static unsigned int
 feature_out(const char *v)
 {
@@ -167,7 +166,6 @@ feature_out(const char *v)
 	warnx("%s: unknown feature", v);
 	return(0);
 }
-#endif
 
 static unsigned int
 feature_in(const char *v)
@@ -258,12 +256,22 @@ main(int argc, char *argv[])
 		++pname;
 #endif
 
-	while (-1 != (c = getopt(argc, argv, "d:e:X:sT:o:v")))
+	while (-1 != (c = getopt(argc, argv, "D:d:E:e:sT:o:vX:")))
 		switch (c) {
+		case ('D'):
+			if (0 == (feat = feature_out(optarg)))
+				goto usage;
+			opts.oflags &= ~feat;
+			break;
 		case ('d'):
 			if (0 == (feat = feature_in(optarg)))
 				goto usage;
 			opts.feat &= ~feat;
+			break;
+		case ('E'):
+			if (0 == (feat = feature_out(optarg)))
+				goto usage;
+			opts.oflags |= feat;
 			break;
 		case ('e'):
 			if (0 == (feat = feature_in(optarg)))
@@ -381,7 +389,9 @@ main(int argc, char *argv[])
 usage:
 	fprintf(stderr, "usage: %s "
 		"[-sv] "
+		"[-D feature] "
 		"[-d feature] "
+		"[-E feature] "
 		"[-e feature] "
 		"[-o output] "
 		"[-T mode] "
