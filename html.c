@@ -34,8 +34,6 @@ typedef struct html_state {
 		int nesting_level;
 	} toc_data;
 	hhtml_fl flags;
-	/* extra callbacks */
-	void (*link_attributes)(hbuf *ob, const hbuf *url, const void *data);
 } html_state;
 
 static void
@@ -89,7 +87,6 @@ hhtml_get_tag(const uint8_t *data, size_t size, const char *tagname)
 static int
 rndr_autolink(hbuf *ob, const hbuf *link, halink_type type, void *data)
 {
-	html_state *state = data;
 
 	if (!link || !link->size)
 		return 0;
@@ -98,14 +95,7 @@ rndr_autolink(hbuf *ob, const hbuf *link, halink_type type, void *data)
 	if (type == HALINK_EMAIL)
 		HBUF_PUTSL(ob, "mailto:");
 	escape_href(ob, link->data, link->size);
-
-	if (state->link_attributes) {
-		hbuf_putc(ob, '\"');
-		state->link_attributes(ob, link, data);
-		hbuf_putc(ob, '>');
-	} else {
-		HBUF_PUTSL(ob, "\">");
-	}
+	HBUF_PUTSL(ob, "\">");
 
 	/*
 	 * Pretty printing: if we get an email address as
@@ -266,7 +256,6 @@ rndr_header(hbuf *ob, const hbuf *content, int level, void *data)
 static int
 rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title, void *data)
 {
-	html_state *state = data;
 
 	HBUF_PUTSL(ob, "<a href=\"");
 
@@ -278,13 +267,7 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title, vo
 		escape_html(ob, title->data, title->size);
 	}
 
-	if (state->link_attributes) {
-		hbuf_putc(ob, '\"');
-		state->link_attributes(ob, link, data);
-		hbuf_putc(ob, '>');
-	} else {
-		HBUF_PUTSL(ob, "\">");
-	}
+	HBUF_PUTSL(ob, "\">");
 
 	if (content && content->size)
 		hbuf_put(ob, content->data, content->size);
