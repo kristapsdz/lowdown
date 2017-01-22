@@ -155,10 +155,10 @@ typedef enum hhtml_fl {
 } hhtml_fl;
 
 typedef enum hnroff_fl {
-	HOEDOWN_NROFF_SKIP_HTML = (1 << 0),
-	HOEDOWN_NROFF_ESCAPE = (1 << 1),
-	HOEDOWN_NROFF_HARD_WRAP = (1 << 2),
-	HOEDOWN_NROFF_GROFF = (1 << 3),
+	LOWDOWN_NROFF_SKIP_HTML = (1 << 0),
+	LOWDOWN_NROFF_ESCAPE = (1 << 1),
+	LOWDOWN_NROFF_HARD_WRAP = (1 << 2),
+	LOWDOWN_NROFF_GROFF = (1 << 3),
 } hnroff_fl;
 
 typedef enum hhtml_tag {

@@ -61,7 +61,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 		(HOEDOWN_HTML_USE_XHTML |
 		 HOEDOWN_HTML_ESCAPE, 0) :
 		hrend_nroff_new
-		(HOEDOWN_NROFF_ESCAPE,
+		(LOWDOWN_NROFF_ESCAPE,
 		 LOWDOWN_MAN == opts->type);
 
 	document = hdoc_new
