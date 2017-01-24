@@ -3082,8 +3082,8 @@ parse_metadata(hdoc *doc, const uint8_t *data, size_t sz,
 	}
 
 	/*
-	 * Convert metadata keys into normalised form: alphanumerics,
-	 * hyphen, underscore, with spaces stripped.
+	 * Convert metadata keys into normalised form: lowercase
+	 * alphanumerics, hyphen, underscore, with spaces stripped.
 	 */
 
 	for (i = 0; i < *metasz; i++) {
@@ -3091,6 +3091,7 @@ parse_metadata(hdoc *doc, const uint8_t *data, size_t sz,
 		while ('\0' != *cp) {
 			if (isalnum((int)*cp) ||
 			    '-' == *cp || '_' == *cp) {
+				*cp = tolower((int)*cp);
 				cp++;
 				continue;
 			} else if (isspace((int)*cp)) {
