@@ -138,6 +138,10 @@ struct 	hdoc {
 	int		 in_link_body;
 };
 
+/* Some forward declarations. */
+
+static void parse_block(hbuf *, hdoc *, uint8_t *, size_t);
+
 static hbuf *
 newbuf(hdoc *doc, int type)
 {
@@ -1746,10 +1750,6 @@ prefix_uli(uint8_t *data, size_t size)
 }
 
 
-/* parse_block • parsing of one block, returning next uint8_t to parse */
-static void parse_block(hbuf *ob, hdoc *doc,
-			uint8_t *data, size_t size);
-
 
 /* parse_blockquote • handles parsing of a blockquote fragment */
 static size_t
@@ -2627,16 +2627,17 @@ parse_table(
 	return i;
 }
 
-/* parse_block • parsing of one block, returning next uint8_t to parse */
+/* 
+ * Parsing of one block, returning next uint8_t to parse.
+ */
 static void
 parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 {
-	size_t beg, end, i;
-	uint8_t *txt_data;
-	beg = 0;
+	size_t	 beg = 0, end, i;
+	uint8_t	*txt_data;
 
 	if (doc->work_bufs[BUFFER_SPAN].size +
-		doc->work_bufs[BUFFER_BLOCK].size > doc->max_nesting)
+	    doc->work_bufs[BUFFER_BLOCK].size > doc->max_nesting)
 		return;
 
 	while (beg < size) {
@@ -2645,14 +2646,11 @@ parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 
 		if (is_atxheader(doc, txt_data, end))
 			beg += parse_atxheader(ob, doc, txt_data, end);
-
 		else if (data[beg] == '<' && doc->md.blockhtml &&
 				(i = parse_htmlblock(ob, doc, txt_data, end, 1)) != 0)
 			beg += i;
-
 		else if ((i = is_empty(txt_data, end)) != 0)
 			beg += i;
-
 		else if (is_hrule(txt_data, end)) {
 			if (doc->md.hrule)
 				doc->md.hrule(ob, doc->data);
@@ -2661,50 +2659,35 @@ parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 				beg++;
 
 			beg++;
-		}
-
-		else if ((doc->ext_flags & LOWDOWN_FENCED) != 0 &&
+		} else if ((doc->ext_flags & LOWDOWN_FENCED) != 0 &&
 			(i = parse_fencedcode(ob, doc, txt_data, end)) != 0)
 			beg += i;
-
 		else if ((doc->ext_flags & LOWDOWN_TABLES) != 0 &&
 			(i = parse_table(ob, doc, txt_data, end)) != 0)
 			beg += i;
-
 		else if (prefix_quote(txt_data, end))
 			beg += parse_blockquote(ob, doc, txt_data, end);
-
 		else if (!(doc->ext_flags & LOWDOWN_NOCODEIND) && prefix_code(txt_data, end))
 			beg += parse_blockcode(ob, doc, txt_data, end);
-
 		else if (prefix_uli(txt_data, end))
 			beg += parse_list(ob, doc, txt_data, end, 0);
-
 		else if (prefix_oli(txt_data, end, NULL, NULL))
 			beg += parse_list(ob, doc, txt_data, end, HLIST_ORDERED);
-
 		else
 			beg += parse_paragraph(ob, doc, txt_data, end);
 	}
 }
 
-
-
-/*********************
- * REFERENCE PARSING *
- *********************/
-
-/* is_footnote • returns whether a line is a footnote definition or not */
+/* 
+ * Returns whether a line is a footnote definition or not.
+ */
 static int
-is_footnote(const uint8_t *data, size_t beg, size_t end, size_t *last, struct footnote_list *list)
+is_footnote(const uint8_t *data, size_t beg, 
+	size_t end, size_t *last, struct footnote_list *list)
 {
-	size_t i = 0;
-	hbuf *contents = NULL;
-	size_t ind = 0;
-	int in_empty = 0;
-	size_t start = 0;
-
-	size_t id_offset, id_end;
+	size_t	 i = 0, ind = 0, start = 0, id_offset, id_end;
+	hbuf	*contents = NULL;
+	int 	 in_empty = 0;
 
 	/* up to 3 optional leading spaces */
 	if (beg + 3 >= end) return 0;
@@ -2799,16 +2782,15 @@ is_footnote(const uint8_t *data, size_t beg, size_t end, size_t *last, struct fo
 	return 1;
 }
 
-/* is_ref • returns whether a line is a reference or not */
+/* 
+ * Returns whether a line is a reference or not.
+ */
 static int
-is_ref(const uint8_t *data, size_t beg, size_t end, size_t *last, struct link_ref **refs)
+is_ref(const uint8_t *data, size_t beg, 
+	size_t end, size_t *last, struct link_ref **refs)
 {
-/*	int n; */
-	size_t i = 0;
-	size_t id_offset, id_end;
-	size_t link_offset, link_end;
-	size_t title_offset, title_end;
-	size_t line_end;
+	size_t	 i = 0, id_offset, id_end, link_offset, 
+		 link_end, title_offset, title_end, line_end;
 
 	/* up to 3 optional leading spaces */
 	if (beg + 3 >= end) return 0;
@@ -2913,18 +2895,23 @@ is_ref(const uint8_t *data, size_t beg, size_t end, size_t *last, struct link_re
 	return 1;
 }
 
-static void expand_tabs(hbuf *ob, const uint8_t *line, size_t size)
+static void 
+expand_tabs(hbuf *ob, const uint8_t *line, size_t size)
 {
-	/* This code makes two assumptions:
-	 * - Input is valid UTF-8.  (Any byte with top two bits 10 is skipped,
-	 *   whether or not it is a valid UTF-8 continuation byte.)
-	 * - Input contains no combining characters.  (Combining characters
-	 *   should be skipped but are not.)
+	size_t  i = 0, tab = 0, org;
+
+	/* 
+	 * This code makes two assumptions:
+	 *
+	 * (1) Input is valid UTF-8.  (Any byte with top two bits 10 is
+	 * skipped, whether or not it is a valid UTF-8 continuation
+	 * byte.)
+	 * (2) Input contains no combining characters.  (Combining
+	 * characters should be skipped but are not.)
 	 */
-	size_t  i = 0, tab = 0;
 
 	while (i < size) {
-		size_t org = i;
+		org = i;
 
 		while (i < size && line[i] != '\t') {
 			/* ignore UTF-8 continuation bytes */
@@ -2940,7 +2927,8 @@ static void expand_tabs(hbuf *ob, const uint8_t *line, size_t size)
 			break;
 
 		do {
-			hbuf_putc(ob, ' '); tab++;
+			hbuf_putc(ob, ' '); 
+			tab++;
 		} while (tab % 4);
 
 		i++;
