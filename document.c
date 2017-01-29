@@ -142,6 +142,14 @@ struct 	hdoc {
 
 static void parse_block(hbuf *, hdoc *, uint8_t *, size_t);
 
+static int
+buf_newln(hbuf *buf)
+{
+
+	assert(NULL != buf);
+	return(0 == buf->size || '\n' == buf->data[buf->size - 1]);
+}
+
 static hbuf *
 newbuf(hdoc *doc, int type)
 {
@@ -527,7 +535,7 @@ last_newline(const hdoc *doc, const uint8_t *data)
  * It subsequently needs escaping according to the output formatter.
  */
 static void
-parse_inline(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
+parse_inline(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int nln)
 {
 	size_t	 i = 0, end = 0, consumed = 0;
 	hbuf	 work;
@@ -710,12 +718,14 @@ find_emph_char(uint8_t *data, size_t size, uint8_t c)
 static size_t
 parse_emph1(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 {
-	size_t i = 0, len;
-	hbuf *work = NULL;
-	int r;
+	size_t	 i = 0, len;
+	hbuf	*work = NULL;
+	int	 r;
 
-	/* skipping one symbol if coming from emph3 */
-	if (size > 1 && data[0] == c && data[1] == c) i = 1;
+	/* Skipping one symbol if coming from emph3. */
+
+	if (size > 1 && data[0] == c && data[1] == c) 
+		i = 1;
 
 	while (i < size) {
 		len = find_emph_char(data + i, size - i, c);
@@ -731,10 +741,9 @@ parse_emph1(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 					continue;
 
 			work = newbuf(doc, BUFFER_SPAN);
-			parse_inline(work, doc, data, i);
+			parse_inline(work, doc, data, i, buf_newln(ob));
 
-			if (doc->ext_flags & LOWDOWN_UNDER &&
-			    c == '_')
+			if (doc->ext_flags & LOWDOWN_UNDER && c == '_')
 				r = doc->md.underline
 					(ob, work, doc->data);
 			else
@@ -755,18 +764,20 @@ parse_emph1(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 static size_t
 parse_emph2(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 {
-	size_t i = 0, len;
-	hbuf *work = NULL;
-	int r;
+	size_t	 i = 0, len;
+	hbuf	*work = NULL;
+	int	 r;
 
 	while (i < size) {
 		len = find_emph_char(data + i, size - i, c);
-		if (!len) return 0;
+		if (0 == len) 
+			return 0;
 		i += len;
 
-		if (i + 1 < size && data[i] == c && data[i + 1] == c && i && !xisspace(data[i - 1])) {
+		if (i + 1 < size && data[i] == c && 
+		    data[i + 1] == c && i && !xisspace(data[i - 1])) {
 			work = newbuf(doc, BUFFER_SPAN);
-			parse_inline(work, doc, data, i);
+			parse_inline(work, doc, data, i, buf_newln(ob));
 
 			if (c == '~')
 				r = doc->md.strikethrough(ob, work, doc->data);
@@ -783,59 +794,75 @@ parse_emph2(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 	return 0;
 }
 
-/* parse_emph3 • parsing single emphase */
-/* finds the first closing tag, and delegates to the other emph */
+/* 
+ * Parsing single emphase
+ * Finds the first closing tag, and delegates to the other emph.
+ */
 static size_t
 parse_emph3(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 {
-	size_t i = 0, len;
-	int r;
+	size_t	 i = 0, len;
+	int	 r;
+	hbuf	*work;
 
 	while (i < size) {
 		len = find_emph_char(data + i, size - i, c);
-		if (!len) return 0;
+		if (0 == len) 
+			return 0;
 		i += len;
 
-		/* skip spacing preceded symbols */
+		/* Skip spacing preceded symbols. */
+
 		if (data[i] != c || xisspace(data[i - 1]))
 			continue;
 
-		if (i + 2 < size && data[i + 1] == c && data[i + 2] == c && doc->md.triple_emphasis) {
-			/* triple symbol found */
-			hbuf *work = newbuf(doc, BUFFER_SPAN);
-
-			parse_inline(work, doc, data, i);
+		if (i + 2 < size && data[i + 1] == c && 
+		    data[i + 2] == c && doc->md.triple_emphasis) {
+			/* Triple symbol found. */
+			work = newbuf(doc, BUFFER_SPAN);
+			parse_inline(work, doc, data, i, buf_newln(ob));
 			r = doc->md.triple_emphasis(ob, work, doc->data);
 			popbuf(doc, BUFFER_SPAN);
 			return r ? i + 3 : 0;
-
 		} else if (i + 1 < size && data[i + 1] == c) {
-			/* double symbol found, handing over to emph1 */
-			len = parse_emph1(ob, doc, data - 2, size + 2, c);
-			if (!len) return 0;
-			else return len - 2;
-
+			/* Double symbol found: handing to emph1. */
+			len = parse_emph1(ob, 
+				doc, data - 2, size + 2, c);
+			if (!len) 
+				return 0;
+			else 
+				return len - 2;
 		} else {
-			/* single symbol found, handing over to emph2 */
-			len = parse_emph2(ob, doc, data - 1, size + 1, c);
-			if (!len) return 0;
-			else return len - 1;
+			/* Single symbol found: handing to emph2. */
+			len = parse_emph2(ob, 
+				doc, data - 1, size + 1, c);
+			if (!len) 
+				return 0;
+			else 
+				return len - 1;
 		}
 	}
 	return 0;
 }
 
-/* parse_math • parses a math span until the given ending delimiter */
+/* 
+ * Parses a math span until the given ending delimiter.
+ */
 static size_t
-parse_math(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size, const char *end, size_t delimsz, int displaymode)
+parse_math(hbuf *ob, hdoc *doc, uint8_t *data, 
+	size_t offset, size_t size, const char *end, 
+	size_t delimsz, int displaymode)
 {
-	hbuf text = { NULL, 0, 0, 0, 0 };
-	size_t i = delimsz;
+	hbuf	 text;
+	size_t	 i = delimsz;
+
+	memset(&text, 0, sizeof(hbuf));
 
 	if (!doc->md.math)
 		return 0;
 
-	/* find ending delimiter */
+	/* Find ending delimiter. */
+
 	while (1) {
 		while (i < size && data[i] != (uint8_t)end[0])
 			i++;
@@ -843,31 +870,40 @@ parse_math(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size, const
 		if (i >= size)
 			return 0;
 
-		if (!is_escaped(data, i) && !(i + delimsz > size)
-			&& memcmp(data + i, end, delimsz) == 0)
+		if (!is_escaped(data, i) && 
+		    !(i + delimsz > size) && 
+		    memcmp(data + i, end, delimsz) == 0)
 			break;
 
 		i++;
 	}
 
-	/* prepare buffers */
+	/* Prepare buffers. */
+
 	text.data = data + delimsz;
 	text.size = i - delimsz;
 
-	/* if this is a $$ and MATH_EXPLICIT is not active,
-	 * guess whether displaymode should be enabled from the context */
+	/* 
+	 * If this is a $$ and MATH_EXPLICIT is not active, guess whether
+	 * displaymode should be enabled from the context.
+	 */
+
 	i += delimsz;
 	if (delimsz == 2 && !(doc->ext_flags & LOWDOWN_MATHEXP))
-		displaymode = is_empty_all(data - offset, offset) && is_empty_all(data + i, size - i);
+		displaymode = is_empty_all(data - offset, offset) && 
+			is_empty_all(data + i, size - i);
 
-	/* call callback */
+	/* Call callback. */
+
 	if (doc->md.math(ob, &text, displaymode, doc->data))
 		return i;
 
 	return 0;
 }
 
-/* char_emphasis • single and double emphasis parsing */
+/* 
+ * Single and double emphasis parsing.
+ */
 static size_t
 char_emphasis(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 {
@@ -999,7 +1035,7 @@ char_quote(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 	/* real quote */
 	if (f_begin < f_end) {
 		hbuf *work = newbuf(doc, BUFFER_SPAN);
-		parse_inline(work, doc, data + f_begin, f_end - f_begin);
+		parse_inline(work, doc, data + f_begin, f_end - f_begin, 0);
 
 		if (!doc->md.quote(ob, work, doc->data))
 			end = 0;
@@ -1428,7 +1464,7 @@ char_link(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 			/* disable autolinking when parsing inline the
 			 * content of a link */
 			doc->in_link_body = 1;
-			parse_inline(content, doc, data + 1, txt_e - 1);
+			parse_inline(content, doc, data + 1, txt_e - 1, 0);
 			doc->in_link_body = 0;
 		}
 	}
@@ -1480,7 +1516,7 @@ char_superscript(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 		return (sup_start == 2) ? 3 : 0;
 
 	sup = newbuf(doc, BUFFER_SPAN);
-	parse_inline(sup, doc, data + sup_start, sup_len - sup_start);
+	parse_inline(sup, doc, data + sup_start, sup_len - sup_start, 0);
 	doc->md.superscript(ob, sup, doc->data);
 	popbuf(doc, BUFFER_SPAN);
 
@@ -1841,7 +1877,7 @@ parse_paragraph(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 
 		sv = doc->start;
 		doc->start = work.data;
-		parse_inline(tmp, doc, work.data, work.size);
+		parse_inline(tmp, doc, work.data, work.size, 0);
 		doc->start = sv;
 
 		if (doc->md.paragraph)
@@ -1862,7 +1898,7 @@ parse_paragraph(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 
 			if (work.size > 0) {
 				hbuf *tmp = newbuf(doc, BUFFER_BLOCK);
-				parse_inline(tmp, doc, work.data, work.size);
+				parse_inline(tmp, doc, work.data, work.size, 0);
 
 				if (doc->md.paragraph)
 					doc->md.paragraph(ob, tmp, doc->data, doc->cur_par);
@@ -1879,7 +1915,7 @@ parse_paragraph(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 
 		sv = doc->start;
 		doc->start = work.data;
-		parse_inline(header_work, doc, work.data, work.size);
+		parse_inline(header_work, doc, work.data, work.size, 0);
 		doc->start = sv;
 
 		if (doc->md.header)
@@ -2117,11 +2153,11 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 	} else {
 		/* intermediate render of inline li */
 		if (sublist && sublist < work->size) {
-			parse_inline(inter, doc, work->data, sublist);
+			parse_inline(inter, doc, work->data, sublist, 0);
 			parse_block(inter, doc, work->data + sublist, work->size - sublist);
 		}
 		else
-			parse_inline(inter, doc, work->data, work->size);
+			parse_inline(inter, doc, work->data, work->size, 0);
 	}
 
 	doc->start = sv;
@@ -2159,19 +2195,24 @@ parse_list(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hlist_fl flags)
 	return i;
 }
 
-/* parse_atxheader • parsing of atx-style headers */
+/* 
+ * Parsing of atx-style headers.
+ */
 static size_t
 parse_atxheader(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 {
-	size_t level = 0;
-	size_t i, end, skip;
+	size_t 	 level = 0, i, end, skip;
+	hbuf	*work;
 
 	while (level < size && level < 6 && data[level] == '#')
 		level++;
 
-	for (i = level; i < size && data[i] == ' '; i++);
+	for (i = level; i < size && data[i] == ' '; i++)
+		continue;
 
-	for (end = i; end < size && data[end] != '\n'; end++);
+	for (end = i; end < size && data[end] != '\n'; end++)
+		continue;
+
 	skip = end;
 
 	while (end && data[end - 1] == '#')
@@ -2181,13 +2222,10 @@ parse_atxheader(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 		end--;
 
 	if (end > i) {
-		hbuf *work = newbuf(doc, BUFFER_SPAN);
-
-		parse_inline(work, doc, data + i, end - i);
-
+		work = newbuf(doc, BUFFER_SPAN);
+		parse_inline(work, doc, data + i, end - i, buf_newln(ob));
 		if (doc->md.header)
 			doc->md.header(ob, work, (int)level, doc->data);
-
 		popbuf(doc, BUFFER_SPAN);
 	}
 
@@ -2402,17 +2440,13 @@ parse_htmlblock(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int do_render)
 }
 
 static void
-parse_table_row(
-	hbuf *ob,
-	hdoc *doc,
-	uint8_t *data,
-	size_t size,
-	size_t columns,
-	htbl_flags *col_data,
-	htbl_flags header_flag)
+parse_table_row(hbuf *ob, hdoc *doc, uint8_t *data, 
+	size_t size, size_t columns, htbl_flags 
+	*col_data, htbl_flags header_flag)
 {
-	size_t i = 0, col, len;
-	hbuf *row_work = NULL;
+	size_t	 i = 0, col, len, cell_start, cell_end;
+	hbuf 	*cell_work, *row_work = NULL;
+	hbuf 	 empty_cell;
 
 	if (!doc->md.table_cell || !doc->md.table_row)
 		return;
@@ -2423,9 +2457,6 @@ parse_table_row(
 		i++;
 
 	for (col = 0; col < columns && i < size; ++col) {
-		size_t cell_start, cell_end;
-		hbuf *cell_work;
-
 		cell_work = newbuf(doc, BUFFER_SPAN);
 
 		while (i < size && xisspace(data[i]))
@@ -2435,50 +2466,53 @@ parse_table_row(
 
 		len = find_emph_char(data + i, size - i, '|');
 
-		/* Two possibilities for len == 0:
-		   1) No more pipe char found in the current line.
-		   2) The next pipe is right after the current one, i.e. empty cell.
-		   For case 1, we skip to the end of line; for case 2 we just continue.
-		*/
+		/* 
+		 * Two possibilities for len == 0:
+		 * (1) No more pipe char found in the current line.
+		 * (2) The next pipe is right after the current one,
+		 * i.e. empty cell.
+		 * For case 1, we skip to the end of line; for case 2 we
+		 * just continue.
+		 */
+
 		if (len == 0 && i < size && data[i] != '|')
 			len = size - i;
 		i += len;
 
 		cell_end = i - 1;
 
-		while (cell_end > cell_start && xisspace(data[cell_end]))
+		while (cell_end > cell_start && 
+		       xisspace(data[cell_end]))
 			cell_end--;
 
-		parse_inline(cell_work, doc, data + cell_start, 1 + cell_end - cell_start);
-		doc->md.table_cell(row_work, cell_work, col_data[col] | header_flag, doc->data, col, columns);
+		parse_inline(cell_work, doc, data + cell_start, 
+			1 + cell_end - cell_start, 0);
+		doc->md.table_cell(row_work, cell_work, 
+			col_data[col] | header_flag, 
+			doc->data, col, columns);
 
 		popbuf(doc, BUFFER_SPAN);
 		i++;
 	}
 
-	for (; col < columns; ++col) {
-		hbuf empty_cell = { NULL, 0, 0, 0, 0 };
-		doc->md.table_cell(row_work, &empty_cell, col_data[col] | header_flag, doc->data, col, columns);
+	for ( ; col < columns; ++col) {
+		memset(&empty_cell, 0, sizeof(hbuf));
+		doc->md.table_cell(row_work, &empty_cell, 
+			col_data[col] | header_flag, 
+			doc->data, col, columns);
 	}
 
 	doc->md.table_row(ob, row_work, doc->data);
-
 	popbuf(doc, BUFFER_SPAN);
 }
 
 static size_t
-parse_table_header(
-	hbuf *ob,
-	hdoc *doc,
-	uint8_t *data,
-	size_t size,
-	size_t *columns,
-	htbl_flags **column_data)
+parse_table_header(hbuf *ob, hdoc *doc, uint8_t *data, 
+	size_t size, size_t *columns, htbl_flags **column_data)
 {
-	int pipes;
-	size_t i = 0, col, header_end, under_end;
+	size_t	 i = 0, col, header_end, under_end, dashes;
+	ssize_t	 pipes = 0;
 
-	pipes = 0;
 	while (i < size && data[i] != '\n')
 		if (data[i++] == '|')
 			pipes++;
@@ -2504,6 +2538,7 @@ parse_table_header(
 	*column_data = xcalloc(*columns, sizeof(htbl_flags));
 
 	/* Parse the header underline */
+
 	i++;
 	if (i < size && data[i] == '|')
 		i++;
@@ -2513,22 +2548,25 @@ parse_table_header(
 		under_end++;
 
 	for (col = 0; col < *columns && i < under_end; ++col) {
-		size_t dashes = 0;
+		dashes = 0;
 
 		while (i < under_end && data[i] == ' ')
 			i++;
 
 		if (data[i] == ':') {
-			i++; (*column_data)[col] |= HTBL_ALIGN_LEFT;
+			i++; 
+			(*column_data)[col] |= HTBL_ALIGN_LEFT;
 			dashes++;
 		}
 
 		while (i < under_end && data[i] == '-') {
-			i++; dashes++;
+			i++; 
+			dashes++;
 		}
 
 		if (i < under_end && data[i] == ':') {
-			i++; (*column_data)[col] |= HTBL_ALIGN_RIGHT;
+			i++; 
+			(*column_data)[col] |= HTBL_ALIGN_RIGHT;
 			dashes++;
 		}
 
@@ -2547,44 +2585,29 @@ parse_table_header(
 	if (col < *columns)
 		return 0;
 
-	parse_table_row(
-		ob, doc, data,
-		header_end,
-		*columns,
-		*column_data,
-		HTBL_HEADER
-	);
-
+	parse_table_row(ob, doc, data, header_end, 
+		*columns, *column_data, HTBL_HEADER);
 	return under_end + 1;
 }
 
 static size_t
-parse_table(
-	hbuf *ob,
-	hdoc *doc,
-	uint8_t *data,
-	size_t size)
+parse_table(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 {
-	size_t i;
-
-	hbuf *work = NULL;
-	hbuf *header_work = NULL;
-	hbuf *body_work = NULL;
-
-	size_t columns;
-	htbl_flags *col_data = NULL;
+	size_t		 i, columns, row_start, pipes;
+	hbuf		 *work = NULL, *header_work = NULL, 
+			 *body_work = NULL;
+	htbl_flags	*col_data = NULL;
 
 	work = newbuf(doc, BUFFER_BLOCK);
 	header_work = newbuf(doc, BUFFER_SPAN);
 	body_work = newbuf(doc, BUFFER_BLOCK);
 
-	i = parse_table_header(header_work, doc, data, size, &columns, &col_data);
+	i = parse_table_header(header_work, 
+		doc, data, size, &columns, &col_data);
+
 	if (i > 0) {
-
 		while (i < size) {
-			size_t row_start;
-			int pipes = 0;
-
+			pipes = 0;
 			row_start = i;
 
 			while (i < size && data[i] != '\n')
@@ -2608,12 +2631,11 @@ parse_table(
 			i++;
 		}
 
-        if (doc->md.table_header)
-            doc->md.table_header(work, header_work, doc->data, col_data, columns);
-
-        if (doc->md.table_body)
-            doc->md.table_body(work, body_work, doc->data);
-
+		if (doc->md.table_header)
+			doc->md.table_header(work, header_work, 
+				doc->data, col_data, columns);
+		if (doc->md.table_body)
+			doc->md.table_body(work, body_work, doc->data);
 		if (doc->md.table)
 			doc->md.table(ob, work, doc->data);
 	}
@@ -2627,6 +2649,8 @@ parse_table(
 
 /* 
  * Parsing of one block, returning next uint8_t to parse.
+ * We can assume, entering the block, that our output is newline
+ * aligned.
  */
 static void
 parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
@@ -3079,8 +3103,9 @@ parse_metadata(hdoc *doc, const uint8_t *data, size_t sz,
 	const uint8_t	*key, *val;
 	struct lowdown_meta *m;
 	char		*cp;
-
-	assert(sz && '\n' == data[sz - 1]);
+	
+	if (0 == sz || '\n' != data[sz - 1])
+		return(0);
 
 	/* 
 	 * Check the first line for a colon to see if we should do
