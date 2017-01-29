@@ -1501,15 +1501,13 @@ char_math(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size)
 	return 0;
 }
 
-/*********************************
- * BLOCK-LEVEL PARSING FUNCTIONS *
- *********************************/
-
-/* is_empty • returns the line length when it is empty, 0 otherwise */
+/* 
+ * Returns the line length when it is empty, 0 otherwise.
+ */
 static size_t
 is_empty(const uint8_t *data, size_t size)
 {
-	size_t i;
+	size_t	 i;
 
 	for (i = 0; i < size && data[i] != '\n'; i++)
 		if (data[i] != ' ')
@@ -2640,41 +2638,101 @@ parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 	    doc->work_bufs[BUFFER_BLOCK].size > doc->max_nesting)
 		return;
 
+	/* 
+	 * What kind of block are we?
+	 * Go through all types of blocks, one by one.
+	 */
+
 	while (beg < size) {
 		txt_data = data + beg;
 		end = size - beg;
 
-		if (is_atxheader(doc, txt_data, end))
+		/* We are at a #header. */
+
+		if (is_atxheader(doc, txt_data, end)) {
 			beg += parse_atxheader(ob, doc, txt_data, end);
-		else if (data[beg] == '<' && doc->md.blockhtml &&
-				(i = parse_htmlblock(ob, doc, txt_data, end, 1)) != 0)
+			continue;
+		}
+
+		/* We have some <HTML>. */
+
+		if (data[beg] == '<' && 
+		    doc->md.blockhtml &&
+		    (i = parse_htmlblock
+		     (ob, doc, txt_data, end, 1)) != 0) {
 			beg += i;
-		else if ((i = is_empty(txt_data, end)) != 0)
+			continue;
+		}
+
+		/* Empty line. */
+
+		if ((i = is_empty(txt_data, end)) != 0) {
 			beg += i;
-		else if (is_hrule(txt_data, end)) {
+			continue;
+		}
+
+		/* Horizontal rule. */
+
+		if (is_hrule(txt_data, end)) {
 			if (doc->md.hrule)
 				doc->md.hrule(ob, doc->data);
-
 			while (beg < size && data[beg] != '\n')
 				beg++;
-
 			beg++;
-		} else if ((doc->ext_flags & LOWDOWN_FENCED) != 0 &&
-			(i = parse_fencedcode(ob, doc, txt_data, end)) != 0)
+			continue;
+		} 
+
+		/* Fenced code. */
+		
+		if ((doc->ext_flags & LOWDOWN_FENCED) != 0 &&
+		    (i = parse_fencedcode
+		     (ob, doc, txt_data, end)) != 0) {
 			beg += i;
-		else if ((doc->ext_flags & LOWDOWN_TABLES) != 0 &&
-			(i = parse_table(ob, doc, txt_data, end)) != 0)
+			continue;
+		}
+
+		/* Table parsing. */
+
+		if ((doc->ext_flags & LOWDOWN_TABLES) != 0 &&
+		    (i = parse_table(ob, doc, txt_data, end)) != 0) {
 			beg += i;
-		else if (prefix_quote(txt_data, end))
-			beg += parse_blockquote(ob, doc, txt_data, end);
-		else if (!(doc->ext_flags & LOWDOWN_NOCODEIND) && prefix_code(txt_data, end))
+			continue;
+		}
+
+		/* We're a > block quote. */
+
+		if (prefix_quote(txt_data, end)) {
+			beg += parse_blockquote
+				(ob, doc, txt_data, end);
+			continue;
+		}
+
+		/* Prefixed code (like block-quotes). */
+
+		if ( ! (doc->ext_flags & LOWDOWN_NOCODEIND) && 
+		    prefix_code(txt_data, end)) {
 			beg += parse_blockcode(ob, doc, txt_data, end);
-		else if (prefix_uli(txt_data, end))
+			continue;
+		}
+
+		/* Some sort of unordered list. */
+
+		if (prefix_uli(txt_data, end)) {
 			beg += parse_list(ob, doc, txt_data, end, 0);
-		else if (prefix_oli(txt_data, end, NULL, NULL))
-			beg += parse_list(ob, doc, txt_data, end, HLIST_ORDERED);
-		else
-			beg += parse_paragraph(ob, doc, txt_data, end);
+			continue;
+		}
+
+		/* An ordered list. */
+
+		if (prefix_oli(txt_data, end, NULL, NULL)) {
+			beg += parse_list(ob, doc, 
+				txt_data, end, HLIST_ORDERED);
+			continue;
+		}
+
+		/* No match: just a regular paragraph. */
+
+		beg += parse_paragraph(ob, doc, txt_data, end);
 	}
 }
 
