@@ -168,10 +168,7 @@ rndr_strikethrough(hbuf *ob, const hbuf *content, void *data, int nln)
 	if (NULL == content || 0 == content->size)
 		return(0);
 
-	if ( ! nln)
-		HBUF_PUTSL(ob, "\n");
 	hbuf_put(ob, content->data, content->size);
-	HBUF_PUTSL(ob, "\n");
 	return 1;
 }
 
@@ -288,19 +285,6 @@ rndr_highlight(hbuf *ob, const hbuf *content, void *data, int nln)
 		HBUF_PUTSL(ob, "\\fP");
 	}
 
-	return 1;
-}
-
-static int
-rndr_quote(hbuf *ob, const hbuf *content, void *data)
-{
-
-	if (NULL == content || 0 == content->size)
-		return(0);
-
-	HBUF_PUTSL(ob, "\\(lq");
-	hbuf_put(ob, content->data, content->size);
-	HBUF_PUTSL(ob, "\\(rq");
 	return 1;
 }
 
@@ -682,7 +666,6 @@ hrend_nroff_new(unsigned int render_flags, int mdoc)
 		rndr_emphasis,
 		rndr_underline,
 		rndr_highlight,
-		rndr_quote,
 		rndr_image,
 		rndr_linebreak,
 		rndr_link,
