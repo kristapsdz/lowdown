@@ -2,7 +2,7 @@
 
 VERSION		 = 0.1.4
 PREFIX		 = /usr/local
-CFLAGS 		+= -g -W -Wall -Wstrict-prototypes -Wno-unused-parameter -Wwrite-strings
+CFLAGS 		+= -g -W -Wall -Wstrict-prototypes -Wno-unused-parameter -Wwrite-strings 
 OBJS		 = autolink.o \
 		   buffer.o \
 		   document.o \
@@ -61,7 +61,7 @@ index.xml README.xml index.pdf README.pdf: lowdown
 index.html README.html: template.xml
 
 .md.pdf:
-	./lowdown -s -Tms $< | groff -Tpdf -ms > $@
+	./lowdown -s -Tms $< | groff -Tpdf -ms -mpdfmark > $@
 
 .xml.html:
 	sblg -t template.xml -o $@ -C $< $< versions.xml
