@@ -216,19 +216,6 @@ rndr_highlight(hbuf *ob, const hbuf *content, void *data, int nln)
 }
 
 static int
-rndr_quote(hbuf *ob, const hbuf *content, void *data)
-{
-	if (!content || !content->size)
-		return 0;
-
-	HBUF_PUTSL(ob, "<q>");
-	hbuf_put(ob, content->data, content->size);
-	HBUF_PUTSL(ob, "</q>");
-
-	return 1;
-}
-
-static int
 rndr_linebreak(hbuf *ob, void *data)
 {
 
@@ -624,7 +611,6 @@ hrend_html_new(unsigned int render_flags, int nesting_level)
 		rndr_emphasis,
 		rndr_underline,
 		rndr_highlight,
-		rndr_quote,
 		rndr_image,
 		rndr_linebreak,
 		rndr_link,

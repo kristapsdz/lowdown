@@ -72,7 +72,6 @@ typedef size_t (*char_trigger)(hbuf *ob, hdoc *doc,
 	uint8_t *data, size_t offset, size_t size, int nln);
 
 static size_t char_emphasis(hbuf *, hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_quote(hbuf *, hdoc *, uint8_t *, size_t, size_t, int);
 static size_t char_linebreak(hbuf *, hdoc *, uint8_t *, size_t, size_t, int);
 static size_t char_codespan(hbuf *, hdoc *, uint8_t *, size_t, size_t, int);
 static size_t char_escape(hbuf *, hdoc *, uint8_t *, size_t, size_t, int);
@@ -118,7 +117,7 @@ static char_trigger markdown_char_ptrs[] = {
 	&char_autolink_email,
 	&char_autolink_www,
 	&char_superscript,
-	&char_quote,
+	NULL,
 	&char_math
 };
 
@@ -516,11 +515,16 @@ tag_length(uint8_t *data, size_t size, halink_type *autolink)
 
 /*
  * Parses inline markdown elements.
- * This function is important because it handles "raw" input that we
- * pass directly to the output formatter.
- * It subsequently needs escaping according to the output formatter.
- * The tricky part here is passing our newline indication to the
- * renderers --- really just nroff, which cares.
+ * This function is important because it handles raw input that we pass
+ * directly to the output formatter ("normal_text").
+ * The "nln" business is entirely for the nroff.c frontend, which needs
+ * to understand newline status in the output buffer: it indicates to
+ * parse_inline that the currently-known output is starting on a fresh
+ * line.
+ * Recursive invocations of parse_inline, which reset "ob" (and thus
+ * we'll lose whether we're on a newline or not) need to respect this.
+ * This is a limitation of the design of the compiler, which, in my
+ * honest opinion, is pretty ad hoc and unstructured.
  */
 static void
 parse_inline(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int nln)
@@ -542,9 +546,13 @@ parse_inline(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int nln)
 		 */
 
 		svsz = ob->size;
-
 		while (end < size && active_char[data[end]] == 0)
 			end++;
+
+		/* 
+		 * Push out all text until the current "active" (i.e.,
+		 * signalling a markdown macro) character.
+		 */
 
 		if (doc->md.normal_text) {
 			work.data = data + i;
@@ -553,12 +561,15 @@ parse_inline(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int nln)
 		} else
 			hbuf_put(ob, data + i, end - i);
 
+		/* End of file? */
+
 		if (end >= size)
 			break;
 
 		/* 
 		 * If we've written something to our output buffer, keep
 		 * track of whether it ended with a newline.
+		 * This is 
 		 */
 
 		i = end;
@@ -1045,64 +1056,6 @@ char_codespan(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size, in
 
 	return end;
 }
-
-/* 
- * '"' parsing a quote.
- */
-static size_t
-char_quote(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size, int nln)
-{
-	size_t	 end, nq = 0, i, f_begin, f_end;
-	hbuf	*work;
-
-	/* Counting the number of quotes in the delimiter. */
-
-	while (nq < size && data[nq] == '"')
-		nq++;
-
-	/* Finding the next delimiter. */
-
-	end = nq;
-	while (1) {
-		i = end;
-		end += find_emph_char(data + end, size - end, '"');
-		/* no matching delimiter */
-		if (end == i) 
-			return 0;		
-		i = end;
-		while (end < size && data[end] == '"' && end - i < nq) 
-			end++;
-		if (end - i >= nq) 
-			break;
-	}
-
-	/* Trimming outside spaces. */
-
-	f_begin = nq;
-	while (f_begin < end && data[f_begin] == ' ')
-		f_begin++;
-
-	f_end = end - nq;
-	while (f_end > nq && data[f_end-1] == ' ')
-		f_end--;
-
-	/* Real quote. */
-
-	if (f_begin < f_end) {
-		work = newbuf(doc, BUFFER_SPAN);
-		parse_inline(work, doc, data + f_begin, 
-			f_end - f_begin, nln);
-		if (!doc->md.quote(ob, work, doc->data))
-			end = 0;
-		popbuf(doc, BUFFER_SPAN);
-	} else {
-		if (!doc->md.quote(ob, 0, doc->data))
-			end = 0;
-	}
-
-	return end;
-}
-
 
 /*
  * '\\' backslash escape
@@ -3179,9 +3132,6 @@ hdoc_new(const hrend *renderer, const struct lowdown_opts *opts,
 
 	if (extensions & LOWDOWN_SUPER)
 		doc->active_char['^'] = MD_CHAR_SUPERSCRIPT;
-
-	if (extensions & LOWDOWN_QUOTE)
-		doc->active_char['"'] = MD_CHAR_QUOTE;
 
 	if (extensions & LOWDOWN_MATH)
 		doc->active_char['$'] = MD_CHAR_MATH;
