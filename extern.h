@@ -120,7 +120,6 @@ typedef struct hrend {
 	int (*emphasis)(hbuf *, const hbuf *, void *, int);
 	int (*underline)(hbuf *, const hbuf *, void *, int);
 	int (*highlight)(hbuf *, const hbuf *, void *, int);
-	int (*quote)(hbuf *, const hbuf *, void *);
 	int (*image)(hbuf *, const hbuf *, 
 		const hbuf *, const hbuf *, void *);
 	int (*linebreak)(hbuf *, void *);
