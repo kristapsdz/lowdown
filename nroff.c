@@ -248,21 +248,6 @@ rndr_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
 	return 1;
 }
 
-/*
- * FIXME: there's no way to do this with man(7) and ms(7)'s way of doing
- * it requires bundling text into the same line.
- */
-static int
-rndr_underline(hbuf *ob, const hbuf *content, void *data, int nln)
-{
-
-	if (NULL == content || 0 == content->size)
-		return(0);
-
-	hbuf_put(ob, content->data, content->size);
-	return 1;
-}
-
 static int
 rndr_highlight(hbuf *ob, const hbuf *content, void *data, int nln)
 {
@@ -664,7 +649,6 @@ hrend_nroff_new(unsigned int render_flags, int mdoc)
 		rndr_codespan,
 		rndr_double_emphasis,
 		rndr_emphasis,
-		rndr_underline,
 		rndr_highlight,
 		rndr_image,
 		rndr_linebreak,

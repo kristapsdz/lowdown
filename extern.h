@@ -118,7 +118,6 @@ typedef struct hrend {
 	int (*codespan)(hbuf *, const hbuf *, void *, int);
 	int (*double_emphasis)(hbuf *, const hbuf *, void *, int);
 	int (*emphasis)(hbuf *, const hbuf *, void *, int);
-	int (*underline)(hbuf *, const hbuf *, void *, int);
 	int (*highlight)(hbuf *, const hbuf *, void *, int);
 	int (*image)(hbuf *, const hbuf *, 
 		const hbuf *, const hbuf *, void *);
