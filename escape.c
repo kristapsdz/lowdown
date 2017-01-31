@@ -189,7 +189,6 @@ hesc_nroff(hbuf *ob, const uint8_t *data, size_t size, int span)
 	size_t	 i = 0, mark, slash;
 
 	while (1) {
-		mark = i;
 		slash = 0;
 		for (mark = i; i < size; i++) {
 			if ('\\' == data[i]) {
