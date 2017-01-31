@@ -97,6 +97,7 @@ void
 hbuf_puts(hbuf *buf, const char *str)
 {
 
+	assert(buf && str);
 	hbuf_put(buf, (const uint8_t *)str, strlen(str));
 }
 
