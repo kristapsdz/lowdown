@@ -64,7 +64,9 @@ lowdown_buf(const struct lowdown_opts *opts,
 
 	document = hdoc_new
 		(renderer, opts, NULL == opts ?
-		 0 : opts->feat, DEF_MAX_NESTING);
+		 0 : opts->feat, DEF_MAX_NESTING,
+		 NULL != opts &&
+		 LOWDOWN_HTML != opts->type);
 
 	/* Parse the output and free resources. */
 

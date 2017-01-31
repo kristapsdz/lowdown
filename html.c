@@ -85,7 +85,7 @@ hhtml_get_tag(const uint8_t *data, size_t size, const char *tagname)
 }
 
 static int
-rndr_autolink(hbuf *ob, const hbuf *link, halink_type type, void *data)
+rndr_autolink(hbuf *ob, const hbuf *link, halink_type type, void *data, int nln)
 {
 
 	if (!link || !link->size)
@@ -144,7 +144,7 @@ rndr_blockquote(hbuf *ob, const hbuf *content, void *data)
 }
 
 static int
-rndr_codespan(hbuf *ob, const hbuf *text, void *data)
+rndr_codespan(hbuf *ob, const hbuf *text, void *data, int nln)
 {
 
 	HBUF_PUTSL(ob, "<code>");
@@ -155,7 +155,7 @@ rndr_codespan(hbuf *ob, const hbuf *text, void *data)
 }
 
 static int
-rndr_strikethrough(hbuf *ob, const hbuf *content, void *data)
+rndr_strikethrough(hbuf *ob, const hbuf *content, void *data, int nln)
 {
 	if (!content || !content->size)
 		return 0;
@@ -167,7 +167,7 @@ rndr_strikethrough(hbuf *ob, const hbuf *content, void *data)
 }
 
 static int
-rndr_double_emphasis(hbuf *ob, const hbuf *content, void *data)
+rndr_double_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
 {
 	if (!content || !content->size)
 		return 0;
@@ -180,7 +180,7 @@ rndr_double_emphasis(hbuf *ob, const hbuf *content, void *data)
 }
 
 static int
-rndr_emphasis(hbuf *ob, const hbuf *content, void *data)
+rndr_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
 {
 	if (!content || !content->size) return 0;
 	HBUF_PUTSL(ob, "<em>");
@@ -190,7 +190,7 @@ rndr_emphasis(hbuf *ob, const hbuf *content, void *data)
 }
 
 static int
-rndr_underline(hbuf *ob, const hbuf *content, void *data)
+rndr_underline(hbuf *ob, const hbuf *content, void *data, int nln)
 {
 	if (!content || !content->size)
 		return 0;
@@ -203,7 +203,7 @@ rndr_underline(hbuf *ob, const hbuf *content, void *data)
 }
 
 static int
-rndr_highlight(hbuf *ob, const hbuf *content, void *data)
+rndr_highlight(hbuf *ob, const hbuf *content, void *data, int nln)
 {
 	if (!content || !content->size)
 		return 0;
@@ -254,7 +254,7 @@ rndr_header(hbuf *ob, const hbuf *content, int level, void *data)
 }
 
 static int
-rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title, void *data)
+rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title, void *data, int nln)
 {
 
 	HBUF_PUTSL(ob, "<a href=\"");
@@ -376,7 +376,7 @@ rndr_raw_block(hbuf *ob, const hbuf *text, void *data)
 }
 
 static int
-rndr_triple_emphasis(hbuf *ob, const hbuf *content, void *data)
+rndr_triple_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
 {
 
 	if (!content || !content->size)
