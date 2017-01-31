@@ -190,19 +190,6 @@ rndr_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
 }
 
 static int
-rndr_underline(hbuf *ob, const hbuf *content, void *data, int nln)
-{
-	if (!content || !content->size)
-		return 0;
-
-	HBUF_PUTSL(ob, "<u>");
-	hbuf_put(ob, content->data, content->size);
-	HBUF_PUTSL(ob, "</u>");
-
-	return 1;
-}
-
-static int
 rndr_highlight(hbuf *ob, const hbuf *content, void *data, int nln)
 {
 	if (!content || !content->size)
@@ -609,7 +596,6 @@ hrend_html_new(unsigned int render_flags, int nesting_level)
 		rndr_codespan,
 		rndr_double_emphasis,
 		rndr_emphasis,
-		rndr_underline,
 		rndr_highlight,
 		rndr_image,
 		rndr_linebreak,

@@ -770,12 +770,7 @@ parse_emph1(hbuf *ob, hdoc *doc,
 			work = newbuf(doc, BUFFER_SPAN);
 			parse_inline(work, doc, data, i, 1);
 
-			if (doc->ext_flags & LOWDOWN_UNDER && c == '_')
-				r = doc->md.underline
-					(ob, work, doc->data, nln);
-			else
-				r = doc->md.emphasis
-					(ob, work, doc->data, nln);
+			r = doc->md.emphasis(ob, work, doc->data, nln);
 
 			popbuf(doc, BUFFER_SPAN);
 			return r ? i + 1 : 0;
@@ -3093,10 +3088,6 @@ hdoc_new(const hrend *renderer, const struct lowdown_opts *opts,
 	hstack_init(&doc->work_bufs[BUFFER_SPAN], 8);
 
 	memset(doc->active_char, 0x0, 256);
-
-	if (extensions & LOWDOWN_UNDER && doc->md.underline) {
-		doc->active_char['_'] = MD_CHAR_EMPHASIS;
-	}
 
 	if (doc->md.emphasis || 
 	    doc->md.double_emphasis || 
