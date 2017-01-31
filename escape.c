@@ -174,19 +174,56 @@ static const char *HTML_ESCAPES[] = {
 };
 
 /*
+ * FIXME: merge with re-written hesc_nroff.
+ */
+static void
+hesc_nroff_oneline(hbuf *ob, const uint8_t *data, size_t sz, int span)
+{
+	size_t	 i;
+
+	if (0 == sz)
+		return;
+
+	assert(NULL != data);
+
+	/* Pre-terminate. */
+
+	if (0 == span && '.' == data[0])
+		HBUF_PUTSL(ob, "\\&");
+
+	for (i = 0; i < sz; i++) {
+		if ('\n' == data[i]) {
+			HBUF_PUTSL(ob, " ");
+			continue;
+		} else if ('\\' == data[i])
+			HBUF_PUTSL(ob, "\\e");
+		hbuf_putc(ob, data[i]);
+	}
+}
+
+/*
  * Escape nroff.
+ * This function was just copied from hesc_html and needs re-writing.
  * There are two ways to do this: block and span (controlled by the
  * "span" variable).
+ * Then there's "oneline", which removes all newlines.
  * If "span" is non-zero, then we only escape characters following the
  * first.
  * If "span" is zero, then we also check the first character.
  * The intuition is that a "block" has its initial character after a
  * newline, and thus needs the newline check.
+ * Finally, "oneline" strips out newlines.
  */
 void
-hesc_nroff(hbuf *ob, const uint8_t *data, size_t size, int span)
+hesc_nroff(hbuf *ob, const uint8_t *data, 
+	size_t size, int span, int oneline)
 {
 	size_t	 i = 0, mark, slash;
+
+	if (oneline) {
+		hesc_nroff_oneline(ob, data, size, span);
+		return;
+	}
 
 	while (1) {
 		slash = 0;
@@ -221,7 +258,9 @@ hesc_nroff(hbuf *ob, const uint8_t *data, size_t size, int span)
 	}
 }
 
-/* escape HTML */
+/* 
+ * Escape HTML.
+ */
 void
 hesc_html(hbuf *ob, const uint8_t *data, size_t size, int secure)
 {
@@ -229,7 +268,8 @@ hesc_html(hbuf *ob, const uint8_t *data, size_t size, int secure)
 
 	while (1) {
 		mark = i;
-		while (i < size && HTML_ESCAPE_TABLE[data[i]] == 0) i++;
+		while (i < size && HTML_ESCAPE_TABLE[data[i]] == 0) 
+			i++;
 
 		/* Optimization for cases where there's nothing to escape */
 		if (mark == 0 && i >= size) {
@@ -240,15 +280,16 @@ hesc_html(hbuf *ob, const uint8_t *data, size_t size, int secure)
 		if (i > mark)
 			hbuf_put(ob, data + mark, i - mark);
 
-		if (i >= size) break;
+		if (i >= size) 
+			break;
 
 		/* The forward slash is only escaped in secure mode */
-		if (!secure && data[i] == '/') {
-			hbuf_putc(ob, '/');
-		} else {
-			hbuf_puts(ob, HTML_ESCAPES[HTML_ESCAPE_TABLE[data[i]]]);
-		}
 
+		if ( ! secure && data[i] == '/')
+			hbuf_putc(ob, '/');
+		else
+			hbuf_puts(ob, HTML_ESCAPES
+				[HTML_ESCAPE_TABLE[data[i]]]);
 		i++;
 	}
 }

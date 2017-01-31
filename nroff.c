@@ -46,35 +46,67 @@ static void
 escape_span(hbuf *ob, const uint8_t *source, size_t length)
 {
 
-	hesc_nroff(ob, source, length, 1);
+	hesc_nroff(ob, source, length, 1, 0);
 }
 
 static void
 escape_block(hbuf *ob, const uint8_t *source, size_t length)
 {
 
-	hesc_nroff(ob, source, length, 0);
+	hesc_nroff(ob, source, length, 0, 0);
+}
+
+static void
+escape_oneline_span(hbuf *ob, const uint8_t *source, size_t length)
+{
+
+	hesc_nroff(ob, source, length, 1, 1);
+}
+
+static void
+escape_oneline_block(hbuf *ob, const uint8_t *source, size_t length)
+{
+
+	hesc_nroff(ob, source, length, 0, 1);
 }
 
 static int
-rndr_autolink(hbuf *ob, const hbuf *link, halink_type type, void *data)
+rndr_autolink(hbuf *ob, const hbuf *link, 
+	halink_type type, void *data, int nln)
 {
+	nroff_state	*st = data;
 
 	if (NULL == link || 0 == link->size)
 		return 0;
 
 	/*
-	 * Pretty printing: if we get an email address as
-	 * an actual URI, e.g. `mailto:foo@bar.com`, we don't
-	 * want to print the `mailto:` prefix
+	 * If we're not using groff extensions, just italicise.
+	 * Otherwise, use UR/UE in -man mode and pdfhref in -ms.
 	 */
 
-	HBUF_PUTSL(ob, "\\fI");
-	if (hbuf_prefix(link, "mailto:") == 0)
-		hbuf_put(ob, link->data + 7, link->size - 7);
-	else
+	if ( ! nln)
+		HBUF_PUTSL(ob, "\n");
+
+	if ( ! (st->flags & LOWDOWN_NROFF_GROFF)) {
+		HBUF_PUTSL(ob, ".I\n");
+		if (hbuf_prefix(link, "mailto:") == 0)
+			escape_oneline_span(ob, 
+				link->data + 7, link->size - 7);
+		else
+			escape_oneline_span(ob, 
+				link->data, link->size);
+		HBUF_PUTSL(ob, "\n.R\n");
+		return 1;
+	} else if (st->mdoc) {
+		HBUF_PUTSL(ob, ".UR ");
 		hbuf_put(ob, link->data, link->size);
-	HBUF_PUTSL(ob, "\\fR");
+		HBUF_PUTSL(ob, "\n.UE\n");
+		return 1;
+	}
+
+	HBUF_PUTSL(ob, ".pdfhref W ");
+	hbuf_put(ob, link->data, link->size);
+	HBUF_PUTSL(ob, "\n");
 	return 1;
 }
 
@@ -117,7 +149,7 @@ rndr_blockquote(hbuf *ob, const hbuf *content, void *data)
 }
 
 static int
-rndr_codespan(hbuf *ob, const hbuf *content, void *data)
+rndr_codespan(hbuf *ob, const hbuf *content, void *data, int nln)
 {
 
 	if (NULL == content || 0 == content->size)
@@ -130,7 +162,101 @@ rndr_codespan(hbuf *ob, const hbuf *content, void *data)
 }
 
 static int
-rndr_strikethrough(hbuf *ob, const hbuf *content, void *data)
+rndr_strikethrough(hbuf *ob, const hbuf *content, void *data, int nln)
+{
+
+	if (NULL == content || 0 == content->size)
+		return(0);
+
+	if ( ! nln)
+		HBUF_PUTSL(ob, "\n");
+	hbuf_put(ob, content->data, content->size);
+	HBUF_PUTSL(ob, "\n");
+	return 1;
+}
+
+static int
+rndr_double_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
+{
+
+	if (NULL == content || 0 == content->size)
+		return(0);
+
+	if ('.' == content->data[0]) {
+		if ( ! nln)
+			HBUF_PUTSL(ob, "\n");
+		HBUF_PUTSL(ob, ".B\n");
+		hbuf_put(ob, content->data, content->size);
+		if (0 == content->size && 
+		    '\n' != content->data[content->size - 1])
+			HBUF_PUTSL(ob, "\n");
+		HBUF_PUTSL(ob, ".R\n");
+	} else { 
+		HBUF_PUTSL(ob, "\\fB");
+		hbuf_put(ob, content->data, content->size);
+		HBUF_PUTSL(ob, "\\fP");
+	}
+
+	return 1;
+}
+
+static int
+rndr_triple_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
+{
+
+	if (NULL == content || 0 == content->size)
+		return(0);
+
+	if ('.' == content->data[0]) {
+		if ( ! nln)
+			HBUF_PUTSL(ob, "\n");
+		HBUF_PUTSL(ob, ".BI\n");
+		hbuf_put(ob, content->data, content->size);
+		if (0 == content->size && 
+		    '\n' != content->data[content->size - 1])
+			HBUF_PUTSL(ob, "\n");
+		HBUF_PUTSL(ob, ".R\n");
+	} else { 
+		HBUF_PUTSL(ob, "\\f[BI]");
+		hbuf_put(ob, content->data, content->size);
+		HBUF_PUTSL(ob, "\\fP");
+	}
+
+	return 1;
+}
+
+
+static int
+rndr_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
+{
+
+	if (NULL == content || 0 == content->size)
+		return(0);
+
+	if ('.' == content->data[0]) {
+		if ( ! nln)
+			HBUF_PUTSL(ob, "\n");
+		HBUF_PUTSL(ob, ".I\n");
+		hbuf_put(ob, content->data, content->size);
+		if (0 == content->size && 
+		    '\n' != content->data[content->size - 1])
+			HBUF_PUTSL(ob, "\n");
+		HBUF_PUTSL(ob, ".R\n");
+	} else {
+		HBUF_PUTSL(ob, "\\fI");
+		hbuf_put(ob, content->data, content->size);
+		HBUF_PUTSL(ob, "\\fP");
+	}
+
+	return 1;
+}
+
+/*
+ * FIXME: there's no way to do this with man(7) and ms(7)'s way of doing
+ * it requires bundling text into the same line.
+ */
+static int
+rndr_underline(hbuf *ob, const hbuf *content, void *data, int nln)
 {
 
 	if (NULL == content || 0 == content->size)
@@ -141,66 +267,27 @@ rndr_strikethrough(hbuf *ob, const hbuf *content, void *data)
 }
 
 static int
-rndr_double_emphasis(hbuf *ob, const hbuf *content, void *data)
+rndr_highlight(hbuf *ob, const hbuf *content, void *data, int nln)
 {
 
 	if (NULL == content || 0 == content->size)
 		return(0);
 
-	HBUF_PUTSL(ob, "\\fB");
-	hbuf_put(ob, content->data, content->size);
-	HBUF_PUTSL(ob, "\\fR");
-	return 1;
-}
+	if ('.' == content->data[0]) {
+		if ( ! nln)
+			HBUF_PUTSL(ob, "\n");
+		HBUF_PUTSL(ob, ".B\n");
+		hbuf_put(ob, content->data, content->size);
+		if (0 == content->size && 
+		    '\n' != content->data[content->size - 1])
+			HBUF_PUTSL(ob, "\n");
+		HBUF_PUTSL(ob, ".R\n");
+	} else {
+		HBUF_PUTSL(ob, "\\fB");
+		hbuf_put(ob, content->data, content->size);
+		HBUF_PUTSL(ob, "\\fP");
+	}
 
-static int
-rndr_triple_emphasis(hbuf *ob, const hbuf *content, void *data)
-{
-
-	if (NULL == content || 0 == content->size)
-		return(0);
-
-	HBUF_PUTSL(ob, "\\f(BI");
-	hbuf_put(ob, content->data, content->size);
-	HBUF_PUTSL(ob, "\\fR");
-	return 1;
-}
-
-
-static int
-rndr_emphasis(hbuf *ob, const hbuf *content, void *data)
-{
-
-	if (NULL == content || 0 == content->size)
-		return(0);
-
-	HBUF_PUTSL(ob, "\\fI");
-	hbuf_put(ob, content->data, content->size);
-	HBUF_PUTSL(ob, "\\fR");
-	return 1;
-}
-
-static int
-rndr_underline(hbuf *ob, const hbuf *content, void *data)
-{
-
-	if (NULL == content || 0 == content->size)
-		return(0);
-
-	hbuf_put(ob, content->data, content->size);
-	return 1;
-}
-
-static int
-rndr_highlight(hbuf *ob, const hbuf *content, void *data)
-{
-
-	if (NULL == content || 0 == content->size)
-		return(0);
-
-	HBUF_PUTSL(ob, "\\fB");
-	hbuf_put(ob, content->data, content->size);
-	HBUF_PUTSL(ob, "\\fR");
 	return 1;
 }
 
@@ -249,23 +336,53 @@ rndr_header(hbuf *ob, const hbuf *content, int level, void *data)
 }
 
 static int
-rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title, void *data)
+rndr_link(hbuf *ob, const hbuf *content, 
+	const hbuf *link, const hbuf *title, void *data, int nln)
 {
+	nroff_state	*st = data;
 
 	if ((NULL == content || 0 == content->size) &&
 	    (NULL == title || 0 == title->size) &&
 	    (NULL == link || 0 == link->size))
 		return 0;
 
-	HBUF_PUTSL(ob, "\\fI");
-	if (NULL != content && 0 != content->size)
-		hbuf_put(ob, content->data, content->size);
-	else if (NULL != title && 0 != title->size)
-		hbuf_put(ob, title->data, title->size);
-	else
-		hbuf_put(ob, link->data, link->size);
-	HBUF_PUTSL(ob, "\\fR");
+	if ( ! nln)
+		HBUF_PUTSL(ob, "\n");
 
+	if ( ! (st->flags & LOWDOWN_NROFF_GROFF)) {
+		HBUF_PUTSL(ob, ".I\n");
+		if (NULL != content && content->size)
+			escape_block(ob, content->data, content->size);
+		else if (NULL != title && title->size)
+			escape_block(ob, title->data, title->size);
+		else if (NULL != link && link->size)
+			escape_block(ob, link->data, link->size);
+		if ('\n' != ob->data[ob->size - 1])
+			HBUF_PUTSL(ob, "\n");
+		HBUF_PUTSL(ob, ".R\n");
+		return 1;
+	} else if (st->mdoc) {
+		HBUF_PUTSL(ob, ".UR ");
+		if (NULL != link && link->size)
+			escape_oneline_span(ob, 
+				link->data, link->size);
+		HBUF_PUTSL(ob, "\n");
+		if (NULL != content && content->size)
+			escape_oneline_block(ob, 
+				content->data, content->size);
+		HBUF_PUTSL(ob, "\n.UE\n");
+		return 1;
+	}
+
+	HBUF_PUTSL(ob, ".pdfhref W -D ");
+	if (NULL != link && link->size)
+		escape_oneline_span(ob, 
+			link->data, link->size);
+	HBUF_PUTSL(ob, " ");
+	if (NULL != content && content->size)
+		escape_oneline_span(ob, 
+			content->data, content->size);
+	HBUF_PUTSL(ob, "\n");
 	return 1;
 }
 

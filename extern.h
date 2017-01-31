@@ -114,20 +114,20 @@ typedef struct hrend {
 	 * verbatim.
 	 */
 
-	int (*autolink)(hbuf *, const hbuf *, halink_type, void *);
-	int (*codespan)(hbuf *, const hbuf *, void *);
-	int (*double_emphasis)(hbuf *, const hbuf *, void *);
-	int (*emphasis)(hbuf *, const hbuf *, void *);
-	int (*underline)(hbuf *, const hbuf *, void *);
-	int (*highlight)(hbuf *, const hbuf *, void *);
+	int (*autolink)(hbuf *, const hbuf *, halink_type, void *, int);
+	int (*codespan)(hbuf *, const hbuf *, void *, int);
+	int (*double_emphasis)(hbuf *, const hbuf *, void *, int);
+	int (*emphasis)(hbuf *, const hbuf *, void *, int);
+	int (*underline)(hbuf *, const hbuf *, void *, int);
+	int (*highlight)(hbuf *, const hbuf *, void *, int);
 	int (*quote)(hbuf *, const hbuf *, void *);
 	int (*image)(hbuf *, const hbuf *, 
 		const hbuf *, const hbuf *, void *);
 	int (*linebreak)(hbuf *, void *);
 	int (*link)(hbuf *, const hbuf *, 
-		const hbuf *, const hbuf *, void *);
-	int (*triple_emphasis)(hbuf *, const hbuf *, void *);
-	int (*strikethrough)(hbuf *, const hbuf *, void *);
+		const hbuf *, const hbuf *, void *, int);
+	int (*triple_emphasis)(hbuf *, const hbuf *, void *, int);
+	int (*strikethrough)(hbuf *, const hbuf *, void *, int);
 	int (*superscript)(hbuf *, const hbuf *, void *);
 	int (*footnote_ref)(hbuf *, unsigned int num, void *);
 	int (*math)(hbuf *, const hbuf *, int, void *);
@@ -191,14 +191,14 @@ void	*hstack_top(const hstack *);
 void	 hstack_uninit(hstack *);
 
 hdoc 	*hdoc_new(const hrend *, const struct lowdown_opts *, 
-		unsigned int, size_t) __attribute__((malloc));
+		unsigned int, size_t, int) __attribute__((malloc));
 void	 hdoc_render(hdoc *, hbuf *, const uint8_t *, size_t, 
 		struct lowdown_meta **, size_t *);
 void	 hdoc_free(hdoc *);
 
 void	 hesc_href(hbuf *, const uint8_t *, size_t);
 void	 hesc_html(hbuf *, const uint8_t *, size_t, int);
-void	 hesc_nroff(hbuf *, const uint8_t *, size_t, int);
+void	 hesc_nroff(hbuf *, const uint8_t *, size_t, int, int);
 
 hhtml_tag hhtml_get_tag(const uint8_t *, size_t, const char *);
 const char *hhtml_find_block(const char *, unsigned int);
