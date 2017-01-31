@@ -69,9 +69,7 @@ struct	lowdown_opts {
 #define LOWDOWN_FOOTNOTES 0x04
 #define LOWDOWN_AUTOLINK  0x08
 #define LOWDOWN_STRIKE	  0x10
-#define LOWDOWN_UNDER	  0x20
 #define LOWDOWN_HILITE	  0x40
-#define LOWDOWN_QUOTE	  0x80
 #define LOWDOWN_SUPER	  0x100
 #define LOWDOWN_MATH	  0x200
 #define LOWDOWN_NOINTEM	  0x400

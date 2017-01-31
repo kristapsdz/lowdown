@@ -183,12 +183,8 @@ feature_in(const char *v)
 		return(LOWDOWN_AUTOLINK);
 	if (0 == strcasecmp(v, "strike"))
 		return(LOWDOWN_STRIKE);
-	if (0 == strcasecmp(v, "under"))
-		return(LOWDOWN_UNDER);
 	if (0 == strcasecmp(v, "hilite"))
 		return(LOWDOWN_HILITE);
-	if (0 == strcasecmp(v, "quote"))
-		return(LOWDOWN_QUOTE);
 	if (0 == strcasecmp(v, "super"))
 		return(LOWDOWN_SUPER);
 	if (0 == strcasecmp(v, "math"))
