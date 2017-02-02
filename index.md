@@ -171,7 +171,9 @@ HTML5 output and
 Input and output buffers are defined in
 [buffer.c](https://github.com/kristapsdz/lowdown/blob/master/buffer.c).
 
-The parse is then started in
+### Sequence
+
+The parse is started in
 [document.c](https://github.com/kristapsdz/lowdown/blob/master/document.c).
 It is preceded by meta-data parsing, if applicable, which occurs before
 document parsing but after the BOM.
@@ -184,6 +186,8 @@ something like this:
 1. Begin parsing a component.
 2. Parse out subcomponents, creating a recursive step.
 3. Render the component, pasting in the subcomponents' renderered output.
+
+### Example
 
 For example, consider the following:
 
@@ -204,6 +208,8 @@ buffer into `<h2>` blocks (in HTML5) or a `.SH` block (troff outputs).
 Finally, the subsection block would be fitted into whatever context it
 was invoked within.
 
+### Escaping
+
 The only time that "real text" is passed directly from the input buffer
 into the output renderer is when then `normal_text` callback is invoked,
 blockcode or codespan, raw HTML, or hyperlink components.  In both
@@ -212,3 +218,84 @@ renderers, you can see how the input is properly escaped by passing into
 
 After being fully parsed into an output buffer, the output buffer is
 passed into a "smartypants" rendering, one for each renderer type.
+
+### Problems
+
+**Warning: here be dragons.**
+
+The **-Tms** and **-Tman** output modes do not produce clean output due
+to the white-space issue.  To fix this, I'll need to create a proper AST
+of the input before formatting output.  Why the original authors did not
+do this is a mystery to me.
+
+The white-space issue is illustrated by the following:
+
+```markdown
+Read this *[linky](link)* here.
+```
+
+Looks benign.  But in GNU extension mode, we want to put that link into
+a hyperlink, which means using the line macro `pdfhref`, as in
+
+```roff
+.pdfhref W -D link linky
+```
+
+The first problem is that the italics are normally rendered using the
+roff `\fI` and `\fP` mode; which, if used, wouldn't render properly:
+
+```roff
+Read this 
+\fI
+.pdfhref W -D link linky
+\fP here.
+```
+
+Since the `\fP` is a control character, it's stripped and the line is
+considered verbatim (leading whitespace).
+
+To avoid all of this, I force inline formatters to recognise that the
+contained text is a macro and adjust accordingly.  Now, this becomes:
+
+```roff
+Read this
+.I
+.pdfhref W -D link linky
+.R
+here.
+```
+
+There's still a problem.  What if we have abutting text?
+
+```markdown
+Read this "[linky](link)".
+```
+
+The period will be on its own line.  To make up for this, I recognise
+(for the time being, only trailing) abutting text and adjust horizontal
+space manually:
+
+```roff
+Read this "
+.I
+.pdfhref W -D link linky
+.R
+\h[-0.4]".
+```
+
+This works, but not always.  For example, if the link occurs at the end
+of a sentence, there's no keep between the link and the abutting text.
+If the link is in italics and the subsequent text is not --- kerning
+issues.  It's actually extremely ugly and I hate it.
+
+The problem is the design of the parser: since content is parsed and
+appended to buffers as it's parsed, there's no knowledge of
+"look-ahead", and the output formatter can't properly know to do what
+should be done:
+
+```roff
+Read this
+.I
+.pdfhref W -P \(dq -A \(dq. -D link linky
+.R
+```
