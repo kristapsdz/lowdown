@@ -19,6 +19,9 @@ The fork features the following modifications to its predecessor:
 8. Rename internal API (for brevity).
 9. Prune dead code and de-obfuscate some internal structures.
 10. Create a usable library interface.
+11. Remove "semantic quote" option, as it has no nroff basis.
+12. Remove "emphasis as underline" option, as it has no nroff basis and
+    is confusing on the web.
 
 For the moment, **lowdown** output is the same as
 [hoedown](https://github.com/hoedown/hoedown) with the following presets:
@@ -40,6 +43,7 @@ The following modifications to the HTML5 output have been made:
 The following major feature additions have been added:
 
 - output mode for troff (via either the *-ms* or *-man* package)
+- extension output mode for GNU troff
 - "smartypants" mode for the troff outputs
 - metadata support
 
