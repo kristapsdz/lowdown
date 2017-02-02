@@ -99,4 +99,28 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.1.6</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2017-02-02">2017-02-02</time>
+		</header>
+		<aside>
+			<p>
+				Significantly update the parser to pass newline status to the front-ends, allowing (finally) for formatted links
+				for the <b>-Tms</b> and <b>-Tman</b> outputs when in GNU extension mode.
+				In the former case, this uses <code>.pfdhref</code>.
+				In the latter cases, <code>.UL</code>.
+				Doing this involved touching basically the entire backend.
+				It was not pretty.
+				I've described the problems in the <q>Hacking</q> section of the web site.
+			</p>
+			<p>
+				Disable the <q>semantic quotes</q> (where in HTML mode qoutes would be rendered as
+				<code>&lt;q&gt;</code>) and <q>underline as emphasis</q>, which rendered emphasis as an underline.
+				The underlines aren't easy in <b>-Tms</b> and <b>-Tman</b> and presentationally confusing (is it a link?) in
+				<b>-Thtml</b>.
+			</p>
+		</aside>
+	</article>
 </articles>
