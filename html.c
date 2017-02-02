@@ -487,7 +487,7 @@ rndr_tablecell(hbuf *ob, const hbuf *content, htbl_flags flags, void *data, size
 }
 
 static int
-rndr_superscript(hbuf *ob, const hbuf *content, void *data)
+rndr_superscript(hbuf *ob, const hbuf *content, void *data, int nln)
 {
 
 	if (!content || !content->size)
@@ -609,6 +609,7 @@ hrend_html_new(unsigned int render_flags, int nesting_level)
 
 		NULL,
 		rndr_normal_text,
+		NULL,
 
 		NULL,
 		NULL

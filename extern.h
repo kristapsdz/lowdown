@@ -126,7 +126,7 @@ typedef struct hrend {
 		const hbuf *, const hbuf *, void *, int);
 	int (*triple_emphasis)(hbuf *, const hbuf *, void *, int);
 	int (*strikethrough)(hbuf *, const hbuf *, void *, int);
-	int (*superscript)(hbuf *, const hbuf *, void *);
+	int (*superscript)(hbuf *, const hbuf *, void *, int);
 	int (*footnote_ref)(hbuf *, unsigned int num, void *);
 	int (*math)(hbuf *, const hbuf *, int, void *);
 	int (*raw_html)(hbuf *, const hbuf *, void *);
@@ -138,6 +138,7 @@ typedef struct hrend {
 
 	void (*entity)(hbuf *, const hbuf *, void *);
 	void (*normal_text)(hbuf *, const hbuf *, void *, int);
+	void (*backspace)(hbuf *);
 
 	/* Miscellaneous callbacks. */
 

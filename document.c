@@ -600,6 +600,9 @@ parse_inline(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int nln)
 			nln = 0;
 
 		if (nln && doc->link_nospace) {
+			if ( ! xisspace((int)data[i]) &&
+			    NULL != doc->md.backspace)
+				(*doc->md.backspace)(ob);
 			while (i < size && xisspace((int)data[i]))
 				i++;
 			consumed = end = i;
@@ -1560,7 +1563,7 @@ char_superscript(hbuf *ob, hdoc *doc,
 	sup = newbuf(doc, BUFFER_SPAN);
 	parse_inline(sup, doc, data + sup_start, 
 		sup_len - sup_start, nln);
-	doc->md.superscript(ob, sup, doc->data);
+	doc->md.superscript(ob, sup, doc->data, nln);
 	popbuf(doc, BUFFER_SPAN);
 
 	return (sup_start == 2) ? sup_len + 1 : sup_len;
