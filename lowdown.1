@@ -96,8 +96,18 @@ You will probably need to hand-edit it.
 If you have the
 .Ar metadata
 feature enabled (the default), the title for the document is pulled from
-the metadata, else it's set to
-.Dq Untitled article .
+the metadata key
+.Dq title
+and the date from the
+.Dq rcsdate
+.Pq in RCS $Date$ format, see Xr rcs 1
+or
+.Dq date
+.Pq ISO-8601 YYYY-MM-DD or YYYY/MM/DD
+metadata keys.
+Else these are set to
+.Dq Untitled article
+and the current date.
 .It Fl T Ar mode
 The output mode.
 This may be

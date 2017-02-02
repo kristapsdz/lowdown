@@ -204,13 +204,64 @@ feature_in(const char *v)
 	return(0);
 }
 
+static char *
+date2str(const char *v)
+{
+	unsigned int	y, m, d;
+	int		rc;
+	static char	buf[32];
+
+	if (NULL == v)
+		return(NULL);
+
+	rc = sscanf(v, "%u/%u/%u", &y, &m, &d);
+	if (3 != rc) {
+		rc = sscanf(v, "%u-%u-%u", &y, &m, &d);
+		if (3 != rc) {
+			warnx("malformed ISO-8601 date");
+			return(NULL);
+		}
+	}
+
+	snprintf(buf, sizeof(buf), "%u-%.2u-%.2u", y, m, d);
+	return(buf);
+}
+
+static char *
+rcsdate2str(const char *v)
+{
+	unsigned int	y, m, d, h, min, s;
+	int		rc;
+	static char	buf[32];
+
+	if (NULL == v)
+		return(NULL);
+
+	if (strlen(v) < 7) {
+		warnx("malformed RCS date");
+		return(NULL);
+	}
+
+	v += 7;
+	rc = sscanf(v, "%u/%u/%u %u:%u:%u", 
+		&y, &m, &d, &h, &min, &s);
+
+	if (6 != rc) {
+		warnx("malformed RCS date");
+		return(NULL);
+	}
+
+	snprintf(buf, sizeof(buf), "%u-%.2u-%.2u", y, m, d);
+	return(buf);
+}
+
 int
 main(int argc, char *argv[])
 {
 	FILE		*fin = stdin, *fout = stdout;
 	const char	*fnin = "<stdin>", *fnout = NULL,
 	      		*title = "Untitled article",
-			*extract = NULL;
+			*date = NULL, *extract = NULL;
 	struct lowdown_opts opts;
 	const char	*pname;
 	int		 c, standalone = 0;
@@ -365,11 +416,20 @@ main(int argc, char *argv[])
 		for (i = 0; i < msz; i++) 
 			if (0 == strcmp(m[i].key, "title"))
 				title = m[i].value;
-		strftime(buf, sizeof(buf), "%F", tm);
+			else if (0 == strcmp(m[i].key, "rcsdate"))
+				date = rcsdate2str(m[i].value);
+			else if (0 == strcmp(m[i].key, "date"))
+				date = date2str(m[i].value);
+
+		if (NULL == date) {
+			strftime(buf, sizeof(buf), "%F", tm);
+			date = buf;
+		}
+
 		if (standalone && LOWDOWN_NROFF == opts.type)
-			fprintf(fout, ".TL\n%s\n", title);
+			fprintf(fout, ".DA %s\n.TL\n%s\n", date, title);
 		else if (standalone && LOWDOWN_MAN == opts.type)
-			fprintf(fout, ".TH \"%s\" 7 %s\n", title, buf);
+			fprintf(fout, ".TH \"%s\" 7 %s\n", title, date);
 		fwrite(ret, 1, retsz, fout);
 	}
 
