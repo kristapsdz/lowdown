@@ -161,6 +161,9 @@ rndr_codespan(hbuf *ob, const hbuf *content, void *data, int nln)
 	return 1;
 }
 
+/*
+ * FIXME: not supported.
+ */
 static int
 rndr_strikethrough(hbuf *ob, const hbuf *content, void *data, int nln)
 {
@@ -184,7 +187,7 @@ rndr_double_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
 			HBUF_PUTSL(ob, "\n");
 		HBUF_PUTSL(ob, ".B\n");
 		hbuf_put(ob, content->data, content->size);
-		if (0 == content->size && 
+		if (content->size && 
 		    '\n' != content->data[content->size - 1])
 			HBUF_PUTSL(ob, "\n");
 		HBUF_PUTSL(ob, ".R\n");
@@ -209,7 +212,7 @@ rndr_triple_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
 			HBUF_PUTSL(ob, "\n");
 		HBUF_PUTSL(ob, ".BI\n");
 		hbuf_put(ob, content->data, content->size);
-		if (0 == content->size && 
+		if (content->size && 
 		    '\n' != content->data[content->size - 1])
 			HBUF_PUTSL(ob, "\n");
 		HBUF_PUTSL(ob, ".R\n");
@@ -235,7 +238,7 @@ rndr_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
 			HBUF_PUTSL(ob, "\n");
 		HBUF_PUTSL(ob, ".I\n");
 		hbuf_put(ob, content->data, content->size);
-		if (0 == content->size && 
+		if (content->size && 
 		    '\n' != content->data[content->size - 1])
 			HBUF_PUTSL(ob, "\n");
 		HBUF_PUTSL(ob, ".R\n");
@@ -260,7 +263,7 @@ rndr_highlight(hbuf *ob, const hbuf *content, void *data, int nln)
 			HBUF_PUTSL(ob, "\n");
 		HBUF_PUTSL(ob, ".B\n");
 		hbuf_put(ob, content->data, content->size);
-		if (0 == content->size && 
+		if (content->size && 
 		    '\n' != content->data[content->size - 1])
 			HBUF_PUTSL(ob, "\n");
 		HBUF_PUTSL(ob, ".R\n");
@@ -326,7 +329,7 @@ rndr_link(hbuf *ob, const hbuf *content,
 			escape_block(ob, title->data, title->size);
 		else if (NULL != link && link->size)
 			escape_block(ob, link->data, link->size);
-		if ('\n' != ob->data[ob->size - 1])
+		if (ob->size && '\n' != ob->data[ob->size - 1])
 			HBUF_PUTSL(ob, "\n");
 		HBUF_PUTSL(ob, ".R\n");
 		return 1;
@@ -552,16 +555,42 @@ rndr_tablecell(hbuf *ob, const hbuf *content,
 }
 
 static int
-rndr_superscript(hbuf *ob, const hbuf *content, void *data)
+rndr_superscript(hbuf *ob, const hbuf *content, void *data, int nln)
 {
 
 	if (NULL == content || 0 == content->size)
 		return 0;
 
-	HBUF_PUTSL(ob, "\\u\\s-2");
-	hbuf_put(ob, content->data, content->size);
-	HBUF_PUTSL(ob, "\\s+2\\d");
+	/*
+	 * If we have a macro contents, it might be the usual macro
+	 * (solo in its buffer) or starting with a newline.
+	 */
+
+	if ('.' == content->data[0] ||
+	    (content->size &&
+	     '\n' == content->data[0] &&
+	     '.' == content->data[1])) {
+		HBUF_PUTSL(ob, "\\u\\s-3");
+		if ('\n' != content->data[0])
+			HBUF_PUTSL(ob, "\n");
+		hbuf_put(ob, content->data, content->size);
+		if (content->size && 
+		    '\n' != content->data[content->size - 1])
+			HBUF_PUTSL(ob, "\n");
+		HBUF_PUTSL(ob, "\\s+3\\d\n");
+	} else {
+		HBUF_PUTSL(ob, "\\u\\s-3");
+		hbuf_put(ob, content->data, content->size);
+		HBUF_PUTSL(ob, "\\s+3\\d");
+	}
 	return 1;
+}
+
+static void
+rndr_backspace(hbuf *ob)
+{
+
+	HBUF_PUTSL(ob, "\\h[-0.475]\n");
 }
 
 static void
@@ -611,7 +640,7 @@ static int
 rndr_footnote_ref(hbuf *ob, unsigned int num, void *data)
 {
 
-	hbuf_printf(ob, "\\u\\s-2%u\\s+2\\d", num);
+	hbuf_printf(ob, "\\u\\s-3%u\\s+3\\d", num);
 	return 1;
 }
 
@@ -662,6 +691,7 @@ hrend_nroff_new(unsigned int render_flags, int mdoc)
 
 		NULL,
 		rndr_normal_text,
+		rndr_backspace,
 
 		NULL,
 		NULL
