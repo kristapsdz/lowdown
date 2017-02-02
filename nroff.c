@@ -178,6 +178,7 @@ rndr_strikethrough(hbuf *ob, const hbuf *content, void *data, int nln)
 static int
 rndr_double_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
 {
+	nroff_state *st	= data;
 
 	if (NULL == content || 0 == content->size)
 		return(0);
@@ -185,12 +186,14 @@ rndr_double_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
 	if ('.' == content->data[0]) {
 		if ( ! nln)
 			HBUF_PUTSL(ob, "\n");
+		/* FIXME: for man(7), this is next-line scope. */
 		HBUF_PUTSL(ob, ".B\n");
 		hbuf_put(ob, content->data, content->size);
 		if (content->size && 
 		    '\n' != content->data[content->size - 1])
 			HBUF_PUTSL(ob, "\n");
-		HBUF_PUTSL(ob, ".R\n");
+		if ( ! st->mdoc)
+			HBUF_PUTSL(ob, ".R\n");
 	} else { 
 		HBUF_PUTSL(ob, "\\fB");
 		hbuf_put(ob, content->data, content->size);
@@ -203,6 +206,7 @@ rndr_double_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
 static int
 rndr_triple_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
 {
+	nroff_state	*st = data;
 
 	if (NULL == content || 0 == content->size)
 		return(0);
@@ -210,12 +214,14 @@ rndr_triple_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
 	if ('.' == content->data[0]) {
 		if ( ! nln)
 			HBUF_PUTSL(ob, "\n");
+		/* FIXME: for man(7), this is next-line scope. */
 		HBUF_PUTSL(ob, ".BI\n");
 		hbuf_put(ob, content->data, content->size);
 		if (content->size && 
 		    '\n' != content->data[content->size - 1])
 			HBUF_PUTSL(ob, "\n");
-		HBUF_PUTSL(ob, ".R\n");
+		if ( ! st->mdoc)
+			HBUF_PUTSL(ob, ".R\n");
 	} else { 
 		HBUF_PUTSL(ob, "\\f[BI]");
 		hbuf_put(ob, content->data, content->size);
@@ -229,6 +235,7 @@ rndr_triple_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
 static int
 rndr_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
 {
+	nroff_state	*st = data;
 
 	if (NULL == content || 0 == content->size)
 		return(0);
@@ -236,12 +243,14 @@ rndr_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
 	if ('.' == content->data[0]) {
 		if ( ! nln)
 			HBUF_PUTSL(ob, "\n");
+		/* FIXME: for man(7), this is next-line scope. */
 		HBUF_PUTSL(ob, ".I\n");
 		hbuf_put(ob, content->data, content->size);
 		if (content->size && 
 		    '\n' != content->data[content->size - 1])
 			HBUF_PUTSL(ob, "\n");
-		HBUF_PUTSL(ob, ".R\n");
+		if ( ! st->mdoc)
+			HBUF_PUTSL(ob, ".R\n");
 	} else {
 		HBUF_PUTSL(ob, "\\fI");
 		hbuf_put(ob, content->data, content->size);
@@ -254,6 +263,7 @@ rndr_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
 static int
 rndr_highlight(hbuf *ob, const hbuf *content, void *data, int nln)
 {
+	nroff_state	*st = data;
 
 	if (NULL == content || 0 == content->size)
 		return(0);
@@ -261,12 +271,14 @@ rndr_highlight(hbuf *ob, const hbuf *content, void *data, int nln)
 	if ('.' == content->data[0]) {
 		if ( ! nln)
 			HBUF_PUTSL(ob, "\n");
+		/* FIXME: for man(7), this is next-line scope. */
 		HBUF_PUTSL(ob, ".B\n");
 		hbuf_put(ob, content->data, content->size);
 		if (content->size && 
 		    '\n' != content->data[content->size - 1])
 			HBUF_PUTSL(ob, "\n");
-		HBUF_PUTSL(ob, ".R\n");
+		if ( ! st->mdoc)
+			HBUF_PUTSL(ob, ".R\n");
 	} else {
 		HBUF_PUTSL(ob, "\\fB");
 		hbuf_put(ob, content->data, content->size);
@@ -331,7 +343,8 @@ rndr_link(hbuf *ob, const hbuf *content,
 			escape_block(ob, link->data, link->size);
 		if (ob->size && '\n' != ob->data[ob->size - 1])
 			HBUF_PUTSL(ob, "\n");
-		HBUF_PUTSL(ob, ".R\n");
+		if ( ! st->mdoc)
+			HBUF_PUTSL(ob, ".R\n");
 		return 1;
 	} else if (st->mdoc) {
 		HBUF_PUTSL(ob, ".UR ");
