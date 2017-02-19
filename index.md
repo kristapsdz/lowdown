@@ -93,10 +93,10 @@ I do this in my Makefiles:
        echo "<article data-sblg-article=\"1\">" ; \
        echo "<header>" ; \
        echo "<h1>" ; \
-       lowdown -E title $< ; \
+       lowdown -X title $< ; \
        echo "</h1>" ; \
        echo "<aside>" ; \
-       lowdown -E htmlaside $< ; \
+       lowdown -X htmlaside $< ; \
        echo "</aside>" ; \
        echo "</header>" ; \
        lowdown $< ; \
