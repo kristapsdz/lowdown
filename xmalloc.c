@@ -14,6 +14,8 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+#include "config.h"
+
 #include <err.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -64,13 +66,8 @@ void *
 xreallocarray(void *p, size_t nm, size_t sz)
 {
 
-#if defined(__OpenBSD__) || defined(__FreeBSD__)
 	if ((p = reallocarray(p, nm, sz)) == NULL)
 		err(EXIT_FAILURE, NULL);
-#else
-	if ((p = realloc(p, nm * sz)) == NULL)
-		err(EXIT_FAILURE, NULL);
-#endif
 
 	return (p);
 }
