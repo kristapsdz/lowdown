@@ -103,4 +103,4 @@ clean:
 	rm -f lowdown liblowdown.a index.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
 
 distclean: clean
-	rm -f Makefile.configure config.h
+	rm -f Makefile.configure config.h config.log

@@ -17,14 +17,14 @@
 #include "config.h"
 
 #include <sys/param.h>
-#ifdef __FreeBSD__
+#if HAVE_CAPSICUM
 # include <sys/resource.h>
 # include <sys/capability.h>
 #endif
 
 #include <err.h>
 #include <errno.h>
-#ifdef __APPLE__
+#if HAVE_SEATBELT_INIT
 # include <sandbox.h>
 #endif
 #include <stdio.h>
@@ -82,7 +82,7 @@ sandbox_pre(void)
 	/* Do nothing. */
 }
 
-#elif defined(__FreeBSD__)
+#elif HAVE_CAPSICUM
 
 static void
 sandbox_post(int fdin, int fdout)
