@@ -83,6 +83,7 @@ INSTALL_DATA=
 # You WANT to change this.
 #----------------------------------------------------------------------
 
+HAVE_CAPSICUM=
 HAVE_ERR=
 HAVE_PATH_MAX=
 HAVE_PLEDGE=
@@ -193,6 +194,7 @@ runtest() {
 # You WANT to change this.
 #----------------------------------------------------------------------
 
+runtest capsicum	CAPSICUM			  || true
 runtest err		ERR				  || true
 runtest PATH_MAX	PATH_MAX			  || true
 runtest pledge		PLEDGE				  || true
@@ -241,6 +243,7 @@ __HEREDOC__
 	&& echo "#define PATH_MAX 4096"
 
 cat << __HEREDOC__
+#define HAVE_CAPSICUM ${HAVE_CAPSICUM}
 #define HAVE_ERR ${HAVE_ERR}
 #define HAVE_PLEDGE ${HAVE_PLEDGE}
 #define HAVE_PROGNAME ${HAVE_PROGNAME}
