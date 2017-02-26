@@ -1,8 +1,8 @@
 .SUFFIXES: .xml .md .html .pdf .1 .1.html .3 .3.html
 
+include Makefile.configure
+
 VERSION		 = 0.1.6
-PREFIX		 = /usr/local
-CFLAGS 		+= -g -W -Wall -Wstrict-prototypes -Wno-unused-parameter -Wwrite-strings 
 OBJS		 = autolink.o \
 		   buffer.o \
 		   document.o \
@@ -16,10 +16,13 @@ OBJS		 = autolink.o \
 		   nroff_smartypants.o \
 		   stack.o \
 		   xmalloc.o
-BINDIR 		 = $(PREFIX)/bin
-LIBDIR 		 = $(PREFIX)/lib
-INCLUDEDIR	 = $(PREFIX)/include
-MANDIR 		 = $(PREFIX)/man
+COMPAT_OBJS	 = compat_err.o \
+		   compat_progname.o \
+		   compat_reallocarray.o \
+		   compat_strlcat.o \
+		   compat_strlcpy.o \
+		   compat_strtonum.o
+
 WWWDIR		 = /var/www/vhosts/kristaps.bsd.lv/htdocs/lowdown
 HTMLS		 = archive.html index.html lowdown.1.html lowdown.3.html README.html
 PDFS		 = index.pdf README.pdf
@@ -89,6 +92,8 @@ lowdown.tar.gz:
 	( cd .dist/ && tar zcf ../$@ ./ )
 	rm -rf .dist/
 
+$(OBJS) $(COMPAT_OBJS) main.o: config.h
+
 $(OBJS): extern.h lowdown.h
 
 main.o: lowdown.h
@@ -96,3 +101,6 @@ main.o: lowdown.h
 clean:
 	rm -f $(OBJS) $(PDFS) $(HTMLS) main.o
 	rm -f lowdown liblowdown.a index.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
+
+distclean: clean
+	rm -f Makefile.configure config.h
