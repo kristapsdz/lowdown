@@ -24,7 +24,7 @@
 
 #include <err.h>
 #include <errno.h>
-#if HAVE_SEATBELT_INIT
+#if HAVE_SANDBOX_INIT
 # include <sandbox.h>
 #endif
 #include <stdio.h>
