@@ -3183,9 +3183,9 @@ parse_metadata(hdoc *doc, const uint8_t *data, size_t sz,
 		m = &(*meta)[(*metasz)++];
 		memset(m, 0, sizeof(struct lowdown_meta));
 
-		m->key = xstrndup(key, i - pos);
+		m->key = xstrndup((char *)key, i - pos);
 		if (i == sz) {
-			m->value = xstrndup(key, 0);
+			m->value = xstrndup((char *)key, 0);
 			break;
 		}
 
@@ -3198,7 +3198,7 @@ parse_metadata(hdoc *doc, const uint8_t *data, size_t sz,
 				break;
 
 		assert(i < sz);
-		m->value = xstrndup(val, i - pos);
+		m->value = xstrndup((char *)val, i - pos);
 		pos = i + 1;
 	}
 
