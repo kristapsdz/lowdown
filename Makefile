@@ -44,8 +44,8 @@ installwww: www
 lowdown: liblowdown.a main.o
 	$(CC) -o $@ main.o liblowdown.a
 
-liblowdown.a: $(OBJS)
-	$(AR) rs $@ $(OBJS)
+liblowdown.a: $(OBJS) $(COMPAT_OBJS)
+	$(AR) rs $@ $(OBJS) $(COMPAT_OBJS)
 
 install: all
 	mkdir -p $(DESTDIR)$(BINDIR)
