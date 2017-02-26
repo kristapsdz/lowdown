@@ -265,6 +265,7 @@ fi
 
 if [ ${HAVE_PROGNAME} -eq 0 ]; then
 	echo "extern const char *getprogname(void);"
+	echo "extern void setprogname(const char *);"
 fi
 
 if [ ${HAVE_REALLOCARRAY} -eq 0 ]; then
