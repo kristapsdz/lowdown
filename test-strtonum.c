@@ -1,6 +1,6 @@
-/*	$Id$ */
+/*	$Id$	*/
 /*
- * Copyright (c) 2016, Kristaps Dzonsons
+ * Copyright (c) 2015 Ingo Schwarze <schwarze@openbsd.org>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,35 +14,29 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-#include "config.h"
 
-#include <stdarg.h>
 #include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
 
-#include "lowdown.h"
-#include "extern.h"
-
-void
-lmsg(const struct lowdown_opts *opts,
-	enum lowdown_err err, const char *fmt, ...)
+int
+main(void)
 {
-	char	 buf[1024];
-	va_list	 ap;
+	const char *errstr;
 
-	if (NULL == opts->msg)
-		return;
-
-	if (NULL == fmt) {
-		opts->msg(err, opts->arg, NULL);
-		return;
-	}
-
-	va_start(ap, fmt);
-	vsnprintf(buf, sizeof(buf), fmt, ap);
-	va_end(ap);
-
-	opts->msg(err, opts->arg, buf);
+	if (strtonum("1", 0, 2, &errstr) != 1)
+		return 1;
+	if (errstr != NULL)
+		return 2;
+	if (strtonum("1x", 0, 2, &errstr) != 0)
+		return 3;
+	if (errstr == NULL)
+		return 4;
+	if (strtonum("2", 0, 1, &errstr) != 0)
+		return 5;
+	if (errstr == NULL)
+		return 6;
+	if (strtonum("0", 1, 2, &errstr) != 0)
+		return 7;
+	if (errstr == NULL)
+		return 8;
+	return 0;
 }

@@ -1,6 +1,6 @@
-/*	$Id$ */
+/*	$Id$	*/
 /*
- * Copyright (c) 2016, Kristaps Dzonsons
+ * Copyright (c) 2015 Ingo Schwarze <schwarze@openbsd.org>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,35 +14,15 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-#include "config.h"
 
-#include <stdarg.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
+#include <err.h>
 
-#include "lowdown.h"
-#include "extern.h"
-
-void
-lmsg(const struct lowdown_opts *opts,
-	enum lowdown_err err, const char *fmt, ...)
+int
+main(void)
 {
-	char	 buf[1024];
-	va_list	 ap;
-
-	if (NULL == opts->msg)
-		return;
-
-	if (NULL == fmt) {
-		opts->msg(err, opts->arg, NULL);
-		return;
-	}
-
-	va_start(ap, fmt);
-	vsnprintf(buf, sizeof(buf), fmt, ap);
-	va_end(ap);
-
-	opts->msg(err, opts->arg, buf);
+	warnx("%d. warnx", 1);
+	warn("%d. warn", 2);
+	err(0, "%d. err", 3);
+	/* NOTREACHED */
+	return 1;
 }

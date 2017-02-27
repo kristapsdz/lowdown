@@ -1,0 +1,332 @@
+#! /bin/sh
+#
+# $Id$
+#
+# Copyright (c) 2014, 2015, 2016 Ingo Schwarze <schwarze@openbsd.org>
+# Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+# 
+# This script outputs two files: config.h and Makefile.configure.
+# It tries to read from configure.local, which contains predefined
+# values we won't autoconfigure.
+#
+# If you want to use configure with your project, have your GNUmakefile
+# or BSDmakefile---whichever---try to import/include Makefile.configure
+# at the beginning of the file.
+#
+# Like so (note no quotes, no period, etc.):
+#
+#   include Makefile.configure
+#
+# If it exists, configure was run; otherwise, it wasn't.
+#
+# You'll probably want to change parts of this file.  I've noted the
+# parts that you'll probably change in the section documentation.
+
+set -e
+
+#----------------------------------------------------------------------
+# Prepare for running: move aside previous configure runs.
+# Output file descriptor usage:
+#  1 (stdout): config.h or Makefile.configure
+#  2 (stderr): original stderr, usually to the console
+#  3: config.log
+# You DO NOT want to change this.
+#----------------------------------------------------------------------
+
+[ -w config.log ] && mv config.log config.log.old
+[ -w config.h   ] && mv config.h config.h.old
+
+exec 3> config.log
+echo "config.log: writing..."
+
+#----------------------------------------------------------------------
+# Initialize all variables here such that nothing can leak in from the
+# environment.
+# You MIGHT want to change this.
+#----------------------------------------------------------------------
+
+CC=`printf "all:\\n\\t@echo \\\$(CC)\\n" | env -i make -sf -`
+CFLAGS="-g -W -Wall -Wmissing-prototypes -Wstrict-prototypes -Wwrite-strings"
+CFLAGS="${CFLAGS} -Wno-unused-parameter"
+LDADD=
+LDFLAGS=
+PREFIX="/usr/local"
+BINDIR=
+SBINDIR=
+INCLUDEDIR=
+LIBDIR=
+MANDIR=
+INSTALL="install"
+INSTALL_PROGRAM=
+INSTALL_LIB=
+INSTALL_MAN=
+INSTALL_DATA=
+
+#----------------------------------------------------------------------
+# These are the values that will be pushed into config.h after we test
+# for whether they're supported or not.
+# Each of these must have a runtest(), below.
+# Please sort by alpha, for clarity.
+# You WANT to change this.
+#----------------------------------------------------------------------
+
+HAVE_CAPSICUM=
+HAVE_ERR=
+HAVE_PATH_MAX=
+HAVE_PLEDGE=
+HAVE_PROGNAME=
+HAVE_REALLOCARRAY=
+HAVE_SANDBOX_INIT=
+HAVE_STRLCAT=
+HAVE_STRLCPY=
+HAVE_STRTONUM=
+
+#----------------------------------------------------------------------
+# Allow configure.local to override all variables, default settings and
+# tested features, above.
+# You PROBABLY DO NOT want to change this.
+#----------------------------------------------------------------------
+
+if [ -r ./configure.local ]; then
+	echo "configure.local: reading..." 1>&2
+	echo "configure.local: reading..." 1>&3
+	cat ./configure.local 1>&3
+	. ./configure.local
+else
+	echo "configure.local: no (fully automatic configuration)" 1>&2
+	echo "configure.local: no (fully automatic configuration)" 1>&3
+fi
+
+echo 1>&3
+
+#----------------------------------------------------------------------
+# Infrastructure for running tests.
+# These consists of a series of functions that will attempt to run the
+# given test file and record its exit into a HAVE_xxx variable.
+# You DO NOT want to change this.
+#----------------------------------------------------------------------
+
+COMP="${CC} ${CFLAGS} -Wno-unused -Werror"
+
+# Check whether this HAVE_ setting is manually overridden.
+# If yes, use the override, if no, do not decide anything yet.
+# Arguments: lower-case test name, manual value
+
+ismanual() {
+	[ -z "${3}" ] && return 1
+	echo "${1}: manual (HAVE_${2}=${3})" 1>&2
+	echo "${1}: manual (HAVE_${2}=${3})" 1>&3
+	echo 1>&3
+	return 0
+}
+
+# Run a single autoconfiguration test.
+# In case of success, enable the feature.
+# In case of failure, do not decide anything yet.
+# Arguments: lower-case test name, upper-case test name, additional
+# CFLAGS
+
+singletest() {
+	cat 1>&3 << __HEREDOC__
+${1}: testing...
+${COMP} ${3} -o test-${1} test-${1}.c
+__HEREDOC__
+
+	if ${COMP} ${3} -o "test-${1}" "test-${1}.c" 1>&3 2>&3; then
+		echo "${1}: ${CC} succeeded" 1>&3
+	else
+		echo "${1}: ${CC} failed with $?" 1>&3
+		echo 1>&3
+		return 1
+	fi
+
+	if ./test-${1} 1>&3 2>&3; then
+		echo "${1}: yes" 1>&2
+		echo "${1}: yes" 1>&3
+		echo 1>&3
+		eval HAVE_${2}=1
+		rm "test-${1}"
+		return 0
+	else
+		echo "${1}: execution failed with $?" 1>&3
+		echo 1>&3
+		rm "test-${1}"
+		return 1
+	fi
+}
+
+# Run a complete autoconfiguration test, including the check for
+# a manual override and disabling the feature on failure.
+# Arguments: lower case name, upper case name, additional CFLAGS
+
+runtest() {
+	eval _manual=\${HAVE_${2}}
+	ismanual "${1}" "${2}" "${_manual}" && return 0
+	if [ ! -r "test-${1}.c" ]
+	then
+		echo "${1}: skipping (no test file)" 1>&2
+		eval HAVE_${2}=0
+		return 1
+	fi
+	singletest "${1}" "${2}" "${3}" && return 0
+	echo "${1}: no" 1>&2
+	eval HAVE_${2}=0
+	return 1
+}
+
+#----------------------------------------------------------------------
+# Begin running the tests themselves.
+# All of your tests must be defined here.
+# Please sort as the HAVE_xxxx values were defined.
+# You WANT to change this.
+#----------------------------------------------------------------------
+
+runtest capsicum	CAPSICUM			  || true
+runtest err		ERR				  || true
+runtest PATH_MAX	PATH_MAX			  || true
+runtest pledge		PLEDGE				  || true
+runtest progname	PROGNAME			  || true
+runtest reallocarray	REALLOCARRAY			  || true
+runtest sandbox_init	SANDBOX_INIT	"-Wno-deprecated" || true
+runtest strlcat		STRLCAT				  || true
+runtest strlcpy		STRLCPY				  || true
+runtest strtonum	STRTONUM			  || true
+
+#----------------------------------------------------------------------
+# Output writing: generate the config.h file.
+# This file contains all of the HAVE_xxxx variables necessary for
+# compiling your source.
+# You must include "config.h" BEFORE any other variables.
+# You WANT to change this.
+#----------------------------------------------------------------------
+
+exec > config.h
+
+# Start with prologue.
+
+cat << __HEREDOC__
+#ifdef __cplusplus
+#error "Do not use C++.  See the INSTALL file."
+#endif
+#if !defined(__GNUC__) || (__GNUC__ < 4)
+#define __attribute__(x)
+#endif
+#if defined(__linux__) || defined(__MINT__)
+#define _GNU_SOURCE	/* See test-*.c what needs this. */
+#endif
+__HEREDOC__
+
+# For the function declaration variables...
+
+[ ${HAVE_REALLOCARRAY} -eq 0 -o \
+  ${HAVE_STRLCAT} -eq 0 -o \
+  ${HAVE_STRLCPY} -eq 0 ] \
+	&& echo "#include <sys/types.h>"
+
+# Now we handle our HAVE_xxxx values.
+# Most will just be defined as 0 or 1.
+
+[ ${HAVE_PATH_MAX} -eq 0 ] \
+	&& echo "#define PATH_MAX 4096"
+
+cat << __HEREDOC__
+#define HAVE_CAPSICUM ${HAVE_CAPSICUM}
+#define HAVE_ERR ${HAVE_ERR}
+#define HAVE_PLEDGE ${HAVE_PLEDGE}
+#define HAVE_PROGNAME ${HAVE_PROGNAME}
+#define HAVE_REALLOCARRAY ${HAVE_REALLOCARRAY}
+#define HAVE_SANDBOX_INIT ${HAVE_SANDBOX_INIT}
+#define HAVE_STRLCAT ${HAVE_STRLCAT}
+#define HAVE_STRLCPY ${HAVE_STRLCPY}
+#define HAVE_STRTONUM ${HAVE_STRTONUM}
+__HEREDOC__
+
+# Now we do our function declarations for missing functions.
+
+if [ ${HAVE_ERR} -eq 0 ]; then
+	echo "extern void err(int, const char *, ...);"
+	echo "extern void errx(int, const char *, ...);"
+	echo "extern void warn(const char *, ...);"
+	echo "extern void warnx(const char *, ...);"
+fi
+
+if [ ${HAVE_PROGNAME} -eq 0 ]; then
+	echo "extern const char *getprogname(void);"
+	echo "extern void setprogname(const char *);"
+fi
+
+if [ ${HAVE_REALLOCARRAY} -eq 0 ]; then
+	echo "extern void *reallocarray(void *, size_t, size_t);"
+fi
+
+if [ ${HAVE_STRLCAT} -eq 0 ]; then
+	echo "extern size_t strlcat(char *, const char *, size_t);"
+fi
+
+if [ ${HAVE_STRLCPY} -eq 0 ]; then
+	echo "extern size_t strlcpy(char *, const char *, size_t);"
+fi
+
+if [ ${HAVE_STRTONUM} -eq 0 ]; then
+	echo "extern long long strtonum(const char *, long long, long long, const char **);"
+fi
+
+echo "config.h: written" 1>&2
+echo "config.h: written" 1>&3
+
+#----------------------------------------------------------------------
+# Now we go to generate our Makefile.configure.
+# This file is simply a bunch of Makefile variables.
+# They'll work in both GNUmakefile and BSDmakefile.
+# You MIGHT want to change this.
+#----------------------------------------------------------------------
+
+exec > Makefile.configure
+
+[ -z "${BINDIR}"     ] && BINDIR="${PREFIX}/bin"
+[ -z "${SBINDIR}"    ] && SBINDIR="${PREFIX}/sbin"
+[ -z "${INCLUDEDIR}" ] && INCLUDEDIR="${PREFIX}/include"
+[ -z "${LIBDIR}"     ] && LIBDIR="${PREFIX}/lib"
+[ -z "${MANDIR}"     ] && MANDIR="${PREFIX}/man"
+
+[ -z "${INSTALL_PROGRAM}" ] && INSTALL_PROGRAM="${INSTALL} -m 0555"
+[ -z "${INSTALL_LIB}"     ] && INSTALL_LIB="${INSTALL} -m 0444"
+[ -z "${INSTALL_MAN}"     ] && INSTALL_MAN="${INSTALL} -m 0444"
+[ -z "${INSTALL_DATA}"    ] && INSTALL_DATA="${INSTALL} -m 0444"
+
+cat << __HEREDOC__
+CC		= ${CC}
+CFLAGS		= ${CFLAGS}
+LDADD		= ${LDADD}
+LDFLAGS		= ${LDFLAGS}
+STATIC		= ${STATIC}
+PREFIX		= ${PREFIX}
+BINDIR		= ${BINDIR}
+SBINDIR		= ${SBINDIR}
+INCLUDEDIR	= ${INCLUDEDIR}
+LIBDIR		= ${LIBDIR}
+MANDIR		= ${MANDIR}
+INSTALL		= ${INSTALL}
+INSTALL_PROGRAM	= ${INSTALL_PROGRAM}
+INSTALL_LIB	= ${INSTALL_LIB}
+INSTALL_MAN	= ${INSTALL_MAN}
+INSTALL_DATA	= ${INSTALL_DATA}
+__HEREDOC__
+
+echo "Makefile.configure: written" 1>&2
+echo "Makefile.configure: written" 1>&3
+
+exit 0

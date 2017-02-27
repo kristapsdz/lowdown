@@ -1,6 +1,14 @@
-/*	$Id$ */
+#include "config.h"
+
+#if HAVE_PROGNAME
+
+int dummy;
+
+#else
+
+/*	$Id$	*/
 /*
- * Copyright (c) 2016, Kristaps Dzonsons
+ * Copyright (c) 2015 Ingo Schwarze <schwarze@openbsd.org>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,35 +22,21 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-#include "config.h"
 
-#include <stdarg.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-
-#include "lowdown.h"
-#include "extern.h"
+static const char *progname;
 
 void
-lmsg(const struct lowdown_opts *opts,
-	enum lowdown_err err, const char *fmt, ...)
+setprogname(const char *name)
 {
-	char	 buf[1024];
-	va_list	 ap;
 
-	if (NULL == opts->msg)
-		return;
-
-	if (NULL == fmt) {
-		opts->msg(err, opts->arg, NULL);
-		return;
-	}
-
-	va_start(ap, fmt);
-	vsnprintf(buf, sizeof(buf), fmt, ap);
-	va_end(ap);
-
-	opts->msg(err, opts->arg, buf);
+	progname = name;
 }
+
+const char *
+getprogname(void)
+{
+
+	return progname;
+}
+
+#endif

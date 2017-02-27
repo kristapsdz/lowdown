@@ -1,6 +1,6 @@
 /*	$Id$ */
 /*
- * Copyright (c) 2016, Kristaps Dzonsons
+ * Copyright (c) 2016, 2017 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,15 +14,17 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+#include "config.h"
+
 #include <sys/param.h>
-#ifdef __FreeBSD__
+#if HAVE_CAPSICUM
 # include <sys/resource.h>
 # include <sys/capability.h>
 #endif
 
 #include <err.h>
 #include <errno.h>
-#ifdef __APPLE__
+#if HAVE_SANDBOX_INIT
 # include <sandbox.h>
 #endif
 #include <stdio.h>
@@ -40,7 +42,7 @@
  * while the sandbox_post() happens afterward.
  */
 
-#if defined(__OpenBSD__) && OpenBSD > 201510
+#if HAVE_PLEDGE
 
 static void
 sandbox_post(int fdin, int fdout)
@@ -56,7 +58,7 @@ sandbox_pre(void)
 		err(EXIT_FAILURE, "pledge");
 }
 
-#elif defined(__APPLE__)
+#elif HAVE_SANDBOX_INIT
 
 static void
 sandbox_post(int fdin, int fdout)
@@ -77,7 +79,7 @@ sandbox_pre(void)
 	/* Do nothing. */
 }
 
-#elif defined(__FreeBSD__)
+#elif HAVE_CAPSICUM
 
 static void
 sandbox_post(int fdin, int fdout)
@@ -111,6 +113,7 @@ sandbox_pre(void)
 #else /* No sandbox. */
 
 #warning Compiling without sandbox support.
+
 static void
 sandbox_post(int fdin, int fdout)
 {
