@@ -119,7 +119,7 @@ typedef struct hrend {
 	int (*double_emphasis)(hbuf *, const hbuf *, void *, int);
 	int (*emphasis)(hbuf *, const hbuf *, void *, int);
 	int (*highlight)(hbuf *, const hbuf *, void *, int);
-	int (*image)(hbuf *, const hbuf *, 
+	int (*image)(hbuf *, const hbuf *, const hbuf *, 
 		const hbuf *, const hbuf *, void *);
 	int (*linebreak)(hbuf *, void *);
 	int (*link)(hbuf *, const hbuf *, 

@@ -374,10 +374,12 @@ rndr_hrule(hbuf *ob, void *data)
 }
 
 static int
-rndr_image(hbuf *ob, const hbuf *link, const hbuf *title, const hbuf *alt, void *data)
+rndr_image(hbuf *ob, const hbuf *link, const hbuf *title, 
+	const hbuf *dims, const hbuf *alt, void *data)
 {
 
-	if (!link || !link->size) return 0;
+	if (NULL == link || 0 == link->size) 
+		return 0;
 
 	HBUF_PUTSL(ob, "<img src=\"");
 	escape_href(ob, link->data, link->size);
