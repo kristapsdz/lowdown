@@ -411,8 +411,9 @@ rndr_image(hbuf *ob, const hbuf *link, const hbuf *title,
 
 	if (title && title->size) {
 		HBUF_PUTSL(ob, " title=\"");
-		escape_html(ob, title->data, title->size); }
+		escape_html(ob, title->data, title->size); 
 		HBUF_PUTSL(ob, "\"");
+	}
 
 	hbuf_puts(ob, "/>");
 	return 1;
