@@ -39,6 +39,7 @@ The following modifications to the HTML5 output have been made:
 
 - "smartypants" emits Unicode codepoints instead of HTML entities to
   make the output XML-friendly
+- emit image dimensions if specified in the link text
 
 The following major feature additions have been added:
 

@@ -219,6 +219,13 @@ parenthesis.
 .It Ar tables
 Allow for GFM tables.
 .El
+.Pp
+The parser also accepts link titles (quoted alongside the link address)
+and image dimensions (=WxH or =Wx).
+Both may also be specified, in any order.
+For example,
+.Li ![alt](url "title" =23x24) .
+These are fairly standard Markdown extensions.
 .Ss Output features
 .Nm
 allows for limited control over output features.
