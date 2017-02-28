@@ -377,22 +377,44 @@ static int
 rndr_image(hbuf *ob, const hbuf *link, const hbuf *title, 
 	const hbuf *dims, const hbuf *alt, void *data)
 {
+	char	 	dimbuf[32];
+	int		x, y, rc = 0;
 
 	if (NULL == link || 0 == link->size) 
 		return 0;
 
+	/*
+	 * Scan in our dimensions, if applicable.
+	 * It's unreasonable for them to be over 32 characters, so use
+	 * that as a cap to the size.
+	 */
+
+	if (NULL != dims && dims->size &&
+	    dims->size < sizeof(dimbuf) - 1) {
+		memset(dimbuf, 0, sizeof(dimbuf));
+		memcpy(dimbuf, dims->data, dims->size);
+		rc = sscanf(dimbuf, "%ux%u", &x, &y);
+	}
+
 	HBUF_PUTSL(ob, "<img src=\"");
 	escape_href(ob, link->data, link->size);
 	HBUF_PUTSL(ob, "\" alt=\"");
-
-	if (alt && alt->size)
+	if (NULL != alt && alt->size)
 		escape_html(ob, alt->data, alt->size);
+	HBUF_PUTSL(ob, "\"");
+
+	if (NULL != dims && rc > 0) {
+		hbuf_printf(ob, " width=\"%u\"", x);
+		if (rc > 1)
+			hbuf_printf(ob, " height=\"%u\"", y);
+	}
 
 	if (title && title->size) {
-		HBUF_PUTSL(ob, "\" title=\"");
+		HBUF_PUTSL(ob, " title=\"");
 		escape_html(ob, title->data, title->size); }
+		HBUF_PUTSL(ob, "\"");
 
-	hbuf_puts(ob, "\"/>");
+	hbuf_puts(ob, "/>");
 	return 1;
 }
 
