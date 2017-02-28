@@ -1293,9 +1293,10 @@ char_link(hbuf *ob, hdoc *doc,
 	uint8_t *data, size_t offset, size_t size, int nln)
 {
 	hbuf 	*content = NULL, *link = NULL , *title = NULL, 
-		*u_link = NULL;
+		*u_link = NULL, *dims = NULL;
 	size_t 	 i = 1, txt_e, link_b = 0, link_e = 0, title_b = 0, 
-		 title_e = 0, org_work_size, nb_p;
+		 title_e = 0, org_work_size, nb_p, dims_b = 0, 
+		 dims_e = 0;
 	int 	 ret = 0, in_title = 0, qtype = 0, is_img, is_footnote;
 	hbuf 	 id;
 	struct footnote_ref *fr;
@@ -1392,7 +1393,9 @@ char_link(hbuf *ob, hdoc *doc,
 					nb_p--;
 				i++;
 			} else if (i >= 1 && xisspace(data[i-1]) && 
-				   (data[i] == '\'' || data[i] == '"')) 
+				   (data[i] == '\'' || 
+				    data[i] == '=' ||
+				    data[i] == '"')) 
 				break;
 			else 
 				i++;
@@ -1400,41 +1403,104 @@ char_link(hbuf *ob, hdoc *doc,
 
 		if (i >= size) 
 			goto cleanup;
+
 		link_e = i;
 
-		/* looking for title end if present */
+		/*
+		 * We might be at the end of the link, or we might be at
+		 * the title of the link.
+		 * In the latter case, progress til link-end.
+		 */
+again:
 		if (data[i] == '\'' || data[i] == '"') {
+			/* 
+			 * Looking for title end if present.
+			 * This is a quoted part after the image.
+			 */
+
 			qtype = data[i];
 			in_title = 1;
 			i++;
 			title_b = i;
 
-			while (i < size) {
-				if (data[i] == '\\') i += 2;
-				else if (data[i] == qtype) {in_title = 0; i++;}
-				else if ((data[i] == ')') && !in_title) break;
-				else i++;
-			}
+			for ( ; i < size; i++)
+				if (data[i] == '\\')
+					i++;
+				else if (data[i] == qtype)
+					in_title = 0; 
+				else if ((data[i] == '=') && !in_title)
+					break;
+				else if ((data[i] == ')') && !in_title)
+					break;
 
-			if (i >= size) goto cleanup;
+			if (i >= size) 
+				goto cleanup;
 
-			/* skipping spacing after title */
+			assert(i < size && 
+			       (')' == data[i] || '=' == data[i]));
+
+			/* Skipping spacing after title. */
+
 			title_e = i - 1;
-			while (title_e > title_b && xisspace(data[title_e]))
+			while (title_e > title_b && 
+			       xisspace(data[title_e]))
 				title_e--;
 
-			/* checking for closing quote presence */
-			if (data[title_e] != '\'' &&  data[title_e] != '"') {
+			/* Checking for closing quote presence. */
+
+			if (data[title_e] != '\'' &&  
+			    data[title_e] != '"') {
 				title_b = title_e = 0;
 				link_e = i;
 			}
+
+			/* 
+			 * If we're followed by a dimension string, then
+			 * jump back into the parsing engine for it.
+			 */
+
+			if ('=' == data[i])
+				goto again;
+		} else if (data[i] == '=') {
+			dims_b = ++i;
+			for ( ; i < size; i++) 
+				if (data[i] == '\\')
+					i++;
+				else if ('\'' == data[i] || '"' == data[i])
+					break;
+				else if (data[i] == ')')
+					break;
+
+			if (i >= size)
+				goto cleanup;
+
+			assert(i < size && 
+			       (')' == data[i] || '"' == data[i] || 
+				'\'' == data[i]));
+
+			/* Skipping spacing after dimensions. */
+
+			dims_e = i;
+			while (dims_e > dims_b && 
+			       xisspace(data[dims_e]))
+				dims_e--;
+
+			/* 
+			 * If we're followed by a title string, then
+			 * jump back into the parsing engine for it.
+			 */
+
+			if ('"' == data[i] || '\'' == data[i])
+				goto again;
 		}
 
-		/* remove spacing at the end of the link */
+		/* Remove spacing at the end of the link. */
+
 		while (link_e > link_b && xisspace(data[link_e - 1]))
 			link_e--;
 
-		/* remove optional angle brackets around the link */
+		/* Remove optional angle brackets around the link. */
+
 		if (data[link_b] == '<' && data[link_e - 1] == '>') {
 			link_b++;
 			link_e--;
@@ -1449,6 +1515,11 @@ char_link(hbuf *ob, hdoc *doc,
 		if (title_e > title_b) {
 			title = newbuf(doc, BUFFER_SPAN);
 			hbuf_put(title, data + title_b, title_e - title_b);
+		}
+
+		if (dims_e > dims_b) {
+			dims = newbuf(doc, BUFFER_SPAN);
+			hbuf_put(dims, data + dims_b, dims_e - dims_b);
 		}
 
 		i++;
@@ -1524,7 +1595,7 @@ char_link(hbuf *ob, hdoc *doc,
 
 	/* calling the relevant rendering function */
 	if (is_img) {
-		ret = doc->md.image(ob, u_link, title, content, doc->data);
+		ret = doc->md.image(ob, u_link, title, dims, content, doc->data);
 	} else {
 		ret = doc->md.link(ob, content, u_link, title, doc->data, nln);
 	}
