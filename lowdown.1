@@ -305,6 +305,12 @@ To extract the title from a file's metadata:
 .Dl lowdown -X title foo.md
 .Sh EXIT STATUS
 .Ex -std
+.Pp
+If the
+.Fl X
+flag is used,
+.Nm
+exits wih an error if the given keyword is not found.
 .Sh STANDARDS
 .Nm
 implements the classic Markdown specification along with some

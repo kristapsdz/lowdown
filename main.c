@@ -267,7 +267,7 @@ main(int argc, char *argv[])
 			*date = NULL, *extract = NULL;
 	struct lowdown_opts opts;
 	const char	*pname;
-	int		 c, standalone = 0;
+	int		 c, standalone = 0, status = EXIT_SUCCESS;
 	struct tm	*tm;
 	char		 buf[32];
 	unsigned char	*ret = NULL;
@@ -395,8 +395,12 @@ main(int argc, char *argv[])
 		for (i = 0; i < msz; i++) 
 			if (0 == strcasecmp(m[i].key, extract))
 				break;
-		if (i < msz)
+		if (i < msz) {
 			fprintf(fout, "%s\n", m[i].value);
+		} else {
+			status = EXIT_FAILURE;
+			warnx("%s: unknown keyword", extract);
+		}
 	} else if (LOWDOWN_HTML == opts.type) {
 		for (i = 0; i < msz; i++) 
 			if (0 == strcmp(m[i].key, "title"))
@@ -444,7 +448,7 @@ main(int argc, char *argv[])
 		free(m[i].value);
 	}
 	free(m);
-	return(EXIT_SUCCESS);
+	return(status);
 usage:
 	fprintf(stderr, "usage: %s "
 		"[-sv] "
