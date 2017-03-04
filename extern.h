@@ -200,7 +200,6 @@ void	 hesc_html(hbuf *, const uint8_t *, size_t, int);
 void	 hesc_nroff(hbuf *, const uint8_t *, size_t, int, int);
 
 hhtml_tag hhtml_get_tag(const uint8_t *, size_t, const char *);
-const char *hhtml_find_block(const char *, unsigned int);
 
 void	 hrend_html_free(hrend *);
 hrend	*hrend_html_new(unsigned int, int) __attribute__ ((malloc));

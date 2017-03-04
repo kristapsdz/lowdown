@@ -2478,7 +2478,53 @@ htmlblock_find_end_strict(
 	return i;
 }
 
-/* parse_htmlblock • parsing of inline HTML block */
+/*
+ * Canonicalise a sequence of length "len" bytes in "str".
+ * This returns NULL if the sequence is not recognised, or a
+ * nil-terminated string of the sequence otherwise.
+ */
+static const char *
+hhtml_find_block(const char *str, size_t len)
+{
+	static const char	*tags[] = {
+		"blockquote",
+		"del",
+		"div",
+		"dl",
+		"fieldset",
+		"figure",
+		"form",
+		"h1",
+		"h2",
+		"h3",
+		"h4",
+		"h5",
+		"h6",
+		"iframe",
+		"ins",
+		"math",
+		"noscript",
+		"ol",
+		"p",
+		"pre",
+		"script",
+		"style",
+		"table",
+		"ul",
+		NULL,
+	};
+	size_t			 i;
+
+	for (i = 0; NULL != tags[i]; i++)
+		if (0 == strncasecmp(tags[i], str, len))
+			return tags[i];
+
+	return NULL;
+}
+
+/* 
+ * Parsing of inline HTML block.
+ */
 static size_t
 parse_htmlblock(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int do_render)
 {
@@ -2497,7 +2543,7 @@ parse_htmlblock(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int do_render)
 		i++;
 
 	if (i < size)
-		curtag = hhtml_find_block((char *)data + 1, (int)i - 1);
+		curtag = hhtml_find_block((char *)data + 1, i - 1);
 
 	/* handling of special cases */
 	if (!curtag) {
