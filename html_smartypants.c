@@ -34,6 +34,12 @@ struct smartypants_data {
 	int in_dquote;
 };
 
+typedef enum hhtml_tag {
+	HOEDOWN_HTML_TAG_NONE = 0,
+	HOEDOWN_HTML_TAG_OPEN,
+	HOEDOWN_HTML_TAG_CLOSE
+} hhtml_tag;
+
 static size_t smartypants_cb__ltag(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
 static size_t smartypants_cb__dquote(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
 static size_t smartypants_cb__amp(hbuf *ob, struct smartypants_data *smrt, uint8_t previous_char, const uint8_t *text, size_t size);
@@ -325,6 +331,43 @@ smartypants_cb__dquote(hbuf *ob, struct smartypants_data *smrt, uint8_t previous
 		HBUF_PUTSL(ob, "&#34;");
 
 	return 0;
+}
+
+/* 
+ * Checks if data starts with a specific tag, returns the tag type or
+ * NONE.
+ */
+static hhtml_tag
+hhtml_get_tag(const uint8_t *data, size_t size, const char *tagname)
+{
+	size_t i;
+	int closed = 0;
+
+	if (size < 3 || data[0] != '<')
+		return HOEDOWN_HTML_TAG_NONE;
+
+	i = 1;
+
+	if (data[i] == '/') {
+		closed = 1;
+		i++;
+	}
+
+	for (; i < size; ++i, ++tagname) {
+		if (*tagname == 0)
+			break;
+
+		if (data[i] != *tagname)
+			return HOEDOWN_HTML_TAG_NONE;
+	}
+
+	if (i == size)
+		return HOEDOWN_HTML_TAG_NONE;
+
+	if (isspace(data[i]) || data[i] == '>')
+		return closed ? HOEDOWN_HTML_TAG_CLOSE : HOEDOWN_HTML_TAG_OPEN;
+
+	return HOEDOWN_HTML_TAG_NONE;
 }
 
 static size_t
