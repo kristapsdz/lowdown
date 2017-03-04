@@ -127,11 +127,12 @@
 		<header>
 			<h1>0.1.7</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2017-03-01">2017-03-01</time>
+			<time datetime="2017-03-04">2017-03-04</time>
 		</header>
 		<aside>
 			<p>
 				Accept image dimensions and pass them to the HTML output formatter.
+				Many internal clean-ups thanks to Anton Lindqvist.
 			</p>
 		</aside>
 	</article>
