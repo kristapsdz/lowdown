@@ -87,7 +87,7 @@ lowdown.tar.gz.sha512: lowdown.tar.gz
 
 lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/
-	install -m 0644 *.c *.h Makefile *.1 .dist/lowdown-$(VERSION)
+	install -m 0644 *.c *.h Makefile configure *.1 .dist/lowdown-$(VERSION)
 	( cd .dist/ && tar zcf ../$@ ./ )
 	rm -rf .dist/
 
