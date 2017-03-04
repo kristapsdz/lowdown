@@ -8,7 +8,6 @@ OBJS		 = autolink.o \
 		   document.o \
 		   escape.o \
 		   html.o \
-		   html_blocks.o \
 		   html_smartypants.o \
 		   library.o \
 		   log.o \
