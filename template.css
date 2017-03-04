@@ -20,9 +20,10 @@ nav#versions			{ background-color: inherit;
 nav#versions ul			{ list-style-type: none;
 				  padding: 0;
 				  margin: 0; }
-nav#versions li + li		{ margin-top: 2em; }
+nav#versions li + li		{ margin-top: 1em; 
+				  border-top: thin solid #ddd; }
 nav#versions li > div:last-child
-				{ color: #444; }
+				{ color: #666; }
 				{ font-size: 15pt; }
 nav#versions li > div:first-child
 				{ font-size: 15pt; }
