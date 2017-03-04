@@ -33,9 +33,9 @@ example is the GitHub [README.md](README.md) rendered as
 [README.html](README.html) or [README.pdf](README.pdf).
 
 To get *lowdown*, just [download](snapshots/lowdown.tar.gz),
-[verify](snapshots/lowdown.tar.gz.sha512), unpack, then run `doas make
-install` (or use `sudo`).  *lowdown* is a [BSD.lv](https://bsd.lv)
-project.
+[verify](snapshots/lowdown.tar.gz.sha512), unpack, run `./configure`,
+then run `doas make install` (or use `sudo`).  *lowdown* is a
+[BSD.lv](https://bsd.lv) project.
 
 ## Output
 
@@ -74,7 +74,7 @@ following Markdown features and extensions:
 - footnotes
 - disabled inline HTML
 - "smartypants"
-- metadata (**experimental**)
+- metadata
 
 ## Examples
 
