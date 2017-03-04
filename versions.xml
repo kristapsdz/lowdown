@@ -136,4 +136,17 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.1.8</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2017-03-05">2017-03-05</time>
+		</header>
+		<aside>
+			<p>
+				One-line fix to bundle the <code>configure</code> file with the distribution.
+				Noted by Anton Lindqvist&#8212;thanks!
+			</p>
+		</aside>
+	</article>
 </articles>
