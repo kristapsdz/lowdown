@@ -52,40 +52,6 @@ escape_href(hbuf *ob, const uint8_t *source, size_t length)
 	hesc_href(ob, source, length);
 }
 
-/* checks if data starts with a specific tag, returns the tag type or NONE */
-hhtml_tag
-hhtml_get_tag(const uint8_t *data, size_t size, const char *tagname)
-{
-	size_t i;
-	int closed = 0;
-
-	if (size < 3 || data[0] != '<')
-		return HOEDOWN_HTML_TAG_NONE;
-
-	i = 1;
-
-	if (data[i] == '/') {
-		closed = 1;
-		i++;
-	}
-
-	for (; i < size; ++i, ++tagname) {
-		if (*tagname == 0)
-			break;
-
-		if (data[i] != *tagname)
-			return HOEDOWN_HTML_TAG_NONE;
-	}
-
-	if (i == size)
-		return HOEDOWN_HTML_TAG_NONE;
-
-	if (isspace(data[i]) || data[i] == '>')
-		return closed ? HOEDOWN_HTML_TAG_CLOSE : HOEDOWN_HTML_TAG_OPEN;
-
-	return HOEDOWN_HTML_TAG_NONE;
-}
-
 static int
 rndr_autolink(hbuf *ob, const hbuf *link, halink_type type, void *data, int nln)
 {

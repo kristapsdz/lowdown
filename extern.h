@@ -146,12 +146,6 @@ typedef struct hrend {
 	void (*doc_footer)(hbuf *, int, void *);
 } hrend;
 
-typedef enum hhtml_tag {
-	HOEDOWN_HTML_TAG_NONE = 0,
-	HOEDOWN_HTML_TAG_OPEN,
-	HOEDOWN_HTML_TAG_CLOSE
-} hhtml_tag;
-
 __BEGIN_DECLS
 
 void	*xmalloc(size_t) __attribute__((malloc));
@@ -198,8 +192,6 @@ void	 hdoc_free(hdoc *);
 void	 hesc_href(hbuf *, const uint8_t *, size_t);
 void	 hesc_html(hbuf *, const uint8_t *, size_t, int);
 void	 hesc_nroff(hbuf *, const uint8_t *, size_t, int, int);
-
-hhtml_tag hhtml_get_tag(const uint8_t *, size_t, const char *);
 
 void	 hrend_html_free(hrend *);
 hrend	*hrend_html_new(unsigned int, int) __attribute__ ((malloc));
