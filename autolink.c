@@ -3,7 +3,7 @@
  * Copyright (c) 2008, Natacha Porté
  * Copyright (c) 2011, Vicent Martí
  * Copyright (c) 2014, Xavier Mendez, Devin Torres and the Hoedown authors
- * Copyright (c) 2016, Kristaps Dzonsons
+ * Copyright (c) 2016--2017, Kristaps Dzonsons
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -28,35 +28,49 @@
 #include "lowdown.h"
 #include "extern.h"
 
-/* verify that a URL has a safe protocol */
-int
+#define VALID_URIS_SZ	6
+
+/*
+ * List of URI prefixes that are considered "valid".
+ */
+static const char *const valid_uris[VALID_URIS_SZ] = {
+	"http://", 
+	"https://", 
+	"/", 
+	"#", 
+	"ftp://", 
+	"mailto:"
+};
+
+/* 
+ * Verify that a URL has a safe protocol.
+ */
+static int
 halink_is_safe(const uint8_t *data, size_t size)
 {
-	static const size_t valid_uris_count = 6;
-	static const char *valid_uris[] = {
-		"http://", "https://", "/", "#", "ftp://", "mailto:"
-	};
-	static const size_t valid_uris_size[] = { 7, 8, 1, 1, 6, 7 };
-	size_t i;
+	size_t	 i, len;
 
-	for (i = 0; i < valid_uris_count; ++i) {
-		size_t len = valid_uris_size[i];
-
+	for (i = 0; i < VALID_URIS_SZ; ++i) {
+		len = strlen(valid_uris[i]);
 		if (size > len &&
-			strncasecmp((char *)data, valid_uris[i], len) == 0 &&
-			isalnum(data[len]))
+		    strncasecmp((char *)data, valid_uris[i], len) == 0 &&
+		    isalnum(data[len]))
 			return 1;
 	}
 
 	return 0;
 }
 
+/*
+ * Find the end of a hyperlink.
+ * Returns the position of the end.
+ */
 static size_t
 autolink_delim(uint8_t *data,
 	size_t link_end, size_t max_rewind, size_t size)
 {
-	uint8_t cclose, copen = 0;
-	size_t i;
+	uint8_t	 cclose, copen = 0;
+	size_t	 closing, opening, i, new_end;
 
 	for (i = 0; i < link_end; ++i)
 		if (data[i] == '<') {
@@ -64,12 +78,11 @@ autolink_delim(uint8_t *data,
 			break;
 		}
 
-	while (link_end > 0) {
+	while (link_end > 0) 
 		if (strchr("?!.,:", data[link_end - 1]) != NULL)
 			link_end--;
-
 		else if (data[link_end - 1] == ';') {
-			size_t new_end = link_end - 2;
+			new_end = link_end - 2;
 
 			while (new_end > 0 && isalpha(data[new_end]))
 				new_end--;
@@ -78,9 +91,8 @@ autolink_delim(uint8_t *data,
 				link_end = new_end;
 			else
 				link_end--;
-		}
-		else break;
-	}
+		} else 
+			break;
 
 	if (link_end == 0)
 		return 0;
@@ -88,36 +100,46 @@ autolink_delim(uint8_t *data,
 	cclose = data[link_end - 1];
 
 	switch (cclose) {
-	case '"':	copen = '"'; break;
-	case '\'':	copen = '\''; break;
-	case ')':	copen = '('; break;
-	case ']':	copen = '['; break;
-	case '}':	copen = '{'; break;
+	case '"':
+		copen = '"'; 
+		break;
+	case '\'':
+		copen = '\''; 
+		break;
+	case ')':
+		copen = '('; 
+		break;
+	case ']':
+		copen = '['; 
+		break;
+	case '}':
+		copen = '{'; 
+		break;
 	}
 
 	if (copen != 0) {
-		size_t closing = 0;
-		size_t opening = 0;
-		size_t i = 0;
+		closing = opening = i = 0;
 
-		/* Try to close the final punctuation sign in this same line;
-		 * if we managed to close it outside of the URL, that means that it's
-		 * not part of the URL. If it closes inside the URL, that means it
-		 * is part of the URL.
+		/* 
+		 * Try to close the final punctuation sign in this same
+		 * line; if we managed to close it outside of the URL,
+		 * that means that it's not part of the URL. If it
+		 * closes inside the URL, that means it is part of the
+		 * URL.
 		 *
 		 * Examples:
 		 *
-		 *	foo http://www.pokemon.com/Pikachu_(Electric) bar
-		 *		=> http://www.pokemon.com/Pikachu_(Electric)
+		 * foo http://www.pokemon.com/Pikachu_(Electric) bar
+		 * => http://www.pokemon.com/Pikachu_(Electric)
 		 *
-		 *	foo (http://www.pokemon.com/Pikachu_(Electric)) bar
-		 *		=> http://www.pokemon.com/Pikachu_(Electric)
+		 * foo (http://www.pokemon.com/Pikachu_(Electric)) bar
+		 * => http://www.pokemon.com/Pikachu_(Electric)
 		 *
-		 *	foo http://www.pokemon.com/Pikachu_(Electric)) bar
-		 *		=> http://www.pokemon.com/Pikachu_(Electric))
+		 * foo http://www.pokemon.com/Pikachu_(Electric)) bar
+		 * => http://www.pokemon.com/Pikachu_(Electric))
 		 *
-		 *	(foo http://www.pokemon.com/Pikachu_(Electric)) bar
-		 *		=> foo http://www.pokemon.com/Pikachu_(Electric)
+		 * (foo http://www.pokemon.com/Pikachu_(Electric)) bar
+		 * => foo http://www.pokemon.com/Pikachu_(Electric)
 		 */
 
 		while (i < link_end) {
@@ -125,7 +147,6 @@ autolink_delim(uint8_t *data,
 				opening++;
 			else if (data[i] == cclose)
 				closing++;
-
 			i++;
 		}
 
@@ -136,24 +157,33 @@ autolink_delim(uint8_t *data,
 	return link_end;
 }
 
+/*
+ * To make sure that a domain is well-formed.
+ * Returns zero on failure, non-zero on success.
+ * XXX: this function needs to be replaced.
+ */
 static size_t
 check_domain(uint8_t *data, size_t size)
 {
 	size_t i, np = 0;
 
-	if (!isalnum(data[0]))
+	if ( ! isalnum(data[0]))
 		return 0;
 
 	for (i = 1; i < size - 1; ++i) {
-		if (strchr(".:", data[i]) != NULL) np++;
-		else if (!isalnum(data[i]) && data[i] != '-') break;
+		if (strchr(".:", data[i]) != NULL) 
+			np++;
+		else if ( ! isalnum(data[i]) && data[i] != '-') 
+			break;
 	}
 
 	/* A valid domain needs to have at least a dot. */
 	return np ? i : 0;
 }
 
-/* search for the next www link in data */
+/* 
+ * Search for the next www link in data.
+ */
 size_t
 halink_www(size_t *rewind_p, hbuf *link, uint8_t *data,
 	size_t max_rewind, size_t size)
@@ -185,16 +215,19 @@ halink_www(size_t *rewind_p, hbuf *link, uint8_t *data,
 	return link_end;
 }
 
-/* search for the next email in data */
+/* 
+ * Search for the next email in data.
+ */
 size_t
 halink_email(size_t *rewind_p, hbuf *link, uint8_t *data,
 	size_t max_rewind, size_t size)
 {
-	size_t link_end, rewind;
-	int nb = 0, np = 0;
+	size_t	 link_end, rewind;
+	int	 nb = 0, np = 0;
+	uint8_t	 c;
 
 	for (rewind = 0; rewind < max_rewind; ++rewind) {
-		uint8_t c = data[-1 - rewind];
+		c = data[-1 - rewind];
 
 		if (isalnum(c))
 			continue;
@@ -209,7 +242,7 @@ halink_email(size_t *rewind_p, hbuf *link, uint8_t *data,
 		return 0;
 
 	for (link_end = 0; link_end < size; ++link_end) {
-		uint8_t c = data[link_end];
+		c = data[link_end];
 
 		if (isalnum(c))
 			continue;
@@ -237,10 +270,12 @@ halink_email(size_t *rewind_p, hbuf *link, uint8_t *data,
 	return link_end;
 }
 
-/* search for the next URL in data */
+/* 
+ * Search for the next URL in data.
+ */
 size_t
-halink_url(size_t *rewind_p, hbuf *link, uint8_t *data,
-	size_t max_rewind, size_t size)
+halink_url(size_t *rewind_p, hbuf *link,
+	uint8_t *data, size_t max_rewind, size_t size)
 {
 	size_t link_end, rewind = 0, domain_len;
 
