@@ -1183,8 +1183,7 @@ char_autolink_www(hbuf *ob, hdoc *doc,
 		return 0;
 
 	link = newbuf(doc, BUFFER_SPAN);
-	link_len = halink_www(&rewind, link, data,
-		offset, size, HALINK_SHORT_DOMAINS);
+	link_len = halink_www(&rewind, link, data, offset, size);
 
 	if (link_len > 0) {
 		link_url = newbuf(doc, BUFFER_SPAN);
@@ -1224,7 +1223,7 @@ char_autolink_email(hbuf *ob, hdoc *doc,
 		return 0;
 
 	link = newbuf(doc, BUFFER_SPAN);
-	link_len = halink_email(&rewind, link, data, offset, size, 0);
+	link_len = halink_email(&rewind, link, data, offset, size);
 
 	if (link_len > 0) {
 		if (ob->size > rewind) {
@@ -1252,7 +1251,7 @@ char_autolink_url(hbuf *ob, hdoc *doc,
 		return 0;
 
 	link = newbuf(doc, BUFFER_SPAN);
-	link_len = halink_url(&rewind, link, data, offset, size, 0);
+	link_len = halink_url(&rewind, link, data, offset, size);
 
 	if (link_len > 0) {
 		if (ob->size > rewind) {
