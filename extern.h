@@ -47,10 +47,6 @@ typedef struct hbuf {
 	int 		 buffer_free; /* obj should be freed */
 } hbuf;
 
-typedef enum halink_flags {
-	HALINK_SHORT_DOMAINS = (1 << 0)
-} halink_flags;
-
 typedef struct hstack {
 	void		**item;
 	size_t		  size;
@@ -169,13 +165,10 @@ void	 hbuf_puts(hbuf *, const char *);
 #define HBUF_PUTSL(output, literal) \
 	hbuf_put(output, (const uint8_t *)literal, sizeof(literal) - 1)
 
-size_t	 halink_email(size_t *, hbuf *, uint8_t *, 
-		size_t, size_t, halink_flags);
+size_t	 halink_email(size_t *, hbuf *, uint8_t *, size_t, size_t);
 int	 halink_is_safe(const uint8_t *data, size_t size);
-size_t	 halink_url(size_t *, hbuf *, uint8_t *, 
-		size_t, size_t, halink_flags);
-size_t	 halink_www(size_t *, hbuf *, uint8_t *, 
-		size_t, size_t, halink_flags);
+size_t	 halink_url(size_t *, hbuf *, uint8_t *, size_t, size_t);
+size_t	 halink_www(size_t *, hbuf *, uint8_t *, size_t, size_t);
 
 void	 hstack_grow(hstack *, size_t);
 void	 hstack_init(hstack *, size_t);
