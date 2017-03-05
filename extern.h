@@ -166,7 +166,6 @@ void	 hbuf_puts(hbuf *, const char *);
 	hbuf_put(output, (const uint8_t *)literal, sizeof(literal) - 1)
 
 size_t	 halink_email(size_t *, hbuf *, uint8_t *, size_t, size_t);
-int	 halink_is_safe(const uint8_t *data, size_t size);
 size_t	 halink_url(size_t *, hbuf *, uint8_t *, size_t, size_t);
 size_t	 halink_www(size_t *, hbuf *, uint8_t *, size_t, size_t);
 
