@@ -191,7 +191,7 @@ halink_www(size_t *rewind_p, hbuf *link, uint8_t *data,
 	hbuf_put(link, data, link_end);
 	*rewind_p = 0;
 
-	return (int)link_end;
+	return link_end;
 }
 
 /* search for the next email in data */
