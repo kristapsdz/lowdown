@@ -149,4 +149,17 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.1.9</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2017-03-06">2017-03-06</time>
+		</header>
+		<aside>
+			<p>
+				More small fixes, many contributed by Anton Lindqvist, for a smooth OpenBSD port.
+				Also internal clean-ups to the legacy code bits.
+			</p>
+		</aside>
+	</article>
 </articles>
