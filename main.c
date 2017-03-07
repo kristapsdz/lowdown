@@ -32,7 +32,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <time.h>
 
 #include "lowdown.h"
 
@@ -207,73 +206,18 @@ feature_in(const char *v)
 	return(0);
 }
 
-static char *
-date2str(const char *v)
-{
-	unsigned int	y, m, d;
-	int		rc;
-	static char	buf[32];
-
-	if (NULL == v)
-		return(NULL);
-
-	rc = sscanf(v, "%u/%u/%u", &y, &m, &d);
-	if (3 != rc) {
-		rc = sscanf(v, "%u-%u-%u", &y, &m, &d);
-		if (3 != rc) {
-			warnx("malformed ISO-8601 date");
-			return(NULL);
-		}
-	}
-
-	snprintf(buf, sizeof(buf), "%u-%.2u-%.2u", y, m, d);
-	return(buf);
-}
-
-static char *
-rcsdate2str(const char *v)
-{
-	unsigned int	y, m, d, h, min, s;
-	int		rc;
-	static char	buf[32];
-
-	if (NULL == v)
-		return(NULL);
-
-	if (strlen(v) < 7) {
-		warnx("malformed RCS date");
-		return(NULL);
-	}
-
-	v += 7;
-	rc = sscanf(v, "%u/%u/%u %u:%u:%u", 
-		&y, &m, &d, &h, &min, &s);
-
-	if (6 != rc) {
-		warnx("malformed RCS date");
-		return(NULL);
-	}
-
-	snprintf(buf, sizeof(buf), "%u-%.2u-%.2u", y, m, d);
-	return(buf);
-}
-
 int
 main(int argc, char *argv[])
 {
 	FILE		*fin = stdin, *fout = stdout;
 	const char	*fnin = "<stdin>", *fnout = NULL,
-	      		*title = "Untitled article",
-			*date = NULL, *extract = NULL;
+			*extract = NULL;
 	struct lowdown_opts opts;
 	const char	*pname;
 	int		 c, standalone = 0, status = EXIT_SUCCESS;
-	struct tm	*tm;
-	char		 buf[32];
 	unsigned char	*ret = NULL;
 	unsigned int	 feat;
 	size_t		 i, retsz = 0, msz = 0;
-	time_t		 t = time(NULL);
 	struct lowdown_meta *m = NULL;
 
 	memset(&opts, 0, sizeof(struct lowdown_opts));
@@ -290,8 +234,6 @@ main(int argc, char *argv[])
 		LOWDOWN_NROFF_SKIP_HTML |
 		LOWDOWN_HTML_SKIP_HTML |
 		LOWDOWN_NROFF_GROFF;
-
-	tm = localtime(&t);
 
 	sandbox_pre();
 
@@ -385,7 +327,6 @@ main(int argc, char *argv[])
 	if (extract)
 		opts.feat |= LOWDOWN_METADATA;
 
-
 	if ( ! lowdown_file(&opts, fin, &ret, &retsz, &m, &msz))
 		err(EXIT_FAILURE, "%s", fnin);
 	if (fin != stdin)
@@ -401,43 +342,12 @@ main(int argc, char *argv[])
 			status = EXIT_FAILURE;
 			warnx("%s: unknown keyword", extract);
 		}
-	} else if (LOWDOWN_HTML == opts.type) {
-		for (i = 0; i < msz; i++) 
-			if (0 == strcmp(m[i].key, "title"))
-				title = m[i].value;
-		if (standalone)
-			fprintf(fout, "<!DOCTYPE html>\n"
-			      "<html>\n"
-			      "<head>\n"
-			      "<meta charset=\"utf-8\">\n"
-			      "<meta name=\"viewport\" content=\""
-			       "width=device-width,initial-scale=1\">\n"
-			      "<title>%s</title>\n"
-			      "</head>\n"
-			      "<body>\n", title);
-		fwrite(ret, 1, retsz, fout);
-		if (standalone)
-			fputs("</body>\n"
-			      "</html>\n", fout);
 	} else {
-		for (i = 0; i < msz; i++) 
-			if (0 == strcmp(m[i].key, "title"))
-				title = m[i].value;
-			else if (0 == strcmp(m[i].key, "rcsdate"))
-				date = rcsdate2str(m[i].value);
-			else if (0 == strcmp(m[i].key, "date"))
-				date = date2str(m[i].value);
-
-		if (NULL == date) {
-			strftime(buf, sizeof(buf), "%F", tm);
-			date = buf;
-		}
-
-		if (standalone && LOWDOWN_NROFF == opts.type)
-			fprintf(fout, ".DA %s\n.TL\n%s\n", date, title);
-		else if (standalone && LOWDOWN_MAN == opts.type)
-			fprintf(fout, ".TH \"%s\" 7 %s\n", title, date);
+		if (standalone)
+			lowdown_standalone_open(fout, &opts, m, msz);
 		fwrite(ret, 1, retsz, fout);
+		if (standalone)
+			lowdown_standalone_close(fout, &opts);
 	}
 
 	free(ret);

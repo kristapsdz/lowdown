@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
 
 #include "lowdown.h"
 #include "extern.h"
@@ -110,4 +111,124 @@ lowdown_file(const struct lowdown_opts *opts,
 	lowdown_buf(opts, ib->data, ib->size, res, rsz, m, msz);
 	hbuf_free(ib);
 	return(1);
+}
+
+static char *
+date2str(const char *v)
+{
+	unsigned int	y, m, d;
+	int		rc;
+	static char	buf[32];
+
+	if (NULL == v)
+		return(NULL);
+
+	rc = sscanf(v, "%u/%u/%u", &y, &m, &d);
+	if (3 != rc) {
+		rc = sscanf(v, "%u-%u-%u", &y, &m, &d);
+		if (3 != rc) {
+			warnx("malformed ISO-8601 date");
+			return(NULL);
+		}
+	}
+
+	snprintf(buf, sizeof(buf), "%u-%.2u-%.2u", y, m, d);
+	return(buf);
+}
+
+static char *
+rcsdate2str(const char *v)
+{
+	unsigned int	y, m, d, h, min, s;
+	int		rc;
+	static char	buf[32];
+
+	if (NULL == v)
+		return(NULL);
+
+	if (strlen(v) < 7) {
+		warnx("malformed RCS date");
+		return(NULL);
+	}
+
+	v += 7;
+	rc = sscanf(v, "%u/%u/%u %u:%u:%u", 
+		&y, &m, &d, &h, &min, &s);
+
+	if (6 != rc) {
+		warnx("malformed RCS date");
+		return(NULL);
+	}
+
+	snprintf(buf, sizeof(buf), "%u-%.2u-%.2u", y, m, d);
+	return(buf);
+}
+
+void
+lowdown_standalone_open(FILE *fout, const struct lowdown_opts *opts,
+	const struct lowdown_meta *m, size_t msz)
+{
+	const char	*date = NULL, *author = NULL,
+	      		*title = "Untitled article";
+	time_t		 t;
+	char		 buf[32];
+	struct tm	*tm;
+	size_t		 i;
+
+	for (i = 0; i < msz; i++) 
+		if (0 == strcmp(m[i].key, "title"))
+			title = m[i].value;
+		else if (0 == strcmp(m[i].key, "author"))
+			author = m[i].value;
+		else if (0 == strcmp(m[i].key, "rcsdate"))
+			date = rcsdate2str(m[i].value);
+		else if (0 == strcmp(m[i].key, "date"))
+			date = date2str(m[i].value);
+
+	if (NULL == date) {
+		t = time(NULL);
+		tm = localtime(&t);
+		strftime(buf, sizeof(buf), "%F", tm);
+		date = buf;
+	}
+
+	switch (opts->type) {
+	case LOWDOWN_HTML:
+		/* FIXME: HTML-escape title. */
+		fprintf(fout, "<!DOCTYPE html>\n"
+		      "<html>\n"
+		      "<head>\n"
+		      "<meta charset=\"utf-8\">\n"
+		      "<meta name=\"viewport\" content=\""
+		       "width=device-width,initial-scale=1\">\n"
+		      "<title>%s</title>\n"
+		      "</head>\n"
+		      "<body>\n", title);
+		break;
+	case LOWDOWN_NROFF:
+		/* FIXME: roff-escape title and author. */
+		fprintf(fout, ".DA %s\n.TL\n%s\n", date, title);
+		if (NULL != author)
+			fprintf(fout, ".AU\n%s\n", author);
+		break;
+	case LOWDOWN_MAN:
+		/* FIXME: roff-escape title and author. */
+		fprintf(fout, ".TH \"%s\" 7 %s\n", title, date);
+		break;
+	}
+}
+
+void
+lowdown_standalone_close(FILE *fout, 
+	const struct lowdown_opts *opts)
+{
+
+	switch (opts->type) {
+	case LOWDOWN_HTML:
+		fputs("</body>\n"
+		      "</html>\n", fout);
+		break;
+	default:
+		break;
+	}
 }
