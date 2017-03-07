@@ -97,6 +97,12 @@ void		lowdown_buf(const struct lowdown_opts *,
 			struct lowdown_meta **, size_t *);
 const char	*lowdown_errstr(enum lowdown_err);
 
+void		 lowdown_standalone_open
+			(FILE *, const struct lowdown_opts *,
+			 const struct lowdown_meta *, size_t);
+void		 lowdown_standalone_close
+			(FILE *, const struct lowdown_opts *);
+
 __END_DECLS
 
 #endif /* !EXTERN_H */
