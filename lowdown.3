@@ -21,7 +21,9 @@
 .Nm lowdown ,
 .Nm lowdown_buf ,
 .Nm lowdown_errstr ,
-.Nm lowdown_file
+.Nm lowdown_file ,
+.Nm lowdown_standalone_close ,
+.Nm lowdown_standalone_open
 .Nd simple markdown translator library
 .Sh LIBRARY
 .Lb liblowdown
@@ -50,6 +52,20 @@
 .Fa "size_t *retsz"
 .Fa "struct lowdown_meta **meta"
 .Fa "size_t *metasz"
+.Fc
+.Ft void
+.Fo lowdown_standalone_close
+.Fa "const struct lowdown_opts *opts"
+.Fa "unsigned char **ret"
+.Fa "size_t *retsz"
+.Fc
+.Ft void
+.Fo lowdown_standalone_open
+.Fa "const struct lowdown_opts *opts"
+.Fa "const struct lowdown_meta *meta"
+.Fa "size_t metasz"
+.Fa "unsigned char **ret"
+.Fa "size_t *retsz"
 .Fc
 .Sh DESCRIPTION
 The
@@ -227,6 +243,13 @@ The
 is provided to return a human-readable version of
 .Vt "enum lowdown_err" .
 It returns a generic (en_GB) description.
+.Pp
+The
+.Nm lowdown_standalone_open
+and
+.Nm lowdown_standalone_close
+are utility functions for outputting a document header and footer (in
+the given output format) given document meta-data.
 .Sh RETURN VALUES
 The
 .Nm lowdown_file

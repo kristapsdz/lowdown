@@ -88,20 +88,21 @@ struct	lowdown_opts {
 
 __BEGIN_DECLS
 
-int		lowdown_file(const struct lowdown_opts *, 
-			FILE *, unsigned char **, size_t *,
-			struct lowdown_meta **, size_t *);
-void		lowdown_buf(const struct lowdown_opts *, 
+void		 lowdown_buf(const struct lowdown_opts *, 
 			const unsigned char *, size_t,
 			unsigned char **, size_t *,
 			struct lowdown_meta **, size_t *);
 const char	*lowdown_errstr(enum lowdown_err);
-
+int		 lowdown_file(const struct lowdown_opts *, 
+			FILE *, unsigned char **, size_t *,
+			struct lowdown_meta **, size_t *);
 void		 lowdown_standalone_open
-			(FILE *, const struct lowdown_opts *,
-			 const struct lowdown_meta *, size_t);
+			(const struct lowdown_opts *,
+			 const struct lowdown_meta *, size_t,
+			 unsigned char **, size_t *);
 void		 lowdown_standalone_close
-			(FILE *, const struct lowdown_opts *);
+			(const struct lowdown_opts *,
+			 unsigned char **, size_t *);
 
 __END_DECLS
 
