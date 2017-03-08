@@ -16,6 +16,7 @@
  */
 #include "config.h"
 
+#include <ctype.h>
 #include <err.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -164,9 +165,31 @@ rcsdate2str(const char *v)
 	return(buf);
 }
 
+static void
+serialise_roff(hbuf *op, const char *v, int block)
+{
+
+	while (isspace((int)*v))
+		v++;
+	if (block && '.' == *v)
+		HBUF_PUTSL(op, "\\&");
+	for ( ; '\0' != *v; v++) 
+		if ('\\' == *v)
+			HBUF_PUTSL(op, "\\e");
+		else if ( ! block && '"' == *v)
+			HBUF_PUTSL(op, "\\(dq");
+		else if (isspace((int)*v))
+			hbuf_putc(op, ' ');
+		else
+			hbuf_putc(op, *v);
+	if (block)
+		HBUF_PUTSL(op, "\n");
+}
+
 void
-lowdown_standalone_open(FILE *fout, const struct lowdown_opts *opts,
-	const struct lowdown_meta *m, size_t msz)
+lowdown_standalone_open(const struct lowdown_opts *opts,
+	const struct lowdown_meta *m, size_t msz,
+	unsigned char **res, size_t *rsz)
 {
 	const char	*date = NULL, *author = NULL,
 	      		*title = "Untitled article";
@@ -174,6 +197,11 @@ lowdown_standalone_open(FILE *fout, const struct lowdown_opts *opts,
 	char		 buf[32];
 	struct tm	*tm;
 	size_t		 i;
+	hbuf		*op;
+
+	op = hbuf_new(DEF_OUNIT);
+
+	/* Acquire metadata that we'll fill in. */
 
 	for (i = 0; i < msz; i++) 
 		if (0 == strcmp(m[i].key, "title"))
@@ -185,6 +213,8 @@ lowdown_standalone_open(FILE *fout, const struct lowdown_opts *opts,
 		else if (0 == strcmp(m[i].key, "date"))
 			date = date2str(m[i].value);
 
+	/* FIXME: convert to buf without strftime. */
+
 	if (NULL == date) {
 		t = time(NULL);
 		tm = localtime(&t);
@@ -194,41 +224,71 @@ lowdown_standalone_open(FILE *fout, const struct lowdown_opts *opts,
 
 	switch (opts->type) {
 	case LOWDOWN_HTML:
-		/* FIXME: HTML-escape title. */
-		fprintf(fout, "<!DOCTYPE html>\n"
+		HBUF_PUTSL(op, 
+		      "<!DOCTYPE html>\n"
 		      "<html>\n"
 		      "<head>\n"
 		      "<meta charset=\"utf-8\">\n"
 		      "<meta name=\"viewport\" content=\""
 		       "width=device-width,initial-scale=1\">\n"
-		      "<title>%s</title>\n"
+		      "<title>");
+		while (isspace((int)*title))
+			title++;
+		for ( ; '\0' != *title; title++)
+			if ('<' == *title)
+				HBUF_PUTSL(op, "&lt;");
+			else if ('>' == *title)
+				HBUF_PUTSL(op, "&gt;");
+			else if (isspace((int)*title))
+				hbuf_putc(op, ' ');
+			else
+				hbuf_putc(op, *title);
+		HBUF_PUTSL(op, 
+		      "</title>\n"
 		      "</head>\n"
-		      "<body>\n", title);
+		      "<body>\n");
 		break;
 	case LOWDOWN_NROFF:
-		/* FIXME: roff-escape title and author. */
-		fprintf(fout, ".DA %s\n.TL\n%s\n", date, title);
-		if (NULL != author)
-			fprintf(fout, ".AU\n%s\n", author);
+		hbuf_printf(op, ".DA %s\n.TL\n", date);
+		serialise_roff(op, title, 1);
+		if (NULL != author) {
+			HBUF_PUTSL(op, ".AU\n");
+			serialise_roff(op, author, 1);
+		}
 		break;
 	case LOWDOWN_MAN:
-		/* FIXME: roff-escape title and author. */
-		fprintf(fout, ".TH \"%s\" 7 %s\n", title, date);
+		HBUF_PUTSL(op, ".TH \"");
+		serialise_roff(op, title, 0);
+		hbuf_printf(op, "\" 7 %s\n", date);
 		break;
 	}
+
+	*res = op->data;
+	*rsz = op->size;
+
+	op->data = NULL;
+	hbuf_free(op);
 }
 
 void
-lowdown_standalone_close(FILE *fout, 
-	const struct lowdown_opts *opts)
+lowdown_standalone_close(const struct lowdown_opts *opts,
+	unsigned char **res, size_t *rsz)
 {
+	hbuf	*op;
+
+	op = hbuf_new(DEF_OUNIT);
 
 	switch (opts->type) {
 	case LOWDOWN_HTML:
-		fputs("</body>\n"
-		      "</html>\n", fout);
+		HBUF_PUTSL(op, "</body>\n</html>\n");
 		break;
 	default:
 		break;
 	}
+
+	*res = op->data;
+	*rsz = op->size;
+
+	op->data = NULL;
+	hbuf_free(op);
 }

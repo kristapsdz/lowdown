@@ -215,9 +215,9 @@ main(int argc, char *argv[])
 	struct lowdown_opts opts;
 	const char	*pname;
 	int		 c, standalone = 0, status = EXIT_SUCCESS;
-	unsigned char	*ret = NULL;
+	unsigned char	*ret = NULL, *head = NULL, *foot = NULL;
 	unsigned int	 feat;
-	size_t		 i, retsz = 0, msz = 0;
+	size_t		 i, retsz = 0, msz = 0, headsz = 0, footsz = 0;
 	struct lowdown_meta *m = NULL;
 
 	memset(&opts, 0, sizeof(struct lowdown_opts));
@@ -343,14 +343,21 @@ main(int argc, char *argv[])
 			warnx("%s: unknown keyword", extract);
 		}
 	} else {
-		if (standalone)
-			lowdown_standalone_open(fout, &opts, m, msz);
+		if (standalone) {
+			lowdown_standalone_open
+				(&opts, m, msz, &head, &headsz);
+			fwrite(head, 1, headsz, fout);
+		}
 		fwrite(ret, 1, retsz, fout);
-		if (standalone)
-			lowdown_standalone_close(fout, &opts);
+		if (standalone) {
+			lowdown_standalone_close(&opts, &foot, &footsz);
+			fwrite(foot, 1, footsz, fout);
+		}
 	}
 
 	free(ret);
+	free(head);
+	free(foot);
 	if (fout != stdout)
 		fclose(fout);
 	for (i = 0; i < msz; i++) {
