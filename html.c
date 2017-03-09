@@ -346,9 +346,6 @@ rndr_image(hbuf *ob, const hbuf *link, const hbuf *title,
 	char	 	dimbuf[32];
 	int		x, y, rc = 0;
 
-	if (NULL == link || 0 == link->size) 
-		return 0;
-
 	/*
 	 * Scan in our dimensions, if applicable.
 	 * It's unreasonable for them to be over 32 characters, so use
@@ -363,7 +360,8 @@ rndr_image(hbuf *ob, const hbuf *link, const hbuf *title,
 	}
 
 	HBUF_PUTSL(ob, "<img src=\"");
-	escape_href(ob, link->data, link->size);
+	if (NULL != link)
+		escape_href(ob, link->data, link->size);
 	HBUF_PUTSL(ob, "\" alt=\"");
 	if (NULL != alt && alt->size)
 		escape_html(ob, alt->data, alt->size);
@@ -381,7 +379,7 @@ rndr_image(hbuf *ob, const hbuf *link, const hbuf *title,
 		HBUF_PUTSL(ob, "\"");
 	}
 
-	hbuf_puts(ob, "/>");
+	hbuf_puts(ob, " />");
 	return 1;
 }
 
