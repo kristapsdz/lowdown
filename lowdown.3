@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate: February 2 2017 $
+.Dd $Mdocdate: March 8 2017 $
 .Dt LOWDOWN 3
 .Os
 .Sh NAME
@@ -195,6 +195,15 @@ You'll need to include
 when invoking
 .Xr groff 1
 for formatting links.
+.El
+.Pp
+For any mode, you may specify:
+.Pp
+.Bl -tag -width Ds -compact
+.It Dv LOWDOWN_SMARTY
+Don't use
+.Dq smartypants
+formatting.
 .El
 .It Va type
 May be set to
