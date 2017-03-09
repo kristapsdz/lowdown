@@ -164,6 +164,8 @@ feature_out(const char *v)
 		return(LOWDOWN_NROFF_HARD_WRAP);
 	if (0 == strcasecmp(v, "nroff-groff"))
 		return(LOWDOWN_NROFF_GROFF);
+	if (0 == strcasecmp(v, "smarty"))
+		return(LOWDOWN_SMARTY);
 
 	warnx("%s: unknown feature", v);
 	return(0);
