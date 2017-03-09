@@ -75,24 +75,31 @@ lowdown_buf(const struct lowdown_opts *opts,
 	/* Parse the output and free resources. */
 
 	hdoc_render(document, ob, data, datasz, m, msz);
-
 	hdoc_free(document);
+	if (NULL == opts || LOWDOWN_HTML == opts->type)
+		hrend_html_free(renderer);
+	else
+		hrend_nroff_free(renderer);
 
 	/* Reprocess the output as smartypants. */
 
-	if (NULL == opts || LOWDOWN_HTML == opts->type) {
-		hrend_html_free(renderer);
-		hsmrt_html(spb, ob->data, ob->size);
+	if (NULL != opts && 
+	    LOWDOWN_SMARTY & opts->oflags) {
+		if (LOWDOWN_HTML == opts->type)
+			hsmrt_html(spb, ob->data, ob->size);
+		else
+			hsmrt_nroff(spb, ob->data, ob->size);
+		hbuf_free(ob);
+		*res = spb->data;
+		*rsz = spb->size;
+		spb->data = NULL;
+		hbuf_free(spb);
 	} else {
-		hrend_nroff_free(renderer);
-		hsmrt_nroff(spb, ob->data, ob->size);
+		*res = ob->data;
+		*rsz = ob->size;
+		ob->data = NULL;
+		hbuf_free(ob);
 	}
-
-	hbuf_free(ob);
-	*res = spb->data;
-	*rsz = spb->size;
-	spb->data = NULL;
-	hbuf_free(spb);
 }
 
 int
