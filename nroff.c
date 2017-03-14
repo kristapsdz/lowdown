@@ -384,7 +384,8 @@ rndr_list(hbuf *ob, const hbuf *content, hlist_fl flags, void *data)
 }
 
 static void
-rndr_listitem(hbuf *ob, const hbuf *content, hlist_fl flags, void *data, size_t num)
+rndr_listitem(hbuf *ob, const hbuf *content, 
+	hlist_fl flags, void *data, size_t num)
 {
 
 	if (NULL == content || 0 == content->size)
@@ -394,7 +395,19 @@ rndr_listitem(hbuf *ob, const hbuf *content, hlist_fl flags, void *data, size_t 
 		hbuf_printf(ob, ".IP %zu.\n", num);
 	else
 		HBUF_PUTSL(ob, ".IP \\(bu\n");
-	hbuf_put(ob, content->data, content->size);
+
+	/* 
+	 * Don't have a superfluous `LP' following the IP.
+	 * This would create useless whitespace following the number of
+	 * bullet.
+	 */
+
+	if (content->size > 4 && 
+	    0 == strncmp(content->data, ".LP\n", 4))
+		hbuf_put(ob, content->data + 4, content->size - 4);
+	else
+		hbuf_put(ob, content->data, content->size);
+
 	BUFFER_NEWLINE(content->data, content->size, ob);
 }
 
