@@ -171,13 +171,15 @@
 		<aside>
 			<p>
 				Some improvements to <b>-Tms</b> and <b>-Tman</b> readability.
+				Namely, lists won't have a leading newline when the first child is a paragraph.
 				Also make the <b>-Thtml</b> output more conformant to the Markdown testing suites.
 				To wit, add the <b>smarty</b> output option to disable <q>smartypants</q>.
 				(It's enabled by default.)
 			</p>
 			<p>
-				Lastly, push the <q>standalone</q> code generator into the library.
-				This makes it easier for libraries to create the document shell.
+				Push the <q>standalone</q> document code generator into the library,
+				<a href="lowdown.3.html">lowdown(3)</a>.
+				This makes it easier for callers to create the document shell.
 			</p>
 		</aside>
 	</article>
