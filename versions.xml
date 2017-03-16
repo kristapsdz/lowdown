@@ -162,4 +162,23 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.1.10</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2017-03-16">2017-03-16</time>
+		</header>
+		<aside>
+			<p>
+				Some improvements to <b>-Tms</b> and <b>-Tman</b> readability.
+				Also make the <b>-Thtml</b> output more conformant to the Markdown testing suites.
+				To wit, add the <b>smarty</b> output option to disable <q>smartypants</q>.
+				(It's enabled by default.)
+			</p>
+			<p>
+				Lastly, push the <q>standalone</q> code generator into the library.
+				This makes it easier for libraries to create the document shell.
+			</p>
+		</aside>
+	</article>
 </articles>
