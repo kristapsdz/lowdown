@@ -36,6 +36,8 @@ To get *lowdown*, just [download](snapshots/lowdown.tar.gz),
 [verify](snapshots/lowdown.tar.gz.sha512), unpack, run `./configure`,
 then run `doas make install` (or use `sudo`).  *lowdown* is a
 [BSD.lv](https://bsd.lv) project.
+[Homebrew](https://brew.sh) users can use BSD.lv's
+[tap](https://github.com/kristapsdz/homebrew-repo).
 
 ## Output
 
