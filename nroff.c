@@ -403,7 +403,7 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 	 */
 
 	if (content->size > 4 && 
-	    0 == strncmp(content->data, ".LP\n", 4))
+	    0 == strncmp((const char *)content->data, ".LP\n", 4))
 		hbuf_put(ob, content->data + 4, content->size - 4);
 	else
 		hbuf_put(ob, content->data, content->size);
