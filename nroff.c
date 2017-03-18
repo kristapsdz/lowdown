@@ -20,7 +20,9 @@
 #include "config.h"
 
 #include <ctype.h>
-#include <err.h>
+#if HAVE_ERR
+# include <err.h>
+#endif
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
