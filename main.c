@@ -22,7 +22,9 @@
 # include <sys/capability.h>
 #endif
 
-#include <err.h>
+#if HAVE_ERR
+# include <err.h>
+#endif
 #include <errno.h>
 #if HAVE_SANDBOX_INIT
 # include <sandbox.h>

@@ -16,7 +16,9 @@
  */
 #include "config.h"
 
-#include <err.h>
+#if HAVE_ERR
+# include <err.h>
+#endif
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
