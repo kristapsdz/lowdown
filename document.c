@@ -3257,6 +3257,81 @@ hdoc_new(const hrend *renderer, const struct lowdown_opts *opts,
 }
 
 /*
+ * Parse a MMD meta-data value.
+ * If the value is a single line, both leading and trailing whitespace
+ * will be stripped.
+ * If the value spans multiple lines, leading whitespace from the first
+ * line will be stripped and any following lines will be taken as is.
+ * Returns a pointer to the value and the length of the value will be
+ * written to len.
+ */
+static const uint8_t *
+parse_metadata_val(const uint8_t *data, size_t sz, size_t *len)
+{
+	const uint8_t	*val;
+	size_t		 i, nlines = 0, nspaces, peek = 0;
+	int		 startws;
+
+	/* Skip leading whitespace. */
+
+	for (i = 0; i < sz; i++, data++)
+		if (' ' != *data)
+			break;
+
+	val = data;
+	sz -= i;
+
+	/* Find end of line and count trailing whitespace. */
+
+	for (i = nspaces = 0; i < sz && '\n' != data[i]; i++)
+		if (' ' == data[i])
+			nspaces++;
+		else
+			nspaces = 0;
+	*len = i;
+
+	/* 
+	 * Find zero or more following multilines.
+	 * Multilines are terminated by a line containing a colon (that
+	 * is not offset by whitespace) or a blank line.
+	 */
+
+	startws = i + 1 < sz &&
+		(' ' == data[i + 1] || 
+		 '\t' == data[i + 1]);
+
+	for (i++; i < sz; i++) {
+		if (0 == startws && ':' == data[i])
+			break;
+		peek++;
+
+		if ('\n' == data[i]) {
+			nlines++;
+			*len += peek;
+
+			/* A blank line terminates multilines. */
+
+			if (i + 1 < sz && '\n' == data[i + 1])
+				break;
+
+			/* Do we have leading whitespace? */
+
+			startws = i + 1 < sz &&
+				(' ' == data[i + 1] || 
+				 '\t' == data[i + 1]);
+			peek = 0;
+		}
+	}
+
+	/* Only remove trailing whitespace from a single line. */
+
+	if (nlines == 0)
+		*len -= nspaces;
+
+	return val;
+}
+
+/*
  * Parse MMD meta-data.
  * This consists of key-value pairs.
  * Returns zero if this is not metadata, non-zero of it is.
@@ -3265,7 +3340,7 @@ static int
 parse_metadata(hdoc *doc, const uint8_t *data, size_t sz,
 	struct lowdown_meta **meta, size_t *metasz)
 {
-	size_t	 	 i, len, pos = 0;
+	size_t	 	 i, len, pos = 0, valsz;
 	const uint8_t	*key, *val;
 	struct lowdown_meta *m;
 	char		*cp;
@@ -3305,17 +3380,12 @@ parse_metadata(hdoc *doc, const uint8_t *data, size_t sz,
 			break;
 		}
 
-		val = &data[++i];
-		pos = i;
+		/* Consume colon, value, then on to next token. */
 
-		for ( ; i < sz; i++)
-			if ('\n' == data[i] &&
-			    (i == sz - 1 || ! isspace((int)data[i + 1])))
-				break;
-
-		assert(i < sz);
-		m->value = xstrndup((char *)val, i - pos);
-		pos = i + 1;
+		i++;
+		val = parse_metadata_val(&data[i], sz - i, &valsz);
+		m->value = xstrndup((const char *)val, valsz);
+		pos = i + valsz + 1;
 	}
 
 	/*
