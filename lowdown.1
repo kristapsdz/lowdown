@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate: March 9 2017 $
+.Dd $Mdocdate: March 20 2017 $
 .Dt LOWDOWN 1
 .Os
 .Sh NAME
@@ -215,6 +215,9 @@ Accept MMD metadata.
 For the first paragraph to count as meta-data, the first line must have
 a colon in it.
 Otherwise it's considered a regular paragraph.
+Meta-data is escaped according to the output mode; and if the
+.Ar smarty
+flag is set, also smartypantsed.
 .It Ar nocodeind
 Do not indent code blocks.
 .It Ar nointem
@@ -316,7 +319,7 @@ lowdown -sT ms foo.md | \e
   groff -k -Dutf8 -t -ms -mpdfmark > foo.ps
 .Ed
 .Pp
-To extract the title from a file's metadata:
+To extract the HTML-escaped title from a file's metadata:
 .Pp
 .Dl lowdown -X title foo.md
 .Sh EXIT STATUS
