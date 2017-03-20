@@ -78,6 +78,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 
 	hdoc_render(document, ob, data, datasz, m, msz);
 	hdoc_free(document);
+
 	if (NULL == opts || LOWDOWN_HTML == opts->type)
 		hrend_html_free(renderer);
 	else
@@ -108,25 +109,37 @@ lowdown_buf(const struct lowdown_opts *opts,
 
 	/* Reprocess the output as smartypants. */
 
-	spb = hbuf_new(DEF_OUNIT);
-
 	if (NULL != opts && 
 	    LOWDOWN_SMARTY & opts->oflags) {
+		spb = hbuf_new(DEF_OUNIT);
 		if (LOWDOWN_HTML == opts->type)
 			hsmrt_html(spb, ob->data, ob->size);
 		else
 			hsmrt_nroff(spb, ob->data, ob->size);
-		hbuf_free(ob);
 		*res = spb->data;
 		*rsz = spb->size;
 		spb->data = NULL;
 		hbuf_free(spb);
+		for (i = 0; i < *msz; i++) {
+			spb = hbuf_new(DEF_OUNIT);
+			if (NULL == opts ||
+			    LOWDOWN_HTML == opts->type)
+				hsmrt_html(spb, (*m)[i].value, 
+					strlen((*m)[i].value));
+			else
+				hsmrt_nroff(spb, (*m)[i].value, 
+					strlen((*m)[i].value));
+			free((*m)[i].value);
+			(*m)[i].value = xstrndup
+				((char *)spb->data, spb->size);
+			hbuf_free(spb);
+		}
 	} else {
 		*res = ob->data;
 		*rsz = ob->size;
 		ob->data = NULL;
-		hbuf_free(ob);
 	}
+	hbuf_free(ob);
 }
 
 int
