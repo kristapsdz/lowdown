@@ -67,13 +67,6 @@ escape_oneline_span(hbuf *ob, const uint8_t *source, size_t length)
 	hesc_nroff(ob, source, length, 1, 1);
 }
 
-static void
-escape_oneline_block(hbuf *ob, const uint8_t *source, size_t length)
-{
-
-	hesc_nroff(ob, source, length, 0, 1);
-}
-
 static int
 rndr_autolink(hbuf *ob, const hbuf *link, 
 	halink_type type, void *data, int nln)
