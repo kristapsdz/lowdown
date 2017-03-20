@@ -197,8 +197,10 @@ hesc_nroff_oneline(hbuf *ob, const uint8_t *data, size_t sz, int span)
 		if ('\n' == data[i]) {
 			HBUF_PUTSL(ob, " ");
 			continue;
-		} else if ('\\' == data[i])
+		} else if ('\\' == data[i]) {
 			HBUF_PUTSL(ob, "\\e");
+			continue;
+		}
 		hbuf_putc(ob, data[i]);
 	}
 }
