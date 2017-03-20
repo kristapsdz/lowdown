@@ -340,7 +340,7 @@ rndr_link(hbuf *ob, const hbuf *content,
 	if ( ! (st->flags & LOWDOWN_NROFF_GROFF)) {
 		HBUF_PUTSL(ob, ".I\n");
 		if (NULL != content && content->size)
-			escape_block(ob, content->data, content->size);
+			hbuf_put(ob, content->data, content->size);
 		else if (NULL != title && title->size)
 			escape_block(ob, title->data, title->size);
 		else if (NULL != link && link->size)
@@ -357,8 +357,7 @@ rndr_link(hbuf *ob, const hbuf *content,
 				link->data, link->size);
 		HBUF_PUTSL(ob, "\n");
 		if (NULL != content && content->size)
-			escape_oneline_block(ob, 
-				content->data, content->size);
+			hbuf_put(ob, content->data, content->size);
 		HBUF_PUTSL(ob, "\n.UE\n");
 		return 1;
 	}
@@ -369,8 +368,7 @@ rndr_link(hbuf *ob, const hbuf *content,
 			link->data, link->size);
 	HBUF_PUTSL(ob, " ");
 	if (NULL != content && content->size)
-		escape_oneline_span(ob, 
-			content->data, content->size);
+		hbuf_put(ob, content->data, content->size);
 	HBUF_PUTSL(ob, "\n");
 	return 1;
 }
