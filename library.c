@@ -54,13 +54,13 @@ lowdown_buf(const struct lowdown_opts *opts,
 	hbuf	 	*ob, *spb;
 	hrend 		*renderer = NULL;
 	hdoc 		*document;
+	size_t		 i;
 
 	/*
 	 * Begin by creating our buffers, renderer, and document.
 	 */
 
 	ob = hbuf_new(DEF_OUNIT);
-	spb = hbuf_new(DEF_OUNIT);
 
 	renderer = NULL == opts || LOWDOWN_HTML == opts->type ?
 		hrend_html_new
@@ -83,7 +83,32 @@ lowdown_buf(const struct lowdown_opts *opts,
 	else
 		hrend_nroff_free(renderer);
 
+	/*
+	 * Now we escape all of our metadata values.
+	 * This may not be standard (?), but it's required: we generally
+	 * include metadata into our documents, and if not here, we'd
+	 * leave escaping to our caller.
+	 * Which we should never do!
+	 */
+
+	for (i = 0; i < *msz; i++) {
+		spb = hbuf_new(DEF_OUNIT);
+		if (NULL == opts ||
+		    LOWDOWN_HTML == opts->type)
+			hesc_html(spb, (*m)[i].value, 
+				strlen((*m)[i].value), 0);
+		else
+			hesc_nroff(spb, (*m)[i].value, 
+				strlen((*m)[i].value), 0, 1);
+		free((*m)[i].value);
+		(*m)[i].value = xstrndup
+			((char *)spb->data, spb->size);
+		hbuf_free(spb);
+	}
+
 	/* Reprocess the output as smartypants. */
+
+	spb = hbuf_new(DEF_OUNIT);
 
 	if (NULL != opts && 
 	    LOWDOWN_SMARTY & opts->oflags) {
