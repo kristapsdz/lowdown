@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate: March 9 2017 $
+.Dd $Mdocdate: March 20 2017 $
 .Dt LOWDOWN 3
 .Os
 .Sh NAME
@@ -262,6 +262,22 @@ and
 .Nm lowdown_standalone_close
 are utility functions for outputting a document header and footer (in
 the given output format) given document meta-data.
+The recognised meta-data keys are
+.Dq title
+.Pq free-form text ,
+.Dq author
+.Pq free-form text ,
+and
+.Dq date
+.Pq ISO-8601 yy/mm/dd .
+The
+.Dq rcsdate
+may be specified instead of
+.Dq date ,
+and should consists of the
+.Xr rcs 1
+.Li $\&Date$
+keyword.
 .Sh RETURN VALUES
 The
 .Nm lowdown_file
