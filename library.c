@@ -212,27 +212,6 @@ rcsdate2str(const char *v)
 	return(buf);
 }
 
-static void
-serialise_roff(hbuf *op, const char *v, int block)
-{
-
-	while (isspace((int)*v))
-		v++;
-	if (block && '.' == *v)
-		HBUF_PUTSL(op, "\\&");
-	for ( ; '\0' != *v; v++) 
-		if ('\\' == *v)
-			HBUF_PUTSL(op, "\\e");
-		else if ( ! block && '"' == *v)
-			HBUF_PUTSL(op, "\\(dq");
-		else if (isspace((int)*v))
-			hbuf_putc(op, ' ');
-		else
-			hbuf_putc(op, *v);
-	if (block)
-		HBUF_PUTSL(op, "\n");
-}
-
 void
 lowdown_standalone_open(const struct lowdown_opts *opts,
 	const struct lowdown_meta *m, size_t msz,
@@ -275,21 +254,16 @@ lowdown_standalone_open(const struct lowdown_opts *opts,
 		      "<!DOCTYPE html>\n"
 		      "<html>\n"
 		      "<head>\n"
-		      "<meta charset=\"utf-8\">\n"
+		      "<meta charset=\"utf-8\" />\n"
 		      "<meta name=\"viewport\" content=\""
-		       "width=device-width,initial-scale=1\">\n"
-		      "<title>");
-		while (isspace((int)*title))
-			title++;
-		for ( ; '\0' != *title; title++)
-			if ('<' == *title)
-				HBUF_PUTSL(op, "&lt;");
-			else if ('>' == *title)
-				HBUF_PUTSL(op, "&gt;");
-			else if (isspace((int)*title))
-				hbuf_putc(op, ' ');
-			else
-				hbuf_putc(op, *title);
+		       "width=device-width,initial-scale=1\" />\n");
+		if (NULL != author) {
+			HBUF_PUTSL(op, "<meta name=\"author\" content=\"");
+			hbuf_puts(op, author);
+			HBUF_PUTSL(op, "\" />\n");
+		}
+		HBUF_PUTSL(op, "<title>");
+		hbuf_puts(op, title);
 		HBUF_PUTSL(op, 
 		      "</title>\n"
 		      "</head>\n"
@@ -297,15 +271,17 @@ lowdown_standalone_open(const struct lowdown_opts *opts,
 		break;
 	case LOWDOWN_NROFF:
 		hbuf_printf(op, ".DA %s\n.TL\n", date);
-		serialise_roff(op, title, 1);
+		hbuf_puts(op, title);
+		HBUF_PUTSL(op, "\n");
 		if (NULL != author) {
 			HBUF_PUTSL(op, ".AU\n");
-			serialise_roff(op, author, 1);
+			hbuf_puts(op, author);
+			HBUF_PUTSL(op, "\n");
 		}
 		break;
 	case LOWDOWN_MAN:
 		HBUF_PUTSL(op, ".TH \"");
-		serialise_roff(op, title, 0);
+		hbuf_puts(op, title);
 		hbuf_printf(op, "\" 7 %s\n", date);
 		break;
 	}
