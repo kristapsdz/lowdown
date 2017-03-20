@@ -127,11 +127,22 @@ Prints out warnings regarding Markdown syntax conformity.
 .It Fl X Ar keyword
 Instead of converting the file, extract the given metadata keyword and
 exit.
-Only the
-.Fl v
-and
-.Fl o
-flags are recognised.
+These will be escaped according to the output mode
+.Fl T ;
+for example, a title of
+.Dq <foo>
+in
+.Ar html
+mode will be extracted as
+.Dq &lt;foo&gt; .
+In either
+.Ar ms
+or
+.Ar man ,
+a title of
+.Dq .foo\ebar
+will be
+.Dq \e&.foo\eebar .
 .El
 .Pp
 For best results, use the
