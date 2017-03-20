@@ -143,6 +143,9 @@ Accept MMD metadata.
 For the first paragraph to count as meta-data, the first line must have
 a colon in it.
 Otherwise it's considered a regular paragraph.
+Meta-data is escaped according to the output mode; and if the
+.Dv LOWDOWN_SMARTY
+flag is set, also smartypantsed.
 .El
 .Pp
 The default value is zero (none).
