@@ -237,7 +237,8 @@ main(int argc, char *argv[])
 	opts.oflags = 
 		LOWDOWN_NROFF_SKIP_HTML |
 		LOWDOWN_HTML_SKIP_HTML |
-		LOWDOWN_NROFF_GROFF;
+		LOWDOWN_NROFF_GROFF |
+		LOWDOWN_SMARTY;
 
 	sandbox_pre();
 
