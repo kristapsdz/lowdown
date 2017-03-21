@@ -126,7 +126,7 @@ static char_trigger markdown_char_ptrs[] = {
 struct 	hdoc {
 	hrend		 md;
 	void		*data;
-	const uint8_t	*start;
+	const uint8_t	*start; /* FIXME: remove */
 	const struct lowdown_opts *opts;
 	struct link_ref	*refs[REF_TABLE_SIZE];
 	struct footnote_list footnotes_found;
@@ -138,6 +138,8 @@ struct 	hdoc {
 	size_t	 	 cur_par;
 	int		 in_link_body;
 	int		 link_nospace;
+	struct lowdown_meta *m; /* document meta-data */
+	size_t		 msz; /* entries in "m" */
 };
 
 /* Some forward declarations. */
@@ -1296,7 +1298,8 @@ char_link(hbuf *ob, hdoc *doc,
 	size_t 	 i = 1, txt_e, link_b = 0, link_e = 0, title_b = 0, 
 		 title_e = 0, org_work_size, nb_p, dims_b = 0, 
 		 dims_e = 0;
-	int 	 ret = 0, in_title = 0, qtype = 0, is_img, is_footnote;
+	int 	 ret = 0, in_title = 0, qtype = 0, is_img, is_footnote,
+		 is_metadata;
 	hbuf 	 id;
 	struct footnote_ref *fr;
 
@@ -1305,6 +1308,8 @@ char_link(hbuf *ob, hdoc *doc,
 		!is_escaped(data - offset, offset - 1);
 	is_footnote = (doc->ext_flags & LOWDOWN_FOOTNOTES && 
 			data[1] == '^');
+	is_metadata = (doc->ext_flags & LOWDOWN_METADATA && 
+			data[1] == '%');
 
 	/* checking whether the correct renderer exists */
 
@@ -1351,6 +1356,12 @@ char_link(hbuf *ob, hdoc *doc,
 
 		goto cleanup;
 	}
+
+#ifdef notyet
+	if (is_metadata) {
+		goto cleanup;
+	}
+#endif
 
 	/*
 	 * Skip any amount of spacing.
@@ -3204,11 +3215,13 @@ hdoc_new(const hrend *renderer, const struct lowdown_opts *opts,
 	doc->opts = opts;
 	doc->data = renderer->opaque;
 	doc->link_nospace = link_nospace;
+	doc->m = NULL;
+	doc->msz = 0;
 
 	hstack_init(&doc->work_bufs[BUFFER_BLOCK], 4);
 	hstack_init(&doc->work_bufs[BUFFER_SPAN], 8);
 
-	memset(doc->active_char, 0x0, 256);
+	memset(doc->active_char, 0, 256);
 
 	if (doc->md.emphasis || 
 	    doc->md.double_emphasis || 
@@ -3227,7 +3240,8 @@ hdoc_new(const hrend *renderer, const struct lowdown_opts *opts,
 	if (doc->md.linebreak)
 		doc->active_char['\n'] = MD_CHAR_LINEBREAK;
 
-	if (doc->md.image || doc->md.link || doc->md.footnotes || doc->md.footnote_ref) {
+	if (doc->md.image || doc->md.link || 
+	    doc->md.footnotes || doc->md.footnote_ref) {
 		doc->active_char['['] = MD_CHAR_LINK;
 		doc->active_char['!'] = MD_CHAR_IMAGE;
 	}
@@ -3337,8 +3351,7 @@ parse_metadata_val(const uint8_t *data, size_t sz, size_t *len)
  * Returns zero if this is not metadata, non-zero of it is.
  */
 static int
-parse_metadata(hdoc *doc, const uint8_t *data, size_t sz,
-	struct lowdown_meta **meta, size_t *metasz)
+parse_metadata(hdoc *doc, const uint8_t *data, size_t sz)
 {
 	size_t	 	 i, len, pos = 0, valsz;
 	const uint8_t	*key, *val;
@@ -3368,10 +3381,10 @@ parse_metadata(hdoc *doc, const uint8_t *data, size_t sz,
 			if (':' == data[i])
 				break;
 
-		*meta = xreallocarray
-			(*meta, *metasz + 1,
+		doc->m = xreallocarray
+			(doc->m, doc->msz + 1,
 			 sizeof(struct lowdown_meta));
-		m = &(*meta)[(*metasz)++];
+		m = &doc->m[doc->msz++];
 		memset(m, 0, sizeof(struct lowdown_meta));
 
 		m->key = xstrndup((char *)key, i - pos);
@@ -3393,8 +3406,8 @@ parse_metadata(hdoc *doc, const uint8_t *data, size_t sz,
 	 * alphanumerics, hyphen, underscore, with spaces stripped.
 	 */
 
-	for (i = 0; i < *metasz; i++) {
-		cp = (*meta)[i].key;
+	for (i = 0; i < doc->msz; i++) {
+		cp = doc->m[i].key;
 		while ('\0' != *cp) {
 			if (isalnum((int)*cp) ||
 			    '-' == *cp || '_' == *cp) {
@@ -3431,8 +3444,7 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data,
 	size_t		 beg, end;
 	int		 footnotes_enabled;
 	const uint8_t	*sv;
-	struct lowdown_meta *m = NULL;
-	size_t		 i, msz = 0;
+	size_t		 i;
 
 	text = hbuf_new(64);
 
@@ -3481,7 +3493,7 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data,
 			    '\n' == data[end - 1])
 				break;
 		}
-		if (parse_metadata(doc, sv, end - beg, &m, &msz))
+		if (parse_metadata(doc, sv, end - beg))
 			beg = end + 1;
 	}
 
@@ -3562,18 +3574,18 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data,
 	/* Only if both. */
 
 	if (NULL != mp && NULL != mszp) {
-		*mp = m;
-		*mszp = msz;
-		m = NULL;
-		msz = 0;
+		*mp = doc->m;
+		*mszp = doc->msz;
+		doc->m = NULL;
+		doc->msz = 0;
 	}
 
-	for (i = 0; i < msz; i++) {
-		free(m[i].key);
-		free(m[i].value);
+	for (i = 0; i < doc->msz; i++) {
+		free(doc->m[i].key);
+		free(doc->m[i].value);
 	}
 
-	free(m);
+	free(doc->m);
 }
 
 /*
