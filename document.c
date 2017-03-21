@@ -126,7 +126,6 @@ static char_trigger markdown_char_ptrs[] = {
 struct 	hdoc {
 	hrend		 md;
 	void		*data;
-	const uint8_t	*start; /* FIXME: remove */
 	const struct lowdown_opts *opts;
 	struct link_ref	*refs[REF_TABLE_SIZE];
 	struct footnote_list footnotes_found;
@@ -1973,7 +1972,6 @@ parse_paragraph(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 	hbuf		*tmp, *header_work;
 	size_t		 i = 0, end = 0, beg;
 	int		 level = 0;
-	const uint8_t	*sv;
 
 	memset(&work, 0, sizeof(hbuf));
 
@@ -2008,10 +2006,7 @@ parse_paragraph(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 	if ( ! level) {
 		tmp = newbuf(doc, BUFFER_BLOCK);
 
-		sv = doc->start;
-		doc->start = work.data;
 		parse_inline(tmp, doc, work.data, work.size, 1);
-		doc->start = sv;
 
 		if (doc->md.paragraph)
 			doc->md.paragraph(ob, tmp, doc->data, doc->cur_par);
@@ -2047,11 +2042,8 @@ parse_paragraph(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 
 		header_work = newbuf(doc, BUFFER_SPAN);
 
-		sv = doc->start;
-		doc->start = work.data;
 		parse_inline(header_work, doc, 
 			work.data, work.size, 1);
-		doc->start = sv;
 
 		if (doc->md.header)
 			doc->md.header(ob, header_work, level, doc->data);
@@ -2158,7 +2150,6 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 	size_t		 beg = 0, end, pre, sublist = 0, orgpre = 0, i;
 	int		 in_empty = 0, has_inside_empty = 0,
 			 in_fence = 0;
-	const uint8_t	*sv;
 	size_t 		 has_next_uli = 0, has_next_oli = 0;
 
 	/* Keeping track of the first indentation prefix. */
@@ -2275,9 +2266,6 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 	if (has_inside_empty)
 		*flags |= HLIST_BLOCK;
 
-	sv = doc->start;
-	doc->start = work->data;
-
 	if (*flags & HLIST_BLOCK) {
 		/* intermediate render of block li */
 		if (sublist && sublist < work->size) {
@@ -2294,8 +2282,6 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 		else
 			parse_inline(inter, doc, work->data, work->size, buf_newln(ob));
 	}
-
-	doc->start = sv;
 
 	/* render of li itself */
 	if (doc->md.listitem)
@@ -2388,7 +2374,6 @@ parse_footnote_list(hbuf *ob, hdoc *doc, struct footnote_list *footnotes)
 	hbuf			*work = NULL;
 	struct footnote_item	*item;
 	struct footnote_ref	*ref;
-	const uint8_t		*sv;
 
 	if (footnotes->count == 0)
 		return;
@@ -2398,11 +2383,8 @@ parse_footnote_list(hbuf *ob, hdoc *doc, struct footnote_list *footnotes)
 	item = footnotes->head;
 	while (item) {
 		ref = item->ref;
-		sv = doc->start;
-		doc->start = ref->contents->data;
 		parse_footnote_def(work, doc, ref->num,
 			ref->contents->data, ref->contents->size);
-		doc->start = sv;
 		item = item->next;
 	}
 
@@ -3262,7 +3244,6 @@ hdoc_new(const hrend *renderer, const struct lowdown_opts *opts,
 	if (extensions & LOWDOWN_MATH)
 		doc->active_char['$'] = MD_CHAR_MATH;
 
-	/* Extension data */
 	doc->ext_flags = extensions;
 	doc->max_nesting = max_nesting;
 	doc->in_link_body = 0;
@@ -3537,18 +3518,12 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data,
 	if (doc->md.doc_header)
 		doc->md.doc_header(ob, 0, doc->data);
 
-	doc->start = text->data;
-
 	if (text->size) {
 		/* Adding a final newline if not already present. */
 		if (text->data[text->size - 1] != '\n' &&
 		    text->data[text->size - 1] != '\r')
 			hbuf_putc(text, '\n');
-
-		sv = doc->start;
-		doc->start = text->data;
 		parse_block(ob, doc, text->data, text->size);
-		doc->start = sv;
 	}
 
 	/* Footnotes. */
@@ -3596,10 +3571,10 @@ hdoc_free(hdoc *doc)
 {
 	size_t	 i;
 
-	for (i = 0; i < (size_t)doc->work_bufs[BUFFER_SPAN].asize; ++i)
+	for (i = 0; i < doc->work_bufs[BUFFER_SPAN].asize; ++i)
 		hbuf_free(doc->work_bufs[BUFFER_SPAN].item[i]);
 
-	for (i = 0; i < (size_t)doc->work_bufs[BUFFER_BLOCK].asize; ++i)
+	for (i = 0; i < doc->work_bufs[BUFFER_BLOCK].asize; ++i)
 		hbuf_free(doc->work_bufs[BUFFER_BLOCK].item[i]);
 
 	hstack_uninit(&doc->work_bufs[BUFFER_SPAN]);
