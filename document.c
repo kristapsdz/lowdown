@@ -1286,7 +1286,7 @@ char_image(hbuf *ob, hdoc *doc,
 }
 
 /* 
- * '[': parsing a link, a footnote or an image.
+ * '[': parsing a link, footnote, metadata, or image.
  */
 static size_t
 char_link(hbuf *ob, hdoc *doc, 
@@ -1296,10 +1296,10 @@ char_link(hbuf *ob, hdoc *doc,
 		*u_link = NULL, *dims = NULL;
 	size_t 	 i = 1, txt_e, link_b = 0, link_e = 0, title_b = 0, 
 		 title_e = 0, org_work_size, nb_p, dims_b = 0, 
-		 dims_e = 0;
+		 dims_e = 0, j, sz;
 	int 	 ret = 0, in_title = 0, qtype = 0, is_img, is_footnote,
 		 is_metadata;
-	hbuf 	 id;
+	hbuf 	 id, work;
 	struct footnote_ref *fr;
 
 	org_work_size = doc->work_bufs[BUFFER_SPAN].size;
@@ -1327,27 +1327,28 @@ char_link(hbuf *ob, hdoc *doc,
 	else 
 		goto cleanup;
 
-	/* footnote link */
-
 	if (is_footnote) {
+		/* 
+		 * Footnote (in footer): look up footnote by its key in
+		 * our array of footnotes.
+		 * If we've already listed the footnote, don't render it
+		 * twice.
+		 */
 		memset(&id, 0, sizeof(hbuf));
-
 		if (txt_e < 3)
 			goto cleanup;
-
 		id.data = data + 2;
 		id.size = txt_e - 2;
 
 		fr = find_footnote_ref
 			(&doc->footnotes_found, id.data, id.size);
 
-		/* mark footnote used */
+		/* Mark footnote used. */
+
 		if (fr && !fr->is_used) {
 			add_footnote_ref(&doc->footnotes_used, fr);
 			fr->is_used = 1;
 			fr->num = doc->footnotes_used.count;
-
-			/* render */
 			if (doc->md.footnote_ref)
 				ret = doc->md.footnote_ref
 					(ob, fr->num, doc->data);
@@ -1356,11 +1357,35 @@ char_link(hbuf *ob, hdoc *doc,
 		goto cleanup;
 	}
 
-#ifdef notyet
 	if (is_metadata) {
+		/*
+		 * Metadata: simply copy the variable (if found) into
+		 * our stream.
+		 * It's raw text, so we need to pass it into our "normal
+		 * text" formatter.
+		 */
+		memset(&id, 0, sizeof(hbuf));
+		if (txt_e < 3)
+			goto cleanup;
+		id.data = data + 2;
+		id.size = txt_e - 2;
+
+		for (j = 0; j < doc->msz; j++) {
+			sz = strlen(doc->m[j].key);
+			if (NULL != doc->md.normal_text &&
+			    sz == id.size && 
+			    0 == strncmp(doc->m[j].key, id.data, sz)) {
+				memset(&work, 0, sizeof(hbuf));
+				work.data = doc->m[j].value;
+				work.size = strlen(doc->m[j].value);
+				doc->md.normal_text(ob, 
+					&work, doc->data, nln);
+			}
+		}
+
+		ret = 1;
 		goto cleanup;
 	}
-#endif
 
 	/*
 	 * Skip any amount of spacing.
@@ -3425,7 +3450,6 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data,
 	size_t		 beg, end;
 	int		 footnotes_enabled;
 	const uint8_t	*sv;
-	size_t		 i;
 
 	text = hbuf_new(64);
 
@@ -3546,7 +3570,11 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data,
 	assert(doc->work_bufs[BUFFER_SPAN].size == 0);
 	assert(doc->work_bufs[BUFFER_BLOCK].size == 0);
 
-	/* Only if both. */
+	/* 
+	 * Copy our metadata to the given pointers.
+	 * If we do this, they'll be freed by the caller, so zero them.
+	 * Do this only if both pointers are provided.
+	 */
 
 	if (NULL != mp && NULL != mszp) {
 		*mp = doc->m;
@@ -3554,13 +3582,6 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data,
 		doc->m = NULL;
 		doc->msz = 0;
 	}
-
-	for (i = 0; i < doc->msz; i++) {
-		free(doc->m[i].key);
-		free(doc->m[i].value);
-	}
-
-	free(doc->m);
 }
 
 /*
@@ -3576,6 +3597,13 @@ hdoc_free(hdoc *doc)
 
 	for (i = 0; i < doc->work_bufs[BUFFER_BLOCK].asize; ++i)
 		hbuf_free(doc->work_bufs[BUFFER_BLOCK].item[i]);
+
+	for (i = 0; i < doc->msz; i++) {
+		free(doc->m[i].key);
+		free(doc->m[i].value);
+	}
+
+	free(doc->m);
 
 	hstack_uninit(&doc->work_bufs[BUFFER_SPAN]);
 	hstack_uninit(&doc->work_bufs[BUFFER_BLOCK]);
