@@ -96,10 +96,10 @@ lowdown_buf(const struct lowdown_opts *opts,
 		spb = hbuf_new(DEF_OUNIT);
 		if (NULL == opts ||
 		    LOWDOWN_HTML == opts->type)
-			hesc_html(spb, (*m)[i].value, 
+			hesc_html(spb, (uint8_t *)(*m)[i].value, 
 				strlen((*m)[i].value), 0);
 		else
-			hesc_nroff(spb, (*m)[i].value, 
+			hesc_nroff(spb, (uint8_t *)(*m)[i].value, 
 				strlen((*m)[i].value), 0, 1);
 		free((*m)[i].value);
 		(*m)[i].value = xstrndup
@@ -124,10 +124,12 @@ lowdown_buf(const struct lowdown_opts *opts,
 			spb = hbuf_new(DEF_OUNIT);
 			if (NULL == opts ||
 			    LOWDOWN_HTML == opts->type)
-				hsmrt_html(spb, (*m)[i].value, 
+				hsmrt_html(spb, 
+					(uint8_t *)(*m)[i].value, 
 					strlen((*m)[i].value));
 			else
-				hsmrt_nroff(spb, (*m)[i].value, 
+				hsmrt_nroff(spb, 
+					(uint8_t *)(*m)[i].value, 
 					strlen((*m)[i].value));
 			free((*m)[i].value);
 			(*m)[i].value = xstrndup

@@ -1374,9 +1374,10 @@ char_link(hbuf *ob, hdoc *doc,
 			sz = strlen(doc->m[j].key);
 			if (NULL != doc->md.normal_text &&
 			    sz == id.size && 
-			    0 == strncmp(doc->m[j].key, id.data, sz)) {
+			    0 == strncmp(doc->m[j].key, 
+				  	 (char *)id.data, sz)) {
 				memset(&work, 0, sizeof(hbuf));
-				work.data = doc->m[j].value;
+				work.data = (uint8_t *)doc->m[j].value;
 				work.size = strlen(doc->m[j].value);
 				doc->md.normal_text(ob, 
 					&work, doc->data, nln);
