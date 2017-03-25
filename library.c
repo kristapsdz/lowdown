@@ -17,9 +17,6 @@
 #include "config.h"
 
 #include <ctype.h>
-#if HAVE_ERR
-# include <err.h>
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -163,6 +160,10 @@ lowdown_file(const struct lowdown_opts *opts,
 	return(1);
 }
 
+/*
+ * Convert an ISO date (y/m/d or y-m-d) to a canonical form.
+ * Returns NULL if the string is malformed at all or the date otherwise.
+ */
 static char *
 date2str(const char *v)
 {
@@ -176,16 +177,47 @@ date2str(const char *v)
 	rc = sscanf(v, "%u/%u/%u", &y, &m, &d);
 	if (3 != rc) {
 		rc = sscanf(v, "%u-%u-%u", &y, &m, &d);
-		if (3 != rc) {
-			warnx("malformed ISO-8601 date");
+		if (3 != rc)
 			return(NULL);
-		}
 	}
 
 	snprintf(buf, sizeof(buf), "%u-%.2u-%.2u", y, m, d);
 	return(buf);
 }
 
+/*
+ * Convert the "$Author$" string to just the author in a static
+ * buffer of a fixed length.
+ * Returns NULL if the string is malformed (too long, too short, etc.)
+ * at all or the author name otherwise.
+ */
+static char *
+rcsauthor2str(const char *v)
+{
+	static char	buf[1024];
+	size_t		sz;
+
+	if (NULL == v ||
+	    strlen(v) < 12 ||
+	    strncmp(v, "$Author: ", 9))
+		return(NULL);
+
+	if ((sz = strlcpy(buf, v + 9, sizeof(buf))) >= sizeof(buf))
+		return(NULL);
+
+	if ('$' == buf[sz - 1])
+		buf[sz - 1] = '\0';
+	if (' ' == buf[sz - 2])
+		buf[sz - 2] = '\0';
+
+	return(buf);
+}
+
+/*
+ * Convert the "$Date$" string to a simple ISO date in a
+ * static buffer.
+ * Returns NULL if the string is malformed at all or the date otherwise.
+ */
 static char *
 rcsdate2str(const char *v)
 {
@@ -193,22 +225,16 @@ rcsdate2str(const char *v)
 	int		rc;
 	static char	buf[32];
 
-	if (NULL == v)
+	if (NULL == v ||
+	    strlen(v) < 10 ||
+	    strncmp(v, "$Date: ", 7))
 		return(NULL);
 
-	if (strlen(v) < 7) {
-		warnx("malformed RCS date");
-		return(NULL);
-	}
-
-	v += 7;
-	rc = sscanf(v, "%u/%u/%u %u:%u:%u", 
+	rc = sscanf(v + 7, "%u/%u/%u %u:%u:%u", 
 		&y, &m, &d, &h, &min, &s);
 
-	if (6 != rc) {
-		warnx("malformed RCS date");
+	if (6 != rc)
 		return(NULL);
-	}
 
 	snprintf(buf, sizeof(buf), "%u-%.2u-%.2u", y, m, d);
 	return(buf);
@@ -236,6 +262,8 @@ lowdown_standalone_open(const struct lowdown_opts *opts,
 			title = m[i].value;
 		else if (0 == strcmp(m[i].key, "author"))
 			author = m[i].value;
+		else if (0 == strcmp(m[i].key, "rcsauthor"))
+			author = rcsauthor2str(m[i].value);
 		else if (0 == strcmp(m[i].key, "rcsdate"))
 			date = rcsdate2str(m[i].value);
 		else if (0 == strcmp(m[i].key, "date"))
