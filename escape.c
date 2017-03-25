@@ -217,6 +217,9 @@ hesc_nroff_oneline(hbuf *ob, const uint8_t *data, size_t sz, int span)
  * The intuition is that a "block" has its initial character after a
  * newline, and thus needs the newline check.
  * Finally, "oneline" strips out newlines.
+ *
+ * FIXME: after newline, strip leading spaces.
+ * This only happens (I think?) when pasting metadata.
  */
 void
 hesc_nroff(hbuf *ob, const uint8_t *data, 
