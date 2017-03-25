@@ -183,4 +183,18 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.1.11</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2017-03-21">2017-03-21</time>
+		</header>
+		<aside>
+			<p>
+				Support <code>[%metadata]</code> embedded in documents.
+				(Thanks to Anton Lindqvist for furnishing several patches for metadata!)
+				Note that <span class="nm">lowdown</span> doesn't do anything with metadata beyond pasting or standalone document creation.
+			</p>
+		</aside>
+	</article>
 </articles>
