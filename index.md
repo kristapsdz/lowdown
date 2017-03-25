@@ -1,6 +1,7 @@
 title: lowdown --- simple markdown translator
+author: Kristaps Dzonsons
 
-# lowdown --- simple Markdown translator
+# [%title]
 
 *lowdown* is just another Markdown translator.  It can output
 traditional HTML or a document for your *troff* type-setter of choice,
