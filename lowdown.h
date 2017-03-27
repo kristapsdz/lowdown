@@ -84,6 +84,7 @@ struct	lowdown_opts {
 #define LOWDOWN_NROFF_SKIP_HTML	0x08
 #define LOWDOWN_NROFF_HARD_WRAP	0x10
 #define LOWDOWN_NROFF_GROFF	0x20
+#define LOWDOWN_NROFF_NUMBERED	0x80
 #define	LOWDOWN_SMARTY	  	0x40
 };
 
