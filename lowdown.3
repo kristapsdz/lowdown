@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate: March 25 2017 $
+.Dd $Mdocdate: March 27 2017 $
 .Dt LOWDOWN 3
 .Os
 .Sh NAME
@@ -269,12 +269,13 @@ are utility functions for outputting a document header and footer (in
 the given output format) given document meta-data.
 The recognised meta-data keys are
 .Dq title
-.Pq free-form text ,
+.Pq free-form text of the title ,
 .Dq author
-.Pq free-form text ,
+.Pq free-form text of one or more names ,
 and
 .Dq date
 .Pq ISO-8601 yy/mm/dd .
+.Pp
 The
 .Dq rcsdate
 may be specified instead of
@@ -289,6 +290,10 @@ may be similarly used and consists of the
 .Xr rcs 1
 .Li $\&Author$
 keyword.
+.Pp
+Two or more consecutive white-space (newlines, tabs, spaces) in the
+.Dq author
+value indicates multiple authors.
 .Sh RETURN VALUES
 The
 .Nm lowdown_file
