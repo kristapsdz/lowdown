@@ -245,7 +245,7 @@ lowdown_standalone_open(const struct lowdown_opts *opts,
 	const struct lowdown_meta *m, size_t msz,
 	unsigned char **res, size_t *rsz)
 {
-	const char	*date = NULL, *author = NULL,
+	const char	*date = NULL, *author = NULL, *cp,
 	      		*title = "Untitled article";
 	time_t		 t;
 	char		 buf[32];
@@ -288,9 +288,24 @@ lowdown_standalone_open(const struct lowdown_opts *opts,
 		      "<meta name=\"viewport\" content=\""
 		       "width=device-width,initial-scale=1\" />\n");
 		if (NULL != author) {
-			HBUF_PUTSL(op, "<meta name=\"author\" content=\"");
-			hbuf_puts(op, author);
-			HBUF_PUTSL(op, "\" />\n");
+			for (cp = author; '\0' != *cp; ) {
+				HBUF_PUTSL(op, 
+					"<meta name=\"author\""
+					" content=\"");
+				while ('\0' != *cp) {
+					if ( ! isspace((int)cp[0]) ||
+					     ! isspace((int)cp[1])) {
+						hbuf_putc(op, *cp);
+						cp++;
+						continue;
+					}
+					cp += 2;
+					while (isspace((int)*cp))
+						cp++;
+					break;
+				}
+				HBUF_PUTSL(op, "\" />\n");
+			}
 		}
 		HBUF_PUTSL(op, "<title>");
 		hbuf_puts(op, title);
@@ -305,11 +320,23 @@ lowdown_standalone_open(const struct lowdown_opts *opts,
 		hbuf_printf(op, ".DA %s\n.TL\n", date);
 		hbuf_puts(op, title);
 		HBUF_PUTSL(op, "\n");
-		if (NULL != author) {
-			HBUF_PUTSL(op, ".AU\n");
-			hbuf_puts(op, author);
-			HBUF_PUTSL(op, "\n");
-		}
+		if (NULL != author)
+			for (cp = author; '\0' != *cp; ) {
+				HBUF_PUTSL(op, ".AU\n");
+				while ('\0' != *cp) {
+					if ( ! isspace((int)cp[0]) ||
+					     ! isspace((int)cp[1])) {
+						hbuf_putc(op, *cp);
+						cp++;
+						continue;
+					}
+					cp += 2;
+					while (isspace((int)*cp))
+						cp++;
+					break;
+				}
+				HBUF_PUTSL(op, "\n");
+			}
 		break;
 	case LOWDOWN_MAN:
 		HBUF_PUTSL(op, ".TH \"");
