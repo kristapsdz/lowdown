@@ -194,6 +194,10 @@
 				Support <code>[%metadata]</code> embedded in documents.
 				(Thanks to Anton Lindqvist for furnishing several patches for metadata!)
 				Note that <span class="nm">lowdown</span> doesn't do anything with metadata beyond pasting or standalone document creation.
+				Metadata has also been expanded to allow for multiple authors.
+				Add the <b>nroff-numbered</b> output mode option for numbered sections.
+				(None for HTML5 because it can be done with CSS.)
+				Add some default roff goop to the standalone <b>-Tms</b> file for prettier section names.
 			</p>
 		</aside>
 	</article>
