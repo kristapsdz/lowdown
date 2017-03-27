@@ -303,14 +303,19 @@ rndr_header(hbuf *ob, const hbuf *content, int level, void *data)
 	if (NULL == content || 0 == content->size)
 		return;
 
-	if (st->mdoc && 1 == level)
-		HBUF_PUTSL(ob, ".SH ");
-	else if (st->mdoc)
-		HBUF_PUTSL(ob, ".SS ");
-	else if (st->flags & LOWDOWN_NROFF_GROFF) 
-		hbuf_printf(ob, ".SH %d\n", level);
-	else
-		hbuf_printf(ob, ".SH\n");
+	if (st->mdoc) {
+		if (1 == level)
+			HBUF_PUTSL(ob, ".SH ");
+		else 
+			HBUF_PUTSL(ob, ".SS ");
+	} else {
+		if (st->flags & LOWDOWN_NROFF_NUMBERED) 
+			hbuf_printf(ob, ".NH %d\n", level);
+		else if (st->flags & LOWDOWN_NROFF_GROFF) 
+			hbuf_printf(ob, ".SH %d\n", level);
+		else
+			hbuf_printf(ob, ".SH\n");
+	}
 
 	hbuf_put(ob, content->data, content->size);
 	BUFFER_NEWLINE(content->data, content->size, ob);
