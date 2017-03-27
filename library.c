@@ -300,6 +300,8 @@ lowdown_standalone_open(const struct lowdown_opts *opts,
 		      "<body>\n");
 		break;
 	case LOWDOWN_NROFF:
+		HBUF_PUTSL(op, ".nr PS 10\n");
+		HBUF_PUTSL(op, ".nr GROWPS 3\n");
 		hbuf_printf(op, ".DA %s\n.TL\n", date);
 		hbuf_puts(op, title);
 		HBUF_PUTSL(op, "\n");
