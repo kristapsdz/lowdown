@@ -48,7 +48,6 @@
 static void
 sandbox_post(int fdin, int fdout)
 {
-
 	if (-1 == pledge("stdio", NULL))
 		err(EXIT_FAILURE, "pledge");
 }
@@ -56,7 +55,6 @@ sandbox_post(int fdin, int fdout)
 static void
 sandbox_pre(void)
 {
-
 	if (-1 == pledge("stdio rpath wpath cpath", NULL))
 		err(EXIT_FAILURE, "pledge");
 }
@@ -79,7 +77,6 @@ sandbox_post(int fdin, int fdout)
 static void
 sandbox_pre(void)
 {
-
 	/* Do nothing. */
 }
 
@@ -111,7 +108,6 @@ sandbox_post(int fdin, int fdout)
 static void
 sandbox_pre(void)
 {
-
 	/* Do nothing. */
 }
 
@@ -122,14 +118,12 @@ sandbox_pre(void)
 static void
 sandbox_post(int fdin, int fdout)
 {
-
 	/* Do nothing. */
 }
 
 static void
 sandbox_pre(void)
 {
-
 	/* Do nothing. */
 }
 
@@ -138,20 +132,17 @@ sandbox_pre(void)
 static void
 message(enum lowdown_err er, void *arg, const char *buf)
 {
-
 	if (NULL != buf)
 		fprintf(stderr, "%s: %s: %s\n", (const char *)arg,
 			lowdown_errstr(er), buf);
 	else
 		fprintf(stderr, "%s: %s\n", (const char *)arg,
 			lowdown_errstr(er));
-
 }
 
 static unsigned int
 feature_out(const char *v)
 {
-
 	if (NULL == v)
 		return(0);
 	if (0 == strcasecmp(v, "html-skiphtml"))
@@ -176,7 +167,6 @@ feature_out(const char *v)
 static unsigned int
 feature_in(const char *v)
 {
-
 	if (NULL == v)
 		return(0);
 	if (0 == strcasecmp(v, "tables"))
