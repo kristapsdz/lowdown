@@ -393,7 +393,7 @@ replace_spacing(hbuf *ob, const uint8_t *data, size_t size)
  * This is less strict than the original markdown e-mail address matching.
  */
 static size_t
-is_mail_autolink(uint8_t *data, size_t size)
+is_mail_autolink(const uint8_t *data, size_t size)
 {
 	size_t i = 0, nb = 0;
 
@@ -424,7 +424,7 @@ is_mail_autolink(uint8_t *data, size_t size)
  * Returns the length of the given tag, or 0 is it's not valid.
  */
 static size_t
-tag_length(uint8_t *data, size_t size, halink_type *autolink)
+tag_length(const uint8_t *data, size_t size, halink_type *autolink)
 {
 	size_t i, j;
 
@@ -617,7 +617,7 @@ parse_inline(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int nln)
  * Returns whether special char at data[loc] is escaped by '\\'.
  */
 static int
-is_escaped(uint8_t *data, size_t loc)
+is_escaped(const uint8_t *data, size_t loc)
 {
 	size_t i = loc;
 
@@ -633,7 +633,7 @@ is_escaped(uint8_t *data, size_t loc)
  * Looks for the next emph uint8_t, skipping other constructs.
   */
 static size_t
-find_emph_char(uint8_t *data, size_t size, uint8_t c)
+find_emph_char(const uint8_t *data, size_t size, uint8_t c)
 {
 	size_t i = 0;
 
@@ -1712,7 +1712,7 @@ is_empty(const uint8_t *data, size_t size)
 
 /* is_hrule • returns whether a line is a horizontal rule */
 static int
-is_hrule(uint8_t *data, size_t size)
+is_hrule(const uint8_t *data, size_t size)
 {
 	size_t i = 0, n = 0;
 	uint8_t c;
@@ -1745,7 +1745,7 @@ is_hrule(uint8_t *data, size_t size)
  * end of the code fence. if passed, width of
  * the fence rule and character will be returned */
 static size_t
-is_codefence(uint8_t *data, size_t size, size_t *width, uint8_t *chr)
+is_codefence(const uint8_t *data, size_t size, size_t *width, uint8_t *chr)
 {
 	size_t i = 0, n = 1;
 	uint8_t c;
@@ -1806,7 +1806,7 @@ parse_codefence(uint8_t *data, size_t size, hbuf *lang, size_t *width, uint8_t *
 
 /* is_atxheader • returns whether the line is a hash-prefixed header */
 static int
-is_atxheader(hdoc *doc, uint8_t *data, size_t size)
+is_atxheader(hdoc *doc, const uint8_t *data, size_t size)
 {
 	if (data[0] != '#')
 		return 0;
@@ -1826,7 +1826,7 @@ is_atxheader(hdoc *doc, uint8_t *data, size_t size)
 
 /* is_headerline • returns whether the line is a setext-style hdr underline */
 static int
-is_headerline(uint8_t *data, size_t size)
+is_headerline(const uint8_t *data, size_t size)
 {
 	size_t i = 0;
 
@@ -1846,7 +1846,7 @@ is_headerline(uint8_t *data, size_t size)
 }
 
 static int
-is_next_headerline(uint8_t *data, size_t size)
+is_next_headerline(const uint8_t *data, size_t size)
 {
 	size_t i = 0;
 
@@ -1861,7 +1861,7 @@ is_next_headerline(uint8_t *data, size_t size)
 
 /* prefix_quote • returns blockquote prefix length */
 static size_t
-prefix_quote(uint8_t *data, size_t size)
+prefix_quote(const uint8_t *data, size_t size)
 {
 	size_t i = 0;
 	if (i < size && data[i] == ' ') i++;
@@ -1880,7 +1880,7 @@ prefix_quote(uint8_t *data, size_t size)
 
 /* prefix_code • returns prefix length for block code*/
 static size_t
-prefix_code(uint8_t *data, size_t size)
+prefix_code(const uint8_t *data, size_t size)
 {
 	if (size > 3 && data[0] == ' ' && data[1] == ' '
 		&& data[2] == ' ' && data[3] == ' ') return 4;
@@ -2427,7 +2427,7 @@ htmlblock_is_end(
 	const char *tag,
 	size_t tag_len,
 	hdoc *doc,
-	uint8_t *data,
+	const uint8_t *data,
 	size_t size)
 {
 	size_t i = tag_len + 3, w;
@@ -2454,7 +2454,7 @@ htmlblock_find_end(
 	const char *tag,
 	size_t tag_len,
 	hdoc *doc,
-	uint8_t *data,
+	const uint8_t *data,
 	size_t size)
 {
 	size_t i = 0, w;
@@ -2477,7 +2477,7 @@ htmlblock_find_end_strict(
 	const char *tag,
 	size_t tag_len,
 	hdoc *doc,
-	uint8_t *data,
+	const uint8_t *data,
 	size_t size)
 {
 	size_t i = 0, mark;
