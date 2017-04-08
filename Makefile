@@ -99,7 +99,7 @@ $(OBJS): extern.h lowdown.h
 main.o: lowdown.h
 
 clean:
-	rm -f $(OBJS) $(PDFS) $(HTMLS) main.o
+	rm -f $(OBJS) $(COMPAT_OBJS) $(PDFS) $(HTMLS) main.o
 	rm -f lowdown liblowdown.a index.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
 
 distclean: clean
