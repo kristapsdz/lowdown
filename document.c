@@ -1824,25 +1824,28 @@ is_atxheader(hdoc *doc, const uint8_t *data, size_t size)
 	return 1;
 }
 
-/* is_headerline • returns whether the line is a setext-style hdr underline */
+/* 
+ * Returns whether the line is a setext-style hdr underline.
+ * Tests for level 1 header ("=") or level 2 ("-").
+ * Returns the zero if it's not a headerline or non-zero otherwise.
+ */
 static int
 is_headerline(const uint8_t *data, size_t size)
 {
-	size_t i = 0;
+	size_t	 i;
+	uint8_t	 hchr;
 
-	/* test of level 1 header */
-	if (data[i] == '=') {
-		for (i = 1; i < size && data[i] == '='; i++);
-		while (i < size && data[i] == ' ') i++;
-		return (i >= size || data[i] == '\n') ? 1 : 0; }
+	if ('=' == *data || '-' == *data)
+		hchr = *data;
+	else
+		return 0;
 
-	/* test of level 2 header */
-	if (data[i] == '-') {
-		for (i = 1; i < size && data[i] == '-'; i++);
-		while (i < size && data[i] == ' ') i++;
-		return (i >= size || data[i] == '\n') ? 2 : 0; }
+	for (i = 1; i < size && data[i] == hchr; i++)
+		continue;
+	for ( ; i < size && data[i] == ' '; i++)
+		continue;
 
-	return 0;
+	return (i >= size || data[i] == '\n') ? 1 : 0;
 }
 
 static int
