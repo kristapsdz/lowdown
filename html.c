@@ -3,7 +3,7 @@
  * Copyright (c) 2008, Natacha Porté
  * Copyright (c) 2011, Vicent Martí
  * Copyright (c) 2014, Xavier Mendez, Devin Torres and the Hoedown authors
- * Copyright (c) 2016, Kristaps Dzonsons
+ * Copyright (c) 2016--2017, Kristaps Dzonsons
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -19,6 +19,8 @@
  */
 #include "config.h"
 
+#include <sys/queue.h>
+
 #include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -28,6 +30,17 @@
 #include "lowdown.h"
 #include "extern.h"
 
+/*
+ * Queue entry for header names.
+ * Keep these so we can make sure that headers have a unique "id" for
+ * themselves.
+ */
+struct	hentry {
+	char		*str; /* header name (raw) */
+	size_t	 	 count; /* references */
+	TAILQ_ENTRY(hentry) entries;
+};
+
 typedef struct html_state {
 	struct {
 		int header_count;
@@ -35,6 +48,7 @@ typedef struct html_state {
 		int level_offset;
 		int nesting_level;
 	} toc_data;
+	TAILQ_HEAD(, hentry) headers_used;
 	unsigned int flags;
 } html_state;
 
@@ -178,6 +192,54 @@ rndr_linebreak(hbuf *ob, void *data)
 	return 1;
 }
 
+/*
+ * Given the header with non-empty content "header", fill "ob" with the
+ * identifier used for the header.
+ * This will reference-count the header so we don't have duplicates.
+ */
+static void
+rndr_header_id(hbuf *ob, const hbuf *header, html_state *state)
+{
+	struct hentry	*hentry;
+
+	/* 
+	 * See if the header was previously already defind. 
+	 * Note that in HTML5, the identifier is case sensitive.
+	 */
+
+	TAILQ_FOREACH(hentry, &state->headers_used, entries) {
+		if (strlen(hentry->str) != header->size)
+			continue;
+		if (0 == strncmp(hentry->str, 
+		    (const char *)header->data, header->size))
+			break;
+	}
+
+	/* Convert to escaped values. */
+
+	escape_href(ob, header->data, header->size);
+
+	/*
+	 * If we're non-unique, then append a "count" value.
+	 * XXX: if we have a header named "foo-2", then two headers
+	 * named "foo", we'll inadvertently have a collision.
+	 * This is a bit much to keep track of, though...
+	 */
+
+	if (NULL != hentry) {
+		hentry->count++;
+		hbuf_printf(ob, "-%zu", hentry->count);
+		return;
+	} 
+
+	/* Create new header entry. */
+
+	hentry = xcalloc(1, sizeof(struct hentry));
+	hentry->count = 1;
+	hentry->str = xstrndup(header->data, header->size);
+	TAILQ_INSERT_TAIL(&state->headers_used, hentry, entries);
+}
+
 static void
 rndr_header(hbuf *ob, const hbuf *content, int level, void *data)
 {
@@ -186,12 +248,20 @@ rndr_header(hbuf *ob, const hbuf *content, int level, void *data)
 	if (ob->size)
 		hbuf_putc(ob, '\n');
 
-	if (level <= state->toc_data.nesting_level)
-		hbuf_printf(ob, "<h%d id=\"toc_%d\">", level, state->toc_data.header_count++);
-	else
+	if (level <= state->toc_data.nesting_level) {
+		hbuf_printf(ob, "<h%d id=\"toc_%d\">", 
+			level, state->toc_data.header_count);
+		state->toc_data.header_count++;
+	} else if (NULL != content && content->size) {
+		hbuf_printf(ob, "<h%d id=\"", level);
+		rndr_header_id(ob, content, state);
+		HBUF_PUTSL(ob, "\">");
+	} else
 		hbuf_printf(ob, "<h%d>", level);
 
-	if (content) hbuf_put(ob, content->data, content->size);
+	if (NULL != content) 
+		hbuf_put(ob, content->data, content->size);
+
 	hbuf_printf(ob, "</h%d>\n", level);
 }
 
@@ -616,6 +686,7 @@ hrend_html_new(unsigned int render_flags, int nesting_level)
 	/* Prepare the state pointer */
 	state = xmalloc(sizeof(html_state));
 	memset(state, 0x0, sizeof(html_state));
+	TAILQ_INIT(&state->headers_used);
 
 	state->flags = render_flags;
 	state->toc_data.nesting_level = nesting_level;
@@ -632,10 +703,21 @@ hrend_html_new(unsigned int render_flags, int nesting_level)
 	return renderer;
 }
 
-/* deallocate an HTML renderer */
+/* 
+ * Deallocate an HTML renderer. 
+ */
 void
 hrend_html_free(hrend *renderer)
 {
-	free(renderer->opaque);
+	html_state	*state = renderer->opaque;
+	struct hentry	*hentry;
+
+	while (NULL != (hentry = TAILQ_FIRST(&state->headers_used))) {
+		TAILQ_REMOVE(&state->headers_used, hentry, entries);
+		free(hentry->str);
+		free(hentry);
+	}
+
+	free(state);
 	free(renderer);
 }
