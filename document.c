@@ -363,6 +363,27 @@ is_empty_all(const uint8_t *data, size_t size)
 }
 
 /*
+ * Returns the number of leading spaces from data starting from offset to size.
+ * If maxlen is greater than zero, only at most maxlen number of leading spaces
+ * will be counted.
+ * Otherwise, all leading spaces will be counted.
+ */
+static size_t
+countspaces(const uint8_t *data, size_t offset, size_t size, size_t maxlen)
+{
+	size_t	i;
+
+	for (i = offset; i < size; i++) {
+		if (maxlen > 0 && i - offset == maxlen)
+			break;
+		if (data[i] != ' ')
+			break;
+	}
+
+	return i;
+}
+
+/*
  * Replace all spacing characters in data with spaces. As a special
  * case, this collapses a newline with the previous space, if possible.
  */
@@ -1035,9 +1056,7 @@ char_codespan(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size, in
 
 	/* Trimming outside spaces. */
 
-	f_begin = nb;
-	while (f_begin < end && data[f_begin] == ' ')
-		f_begin++;
+	f_begin = countspaces(data, nb, end, 0);
 
 	f_end = end - nb;
 	while (f_end > nb && data[f_end-1] == ' ')
@@ -1718,10 +1737,9 @@ is_hrule(const uint8_t *data, size_t size)
 	uint8_t c;
 
 	/* skipping initial spaces */
-	if (size < 3) return 0;
-	if (data[0] == ' ') { i++;
-	if (data[1] == ' ') { i++;
-	if (data[2] == ' ') { i++; } } }
+	if (size < 3)
+		return 0;
+	i = countspaces(data, 0, size, 3);
 
 	/* looking at the hrule uint8_t */
 	if (i + 2 >= size
@@ -1753,10 +1771,7 @@ is_codefence(const uint8_t *data, size_t size, size_t *width, uint8_t *chr)
 	/* skipping initial spaces */
 	if (size < 3)
 		return 0;
-
-	if (data[0] == ' ') { i++;
-	if (data[1] == ' ') { i++;
-	if (data[2] == ' ') { i++; } } }
+	i = countspaces(data, 0, size, 3);
 
 	/* looking at the hrule uint8_t */
 	c = data[i];
@@ -1842,8 +1857,7 @@ is_headerline(const uint8_t *data, size_t size)
 
 	for (i = 1; i < size && data[i] == hchr; i++)
 		continue;
-	for ( ; i < size && data[i] == ' '; i++)
-		continue;
+	i = countspaces(data, i, size, 0);
 
 	return (i >= size || data[i] == '\n') ? 1 : 0;
 }
@@ -1866,17 +1880,12 @@ is_next_headerline(const uint8_t *data, size_t size)
 static size_t
 prefix_quote(const uint8_t *data, size_t size)
 {
-	size_t i = 0;
-	if (i < size && data[i] == ' ') i++;
-	if (i < size && data[i] == ' ') i++;
-	if (i < size && data[i] == ' ') i++;
+	size_t i;
 
-	if (i < size && data[i] == '>') {
-		if (i + 1 < size && data[i + 1] == ' ')
-			return i + 2;
+	i = countspaces(data, 0, size, 3);
 
-		return i + 1;
-	}
+	if (i < size && data[i] == '>')
+		return countspaces(data, i + 1, size, 1);
 
 	return 0;
 }
@@ -1885,21 +1894,20 @@ prefix_quote(const uint8_t *data, size_t size)
 static size_t
 prefix_code(const uint8_t *data, size_t size)
 {
-	if (size > 3 && data[0] == ' ' && data[1] == ' '
-		&& data[2] == ' ' && data[3] == ' ') return 4;
+	if (countspaces(data, 0, size, 4) == 4)
+		return 4;
 
 	return 0;
+
 }
 
 /* prefix_oli • returns ordered list item prefix */
 static size_t
 prefix_oli(uint8_t *data, size_t size, uint8_t **num, size_t *numsz)
 {
-	size_t i = 0, st;
+	size_t i, st;
 
-	if (i < size && data[i] == ' ') i++;
-	if (i < size && data[i] == ' ') i++;
-	if (i < size && data[i] == ' ') i++;
+	i = countspaces(data, 0, size, 3);
 
 	if (i >= size || data[i] < '0' || data[i] > '9')
 		return 0;
@@ -1927,11 +1935,9 @@ prefix_oli(uint8_t *data, size_t size, uint8_t **num, size_t *numsz)
 static size_t
 prefix_uli(uint8_t *data, size_t size)
 {
-	size_t i = 0;
+	size_t i;
 
-	if (i < size && data[i] == ' ') i++;
-	if (i < size && data[i] == ' ') i++;
-	if (i < size && data[i] == ' ') i++;
+	i = countspaces(data, 0, size, 3);
 
 	if (i + 1 >= size ||
 		(data[i] != '*' && data[i] != '+' && data[i] != '-') ||
@@ -2176,15 +2182,14 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 	size_t size, hlist_fl *flags, size_t num)
 {
 	hbuf		*work = NULL, *inter = NULL;
-	size_t		 beg = 0, end, pre, sublist = 0, orgpre = 0, i;
+	size_t		 beg = 0, end, pre, sublist = 0, orgpre, i;
 	int		 in_empty = 0, has_inside_empty = 0,
 			 in_fence = 0;
 	size_t 		 has_next_uli = 0, has_next_oli = 0;
 
 	/* Keeping track of the first indentation prefix. */
 
-	while (orgpre < 3 && orgpre < size && data[orgpre] == ' ')
-		orgpre++;
+	orgpre = countspaces(data, 0, size, 3);
 
 	beg = prefix_uli(data, size);
 
@@ -2228,10 +2233,7 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 
 		/* Calculating the indentation. */
 
-		i = 0;
-		while (i < 4 && beg + i < end && data[beg + i] == ' ')
-			i++;
-		pre = i;
+		pre = i = countspaces(data, beg, end, 4) - beg;
 
 		if (doc->ext_flags & LOWDOWN_FENCED)
 			if (is_codefence(data + beg + i,
@@ -2357,8 +2359,7 @@ parse_atxheader(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 	while (level < size && level < 6 && data[level] == '#')
 		level++;
 
-	for (i = level; i < size && data[i] == ' '; i++)
-		continue;
+	i = countspaces(data, level, size, 0);
 
 	for (end = i; end < size && data[end] != '\n'; end++)
 		continue;
@@ -2742,8 +2743,7 @@ parse_table_header(hbuf *ob, hdoc *doc, uint8_t *data,
 	for (col = 0; col < *columns && i < under_end; ++col) {
 		dashes = 0;
 
-		while (i < under_end && data[i] == ' ')
-			i++;
+		i = countspaces(data, i, under_end, 0);
 
 		if (data[i] == ':') {
 			i++; 
@@ -2762,8 +2762,7 @@ parse_table_header(hbuf *ob, hdoc *doc, uint8_t *data,
 			dashes++;
 		}
 
-		while (i < under_end && data[i] == ' ')
-			i++;
+		i = countspaces(data, i, under_end, 0);
 
 		if (i < under_end && data[i] != '|' && data[i] != '+')
 			break;
@@ -2964,12 +2963,9 @@ is_footnote(const uint8_t *data, size_t beg,
 	int 	 in_empty = 0;
 
 	/* up to 3 optional leading spaces */
-	if (beg + 3 >= end) return 0;
-	if (data[beg] == ' ') { i = 1;
-	if (data[beg + 1] == ' ') { i = 2;
-	if (data[beg + 2] == ' ') { i = 3;
-	if (data[beg + 3] == ' ') return 0; } } }
-	i += beg;
+	if (beg + 3 >= end)
+		return 0;
+	i = countspaces(data, beg, end, 3);
 
 	/* id part: caret followed by anything between brackets */
 	if (data[i] != '[') return 0;
@@ -3008,9 +3004,7 @@ is_footnote(const uint8_t *data, size_t beg,
 		}
 
 		/* calculating the indentation */
-		ind = 0;
-		while (ind < 4 && start + ind < end && data[start + ind] == ' ')
-			ind++;
+		ind = countspaces(data, start, end, 4) - start;
 
 		/* joining only indented stuff after empty lines;
 		 * note that now we only require 1 space of indentation
@@ -3063,16 +3057,13 @@ static int
 is_ref(const uint8_t *data, size_t beg, 
 	size_t end, size_t *last, struct link_ref **refs)
 {
-	size_t	 i = 0, id_offset, id_end, link_offset, 
+	size_t	 i, id_offset, id_end, link_offset,
 		 link_end, title_offset, title_end, line_end;
 
 	/* up to 3 optional leading spaces */
-	if (beg + 3 >= end) return 0;
-	if (data[beg] == ' ') { i = 1;
-	if (data[beg + 1] == ' ') { i = 2;
-	if (data[beg + 2] == ' ') { i = 3;
-	if (data[beg + 3] == ' ') return 0; } } }
-	i += beg;
+	if (beg + 3 >= end)
+		return 0;
+	i = countspaces(data, beg, end, 3);
 
 	/* id part: anything but a newline between brackets */
 	if (data[i] != '[') return 0;
@@ -3087,11 +3078,11 @@ is_ref(const uint8_t *data, size_t beg,
 	i++;
 	if (i >= end || data[i] != ':') return 0;
 	i++;
-	while (i < end && data[i] == ' ') i++;
+	i = countspaces(data, i, end, 0);
 	if (i < end && (data[i] == '\n' || data[i] == '\r')) {
 		i++;
 		if (i < end && data[i] == '\r' && data[i - 1] == '\n') i++; }
-	while (i < end && data[i] == ' ') i++;
+	i = countspaces(data, i, end, 0);
 	if (i >= end) return 0;
 
 	/* link: spacing-free sequence, optionally between angle brackets */
@@ -3107,7 +3098,7 @@ is_ref(const uint8_t *data, size_t beg,
 	else link_end = i;
 
 	/* optional spacer: (space | tab)* (newline | '\'' | '"' | '(' ) */
-	while (i < end && data[i] == ' ') i++;
+	i = countspaces(data, i, end, 0);
 	if (i < end && data[i] != '\n' && data[i] != '\r'
 			&& data[i] != '\'' && data[i] != '"' && data[i] != '(')
 		return 0;
@@ -3118,9 +3109,8 @@ is_ref(const uint8_t *data, size_t beg,
 		line_end = i + 1;
 
 	/* optional (space|tab)* spacer after a newline */
-	if (line_end) {
-		i = line_end + 1;
-		while (i < end && data[i] == ' ') i++; }
+	if (line_end)
+		i = countspaces(data, line_end + 1, end, 0);
 
 	/* optional title: any non-newline sequence enclosed in '"()
 					alone on its line */
@@ -3298,9 +3288,7 @@ parse_metadata_val(const uint8_t *data, size_t sz, size_t *len)
 
 	/* Skip leading whitespace. */
 
-	for (i = 0; i < sz; i++, data++)
-		if (' ' != *data)
-			break;
+	i = countspaces(data, 0, sz, 0);
 
 	val = data;
 	sz -= i;
