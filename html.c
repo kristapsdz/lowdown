@@ -236,7 +236,8 @@ rndr_header_id(hbuf *ob, const hbuf *header, html_state *state)
 
 	hentry = xcalloc(1, sizeof(struct hentry));
 	hentry->count = 1;
-	hentry->str = xstrndup(header->data, header->size);
+	hentry->str = xstrndup
+		((const char *)header->data, header->size);
 	TAILQ_INSERT_TAIL(&state->headers_used, hentry, entries);
 }
 
