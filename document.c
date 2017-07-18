@@ -3321,10 +3321,12 @@ parse_metadata_val(const uint8_t *data, size_t sz, size_t *len)
 			nlines++;
 			*len += peek;
 
-			/* A blank line terminates multilines. */
+			/* 
+			 * We shouldn't have double-newlines: they're
+			 * filtered out prior to calling parse_metdata().
+			 */
 
-			if (i + 1 < sz && '\n' == data[i + 1])
-				break;
+			assert( ! (i + 1 < sz && '\n' == data[i + 1]));
 
 			/* Do we have leading whitespace? */
 
@@ -3334,6 +3336,14 @@ parse_metadata_val(const uint8_t *data, size_t sz, size_t *len)
 			peek = 0;
 		}
 	}
+
+	/* 
+	 * If we have peek data, that means that we hit the end of the
+	 * metadata section and have already read ahead.
+	 */
+
+	if (i == sz && peek)
+		*len += peek;
 
 	/* Only remove trailing whitespace from a single line. */
 
