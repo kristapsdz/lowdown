@@ -54,6 +54,82 @@ enum	lowdown_err {
 
 typedef	void (*lowdown_msg)(enum lowdown_err, void *, const char *);
 
+enum	lowdown_rndrt {
+	LOWDOWN_ROOT,
+	LOWDOWN_BLOCKCODE,
+	LOWDOWN_BLOCKQUOTE,
+	LOWDOWN_HEADER,
+	LOWDOWN_HRULE,
+	LOWDOWN_LIST,
+	LOWDOWN_LISTITEM,
+	LOWDOWN_PARAGRAPH,
+	LOWDOWN_TABLE,
+	LOWDOWN_TABLE_HEADER,
+	LOWDOWN_TABLE_BODY,
+	LOWDOWN_TABLE_ROW,
+	LOWDOWN_TABLE_CELL,
+	LOWDOWN_FOOTNOTES,
+	LOWDOWN_FOOTNOTE_DEF,
+	LOWDOWN_BLOCKHTML,
+	LOWDOWN_AUTOLINK,
+	LOWDOWN_CODESPAN,
+	LOWDOWN_DOUBLE_EMPHASIS,
+	LOWDOWN_EMPHASIS,
+	LOWDOWN_HIGHLIGHT,
+	LOWDOWN_IMAGE,
+	LOWDOWN_LINEBREAK,
+	LOWDOWN_LINK,
+	LOWDOWN_TRIPLE_EMPHASIS,
+	LOWDOWN_STRIKETHROUGH,
+	LOWDOWN_SUPERSCRIPT,
+	LOWDOWN_FOOTNOTE_REF,
+	LOWDOWN_MATH,
+	LOWDOWN_RAW_HTML,
+	LOWDOWN_ENTITY,
+	LOWDOWN_NORMAL_TEXT,
+	LOWDOWN_BACKSPACE,
+	LOWDOWN_DOC_HEADER,
+	LOWDOWN_DOC_FOOTER,
+	LOWDOWN__MAX
+};
+
+TAILQ_HEAD(lowdown_nodeq, lowdown_node);
+
+/*
+ * Node parsed from input document.
+ * Each node is part of the parse tree.
+ */
+struct	lowdown_node {
+	enum lowdown_rndrt	 type;
+	union {
+		struct rndr_normal_text {
+			char *text;
+			size_t textsz;
+		} rndr_normal_text; 
+		struct rndr_entity {
+			char *text;
+			size_t textsz;
+		} rndr_entity; 
+		struct rndr_autolink {
+			char *link;
+			size_t linksz;
+		} rndr_autolink; 
+		struct rndr_raw_html {
+			char *text;
+			size_t textsz;
+		} rndr_raw_html; 
+		struct rndr_link {
+			char *text;
+			size_t textsz;
+			char *link;
+			size_t linksz;
+		} rndr_link; 
+	};
+	struct lowdown_node *parent;
+	struct lowdown_nodeq children;
+	TAILQ_ENTRY(lowdown_node) entries;
+};
+
 struct	lowdown_meta {
 	char		*key;
 	char		*value;
