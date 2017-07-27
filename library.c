@@ -16,6 +16,8 @@
  */
 #include "config.h"
 
+#include <sys/queue.h>
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>

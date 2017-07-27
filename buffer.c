@@ -19,6 +19,8 @@
  */
 #include "config.h"
 
+#include <sys/queue.h>
+
 #include <assert.h>
 #if HAVE_ERR
 # include <err.h>

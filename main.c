@@ -16,6 +16,7 @@
  */
 #include "config.h"
 
+#include <sys/queue.h>
 #include <sys/param.h>
 #if HAVE_CAPSICUM
 # include <sys/resource.h>

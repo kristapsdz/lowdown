@@ -19,6 +19,8 @@
  */
 #include "config.h"
 
+#include <sys/queue.h>
+
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
