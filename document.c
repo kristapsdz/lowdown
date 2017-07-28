@@ -1271,7 +1271,7 @@ char_langle_tag(hbuf *ob, hdoc *doc,
 		if (NULL != doc->md.autolink && 
 		    altype != HALINK_NONE) {
 			hbuf *u_link = newbuf(doc, BUFFER_SPAN);
-			n = pushnode(doc, LOWDOWN_AUTOLINK);
+			n = pushnode(doc, LOWDOWN_LINK_AUTO);
 			pushbuffer(&n->rndr_autolink.link, 
 				&n->rndr_autolink.linksz, 
 				data + 1, end - 2);
@@ -1365,7 +1365,7 @@ char_autolink_email(hbuf *ob, hdoc *doc,
 	link_len = halink_email(&rewind, link, data, offset, size);
 
 	if (link_len > 0) {
-		n = pushnode(doc, LOWDOWN_AUTOLINK);
+		n = pushnode(doc, LOWDOWN_LINK_AUTO);
 		pushbuffer(&n->rndr_autolink.link, 
 			&n->rndr_autolink.linksz, 
 			link->data, link->size);
@@ -1399,7 +1399,7 @@ char_autolink_url(hbuf *ob, hdoc *doc,
 	link_len = halink_url(&rewind, link, data, offset, size);
 
 	if (link_len > 0) {
-		n = pushnode(doc, LOWDOWN_AUTOLINK);
+		n = pushnode(doc, LOWDOWN_LINK_AUTO);
 		pushbuffer(&n->rndr_autolink.link, 
 			&n->rndr_autolink.linksz, 
 			link->data, link->size);
@@ -2162,9 +2162,6 @@ parse_blockquote(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 	return end;
 }
 
-static size_t
-parse_htmlblock(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int do_render);
-
 /*
  * Handles parsing of a regular paragraph, which terminates at sections
  * or blank lines.
@@ -2815,8 +2812,7 @@ hhtml_find_block(const char *str, size_t len)
  * Parsing of inline HTML block.
  */
 static size_t
-parse_htmlblock(hbuf *ob, hdoc *doc, 
-	uint8_t *data, size_t size, int do_render)
+parse_htmlblock(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 {
 	hbuf	 	 work;
 	size_t	 	 i, j = 0, tag_len, tag_end;
@@ -2858,7 +2854,7 @@ parse_htmlblock(hbuf *ob, hdoc *doc,
 			if (j) {
 				n = pushnode(doc, LOWDOWN_BLOCKHTML);
 				work.size = i + j;
-				if (do_render && doc->md.blockhtml)
+				if (doc->md.blockhtml)
 					doc->md.blockhtml(ob, 
 						&work, doc->data);
 				popnode(doc, n);
@@ -2884,7 +2880,7 @@ parse_htmlblock(hbuf *ob, hdoc *doc,
 				if (j) {
 					n = pushnode(doc, LOWDOWN_BLOCKHTML);
 					work.size = i + j;
-					if (do_render && doc->md.blockhtml)
+					if (doc->md.blockhtml)
 						doc->md.blockhtml(ob, &work, doc->data);
 					popnode(doc, n);
 					return work.size;
@@ -2921,7 +2917,7 @@ parse_htmlblock(hbuf *ob, hdoc *doc,
 
 	n = pushnode(doc, LOWDOWN_BLOCKHTML);
 	work.size = tag_end;
-	if (do_render && doc->md.blockhtml)
+	if (doc->md.blockhtml)
 		doc->md.blockhtml(ob, &work, doc->data);
 	popnode(doc, n);
 
@@ -2936,10 +2932,12 @@ parse_table_row(hbuf *ob, hdoc *doc, uint8_t *data,
 	size_t	 i = 0, col, len, cell_start, cell_end;
 	hbuf 	*cell_work, *row_work = NULL;
 	hbuf 	 empty_cell;
+	struct lowdown_node *n, *nn;
 
 	if (!doc->md.table_cell || !doc->md.table_row)
 		return;
 
+	n = pushnode(doc, LOWDOWN_TABLE_ROW);
 	row_work = newbuf(doc, BUFFER_SPAN);
 
 	if (i < size && data[i] == '|')
@@ -2974,33 +2972,41 @@ parse_table_row(hbuf *ob, hdoc *doc, uint8_t *data,
 		       xisspace(data[cell_end]))
 			cell_end--;
 
+		nn = pushnode(doc, LOWDOWN_TABLE_CELL);
+
 		parse_inline(cell_work, doc, data + cell_start, 
 			1 + cell_end - cell_start, buf_newln(ob));
 		doc->md.table_cell(row_work, cell_work, 
 			col_data[col] | header_flag, 
 			doc->data, col, columns);
 
+		popnode(doc, nn);
 		popbuf(doc, BUFFER_SPAN);
 		i++;
 	}
 
 	for ( ; col < columns; ++col) {
 		memset(&empty_cell, 0, sizeof(hbuf));
+		nn = pushnode(doc, LOWDOWN_TABLE_CELL);
 		doc->md.table_cell(row_work, &empty_cell, 
 			col_data[col] | header_flag, 
 			doc->data, col, columns);
+		popnode(doc, nn);
 	}
 
 	doc->md.table_row(ob, row_work, doc->data);
+	popnode(doc, n);
 	popbuf(doc, BUFFER_SPAN);
 }
 
 static size_t
-parse_table_header(hbuf *ob, hdoc *doc, uint8_t *data, 
+parse_table_header(struct lowdown_node **np, 
+	hbuf *ob, hdoc *doc, uint8_t *data, 
 	size_t size, size_t *columns, htbl_flags **column_data)
 {
 	size_t	 i = 0, col, header_end, under_end, dashes;
 	ssize_t	 pipes = 0;
+	struct lowdown_node *n;
 
 	while (i < size && data[i] != '\n')
 		if (data[i++] == '|')
@@ -3072,8 +3078,13 @@ parse_table_header(hbuf *ob, hdoc *doc, uint8_t *data,
 	if (col < *columns)
 		return 0;
 
+	/* (This calls pushnode for the table row.) */
+
+	*np = pushnode(doc, LOWDOWN_TABLE_BLOCK);
+	n = pushnode(doc, LOWDOWN_TABLE_HEADER);
 	parse_table_row(ob, doc, data, header_end, 
 		*columns, *column_data, HTBL_HEADER);
+	popnode(doc, n);
 	return under_end + 1;
 }
 
@@ -3084,15 +3095,17 @@ parse_table(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 	hbuf		 *work = NULL, *header_work = NULL, 
 			 *body_work = NULL;
 	htbl_flags	*col_data = NULL;
+	struct lowdown_node *n = NULL, *nn;
 
 	work = newbuf(doc, BUFFER_BLOCK);
 	header_work = newbuf(doc, BUFFER_SPAN);
 	body_work = newbuf(doc, BUFFER_BLOCK);
 
-	i = parse_table_header(header_work, 
+	i = parse_table_header(&n, header_work, 
 		doc, data, size, &columns, &col_data);
 
 	if (i > 0) {
+		nn = pushnode(doc, LOWDOWN_TABLE_BODY);
 		while (i < size) {
 			pipes = 0;
 			row_start = i;
@@ -3106,14 +3119,10 @@ parse_table(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 				break;
 			}
 
-			parse_table_row(
-				body_work,
-				doc,
-				data + row_start,
-				i - row_start,
-				columns,
-				col_data, 0
-			);
+			parse_table_row(body_work,
+				doc, data + row_start,
+				i - row_start, columns,
+				col_data, 0);
 
 			i++;
 		}
@@ -3125,6 +3134,8 @@ parse_table(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 			doc->md.table_body(work, body_work, doc->data);
 		if (doc->md.table)
 			doc->md.table(ob, work, doc->data);
+		popnode(doc, nn);
+		popnode(doc, n);
 	}
 
 	free(col_data);
@@ -3144,6 +3155,7 @@ parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 {
 	size_t	 beg = 0, end, i;
 	uint8_t	*txt_data;
+	struct lowdown_node *n;
 
 	if (doc->work_bufs[BUFFER_SPAN].size +
 	    doc->work_bufs[BUFFER_BLOCK].size > doc->max_nesting)
@@ -3170,7 +3182,7 @@ parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 		if (data[beg] == '<' && 
 		    doc->md.blockhtml &&
 		    (i = parse_htmlblock
-		     (ob, doc, txt_data, end, 1)) != 0) {
+		     (ob, doc, txt_data, end)) != 0) {
 			beg += i;
 			continue;
 		}
@@ -3185,11 +3197,13 @@ parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 		/* Horizontal rule. */
 
 		if (is_hrule(txt_data, end)) {
+			n = pushnode(doc, LOWDOWN_HRULE);
 			if (doc->md.hrule)
 				doc->md.hrule(ob, doc->data);
 			while (beg < size && data[beg] != '\n')
 				beg++;
 			beg++;
+			popnode(doc, n);
 			continue;
 		} 
 
@@ -3897,6 +3911,21 @@ lowdown_node_free(struct lowdown_node *root, size_t tabs)
 	case (LOWDOWN_ROOT):
 		fprintf(stderr, "LOWDOWN_ROOT\n");
 		break;
+	case (LOWDOWN_TABLE_BLOCK):
+		fprintf(stderr, "LOWDOWN_TABLE_BLOCK\n");
+		break;
+	case (LOWDOWN_TABLE_ROW):
+		fprintf(stderr, "LOWDOWN_TABLE_ROW\n");
+		break;
+	case (LOWDOWN_TABLE_CELL):
+		fprintf(stderr, "LOWDOWN_TABLE_CELL\n");
+		break;
+	case (LOWDOWN_TABLE_HEADER):
+		fprintf(stderr, "LOWDOWN_TABLE_HEADER\n");
+		break;
+	case (LOWDOWN_TABLE_BODY):
+		fprintf(stderr, "LOWDOWN_TABLE_BODY\n");
+		break;
 	case (LOWDOWN_PARAGRAPH):
 		fprintf(stderr, "LOWDOWN_PARAGRAPH\n");
 		break;
@@ -3944,8 +3973,8 @@ lowdown_node_free(struct lowdown_node *root, size_t tabs)
 		fprintf(stderr, "LOWDOWN_RAW_HTML (%zu bytes)\n",
 			root->rndr_raw_html.textsz);
 		break;
-	case (LOWDOWN_AUTOLINK):
-		fprintf(stderr, "LOWDOWN_AUTOLINK (%zu bytes)\n",
+	case (LOWDOWN_LINK_AUTO):
+		fprintf(stderr, "LOWDOWN_LINK_AUTO (%zu bytes)\n",
 			root->rndr_autolink.linksz);
 		break;
 	case (LOWDOWN_LINK):
