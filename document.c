@@ -1796,6 +1796,7 @@ char_superscript(hbuf *ob, hdoc *doc,
 {
 	size_t	 sup_start, sup_len;
 	hbuf	*sup;
+	struct lowdown_node *n;
 
 	if (!doc->md.superscript)
 		return 0;
@@ -1817,10 +1818,14 @@ char_superscript(hbuf *ob, hdoc *doc,
 	if (sup_len - sup_start == 0)
 		return (sup_start == 2) ? 3 : 0;
 
+	n = pushnode(doc, LOWDOWN_SUPERSCRIPT);
+
 	sup = newbuf(doc, BUFFER_SPAN);
 	parse_inline(sup, doc, data + sup_start, 
 		sup_len - sup_start, nln);
 	doc->md.superscript(ob, sup, doc->data, nln);
+
+	popnode(doc, n);
 	popbuf(doc, BUFFER_SPAN);
 
 	return (sup_start == 2) ? sup_len + 1 : sup_len;
@@ -1859,7 +1864,9 @@ is_empty(const uint8_t *data, size_t size)
 	return i + 1;
 }
 
-/* is_hrule • returns whether a line is a horizontal rule */
+/* 
+ * Returns whether a line is a horizontal rule. 
+ */
 static int
 is_hrule(const uint8_t *data, size_t size)
 {
@@ -1889,9 +1896,10 @@ is_hrule(const uint8_t *data, size_t size)
 	return n >= 3;
 }
 
-/* check if a line is a code fence; return the
- * end of the code fence. if passed, width of
- * the fence rule and character will be returned */
+/* 
+ * Check if a line is a code fence; return the end of the code fence. 
+ * If passed, width of the fence rule and character will be returned.
+ */
 static size_t
 is_codefence(const uint8_t *data, size_t size, size_t *width, uint8_t *chr)
 {
@@ -1920,13 +1928,18 @@ is_codefence(const uint8_t *data, size_t size, size_t *width, uint8_t *chr)
 	return i;
 }
 
-/* expects single line, checks if it's a codefence and extracts language */
+/* 
+ * Expects single line, checks if it's a codefence and extracts
+ * language. 
+ */
 static size_t
-parse_codefence(uint8_t *data, size_t size, hbuf *lang, size_t *width, uint8_t *chr)
+parse_codefence(uint8_t *data, size_t size, 
+	hbuf *lang, size_t *width, uint8_t *chr)
 {
 	size_t i, w, lang_start;
 
 	i = w = is_codefence(data, size, width, chr);
+
 	if (i == 0)
 		return 0;
 
@@ -1942,26 +1955,36 @@ parse_codefence(uint8_t *data, size_t size, hbuf *lang, size_t *width, uint8_t *
 	lang->size = i - lang_start;
 
 	/* Avoid parsing a codespan as a fence */
+
 	i = lang_start + 2;
-	while (i < size && !(data[i] == *chr && data[i-1] == *chr && data[i-2] == *chr)) i++;
-	if (i < size) return 0;
+
+	while (i < size && 
+	       ! (data[i] == *chr && 
+		  data[i-1] == *chr && 
+		  data[i-2] == *chr)) 
+		i++;
+
+	if (i < size) 
+		return 0;
 
 	return w;
 }
 
-/* is_atxheader • returns whether the line is a hash-prefixed header */
+/* 
+ * Returns whether the line is a hash-prefixed header.
+ */
 static int
 is_atxheader(hdoc *doc, const uint8_t *data, size_t size)
 {
+	size_t	 level;
+
 	if (data[0] != '#')
 		return 0;
 
 	if (doc->ext_flags & LOWDOWN_SPHD) {
-		size_t level = 0;
-
+		level = 0;
 		while (level < size && level < 6 && data[level] == '#')
 			level++;
-
 		if (level < size && data[level] != ' ')
 			return 0;
 	}
@@ -2002,11 +2025,12 @@ is_next_headerline(const uint8_t *data, size_t size)
 
 	if (++i >= size)
 		return 0;
-
 	return is_headerline(data + i, size - i);
 }
 
-/* prefix_quote • returns blockquote prefix length */
+/* 
+ * Returns blockquote prefix length.
+ */
 static size_t
 prefix_quote(const uint8_t *data, size_t size)
 {
@@ -2016,22 +2040,24 @@ prefix_quote(const uint8_t *data, size_t size)
 
 	if (i < size && data[i] == '>')
 		return countspaces(data, i + 1, size, 1);
-
 	return 0;
 }
 
-/* prefix_code • returns prefix length for block code*/
+/* 
+ * Returns prefix length for block code.
+ */
 static size_t
 prefix_code(const uint8_t *data, size_t size)
 {
+
 	if (countspaces(data, 0, size, 4) == 4)
 		return 4;
-
 	return 0;
-
 }
 
-/* prefix_oli • returns ordered list item prefix */
+/* 
+ * Returns ordered list item prefix.
+ */
 static size_t
 prefix_oli(uint8_t *data, size_t size, uint8_t **num, size_t *numsz)
 {
@@ -2061,7 +2087,9 @@ prefix_oli(uint8_t *data, size_t size, uint8_t **num, size_t *numsz)
 	return i + 2;
 }
 
-/* prefix_uli • returns ordered list item prefix */
+/* 
+ * Returns ordered list item prefix.
+ */
 static size_t
 prefix_uli(uint8_t *data, size_t size)
 {
@@ -2070,7 +2098,8 @@ prefix_uli(uint8_t *data, size_t size)
 	i = countspaces(data, 0, size, 3);
 
 	if (i + 1 >= size ||
-		(data[i] != '*' && data[i] != '+' && data[i] != '-') ||
+	    (data[i] != '*' && data[i] != '+' && 
+	     data[i] != '-') ||
 		data[i + 1] != ' ')
 		return 0;
 
@@ -2080,30 +2109,37 @@ prefix_uli(uint8_t *data, size_t size)
 	return i + 2;
 }
 
-
-
-/* parse_blockquote • handles parsing of a blockquote fragment */
+/* 
+ * Handles parsing of a blockquote fragment.
+ */
 static size_t
 parse_blockquote(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 {
 	size_t beg, end = 0, pre, work_size = 0;
 	uint8_t *work_data = NULL;
 	hbuf *out = NULL;
+	struct lowdown_node *n;
 
 	out = newbuf(doc, BUFFER_BLOCK);
 	beg = 0;
 	while (beg < size) {
-		for (end = beg + 1; end < size && data[end - 1] != '\n'; end++);
+		for (end = beg + 1; 
+		     end < size && data[end - 1] != '\n'; 
+		     end++)
+			continue;
 
 		pre = prefix_quote(data + beg, end - beg);
 
-		if (pre)
-			beg += pre; /* skipping prefix */
+		/* 
+		 * Skip prefix or empty line followed by non-quote line.
+		 */
 
-		/* empty line followed by non-quote line */
+		if (pre)
+			beg += pre;
 		else if (is_empty(data + beg, end - beg) &&
-				(end >= size || (prefix_quote(data + end, size - end) == 0 &&
-				!is_empty(data + end, size - end))))
+			 (end >= size || 
+			  (prefix_quote(data + end, size - end) == 0 &&
+			   !is_empty(data + end, size - end))))
 			break;
 
 		if (beg < end) { /* copy into the in-place working buffer */
@@ -2117,9 +2153,11 @@ parse_blockquote(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 		beg = end;
 	}
 
+	n = pushnode(doc, LOWDOWN_BLOCKQUOTE);
 	parse_block(out, doc, work_data, work_size);
 	if (doc->md.blockquote)
 		doc->md.blockquote(ob, out, doc->data);
+	popnode(doc, n);
 	popbuf(doc, BUFFER_BLOCK);
 	return end;
 }
@@ -2220,30 +2258,41 @@ parse_paragraph(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 
 		header_work = newbuf(doc, BUFFER_SPAN);
 
+		n = pushnode(doc, LOWDOWN_HEADER);
+		/* XXX: set level */
+
 		parse_inline(header_work, doc, 
 			work.data, work.size, 1);
 
 		if (NULL != doc->md.header)
 			doc->md.header(ob, header_work, level, doc->data);
 
+		popnode(doc, n);
 		popbuf(doc, BUFFER_SPAN);
 	}
 
 	return end;
 }
 
-/* parse_fencedcode • handles parsing of a block-level code fragment */
+/* 
+ * Handles parsing of a block-level code fragment.
+ */
 static size_t
 parse_fencedcode(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 {
-	hbuf text = { NULL, 0, 0, 0, 0 };
-	hbuf lang = { NULL, 0, 0, 0, 0 };
-	size_t i = 0, text_start, line_start;
-	size_t w, w2;
-	size_t width, width2;
-	uint8_t chr, chr2;
+	hbuf	 text;
+	hbuf	 lang;
+	size_t	 i = 0, text_start, line_start;
+	size_t	 w, w2;
+	size_t	 width, width2;
+	uint8_t	 chr, chr2;
+	struct lowdown_node *n;
 
-	/* parse codefence line */
+	memset(&text, 0, sizeof(hbuf));
+	memset(&lang, 0, sizeof(hbuf));
+
+	/* Parse codefence line. */
+
 	while (i < size && data[i] != '\n')
 		i++;
 
@@ -2251,14 +2300,17 @@ parse_fencedcode(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 	if (!w)
 		return 0;
 
-	/* search for end */
+	/* Search for end. */
+
 	i++;
 	text_start = i;
 	while ((line_start = i) < size) {
 		while (i < size && data[i] != '\n')
 			i++;
 
-		w2 = is_codefence(data + line_start, i - line_start, &width2, &chr2);
+		w2 = is_codefence(data + line_start, 
+			i - line_start, &width2, &chr2);
+
 		if (w == w2 && width == width2 && chr == chr2 &&
 		    is_empty(data + (line_start+w), i - (line_start+w)))
 			break;
@@ -2269,37 +2321,59 @@ parse_fencedcode(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 	text.data = data + text_start;
 	text.size = line_start - text_start;
 
-	if (doc->md.blockcode)
-		doc->md.blockcode(ob, text.size ? &text : NULL, lang.size ? &lang : NULL, doc->data);
+	n = pushnode(doc, LOWDOWN_BLOCKCODE);
+	pushbuffer(&n->rndr_blockcode.text, 
+		&n->rndr_blockcode.textsz, 
+		data + text_start, line_start - text_start);
+	pushbuffer(&n->rndr_blockcode.lang, 
+		&n->rndr_blockcode.langsz, 
+		lang.data, lang.size);
 
+	if (doc->md.blockcode)
+		doc->md.blockcode(ob, text.size ? &text : NULL, 
+			lang.size ? &lang : NULL, doc->data);
+
+	popnode(doc, n);
 	return i;
 }
 
 static size_t
 parse_blockcode(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 {
-	size_t beg, end, pre;
-	hbuf *work = NULL;
+	size_t	 beg, end, pre;
+	hbuf	*work = NULL;
+	struct lowdown_node *n;
 
 	work = newbuf(doc, BUFFER_BLOCK);
 
 	beg = 0;
 	while (beg < size) {
-		for (end = beg + 1; end < size && data[end - 1] != '\n'; end++) {};
+		for (end = beg + 1; 
+		     end < size && data[end - 1] != '\n'; 
+		     end++) 
+			continue;
+
 		pre = prefix_code(data + beg, end - beg);
 
+		/* 
+		 * Skip prefix or non-empty non-prefixed line breaking
+		 * the pre. 
+		 */
+
 		if (pre)
-			beg += pre; /* skipping prefix */
+			beg += pre; 
 		else if (!is_empty(data + beg, end - beg))
-			/* non-empty non-prefixed line breaks the pre */
 			break;
 
 		if (beg < end) {
-			/* verbatim copy to the working buffer,
-				escaping entities */
+			/* 
+			 * Verbatim copy to the working buffer, escaping
+			 * entities. 
+			 */
 			if (is_empty(data + beg, end - beg))
 				hbuf_putc(work, '\n');
-			else hbuf_put(work, data + beg, end - beg);
+			else 
+				hbuf_put(work, data + beg, end - beg);
 		}
 		beg = end;
 	}
@@ -2309,9 +2383,13 @@ parse_blockcode(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 
 	hbuf_putc(work, '\n');
 
+	n = pushnode(doc, LOWDOWN_BLOCKCODE);
+	pushbuffer(&n->rndr_blockcode.text, 
+		&n->rndr_blockcode.textsz, 
+		work->data, work->size);
 	if (doc->md.blockcode)
 		doc->md.blockcode(ob, work, NULL, doc->data);
-
+	popnode(doc, n);
 	popbuf(doc, BUFFER_BLOCK);
 	return beg;
 }
@@ -2329,6 +2407,7 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 	int		 in_empty = 0, has_inside_empty = 0,
 			 in_fence = 0;
 	size_t 		 has_next_uli = 0, has_next_oli = 0;
+	struct lowdown_node *n;
 
 	/* Keeping track of the first indentation prefix. */
 
@@ -2440,52 +2519,68 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 	if (has_inside_empty)
 		*flags |= HLIST_BLOCK;
 
+	n = pushnode(doc, LOWDOWN_LISTITEM);
+
 	if (*flags & HLIST_BLOCK) {
 		/* intermediate render of block li */
 		if (sublist && sublist < work->size) {
-			parse_block(inter, doc, work->data, sublist);
-			parse_block(inter, doc, work->data + sublist, work->size - sublist);
+			parse_block(inter, doc, 
+				work->data, sublist);
+			parse_block(inter, doc, 
+				work->data + sublist, 
+				work->size - sublist);
 		} else
-			parse_block(inter, doc, work->data, work->size);
+			parse_block(inter, doc, 
+				work->data, work->size);
 	} else {
 		/* intermediate render of inline li */
 		if (sublist && sublist < work->size) {
-			parse_inline(inter, doc, work->data, sublist, buf_newln(ob));
-			parse_block(inter, doc, work->data + sublist, work->size - sublist);
-		}
-		else
-			parse_inline(inter, doc, work->data, work->size, buf_newln(ob));
+			parse_inline(inter, doc, 
+				work->data, sublist, buf_newln(ob));
+			parse_block(inter, doc, 
+				work->data + sublist, 
+				work->size - sublist);
+		} else
+			parse_inline(inter, doc, 
+				work->data, work->size, buf_newln(ob));
 	}
 
 	/* render of li itself */
 	if (doc->md.listitem)
 		doc->md.listitem(ob, inter, *flags, doc->data, num);
 
+	popnode(doc, n);
 	popbuf(doc, BUFFER_SPAN);
 	popbuf(doc, BUFFER_SPAN);
 	return beg;
 }
 
 
-/* parse_list • parsing ordered or unordered list block */
+/* 
+ * Parsing ordered or unordered list block.
+ */
 static size_t
 parse_list(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hlist_fl flags)
 {
-	hbuf *work = NULL;
-	size_t i = 0, j, k = 1;
+	hbuf	*work = NULL;
+	size_t	 i = 0, j, k = 1;
+	struct lowdown_node *n;
 
 	work = newbuf(doc, BUFFER_BLOCK);
+	n = pushnode(doc, LOWDOWN_LIST);
 
 	while (i < size) {
-		j = parse_listitem(work, doc, data + i, size - i, &flags, k++);
+		j = parse_listitem(work, doc, 
+			data + i, size - i, &flags, k++);
 		i += j;
-
 		if (!j || (flags & HOEDOWN_LI_END))
 			break;
 	}
 
 	if (doc->md.list)
 		doc->md.list(ob, work, flags, doc->data);
+
+	popnode(doc, n);
 	popbuf(doc, BUFFER_BLOCK);
 	return i;
 }
@@ -2498,6 +2593,7 @@ parse_atxheader(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 {
 	size_t 	 level = 0, i, end, skip;
 	hbuf	*work;
+	struct lowdown_node *n;
 
 	while (level < size && level < 6 && data[level] == '#')
 		level++;
@@ -2516,40 +2612,56 @@ parse_atxheader(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 		end--;
 
 	if (end > i) {
+		n = pushnode(doc, LOWDOWN_HEADER);
 		work = newbuf(doc, BUFFER_SPAN);
-		parse_inline(work, doc, data + i, end - i, buf_newln(ob));
+		parse_inline(work, doc, 
+			data + i, end - i, buf_newln(ob));
 		if (doc->md.header)
-			doc->md.header(ob, work, (int)level, doc->data);
+			doc->md.header(ob, work, level, doc->data);
+		popnode(doc, n);
 		popbuf(doc, BUFFER_SPAN);
 	}
 
 	return skip;
 }
 
-/* parse_footnote_def • parse a single footnote definition */
+/* 
+ * Parse a single footnote definition.
+ */
 static void
 parse_footnote_def(hbuf *ob, hdoc *doc, unsigned int num, uint8_t *data, size_t size)
 {
-	hbuf *work = NULL;
+	hbuf	*work = NULL;
+	struct lowdown_node *n;
+
 	work = newbuf(doc, BUFFER_SPAN);
+
+	n = pushnode(doc, LOWDOWN_FOOTNOTE_DEF);
 
 	parse_block(work, doc, data, size);
 
 	if (doc->md.footnote_def)
-	doc->md.footnote_def(ob, work, num, doc->data);
+		doc->md.footnote_def(ob, work, num, doc->data);
+
+	popnode(doc, n);
 	popbuf(doc, BUFFER_SPAN);
 }
 
-/* parse_footnote_list • render the contents of the footnotes */
+/* 
+ * Render the contents of the footnotes.
+ */
 static void
 parse_footnote_list(hbuf *ob, hdoc *doc, struct footnote_list *footnotes)
 {
 	hbuf			*work = NULL;
 	struct footnote_item	*item;
 	struct footnote_ref	*ref;
+	struct lowdown_node	*n;
 
 	if (footnotes->count == 0)
 		return;
+
+	n = pushnode(doc, LOWDOWN_FOOTNOTES);
 
 	work = newbuf(doc, BUFFER_BLOCK);
 
@@ -2563,81 +2675,93 @@ parse_footnote_list(hbuf *ob, hdoc *doc, struct footnote_list *footnotes)
 
 	if (doc->md.footnotes)
 		doc->md.footnotes(ob, work, doc->data);
+
+	popnode(doc, n);
 	popbuf(doc, BUFFER_BLOCK);
 }
 
-/* htmlblock_is_end • check for end of HTML block : </tag>( *)\n */
-/*	returns tag length on match, 0 otherwise */
-/*	assumes data starts with "<" */
+/* 
+ * Check for end of HTML block : </tag>( *)\n 
+ * Returns tag length on match, 0 otherwise.
+ * Assumes data starts with "<".
+ */
 static size_t
-htmlblock_is_end(
-	const char *tag,
-	size_t tag_len,
-	hdoc *doc,
-	const uint8_t *data,
-	size_t size)
+htmlblock_is_end(const char *tag, size_t tag_len,
+	hdoc *doc, const uint8_t *data, size_t size)
 {
 	size_t i = tag_len + 3, w;
 
-	/* try to match the end tag */
-	/* note: we're not considering tags like "</tag >" which are still valid */
+	/* 
+	 * Try to match the end tag 
+	 * Note: we're not considering tags like "</tag >" which are
+	 * still valid.
+	 */
+
 	if (i > size ||
 		data[1] != '/' ||
 		strncasecmp((char *)data + 2, tag, tag_len) != 0 ||
 		data[tag_len + 2] != '>')
 		return 0;
 
-	/* rest of the line must be empty */
+	/* Rest of the line must be empty. */
+
 	if ((w = is_empty(data + i, size - i)) == 0 && i < size)
 		return 0;
 
 	return i + w;
 }
 
-/* htmlblock_find_end • try to find HTML block ending tag */
-/*	returns the length on match, 0 otherwise */
+/* 
+ * Try to find HTML block ending tag.
+ * Returns the length on match, 0 otherwise.
+ */
 static size_t
-htmlblock_find_end(
-	const char *tag,
-	size_t tag_len,
-	hdoc *doc,
-	const uint8_t *data,
-	size_t size)
+htmlblock_find_end( const char *tag, size_t tag_len,
+	hdoc *doc, const uint8_t *data, size_t size)
 {
 	size_t i = 0, w;
 
 	while (1) {
-		while (i < size && data[i] != '<') i++;
-		if (i >= size) return 0;
+		while (i < size && data[i] != '<') 
+			i++;
+		if (i >= size) 
+			return 0;
 
-		w = htmlblock_is_end(tag, tag_len, doc, data + i, size - i);
-		if (w) return i + w;
+		w = htmlblock_is_end(tag, 
+			tag_len, doc, data + i, size - i);
+		if (w) 
+			return i + w;
 		i++;
 	}
 }
 
-/* htmlblock_find_end_strict • try to find end of HTML block in strict mode */
-/*	(it must be an unindented line, and have a blank line afterwads) */
-/*	returns the length on match, 0 otherwise */
+/* 
+ * Try to find end of HTML block in strict mode (it must be an
+ * unindented line, and have a blank line afterwards).  
+ * Returns the length on match, 0 otherwise.
+ */
 static size_t
-htmlblock_find_end_strict(
-	const char *tag,
-	size_t tag_len,
-	hdoc *doc,
-	const uint8_t *data,
-	size_t size)
+htmlblock_find_end_strict(const char *tag, size_t tag_len,
+	hdoc *doc, const uint8_t *data, size_t size)
 {
 	size_t i = 0, mark;
 
 	while (1) {
 		mark = i;
-		while (i < size && data[i] != '\n') i++;
-		if (i < size) i++;
-		if (i == mark) return 0;
+		while (i < size && data[i] != '\n') 
+			i++;
+		if (i < size) 
+			i++;
+		if (i == mark) 
+			return 0;
 
-		if (data[mark] == ' ' && mark > 0) continue;
-		mark += htmlblock_find_end(tag, tag_len, doc, data + mark, i - mark);
-		if (mark == i && (is_empty(data + i, size - i) || i >= size)) break;
+		if (data[mark] == ' ' && mark > 0) 
+			continue;
+		mark += htmlblock_find_end(tag, tag_len, 
+			doc, data + mark, i - mark);
+		if (mark == i && 
+		    (is_empty(data + i, size - i) || i >= size)) 
+			break;
 	}
 
 	return i;
@@ -2691,15 +2815,20 @@ hhtml_find_block(const char *str, size_t len)
  * Parsing of inline HTML block.
  */
 static size_t
-parse_htmlblock(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int do_render)
+parse_htmlblock(hbuf *ob, hdoc *doc, 
+	uint8_t *data, size_t size, int do_render)
 {
-	hbuf work = { NULL, 0, 0, 0, 0 };
-	size_t i, j = 0, tag_len, tag_end;
-	const char *curtag = NULL;
+	hbuf	 	 work;
+	size_t	 	 i, j = 0, tag_len, tag_end;
+	const char	*curtag = NULL;
+	struct lowdown_node *n;
+
+	memset(&work, 0, sizeof(hbuf));
 
 	work.data = data;
 
-	/* identification of the opening tag */
+	/* Identification of the opening tag. */
+
 	if (size < 2 || data[0] != '<')
 		return 0;
 
@@ -2710,31 +2839,41 @@ parse_htmlblock(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int do_render)
 	if (i < size)
 		curtag = hhtml_find_block((char *)data + 1, i - 1);
 
-	/* handling of special cases */
+	/* Handling of special cases. */
+
 	if (!curtag) {
+		/* HTML comment, laxist form. */
 
-		/* HTML comment, laxist form */
-		if (size > 5 && data[1] == '!' && data[2] == '-' && data[3] == '-') {
+		if (size > 5 && data[1] == '!' && 
+		    data[2] == '-' && data[3] == '-') {
 			i = 5;
-
-			while (i < size && !(data[i - 2] == '-' && data[i - 1] == '-' && data[i] == '>'))
+			while (i < size && !(data[i - 2] == '-' && 
+			       data[i - 1] == '-' && data[i] == '>'))
 				i++;
-
 			i++;
 
 			if (i < size)
 				j = is_empty(data + i, size - i);
 
 			if (j) {
+				n = pushnode(doc, LOWDOWN_BLOCKHTML);
 				work.size = i + j;
 				if (do_render && doc->md.blockhtml)
-					doc->md.blockhtml(ob, &work, doc->data);
+					doc->md.blockhtml(ob, 
+						&work, doc->data);
+				popnode(doc, n);
 				return work.size;
 			}
 		}
 
-		/* HR, which is the only self-closing block tag considered */
-		if (size > 4 && (data[1] == 'h' || data[1] == 'H') && (data[2] == 'r' || data[2] == 'R')) {
+		/* 
+		 * HR, which is the only self-closing block tag
+		 * considered.
+		 */
+
+		if (size > 4 && 
+		    (data[1] == 'h' || data[1] == 'H') && 
+		    (data[2] == 'r' || data[2] == 'R')) {
 			i = 3;
 			while (i < size && data[i] != '>')
 				i++;
@@ -2743,34 +2882,48 @@ parse_htmlblock(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int do_render)
 				i++;
 				j = is_empty(data + i, size - i);
 				if (j) {
+					n = pushnode(doc, LOWDOWN_BLOCKHTML);
 					work.size = i + j;
 					if (do_render && doc->md.blockhtml)
 						doc->md.blockhtml(ob, &work, doc->data);
+					popnode(doc, n);
 					return work.size;
 				}
 			}
 		}
 
-		/* no special case recognised */
+		/* No special case recognised. */
+
 		return 0;
 	}
 
-	/* looking for a matching closing tag in strict mode */
-	tag_len = strlen(curtag);
-	tag_end = htmlblock_find_end_strict(curtag, tag_len, doc, data, size);
+	/* Looking for a matching closing tag in strict mode. */
 
-	/* if not found, trying a second pass looking for indented match */
-	/* but not if tag is "ins" or "del" (following original Markdown.pl) */
-	if (!tag_end && strcmp(curtag, "ins") != 0 && strcmp(curtag, "del") != 0)
-		tag_end = htmlblock_find_end(curtag, tag_len, doc, data, size);
+	tag_len = strlen(curtag);
+	tag_end = htmlblock_find_end_strict
+		(curtag, tag_len, doc, data, size);
+
+	/* 
+	 * If not found, trying a second pass looking for indented match
+	 * but not if tag is "ins" or "del" (following original
+	 * Markdown.pl).
+	 */
+
+	if (!tag_end && strcmp(curtag, "ins") != 0 && 
+	    strcmp(curtag, "del") != 0)
+		tag_end = htmlblock_find_end(curtag, 
+			tag_len, doc, data, size);
 
 	if (!tag_end)
 		return 0;
 
-	/* the end of the block has been found */
+	/* The end of the block has been found. */
+
+	n = pushnode(doc, LOWDOWN_BLOCKHTML);
 	work.size = tag_end;
 	if (do_render && doc->md.blockhtml)
 		doc->md.blockhtml(ob, &work, doc->data);
+	popnode(doc, n);
 
 	return tag_end;
 }
@@ -3759,6 +3912,30 @@ lowdown_node_free(struct lowdown_node *root, size_t tabs)
 	case (LOWDOWN_TRIPLE_EMPHASIS):
 		fprintf(stderr, "LOWDOWN_TRIPLE_EMPHASIS\n");
 		break;
+	case (LOWDOWN_SUPERSCRIPT):
+		fprintf(stderr, "LOWDOWN_SUPERSCRIPT\n");
+		break;
+	case (LOWDOWN_HEADER):
+		fprintf(stderr, "LOWDOWN_HEADER\n");
+		break;
+	case (LOWDOWN_BLOCKQUOTE):
+		fprintf(stderr, "LOWDOWN_BLOCKQUOTE\n");
+		break;
+	case (LOWDOWN_BLOCKHTML):
+		fprintf(stderr, "LOWDOWN_BLOCKHTML\n");
+		break;
+	case (LOWDOWN_FOOTNOTE_DEF):
+		fprintf(stderr, "LOWDOWN_FOOTNOTE_DEF\n");
+		break;
+	case (LOWDOWN_FOOTNOTES):
+		fprintf(stderr, "LOWDOWN_FOOTNOTES\n");
+		break;
+	case (LOWDOWN_LIST):
+		fprintf(stderr, "LOWDOWN_LIST\n");
+		break;
+	case (LOWDOWN_LISTITEM):
+		fprintf(stderr, "LOWDOWN_LISTITEM\n");
+		break;
 	case (LOWDOWN_ENTITY):
 		fprintf(stderr, "LOWDOWN_ENTITY (%zu bytes)\n",
 			root->rndr_entity.textsz);
@@ -3776,6 +3953,11 @@ lowdown_node_free(struct lowdown_node *root, size_t tabs)
 			root->rndr_link.textsz,
 			root->rndr_link.linksz);
 		break;
+	case (LOWDOWN_BLOCKCODE):
+		fprintf(stderr, "LOWDOWN_BLOCKCODE (%zu, %zu bytes)\n",
+			root->rndr_blockcode.textsz,
+			root->rndr_blockcode.langsz);
+		break;
 	case (LOWDOWN_NORMAL_TEXT):
 		fprintf(stderr, "LOWDOWN_NORMAL_TEXT (%zu bytes)\n",
 			root->rndr_normal_text.textsz);
@@ -3784,6 +3966,7 @@ lowdown_node_free(struct lowdown_node *root, size_t tabs)
 		fprintf(stderr, "???\n");
 		break;
 	}
+
 
 	while (NULL != (n = TAILQ_FIRST(&root->children))) {
 		TAILQ_REMOVE(&root->children, n, entries);
