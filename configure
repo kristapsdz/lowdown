@@ -59,7 +59,7 @@ echo "config.log: writing..."
 #----------------------------------------------------------------------
 
 CC=`printf "all:\\n\\t@echo \\\$(CC)\\n" | env -i make -sf -`
-CFLAGS="-g -W -Wall -Wmissing-prototypes -Wstrict-prototypes -Wwrite-strings"
+CFLAGS="-g -W -Wall -Wextra -Wmissing-prototypes -Wstrict-prototypes -Wwrite-strings"
 CFLAGS="${CFLAGS} -Wno-unused-parameter"
 LDADD=
 LDFLAGS=
