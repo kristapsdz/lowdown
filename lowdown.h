@@ -124,6 +124,12 @@ struct	lowdown_node {
 			char *link;
 			size_t linksz;
 		} rndr_link; 
+		struct rndr_blockcode {
+			char *text;
+			size_t textsz;
+			char *lang;
+			size_t langsz;
+		} rndr_blockcode; 
 	};
 	struct lowdown_node *parent;
 	struct lowdown_nodeq children;
