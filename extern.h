@@ -39,14 +39,6 @@
 # endif
 #endif
 
-typedef struct hbuf {
-	uint8_t		*data;	/* actual character data */
-	size_t		 size;	/* size of the string */
-	size_t		 asize;	/* allocated size (0 = volatile) */
-	size_t		 unit;	/* realloc unit size (0 = read-only) */
-	int 		 buffer_free; /* obj should be freed */
-} hbuf;
-
 typedef struct hstack {
 	void		**item;
 	size_t		  size;
@@ -54,23 +46,9 @@ typedef struct hstack {
 } hstack;
 
 typedef enum hlist_fl {
-	HLIST_ORDERED = (1 << 0),
-	HLIST_BLOCK = (1 << 1) /* <li> containing block data */
+	HLIST_FL_ORDERED = (1 << 0),
+	HLIST_FL_BLOCK = (1 << 1) /* <li> containing block data */
 } hlist_fl;
-
-typedef enum htbl_flags {
-	HTBL_ALIGN_LEFT = 1,
-	HTBL_ALIGN_RIGHT = 2,
-	HTBL_ALIGN_CENTER = 3,
-	HTBL_ALIGNMASK = 3,
-	HTBL_HEADER = 4
-} htbl_flags;
-
-typedef enum halink_type {
-	HALINK_NONE, /* used internally when it is not an autolink */
-	HALINK_NORMAL, /* normal http/http/ftp/mailto/etc link */
-	HALINK_EMAIL /* e-mail link without explit mailto: */
-} halink_type;
 
 struct hdoc;
 

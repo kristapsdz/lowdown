@@ -3,7 +3,7 @@
  * Copyright (c) 2008, Natacha Porté
  * Copyright (c) 2011, Vicent Martí
  * Copyright (c) 2014, Xavier Mendez, Devin Torres and the Hoedown authors
- * Copyright (c) 2016, Kristaps Dzonsons
+ * Copyright (c) 2016--2017, Kristaps Dzonsons
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -173,19 +173,18 @@ pushnode(hdoc *doc, enum lowdown_rndrt t)
 }
 
 static void
-pushbuffer(char **text, size_t *textsz, 
-	const uint8_t *data, size_t datasz)
+pushbuffer(hbuf *buf, const uint8_t *data, size_t datasz)
 {
 
-	*textsz = 0;
-	*text = NULL;
+	memset(&buf, 0, sizeof(hbuf));
 
 	if (0 == datasz)
 		return;
 
-	*textsz = datasz;
-	*text = xmalloc(*textsz);
-	memcpy(*text, data, *textsz);
+	buf->data = malloc(datasz);
+	buf->size = buf->asize = datasz;
+	buf->buffer_free = 1;
+	memcpy(buf->data, data, datasz);
 }
 
 static void
@@ -619,7 +618,6 @@ parse_inline(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int nln)
 
 		n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 		pushbuffer(&n->rndr_normal_text.text, 
-			&n->rndr_normal_text.textsz, 
 			data + i, end - i);
 
 		/* 
@@ -986,6 +984,7 @@ parse_math(hbuf *ob, hdoc *doc, uint8_t *data,
 {
 	hbuf	 text;
 	size_t	 i = delimsz;
+	struct lowdown_node *n;
 
 	memset(&text, 0, sizeof(hbuf));
 
@@ -1025,6 +1024,10 @@ parse_math(hbuf *ob, hdoc *doc, uint8_t *data,
 			is_empty_all(data + i, size - i);
 
 	/* Call callback. */
+
+	n = pushnode(doc, LOWDOWN_MATH_BLOCK);
+	n->rndr_math.displaymode = displaymode;
+	popnode(doc, n);
 
 	if (doc->md.math(ob, &text, displaymode, doc->data))
 		return i;
@@ -1185,8 +1188,7 @@ char_escape(hbuf *ob, hdoc *doc,
 			return 0;
 
 		n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
-		pushbuffer(&n->rndr_normal_text.text, 
-			&n->rndr_normal_text.textsz, data + 1, 1);
+		pushbuffer(&n->rndr_normal_text.text, data + 1, 1);
 		if (doc->md.normal_text) {
 			work.data = data + 1;
 			work.size = 1;
@@ -1196,8 +1198,7 @@ char_escape(hbuf *ob, hdoc *doc,
 		popnode(doc, n);
 	} else if (size == 1) {
 		n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
-		pushbuffer(&n->rndr_normal_text.text, 
-			&n->rndr_normal_text.textsz, data, 1);
+		pushbuffer(&n->rndr_normal_text.text, data, 1);
 		if (doc->md.normal_text) {
 			work.data = data;
 			work.size = 1;
@@ -1235,8 +1236,7 @@ char_entity(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size, int 
 		return 0; /* lone '&' */
 
 	n = pushnode(doc, LOWDOWN_ENTITY);
-	pushbuffer(&n->rndr_entity.text, 
-		&n->rndr_entity.textsz, data, end);
+	pushbuffer(&n->rndr_entity.text, data, end);
 
 	if (doc->md.entity) {
 		work.data = data;
@@ -1272,8 +1272,8 @@ char_langle_tag(hbuf *ob, hdoc *doc,
 		    altype != HALINK_NONE) {
 			hbuf *u_link = newbuf(doc, BUFFER_SPAN);
 			n = pushnode(doc, LOWDOWN_LINK_AUTO);
+			n->rndr_autolink.type = altype;
 			pushbuffer(&n->rndr_autolink.link, 
-				&n->rndr_autolink.linksz, 
 				data + 1, end - 2);
 			work.data = data + 1;
 			work.size = end - 2;
@@ -1284,8 +1284,7 @@ char_langle_tag(hbuf *ob, hdoc *doc,
 			popbuf(doc, BUFFER_SPAN);
 		} else if (doc->md.raw_html) {
 			n = pushnode(doc, LOWDOWN_RAW_HTML);
-			pushbuffer(&n->rndr_raw_html.text, 
-				&n->rndr_raw_html.textsz, data, end);
+			pushbuffer(&n->rndr_raw_html.text, data, end);
 			ret = doc->md.raw_html(ob, &work, doc->data);
 			popnode(doc, n);
 		}
@@ -1322,11 +1321,8 @@ char_autolink_www(hbuf *ob, hdoc *doc,
 			ob->size = 0;
 
 		n = pushnode(doc, LOWDOWN_LINK);
-		pushbuffer(&n->rndr_link.text, 
-			&n->rndr_link.textsz, 
-			link->data, link->size);
+		pushbuffer(&n->rndr_link.text, link->data, link->size);
 		pushbuffer(&n->rndr_link.link, 
-			&n->rndr_link.linksz, 
 			link_url->data, link_url->size);
 
 		if (doc->md.normal_text) {
@@ -1366,8 +1362,8 @@ char_autolink_email(hbuf *ob, hdoc *doc,
 
 	if (link_len > 0) {
 		n = pushnode(doc, LOWDOWN_LINK_AUTO);
+		n->rndr_autolink.type = HALINK_EMAIL;
 		pushbuffer(&n->rndr_autolink.link, 
-			&n->rndr_autolink.linksz, 
 			link->data, link->size);
 		if (ob->size > rewind) {
 			ob->size -= rewind;
@@ -1400,8 +1396,8 @@ char_autolink_url(hbuf *ob, hdoc *doc,
 
 	if (link_len > 0) {
 		n = pushnode(doc, LOWDOWN_LINK_AUTO);
+		n->rndr_autolink.type = HALINK_NORMAL;
 		pushbuffer(&n->rndr_autolink.link, 
-			&n->rndr_autolink.linksz, 
 			link->data, link->size);
 		if (ob->size > rewind) {
 			ob->size -= rewind;
@@ -1450,6 +1446,7 @@ char_link(hbuf *ob, hdoc *doc,
 		 is_metadata;
 	hbuf 	 id, work;
 	struct footnote_ref *fr;
+	struct lowdown_node *n;
 
 	org_work_size = doc->work_bufs[BUFFER_SPAN].size;
 	is_img = offset && data[-1] == '!' && 
@@ -1496,11 +1493,14 @@ char_link(hbuf *ob, hdoc *doc,
 
 		if (fr && !fr->is_used) {
 			add_footnote_ref(&doc->footnotes_used, fr);
+			n = pushnode(doc, LOWDOWN_FOOTNOTE_REF);
+			n->rndr_footnote_ref.num = fr->num;
 			fr->is_used = 1;
 			fr->num = doc->footnotes_used.count;
 			if (doc->md.footnote_ref)
 				ret = doc->md.footnote_ref
 					(ob, fr->num, doc->data);
+			popnode(doc, n);
 		}
 
 		goto cleanup;
@@ -1525,11 +1525,15 @@ char_link(hbuf *ob, hdoc *doc,
 			    sz == id.size && 
 			    0 == strncmp(doc->m[j].key, 
 				  	 (char *)id.data, sz)) {
+				n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 				memset(&work, 0, sizeof(hbuf));
 				work.data = (uint8_t *)doc->m[j].value;
 				work.size = strlen(doc->m[j].value);
+				pushbuffer(&n->rndr_normal_text.text,
+					work.data, work.size);
 				doc->md.normal_text(ob, 
 					&work, doc->data, nln);
+				popnode(doc, n);
 			}
 		}
 
@@ -1779,9 +1783,27 @@ again:
 
 	/* calling the relevant rendering function */
 	if (is_img) {
-		ret = doc->md.image(ob, u_link, title, dims, content, doc->data);
+		n = pushnode(doc, LOWDOWN_IMAGE);
+		pushbuffer(&n->rndr_image.link,
+			u_link->data, u_link->size);
+		pushbuffer(&n->rndr_image.title,
+			title->data, title->size);
+		pushbuffer(&n->rndr_image.dims,
+			dims->data, dims->size);
+		pushbuffer(&n->rndr_image.alt,
+			content->data, content->size);
+		ret = doc->md.image(ob, u_link, 
+			title, dims, content, doc->data);
+		popnode(doc, n);
 	} else {
-		ret = doc->md.link(ob, content, u_link, title, doc->data, nln);
+		n = pushnode(doc, LOWDOWN_LINK);
+		pushbuffer(&n->rndr_link.link,
+			u_link->data, u_link->size);
+		pushbuffer(&n->rndr_link.text,
+			title->data, title->size);
+		ret = doc->md.link(ob, content, 
+			u_link, title, doc->data, nln);
+		popnode(doc, n);
 	}
 
 	/* cleanup */
@@ -2320,10 +2342,8 @@ parse_fencedcode(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 
 	n = pushnode(doc, LOWDOWN_BLOCKCODE);
 	pushbuffer(&n->rndr_blockcode.text, 
-		&n->rndr_blockcode.textsz, 
 		data + text_start, line_start - text_start);
 	pushbuffer(&n->rndr_blockcode.lang, 
-		&n->rndr_blockcode.langsz, 
 		lang.data, lang.size);
 
 	if (doc->md.blockcode)
@@ -2382,7 +2402,6 @@ parse_blockcode(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 
 	n = pushnode(doc, LOWDOWN_BLOCKCODE);
 	pushbuffer(&n->rndr_blockcode.text, 
-		&n->rndr_blockcode.textsz, 
 		work->data, work->size);
 	if (doc->md.blockcode)
 		doc->md.blockcode(ob, work, NULL, doc->data);
@@ -2484,8 +2503,8 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 			if (pre <= orgpre) {
 				/* if the following item has different list type, we end this list */
 				if (in_empty && (
-					((*flags & HLIST_ORDERED) && has_next_uli) ||
-					(!(*flags & HLIST_ORDERED) && has_next_oli)))
+					((*flags & HLIST_FL_ORDERED) && has_next_uli) ||
+					(!(*flags & HLIST_FL_ORDERED) && has_next_oli)))
 					*flags |= HOEDOWN_LI_END;
 
 				break;
@@ -2514,11 +2533,13 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 
 	/* render of li contents */
 	if (has_inside_empty)
-		*flags |= HLIST_BLOCK;
+		*flags |= HLIST_FL_BLOCK;
 
 	n = pushnode(doc, LOWDOWN_LISTITEM);
+	n->rndr_listitem.flags = *flags;
+	n->rndr_listitem.num = num;
 
-	if (*flags & HLIST_BLOCK) {
+	if (*flags & HLIST_FL_BLOCK) {
 		/* intermediate render of block li */
 		if (sublist && sublist < work->size) {
 			parse_block(inter, doc, 
@@ -2565,6 +2586,7 @@ parse_list(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hlist_fl flags)
 
 	work = newbuf(doc, BUFFER_BLOCK);
 	n = pushnode(doc, LOWDOWN_LIST);
+	n->rndr_list.flags = flags;
 
 	while (i < size) {
 		j = parse_listitem(work, doc, 
@@ -2610,6 +2632,7 @@ parse_atxheader(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 
 	if (end > i) {
 		n = pushnode(doc, LOWDOWN_HEADER);
+		n->rndr_header.level = level;
 		work = newbuf(doc, BUFFER_SPAN);
 		parse_inline(work, doc, 
 			data + i, end - i, buf_newln(ob));
@@ -2634,6 +2657,7 @@ parse_footnote_def(hbuf *ob, hdoc *doc, unsigned int num, uint8_t *data, size_t 
 	work = newbuf(doc, BUFFER_SPAN);
 
 	n = pushnode(doc, LOWDOWN_FOOTNOTE_DEF);
+	n->rndr_footnote_def.num = num;
 
 	parse_block(work, doc, data, size);
 
@@ -2658,7 +2682,7 @@ parse_footnote_list(hbuf *ob, hdoc *doc, struct footnote_list *footnotes)
 	if (footnotes->count == 0)
 		return;
 
-	n = pushnode(doc, LOWDOWN_FOOTNOTES);
+	n = pushnode(doc, LOWDOWN_FOOTNOTES_BLOCK);
 
 	work = newbuf(doc, BUFFER_BLOCK);
 
@@ -2973,6 +2997,9 @@ parse_table_row(hbuf *ob, hdoc *doc, uint8_t *data,
 			cell_end--;
 
 		nn = pushnode(doc, LOWDOWN_TABLE_CELL);
+		nn->rndr_table_cell.flags = col_data[col] | header_flag;
+		nn->rndr_table_cell.col = col;
+		nn->rndr_table_cell.columns = columns;
 
 		parse_inline(cell_work, doc, data + cell_start, 
 			1 + cell_end - cell_start, buf_newln(ob));
@@ -3049,7 +3076,7 @@ parse_table_header(struct lowdown_node **np,
 
 		if (data[i] == ':') {
 			i++; 
-			(*column_data)[col] |= HTBL_ALIGN_LEFT;
+			(*column_data)[col] |= HTBL_FL_ALIGN_LEFT;
 			dashes++;
 		}
 
@@ -3060,7 +3087,7 @@ parse_table_header(struct lowdown_node **np,
 
 		if (i < under_end && data[i] == ':') {
 			i++; 
-			(*column_data)[col] |= HTBL_ALIGN_RIGHT;
+			(*column_data)[col] |= HTBL_FL_ALIGN_RIGHT;
 			dashes++;
 		}
 
@@ -3082,8 +3109,14 @@ parse_table_header(struct lowdown_node **np,
 
 	*np = pushnode(doc, LOWDOWN_TABLE_BLOCK);
 	n = pushnode(doc, LOWDOWN_TABLE_HEADER);
+	n->rndr_table_header.flags = 
+		xcalloc(*columns, sizeof(int));
+	for (i = 0; i < *columns; i++)
+		n->rndr_table_header.flags[i] = (*column_data)[i];
+	n->rndr_table_header.columns = *columns;
+
 	parse_table_row(ob, doc, data, header_end, 
-		*columns, *column_data, HTBL_HEADER);
+		*columns, *column_data, HTBL_FL_HEADER);
 	popnode(doc, n);
 	return under_end + 1;
 }
@@ -3251,7 +3284,7 @@ parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 
 		if (prefix_oli(txt_data, end, NULL, NULL)) {
 			beg += parse_list(ob, doc, 
-				txt_data, end, HLIST_ORDERED);
+				txt_data, end, HLIST_FL_ORDERED);
 			continue;
 		}
 
@@ -3271,6 +3304,7 @@ is_footnote(const uint8_t *data, size_t beg,
 	size_t	 i = 0, ind = 0, start = 0, id_offset, id_end;
 	hbuf	*contents = NULL;
 	int 	 in_empty = 0;
+	struct footnote_ref *ref;
 
 	/* up to 3 optional leading spaces */
 	if (beg + 3 >= end)
@@ -3346,8 +3380,9 @@ is_footnote(const uint8_t *data, size_t beg,
 		*last = start;
 
 	if (list) {
-		struct footnote_ref *ref;
-		ref = create_footnote_ref(list, data + id_offset, id_end - id_offset);
+		ref = create_footnote_ref
+			(list, data + id_offset, 
+			 id_end - id_offset);
 		if (!ref) {
 			hbuf_free(contents);
 			return 0;
@@ -3956,8 +3991,8 @@ lowdown_node_free(struct lowdown_node *root, size_t tabs)
 	case (LOWDOWN_FOOTNOTE_DEF):
 		fprintf(stderr, "LOWDOWN_FOOTNOTE_DEF\n");
 		break;
-	case (LOWDOWN_FOOTNOTES):
-		fprintf(stderr, "LOWDOWN_FOOTNOTES\n");
+	case (LOWDOWN_FOOTNOTES_BLOCK):
+		fprintf(stderr, "LOWDOWN_FOOTNOTES_BLOCK\n");
 		break;
 	case (LOWDOWN_LIST):
 		fprintf(stderr, "LOWDOWN_LIST\n");
@@ -3965,37 +4000,39 @@ lowdown_node_free(struct lowdown_node *root, size_t tabs)
 	case (LOWDOWN_LISTITEM):
 		fprintf(stderr, "LOWDOWN_LISTITEM\n");
 		break;
+	case (LOWDOWN_MATH_BLOCK):
+		fprintf(stderr, "LOWDOWN_LOWDOWN_MATH_BLOCK\n");
+		break;
 	case (LOWDOWN_ENTITY):
 		fprintf(stderr, "LOWDOWN_ENTITY (%zu bytes)\n",
-			root->rndr_entity.textsz);
+			root->rndr_entity.text.size);
 		break;
 	case (LOWDOWN_RAW_HTML):
 		fprintf(stderr, "LOWDOWN_RAW_HTML (%zu bytes)\n",
-			root->rndr_raw_html.textsz);
+			root->rndr_raw_html.text.size);
 		break;
 	case (LOWDOWN_LINK_AUTO):
 		fprintf(stderr, "LOWDOWN_LINK_AUTO (%zu bytes)\n",
-			root->rndr_autolink.linksz);
+			root->rndr_autolink.link.size);
 		break;
 	case (LOWDOWN_LINK):
 		fprintf(stderr, "LOWDOWN_LINK (%zu, %zu bytes)\n",
-			root->rndr_link.textsz,
-			root->rndr_link.linksz);
+			root->rndr_link.text.size,
+			root->rndr_link.link.size);
 		break;
 	case (LOWDOWN_BLOCKCODE):
 		fprintf(stderr, "LOWDOWN_BLOCKCODE (%zu, %zu bytes)\n",
-			root->rndr_blockcode.textsz,
-			root->rndr_blockcode.langsz);
+			root->rndr_blockcode.text.size,
+			root->rndr_blockcode.lang.size);
 		break;
 	case (LOWDOWN_NORMAL_TEXT):
 		fprintf(stderr, "LOWDOWN_NORMAL_TEXT (%zu bytes)\n",
-			root->rndr_normal_text.textsz);
+			root->rndr_normal_text.text.size);
 		break;
 	default:
 		fprintf(stderr, "???\n");
 		break;
 	}
-
 
 	while (NULL != (n = TAILQ_FIRST(&root->children))) {
 		TAILQ_REMOVE(&root->children, n, entries);
