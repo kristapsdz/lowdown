@@ -489,7 +489,8 @@ rndr_table(hbuf *ob, const hbuf *content, void *data)
 }
 
 static void
-rndr_table_header(hbuf *ob, const hbuf *content, void *data, const htbl_flags *fl, size_t columns)
+rndr_table_header(hbuf *ob, const hbuf *content, 
+	void *data, const htbl_flags *fl, size_t columns)
 {
 
 	if (ob->size)
@@ -524,19 +525,19 @@ static void
 rndr_tablecell(hbuf *ob, const hbuf *content, htbl_flags flags, void *data, size_t col, size_t columns)
 {
 
-	if (flags & HTBL_HEADER)
+	if (flags & HTBL_FL_HEADER)
 		HBUF_PUTSL(ob, "<th");
 	else
 		HBUF_PUTSL(ob, "<td");
 
-	switch (flags & HTBL_ALIGNMASK) {
-	case HTBL_ALIGN_CENTER:
+	switch (flags & HTBL_FL_ALIGNMASK) {
+	case HTBL_FL_ALIGN_CENTER:
 		HBUF_PUTSL(ob, " style=\"text-align: center\">");
 		break;
-	case HTBL_ALIGN_LEFT:
+	case HTBL_FL_ALIGN_LEFT:
 		HBUF_PUTSL(ob, " style=\"text-align: left\">");
 		break;
-	case HTBL_ALIGN_RIGHT:
+	case HTBL_FL_ALIGN_RIGHT:
 		HBUF_PUTSL(ob, " style=\"text-align: right\">");
 		break;
 	default:
@@ -546,7 +547,7 @@ rndr_tablecell(hbuf *ob, const hbuf *content, htbl_flags flags, void *data, size
 	if (content)
 		hbuf_put(ob, content->data, content->size);
 
-	if (flags & HTBL_HEADER)
+	if (flags & HTBL_FL_HEADER)
 		HBUF_PUTSL(ob, "</th>\n");
 	else
 		HBUF_PUTSL(ob, "</td>\n");
@@ -590,18 +591,25 @@ rndr_footnotes(hbuf *ob, const hbuf *content, void *data)
 }
 
 static void
-rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num, void *data)
+rndr_footnote_def(hbuf *ob, const hbuf *content, 
+	unsigned int num, void *data)
 {
 	size_t i = 0;
 	int pfound = 0;
 
-	/* insert anchor at the end of first paragraph block */
+	/* Insert anchor at the end of first paragraph block. */
+
 	if (content) {
 		while ((i+3) < content->size) {
-			if (content->data[i++] != '<') continue;
-			if (content->data[i++] != '/') continue;
-			if (content->data[i++] != 'p' && content->data[i] != 'P') continue;
-			if (content->data[i] != '>') continue;
+			if (content->data[i++] != '<') 
+				continue;
+			if (content->data[i++] != '/') 
+				continue;
+			if (content->data[i++] != 'p' && 
+			    content->data[i] != 'P') 
+				continue;
+			if (content->data[i] != '>') 
+				continue;
 			i -= 3;
 			pfound = 1;
 			break;
@@ -609,30 +617,183 @@ rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num, void *data)
 	}
 
 	hbuf_printf(ob, "\n<li id=\"fn%d\">\n", num);
+
 	if (pfound) {
 		hbuf_put(ob, content->data, i);
-		hbuf_printf(ob, "&nbsp;<a href=\"#fnref%d\" rev=\"footnote\">&#8617;</a>", num);
+		hbuf_printf(ob, "&nbsp;"
+			"<a href=\"#fnref%d\" rev=\"footnote\">"
+			"&#8617;</a>", num);
 		hbuf_put(ob, content->data + i, content->size - i);
 	} else if (content) {
 		hbuf_put(ob, content->data, content->size);
 	}
+
 	HBUF_PUTSL(ob, "</li>\n");
 }
 
 static int
 rndr_footnote_ref(hbuf *ob, unsigned int num, void *data)
 {
-	hbuf_printf(ob, "<sup id=\"fnref%d\"><a href=\"#fn%d\" rel=\"footnote\">%d</a></sup>", num, num, num);
+
+	hbuf_printf(ob, 
+		"<sup id=\"fnref%d\">"
+		"<a href=\"#fn%d\" rel=\"footnote\">"
+		"%d</a></sup>", num, num, num);
 	return 1;
 }
 
 static int
 rndr_math(hbuf *ob, const hbuf *text, int displaymode, void *data)
 {
-	hbuf_put(ob, (const uint8_t *)(displaymode ? "\\[" : "\\("), 2);
+
+	if (displaymode)
+		HBUF_PUTSL(ob, "\\[");
+	else
+		HBUF_PUTSL(ob, "\\(");
 	escape_html(ob, text->data, text->size);
-	hbuf_put(ob, (const uint8_t *)(displaymode ? "\\]" : "\\)"), 2);
+	if (displaymode)
+		HBUF_PUTSL(ob, "\\]");
+	else
+		HBUF_PUTSL(ob, "\\)");
 	return 1;
+}
+
+void
+lowdown_html_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root)
+{
+	const struct lowdown_node *n;
+	hbuf	*tmp;
+
+	tmp = hbuf_new(64);
+
+	while (NULL != (n = TAILQ_FIRST(&root->children)))
+		lowdown_html_rndr(tmp, ref, n);
+
+	switch (n->type) {
+	case (LOWDOWN_BLOCKCODE):
+		rndr_blockcode(ob, tmp, 
+			&n->rndr_blockcode.lang, 
+			ref->opaque);
+		break;
+	case (LOWDOWN_BLOCKQUOTE):
+		rndr_blockquote(ob, tmp, ref->opaque);
+		break;
+	case (LOWDOWN_HEADER):
+		rndr_header(ob, tmp, 
+			n->rndr_header.level,
+			ref->opaque);
+		break;
+	case (LOWDOWN_HRULE):
+		rndr_hrule(ob, ref->opaque);
+		break;
+	case (LOWDOWN_LIST):
+		rndr_list(ob, tmp, 
+			n->rndr_list.flags, 
+			ref->opaque);
+		break;
+	case (LOWDOWN_LISTITEM):
+		rndr_listitem(ob, tmp, 
+			n->rndr_listitem.flags,
+			ref->opaque, n->rndr_listitem.num);
+		break;
+	case (LOWDOWN_PARAGRAPH):
+		rndr_paragraph(ob, tmp, ref->opaque, 0);
+		break;
+	case (LOWDOWN_TABLE_BLOCK):
+		rndr_table(ob, tmp, ref->opaque);
+		break;
+	case (LOWDOWN_TABLE_HEADER):
+		rndr_table_header(ob, tmp, ref->opaque,
+			n->rndr_table_header.flags,
+			n->rndr_table_header.columns);
+		break;
+	case (LOWDOWN_TABLE_BODY):
+		rndr_table_body(ob, tmp, ref->opaque);
+		break;
+	case (LOWDOWN_TABLE_ROW):
+		rndr_tablerow(ob, tmp, ref->opaque);
+		break;
+	case (LOWDOWN_TABLE_CELL):
+		rndr_tablecell(ob, tmp, 
+			n->rndr_table_cell.flags,
+			ref->opaque,
+			n->rndr_table_cell.col,
+			n->rndr_table_cell.columns);
+		break;
+	case (LOWDOWN_FOOTNOTES_BLOCK):
+		rndr_footnotes(ob, tmp, ref->opaque);
+		break;
+	case (LOWDOWN_FOOTNOTE_DEF):
+		rndr_footnote_def(ob, tmp, 
+			n->rndr_footnote_def.num,
+			ref->opaque);
+		break;
+	case (LOWDOWN_BLOCKHTML):
+		rndr_raw_block(ob, tmp, ref->opaque);
+		break;
+	case (LOWDOWN_LINK_AUTO):
+		rndr_autolink(ob, 
+			&n->rndr_autolink.link,
+			n->rndr_autolink.type,
+			ref->opaque, 0);
+		break;
+	case (LOWDOWN_CODESPAN):
+		rndr_codespan(ob, tmp, ref->opaque, 0);
+		break;
+	case (LOWDOWN_DOUBLE_EMPHASIS):
+		rndr_double_emphasis(ob, tmp, ref->opaque, 0);
+		break;
+	case (LOWDOWN_EMPHASIS):
+		rndr_emphasis(ob, tmp, ref->opaque, 0);
+		break;
+	case (LOWDOWN_HIGHLIGHT):
+		rndr_highlight(ob, tmp, ref->opaque, 0);
+		break;
+	case (LOWDOWN_IMAGE):
+		rndr_image(ob, 
+			&n->rndr_image.link,
+			&n->rndr_image.title,
+			&n->rndr_image.dims,
+			&n->rndr_image.alt,
+			ref->opaque);
+		break;
+	case (LOWDOWN_LINEBREAK):
+		rndr_linebreak(ob, ref->opaque);
+		break;
+	case (LOWDOWN_LINK):
+		rndr_link(ob, tmp, 
+			&n->rndr_link.link,
+			&n->rndr_link.text,
+			ref->opaque, 0);
+		break;
+	case (LOWDOWN_TRIPLE_EMPHASIS):
+		rndr_triple_emphasis(ob, tmp, ref->opaque, 0);
+		break;
+	case (LOWDOWN_STRIKETHROUGH):
+		rndr_strikethrough(ob, tmp, ref->opaque, 0);
+		break;
+	case (LOWDOWN_SUPERSCRIPT):
+		rndr_superscript(ob, tmp, ref->opaque, 0);
+		break;
+	case (LOWDOWN_FOOTNOTE_REF):
+		rndr_footnote_ref(ob, 
+			n->rndr_footnote_ref.num, 
+			ref->opaque);
+		break;
+	case (LOWDOWN_MATH_BLOCK):
+		rndr_math(ob, tmp, 
+			n->rndr_math.displaymode,
+			ref->opaque);
+		break;
+	case (LOWDOWN_RAW_HTML):
+		rndr_raw_html(ob, tmp, ref->opaque);
+		break;
+	case (LOWDOWN_NORMAL_TEXT):
+		rndr_normal_text(ob, tmp, ref->opaque, 0);
+		break;
+	default:
+		break;
+	}
 }
 
 /* allocates a regular HTML renderer */
