@@ -54,6 +54,9 @@ enum	lowdown_err {
 
 typedef	void (*lowdown_msg)(enum lowdown_err, void *, const char *);
 
+/*
+ * All types of Markdown nodes that lowdown understands.
+ */
 enum	lowdown_rndrt {
 	LOWDOWN_ROOT,
 	LOWDOWN_BLOCKCODE,
@@ -68,7 +71,7 @@ enum	lowdown_rndrt {
 	LOWDOWN_TABLE_BODY,
 	LOWDOWN_TABLE_ROW,
 	LOWDOWN_TABLE_CELL,
-	LOWDOWN_FOOTNOTES,
+	LOWDOWN_FOOTNOTES_BLOCK,
 	LOWDOWN_FOOTNOTE_DEF,
 	LOWDOWN_BLOCKHTML,
 	LOWDOWN_LINK_AUTO,
@@ -83,7 +86,7 @@ enum	lowdown_rndrt {
 	LOWDOWN_STRIKETHROUGH,
 	LOWDOWN_SUPERSCRIPT,
 	LOWDOWN_FOOTNOTE_REF,
-	LOWDOWN_MATH,
+	LOWDOWN_MATH_BLOCK,
 	LOWDOWN_RAW_HTML,
 	LOWDOWN_ENTITY,
 	LOWDOWN_NORMAL_TEXT,
@@ -93,7 +96,34 @@ enum	lowdown_rndrt {
 	LOWDOWN__MAX
 };
 
+typedef struct hbuf {
+	uint8_t		*data;	/* actual character data */
+	size_t		 size;	/* size of the string */
+	size_t		 asize;	/* allocated size (0 = volatile) */
+	size_t		 unit;	/* realloc unit size (0 = read-only) */
+	int 		 buffer_free; /* obj should be freed */
+} hbuf;
+
+/*
+ */
 TAILQ_HEAD(lowdown_nodeq, lowdown_node);
+
+/* XXX: remove */
+typedef enum htbl_flags {
+	HTBL_FL_ALIGN_LEFT = 1,
+	HTBL_FL_ALIGN_RIGHT = 2,
+	HTBL_FL_ALIGN_CENTER = 3,
+	HTBL_FL_ALIGNMASK = 3,
+	HTBL_FL_HEADER = 4
+} htbl_flags;
+
+/* XXX: un-typedef */
+typedef enum halink_type {
+	HALINK_NONE, /* used internally when it is not an autolink */
+	HALINK_NORMAL, /* normal http/http/ftp/mailto/etc link */
+	HALINK_EMAIL /* e-mail link without explit mailto: */
+} halink_type;
+
 
 /*
  * Node parsed from input document.
@@ -102,39 +132,80 @@ TAILQ_HEAD(lowdown_nodeq, lowdown_node);
 struct	lowdown_node {
 	enum lowdown_rndrt	 type;
 	union {
+		struct rndr_list {
+#define HLIST_ORDERED	0x01 /* ordered list */
+#define HLIST_BLOCK	0x02 /* item has block data */
+			int flags;
+		} rndr_list; 
+		struct rndr_listitem {
+			int flags; /* see rndr_list */
+			size_t num; /* index in ordered */
+		} rndr_listitem; 
+		struct rndr_header {
+			size_t level; /* hN level */
+		} rndr_header; 
 		struct rndr_normal_text {
-			char *text;
-			size_t textsz;
+			hbuf text;
 		} rndr_normal_text; 
 		struct rndr_entity {
-			char *text;
-			size_t textsz;
+			hbuf text;
 		} rndr_entity; 
 		struct rndr_autolink {
-			char *link;
-			size_t linksz;
+			hbuf link;
+			halink_type type;
 		} rndr_autolink; 
 		struct rndr_raw_html {
-			char *text;
-			size_t textsz;
+			hbuf text;
 		} rndr_raw_html; 
 		struct rndr_link {
-			char *text;
-			size_t textsz;
-			char *link;
-			size_t linksz;
+			hbuf text;
+			hbuf link;
 		} rndr_link; 
 		struct rndr_blockcode {
-			char *text;
-			size_t textsz;
-			char *lang;
-			size_t langsz;
+			hbuf text;
+			hbuf lang;
 		} rndr_blockcode; 
+		struct rndr_table_header {
+			htbl_flags *flags;
+			size_t columns;
+		} rndr_table_header; 
+		struct rndr_table_cell {
+			htbl_flags flags;
+			size_t col;
+			size_t columns;
+		} rndr_table_cell; 
+		struct rndr_footnote_def {
+			size_t num;
+		} rndr_footnote_def;
+		struct rndr_footnote_ref {
+			size_t num;
+		} rndr_footnote_ref;
+		struct rndr_image {
+			hbuf link;
+			hbuf title;
+			hbuf dims;
+			hbuf alt;
+		} rndr_image;
+		struct rndr_math {
+			int displaymode;
+		} rndr_math;
 	};
 	struct lowdown_node *parent;
 	struct lowdown_nodeq children;
 	TAILQ_ENTRY(lowdown_node) entries;
 };
+
+/*
+ * A callback for rendering.
+ */
+typedef	void (*lowdown_rndr_fp)(hbuf *, const hbuf *,
+		const struct lowdown_node *, void *);
+
+struct	lowdown_rndr {
+	lowdown_rndr_fp	 tab[LOWDOWN__MAX];
+	void		*data;
+};
+
 
 struct	lowdown_meta {
 	char		*key;

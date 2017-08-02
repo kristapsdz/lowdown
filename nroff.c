@@ -538,11 +538,11 @@ rndr_table_header(hbuf *ob, const hbuf *content,
 	for (i = 0; i < columns; i++) {
 		if (i > 0)
 			HBUF_PUTSL(ob, " ");
-		switch (fl[i] & HTBL_ALIGNMASK) {
-		case (HTBL_ALIGN_CENTER):
+		switch (fl[i] & HTBL_FL_ALIGNMASK) {
+		case (HTBL_FL_ALIGN_CENTER):
 			HBUF_PUTSL(ob, "c");
 			break;
-		case (HTBL_ALIGN_RIGHT):
+		case (HTBL_FL_ALIGN_RIGHT):
 			HBUF_PUTSL(ob, "r");
 			break;
 		default:
