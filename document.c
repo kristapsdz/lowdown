@@ -2349,11 +2349,9 @@ parse_paragraph(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 		header_work = newbuf(doc, BUFFER_SPAN);
 
 		n = pushnode(doc, LOWDOWN_HEADER);
-		/* XXX: set level */
-
+		n->rndr_header.level = level;
 		parse_inline(header_work, doc, 
 			work.data, work.size, 1);
-
 		if (NULL != doc->md.header)
 			doc->md.header(ob, header_work, level, doc->data);
 
