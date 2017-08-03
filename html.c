@@ -664,101 +664,6 @@ lowdown_html_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root)
 	const struct lowdown_node *n;
 	hbuf	*tmp;
 
-#if 0
-	switch (root->type) {
-	case (LOWDOWN_ROOT):
-		fprintf(stderr, "LOWDOWN_ROOT\n");
-		break;
-	case (LOWDOWN_TABLE_BLOCK):
-		fprintf(stderr, "LOWDOWN_TABLE_BLOCK\n");
-		break;
-	case (LOWDOWN_TABLE_ROW):
-		fprintf(stderr, "LOWDOWN_TABLE_ROW\n");
-		break;
-	case (LOWDOWN_TABLE_CELL):
-		fprintf(stderr, "LOWDOWN_TABLE_CELL\n");
-		break;
-	case (LOWDOWN_TABLE_HEADER):
-		fprintf(stderr, "LOWDOWN_TABLE_HEADER\n");
-		break;
-	case (LOWDOWN_TABLE_BODY):
-		fprintf(stderr, "LOWDOWN_TABLE_BODY\n");
-		break;
-	case (LOWDOWN_PARAGRAPH):
-		fprintf(stderr, "LOWDOWN_PARAGRAPH\n");
-		break;
-	case (LOWDOWN_EMPHASIS):
-		fprintf(stderr, "LOWDOWN_EMPHASIS\n");
-		break;
-	case (LOWDOWN_HIGHLIGHT):
-		fprintf(stderr, "LOWDOWN_HIGHLIGHT\n");
-		break;
-	case (LOWDOWN_DOUBLE_EMPHASIS):
-		fprintf(stderr, "LOWDOWN_DOUBLE_EMPHASIS\n");
-		break;
-	case (LOWDOWN_TRIPLE_EMPHASIS):
-		fprintf(stderr, "LOWDOWN_TRIPLE_EMPHASIS\n");
-		break;
-	case (LOWDOWN_SUPERSCRIPT):
-		fprintf(stderr, "LOWDOWN_SUPERSCRIPT\n");
-		break;
-	case (LOWDOWN_HEADER):
-		fprintf(stderr, "LOWDOWN_HEADER\n");
-		break;
-	case (LOWDOWN_BLOCKQUOTE):
-		fprintf(stderr, "LOWDOWN_BLOCKQUOTE\n");
-		break;
-	case (LOWDOWN_BLOCKHTML):
-		fprintf(stderr, "LOWDOWN_BLOCKHTML\n");
-		break;
-	case (LOWDOWN_FOOTNOTE_DEF):
-		fprintf(stderr, "LOWDOWN_FOOTNOTE_DEF\n");
-		break;
-	case (LOWDOWN_FOOTNOTES_BLOCK):
-		fprintf(stderr, "LOWDOWN_FOOTNOTES_BLOCK\n");
-		break;
-	case (LOWDOWN_LIST):
-		fprintf(stderr, "LOWDOWN_LIST\n");
-		break;
-	case (LOWDOWN_LISTITEM):
-		fprintf(stderr, "LOWDOWN_LISTITEM\n");
-		break;
-	case (LOWDOWN_MATH_BLOCK):
-		fprintf(stderr, "LOWDOWN_LOWDOWN_MATH_BLOCK\n");
-		break;
-	case (LOWDOWN_ENTITY):
-		fprintf(stderr, "LOWDOWN_ENTITY (%zu bytes)\n",
-			root->rndr_entity.text.size);
-		break;
-	case (LOWDOWN_RAW_HTML):
-		fprintf(stderr, "LOWDOWN_RAW_HTML (%zu bytes)\n",
-			root->rndr_raw_html.text.size);
-		break;
-	case (LOWDOWN_LINK_AUTO):
-		fprintf(stderr, "LOWDOWN_LINK_AUTO (%zu bytes)\n",
-			root->rndr_autolink.link.size);
-		break;
-	case (LOWDOWN_LINK):
-		fprintf(stderr, "LOWDOWN_LINK (%zu, %zu, %zu bytes)\n",
-			root->rndr_link.text.size,
-			root->rndr_link.link.size,
-			root->rndr_link.title.size);
-		break;
-	case (LOWDOWN_BLOCKCODE):
-		fprintf(stderr, "LOWDOWN_BLOCKCODE (%zu, %zu bytes)\n",
-			root->rndr_blockcode.text.size,
-			root->rndr_blockcode.lang.size);
-		break;
-	case (LOWDOWN_NORMAL_TEXT):
-		fprintf(stderr, "LOWDOWN_NORMAL_TEXT (%zu bytes)\n",
-			root->rndr_normal_text.text.size);
-		break;
-	default:
-		fprintf(stderr, "???\n");
-		break;
-	}
-#endif
-
 	tmp = hbuf_new(64);
 
 	TAILQ_FOREACH(n, &root->children, entries)
@@ -900,6 +805,8 @@ lowdown_html_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root)
 		hbuf_put(ob, tmp->data, tmp->size);
 		break;
 	}
+
+	hbuf_free(tmp);
 }
 
 /* allocates a regular HTML renderer */
