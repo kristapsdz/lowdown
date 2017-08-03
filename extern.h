@@ -177,6 +177,8 @@ void	 lmsg(const struct lowdown_opts *, enum lowdown_err, const char *, ...)
 
 void
 lowdown_html_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root);
+void
+lowdown_nroff_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root);
 
 __END_DECLS
 
