@@ -100,7 +100,7 @@ rndr_blockcode(hbuf *ob, const hbuf *text, const hbuf *lang, void *data)
 {
 	if (ob->size) hbuf_putc(ob, '\n');
 
-	if (lang) {
+	if (lang && lang->size) {
 		HBUF_PUTSL(ob, "<pre><code class=\"language-");
 		escape_html(ob, lang->data, lang->size);
 		HBUF_PUTSL(ob, "\">");
@@ -766,7 +766,8 @@ lowdown_html_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root)
 
 	switch (root->type) {
 	case (LOWDOWN_BLOCKCODE):
-		rndr_blockcode(ob, tmp, 
+		rndr_blockcode(ob, 
+			&root->rndr_blockcode.text, 
 			&root->rndr_blockcode.lang, 
 			ref->opaque);
 		break;
@@ -833,7 +834,9 @@ lowdown_html_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root)
 			ref->opaque, 0);
 		break;
 	case (LOWDOWN_CODESPAN):
-		rndr_codespan(ob, tmp, ref->opaque, 0);
+		rndr_codespan(ob, 
+			&root->rndr_codespan.text, 
+			ref->opaque, 0);
 		break;
 	case (LOWDOWN_DOUBLE_EMPHASIS):
 		rndr_double_emphasis(ob, tmp, ref->opaque, 0);

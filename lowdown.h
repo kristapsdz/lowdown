@@ -167,6 +167,9 @@ struct	lowdown_node {
 			hbuf text;
 			hbuf lang;
 		} rndr_blockcode; 
+		struct rndr_codespan {
+			hbuf text;
+		} rndr_codespan; 
 		struct rndr_table_header {
 			htbl_flags *flags;
 			size_t columns;

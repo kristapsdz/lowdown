@@ -1111,6 +1111,7 @@ char_codespan(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size, in
 {
 	hbuf	 work;
 	size_t	 end, nb = 0, i, f_begin, f_end;
+	struct lowdown_node *n;
 
 	memset(&work, 0, sizeof(hbuf));
 
@@ -1142,15 +1143,21 @@ char_codespan(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size, in
 
 	/* Real code span. */
 
+	n = pushnode(doc, LOWDOWN_CODESPAN);
+
 	if (f_begin < f_end) {
 		work.data = data + f_begin;
 		work.size = f_end - f_begin;
+		pushbuffer(&n->rndr_codespan.text,
+			work.data, work.size);
 		if (!doc->md.codespan(ob, &work, doc->data, nln))
 			end = 0;
 	} else {
 		if (!doc->md.codespan(ob, NULL, doc->data, nln))
 			end = 0;
 	}
+
+	popnode(doc, n);
 
 	return end;
 }
@@ -1464,7 +1471,9 @@ char_image(hbuf *ob, hdoc *doc,
 	if (size < 2 || data[1] != '[') 
 		return 0;
 
-	ret = char_link(ob, doc, data + 1, offset + 1, size - 1, nln);
+	ret = char_link(ob, doc, 
+		data + 1, offset + 1, size - 1, nln);
+
 	if (!ret) 
 		return 0;
 
@@ -1486,6 +1495,8 @@ char_link(hbuf *ob, hdoc *doc,
 	int 	 ret = 0, in_title = 0, qtype = 0, is_img, is_footnote,
 		 is_metadata;
 	hbuf 	 id, work;
+	hbuf 	*idp;
+	struct link_ref *lr;
 	struct footnote_ref *fr;
 	struct lowdown_node *n;
 
@@ -1497,14 +1508,14 @@ char_link(hbuf *ob, hdoc *doc,
 	is_metadata = (doc->ext_flags & LOWDOWN_METADATA && 
 			data[1] == '%');
 
-	/* checking whether the correct renderer exists */
+	/* Checking whether the correct renderer exists. */
 
-	if ((is_footnote && !doc->md.footnote_ref) || 
-	    (is_img && !doc->md.image) || 
-	    (!is_img && !is_footnote && !doc->md.link))
+	if ((is_footnote && ! doc->md.footnote_ref) || 
+	    (is_img && ! doc->md.image) || 
+	    ( ! is_img && ! is_footnote && ! doc->md.link))
 		goto cleanup;
 
-	/* looking for the matching closing bracket */
+	/* Looking for the matching closing bracket. */
 
 	i += find_emph_char(data + i, size - i, ']');
 	txt_e = i;
@@ -1532,7 +1543,7 @@ char_link(hbuf *ob, hdoc *doc,
 
 		/* Mark footnote used. */
 
-		if (fr && !fr->is_used) {
+		if (fr && ! fr->is_used) {
 			add_footnote_ref(&doc->footnotes_used, fr);
 			n = pushnode(doc, LOWDOWN_FOOTNOTE_REF);
 			n->rndr_footnote_ref.num = fr->num;
@@ -1594,10 +1605,11 @@ char_link(hbuf *ob, hdoc *doc,
 	while (i < size && xisspace(data[i]))
 		i++;
 
-	/* inline style link */
-
 	if (i < size && data[i] == '(') {
-		/* skipping initial spacing */
+		/* 
+		 * Inline style link.
+		 * Skip initial spacing.
+		 */
 		i++;
 
 		while (i < size && xisspace(data[i]))
@@ -1605,14 +1617,17 @@ char_link(hbuf *ob, hdoc *doc,
 
 		link_b = i;
 
-		/* looking for link end: ' " ) */
-		/* Count the number of open parenthesis */
+		/* 
+		 * Looking for link end: ' " ) 
+		 * Count the number of open parenthesis.
+		*/
+
 		nb_p = 0;
 
 		while (i < size) {
-			if (data[i] == '\\')
+			if (data[i] == '\\') {
 				i += 2;
-			else if (data[i] == '(' && i != 0) {
+			} else if (data[i] == '(' && i != 0) {
 				nb_p++; 
 				i++;
 			} else if (data[i] == ')') {
@@ -1752,75 +1767,84 @@ again:
 		}
 
 		i++;
-	}
+	} else if (i < size && data[i] == '[') {
+		/* 
+		 * Reference style link.
+		*/
+		idp = newbuf(doc, BUFFER_SPAN);
 
-	/* reference style link */
-	else if (i < size && data[i] == '[') {
-		hbuf *id = newbuf(doc, BUFFER_SPAN);
-		struct link_ref *lr;
+		/* Looking for the id. */
 
-		/* looking for the id */
 		i++;
 		link_b = i;
-		while (i < size && data[i] != ']') i++;
-		if (i >= size) goto cleanup;
+		while (i < size && data[i] != ']') 
+			i++;
+		if (i >= size) 
+			goto cleanup;
 		link_e = i;
 
-		/* finding the link_ref */
-		if (link_b == link_e)
-			replace_spacing(id, data + 1, txt_e - 1);
-		else
-			hbuf_put(id, data + link_b, link_e - link_b);
+		/* Finding the link_ref. */
 
-		lr = find_link_ref(doc->refs, id->data, id->size);
-		if (!lr)
+		if (link_b == link_e)
+			replace_spacing(idp, data + 1, txt_e - 1);
+		else
+			hbuf_put(idp, data + link_b, link_e - link_b);
+
+		lr = find_link_ref(doc->refs, idp->data, idp->size);
+		if ( ! lr)
 			goto cleanup;
 
-		/* keeping link and title from link_ref */
+		/* Keeping link and title from link_ref. */
+
 		link = lr->link;
 		title = lr->title;
 		i++;
-	}
+	} else {
+		/* 
+		 * Shortcut reference style link.
+		 */
+		idp = newbuf(doc, BUFFER_SPAN);
 
-	/* shortcut reference style link */
-	else {
-		hbuf *id = newbuf(doc, BUFFER_SPAN);
-		struct link_ref *lr;
+		/* Crafting the id. */
 
-		/* crafting the id */
-		replace_spacing(id, data + 1, txt_e - 1);
+		replace_spacing(idp, data + 1, txt_e - 1);
 
-		/* finding the link_ref */
-		lr = find_link_ref(doc->refs, id->data, id->size);
-		if (!lr)
+		/* Finding the link_ref. */
+
+		lr = find_link_ref(doc->refs, idp->data, idp->size);
+		if ( ! lr)
 			goto cleanup;
 
-		/* keeping link and title from link_ref */
+		/* Keeping link and title from link_ref. */
+
 		link = lr->link;
 		title = lr->title;
 
-		/* rewinding the spacing */
+		/* Rewinding the spacing. */
+
 		i = txt_e + 1;
 	}
 
-	if (is_img) {
-		n = pushnode(doc, LOWDOWN_IMAGE);
-	} else {
-		n = pushnode(doc, LOWDOWN_LINK);
-	}
+	n = pushnode(doc, is_img ? LOWDOWN_IMAGE : LOWDOWN_LINK);
 
-	/* building content: img alt is kept, only link content is parsed */
+	/* 
+	 * Building content: img alt is kept, only link content is
+	 * parsed. 
+	 */
+
 	if (txt_e > 1) {
 		content = newbuf(doc, BUFFER_SPAN);
-		if (is_img) {
-			hbuf_put(content, data + 1, txt_e - 1);
-		} else {
-			/* disable autolinking when parsing inline the
-			 * content of a link */
+		if ( ! is_img) {
+			/* 
+			 * Disable autolinking when parsing inline the
+			 * content of a link.
+			 */
 			doc->in_link_body = 1;
-			parse_inline(content, doc, data + 1, txt_e - 1, nln);
+			parse_inline(content, doc, 
+				data + 1, txt_e - 1, nln);
 			doc->in_link_body = 0;
-		}
+		} else
+			hbuf_put(content, data + 1, txt_e - 1);
 	}
 
 	if (link) {
@@ -1828,7 +1852,8 @@ again:
 		unscape_text(u_link, link);
 	}
 
-	/* calling the relevant rendering function */
+	/* Calling the relevant rendering function. */
+
 	if (is_img) {
 		if (NULL != u_link)
 			pushbuffer(&n->rndr_image.link,
@@ -1853,7 +1878,6 @@ again:
 	}
 	popnode(doc, n);
 
-	/* cleanup */
 cleanup:
 	doc->work_bufs[BUFFER_SPAN].size = (int)org_work_size;
 	return ret ? i : 0;
@@ -4039,10 +4063,13 @@ hdoc_free(hdoc *doc)
 
 	{
 		hbuf *ob = hbuf_new(64);
+		hbuf *sbp = hbuf_new(64);
 		lowdown_html_rndr(ob, &doc->md, doc->root);
-		fwrite(ob->data, 1, ob->size, stderr);
+		hsmrt_html(sbp, ob->data, ob->size);
+		fwrite(sbp->data, 1, sbp->size, stderr);
 		fflush(stderr);
 		hbuf_free(ob);
+		hbuf_free(sbp);
 	}
 
 	lowdown_node_free(doc->root);
