@@ -1304,7 +1304,7 @@ char_autolink_www(hbuf *ob, hdoc *doc,
 {
 	hbuf	*link, *link_url, *link_text;
 	size_t	 link_len, rewind;
-	struct lowdown_node *n;
+	struct lowdown_node *n, *nn;
 
 	if (NULL == doc->md.link || doc->in_link_body)
 		return 0;
@@ -1317,17 +1317,30 @@ char_autolink_www(hbuf *ob, hdoc *doc,
 		HBUF_PUTSL(link_url, "http://");
 		hbuf_put(link_url, link->data, link->size);
 
-		/* How to do this portably? */
 		if (ob->size > rewind)
 			ob->size -= rewind;
 		else
 			ob->size = 0;
 
+		if (doc->current &&
+		    NULL != (n = TAILQ_LAST
+			    (&doc->current->children, 
+			     lowdown_nodeq)) &&
+		    LOWDOWN_NORMAL_TEXT == n->type) {
+			if (n->rndr_normal_text.text.size > rewind)
+				n->rndr_normal_text.text.size -= rewind;
+			else
+				n->rndr_normal_text.text.size = 0;
+		}
+
 		n = pushnode(doc, LOWDOWN_LINK);
-		pushbuffer(&n->rndr_link.text, 
-			link->data, link->size);
 		pushbuffer(&n->rndr_link.link, 
 			link_url->data, link_url->size);
+
+		nn = pushnode(doc, LOWDOWN_NORMAL_TEXT);
+		pushbuffer(&n->rndr_normal_text.text, 
+			link->data, link->size);
+		popnode(doc, nn);
 
 		if (doc->md.normal_text) {
 			link_text = newbuf(doc, BUFFER_SPAN);
@@ -1365,10 +1378,6 @@ char_autolink_email(hbuf *ob, hdoc *doc,
 	link_len = halink_email(&rewind, link, data, offset, size);
 
 	if (link_len > 0) {
-		n = pushnode(doc, LOWDOWN_LINK_AUTO);
-		n->rndr_autolink.type = HALINK_EMAIL;
-		pushbuffer(&n->rndr_autolink.link, 
-			link->data, link->size);
 		if (ob->size > rewind) {
 			ob->size -= rewind;
 			nln = 0 == ob->size ? nln :
@@ -1376,7 +1385,23 @@ char_autolink_email(hbuf *ob, hdoc *doc,
 		} else
 			ob->size = 0;
 
-		doc->md.autolink(ob, link, HALINK_EMAIL, doc->data, nln);
+		if (doc->current &&
+		    NULL != (n = TAILQ_LAST
+			    (&doc->current->children, 
+			     lowdown_nodeq)) &&
+		    LOWDOWN_NORMAL_TEXT == n->type) {
+			if (n->rndr_normal_text.text.size > rewind)
+				n->rndr_normal_text.text.size -= rewind;
+			else
+				n->rndr_normal_text.text.size = 0;
+		}
+
+		n = pushnode(doc, LOWDOWN_LINK_AUTO);
+		n->rndr_autolink.type = HALINK_EMAIL;
+		pushbuffer(&n->rndr_autolink.link, 
+			link->data, link->size);
+		doc->md.autolink(ob, link, 
+			HALINK_EMAIL, doc->data, nln);
 		popnode(doc, n);
 	}
 
@@ -1399,10 +1424,6 @@ char_autolink_url(hbuf *ob, hdoc *doc,
 	link_len = halink_url(&rewind, link, data, offset, size);
 
 	if (link_len > 0) {
-		n = pushnode(doc, LOWDOWN_LINK_AUTO);
-		n->rndr_autolink.type = HALINK_NORMAL;
-		pushbuffer(&n->rndr_autolink.link, 
-			link->data, link->size);
 		if (ob->size > rewind) {
 			ob->size -= rewind;
 			nln = 0 == ob->size ? nln :
@@ -1410,7 +1431,23 @@ char_autolink_url(hbuf *ob, hdoc *doc,
 		} else
 			ob->size = 0;
 
-		doc->md.autolink(ob, link, HALINK_NORMAL, doc->data, nln);
+		if (doc->current &&
+		    NULL != (n = TAILQ_LAST
+			    (&doc->current->children, 
+			     lowdown_nodeq)) &&
+		    LOWDOWN_NORMAL_TEXT == n->type) {
+			if (n->rndr_normal_text.text.size > rewind)
+				n->rndr_normal_text.text.size -= rewind;
+			else
+				n->rndr_normal_text.text.size = 0;
+		}
+
+		n = pushnode(doc, LOWDOWN_LINK_AUTO);
+		n->rndr_autolink.type = HALINK_NORMAL;
+		pushbuffer(&n->rndr_autolink.link, 
+			link->data, link->size);
+		doc->md.autolink(ob, link, 
+			HALINK_NORMAL, doc->data, nln);
 		popnode(doc, n);
 	}
 
@@ -1766,6 +1803,12 @@ again:
 		i = txt_e + 1;
 	}
 
+	if (is_img) {
+		n = pushnode(doc, LOWDOWN_IMAGE);
+	} else {
+		n = pushnode(doc, LOWDOWN_LINK);
+	}
+
 	/* building content: img alt is kept, only link content is parsed */
 	if (txt_e > 1) {
 		content = newbuf(doc, BUFFER_SPAN);
@@ -1787,7 +1830,6 @@ again:
 
 	/* calling the relevant rendering function */
 	if (is_img) {
-		n = pushnode(doc, LOWDOWN_IMAGE);
 		if (NULL != u_link)
 			pushbuffer(&n->rndr_image.link,
 				u_link->data, u_link->size);
@@ -1797,27 +1839,19 @@ again:
 		if (NULL != dims)
 			pushbuffer(&n->rndr_image.dims,
 				dims->data, dims->size);
-		if (NULL != content)
-			pushbuffer(&n->rndr_image.alt,
-				content->data, content->size);
 		ret = doc->md.image(ob, u_link, 
 			title, dims, content, doc->data);
-		popnode(doc, n);
 	} else {
-		n = pushnode(doc, LOWDOWN_LINK);
 		if (NULL != u_link)
 			pushbuffer(&n->rndr_link.link,
 				u_link->data, u_link->size);
 		if (NULL != title)
 			pushbuffer(&n->rndr_link.title,
 				title->data, title->size);
-		if (NULL != content)
-			pushbuffer(&n->rndr_link.text,
-				content->data, content->size);
 		ret = doc->md.link(ob, content, 
 			u_link, title, doc->data, nln);
-		popnode(doc, n);
 	}
+	popnode(doc, n);
 
 	/* cleanup */
 cleanup:
