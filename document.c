@@ -1864,6 +1864,9 @@ again:
 		if (NULL != dims)
 			pushbuffer(&n->rndr_image.dims,
 				dims->data, dims->size);
+		if (NULL != content)
+			pushbuffer(&n->rndr_image.alt,
+				content->data, content->size);
 		ret = doc->md.image(ob, u_link, 
 			title, dims, content, doc->data);
 	} else {
