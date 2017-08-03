@@ -4064,8 +4064,8 @@ hdoc_free(hdoc *doc)
 	{
 		hbuf *ob = hbuf_new(64);
 		hbuf *sbp = hbuf_new(64);
-		lowdown_html_rndr(ob, &doc->md, doc->root);
-		hsmrt_html(sbp, ob->data, ob->size);
+		lowdown_nroff_rndr(ob, &doc->md, doc->root);
+		hsmrt_nroff(sbp, ob->data, ob->size);
 		fwrite(sbp->data, 1, sbp->size, stderr);
 		fflush(stderr);
 		hbuf_free(ob);
