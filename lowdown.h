@@ -145,51 +145,50 @@ struct	lowdown_node {
 			size_t level; /* hN level */
 		} rndr_header; 
 		struct rndr_normal_text {
-			hbuf text;
+			hbuf text; /* basic text */
 		} rndr_normal_text; 
 		struct rndr_entity {
-			hbuf text;
+			hbuf text; /* entity text */
 		} rndr_entity; 
 		struct rndr_autolink {
-			hbuf link;
-			hbuf text;
-			halink_type type;
+			hbuf link; /* link address */
+			hbuf text; /* shown address */
+			halink_type type; /* type of link */
 		} rndr_autolink; 
 		struct rndr_raw_html {
-			hbuf text;
+			hbuf text; /* raw html buffer */
 		} rndr_raw_html; 
 		struct rndr_link {
-			hbuf text;
-			hbuf link;
-			hbuf title;
+			hbuf link; /* link address */
+			hbuf title; /* title of link */
 		} rndr_link; 
 		struct rndr_blockcode {
-			hbuf text;
-			hbuf lang;
+			hbuf text; /* raw code buffer */
+			hbuf lang; /* fence language */
 		} rndr_blockcode; 
 		struct rndr_codespan {
-			hbuf text;
+			hbuf text; /* raw code buffer */
 		} rndr_codespan; 
 		struct rndr_table_header {
-			htbl_flags *flags;
-			size_t columns;
+			htbl_flags *flags; /* per-column flags */
+			size_t columns; /* number of columns */
 		} rndr_table_header; 
 		struct rndr_table_cell {
-			htbl_flags flags;
-			size_t col;
-			size_t columns;
+			htbl_flags flags; /* flags for cell */
+			size_t col; /* column number */
+			size_t columns; /* number of columns */
 		} rndr_table_cell; 
 		struct rndr_footnote_def {
-			size_t num;
+			size_t num; /* footnote number */
 		} rndr_footnote_def;
 		struct rndr_footnote_ref {
-			size_t num;
+			size_t num; /* footnote number */
 		} rndr_footnote_ref;
 		struct rndr_image {
-			hbuf link;
-			hbuf title;
-			hbuf dims;
-			hbuf alt;
+			hbuf link; /* image address */
+			hbuf title; /* title of image */
+			hbuf dims; /* dimensions of image */
+			hbuf alt; /* alt-text of image */
 		} rndr_image;
 		struct rndr_math {
 			int displaymode;
