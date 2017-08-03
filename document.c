@@ -176,14 +176,13 @@ static void
 pushbuffer(hbuf *buf, const uint8_t *data, size_t datasz)
 {
 
-	memset(&buf, 0, sizeof(hbuf));
+	memset(buf, 0, sizeof(hbuf));
 
 	if (0 == datasz)
 		return;
 
-	buf->data = malloc(datasz);
+	buf->data = xmalloc(datasz);
 	buf->size = buf->asize = datasz;
-	buf->buffer_free = 1;
 	memcpy(buf->data, data, datasz);
 }
 
@@ -1271,13 +1270,16 @@ char_langle_tag(hbuf *ob, hdoc *doc,
 		if (NULL != doc->md.autolink && 
 		    altype != HALINK_NONE) {
 			hbuf *u_link = newbuf(doc, BUFFER_SPAN);
-			n = pushnode(doc, LOWDOWN_LINK_AUTO);
-			n->rndr_autolink.type = altype;
-			pushbuffer(&n->rndr_autolink.link, 
-				data + 1, end - 2);
 			work.data = data + 1;
 			work.size = end - 2;
 			unscape_text(u_link, &work);
+
+			n = pushnode(doc, LOWDOWN_LINK_AUTO);
+			n->rndr_autolink.type = altype;
+			pushbuffer(&n->rndr_autolink.link, 
+				u_link->data, u_link->size);
+			pushbuffer(&n->rndr_autolink.text, 
+				u_link->data, u_link->size);
 			ret = doc->md.autolink(ob, u_link, 
 				altype, doc->data, nln);
 			popnode(doc, n);
@@ -1315,13 +1317,15 @@ char_autolink_www(hbuf *ob, hdoc *doc,
 		HBUF_PUTSL(link_url, "http://");
 		hbuf_put(link_url, link->data, link->size);
 
+		/* How to do this portably? */
 		if (ob->size > rewind)
 			ob->size -= rewind;
 		else
 			ob->size = 0;
 
 		n = pushnode(doc, LOWDOWN_LINK);
-		pushbuffer(&n->rndr_link.text, link->data, link->size);
+		pushbuffer(&n->rndr_link.text, 
+			link->data, link->size);
 		pushbuffer(&n->rndr_link.link, 
 			link_url->data, link_url->size);
 
@@ -1784,23 +1788,32 @@ again:
 	/* calling the relevant rendering function */
 	if (is_img) {
 		n = pushnode(doc, LOWDOWN_IMAGE);
-		pushbuffer(&n->rndr_image.link,
-			u_link->data, u_link->size);
-		pushbuffer(&n->rndr_image.title,
-			title->data, title->size);
-		pushbuffer(&n->rndr_image.dims,
-			dims->data, dims->size);
-		pushbuffer(&n->rndr_image.alt,
-			content->data, content->size);
+		if (NULL != u_link)
+			pushbuffer(&n->rndr_image.link,
+				u_link->data, u_link->size);
+		if (NULL != title)
+			pushbuffer(&n->rndr_image.title,
+				title->data, title->size);
+		if (NULL != dims)
+			pushbuffer(&n->rndr_image.dims,
+				dims->data, dims->size);
+		if (NULL != content)
+			pushbuffer(&n->rndr_image.alt,
+				content->data, content->size);
 		ret = doc->md.image(ob, u_link, 
 			title, dims, content, doc->data);
 		popnode(doc, n);
 	} else {
 		n = pushnode(doc, LOWDOWN_LINK);
-		pushbuffer(&n->rndr_link.link,
-			u_link->data, u_link->size);
-		pushbuffer(&n->rndr_link.text,
-			title->data, title->size);
+		if (NULL != u_link)
+			pushbuffer(&n->rndr_link.link,
+				u_link->data, u_link->size);
+		if (NULL != title)
+			pushbuffer(&n->rndr_link.title,
+				title->data, title->size);
+		if (NULL != content)
+			pushbuffer(&n->rndr_link.text,
+				content->data, content->size);
 		ret = doc->md.link(ob, content, 
 			u_link, title, doc->data, nln);
 		popnode(doc, n);
@@ -3934,109 +3947,49 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data,
 }
 
 static void
-lowdown_node_free(struct lowdown_node *root, size_t tabs)
+lowdown_node_free(struct lowdown_node *root)
 {
 	struct lowdown_node *n;
-	size_t	 i;
-
-	for (i = 0; i < tabs; i++) 
-		fputc('\t', stderr);
 
 	switch (root->type) {
-	case (LOWDOWN_ROOT):
-		fprintf(stderr, "LOWDOWN_ROOT\n");
-		break;
-	case (LOWDOWN_TABLE_BLOCK):
-		fprintf(stderr, "LOWDOWN_TABLE_BLOCK\n");
-		break;
-	case (LOWDOWN_TABLE_ROW):
-		fprintf(stderr, "LOWDOWN_TABLE_ROW\n");
-		break;
-	case (LOWDOWN_TABLE_CELL):
-		fprintf(stderr, "LOWDOWN_TABLE_CELL\n");
-		break;
-	case (LOWDOWN_TABLE_HEADER):
-		fprintf(stderr, "LOWDOWN_TABLE_HEADER\n");
-		break;
-	case (LOWDOWN_TABLE_BODY):
-		fprintf(stderr, "LOWDOWN_TABLE_BODY\n");
-		break;
-	case (LOWDOWN_PARAGRAPH):
-		fprintf(stderr, "LOWDOWN_PARAGRAPH\n");
-		break;
-	case (LOWDOWN_EMPHASIS):
-		fprintf(stderr, "LOWDOWN_EMPHASIS\n");
-		break;
-	case (LOWDOWN_HIGHLIGHT):
-		fprintf(stderr, "LOWDOWN_HIGHLIGHT\n");
-		break;
-	case (LOWDOWN_DOUBLE_EMPHASIS):
-		fprintf(stderr, "LOWDOWN_DOUBLE_EMPHASIS\n");
-		break;
-	case (LOWDOWN_TRIPLE_EMPHASIS):
-		fprintf(stderr, "LOWDOWN_TRIPLE_EMPHASIS\n");
-		break;
-	case (LOWDOWN_SUPERSCRIPT):
-		fprintf(stderr, "LOWDOWN_SUPERSCRIPT\n");
-		break;
-	case (LOWDOWN_HEADER):
-		fprintf(stderr, "LOWDOWN_HEADER\n");
-		break;
-	case (LOWDOWN_BLOCKQUOTE):
-		fprintf(stderr, "LOWDOWN_BLOCKQUOTE\n");
-		break;
-	case (LOWDOWN_BLOCKHTML):
-		fprintf(stderr, "LOWDOWN_BLOCKHTML\n");
-		break;
-	case (LOWDOWN_FOOTNOTE_DEF):
-		fprintf(stderr, "LOWDOWN_FOOTNOTE_DEF\n");
-		break;
-	case (LOWDOWN_FOOTNOTES_BLOCK):
-		fprintf(stderr, "LOWDOWN_FOOTNOTES_BLOCK\n");
-		break;
-	case (LOWDOWN_LIST):
-		fprintf(stderr, "LOWDOWN_LIST\n");
-		break;
-	case (LOWDOWN_LISTITEM):
-		fprintf(stderr, "LOWDOWN_LISTITEM\n");
-		break;
-	case (LOWDOWN_MATH_BLOCK):
-		fprintf(stderr, "LOWDOWN_LOWDOWN_MATH_BLOCK\n");
+	case (LOWDOWN_NORMAL_TEXT):
+		hbuf_free(&root->rndr_normal_text.text);
 		break;
 	case (LOWDOWN_ENTITY):
-		fprintf(stderr, "LOWDOWN_ENTITY (%zu bytes)\n",
-			root->rndr_entity.text.size);
+		hbuf_free(&root->rndr_entity.text);
+		break;
+	case (LOWDOWN_AUTOLINK):
+		hbuf_free(&root->rndr_autolink.text);
+		hbuf_free(&root->rndr_autolink.link);
 		break;
 	case (LOWDOWN_RAW_HTML):
-		fprintf(stderr, "LOWDOWN_RAW_HTML (%zu bytes)\n",
-			root->rndr_raw_html.text.size);
-		break;
-	case (LOWDOWN_LINK_AUTO):
-		fprintf(stderr, "LOWDOWN_LINK_AUTO (%zu bytes)\n",
-			root->rndr_autolink.link.size);
+		hbuf_free(&root->rndr_raw_html.text);
 		break;
 	case (LOWDOWN_LINK):
-		fprintf(stderr, "LOWDOWN_LINK (%zu, %zu bytes)\n",
-			root->rndr_link.text.size,
-			root->rndr_link.link.size);
+		hbuf_free(&root->rndr_link.text);
+		hbuf_free(&root->rndr_link.link);
+		hbuf_free(&root->rndr_link.title);
 		break;
 	case (LOWDOWN_BLOCKCODE):
-		fprintf(stderr, "LOWDOWN_BLOCKCODE (%zu, %zu bytes)\n",
-			root->rndr_blockcode.text.size,
-			root->rndr_blockcode.lang.size);
+		hbuf_free(&root->rndr_blockcode.text);
+		hbuf_free(&root->rndr_blockcode.lang);
 		break;
-	case (LOWDOWN_NORMAL_TEXT):
-		fprintf(stderr, "LOWDOWN_NORMAL_TEXT (%zu bytes)\n",
-			root->rndr_normal_text.text.size);
+	case (LOWDOWN_TABLE_HEADER):
+		free(root->rndr_table_header.flags);
+		break;
+	case (LOWDOWN_IMAGE):
+		hbuf_free(&root->rndr_image.link);
+		hbuf_free(&root->rndr_image.title);
+		hbuf_free(&root->rndr_image.dims);
+		hbuf_free(&root->rndr_image.alt);
 		break;
 	default:
-		fprintf(stderr, "???\n");
 		break;
 	}
 
 	while (NULL != (n = TAILQ_FIRST(&root->children))) {
 		TAILQ_REMOVE(&root->children, n, entries);
-		lowdown_node_free(n, tabs + 1);
+		lowdown_node_free(n);
 	}
 
 	free(root);
@@ -4050,7 +4003,15 @@ hdoc_free(hdoc *doc)
 {
 	size_t	 i;
 
-	lowdown_node_free(doc->root, 0);
+	{
+		hbuf *ob = hbuf_new(64);
+		lowdown_html_rndr(ob, &doc->md, doc->root);
+		fwrite(ob->data, 1, ob->size, stderr);
+		fflush(stderr);
+		hbuf_free(ob);
+	}
+
+	lowdown_node_free(doc->root);
 
 	for (i = 0; i < doc->work_bufs[BUFFER_SPAN].asize; ++i)
 		hbuf_free(doc->work_bufs[BUFFER_SPAN].item[i]);
