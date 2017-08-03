@@ -856,8 +856,7 @@ lowdown_html_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root)
 		rndr_linebreak(ob, ref->opaque);
 		break;
 	case (LOWDOWN_LINK):
-		rndr_link(ob, 
-			&root->rndr_link.text, 
+		rndr_link(ob, tmp,
 			&root->rndr_link.link,
 			&root->rndr_link.title,
 			ref->opaque, 0);
