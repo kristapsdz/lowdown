@@ -59,7 +59,6 @@ void
 hbuf_free(hbuf *buf)
 {
 	if (!buf) return;
-	assert(buf && buf->unit);
 
 	free(buf->data);
 

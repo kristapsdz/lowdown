@@ -152,6 +152,7 @@ struct	lowdown_node {
 		} rndr_entity; 
 		struct rndr_autolink {
 			hbuf link;
+			hbuf text;
 			halink_type type;
 		} rndr_autolink; 
 		struct rndr_raw_html {
@@ -160,6 +161,7 @@ struct	lowdown_node {
 		struct rndr_link {
 			hbuf text;
 			hbuf link;
+			hbuf title;
 		} rndr_link; 
 		struct rndr_blockcode {
 			hbuf text;
