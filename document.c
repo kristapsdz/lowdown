@@ -4025,7 +4025,6 @@ lowdown_node_free(struct lowdown_node *root)
 		hbuf_free(&root->rndr_raw_html.text);
 		break;
 	case (LOWDOWN_LINK):
-		hbuf_free(&root->rndr_link.text);
 		hbuf_free(&root->rndr_link.link);
 		hbuf_free(&root->rndr_link.title);
 		break;
