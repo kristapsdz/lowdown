@@ -175,6 +175,9 @@ void	 hsmrt_nroff(hbuf *, const uint8_t *, size_t);
 void	 lmsg(const struct lowdown_opts *, enum lowdown_err, const char *, ...)
 		__attribute__ ((format(printf, 3, 4)));
 
+void
+lowdown_html_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root);
+
 __END_DECLS
 
 #endif /* !EXTERN_H */
