@@ -253,7 +253,8 @@ rndr_header(hbuf *ob, const hbuf *content, int level, void *data)
 		hbuf_printf(ob, "<h%d id=\"toc_%d\">", 
 			level, state->toc_data.header_count);
 		state->toc_data.header_count++;
-	} else if (NULL != content && content->size) {
+	} else if (NULL != content && content->size &&
+	   	   LOWDOWN_HTML_HEAD_IDS & state->flags) {
 		hbuf_printf(ob, "<h%d id=\"", level);
 		rndr_header_id(ob, content, state);
 		HBUF_PUTSL(ob, "\">");
