@@ -54,6 +54,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 	hrend 		*renderer = NULL;
 	hdoc 		*document;
 	size_t		 i;
+	struct lowdown_node *n;
 
 	/*
 	 * Begin by creating our buffers, renderer, and document.
@@ -68,20 +69,25 @@ lowdown_buf(const struct lowdown_opts *opts,
 			LOWDOWN_MAN == opts->type);
 
 	document = hdoc_new
-		(renderer, opts, NULL == opts ?
+		(opts, NULL == opts ?
 		 0 : opts->feat, DEF_MAX_NESTING,
 		 NULL != opts &&
 		 LOWDOWN_HTML != opts->type);
 
 	/* Parse the output and free resources. */
 
-	hdoc_render(document, ob, data, datasz, m, msz);
+	n = hdoc_render(document, data, datasz, m, msz);
 	hdoc_free(document);
 
-	if (NULL == opts || LOWDOWN_HTML == opts->type)
+	if (NULL == opts || LOWDOWN_HTML == opts->type) {
+		lowdown_html_rndr(ob, renderer, n);
 		hrend_html_free(renderer);
-	else
+	} else {
+		lowdown_nroff_rndr(ob, renderer, n);
 		hrend_nroff_free(renderer);
+	}
+
+	lowdown_node_free(n);
 
 	/*
 	 * Now we escape all of our metadata values.

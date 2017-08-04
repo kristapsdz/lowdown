@@ -126,8 +126,6 @@ static char_trigger markdown_char_ptrs[] = {
 };
 
 struct 	hdoc {
-	hrend		 md;
-	void		*data;
 	const struct lowdown_opts *opts;
 	struct link_ref	*refs[REF_TABLE_SIZE];
 	struct footnote_list footnotes_found;
@@ -141,7 +139,6 @@ struct 	hdoc {
 	int		 link_nospace;
 	struct lowdown_meta *m; /* document meta-data */
 	size_t		 msz; /* entries in "m" */
-	struct lowdown_node *root;
 	struct lowdown_node *current;
 };
 
@@ -3453,23 +3450,23 @@ expand_tabs(hbuf *ob, const uint8_t *line, size_t size)
  * Allocate a new document processor instance.
  */
 hdoc *
-hdoc_new(const hrend *renderer, const struct lowdown_opts *opts,
+hdoc_new(const struct lowdown_opts *opts,
 	unsigned int extensions, size_t max_nesting, int link_nospace)
 {
 	hdoc *doc = NULL;
+	struct lowdown_node *n;
 
-	assert(max_nesting > 0 && renderer);
+	assert(max_nesting > 0);
 
 	doc = xmalloc(sizeof(hdoc));
-	memcpy(&doc->md, renderer, sizeof(hrend));
 
 	doc->current = NULL;
-	doc->root = pushnode(doc, LOWDOWN_ROOT);
 	doc->opts = opts;
-	doc->data = renderer->opaque;
 	doc->link_nospace = link_nospace;
 	doc->m = NULL;
 	doc->msz = 0;
+
+	n = pushnode(doc, LOWDOWN_ROOT);
 
 	hstack_init(&doc->work_bufs[BUFFER_BLOCK], 4);
 	hstack_init(&doc->work_bufs[BUFFER_SPAN], 8);
@@ -3683,8 +3680,8 @@ parse_metadata(hdoc *doc, const uint8_t *data, size_t sz)
  * instead of locally destroying it.
  * (Obviously only applicable if LOWDOWN_METADATA has been set.)
  */
-void
-hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data,
+struct lowdown_node *
+hdoc_render(hdoc *doc, const uint8_t *data,
 	size_t size, struct lowdown_meta **mp, size_t *mszp)
 {
 	static const uint8_t UTF8_BOM[] = {0xEF, 0xBB, 0xBF};
@@ -3779,7 +3776,7 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data,
 
 	/* Pre-grow the output buffer to minimize allocations. */
 
-	hbuf_grow(ob, text->size + (text->size >> 1));
+	/*hbuf_grow(ob, text->size + (text->size >> 1));*/
 
 	/* Second pass: actual rendering. */
 
@@ -3827,15 +3824,11 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data,
 		doc->msz = 0;
 	}
 
-	if (LOWDOWN_HTML == doc->opts->type)
-		lowdown_html_rndr(ob, &doc->md, doc->root);
-	else
-		lowdown_nroff_rndr(ob, &doc->md, doc->root);
-
 	hbuf_free(divert);
+	return(n);
 }
 
-static void
+void
 lowdown_node_free(struct lowdown_node *root)
 {
 	struct lowdown_node *n;
@@ -3893,8 +3886,6 @@ void
 hdoc_free(hdoc *doc)
 {
 	size_t	 i;
-
-	lowdown_node_free(doc->root);
 
 	for (i = 0; i < doc->work_bufs[BUFFER_SPAN].asize; ++i)
 		hbuf_free(doc->work_bufs[BUFFER_SPAN].item[i]);
