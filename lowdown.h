@@ -192,6 +192,9 @@ struct	lowdown_node {
 		struct rndr_math {
 			int displaymode;
 		} rndr_math;
+		struct rndr_blockhtml {
+			hbuf text;
+		} rndr_blockhtml;
 	};
 	struct lowdown_node *parent;
 	struct lowdown_nodeq children;
