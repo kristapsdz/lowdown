@@ -153,9 +153,10 @@ void	 hstack_push(hstack *, void *);
 void	*hstack_top(const hstack *);
 void	 hstack_uninit(hstack *);
 
-hdoc 	*hdoc_new(const hrend *, const struct lowdown_opts *, 
+hdoc 	*hdoc_new(const struct lowdown_opts *, 
 		unsigned int, size_t, int) __attribute__((malloc));
-void	 hdoc_render(hdoc *, hbuf *, const uint8_t *, size_t, 
+struct lowdown_node
+	*hdoc_render(hdoc *, const uint8_t *, size_t, 
 		struct lowdown_meta **, size_t *);
 void	 hdoc_free(hdoc *);
 
@@ -175,10 +176,11 @@ void	 hsmrt_nroff(hbuf *, const uint8_t *, size_t);
 void	 lmsg(const struct lowdown_opts *, enum lowdown_err, const char *, ...)
 		__attribute__ ((format(printf, 3, 4)));
 
-void
-lowdown_html_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root);
-void
-lowdown_nroff_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root);
+void	 lowdown_html_rndr(hbuf *, hrend *, 
+		const struct lowdown_node *);
+void	 lowdown_nroff_rndr(hbuf *, hrend *, 
+		const struct lowdown_node *);
+void	 lowdown_node_free(struct lowdown_node *);
 
 __END_DECLS
 
