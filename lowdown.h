@@ -124,7 +124,6 @@ typedef enum halink_type {
 	HALINK_EMAIL /* e-mail link without explit mailto: */
 } halink_type;
 
-
 /*
  * Node parsed from input document.
  * Each node is part of the parse tree.
@@ -217,32 +216,32 @@ struct	lowdown_meta {
 };
 
 struct	lowdown_opts {
-	lowdown_msg	  msg;
-	enum lowdown_type type;
-	void		 *arg;
-	unsigned int	  feat;
-#define LOWDOWN_TABLES	  0x01
-#define LOWDOWN_FENCED	  0x02
-#define LOWDOWN_FOOTNOTES 0x04
-#define LOWDOWN_AUTOLINK  0x08
-#define LOWDOWN_STRIKE	  0x10
-#define LOWDOWN_HILITE	  0x40
-#define LOWDOWN_SUPER	  0x100
-#define LOWDOWN_MATH	  0x200
-#define LOWDOWN_NOINTEM	  0x400
-#define LOWDOWN_SPHD	  0x800
-#define LOWDOWN_MATHEXP	  0x1000
-#define LOWDOWN_NOCODEIND 0x2000
-#define	LOWDOWN_METADATA  0x4000
-	unsigned int	  oflags;
-#define LOWDOWN_HTML_SKIP_HTML	0x01
-#define LOWDOWN_HTML_ESCAPE	0x02
-#define LOWDOWN_HTML_HARD_WRAP	0x04
-#define LOWDOWN_NROFF_SKIP_HTML	0x08
-#define LOWDOWN_NROFF_HARD_WRAP	0x10
-#define LOWDOWN_NROFF_GROFF	0x20
-#define LOWDOWN_NROFF_NUMBERED	0x80
-#define	LOWDOWN_SMARTY	  	0x40
+	lowdown_msg		 msg;
+	enum lowdown_type	 type;
+	void			*arg;
+	unsigned int		 feat;
+#define LOWDOWN_TABLES		 0x01
+#define LOWDOWN_FENCED		 0x02
+#define LOWDOWN_FOOTNOTES	 0x04
+#define LOWDOWN_AUTOLINK	 0x08
+#define LOWDOWN_STRIKE		 0x10
+#define LOWDOWN_HILITE		 0x40
+#define LOWDOWN_SUPER		 0x100
+#define LOWDOWN_MATH		 0x200
+#define LOWDOWN_NOINTEM		 0x400
+#define LOWDOWN_SPHD		 0x800
+#define LOWDOWN_MATHEXP		 0x1000
+#define LOWDOWN_NOCODEIND	 0x2000
+#define	LOWDOWN_METADATA	 0x4000
+	unsigned int		 oflags;
+#define LOWDOWN_HTML_SKIP_HTML	 0x01
+#define LOWDOWN_HTML_ESCAPE	 0x02
+#define LOWDOWN_HTML_HARD_WRAP	 0x04
+#define LOWDOWN_NROFF_SKIP_HTML	 0x08
+#define LOWDOWN_NROFF_HARD_WRAP	 0x10
+#define LOWDOWN_NROFF_GROFF	 0x20
+#define LOWDOWN_NROFF_NUMBERED	 0x80
+#define	LOWDOWN_SMARTY	  	 0x40
 };
 
 __BEGIN_DECLS

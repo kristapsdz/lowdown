@@ -3867,12 +3867,14 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data,
 	size_t size, struct lowdown_meta **mp, size_t *mszp)
 {
 	static const uint8_t UTF8_BOM[] = {0xEF, 0xBB, 0xBF};
-	hbuf		*text;
+	hbuf		*text, *divert;
 	size_t		 beg, end;
 	int		 footnotes_enabled;
 	const uint8_t	*sv;
+	struct lowdown_node *n;
 
 	text = hbuf_new(64);
+	divert = hbuf_new(64);
 
 	/*
 	 * Preallocate enough space for our buffer to avoid expanding
@@ -3960,24 +3962,30 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data,
 
 	/* Second pass: actual rendering. */
 
+	n = pushnode(doc, LOWDOWN_DOC_HEADER);
+	popnode(doc, n);
+
 	if (doc->md.doc_header)
-		doc->md.doc_header(ob, 0, doc->data);
+		doc->md.doc_header(divert, 0, doc->data);
 
 	if (text->size) {
 		/* Adding a final newline if not already present. */
 		if (text->data[text->size - 1] != '\n' &&
 		    text->data[text->size - 1] != '\r')
 			hbuf_putc(text, '\n');
-		parse_block(ob, doc, text->data, text->size);
+		parse_block(divert, doc, text->data, text->size);
 	}
 
 	/* Footnotes. */
 
 	if (footnotes_enabled)
-		parse_footnote_list(ob, doc, &doc->footnotes_used);
+		parse_footnote_list(divert, doc, &doc->footnotes_used);
 
 	if (doc->md.doc_footer)
-		doc->md.doc_footer(ob, 0, doc->data);
+		doc->md.doc_footer(divert, 0, doc->data);
+
+	n = pushnode(doc, LOWDOWN_DOC_FOOTER);
+	popnode(doc, n);
 
 	/* Clean-up. */
 
@@ -4003,6 +4011,13 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data,
 		doc->m = NULL;
 		doc->msz = 0;
 	}
+
+	if (LOWDOWN_HTML == doc->opts->type)
+		lowdown_html_rndr(ob, &doc->md, doc->root);
+	else
+		lowdown_nroff_rndr(ob, &doc->md, doc->root);
+
+	hbuf_free(divert);
 }
 
 static void
@@ -4060,17 +4075,6 @@ void
 hdoc_free(hdoc *doc)
 {
 	size_t	 i;
-
-	{
-		hbuf *ob = hbuf_new(64);
-		hbuf *sbp = hbuf_new(64);
-		lowdown_nroff_rndr(ob, &doc->md, doc->root);
-		hsmrt_nroff(sbp, ob->data, ob->size);
-		fwrite(sbp->data, 1, sbp->size, stderr);
-		fflush(stderr);
-		hbuf_free(ob);
-		hbuf_free(sbp);
-	}
 
 	lowdown_node_free(doc->root);
 
