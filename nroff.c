@@ -693,6 +693,10 @@ lowdown_nroff_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root)
 	TAILQ_FOREACH(n, &root->children, entries)
 		lowdown_nroff_rndr(tmp, ref, n);
 
+	/*
+	 * Doesn't work, but good enough to get started.
+	 */
+
 	nln = ob->size ? '\n' == ob->data[ob->size - 1] : 1;
 
 	switch (root->type) {
