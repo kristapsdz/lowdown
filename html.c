@@ -730,7 +730,8 @@ lowdown_html_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root)
 			ref->opaque);
 		break;
 	case (LOWDOWN_BLOCKHTML):
-		rndr_raw_block(ob, tmp, ref->opaque);
+		rndr_raw_block(ob, 
+			&root->rndr_blockhtml.text, ref->opaque);
 		break;
 	case (LOWDOWN_LINK_AUTO):
 		rndr_autolink(ob, 
