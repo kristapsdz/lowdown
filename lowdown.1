@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate: March 20 2017 $
+.Dd $Mdocdate: March 27 2017 $
 .Dt LOWDOWN 1
 .Os
 .Sh NAME
@@ -170,6 +170,7 @@ You can see a full list of features in
 .Sx Input features .
 The
 .Ar html-skiphtml ,
+.Ar html-head-ids ,
 .Ar nroff-groff ,
 .Ar nroff-skiphtml ,
 and
@@ -264,6 +265,8 @@ Note that
 .Ar html-escape
 takes priority if both are specified.
 Text within HTML elements remains.
+.It Ar html-head-ids
+Give each header an identifier created by encoding its content.
 .It Ar nroff-numbered
 Use numbered sections.
 Only applies to the
