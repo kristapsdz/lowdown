@@ -1252,7 +1252,7 @@ static size_t
 char_autolink_www(hbuf *ob, hdoc *doc,
 	uint8_t *data, size_t offset, size_t size, int nln)
 {
-	hbuf	*link, *link_url, *link_text;
+	hbuf	*link, *link_url;
 	size_t	 link_len, rewind;
 	struct lowdown_node *n, *nn;
 
