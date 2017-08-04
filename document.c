@@ -2599,7 +2599,6 @@ parse_footnote_def(hdoc *doc, unsigned int num, uint8_t *data, size_t size)
 static void
 parse_footnote_list(hdoc *doc, struct footnote_list *footnotes)
 {
-	hbuf			*work = NULL;
 	struct footnote_item	*item;
 	struct footnote_ref	*ref;
 	struct lowdown_node	*n;
@@ -2608,9 +2607,6 @@ parse_footnote_list(hdoc *doc, struct footnote_list *footnotes)
 		return;
 
 	n = pushnode(doc, LOWDOWN_FOOTNOTES_BLOCK);
-
-	work = newbuf(doc, BUFFER_BLOCK);
-
 	item = footnotes->head;
 	while (item) {
 		ref = item->ref;
@@ -2618,9 +2614,7 @@ parse_footnote_list(hdoc *doc, struct footnote_list *footnotes)
 			ref->contents->data, ref->contents->size);
 		item = item->next;
 	}
-
 	popnode(doc, n);
-	popbuf(doc, BUFFER_BLOCK);
 }
 
 /* 
@@ -2874,15 +2868,14 @@ parse_table_row(hbuf *ob, hdoc *doc, uint8_t *data,
 	*col_data, htbl_flags header_flag)
 {
 	size_t	 i = 0, col, len, cell_start, cell_end;
-	hbuf 	*cell_work, *row_work = NULL;
+	hbuf 	*cell_work;
 	hbuf 	 empty_cell;
 	struct lowdown_node *n, *nn;
 
-	n = pushnode(doc, LOWDOWN_TABLE_ROW);
-	row_work = newbuf(doc, BUFFER_SPAN);
-
 	if (i < size && data[i] == '|')
 		i++;
+
+	n = pushnode(doc, LOWDOWN_TABLE_ROW);
 
 	for (col = 0; col < columns && i < size; ++col) {
 		cell_work = newbuf(doc, BUFFER_SPAN);
@@ -2935,7 +2928,6 @@ parse_table_row(hbuf *ob, hdoc *doc, uint8_t *data,
 	}
 
 	popnode(doc, n);
-	popbuf(doc, BUFFER_SPAN);
 }
 
 static size_t
@@ -3037,12 +3029,11 @@ static size_t
 parse_table(hdoc *doc, uint8_t *data, size_t size)
 {
 	size_t		 i, columns, row_start, pipes;
-	hbuf		 *work = NULL, *header_work = NULL, 
+	hbuf		 *header_work = NULL, 
 			 *body_work = NULL;
 	htbl_flags	*col_data = NULL;
 	struct lowdown_node *n = NULL, *nn;
 
-	work = newbuf(doc, BUFFER_BLOCK);
 	header_work = newbuf(doc, BUFFER_SPAN);
 	body_work = newbuf(doc, BUFFER_BLOCK);
 
@@ -3078,7 +3069,6 @@ parse_table(hdoc *doc, uint8_t *data, size_t size)
 
 	free(col_data);
 	popbuf(doc, BUFFER_SPAN);
-	popbuf(doc, BUFFER_BLOCK);
 	popbuf(doc, BUFFER_BLOCK);
 	return i;
 }
@@ -3454,7 +3444,6 @@ hdoc_new(const struct lowdown_opts *opts,
 	unsigned int extensions, size_t max_nesting, int link_nospace)
 {
 	hdoc *doc = NULL;
-	struct lowdown_node *n;
 
 	assert(max_nesting > 0);
 
@@ -3465,8 +3454,6 @@ hdoc_new(const struct lowdown_opts *opts,
 	doc->link_nospace = link_nospace;
 	doc->m = NULL;
 	doc->msz = 0;
-
-	n = pushnode(doc, LOWDOWN_ROOT);
 
 	hstack_init(&doc->work_bufs[BUFFER_BLOCK], 4);
 	hstack_init(&doc->work_bufs[BUFFER_SPAN], 8);
@@ -3689,10 +3676,11 @@ hdoc_render(hdoc *doc, const uint8_t *data,
 	size_t		 beg, end;
 	int		 footnotes_enabled;
 	const uint8_t	*sv;
-	struct lowdown_node *n;
+	struct lowdown_node *n, *root;
 
 	text = hbuf_new(64);
 	divert = hbuf_new(64);
+	root = pushnode(doc, LOWDOWN_DOC_HEADER);
 
 	/*
 	 * Preallocate enough space for our buffer to avoid expanding
@@ -3825,7 +3813,8 @@ hdoc_render(hdoc *doc, const uint8_t *data,
 	}
 
 	hbuf_free(divert);
-	return(n);
+	popnode(doc, root);
+	return(root);
 }
 
 void
