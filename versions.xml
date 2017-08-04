@@ -221,6 +221,12 @@
 		</header>
 		<aside>
 			<p>
+				Significant internal re-write, moving from <q>in-line</q> production of output to production of a parse tree,
+				which in turn is used to create output.
+				This allows for many things, such as comparing parse trees (<q>diff</q> mode) and having <b>-Tms</b> output be
+				much smarter about its output.
+			</p>
+			<p>
 				Add <code>html-head-ids</code> as a tunable output option for HTML.
 			</p>
 		</aside>
