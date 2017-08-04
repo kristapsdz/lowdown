@@ -72,22 +72,22 @@ struct footnote_list {
  * "data" is the pointer of the beginning of the span.
  * "offset" is the number of valid chars before data.
  */
-typedef size_t (*char_trigger)(hbuf *ob, hdoc *doc,
+typedef size_t (*char_trigger)(hdoc *doc,
 	uint8_t *data, size_t offset, size_t size, int nln);
 
-static size_t char_emphasis(hbuf *, hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_linebreak(hbuf *, hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_codespan(hbuf *, hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_escape(hbuf *, hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_entity(hbuf *, hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_langle_tag(hbuf *, hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_autolink_url(hbuf *, hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_autolink_email(hbuf *, hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_autolink_www(hbuf *, hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_link(hbuf *, hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_image(hbuf *, hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_superscript(hbuf *, hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_math(hbuf *, hdoc *, uint8_t *, size_t, size_t, int);
+static size_t char_emphasis(hdoc *, uint8_t *, size_t, size_t, int);
+static size_t char_linebreak(hdoc *, uint8_t *, size_t, size_t, int);
+static size_t char_codespan(hdoc *, uint8_t *, size_t, size_t, int);
+static size_t char_escape(hdoc *, uint8_t *, size_t, size_t, int);
+static size_t char_entity(hdoc *, uint8_t *, size_t, size_t, int);
+static size_t char_langle_tag(hdoc *, uint8_t *, size_t, size_t, int);
+static size_t char_autolink_url(hdoc *, uint8_t *, size_t, size_t, int);
+static size_t char_autolink_email(hdoc *, uint8_t *, size_t, size_t, int);
+static size_t char_autolink_www(hdoc *, uint8_t *, size_t, size_t, int);
+static size_t char_link(hdoc *, uint8_t *, size_t, size_t, int);
+static size_t char_image(hdoc *, uint8_t *, size_t, size_t, int);
+static size_t char_superscript(hdoc *, uint8_t *, size_t, size_t, int);
+static size_t char_math(hdoc *, uint8_t *, size_t, size_t, int);
 
 enum markdown_char_t {
 	MD_CHAR_NONE = 0,
@@ -635,7 +635,7 @@ parse_inline(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int nln)
 		nln = svsz != ob->size ? buf_newln(ob) : nln;
 
 		end = markdown_char_ptrs[(int)active_char[data[end]]]
-			(ob, doc, data + i, i - consumed, size - i, nln);
+			(doc, data + i, i - consumed, size - i, nln);
 
 		/* Check if no action from the callback. */
 
@@ -805,7 +805,6 @@ parse_emph1(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 {
 	size_t	 i = 0, len;
 	hbuf	*work = NULL;
-	int	 r;
 	struct lowdown_node *n;
 
 	/* Skipping one symbol if coming from emph3. */
@@ -833,7 +832,7 @@ parse_emph1(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 			popnode(doc, n);
 			popbuf(doc, BUFFER_SPAN);
 
-			return r ? i + 1 : 0;
+			return i + 1;
 		}
 	}
 
@@ -848,7 +847,6 @@ parse_emph2(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 {
 	size_t	 i = 0, len;
 	hbuf	*work = NULL;
-	int	 r;
 	struct lowdown_node *n;
 	enum lowdown_rndrt t;
 
@@ -872,11 +870,10 @@ parse_emph2(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 
 			n = pushnode(doc, t);
 			parse_inline(work, doc, data, i, 1);
-			r = work->size > 0;
 			popnode(doc, n);
 
 			popbuf(doc, BUFFER_SPAN);
-			return r ? i + 2 : 0;
+			return i + 2;
 		}
 		i++;
 	}
@@ -891,7 +888,6 @@ static size_t
 parse_emph3(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 {
 	size_t	 i = 0, len;
-	int	 r;
 	hbuf	*work;
 	struct lowdown_node *n;
 
@@ -914,10 +910,9 @@ parse_emph3(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 			n = pushnode(doc, LOWDOWN_TRIPLE_EMPHASIS);
 			work = newbuf(doc, BUFFER_SPAN);
 			parse_inline(work, doc, data, i, 1);
-			r = work->size > 0;
 			popnode(doc, n);
 			popbuf(doc, BUFFER_SPAN);
-			return r ? i + 3 : 0;
+			return i + 3;
 		} else if (i + 1 < size && data[i + 1] == c) {
 			/* 
 			 * Double symbol (**) found.
@@ -1002,8 +997,8 @@ parse_math(hdoc *doc, uint8_t *data,
  * Single and double emphasis parsing.
  */
 static size_t
-char_emphasis(hbuf *ob, hdoc *doc, 
-	uint8_t *data, size_t offset, size_t size, int nln)
+char_emphasis(hdoc *doc, uint8_t *data, 
+	size_t offset, size_t size, int nln)
 {
 	uint8_t c = data[0];
 	size_t ret;
@@ -1052,15 +1047,15 @@ char_emphasis(hbuf *ob, hdoc *doc,
  * '\n' preceded by two spaces (assuming linebreak != 0) 
  */
 static size_t
-char_linebreak(hbuf *ob, hdoc *doc, 
-	uint8_t *data, size_t offset, size_t size, int nln)
+char_linebreak(hdoc *doc, uint8_t *data, 
+	size_t offset, size_t size, int nln)
 {
 	struct lowdown_node *n, *cur;
 
 	if (offset < 2 || data[-1] != ' ' || data[-2] != ' ')
 		return 0;
 
-	/* Removing the last space from ob and rendering. */
+	/* Removing the last space from nodes. */
 
 	if (NULL != (cur = doc->current) && 
 	    NULL != (n = TAILQ_LAST(&cur->children, lowdown_nodeq)) &&
@@ -1080,7 +1075,8 @@ char_linebreak(hbuf *ob, hdoc *doc,
  * '`' parsing a code span (assuming codespan != 0) 
  */
 static size_t
-char_codespan(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size, int nln)
+char_codespan(hdoc *doc, uint8_t *data, 
+	size_t offset, size_t size, int nln)
 {
 	hbuf	 work;
 	size_t	 end, nb = 0, i, f_begin, f_end;
@@ -1134,8 +1130,8 @@ char_codespan(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size, in
  * '\\' backslash escape
  */
 static size_t
-char_escape(hbuf *ob, hdoc *doc,
-	uint8_t *data, size_t offset, size_t size, int nln)
+char_escape(hdoc *doc, uint8_t *data, 
+	size_t offset, size_t size, int nln)
 {
 	static const char *escape_chars =
 		"\\`*_{}[]()#+-.!:|&<>^~=\"$";
@@ -1178,7 +1174,8 @@ char_escape(hbuf *ob, hdoc *doc,
  * Valid entities are assumed to be anything matching &#?[A-Za-z0-9]+;
  */
 static size_t
-char_entity(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size, int nln)
+char_entity(hdoc *doc, uint8_t *data, 
+	size_t offset, size_t size, int nln)
 {
 	size_t	 end = 1;
 	hbuf	 work;
@@ -1207,8 +1204,8 @@ char_entity(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size, int 
  * '<' when tags or autolinks are allowed.
  */
 static size_t
-char_langle_tag(hbuf *ob, hdoc *doc, 
-	uint8_t *data, size_t offset, size_t size, int nln)
+char_langle_tag(hdoc *doc, uint8_t *data, 
+	size_t offset, size_t size, int nln)
 {
 	hbuf	 	 work;
 	halink_type 	 altype = HALINK_NONE;
@@ -1251,8 +1248,8 @@ char_langle_tag(hbuf *ob, hdoc *doc,
 }
 
 static size_t
-char_autolink_www(hbuf *ob, hdoc *doc,
-	uint8_t *data, size_t offset, size_t size, int nln)
+char_autolink_www(hdoc *doc, uint8_t *data, 
+	size_t offset, size_t size, int nln)
 {
 	hbuf	*link, *link_url;
 	size_t	 link_len, rewind;
@@ -1268,11 +1265,6 @@ char_autolink_www(hbuf *ob, hdoc *doc,
 		link_url = newbuf(doc, BUFFER_SPAN);
 		HBUF_PUTSL(link_url, "http://");
 		hbuf_put(link_url, link->data, link->size);
-
-		if (ob->size > rewind)
-			ob->size -= rewind;
-		else
-			ob->size = 0;
 
 		if (doc->current &&
 		    NULL != (n = TAILQ_LAST
@@ -1304,8 +1296,8 @@ char_autolink_www(hbuf *ob, hdoc *doc,
  * FIXME: merge with char_autolink_url().
  */
 static size_t
-char_autolink_email(hbuf *ob, hdoc *doc, 
-	uint8_t *data, size_t offset, size_t size, int nln)
+char_autolink_email(hdoc *doc, uint8_t *data, 
+	size_t offset, size_t size, int nln)
 {
 	hbuf	*link;
 	size_t	 link_len, rewind;
@@ -1318,13 +1310,6 @@ char_autolink_email(hbuf *ob, hdoc *doc,
 	link_len = halink_email(&rewind, link, data, offset, size);
 
 	if (link_len > 0) {
-		if (ob->size > rewind) {
-			ob->size -= rewind;
-			nln = 0 == ob->size ? nln :
-				'\n' == ob->data[ob->size - 1];
-		} else
-			ob->size = 0;
-
 		if (doc->current &&
 		    NULL != (n = TAILQ_LAST
 			    (&doc->current->children, 
@@ -1348,8 +1333,8 @@ char_autolink_email(hbuf *ob, hdoc *doc,
 }
 
 static size_t
-char_autolink_url(hbuf *ob, hdoc *doc, 
-	uint8_t *data, size_t offset, size_t size, int nln)
+char_autolink_url(hdoc *doc, uint8_t *data, 
+	size_t offset, size_t size, int nln)
 {
 	hbuf	*link;
 	size_t	 link_len, rewind;
@@ -1362,13 +1347,6 @@ char_autolink_url(hbuf *ob, hdoc *doc,
 	link_len = halink_url(&rewind, link, data, offset, size);
 
 	if (link_len > 0) {
-		if (ob->size > rewind) {
-			ob->size -= rewind;
-			nln = 0 == ob->size ? nln :
-				'\n' == ob->data[ob->size - 1];
-		} else
-			ob->size = 0;
-
 		if (doc->current &&
 		    NULL != (n = TAILQ_LAST
 			    (&doc->current->children, 
@@ -1392,16 +1370,15 @@ char_autolink_url(hbuf *ob, hdoc *doc,
 }
 
 static size_t
-char_image(hbuf *ob, hdoc *doc, 
-	uint8_t *data, size_t offset, size_t size, int nln) 
+char_image(hdoc *doc, uint8_t *data, 
+	size_t offset, size_t size, int nln) 
 {
 	size_t	 ret;
 
 	if (size < 2 || data[1] != '[') 
 		return 0;
 
-	ret = char_link(ob, doc, 
-		data + 1, offset + 1, size - 1, nln);
+	ret = char_link(doc, data + 1, offset + 1, size - 1, nln);
 
 	if (!ret) 
 		return 0;
@@ -1413,8 +1390,8 @@ char_image(hbuf *ob, hdoc *doc,
  * '[': parsing a link, footnote, metadata, or image.
  */
 static size_t
-char_link(hbuf *ob, hdoc *doc, 
-	uint8_t *data, size_t offset, size_t size, int nln)
+char_link(hdoc *doc, uint8_t *data, 
+	size_t offset, size_t size, int nln)
 {
 	hbuf 	*content = NULL, *link = NULL , *title = NULL, 
 		*u_link = NULL, *dims = NULL;
@@ -1802,8 +1779,8 @@ cleanup:
 }
 
 static size_t
-char_superscript(hbuf *ob, hdoc *doc, 
-	uint8_t *data, size_t offset, size_t size, int nln)
+char_superscript(hdoc *doc, uint8_t *data, 
+	size_t offset, size_t size, int nln)
 {
 	size_t	 sup_start, sup_len;
 	hbuf	*sup;
@@ -1839,8 +1816,8 @@ char_superscript(hbuf *ob, hdoc *doc,
 }
 
 static size_t
-char_math(hbuf *ob, hdoc *doc, 
-	uint8_t *data, size_t offset, size_t size, int nln)
+char_math(hdoc *doc, uint8_t *data, 
+	size_t offset, size_t size, int nln)
 {
 
 	/* Double dollar. */
