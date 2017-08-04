@@ -801,8 +801,7 @@ find_emph_char(const uint8_t *data, size_t size, uint8_t c)
  * symbol.
  */
 static size_t
-parse_emph1(hbuf *ob, hdoc *doc, 
-	uint8_t *data, size_t size, uint8_t c, int nln)
+parse_emph1(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 {
 	size_t	 i = 0, len;
 	hbuf	*work = NULL;
@@ -845,8 +844,7 @@ parse_emph1(hbuf *ob, hdoc *doc,
  * Parsing single emphase.
  */
 static size_t
-parse_emph2(hbuf *ob, hdoc *doc, 
-	uint8_t *data, size_t size, uint8_t c, int nln)
+parse_emph2(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 {
 	size_t	 i = 0, len;
 	hbuf	*work = NULL;
@@ -890,8 +888,7 @@ parse_emph2(hbuf *ob, hdoc *doc,
  * Finds the first closing tag, and delegates to the other emph.
  */
 static size_t
-parse_emph3(hbuf *ob, hdoc *doc, 
-	uint8_t *data, size_t size, uint8_t c, int nln)
+parse_emph3(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 {
 	size_t	 i = 0, len;
 	int	 r;
@@ -925,7 +922,7 @@ parse_emph3(hbuf *ob, hdoc *doc,
 			/* 
 			 * Double symbol (**) found.
 			 */
-			len = parse_emph1(ob, doc, 
+			len = parse_emph1(doc, 
 				data - 2, size + 2, c, nln);
 			if (!len) 
 				return 0;
@@ -935,7 +932,7 @@ parse_emph3(hbuf *ob, hdoc *doc,
 			/* 
 			 * Single symbol found.
 			 */
-			len = parse_emph2(ob, doc, 
+			len = parse_emph2(doc, 
 				data - 1, size + 1, c, nln);
 			if (!len) 
 				return 0;
@@ -950,7 +947,7 @@ parse_emph3(hbuf *ob, hdoc *doc,
  * Parses a math span until the given ending delimiter.
  */
 static size_t
-parse_math(hbuf *ob, hdoc *doc, uint8_t *data, 
+parse_math(hdoc *doc, uint8_t *data, 
 	size_t offset, size_t size, const char *end, 
 	size_t delimsz, int displaymode)
 {
@@ -1022,7 +1019,7 @@ char_emphasis(hbuf *ob, hdoc *doc,
 		 * strikethrough and highlight only takes '~~'.
 		 */
 		if (c == '~' || c == '=' || xisspace(data[1]) || 
-		    (ret = parse_emph1(ob, doc, 
+		    (ret = parse_emph1(doc, 
 		     data + 1, size - 1, c, nln)) == 0)
 			return 0;
 
@@ -1031,7 +1028,7 @@ char_emphasis(hbuf *ob, hdoc *doc,
 
 	if (size > 3 && data[1] == c && data[2] != c) {
 		if (xisspace(data[2]) || 
-		    (ret = parse_emph2(ob, doc, 
+		    (ret = parse_emph2(doc, 
 		     data + 2, size - 2, c, nln)) == 0)
 			return 0;
 
@@ -1040,7 +1037,7 @@ char_emphasis(hbuf *ob, hdoc *doc,
 
 	if (size > 4 && data[1] == c && data[2] == c && data[3] != c) {
 		if (c == '~' || c == '=' || xisspace(data[3]) || 
-		    (ret = parse_emph3(ob, doc, 
+		    (ret = parse_emph3(doc, 
 		     data + 3, size - 3, c, nln)) == 0)
 			return 0;
 
@@ -1150,7 +1147,7 @@ char_escape(hbuf *ob, hdoc *doc,
 		    size > 2 &&
 		    (data[2] == '(' || data[2] == '[')) {
 			end = (data[2] == '[') ? "\\\\]" : "\\\\)";
-			w = parse_math(ob, doc, data, offset,
+			w = parse_math(doc, data, offset,
 				size, end, 3, data[2] == '[');
 			if (w)
 				return w;
@@ -1844,12 +1841,12 @@ char_math(hbuf *ob, hdoc *doc,
 	/* Double dollar. */
 
 	if (size > 1 && data[1] == '$')
-		return parse_math(ob, doc, data, offset, size, "$$", 2, 1);
+		return parse_math(doc, data, offset, size, "$$", 2, 1);
 
 	/* Single dollar allowed only with MATH_EXPLICIT flag. */
 
 	if (doc->ext_flags & LOWDOWN_MATHEXP)
-		return parse_math(ob, doc, data, offset, size, "$", 1, 0);
+		return parse_math(doc, data, offset, size, "$", 1, 0);
 
 	return 0;
 }
@@ -2118,7 +2115,7 @@ prefix_uli(uint8_t *data, size_t size)
  * Handles parsing of a blockquote fragment.
  */
 static size_t
-parse_blockquote(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
+parse_blockquote(hdoc *doc, uint8_t *data, size_t size)
 {
 	size_t beg, end = 0, pre, work_size = 0;
 	uint8_t *work_data = NULL;
@@ -2171,7 +2168,7 @@ parse_blockquote(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
  * Returns the number of characters parsed from the paragraph input.
  */
 static size_t
-parse_paragraph(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
+parse_paragraph(hdoc *doc, uint8_t *data, size_t size)
 {
 	hbuf		 work;
 	hbuf		*tmp, *header_work;
@@ -2267,7 +2264,7 @@ parse_paragraph(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
  * Handles parsing of a block-level code fragment.
  */
 static size_t
-parse_fencedcode(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
+parse_fencedcode(hdoc *doc, uint8_t *data, size_t size)
 {
 	hbuf	 text;
 	hbuf	 lang;
@@ -2320,7 +2317,7 @@ parse_fencedcode(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 }
 
 static size_t
-parse_blockcode(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
+parse_blockcode(hdoc *doc, uint8_t *data, size_t size)
 {
 	size_t	 beg, end, pre;
 	hbuf	*work = NULL;
@@ -2537,7 +2534,7 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
  * Parsing ordered or unordered list block.
  */
 static size_t
-parse_list(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, hlist_fl flags)
+parse_list(hdoc *doc, uint8_t *data, size_t size, hlist_fl flags)
 {
 	hbuf	*work = NULL;
 	size_t	 i = 0, j, k = 1;
@@ -2603,7 +2600,7 @@ parse_atxheader(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
  * Parse a single footnote definition.
  */
 static void
-parse_footnote_def(hbuf *ob, hdoc *doc, unsigned int num, uint8_t *data, size_t size)
+parse_footnote_def(hdoc *doc, unsigned int num, uint8_t *data, size_t size)
 {
 	hbuf	*work = NULL;
 	struct lowdown_node *n;
@@ -2621,7 +2618,7 @@ parse_footnote_def(hbuf *ob, hdoc *doc, unsigned int num, uint8_t *data, size_t 
  * Render the contents of the footnotes.
  */
 static void
-parse_footnote_list(hbuf *ob, hdoc *doc, struct footnote_list *footnotes)
+parse_footnote_list(hdoc *doc, struct footnote_list *footnotes)
 {
 	hbuf			*work = NULL;
 	struct footnote_item	*item;
@@ -2638,7 +2635,7 @@ parse_footnote_list(hbuf *ob, hdoc *doc, struct footnote_list *footnotes)
 	item = footnotes->head;
 	while (item) {
 		ref = item->ref;
-		parse_footnote_def(work, doc, ref->num,
+		parse_footnote_def(doc, ref->num,
 			ref->contents->data, ref->contents->size);
 		item = item->next;
 	}
@@ -2782,7 +2779,7 @@ hhtml_find_block(const char *str, size_t len)
  * Parsing of inline HTML block.
  */
 static size_t
-parse_htmlblock(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
+parse_htmlblock(hdoc *doc, uint8_t *data, size_t size)
 {
 	hbuf	 	 work;
 	size_t	 	 i, j = 0, tag_len, tag_end;
@@ -3058,7 +3055,7 @@ parse_table_header(struct lowdown_node **np,
 }
 
 static size_t
-parse_table(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
+parse_table(hdoc *doc, uint8_t *data, size_t size)
 {
 	size_t		 i, columns, row_start, pipes;
 	hbuf		 *work = NULL, *header_work = NULL, 
@@ -3143,7 +3140,7 @@ parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 
 		if (data[beg] == '<' && 
 		    (i = parse_htmlblock
-		     (ob, doc, txt_data, end)) != 0) {
+		     (doc, txt_data, end)) != 0) {
 			beg += i;
 			continue;
 		}
@@ -3170,7 +3167,7 @@ parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 		
 		if ((doc->ext_flags & LOWDOWN_FENCED) != 0 &&
 		    (i = parse_fencedcode
-		     (ob, doc, txt_data, end)) != 0) {
+		     (doc, txt_data, end)) != 0) {
 			beg += i;
 			continue;
 		}
@@ -3178,7 +3175,7 @@ parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 		/* Table parsing. */
 
 		if ((doc->ext_flags & LOWDOWN_TABLES) != 0 &&
-		    (i = parse_table(ob, doc, txt_data, end)) != 0) {
+		    (i = parse_table(doc, txt_data, end)) != 0) {
 			beg += i;
 			continue;
 		}
@@ -3187,7 +3184,7 @@ parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 
 		if (prefix_quote(txt_data, end)) {
 			beg += parse_blockquote
-				(ob, doc, txt_data, end);
+				(doc, txt_data, end);
 			continue;
 		}
 
@@ -3195,28 +3192,28 @@ parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 
 		if ( ! (doc->ext_flags & LOWDOWN_NOCODEIND) && 
 		    prefix_code(txt_data, end)) {
-			beg += parse_blockcode(ob, doc, txt_data, end);
+			beg += parse_blockcode(doc, txt_data, end);
 			continue;
 		}
 
 		/* Some sort of unordered list. */
 
 		if (prefix_uli(txt_data, end)) {
-			beg += parse_list(ob, doc, txt_data, end, 0);
+			beg += parse_list(doc, txt_data, end, 0);
 			continue;
 		}
 
 		/* An ordered list. */
 
 		if (prefix_oli(txt_data, end, NULL, NULL)) {
-			beg += parse_list(ob, doc, 
+			beg += parse_list(doc, 
 				txt_data, end, HLIST_FL_ORDERED);
 			continue;
 		}
 
 		/* No match: just a regular paragraph. */
 
-		beg += parse_paragraph(ob, doc, txt_data, end);
+		beg += parse_paragraph(doc, txt_data, end);
 	}
 }
 
@@ -3818,7 +3815,7 @@ hdoc_render(hdoc *doc, hbuf *ob, const uint8_t *data,
 	/* Footnotes. */
 
 	if (footnotes_enabled)
-		parse_footnote_list(divert, doc, &doc->footnotes_used);
+		parse_footnote_list(doc, &doc->footnotes_used);
 
 	n = pushnode(doc, LOWDOWN_DOC_FOOTER);
 	popnode(doc, n);
