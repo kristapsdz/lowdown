@@ -161,6 +161,8 @@ feature_out(const char *v)
 		return(LOWDOWN_HTML_ESCAPE);
 	if (0 == strcasecmp(v, "html-hardwrap"))
 		return(LOWDOWN_HTML_HARD_WRAP);
+	if (0 == strcasecmp(v, "html-head-ids"))
+		return(LOWDOWN_HTML_HEAD_IDS);
 	if (0 == strcasecmp(v, "nroff-skiphtml"))
 		return(LOWDOWN_NROFF_SKIP_HTML);
 	if (0 == strcasecmp(v, "nroff-hardwrap"))
