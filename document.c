@@ -1052,18 +1052,23 @@ char_emphasis(hbuf *ob, hdoc *doc,
  * '\n' preceded by two spaces (assuming linebreak != 0) 
  */
 static size_t
-char_linebreak(hbuf *ob, hdoc *doc, uint8_t *data, size_t offset, size_t size, int nln)
+char_linebreak(hbuf *ob, hdoc *doc, 
+	uint8_t *data, size_t offset, size_t size, int nln)
 {
-	struct lowdown_node *n;
+	struct lowdown_node *n, *cur;
 
 	if (offset < 2 || data[-1] != ' ' || data[-2] != ' ')
 		return 0;
 
 	/* Removing the last space from ob and rendering. */
-	/* FIXME */
 
-	while (ob->size && ob->data[ob->size - 1] == ' ')
-		ob->size--;
+	if (NULL != (cur = doc->current) && 
+	    NULL != (n = TAILQ_LAST(&cur->children, lowdown_nodeq)) &&
+	    LOWDOWN_NORMAL_TEXT == n->type)
+		while (n->rndr_normal_text.text.size &&
+		       n->rndr_normal_text.text.data
+		       [n->rndr_normal_text.text.size - 1] == ' ')
+			n->rndr_normal_text.text.size--;
 
 	n = pushnode(doc, LOWDOWN_LINEBREAK);
 	popnode(doc, n);
