@@ -451,13 +451,22 @@ rndr_paragraph(hbuf *ob, const hbuf *content, void *data, size_t par_count)
 	BUFFER_NEWLINE(content->data + i, content->size - i, ob);
 }
 
+/*
+ * FIXME: verify behaviour.
+ */
 static void
 rndr_raw_block(hbuf *ob, const hbuf *content, void *data)
 {
+	nroff_state *state = data;
 	size_t org, sz;
 
-	if ( ! content)
+	if (NULL == content)
 		return;
+
+	if (state->flags & LOWDOWN_NROFF_SKIP_HTML) {
+		escape_block(ob, content->data, content->size);
+		return;
+	}
 
 	/*
 	 * FIXME: Do we *really* need to trim the HTML? How does that
@@ -613,13 +622,6 @@ rndr_superscript(hbuf *ob, const hbuf *content, void *data, int nln)
 		HBUF_PUTSL(ob, "\\s+3\\d");
 	}
 	return 1;
-}
-
-static void
-rndr_backspace(hbuf *ob)
-{
-
-	HBUF_PUTSL(ob, "\\h[-0.475]\n");
 }
 
 static void
@@ -842,47 +844,6 @@ lowdown_nroff_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root)
 hrend *
 hrend_nroff_new(unsigned int render_flags, int mdoc)
 {
-	static const hrend cb_default = {
-		NULL,
-
-		rndr_blockcode,
-		rndr_blockquote,
-		rndr_header,
-		rndr_hrule,
-		rndr_list,
-		rndr_listitem,
-		rndr_paragraph,
-		rndr_table,
-		rndr_table_header,
-		rndr_table_body,
-		rndr_tablerow,
-		rndr_tablecell,
-		rndr_footnotes,
-		rndr_footnote_def,
-		rndr_raw_block,
-
-		rndr_autolink,
-		rndr_codespan,
-		rndr_double_emphasis,
-		rndr_emphasis,
-		rndr_highlight,
-		rndr_image,
-		rndr_linebreak,
-		rndr_link,
-		rndr_triple_emphasis,
-		rndr_strikethrough,
-		rndr_superscript,
-		rndr_footnote_ref,
-		rndr_math,
-		rndr_raw_html,
-
-		NULL,
-		rndr_normal_text,
-		rndr_backspace,
-
-		NULL,
-		NULL
-	};
 	nroff_state 	*state;
 	hrend 		*renderer;
 
@@ -896,10 +857,6 @@ hrend_nroff_new(unsigned int render_flags, int mdoc)
 	/* Prepare the renderer. */
 
 	renderer = xmalloc(sizeof(hrend));
-	memcpy(renderer, &cb_default, sizeof(hrend));
-
-	if (render_flags & LOWDOWN_NROFF_SKIP_HTML)
-		renderer->blockhtml = NULL;
 
 	renderer->opaque = state;
 	return renderer;

@@ -61,63 +61,6 @@ typedef struct hrend {
 	/* Private object passed as void argument. */
 
 	void *opaque;
-
-	/* Block level callbacks: NULL skips the block. */
-
-	void (*blockcode)(hbuf *, const hbuf *, const hbuf *, void *);
-	void (*blockquote)(hbuf *, const hbuf *, void *);
-	void (*header)(hbuf *, const hbuf *, int, void *);
-	void (*hrule)(hbuf *, void *);
-	void (*list)(hbuf *, const hbuf *, hlist_fl, void *);
-	void (*listitem)(hbuf *, const hbuf *, hlist_fl, void *, size_t);
-	void (*paragraph)(hbuf *, const hbuf *, void *, size_t);
-	void (*table)(hbuf *, const hbuf *, void *);
-	void (*table_header)(hbuf *, const hbuf *, 
-		void *, const htbl_flags *, size_t);
-	void (*table_body)(hbuf *, const hbuf *, void *);
-	void (*table_row)(hbuf *, const hbuf *, void *);
-	void (*table_cell)(hbuf *, const hbuf *, 
-		htbl_flags, void *, size_t, size_t);
-	void (*footnotes)(hbuf *, const hbuf *, void *);
-	void (*footnote_def)(hbuf *, 
-		const hbuf *, unsigned int, void *);
-	void (*blockhtml)(hbuf *, const hbuf *, void *);
-
-	/* 
-	 * Span level callbacks: NULL or return 0 prints the span
-	 * verbatim.
-	 */
-
-	int (*autolink)(hbuf *, const hbuf *, halink_type, void *, int);
-	int (*codespan)(hbuf *, const hbuf *, void *, int);
-	int (*double_emphasis)(hbuf *, const hbuf *, void *, int);
-	int (*emphasis)(hbuf *, const hbuf *, void *, int);
-	int (*highlight)(hbuf *, const hbuf *, void *, int);
-	int (*image)(hbuf *, const hbuf *, const hbuf *, 
-		const hbuf *, const hbuf *, void *);
-	int (*linebreak)(hbuf *, void *);
-	int (*link)(hbuf *, const hbuf *, 
-		const hbuf *, const hbuf *, void *, int);
-	int (*triple_emphasis)(hbuf *, const hbuf *, void *, int);
-	int (*strikethrough)(hbuf *, const hbuf *, void *, int);
-	int (*superscript)(hbuf *, const hbuf *, void *, int);
-	int (*footnote_ref)(hbuf *, unsigned int num, void *);
-	int (*math)(hbuf *, const hbuf *, int, void *);
-	int (*raw_html)(hbuf *, const hbuf *, void *);
-
-	/* 
-	 * Low level callbacks: NULL copies input directly into the
-	 * output.
-	 */
-
-	void (*entity)(hbuf *, const hbuf *, void *);
-	void (*normal_text)(hbuf *, const hbuf *, void *, int);
-	void (*backspace)(hbuf *);
-
-	/* Miscellaneous callbacks. */
-
-	void (*doc_header)(hbuf *, int, void *);
-	void (*doc_footer)(hbuf *, int, void *);
 } hrend;
 
 __BEGIN_DECLS
