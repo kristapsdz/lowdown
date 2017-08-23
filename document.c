@@ -32,19 +32,17 @@
 #include "lowdown.h"
 #include "extern.h"
 
-#define REF_TABLE_SIZE	8
-#define BUFFER_BLOCK	0
-#define BUFFER_SPAN	1
 #define HOEDOWN_LI_END	8 /* internal list flag */
 
 /* Reference to a link. */
 struct link_ref {
-	hbuf		*name;
-	hbuf		*link;
-	hbuf		*title;
+	hbuf		*name; /* identifier of link */
+	hbuf		*link; /* link address */
+	hbuf		*title; /* optional title */
 	TAILQ_ENTRY(link_ref) entries;
 };
 
+/* Queue of links. */
 TAILQ_HEAD(link_refq, link_ref);
 
 /* Feference to a footnote. */
@@ -129,7 +127,6 @@ static char_trigger markdown_char_ptrs[] = {
 
 struct 	hdoc {
 	const struct lowdown_opts *opts;
-	struct link_ref	*refs[REF_TABLE_SIZE];
 	struct link_refq refq;
 	struct footnote_list footnotes_found;
 	struct footnote_list footnotes_used;
@@ -3671,7 +3668,6 @@ hdoc_render(hdoc *doc, const uint8_t *data,
 	/* Reset the references table. */
 
 	TAILQ_INIT(&doc->refq);
-	memset(&doc->refs, 0x0, REF_TABLE_SIZE * sizeof(void *));
 
 	footnotes_enabled = doc->ext_flags & LOWDOWN_FOOTNOTES;
 
