@@ -67,7 +67,7 @@ escape_href(hbuf *ob, const uint8_t *source, size_t length)
 }
 
 static int
-rndr_autolink(hbuf *ob, const hbuf *link, halink_type type, void *data, int nln)
+rndr_autolink(hbuf *ob, const hbuf *link, halink_type type, void *data)
 {
 
 	if (!link || !link->size)
@@ -126,7 +126,7 @@ rndr_blockquote(hbuf *ob, const hbuf *content, void *data)
 }
 
 static int
-rndr_codespan(hbuf *ob, const hbuf *text, void *data, int nln)
+rndr_codespan(hbuf *ob, const hbuf *text, void *data)
 {
 
 	HBUF_PUTSL(ob, "<code>");
@@ -137,7 +137,7 @@ rndr_codespan(hbuf *ob, const hbuf *text, void *data, int nln)
 }
 
 static int
-rndr_strikethrough(hbuf *ob, const hbuf *content, void *data, int nln)
+rndr_strikethrough(hbuf *ob, const hbuf *content, void *data)
 {
 	if (!content || !content->size)
 		return 0;
@@ -149,7 +149,7 @@ rndr_strikethrough(hbuf *ob, const hbuf *content, void *data, int nln)
 }
 
 static int
-rndr_double_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
+rndr_double_emphasis(hbuf *ob, const hbuf *content, void *data)
 {
 	if (!content || !content->size)
 		return 0;
@@ -162,7 +162,7 @@ rndr_double_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
 }
 
 static int
-rndr_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
+rndr_emphasis(hbuf *ob, const hbuf *content, void *data)
 {
 	if (!content || !content->size) return 0;
 	HBUF_PUTSL(ob, "<em>");
@@ -172,7 +172,7 @@ rndr_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
 }
 
 static int
-rndr_highlight(hbuf *ob, const hbuf *content, void *data, int nln)
+rndr_highlight(hbuf *ob, const hbuf *content, void *data)
 {
 	if (!content || !content->size)
 		return 0;
@@ -268,7 +268,7 @@ rndr_header(hbuf *ob, const hbuf *content, int level, void *data)
 }
 
 static int
-rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title, void *data, int nln)
+rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title, void *data)
 {
 
 	HBUF_PUTSL(ob, "<a href=\"");
@@ -324,7 +324,7 @@ rndr_listitem(hbuf *ob, const hbuf *content, hlist_fl flags, void *data, size_t 
 }
 
 static void
-rndr_paragraph(hbuf *ob, const hbuf *content, void *data, size_t par_count)
+rndr_paragraph(hbuf *ob, const hbuf *content, void *data)
 {
 	html_state *state = data;
 	size_t i = 0;
@@ -408,7 +408,7 @@ rndr_raw_block(hbuf *ob, const hbuf *text, void *data)
 }
 
 static int
-rndr_triple_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
+rndr_triple_emphasis(hbuf *ob, const hbuf *content, void *data)
 {
 
 	if (!content || !content->size)
@@ -569,7 +569,7 @@ rndr_tablecell(hbuf *ob, const hbuf *content, htbl_flags flags, void *data, size
 }
 
 static int
-rndr_superscript(hbuf *ob, const hbuf *content, void *data, int nln)
+rndr_superscript(hbuf *ob, const hbuf *content, void *data)
 {
 
 	if (!content || !content->size)
@@ -582,7 +582,7 @@ rndr_superscript(hbuf *ob, const hbuf *content, void *data, int nln)
 }
 
 static void
-rndr_normal_text(hbuf *ob, const hbuf *content, void *data, int nl)
+rndr_normal_text(hbuf *ob, const hbuf *content, void *data)
 {
 
 	if (content)
@@ -713,7 +713,7 @@ lowdown_html_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root)
 			ref->opaque, root->rndr_listitem.num);
 		break;
 	case (LOWDOWN_PARAGRAPH):
-		rndr_paragraph(ob, tmp, ref->opaque, 0);
+		rndr_paragraph(ob, tmp, ref->opaque);
 		break;
 	case (LOWDOWN_TABLE_BLOCK):
 		rndr_table(ob, tmp, ref->opaque);
@@ -752,21 +752,21 @@ lowdown_html_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root)
 		rndr_autolink(ob, 
 			&root->rndr_autolink.link,
 			root->rndr_autolink.type,
-			ref->opaque, 0);
+			ref->opaque);
 		break;
 	case (LOWDOWN_CODESPAN):
 		rndr_codespan(ob, 
 			&root->rndr_codespan.text, 
-			ref->opaque, 0);
+			ref->opaque);
 		break;
 	case (LOWDOWN_DOUBLE_EMPHASIS):
-		rndr_double_emphasis(ob, tmp, ref->opaque, 0);
+		rndr_double_emphasis(ob, tmp, ref->opaque);
 		break;
 	case (LOWDOWN_EMPHASIS):
-		rndr_emphasis(ob, tmp, ref->opaque, 0);
+		rndr_emphasis(ob, tmp, ref->opaque);
 		break;
 	case (LOWDOWN_HIGHLIGHT):
-		rndr_highlight(ob, tmp, ref->opaque, 0);
+		rndr_highlight(ob, tmp, ref->opaque);
 		break;
 	case (LOWDOWN_IMAGE):
 		rndr_image(ob, 
@@ -783,16 +783,16 @@ lowdown_html_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root)
 		rndr_link(ob, tmp,
 			&root->rndr_link.link,
 			&root->rndr_link.title,
-			ref->opaque, 0);
+			ref->opaque);
 		break;
 	case (LOWDOWN_TRIPLE_EMPHASIS):
-		rndr_triple_emphasis(ob, tmp, ref->opaque, 0);
+		rndr_triple_emphasis(ob, tmp, ref->opaque);
 		break;
 	case (LOWDOWN_STRIKETHROUGH):
-		rndr_strikethrough(ob, tmp, ref->opaque, 0);
+		rndr_strikethrough(ob, tmp, ref->opaque);
 		break;
 	case (LOWDOWN_SUPERSCRIPT):
-		rndr_superscript(ob, tmp, ref->opaque, 0);
+		rndr_superscript(ob, tmp, ref->opaque);
 		break;
 	case (LOWDOWN_FOOTNOTE_REF):
 		rndr_footnote_ref(ob, 
@@ -810,7 +810,7 @@ lowdown_html_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root)
 	case (LOWDOWN_NORMAL_TEXT):
 		rndr_normal_text(ob, 
 			&root->rndr_normal_text.text, 
-			ref->opaque, 0);
+			ref->opaque);
 		break;
 	case (LOWDOWN_ENTITY):
 		hbuf_put(ob,
