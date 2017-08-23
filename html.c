@@ -366,15 +366,29 @@ rndr_paragraph(hbuf *ob, const hbuf *content, void *data, size_t par_count)
 	HBUF_PUTSL(ob, "</p>\n");
 }
 
+/*
+ * FIXME: verify behaviour.
+ */
 static void
 rndr_raw_block(hbuf *ob, const hbuf *text, void *data)
 {
+	html_state *state = data;
 	size_t org, sz;
 
-	if (!text)
+	if (NULL == text)
 		return;
 
-	/* FIXME: Do we *really* need to trim the HTML? How does that make a difference? */
+	if (state->flags & LOWDOWN_HTML_SKIP_HTML || 
+	    state->flags & LOWDOWN_HTML_ESCAPE) {
+		escape_html(ob, text->data, text->size);
+		return;
+	}
+
+	/* 
+	 * FIXME: Do we *really* need to trim the HTML? How does that
+	 * make a difference? 
+	 */
+
 	sz = text->size;
 	while (sz > 0 && text->data[sz - 1] == '\n')
 		sz--;
@@ -815,48 +829,6 @@ lowdown_html_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root)
 hrend *
 hrend_html_new(unsigned int render_flags, int nesting_level)
 {
-	static const hrend cb_default = {
-		NULL,
-
-		rndr_blockcode,
-		rndr_blockquote,
-		rndr_header,
-		rndr_hrule,
-		rndr_list,
-		rndr_listitem,
-		rndr_paragraph,
-		rndr_table,
-		rndr_table_header,
-		rndr_table_body,
-		rndr_tablerow,
-		rndr_tablecell,
-		rndr_footnotes,
-		rndr_footnote_def,
-		rndr_raw_block,
-
-		rndr_autolink,
-		rndr_codespan,
-		rndr_double_emphasis,
-		rndr_emphasis,
-		rndr_highlight,
-		rndr_image,
-		rndr_linebreak,
-		rndr_link,
-		rndr_triple_emphasis,
-		rndr_strikethrough,
-		rndr_superscript,
-		rndr_footnote_ref,
-		rndr_math,
-		rndr_raw_html,
-
-		NULL,
-		rndr_normal_text,
-		NULL,
-
-		NULL,
-		NULL
-	};
-
 	html_state *state;
 	hrend *renderer;
 
@@ -870,11 +842,6 @@ hrend_html_new(unsigned int render_flags, int nesting_level)
 
 	/* Prepare the renderer */
 	renderer = xmalloc(sizeof(hrend));
-	memcpy(renderer, &cb_default, sizeof(hrend));
-
-	if (render_flags & LOWDOWN_HTML_SKIP_HTML || 
-	    render_flags & LOWDOWN_HTML_ESCAPE)
-		renderer->blockhtml = NULL;
 
 	renderer->opaque = state;
 	return renderer;
