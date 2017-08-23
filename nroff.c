@@ -391,7 +391,7 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 	if (NULL == content || 0 == content->size)
 		return;
 
-	if (HLIST_ORDERED & flags)
+	if (HLIST_FL_ORDERED & flags)
 		hbuf_printf(ob, ".IP %zu.\n", num);
 	else
 		HBUF_PUTSL(ob, ".IP \\(bu\n");

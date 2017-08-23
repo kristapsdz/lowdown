@@ -295,13 +295,13 @@ rndr_list(hbuf *ob, const hbuf *content, hlist_fl flags, void *data)
 
 	if (ob->size)
 		hbuf_putc(ob, '\n');
-	if (flags & HLIST_ORDERED)
+	if (flags & HLIST_FL_ORDERED)
 		HBUF_PUTSL(ob, "<ol>\n");
 	else
 		HBUF_PUTSL(ob, "<ul>\n");
 	if (content)
 		hbuf_put(ob, content->data, content->size);
-	if (flags & HLIST_ORDERED)
+	if (flags & HLIST_FL_ORDERED)
 		HBUF_PUTSL(ob, "</ol>\n");
 	else
 		HBUF_PUTSL(ob, "</ul>\n");
