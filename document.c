@@ -39,11 +39,13 @@
 
 /* Reference to a link. */
 struct link_ref {
-	unsigned int	 id;
+	hbuf		*name;
 	hbuf		*link;
 	hbuf		*title;
-	struct link_ref	*next;
+	TAILQ_ENTRY(link_ref) entries;
 };
+
+TAILQ_HEAD(link_refq, link_ref);
 
 /* Feference to a footnote. */
 struct footnote_ref {
@@ -128,10 +130,10 @@ static char_trigger markdown_char_ptrs[] = {
 struct 	hdoc {
 	const struct lowdown_opts *opts;
 	struct link_ref	*refs[REF_TABLE_SIZE];
+	struct link_refq refq;
 	struct footnote_list footnotes_found;
 	struct footnote_list footnotes_used;
 	uint8_t		 active_char[256];
-	hstack		 work_bufs[2];
 	unsigned int	 ext_flags;
 	size_t		 max_nesting;
 	size_t	 	 cur_par;
@@ -191,32 +193,6 @@ popnode(hdoc *doc, const struct lowdown_node *n)
 	doc->current = doc->current->parent;
 }
 
-static hbuf *
-newbuf(hdoc *doc, int type)
-{
-	static const size_t buf_size[2] = {256, 64};
-	hbuf *work = NULL;
-	hstack *pool = &doc->work_bufs[type];
-
-	if (pool->size < pool->asize &&
-		pool->item[pool->size] != NULL) {
-		work = pool->item[pool->size++];
-		work->size = 0;
-	} else {
-		work = hbuf_new(buf_size[type]);
-		hstack_push(pool, work);
-	}
-
-	return work;
-}
-
-static void
-popbuf(hdoc *doc, int type)
-{
-
-	doc->work_bufs[type].size--;
-}
-
 static void
 unscape_text(hbuf *ob, hbuf *src)
 {
@@ -252,51 +228,29 @@ hash_link_ref(const uint8_t *link_ref, size_t length)
 }
 
 static struct link_ref *
-add_link_ref(struct link_ref **refs,
-	const uint8_t *name, size_t name_size)
+find_link_ref(struct link_refq *q, uint8_t *name, size_t length)
 {
-	struct link_ref *ref = xcalloc(1, sizeof(struct link_ref));
+	struct link_ref *ref;
 
-	ref->id = hash_link_ref(name, name_size);
-	ref->next = refs[ref->id % REF_TABLE_SIZE];
-
-	refs[ref->id % REF_TABLE_SIZE] = ref;
-	return ref;
-}
-
-static struct link_ref *
-find_link_ref(struct link_ref **refs, uint8_t *name, size_t length)
-{
-	unsigned int hash = hash_link_ref(name, length);
-	struct link_ref *ref = NULL;
-
-	ref = refs[hash % REF_TABLE_SIZE];
-
-	while (ref != NULL) {
-		if (ref->id == hash)
-			return ref;
-
-		ref = ref->next;
-	}
+	TAILQ_FOREACH(ref, q, entries)
+		if (ref->name->size == length &&
+		    0 == memcmp(ref->name->data, name, length))
+			return(ref);
 
 	return NULL;
 }
 
 static void
-free_link_refs(struct link_ref **refs)
+free_link_refs(struct link_refq *q)
 {
-	size_t i;
-	struct link_ref *r, *next;
+	struct link_ref *r;
 
-	for (i = 0; i < REF_TABLE_SIZE; ++i) {
-		r = refs[i];
-		while (r) {
-			next = r->next;
-			hbuf_free(r->link);
-			hbuf_free(r->title);
-			free(r);
-			r = next;
-		}
+	while (NULL != (r = TAILQ_FIRST(q))) {
+		TAILQ_REMOVE(q, r, entries);
+		hbuf_free(r->link);
+		hbuf_free(r->name);
+		hbuf_free(r->title);
+		free(r);
 	}
 }
 
@@ -598,10 +552,6 @@ parse_inline(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int nln)
 
 	memset(&work, 0, sizeof(hbuf));
 	
-	if (doc->work_bufs[BUFFER_SPAN].size +
-	    doc->work_bufs[BUFFER_BLOCK].size > doc->max_nesting)
-		return;
-
 	while (i < size) {
 		/* 
 		 * Copying non-macro chars into the output. 
@@ -824,10 +774,10 @@ parse_emph1(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 					continue;
 
 			n = pushnode(doc, LOWDOWN_EMPHASIS);
-			work = newbuf(doc, BUFFER_SPAN);
+			work = hbuf_new(64);
 			parse_inline(work, doc, data, i, 1);
 			popnode(doc, n);
-			popbuf(doc, BUFFER_SPAN);
+			hbuf_free(work);
 
 			return i + 1;
 		}
@@ -856,7 +806,7 @@ parse_emph2(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 		if (i + 1 < size && data[i] == c && 
 		    data[i + 1] == c && i && 
 		    ! xisspace(data[i - 1])) {
-			work = newbuf(doc, BUFFER_SPAN);
+			work = hbuf_new(64);
 
 			if (c == '~')
 				t = LOWDOWN_STRIKETHROUGH;
@@ -869,7 +819,7 @@ parse_emph2(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 			parse_inline(work, doc, data, i, 1);
 			popnode(doc, n);
 
-			popbuf(doc, BUFFER_SPAN);
+			hbuf_free(work);
 			return i + 2;
 		}
 		i++;
@@ -905,10 +855,10 @@ parse_emph3(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 			 * Triple symbol (***) found. 
 			 */
 			n = pushnode(doc, LOWDOWN_TRIPLE_EMPHASIS);
-			work = newbuf(doc, BUFFER_SPAN);
+			work = hbuf_new(64);
 			parse_inline(work, doc, data, i, 1);
+			hbuf_free(work);
 			popnode(doc, n);
-			popbuf(doc, BUFFER_SPAN);
 			return i + 3;
 		} else if (i + 1 < size && data[i + 1] == c) {
 			/* 
@@ -1205,6 +1155,7 @@ char_langle_tag(hdoc *doc, uint8_t *data,
 	size_t offset, size_t size, int nln)
 {
 	hbuf	 	 work;
+	hbuf		*u_link;
 	halink_type 	 altype = HALINK_NONE;
 	size_t 	 	 end = tag_length(data, size, &altype);
 	int 		 ret = 0;
@@ -1217,7 +1168,7 @@ char_langle_tag(hdoc *doc, uint8_t *data,
 
 	if (end > 2) {
 		if (altype != HALINK_NONE) {
-			hbuf *u_link = newbuf(doc, BUFFER_SPAN);
+			u_link = hbuf_new(64);
 			work.data = data + 1;
 			work.size = end - 2;
 			unscape_text(u_link, &work);
@@ -1229,7 +1180,7 @@ char_langle_tag(hdoc *doc, uint8_t *data,
 			pushbuffer(&n->rndr_autolink.text, 
 				u_link->data, u_link->size);
 			popnode(doc, n);
-			popbuf(doc, BUFFER_SPAN);
+			hbuf_free(u_link);
 		} else {
 			n = pushnode(doc, LOWDOWN_RAW_HTML);
 			pushbuffer(&n->rndr_raw_html.text, data, end);
@@ -1255,11 +1206,11 @@ char_autolink_www(hdoc *doc, uint8_t *data,
 	if (doc->in_link_body)
 		return 0;
 
-	link = newbuf(doc, BUFFER_SPAN);
+	link = hbuf_new(64);
 	link_len = halink_www(&rewind, link, data, offset, size);
 
 	if (link_len > 0) {
-		link_url = newbuf(doc, BUFFER_SPAN);
+		link_url = hbuf_new(64);
 		HBUF_PUTSL(link_url, "http://");
 		hbuf_put(link_url, link->data, link->size);
 
@@ -1282,10 +1233,10 @@ char_autolink_www(hdoc *doc, uint8_t *data,
 			link->data, link->size);
 		popnode(doc, nn);
 		popnode(doc, n);
-		popbuf(doc, BUFFER_SPAN);
+		hbuf_free(link_url);
 	}
 
-	popbuf(doc, BUFFER_SPAN);
+	hbuf_free(link);
 	return link_len;
 }
 
@@ -1303,7 +1254,7 @@ char_autolink_email(hdoc *doc, uint8_t *data,
 	if (doc->in_link_body)
 		return 0;
 
-	link = newbuf(doc, BUFFER_SPAN);
+	link = hbuf_new(64);
 	link_len = halink_email(&rewind, link, data, offset, size);
 
 	if (link_len > 0) {
@@ -1325,7 +1276,7 @@ char_autolink_email(hdoc *doc, uint8_t *data,
 		popnode(doc, n);
 	}
 
-	popbuf(doc, BUFFER_SPAN);
+	hbuf_free(link);
 	return link_len;
 }
 
@@ -1340,7 +1291,7 @@ char_autolink_url(hdoc *doc, uint8_t *data,
 	if (doc->in_link_body)
 		return 0;
 
-	link = newbuf(doc, BUFFER_SPAN);
+	link = hbuf_new(64);
 	link_len = halink_url(&rewind, link, data, offset, size);
 
 	if (link_len > 0) {
@@ -1362,7 +1313,7 @@ char_autolink_url(hdoc *doc, uint8_t *data,
 		popnode(doc, n);
 	}
 
-	popbuf(doc, BUFFER_SPAN);
+	hbuf_free(link);
 	return link_len;
 }
 
@@ -1391,19 +1342,18 @@ char_link(hdoc *doc, uint8_t *data,
 	size_t offset, size_t size, int nln)
 {
 	hbuf 	*content = NULL, *link = NULL , *title = NULL, 
-		*u_link = NULL, *dims = NULL;
+		*u_link = NULL, *dims = NULL, *idp = NULL,
+		*linkp = NULL, *titlep = NULL;
 	size_t 	 i = 1, txt_e, link_b = 0, link_e = 0, title_b = 0, 
-		 title_e = 0, org_work_size, nb_p, dims_b = 0, 
+		 title_e = 0, nb_p, dims_b = 0, 
 		 dims_e = 0, j, sz;
 	int 	 ret = 0, in_title = 0, qtype = 0, is_img, is_footnote,
 		 is_metadata;
 	hbuf 	 id, work;
-	hbuf 	*idp;
 	struct link_ref *lr;
 	struct footnote_ref *fr;
 	struct lowdown_node *n;
 
-	org_work_size = doc->work_bufs[BUFFER_SPAN].size;
 	is_img = offset && data[-1] == '!' && 
 		!is_escaped(data - offset, offset - 1);
 	is_footnote = (doc->ext_flags & LOWDOWN_FOOTNOTES && 
@@ -1643,17 +1593,17 @@ again:
 
 		/* building escaped link and title */
 		if (link_e > link_b) {
-			link = newbuf(doc, BUFFER_SPAN);
+			link = linkp = hbuf_new(64);
 			hbuf_put(link, data + link_b, link_e - link_b);
 		}
 
 		if (title_e > title_b) {
-			title = newbuf(doc, BUFFER_SPAN);
+			title = titlep = hbuf_new(64);
 			hbuf_put(title, data + title_b, title_e - title_b);
 		}
 
 		if (dims_e > dims_b) {
-			dims = newbuf(doc, BUFFER_SPAN);
+			dims = hbuf_new(64);
 			hbuf_put(dims, data + dims_b, dims_e - dims_b);
 		}
 
@@ -1662,7 +1612,7 @@ again:
 		/* 
 		 * Reference style link.
 		*/
-		idp = newbuf(doc, BUFFER_SPAN);
+		idp = hbuf_new(64);
 
 		/* Looking for the id. */
 
@@ -1681,7 +1631,7 @@ again:
 		else
 			hbuf_put(idp, data + link_b, link_e - link_b);
 
-		lr = find_link_ref(doc->refs, idp->data, idp->size);
+		lr = find_link_ref(&doc->refq, idp->data, idp->size);
 		if ( ! lr)
 			goto cleanup;
 
@@ -1694,7 +1644,7 @@ again:
 		/* 
 		 * Shortcut reference style link.
 		 */
-		idp = newbuf(doc, BUFFER_SPAN);
+		idp = hbuf_new(64);
 
 		/* Crafting the id. */
 
@@ -1702,7 +1652,7 @@ again:
 
 		/* Finding the link_ref. */
 
-		lr = find_link_ref(doc->refs, idp->data, idp->size);
+		lr = find_link_ref(&doc->refq, idp->data, idp->size);
 		if ( ! lr)
 			goto cleanup;
 
@@ -1724,7 +1674,7 @@ again:
 	 */
 
 	if (txt_e > 1) {
-		content = newbuf(doc, BUFFER_SPAN);
+		content = hbuf_new(64);
 		if ( ! is_img) {
 			/* 
 			 * Disable autolinking when parsing inline the
@@ -1739,7 +1689,7 @@ again:
 	}
 
 	if (link) {
-		u_link = newbuf(doc, BUFFER_SPAN);
+		u_link = hbuf_new(64);
 		unscape_text(u_link, link);
 	}
 
@@ -1771,7 +1721,12 @@ again:
 	popnode(doc, n);
 
 cleanup:
-	doc->work_bufs[BUFFER_SPAN].size = (int)org_work_size;
+	hbuf_free(linkp);
+	hbuf_free(titlep);
+	hbuf_free(dims);
+	hbuf_free(idp);
+	hbuf_free(content);
+	hbuf_free(u_link);
 	return ret ? i : 0;
 }
 
@@ -1802,12 +1757,12 @@ char_superscript(hdoc *doc, uint8_t *data,
 
 	n = pushnode(doc, LOWDOWN_SUPERSCRIPT);
 
-	sup = newbuf(doc, BUFFER_SPAN);
+	sup = hbuf_new(64);
 	parse_inline(sup, doc, data + sup_start, 
 		sup_len - sup_start, nln);
 
 	popnode(doc, n);
-	popbuf(doc, BUFFER_SPAN);
+	hbuf_free(sup);
 
 	return (sup_start == 2) ? sup_len + 1 : sup_len;
 }
@@ -2101,7 +2056,7 @@ parse_blockquote(hdoc *doc, uint8_t *data, size_t size)
 	hbuf *out = NULL;
 	struct lowdown_node *n;
 
-	out = newbuf(doc, BUFFER_BLOCK);
+	out = hbuf_new(256);
 	beg = 0;
 	while (beg < size) {
 		for (end = beg + 1; 
@@ -2137,7 +2092,7 @@ parse_blockquote(hdoc *doc, uint8_t *data, size_t size)
 	n = pushnode(doc, LOWDOWN_BLOCKQUOTE);
 	parse_block(out, doc, work_data, work_size);
 	popnode(doc, n);
-	popbuf(doc, BUFFER_BLOCK);
+	hbuf_free(out);
 	return end;
 }
 
@@ -2194,12 +2149,12 @@ parse_paragraph(hdoc *doc, uint8_t *data, size_t size)
 		work.size--;
 
 	if ( ! level) {
-		tmp = newbuf(doc, BUFFER_BLOCK);
+		tmp = hbuf_new(256);
 		n = pushnode(doc, LOWDOWN_PARAGRAPH);
 		parse_inline(tmp, doc, work.data, work.size, 1);
 		popnode(doc, n);
 		doc->cur_par++;
-		popbuf(doc, BUFFER_BLOCK);
+		hbuf_free(tmp);
 	} else {
 		if (work.size) {
 			i = work.size;
@@ -2213,27 +2168,26 @@ parse_paragraph(hdoc *doc, uint8_t *data, size_t size)
 				work.size -= 1;
 
 			if (work.size > 0) {
-				hbuf *tmp = newbuf(doc, BUFFER_BLOCK);
+				tmp = hbuf_new(256);
 				n = pushnode(doc, LOWDOWN_PARAGRAPH);
 				parse_inline(tmp, doc, work.data, 
 					work.size, 1);
 				popnode(doc, n);
 				doc->cur_par++;
-				popbuf(doc, BUFFER_BLOCK);
+				hbuf_free(tmp);
 				work.data += beg;
 				work.size = i - beg;
 			} else 
 				work.size = i;
 		}
 
-		header_work = newbuf(doc, BUFFER_SPAN);
-
+		header_work = hbuf_new(64);
 		n = pushnode(doc, LOWDOWN_HEADER);
 		n->rndr_header.level = level;
 		parse_inline(header_work, doc, 
 			work.data, work.size, 1);
 		popnode(doc, n);
-		popbuf(doc, BUFFER_SPAN);
+		hbuf_free(header_work);
 	}
 
 	return end;
@@ -2302,7 +2256,7 @@ parse_blockcode(hdoc *doc, uint8_t *data, size_t size)
 	hbuf	*work = NULL;
 	struct lowdown_node *n;
 
-	work = newbuf(doc, BUFFER_BLOCK);
+	work = hbuf_new(256);
 
 	beg = 0;
 	while (beg < size) {
@@ -2345,7 +2299,7 @@ parse_blockcode(hdoc *doc, uint8_t *data, size_t size)
 	pushbuffer(&n->rndr_blockcode.text, 
 		work->data, work->size);
 	popnode(doc, n);
-	popbuf(doc, BUFFER_BLOCK);
+	hbuf_free(work);
 	return beg;
 }
 
@@ -2383,8 +2337,8 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 
 	/* Getting working buffers. */
 
-	work = newbuf(doc, BUFFER_SPAN);
-	inter = newbuf(doc, BUFFER_SPAN);
+	work = hbuf_new(64);
+	inter = hbuf_new(64);
 
 	/* Putting the first line into the working buffer. */
 
@@ -2503,8 +2457,8 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 	}
 
 	popnode(doc, n);
-	popbuf(doc, BUFFER_SPAN);
-	popbuf(doc, BUFFER_SPAN);
+	hbuf_free(work);
+	hbuf_free(inter);
 	return beg;
 }
 
@@ -2519,7 +2473,7 @@ parse_list(hdoc *doc, uint8_t *data, size_t size, hlist_fl flags)
 	size_t	 i = 0, j, k = 1;
 	struct lowdown_node *n;
 
-	work = newbuf(doc, BUFFER_BLOCK);
+	work = hbuf_new(256);
 	n = pushnode(doc, LOWDOWN_LIST);
 	n->rndr_list.flags = flags;
 
@@ -2532,7 +2486,7 @@ parse_list(hdoc *doc, uint8_t *data, size_t size, hlist_fl flags)
 	}
 
 	popnode(doc, n);
-	popbuf(doc, BUFFER_BLOCK);
+	hbuf_free(work);
 	return i;
 }
 
@@ -2565,11 +2519,11 @@ parse_atxheader(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 	if (end > i) {
 		n = pushnode(doc, LOWDOWN_HEADER);
 		n->rndr_header.level = level;
-		work = newbuf(doc, BUFFER_SPAN);
+		work = hbuf_new(64);
 		parse_inline(work, doc, 
 			data + i, end - i, buf_newln(ob));
 		popnode(doc, n);
-		popbuf(doc, BUFFER_SPAN);
+		hbuf_free(work);
 	}
 
 	return skip;
@@ -2584,13 +2538,13 @@ parse_footnote_def(hdoc *doc, unsigned int num, uint8_t *data, size_t size)
 	hbuf	*work = NULL;
 	struct lowdown_node *n;
 
-	work = newbuf(doc, BUFFER_SPAN);
+	work = hbuf_new(64);
 
 	n = pushnode(doc, LOWDOWN_FOOTNOTE_DEF);
 	n->rndr_footnote_def.num = num;
 	parse_block(work, doc, data, size);
 	popnode(doc, n);
-	popbuf(doc, BUFFER_SPAN);
+	hbuf_free(work);
 }
 
 /* 
@@ -2878,7 +2832,7 @@ parse_table_row(hbuf *ob, hdoc *doc, uint8_t *data,
 	n = pushnode(doc, LOWDOWN_TABLE_ROW);
 
 	for (col = 0; col < columns && i < size; ++col) {
-		cell_work = newbuf(doc, BUFFER_SPAN);
+		cell_work = hbuf_new(64);
 
 		while (i < size && xisspace(data[i]))
 			i++;
@@ -2914,7 +2868,7 @@ parse_table_row(hbuf *ob, hdoc *doc, uint8_t *data,
 		parse_inline(cell_work, doc, data + cell_start, 
 			1 + cell_end - cell_start, buf_newln(ob));
 		popnode(doc, nn);
-		popbuf(doc, BUFFER_SPAN);
+		hbuf_free(cell_work);
 		i++;
 	}
 
@@ -3034,8 +2988,8 @@ parse_table(hdoc *doc, uint8_t *data, size_t size)
 	htbl_flags	*col_data = NULL;
 	struct lowdown_node *n = NULL, *nn;
 
-	header_work = newbuf(doc, BUFFER_SPAN);
-	body_work = newbuf(doc, BUFFER_BLOCK);
+	header_work = hbuf_new(64);
+	body_work = hbuf_new(256);
 
 	i = parse_table_header(&n, header_work, 
 		doc, data, size, &columns, &col_data);
@@ -3068,8 +3022,8 @@ parse_table(hdoc *doc, uint8_t *data, size_t size)
 	}
 
 	free(col_data);
-	popbuf(doc, BUFFER_SPAN);
-	popbuf(doc, BUFFER_BLOCK);
+	hbuf_free(header_work);
+	hbuf_free(body_work);
 	return i;
 }
 
@@ -3084,10 +3038,6 @@ parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 	size_t	 beg = 0, end, i;
 	uint8_t	*txt_data;
 	struct lowdown_node *n;
-
-	if (doc->work_bufs[BUFFER_SPAN].size +
-	    doc->work_bufs[BUFFER_BLOCK].size > doc->max_nesting)
-		return;
 
 	/* 
 	 * What kind of block are we?
@@ -3291,106 +3241,138 @@ is_footnote(const uint8_t *data, size_t beg,
  * Returns whether a line is a reference or not.
  */
 static int
-is_ref(const uint8_t *data, size_t beg, 
-	size_t end, size_t *last, struct link_ref **refs)
+is_ref(struct hdoc *doc, const uint8_t *data, 
+	size_t beg, size_t end, size_t *last)
 {
 	size_t	 i, id_offset, id_end, link_offset,
 		 link_end, title_offset, title_end, line_end;
+	struct link_ref *ref;
 
-	/* up to 3 optional leading spaces */
+	/* Up to 3 optional leading spaces. */
+
 	if (beg + 3 >= end)
 		return 0;
 	i = countspaces(data, beg, end, 3);
 
-	/* id part: anything but a newline between brackets */
-	if (data[i] != '[') return 0;
+	/* Id part: anything but a newline between brackets. */
+
+	if (data[i] != '[') 
+		return 0;
 	i++;
 	id_offset = i;
-	while (i < end && data[i] != '\n' && data[i] != '\r' && data[i] != ']')
+	while (i < end && data[i] != '\n' && 
+	       data[i] != '\r' && data[i] != ']')
 		i++;
-	if (i >= end || data[i] != ']') return 0;
+	if (i >= end || data[i] != ']') 
+		return 0;
 	id_end = i;
 
-	/* spacer: colon (space | tab)* newline? (space | tab)* */
+	/* Spacer: colon (space | tab)* newline? (space | tab)* */
+
 	i++;
-	if (i >= end || data[i] != ':') return 0;
+	if (i >= end || data[i] != ':') 
+		return 0;
 	i++;
 	i = countspaces(data, i, end, 0);
 	if (i < end && (data[i] == '\n' || data[i] == '\r')) {
 		i++;
-		if (i < end && data[i] == '\r' && data[i - 1] == '\n') i++; }
+		if (i < end && data[i] == '\r' && data[i - 1] == '\n')
+			i++; 
+	}
 	i = countspaces(data, i, end, 0);
-	if (i >= end) return 0;
+	if (i >= end) 
+		return 0;
 
-	/* link: spacing-free sequence, optionally between angle brackets */
+	/* 
+	 * Link: spacing-free sequence, optionally between angle
+	 * brackets. 
+	 */
+
 	if (data[i] == '<')
 		i++;
 
 	link_offset = i;
 
-	while (i < end && data[i] != ' ' && data[i] != '\n' && data[i] != '\r')
+	while (i < end && data[i] != ' ' && 
+	       data[i] != '\n' && data[i] != '\r')
 		i++;
 
-	if (data[i - 1] == '>') link_end = i - 1;
-	else link_end = i;
+	if (data[i - 1] == '>') 
+		link_end = i - 1;
+	else 
+		link_end = i;
 
-	/* optional spacer: (space | tab)* (newline | '\'' | '"' | '(' ) */
+	/* Optional spacer: (space | tab)* (newline | '\'' | '"' | '(' ) */
+
 	i = countspaces(data, i, end, 0);
-	if (i < end && data[i] != '\n' && data[i] != '\r'
-			&& data[i] != '\'' && data[i] != '"' && data[i] != '(')
+	if (i < end && data[i] != '\n' && data[i] != '\r' && 
+	    data[i] != '\'' && data[i] != '"' && data[i] != '(')
 		return 0;
 	line_end = 0;
+
 	/* computing end-of-line */
-	if (i >= end || data[i] == '\r' || data[i] == '\n') line_end = i;
+
+	if (i >= end || data[i] == '\r' || data[i] == '\n') 
+		line_end = i;
 	if (i + 1 < end && data[i] == '\n' && data[i + 1] == '\r')
 		line_end = i + 1;
 
 	/* optional (space|tab)* spacer after a newline */
+
 	if (line_end)
 		i = countspaces(data, line_end + 1, end, 0);
 
 	/* optional title: any non-newline sequence enclosed in '"()
-					alone on its line */
+	 * alone on its line */
+
 	title_offset = title_end = 0;
-	if (i + 1 < end
-	&& (data[i] == '\'' || data[i] == '"' || data[i] == '(')) {
+	if (i + 1 < end && 
+	    (data[i] == '\'' || data[i] == '"' || data[i] == '(')) {
 		i++;
 		title_offset = i;
+
 		/* looking for EOL */
-		while (i < end && data[i] != '\n' && data[i] != '\r') i++;
+
+		while (i < end && data[i] != '\n' && data[i] != '\r') 
+			i++;
 		if (i + 1 < end && data[i] == '\n' && data[i + 1] == '\r')
 			title_end = i + 1;
-		else	title_end = i;
+		else	
+			title_end = i;
+
 		/* stepping back */
+
 		i -= 1;
 		while (i > title_offset && data[i] == ' ')
 			i -= 1;
-		if (i > title_offset
-		&& (data[i] == '\'' || data[i] == '"' || data[i] == ')')) {
+		if (i > title_offset && 
+		    (data[i] == '\'' || 
+		     data[i] == '"' || data[i] == ')')) {
 			line_end = title_end;
-			title_end = i; } }
+			title_end = i; 
+		} 
+	}
+
+	/* garbage after the link empty link */
 
 	if (!line_end || link_end == link_offset)
-		return 0; /* garbage after the link empty link */
+		return 0; 
 
 	/* a valid ref has been found, filling-in return structures */
+
 	if (last)
 		*last = line_end;
 
-	if (refs) {
-		struct link_ref *ref;
+	ref = xcalloc(1, sizeof(struct link_ref));
+	TAILQ_INSERT_TAIL(&doc->refq, ref, entries);
+	ref->name = hbuf_new(id_end - id_offset);
+	hbuf_put(ref->name, data + id_offset, id_end - id_offset);
+	ref->link = hbuf_new(link_end - link_offset);
+	hbuf_put(ref->link, data + link_offset, link_end - link_offset);
 
-		ref = add_link_ref(refs, data + id_offset, id_end - id_offset);
-		if (!ref)
-			return 0;
-
-		ref->link = hbuf_new(link_end - link_offset);
-		hbuf_put(ref->link, data + link_offset, link_end - link_offset);
-
-		if (title_end > title_offset) {
-			ref->title = hbuf_new(title_end - title_offset);
-			hbuf_put(ref->title, data + title_offset, title_end - title_offset);
-		}
+	if (title_end > title_offset) {
+		ref->title = hbuf_new(title_end - title_offset);
+		hbuf_put(ref->title, data + title_offset, title_end - title_offset);
 	}
 
 	return 1;
@@ -3454,9 +3436,6 @@ hdoc_new(const struct lowdown_opts *opts,
 	doc->link_nospace = link_nospace;
 	doc->m = NULL;
 	doc->msz = 0;
-
-	hstack_init(&doc->work_bufs[BUFFER_BLOCK], 4);
-	hstack_init(&doc->work_bufs[BUFFER_SPAN], 8);
 
 	memset(doc->active_char, 0, 256);
 
@@ -3691,6 +3670,7 @@ hdoc_render(hdoc *doc, const uint8_t *data,
 
 	/* Reset the references table. */
 
+	TAILQ_INIT(&doc->refq);
 	memset(&doc->refs, 0x0, REF_TABLE_SIZE * sizeof(void *));
 
 	footnotes_enabled = doc->ext_flags & LOWDOWN_FOOTNOTES;
@@ -3737,7 +3717,7 @@ hdoc_render(hdoc *doc, const uint8_t *data,
 		if (footnotes_enabled &&
 		    is_footnote(data, beg, size, &end, &doc->footnotes_found))
 			beg = end;
-		else if (is_ref(data, beg, size, &end, doc->refs))
+		else if (is_ref(doc, data, beg, size, &end))
 			beg = end;
 		else {
 			/* Skipping to the next line. */
@@ -3790,14 +3770,11 @@ hdoc_render(hdoc *doc, const uint8_t *data,
 	/* Clean-up. */
 
 	hbuf_free(text);
-	free_link_refs(doc->refs);
+	free_link_refs(&doc->refq);
 	if (footnotes_enabled) {
 		free_footnote_list(&doc->footnotes_found, 1);
 		free_footnote_list(&doc->footnotes_used, 0);
 	}
-
-	assert(doc->work_bufs[BUFFER_SPAN].size == 0);
-	assert(doc->work_bufs[BUFFER_BLOCK].size == 0);
 
 	/* 
 	 * Copy our metadata to the given pointers.
@@ -3876,20 +3853,11 @@ hdoc_free(hdoc *doc)
 {
 	size_t	 i;
 
-	for (i = 0; i < doc->work_bufs[BUFFER_SPAN].asize; ++i)
-		hbuf_free(doc->work_bufs[BUFFER_SPAN].item[i]);
-
-	for (i = 0; i < doc->work_bufs[BUFFER_BLOCK].asize; ++i)
-		hbuf_free(doc->work_bufs[BUFFER_BLOCK].item[i]);
-
 	for (i = 0; i < doc->msz; i++) {
 		free(doc->m[i].key);
 		free(doc->m[i].value);
 	}
 
 	free(doc->m);
-
-	hstack_uninit(&doc->work_bufs[BUFFER_SPAN]);
-	hstack_uninit(&doc->work_bufs[BUFFER_BLOCK]);
 	free(doc);
 }

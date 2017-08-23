@@ -13,7 +13,6 @@ OBJS		 = autolink.o \
 		   log.o \
 		   nroff.o \
 		   nroff_smartypants.o \
-		   stack.o \
 		   xmalloc.o
 COMPAT_OBJS	 = compat_err.o \
 		   compat_progname.o \

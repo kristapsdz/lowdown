@@ -58,7 +58,8 @@ hbuf_new(size_t unit)
 void
 hbuf_free(hbuf *buf)
 {
-	if (!buf) return;
+	if (NULL == buf) 
+		return;
 
 	free(buf->data);
 
