@@ -45,11 +45,6 @@ typedef struct hstack {
 	size_t		  asize;
 } hstack;
 
-typedef enum hlist_fl {
-	HLIST_FL_ORDERED = (1 << 0),
-	HLIST_FL_BLOCK = (1 << 1) /* <li> containing block data */
-} hlist_fl;
-
 struct hdoc;
 
 typedef struct hdoc hdoc;

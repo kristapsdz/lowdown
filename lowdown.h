@@ -124,6 +124,12 @@ typedef enum halink_type {
 	HALINK_EMAIL /* e-mail link without explit mailto: */
 } halink_type;
 
+/* XXX: un-typedef */
+typedef enum hlist_fl {
+	HLIST_FL_ORDERED = (1 << 0),
+	HLIST_FL_BLOCK = (1 << 1) /* <li> containing block data */
+} hlist_fl;
+
 /*
  * Node parsed from input document.
  * Each node is part of the parse tree.
@@ -132,9 +138,7 @@ struct	lowdown_node {
 	enum lowdown_rndrt	 type;
 	union {
 		struct rndr_list {
-#define HLIST_ORDERED	0x01 /* ordered list */
-#define HLIST_BLOCK	0x02 /* item has block data */
-			int flags;
+			hlist_fl flags;
 		} rndr_list; 
 		struct rndr_listitem {
 			int flags; /* see rndr_list */
