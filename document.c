@@ -36,7 +36,7 @@
 
 /* Reference to a link. */
 struct link_ref {
-	hbuf		*name; /* identifier of link */
+	hbuf		*name; /* identifier of link (or NULL) */
 	hbuf		*link; /* link address */
 	hbuf		*title; /* optional title */
 	TAILQ_ENTRY(link_ref) entries;
@@ -229,9 +229,11 @@ find_link_ref(struct link_refq *q, uint8_t *name, size_t length)
 {
 	struct link_ref *ref;
 
-	TAILQ_FOREACH(ref, q, entries)
-		if (ref->name->size == length &&
-		    0 == memcmp(ref->name->data, name, length))
+	TAILQ_FOREACH(ref, q, entries) 
+		if ((NULL == ref->name && 0 == length) ||
+		    (NULL != ref->name &&
+		     ref->name->size == length &&
+		     0 == memcmp(ref->name->data, name, length)))
 			return(ref);
 
 	return NULL;
@@ -3362,8 +3364,11 @@ is_ref(struct hdoc *doc, const uint8_t *data,
 
 	ref = xcalloc(1, sizeof(struct link_ref));
 	TAILQ_INSERT_TAIL(&doc->refq, ref, entries);
-	ref->name = hbuf_new(id_end - id_offset);
-	hbuf_put(ref->name, data + id_offset, id_end - id_offset);
+
+	if (id_end - id_offset) {
+		ref->name = hbuf_new(id_end - id_offset);
+		hbuf_put(ref->name, data + id_offset, id_end - id_offset);
+	}
 	ref->link = hbuf_new(link_end - link_offset);
 	hbuf_put(ref->link, data + link_offset, link_end - link_offset);
 
