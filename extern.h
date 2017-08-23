@@ -39,12 +39,6 @@
 # endif
 #endif
 
-typedef struct hstack {
-	void		**item;
-	size_t		  size;
-	size_t		  asize;
-} hstack;
-
 struct hdoc;
 
 typedef struct hdoc hdoc;
@@ -84,12 +78,6 @@ void	 hbuf_puts(hbuf *, const char *);
 size_t	 halink_email(size_t *, hbuf *, uint8_t *, size_t, size_t);
 size_t	 halink_url(size_t *, hbuf *, uint8_t *, size_t, size_t);
 size_t	 halink_www(size_t *, hbuf *, uint8_t *, size_t, size_t);
-
-void	 hstack_grow(hstack *, size_t);
-void	 hstack_init(hstack *, size_t);
-void	 hstack_push(hstack *, void *);
-void	*hstack_top(const hstack *);
-void	 hstack_uninit(hstack *);
 
 hdoc 	*hdoc_new(const struct lowdown_opts *, 
 		unsigned int, size_t, int) __attribute__((malloc));
