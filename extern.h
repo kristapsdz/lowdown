@@ -80,7 +80,7 @@ size_t	 halink_url(size_t *, hbuf *, uint8_t *, size_t, size_t);
 size_t	 halink_www(size_t *, hbuf *, uint8_t *, size_t, size_t);
 
 hdoc 	*hdoc_new(const struct lowdown_opts *, 
-		unsigned int, size_t, int) __attribute__((malloc));
+		unsigned int, int) __attribute__((malloc));
 struct lowdown_node
 	*hdoc_render(hdoc *, const uint8_t *, size_t, 
 		struct lowdown_meta **, size_t *);

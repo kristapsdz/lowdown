@@ -47,24 +47,15 @@ TAILQ_HEAD(link_refq, link_ref);
 
 /* Feference to a footnote. */
 struct footnote_ref {
-	unsigned int	 id;
-	int		 is_used;
-	unsigned int	 num;
-	hbuf		*contents;
+	int		 is_used; /* whether has been referenced */
+	size_t		 num; /* if referenced, the order */
+	hbuf		*name; /* identifier (or NULL) */
+	hbuf		*contents; /* contents of footnote */
+	TAILQ_ENTRY(footnote_ref) entries;
 };
 
-/* An item in a footnote_list. */
-struct footnote_item {
-	struct footnote_ref *ref;
-	struct footnote_item *next;
-};
-
-/* Linked list of footnote_item. */
-struct footnote_list {
-	unsigned int count;
-	struct footnote_item *head;
-	struct footnote_item *tail;
-};
+/* Queue of footnotes. */
+TAILQ_HEAD(footnote_refq, footnote_ref);
 
 /*
  * Function pointer to render active chars.
@@ -127,12 +118,11 @@ static char_trigger markdown_char_ptrs[] = {
 
 struct 	hdoc {
 	const struct lowdown_opts *opts;
-	struct link_refq refq;
-	struct footnote_list footnotes_found;
-	struct footnote_list footnotes_used;
+	struct link_refq refq; /* all internal references */
+	struct footnote_refq footnotes; /* all footnotes */
+	size_t		 footnotesz; /* # of used footnotes */
 	uint8_t		 active_char[256];
 	unsigned int	 ext_flags;
-	size_t		 max_nesting;
 	size_t	 	 cur_par;
 	int		 in_link_body;
 	int		 link_nospace;
@@ -211,19 +201,6 @@ unscape_text(hbuf *ob, hbuf *src)
 	}
 }
 
-static unsigned int
-hash_link_ref(const uint8_t *link_ref, size_t length)
-{
-	size_t i;
-	unsigned int hash = 0;
-
-	for (i = 0; i < length; ++i)
-		hash = tolower(link_ref[i]) +
-			(hash << 6) + (hash << 16) - hash;
-
-	return hash;
-}
-
 static struct link_ref *
 find_link_ref(struct link_refq *q, uint8_t *name, size_t length)
 {
@@ -254,74 +231,32 @@ free_link_refs(struct link_refq *q)
 }
 
 static struct footnote_ref *
-create_footnote_ref(struct footnote_list *list,
-	const uint8_t *name, size_t name_size)
+find_footnote_ref(struct footnote_refq *q, uint8_t *name, size_t length)
 {
 	struct footnote_ref *ref;
 
-	ref = xcalloc(1, sizeof(struct footnote_ref));
-	ref->id = hash_link_ref(name, name_size);
-
-	return ref;
-}
-
-static void
-add_footnote_ref(struct footnote_list *list, struct footnote_ref *ref)
-{
-	struct footnote_item *item;
-
-	item = xcalloc(1, sizeof(struct footnote_item));
-	item->ref = ref;
-
-	if (list->head == NULL) {
-		list->head = list->tail = item;
-	} else {
-		list->tail->next = item;
-		list->tail = item;
-	}
-	list->count++;
-}
-
-static struct footnote_ref *
-find_footnote_ref(struct footnote_list *list, uint8_t *name, size_t length)
-{
-	unsigned int hash = hash_link_ref(name, length);
-	struct footnote_item *item = NULL;
-
-	item = list->head;
-
-	while (item != NULL) {
-		if (item->ref->id == hash)
-			return item->ref;
-		item = item->next;
-	}
+	TAILQ_FOREACH(ref, q, entries)
+		if ((NULL == ref->name && 0 == length) ||
+		    (NULL != ref->name &&
+		     ref->name->size == length &&
+		     0 == memcmp(ref->name->data, name, length)))
+			return(ref);
 
 	return NULL;
 }
 
 static void
-free_footnote_ref(struct footnote_ref *ref)
+free_footnote_refs(struct footnote_refq *q)
 {
+	struct footnote_ref *ref;
 
-	hbuf_free(ref->contents);
-	free(ref);
-}
-
-static void
-free_footnote_list(struct footnote_list *list, int free_refs)
-{
-	struct footnote_item *item = list->head;
-	struct footnote_item *next;
-
-	while (item) {
-		next = item->next;
-		if (free_refs)
-			free_footnote_ref(item->ref);
-		free(item);
-		item = next;
+	while (NULL != (ref = TAILQ_FIRST(q))) {
+		TAILQ_REMOVE(q, ref, entries);
+		hbuf_free(ref->contents);
+		hbuf_free(ref->name);
+		free(ref);
 	}
 }
-
 
 /*
  * Check whether a char is a Markdown spacing char.
@@ -1384,20 +1319,38 @@ char_link(hdoc *doc, uint8_t *data,
 		id.size = txt_e - 2;
 
 		fr = find_footnote_ref
-			(&doc->footnotes_found, id.data, id.size);
+			(&doc->footnotes, id.data, id.size);
 
-		/* Mark footnote used. */
+		/* 
+		 * Mark footnote used.
+		 * If it's NULL, then there was no footnote found.
+		 * If it is NULL and is_used is defined, then we've
+		 * already registered the footnote.
+		 * XXX: Markdown, as is, can only use one footnote
+		 * reference per definition.  This is stupid.
+		 */
 
-		if (fr && ! fr->is_used) {
-			add_footnote_ref(&doc->footnotes_used, fr);
+		if (NULL != fr && 0 == fr->is_used) {
 			n = pushnode(doc, LOWDOWN_FOOTNOTE_REF);
-			n->rndr_footnote_ref.num = fr->num;
+			fr->num = ++doc->footnotesz;
 			fr->is_used = 1;
-			fr->num = doc->footnotes_used.count;
-			ret = 1;
-			popnode(doc, n);
+			n->rndr_footnote_ref.num = fr->num;
+		} else if (NULL != fr && fr->is_used) {
+			lmsg(doc->opts, LOWDOWN_ERR_DUPE_FOOTNOTE,
+				"%.*s", (int)id.size, id.data);
+			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
+			pushbuffer(&n->rndr_normal_text.text, 
+				data, txt_e + 1);
+		} else {
+			lmsg(doc->opts, LOWDOWN_ERR_UNKNOWN_FOOTNOTE,
+				"%.*s", (int)id.size, id.data);
+			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
+			pushbuffer(&n->rndr_normal_text.text, 
+				data, txt_e + 1);
 		}
 
+		popnode(doc, n);
+		ret = 1;
 		goto cleanup;
 	}
 
@@ -2550,22 +2503,20 @@ parse_footnote_def(hdoc *doc, unsigned int num, uint8_t *data, size_t size)
  * Render the contents of the footnotes.
  */
 static void
-parse_footnote_list(hdoc *doc, struct footnote_list *footnotes)
+parse_footnote_list(hdoc *doc)
 {
-	struct footnote_item	*item;
 	struct footnote_ref	*ref;
 	struct lowdown_node	*n;
 
-	if (footnotes->count == 0)
+	if (TAILQ_EMPTY(&doc->footnotes))
 		return;
 
 	n = pushnode(doc, LOWDOWN_FOOTNOTES_BLOCK);
-	item = footnotes->head;
-	while (item) {
-		ref = item->ref;
+	TAILQ_FOREACH(ref, &doc->footnotes, entries) {
+		if ( ! ref->is_used)
+			continue;
 		parse_footnote_def(doc, ref->num,
 			ref->contents->data, ref->contents->size);
-		item = item->next;
 	}
 	popnode(doc, n);
 }
@@ -3137,10 +3088,12 @@ parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 
 /* 
  * Returns whether a line is a footnote definition or not.
+ * This is invoked during the first pass to establish all possible
+ * footnotes.
  */
 static int
-is_footnote(const uint8_t *data, size_t beg, 
-	size_t end, size_t *last, struct footnote_list *list)
+is_footnote(hdoc *doc, const uint8_t *data, 
+	size_t beg, size_t end, size_t *last)
 {
 	size_t	 i = 0, ind = 0, start = 0, id_offset, id_end;
 	hbuf	*contents = NULL;
@@ -3148,70 +3101,93 @@ is_footnote(const uint8_t *data, size_t beg,
 	struct footnote_ref *ref;
 
 	/* up to 3 optional leading spaces */
+
 	if (beg + 3 >= end)
 		return 0;
 	i = countspaces(data, beg, end, 3);
 
 	/* id part: caret followed by anything between brackets */
-	if (data[i] != '[') return 0;
+
+	if (data[i] != '[') 
+		return 0;
 	i++;
-	if (i >= end || data[i] != '^') return 0;
+	if (i >= end || data[i] != '^') 
+		return 0;
 	i++;
 	id_offset = i;
-	while (i < end && data[i] != '\n' && data[i] != '\r' && data[i] != ']')
+	while (i < end && data[i] != '\n' && 
+	       data[i] != '\r' && data[i] != ']')
 		i++;
-	if (i >= end || data[i] != ']') return 0;
+	if (i >= end || data[i] != ']') 
+		return 0;
 	id_end = i;
 
 	/* spacer: colon (space | tab)* newline? (space | tab)* */
+
 	i++;
-	if (i >= end || data[i] != ':') return 0;
+	if (i >= end || data[i] != ':') 
+		return 0;
 	i++;
 
 	/* getting content buffer */
+
 	contents = hbuf_new(64);
 
 	start = i;
 
 	/* process lines similar to a list item */
+
 	while (i < end) {
-		while (i < end && data[i] != '\n' && data[i] != '\r') i++;
+		while (i < end && data[i] != '\n' && data[i] != '\r') 
+			i++;
 
 		/* process an empty line */
+
 		if (is_empty(data + start, i - start)) {
 			in_empty = 1;
 			if (i < end && (data[i] == '\n' || data[i] == '\r')) {
 				i++;
-				if (i < end && data[i] == '\n' && data[i - 1] == '\r') i++;
+				if (i < end && data[i] == '\n' && 
+				    data[i - 1] == '\r') 
+					i++;
 			}
 			start = i;
 			continue;
 		}
 
 		/* calculating the indentation */
+
 		ind = countspaces(data, start, end, 4) - start;
 
 		/* joining only indented stuff after empty lines;
 		 * note that now we only require 1 space of indentation
 		 * to continue, just like lists */
+
 		if (ind == 0) {
-			if (start == id_end + 2 && data[start] == '\t') {}
-			else break;
-		}
-		else if (in_empty) {
+			if (start == id_end + 2 && data[start] == '\t') {
+				/* XXX: wtf? */
+			} else 
+				break;
+		} else if (in_empty) {
 			hbuf_putc(contents, '\n');
 		}
 
 		in_empty = 0;
 
 		/* adding the line into the content buffer */
+
 		hbuf_put(contents, data + start + ind, i - start - ind);
+
 		/* add carriage return */
+
 		if (i < end) {
 			hbuf_putc(contents, '\n');
-			if (i < end && (data[i] == '\n' || data[i] == '\r')) {
+			if (i < end && 
+			    (data[i] == '\n' || data[i] == '\r')) {
 				i++;
-				if (i < end && data[i] == '\n' && data[i - 1] == '\r') i++;
+				if (i < end && data[i] == '\n' && 
+				    data[i - 1] == '\r') 
+					i++;
 			}
 		}
 		start = i;
@@ -3220,18 +3196,13 @@ is_footnote(const uint8_t *data, size_t beg,
 	if (last)
 		*last = start;
 
-	if (list) {
-		ref = create_footnote_ref
-			(list, data + id_offset, 
-			 id_end - id_offset);
-		if (!ref) {
-			hbuf_free(contents);
-			return 0;
-		}
-		add_footnote_ref(list, ref);
-		ref->contents = contents;
-	} else
-		hbuf_free(contents);
+	ref = xcalloc(1, sizeof(struct footnote_ref));
+	TAILQ_INSERT_TAIL(&doc->footnotes, ref, entries);
+	ref->contents = contents;
+	if (id_end - id_offset) {
+		ref->name = hbuf_new(id_end - id_offset);
+		hbuf_put(ref->name, data + id_offset, id_end - id_offset);
+	} 
 
 	return 1;
 }
@@ -3425,11 +3396,9 @@ expand_tabs(hbuf *ob, const uint8_t *line, size_t size)
  */
 hdoc *
 hdoc_new(const struct lowdown_opts *opts,
-	unsigned int extensions, size_t max_nesting, int link_nospace)
+	unsigned int extensions, int link_nospace)
 {
 	hdoc *doc = NULL;
-
-	assert(max_nesting > 0);
 
 	doc = xmalloc(sizeof(hdoc));
 
@@ -3469,7 +3438,6 @@ hdoc_new(const struct lowdown_opts *opts,
 		doc->active_char['$'] = MD_CHAR_MATH;
 
 	doc->ext_flags = extensions;
-	doc->max_nesting = max_nesting;
 	doc->in_link_body = 0;
 
 	return doc;
@@ -3673,17 +3641,9 @@ hdoc_render(hdoc *doc, const uint8_t *data,
 	/* Reset the references table. */
 
 	TAILQ_INIT(&doc->refq);
+	TAILQ_INIT(&doc->footnotes);
 
 	footnotes_enabled = doc->ext_flags & LOWDOWN_FOOTNOTES;
-
-	/* Reset the footnotes lists. */
-
-	if (footnotes_enabled) {
-		memset(&doc->footnotes_found, 0x0,
-			sizeof(doc->footnotes_found));
-		memset(&doc->footnotes_used, 0x0,
-			sizeof(doc->footnotes_used));
-	}
 
 	/*
 	 * Skip a possible UTF-8 BOM, even though the Unicode standard
@@ -3716,7 +3676,7 @@ hdoc_render(hdoc *doc, const uint8_t *data,
 
 	while (beg < size)
 		if (footnotes_enabled &&
-		    is_footnote(data, beg, size, &end, &doc->footnotes_found))
+		    is_footnote(doc, data, beg, size, &end))
 			beg = end;
 		else if (is_ref(doc, data, beg, size, &end))
 			beg = end;
@@ -3763,7 +3723,7 @@ hdoc_render(hdoc *doc, const uint8_t *data,
 	/* Footnotes. */
 
 	if (footnotes_enabled)
-		parse_footnote_list(doc, &doc->footnotes_used);
+		parse_footnote_list(doc);
 
 	n = pushnode(doc, LOWDOWN_DOC_FOOTER);
 	popnode(doc, n);
@@ -3772,10 +3732,8 @@ hdoc_render(hdoc *doc, const uint8_t *data,
 
 	hbuf_free(text);
 	free_link_refs(&doc->refq);
-	if (footnotes_enabled) {
-		free_footnote_list(&doc->footnotes_found, 1);
-		free_footnote_list(&doc->footnotes_used, 0);
-	}
+	if (footnotes_enabled)
+		free_footnote_refs(&doc->footnotes);
 
 	/* 
 	 * Copy our metadata to the given pointers.
