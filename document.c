@@ -123,9 +123,9 @@ struct 	hdoc {
 	size_t		 footnotesz; /* # of used footnotes */
 	uint8_t		 active_char[256];
 	unsigned int	 ext_flags;
-	size_t	 	 cur_par;
+	size_t	 	 cur_par; /* XXX: not used */
 	int		 in_link_body;
-	int		 link_nospace;
+	int		 link_nospace; /* XXX: remove */
 	struct lowdown_meta *m; /* document meta-data */
 	size_t		 msz; /* entries in "m" */
 	struct lowdown_node *current;
