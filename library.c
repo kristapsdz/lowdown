@@ -30,11 +30,11 @@
 
 #define DEF_IUNIT 1024
 #define DEF_OUNIT 64
-#define DEF_MAX_NESTING 16
 
 static	const char *const errs[LOWDOWN_ERR__MAX] = {
 	"space before link (CommonMark violation)",
 	"bad character in metadata key (MultiMarkdown violation)",
+	"unknown footnote reference",
 };
 
 const char *
@@ -70,8 +70,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 
 	document = hdoc_new
 		(opts, NULL == opts ?
-		 0 : opts->feat, DEF_MAX_NESTING,
-		 NULL != opts &&
+		 0 : opts->feat, NULL != opts &&
 		 LOWDOWN_HTML != opts->type);
 
 	/* Parse the output and free resources. */
