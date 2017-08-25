@@ -252,6 +252,7 @@ struct	lowdown_opts {
 #define LOWDOWN_NROFF_GROFF	 0x20
 #define LOWDOWN_NROFF_NUMBERED	 0x80
 #define	LOWDOWN_SMARTY	  	 0x40
+#define LOWDOWN_DOCHEADER	 0x80
 };
 
 struct hdoc;
@@ -274,16 +275,6 @@ void	 lowdown_buf(const struct lowdown_opts *,
 int	 lowdown_file(const struct lowdown_opts *, 
 		FILE *, unsigned char **, size_t *,
 		struct lowdown_meta **, size_t *);
-
-/* FIXME: merge into LOWDOWN_DOC_HEADER/FOOTER. */
-
-void	 lowdown_standalone_open
-		(const struct lowdown_opts *,
-		 const struct lowdown_meta *, size_t,
-		 unsigned char **, size_t *);
-void	 lowdown_standalone_close
-		(const struct lowdown_opts *,
-		 unsigned char **, size_t *);
 
 /* 
  * Low-level functions.
