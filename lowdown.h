@@ -252,7 +252,7 @@ struct	lowdown_opts {
 #define LOWDOWN_NROFF_GROFF	 0x20
 #define LOWDOWN_NROFF_NUMBERED	 0x80
 #define	LOWDOWN_SMARTY	  	 0x40
-#define LOWDOWN_DOCHEADER	 0x80
+#define LOWDOWN_STANDALONE	 0x80
 };
 
 struct hdoc;

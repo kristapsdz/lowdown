@@ -707,7 +707,7 @@ rndr_doc_footer(hbuf *ob, void *data)
 {
 	html_state	*st = data;
 
-	if (LOWDOWN_DOCHEADER & st->flags)
+	if (LOWDOWN_STANDALONE & st->flags)
 		HBUF_PUTSL(ob, "</body>\n</html>\n");
 }
 
@@ -720,7 +720,7 @@ rndr_doc_header(hbuf *ob,
 	size_t		 i;
 	html_state	*st = data;
 
-	if ( ! (LOWDOWN_DOCHEADER & st->flags))
+	if ( ! (LOWDOWN_STANDALONE & st->flags))
 		return;
 
 	/* 
