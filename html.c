@@ -50,6 +50,7 @@ typedef struct html_state {
 	} toc_data;
 	TAILQ_HEAD(, hentry) headers_used;
 	unsigned int flags;
+	unsigned int feats;
 } html_state;
 
 static void
@@ -673,6 +674,112 @@ rndr_math(hbuf *ob, const hbuf *text, int displaymode, void *data)
 	return 1;
 }
 
+/*
+ * Convert the "$Author$" string to just the author in a static
+ * buffer of a fixed length.
+ * Returns NULL if the string is malformed (too long, too short, etc.)
+ * at all or the author name otherwise.
+ */
+static char *
+rcsauthor2str(const char *v)
+{
+	static char	buf[1024];
+	size_t		sz;
+
+	if (NULL == v ||
+	    strlen(v) < 12 ||
+	    strncmp(v, "$Author: ", 9))
+		return(NULL);
+
+	if ((sz = strlcpy(buf, v + 9, sizeof(buf))) >= sizeof(buf))
+		return(NULL);
+
+	if ('$' == buf[sz - 1])
+		buf[sz - 1] = '\0';
+	if (' ' == buf[sz - 2])
+		buf[sz - 2] = '\0';
+
+	return(buf);
+}
+
+static void
+rndr_doc_footer(hbuf *ob, void *data)
+{
+	html_state	*st = data;
+
+	if (LOWDOWN_DOCHEADER & st->flags)
+		HBUF_PUTSL(ob, "</body>\n</html>\n");
+}
+
+static void
+rndr_doc_header(hbuf *ob, 
+	const struct lowdown_meta *m, size_t msz, void *data)
+{
+	const char	*author = NULL, *cp,
+	      		*title = "Untitled article";
+	size_t		 i;
+	hbuf		*op;
+	html_state	*st = data;
+
+	if ( ! (LOWDOWN_DOCHEADER & st->flags))
+		return;
+
+	/* 
+	 * Acquire metadata that we'll fill in.
+	 * We format this as well.
+	 */
+
+	for (i = 0; i < msz; i++) 
+		if (0 == strcmp(m[i].key, "title"))
+			title = m[i].value;
+		else if (0 == strcmp(m[i].key, "author"))
+			author = m[i].value;
+		else if (0 == strcmp(m[i].key, "rcsauthor"))
+			author = rcsauthor2str(m[i].value);
+
+	HBUF_PUTSL(op, 
+	      "<!DOCTYPE html>\n"
+	      "<html>\n"
+	      "<head>\n"
+	      "<meta charset=\"utf-8\" />\n"
+	      "<meta name=\"viewport\" content=\""
+	       "width=device-width,initial-scale=1\" />\n");
+
+	/*
+	 * We might have multiple multi-white-space separated authors,
+	 * so loop through looking for that.
+	 * FIXME: HTML-escape.
+	 */
+
+	if (NULL != author) {
+		for (cp = author; '\0' != *cp; ) {
+			HBUF_PUTSL(op, 
+				"<meta name=\"author\""
+				" content=\"");
+			while ('\0' != *cp) {
+				if ( ! isspace((int)cp[0]) ||
+				     ! isspace((int)cp[1])) {
+					hbuf_putc(op, *cp);
+					cp++;
+					continue;
+				}
+				cp += 2;
+				while (isspace((int)*cp))
+					cp++;
+				break;
+			}
+			HBUF_PUTSL(op, "\" />\n");
+		}
+	}
+
+	HBUF_PUTSL(op, "<title>");
+	hbuf_puts(op, title);
+	HBUF_PUTSL(op, 
+	      "</title>\n"
+	      "</head>\n"
+	      "<body>\n");
+}
+
 void
 lowdown_html_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 {
@@ -692,6 +799,14 @@ lowdown_html_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 		break;
 	case (LOWDOWN_BLOCKQUOTE):
 		rndr_blockquote(ob, tmp, ref);
+		break;
+	case (LOWDOWN_DOC_HEADER):
+		rndr_doc_header(ob, 
+			root->rndr_doc_header.m, 
+			root->rndr_doc_header.msz, ref);
+		break;
+	case (LOWDOWN_DOC_FOOTER):
+		rndr_doc_footer(ob, ref);
 		break;
 	case (LOWDOWN_HEADER):
 		rndr_header(ob, tmp, 
@@ -825,6 +940,7 @@ hrend_html_new(const struct lowdown_opts *opts)
 	TAILQ_INIT(&state->headers_used);
 
 	state->flags = NULL == opts ? 0 : opts->oflags;
+	state->feats = NULL == opts ? 0 : opts->feat;
 	/* TODO: not yet used. */
 	state->toc_data.nesting_level = 0;
 
