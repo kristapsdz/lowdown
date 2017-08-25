@@ -3,7 +3,7 @@
  * Copyright (c) 2008, Natacha Porté
  * Copyright (c) 2011, Vicent Martí
  * Copyright (c) 2014, Xavier Mendez, Devin Torres and the Hoedown authors
- * Copyright (c) 2016--2017, Kristaps Dzonsons
+ * Copyright (c) 2016--2017 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -3395,16 +3395,19 @@ expand_tabs(hbuf *ob, const uint8_t *line, size_t size)
  * Allocate a new document processor instance.
  */
 hdoc *
-hdoc_new(const struct lowdown_opts *opts,
-	unsigned int extensions, int link_nospace)
+hdoc_new(const struct lowdown_opts *opts)
 {
-	hdoc *doc = NULL;
+	hdoc 		*doc = NULL;
+	unsigned int	 extensions;
+
+	extensions = opts ? opts->feat : 0;
 
 	doc = xmalloc(sizeof(hdoc));
 
 	doc->current = NULL;
 	doc->opts = opts;
-	doc->link_nospace = link_nospace;
+	doc->link_nospace = NULL != opts && 
+		LOWDOWN_NROFF == opts->type;
 	doc->m = NULL;
 	doc->msz = 0;
 
@@ -3611,13 +3614,13 @@ parse_metadata(hdoc *doc, const uint8_t *data, size_t sz)
 }
 
 /*
- * Render regular Markdown using the document processor.
+ * Parse the buffer in data of length size.
  * If both mp and mszp are not NULL, set them with the meta information
  * instead of locally destroying it.
  * (Obviously only applicable if LOWDOWN_METADATA has been set.)
  */
 struct lowdown_node *
-hdoc_render(hdoc *doc, const uint8_t *data,
+hdoc_parse(hdoc *doc, const uint8_t *data,
 	size_t size, struct lowdown_meta **mp, size_t *mszp)
 {
 	static const uint8_t UTF8_BOM[] = {0xEF, 0xBB, 0xBF};

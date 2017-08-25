@@ -1,6 +1,6 @@
 /*	$Id$ */
 /*
- * Copyright (c) 2017, Kristaps Dzonsons
+ * Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -207,23 +207,14 @@ struct	lowdown_node {
 	TAILQ_ENTRY(lowdown_node) entries;
 };
 
-/*
- * A callback for rendering.
- */
-typedef	void (*lowdown_rndr_fp)(hbuf *, const hbuf *,
-		const struct lowdown_node *, void *);
-
-struct	lowdown_rndr {
-	lowdown_rndr_fp	 tab[LOWDOWN__MAX];
-	void		*data;
-};
-
-
 struct	lowdown_meta {
 	char		*key;
 	char		*value;
 };
 
+/*
+ * These options contain everything needed to parse and render content.
+ */
 struct	lowdown_opts {
 	lowdown_msg		 msg;
 	enum lowdown_type	 type;
@@ -254,23 +245,67 @@ struct	lowdown_opts {
 #define	LOWDOWN_SMARTY	  	 0x40
 };
 
+struct hdoc;
+
+typedef struct hdoc hdoc;
+
 __BEGIN_DECLS
 
-void		 lowdown_buf(const struct lowdown_opts *, 
-			const unsigned char *, size_t,
-			unsigned char **, size_t *,
-			struct lowdown_meta **, size_t *);
-const char	*lowdown_errstr(enum lowdown_err);
-int		 lowdown_file(const struct lowdown_opts *, 
-			FILE *, unsigned char **, size_t *,
-			struct lowdown_meta **, size_t *);
-void		 lowdown_standalone_open
-			(const struct lowdown_opts *,
-			 const struct lowdown_meta *, size_t,
-			 unsigned char **, size_t *);
-void		 lowdown_standalone_close
-			(const struct lowdown_opts *,
-			 unsigned char **, size_t *);
+const char *lowdown_errstr(enum lowdown_err);
+
+/*
+ * High-level functions.
+ * These use the "lowdown_opts" to determine how to parse and render
+ * content, and extract that content from a buffer, file, or descriptor.
+ */
+void	 lowdown_buf(const struct lowdown_opts *, 
+		const unsigned char *, size_t,
+		unsigned char **, size_t *,
+		struct lowdown_meta **, size_t *);
+int	 lowdown_file(const struct lowdown_opts *, 
+		FILE *, unsigned char **, size_t *,
+		struct lowdown_meta **, size_t *);
+
+/* FIXME: merge into LOWDOWN_DOC_HEADER/FOOTER. */
+
+void	 lowdown_standalone_open
+		(const struct lowdown_opts *,
+		 const struct lowdown_meta *, size_t,
+		 unsigned char **, size_t *);
+void	 lowdown_standalone_close
+		(const struct lowdown_opts *,
+		 unsigned char **, size_t *);
+
+/* 
+ * Low-level functions.
+ * These actually parse and render the AST from a buffer in various
+ * ways.
+ */
+
+hdoc 	*hdoc_new(const struct lowdown_opts *);
+struct lowdown_node
+	*hdoc_parse(hdoc *, const uint8_t *, size_t, 
+		struct lowdown_meta **, size_t *);
+void	 hdoc_free(hdoc *);
+
+void	 hrend_html_free(void *);
+void	 hrend_nroff_free(void *);
+void	 hrend_tree_free(void *);
+
+void	*hrend_html_new(const struct lowdown_opts *);
+void	*hrend_nroff_new(const struct lowdown_opts *);
+void	*hrend_tree_new(void);
+
+void	 hsmrt_html(hbuf *, const uint8_t *, size_t);
+void	 hsmrt_nroff(hbuf *, const uint8_t *, size_t);
+
+void 	 lowdown_html_rndr(hbuf *, void *, 
+		const struct lowdown_node *);
+void 	 lowdown_nroff_rndr(hbuf *, void *, 
+		const struct lowdown_node *);
+void 	 lowdown_tree_rndr(hbuf *, void *, 
+		const struct lowdown_node *);
+void 	 lowdown_node_free(struct lowdown_node *);
 
 __END_DECLS
 

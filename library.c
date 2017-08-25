@@ -1,6 +1,6 @@
 /*	$Id$ */
 /*
- * Copyright (c) 2017, Kristaps Dzonsons
+ * Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -51,7 +51,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 	struct lowdown_meta **m, size_t *msz)
 {
 	hbuf	 	*ob, *spb;
-	hrend 		*renderer = NULL;
+	void 		*renderer;
 	hdoc 		*document;
 	size_t		 i;
 	struct lowdown_node *n;
@@ -63,19 +63,13 @@ lowdown_buf(const struct lowdown_opts *opts,
 	ob = hbuf_new(DEF_OUNIT);
 
 	renderer = NULL == opts || LOWDOWN_HTML == opts->type ?
-		hrend_html_new
-		(NULL == opts ? 0 : opts->oflags, 0) :
-		hrend_nroff_new(opts->oflags, 
-			LOWDOWN_MAN == opts->type);
+		hrend_html_new(opts) : hrend_nroff_new(opts);
 
-	document = hdoc_new
-		(opts, NULL == opts ?
-		 0 : opts->feat, NULL != opts &&
-		 LOWDOWN_HTML != opts->type);
+	document = hdoc_new(opts);
 
 	/* Parse the output and free resources. */
 
-	n = hdoc_render(document, data, datasz, m, msz);
+	n = hdoc_parse(document, data, datasz, m, msz);
 	hdoc_free(document);
 
 	if (NULL == opts || LOWDOWN_HTML == opts->type) {
