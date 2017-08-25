@@ -3,7 +3,7 @@
  * Copyright (c) 2008, Natacha Porté
  * Copyright (c) 2011, Vicent Martí
  * Copyright (c) 2014, Xavier Mendez, Devin Torres and the Hoedown authors
- * Copyright (c) 2016--2017, Kristaps Dzonsons
+ * Copyright (c) 2016--2017 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -674,7 +674,7 @@ rndr_math(hbuf *ob, const hbuf *text, int displaymode, void *data)
 }
 
 void
-lowdown_html_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root)
+lowdown_html_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 {
 	const struct lowdown_node *n;
 	hbuf	*tmp;
@@ -688,129 +688,117 @@ lowdown_html_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root)
 	case (LOWDOWN_BLOCKCODE):
 		rndr_blockcode(ob, 
 			&root->rndr_blockcode.text, 
-			&root->rndr_blockcode.lang, 
-			ref->opaque);
+			&root->rndr_blockcode.lang, ref);
 		break;
 	case (LOWDOWN_BLOCKQUOTE):
-		rndr_blockquote(ob, tmp, ref->opaque);
+		rndr_blockquote(ob, tmp, ref);
 		break;
 	case (LOWDOWN_HEADER):
 		rndr_header(ob, tmp, 
-			root->rndr_header.level,
-			ref->opaque);
+			root->rndr_header.level, ref);
 		break;
 	case (LOWDOWN_HRULE):
-		rndr_hrule(ob, ref->opaque);
+		rndr_hrule(ob, ref);
 		break;
 	case (LOWDOWN_LIST):
 		rndr_list(ob, tmp, 
-			root->rndr_list.flags, 
-			ref->opaque);
+			root->rndr_list.flags, ref);
 		break;
 	case (LOWDOWN_LISTITEM):
 		rndr_listitem(ob, tmp, 
 			root->rndr_listitem.flags,
-			ref->opaque, root->rndr_listitem.num);
+			ref, root->rndr_listitem.num);
 		break;
 	case (LOWDOWN_PARAGRAPH):
-		rndr_paragraph(ob, tmp, ref->opaque);
+		rndr_paragraph(ob, tmp, ref);
 		break;
 	case (LOWDOWN_TABLE_BLOCK):
-		rndr_table(ob, tmp, ref->opaque);
+		rndr_table(ob, tmp, ref);
 		break;
 	case (LOWDOWN_TABLE_HEADER):
-		rndr_table_header(ob, tmp, ref->opaque,
+		rndr_table_header(ob, tmp, ref,
 			root->rndr_table_header.flags,
 			root->rndr_table_header.columns);
 		break;
 	case (LOWDOWN_TABLE_BODY):
-		rndr_table_body(ob, tmp, ref->opaque);
+		rndr_table_body(ob, tmp, ref);
 		break;
 	case (LOWDOWN_TABLE_ROW):
-		rndr_tablerow(ob, tmp, ref->opaque);
+		rndr_tablerow(ob, tmp, ref);
 		break;
 	case (LOWDOWN_TABLE_CELL):
 		rndr_tablecell(ob, tmp, 
-			root->rndr_table_cell.flags,
-			ref->opaque,
+			root->rndr_table_cell.flags, ref,
 			root->rndr_table_cell.col,
 			root->rndr_table_cell.columns);
 		break;
 	case (LOWDOWN_FOOTNOTES_BLOCK):
-		rndr_footnotes(ob, tmp, ref->opaque);
+		rndr_footnotes(ob, tmp, ref);
 		break;
 	case (LOWDOWN_FOOTNOTE_DEF):
 		rndr_footnote_def(ob, tmp, 
-			root->rndr_footnote_def.num,
-			ref->opaque);
+			root->rndr_footnote_def.num, ref);
 		break;
 	case (LOWDOWN_BLOCKHTML):
 		rndr_raw_block(ob, 
-			&root->rndr_blockhtml.text, ref->opaque);
+			&root->rndr_blockhtml.text, ref);
 		break;
 	case (LOWDOWN_LINK_AUTO):
 		rndr_autolink(ob, 
 			&root->rndr_autolink.link,
-			root->rndr_autolink.type,
-			ref->opaque);
+			root->rndr_autolink.type, ref);
 		break;
 	case (LOWDOWN_CODESPAN):
 		rndr_codespan(ob, 
-			&root->rndr_codespan.text, 
-			ref->opaque);
+			&root->rndr_codespan.text, ref);
 		break;
 	case (LOWDOWN_DOUBLE_EMPHASIS):
-		rndr_double_emphasis(ob, tmp, ref->opaque);
+		rndr_double_emphasis(ob, tmp, ref);
 		break;
 	case (LOWDOWN_EMPHASIS):
-		rndr_emphasis(ob, tmp, ref->opaque);
+		rndr_emphasis(ob, tmp, ref);
 		break;
 	case (LOWDOWN_HIGHLIGHT):
-		rndr_highlight(ob, tmp, ref->opaque);
+		rndr_highlight(ob, tmp, ref);
 		break;
 	case (LOWDOWN_IMAGE):
 		rndr_image(ob, 
 			&root->rndr_image.link,
 			&root->rndr_image.title,
 			&root->rndr_image.dims,
-			&root->rndr_image.alt,
-			ref->opaque);
+			&root->rndr_image.alt, ref);
 		break;
 	case (LOWDOWN_LINEBREAK):
-		rndr_linebreak(ob, ref->opaque);
+		rndr_linebreak(ob, ref);
 		break;
 	case (LOWDOWN_LINK):
 		rndr_link(ob, tmp,
 			&root->rndr_link.link,
-			&root->rndr_link.title,
-			ref->opaque);
+			&root->rndr_link.title, ref);
 		break;
 	case (LOWDOWN_TRIPLE_EMPHASIS):
-		rndr_triple_emphasis(ob, tmp, ref->opaque);
+		rndr_triple_emphasis(ob, tmp, ref);
 		break;
 	case (LOWDOWN_STRIKETHROUGH):
-		rndr_strikethrough(ob, tmp, ref->opaque);
+		rndr_strikethrough(ob, tmp, ref);
 		break;
 	case (LOWDOWN_SUPERSCRIPT):
-		rndr_superscript(ob, tmp, ref->opaque);
+		rndr_superscript(ob, tmp, ref);
 		break;
 	case (LOWDOWN_FOOTNOTE_REF):
 		rndr_footnote_ref(ob, 
-			root->rndr_footnote_ref.num, 
-			ref->opaque);
+			root->rndr_footnote_ref.num, ref);
 		break;
 	case (LOWDOWN_MATH_BLOCK):
 		rndr_math(ob, tmp, 
-			root->rndr_math.displaymode,
-			ref->opaque);
+			root->rndr_math.displaymode, ref);
 		break;
 	case (LOWDOWN_RAW_HTML):
-		rndr_raw_html(ob, tmp, ref->opaque);
+		rndr_raw_html(ob, tmp, ref);
 		break;
 	case (LOWDOWN_NORMAL_TEXT):
 		rndr_normal_text(ob, 
-			&root->rndr_normal_text.text, 
-			ref->opaque);
+			&root->rndr_normal_text.text, ref);
 		break;
 	case (LOWDOWN_ENTITY):
 		hbuf_put(ob,
@@ -826,34 +814,30 @@ lowdown_html_rndr(hbuf *ob, hrend *ref, const struct lowdown_node *root)
 }
 
 /* allocates a regular HTML renderer */
-hrend *
-hrend_html_new(unsigned int render_flags, int nesting_level)
+void *
+hrend_html_new(const struct lowdown_opts *opts)
 {
 	html_state *state;
-	hrend *renderer;
 
 	/* Prepare the state pointer */
 	state = xmalloc(sizeof(html_state));
 	memset(state, 0x0, sizeof(html_state));
 	TAILQ_INIT(&state->headers_used);
 
-	state->flags = render_flags;
-	state->toc_data.nesting_level = nesting_level;
+	state->flags = NULL == opts ? 0 : opts->oflags;
+	/* TODO: not yet used. */
+	state->toc_data.nesting_level = 0;
 
-	/* Prepare the renderer */
-	renderer = xmalloc(sizeof(hrend));
-
-	renderer->opaque = state;
-	return renderer;
+	return state;
 }
 
 /* 
  * Deallocate an HTML renderer. 
  */
 void
-hrend_html_free(hrend *renderer)
+hrend_html_free(void *renderer)
 {
-	html_state	*state = renderer->opaque;
+	html_state	*state = renderer;
 	struct hentry	*hentry;
 
 	while (NULL != (hentry = TAILQ_FIRST(&state->headers_used))) {
