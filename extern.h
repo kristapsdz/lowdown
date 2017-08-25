@@ -3,7 +3,7 @@
  * Copyright (c) 2008, Natacha Porté
  * Copyright (c) 2011, Vicent Martí
  * Copyright (c) 2014, Xavier Mendez, Devin Torres and the Hoedown authors
- * Copyright (c) 2016, Kristaps Dzonsons
+ * Copyright (c) 2016--2017 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -39,19 +39,6 @@
 # endif
 #endif
 
-struct hdoc;
-
-typedef struct hdoc hdoc;
-
-/* 
- * Functions callbacks for rendering parsed data.
- */
-typedef struct hrend {
-	/* Private object passed as void argument. */
-
-	void *opaque;
-} hrend;
-
 __BEGIN_DECLS
 
 void	*xmalloc(size_t) __attribute__((malloc));
@@ -79,34 +66,12 @@ size_t	 halink_email(size_t *, hbuf *, uint8_t *, size_t, size_t);
 size_t	 halink_url(size_t *, hbuf *, uint8_t *, size_t, size_t);
 size_t	 halink_www(size_t *, hbuf *, uint8_t *, size_t, size_t);
 
-hdoc 	*hdoc_new(const struct lowdown_opts *, 
-		unsigned int, int) __attribute__((malloc));
-struct lowdown_node
-	*hdoc_render(hdoc *, const uint8_t *, size_t, 
-		struct lowdown_meta **, size_t *);
-void	 hdoc_free(hdoc *);
-
 void	 hesc_href(hbuf *, const uint8_t *, size_t);
 void	 hesc_html(hbuf *, const uint8_t *, size_t, int);
 void	 hesc_nroff(hbuf *, const uint8_t *, size_t, int, int);
 
-void	 hrend_html_free(hrend *);
-hrend	*hrend_html_new(unsigned int, int) __attribute__ ((malloc));
-
-hrend	*hrend_nroff_new(unsigned int, int) __attribute__ ((malloc));
-void	 hrend_nroff_free(hrend *);
-
-void	 hsmrt_html(hbuf *, const uint8_t *, size_t);
-void	 hsmrt_nroff(hbuf *, const uint8_t *, size_t);
-
 void	 lmsg(const struct lowdown_opts *, enum lowdown_err, const char *, ...)
 		__attribute__ ((format(printf, 3, 4)));
-
-void	 lowdown_html_rndr(hbuf *, hrend *, 
-		const struct lowdown_node *);
-void	 lowdown_nroff_rndr(hbuf *, hrend *, 
-		const struct lowdown_node *);
-void	 lowdown_node_free(struct lowdown_node *);
 
 __END_DECLS
 
