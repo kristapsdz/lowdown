@@ -3646,6 +3646,7 @@ hdoc_parse(hdoc *doc, const uint8_t *data,
 	TAILQ_INIT(&doc->refq);
 	TAILQ_INIT(&doc->footnotes);
 
+	doc->footnotesz = 0;
 	footnotes_enabled = doc->ext_flags & LOWDOWN_FOOTNOTES;
 
 	/*
@@ -3786,10 +3787,13 @@ lowdown_node_free(struct lowdown_node *root)
 	case (LOWDOWN_NORMAL_TEXT):
 		hbuf_free(&root->rndr_normal_text.text);
 		break;
+	case (LOWDOWN_CODESPAN):
+		hbuf_free(&root->rndr_codespan.text);
+		break;
 	case (LOWDOWN_ENTITY):
 		hbuf_free(&root->rndr_entity.text);
 		break;
-	case (LOWDOWN_AUTOLINK):
+	case (LOWDOWN_LINK_AUTO):
 		hbuf_free(&root->rndr_autolink.text);
 		hbuf_free(&root->rndr_autolink.link);
 		break;

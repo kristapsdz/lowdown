@@ -718,7 +718,6 @@ rndr_doc_header(hbuf *ob,
 	const char	*author = NULL, *cp,
 	      		*title = "Untitled article";
 	size_t		 i;
-	hbuf		*op;
 	html_state	*st = data;
 
 	if ( ! (LOWDOWN_DOCHEADER & st->flags))
@@ -737,7 +736,7 @@ rndr_doc_header(hbuf *ob,
 		else if (0 == strcmp(m[i].key, "rcsauthor"))
 			author = rcsauthor2str(m[i].value);
 
-	HBUF_PUTSL(op, 
+	HBUF_PUTSL(ob, 
 	      "<!DOCTYPE html>\n"
 	      "<html>\n"
 	      "<head>\n"
@@ -753,13 +752,13 @@ rndr_doc_header(hbuf *ob,
 
 	if (NULL != author) {
 		for (cp = author; '\0' != *cp; ) {
-			HBUF_PUTSL(op, 
+			HBUF_PUTSL(ob, 
 				"<meta name=\"author\""
 				" content=\"");
 			while ('\0' != *cp) {
 				if ( ! isspace((int)cp[0]) ||
 				     ! isspace((int)cp[1])) {
-					hbuf_putc(op, *cp);
+					hbuf_putc(ob, *cp);
 					cp++;
 					continue;
 				}
@@ -768,13 +767,13 @@ rndr_doc_header(hbuf *ob,
 					cp++;
 				break;
 			}
-			HBUF_PUTSL(op, "\" />\n");
+			HBUF_PUTSL(ob, "\" />\n");
 		}
 	}
 
-	HBUF_PUTSL(op, "<title>");
-	hbuf_puts(op, title);
-	HBUF_PUTSL(op, 
+	HBUF_PUTSL(ob, "<title>");
+	hbuf_puts(ob, title);
+	HBUF_PUTSL(ob, 
 	      "</title>\n"
 	      "</head>\n"
 	      "<body>\n");
@@ -963,5 +962,4 @@ hrend_html_free(void *renderer)
 	}
 
 	free(state);
-	free(renderer);
 }
