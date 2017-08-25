@@ -80,7 +80,6 @@ lowdown_buf(const struct lowdown_opts *opts,
 		hrend_nroff_free(renderer);
 	}
 
-	warnx("asdfasdf");
 	lowdown_node_free(n);
 
 	/*
