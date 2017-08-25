@@ -3632,7 +3632,7 @@ hdoc_parse(hdoc *doc, const uint8_t *data,
 
 	text = hbuf_new(64);
 	divert = hbuf_new(64);
-	root = pushnode(doc, LOWDOWN_DOC_HEADER);
+	root = pushnode(doc, LOWDOWN_ROOT);
 
 	/*
 	 * Preallocate enough space for our buffer to avoid expanding
@@ -3714,14 +3714,17 @@ hdoc_parse(hdoc *doc, const uint8_t *data,
 
 	n = pushnode(doc, LOWDOWN_DOC_HEADER);
 	n->rndr_doc_header.msz = doc->msz;
-	n->rndr_doc_header.m = 
-		xcalloc(doc->msz, sizeof(struct lowdown_meta));
-	for (i = 0; i < doc->msz; i++) {
-		n->rndr_doc_header.m[i].key = 
-			xstrdup(doc->m[i].key);
-		n->rndr_doc_header.m[i].value = 
-			xstrdup(doc->m[i].value);
+	if (n->rndr_doc_header.msz) {
+		n->rndr_doc_header.m = 
+			xcalloc(doc->msz, 
+				sizeof(struct lowdown_meta));
+		for (i = 0; i < doc->msz; i++) {
+			n->rndr_doc_header.m[i].key = 
+				xstrdup(doc->m[i].key);
+			n->rndr_doc_header.m[i].value = 
+				xstrdup(doc->m[i].value);
 
+		}
 	}
 	popnode(doc, n);
 

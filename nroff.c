@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "lowdown.h"
 #include "extern.h"
@@ -683,6 +684,154 @@ rndr_math(hbuf *ob, const hbuf *text, int displaymode, void *data)
 	return 1;
 }
 
+/*
+ * Convert an ISO date (y/m/d or y-m-d) to a canonical form.
+ * Returns NULL if the string is malformed at all or the date otherwise.
+ */
+static char *
+date2str(const char *v)
+{
+	unsigned int	y, m, d;
+	int		rc;
+	static char	buf[32];
+
+	if (NULL == v)
+		return(NULL);
+
+	rc = sscanf(v, "%u/%u/%u", &y, &m, &d);
+	if (3 != rc) {
+		rc = sscanf(v, "%u-%u-%u", &y, &m, &d);
+		if (3 != rc)
+			return(NULL);
+	}
+
+	snprintf(buf, sizeof(buf), "%u-%.2u-%.2u", y, m, d);
+	return(buf);
+}
+
+/*
+ * Convert the "$Author$" string to just the author in a static
+ * buffer of a fixed length.
+ * Returns NULL if the string is malformed (too long, too short, etc.)
+ * at all or the author name otherwise.
+ */
+static char *
+rcsauthor2str(const char *v)
+{
+	static char	buf[1024];
+	size_t		sz;
+
+	if (NULL == v ||
+	    strlen(v) < 12 ||
+	    strncmp(v, "$Author: ", 9))
+		return(NULL);
+
+	if ((sz = strlcpy(buf, v + 9, sizeof(buf))) >= sizeof(buf))
+		return(NULL);
+
+	if ('$' == buf[sz - 1])
+		buf[sz - 1] = '\0';
+	if (' ' == buf[sz - 2])
+		buf[sz - 2] = '\0';
+
+	return(buf);
+}
+
+/*
+ * Convert the "$Date$" string to a simple ISO date in a
+ * static buffer.
+ * Returns NULL if the string is malformed at all or the date otherwise.
+ */
+static char *
+rcsdate2str(const char *v)
+{
+	unsigned int	y, m, d, h, min, s;
+	int		rc;
+	static char	buf[32];
+
+	if (NULL == v ||
+	    strlen(v) < 10 ||
+	    strncmp(v, "$Date: ", 7))
+		return(NULL);
+
+	rc = sscanf(v + 7, "%u/%u/%u %u:%u:%u", 
+		&y, &m, &d, &h, &min, &s);
+
+	if (6 != rc)
+		return(NULL);
+
+	snprintf(buf, sizeof(buf), "%u-%.2u-%.2u", y, m, d);
+	return(buf);
+}
+
+static void
+rndr_doc_header(hbuf *ob, 
+	const struct lowdown_meta *m, size_t msz, void *data)
+{
+	const char	*date = NULL, *author = NULL, *cp,
+	      		*title = "Untitled article";
+	time_t		 t;
+	char		 buf[32];
+	struct tm	*tm;
+	size_t		 i;
+	nroff_state	*st = data;
+
+	if ( ! (LOWDOWN_DOCHEADER & st->flags))
+		return;
+
+	/* Acquire metadata that we'll fill in. */
+
+	for (i = 0; i < msz; i++) 
+		if (0 == strcmp(m[i].key, "title"))
+			title = m[i].value;
+		else if (0 == strcmp(m[i].key, "author"))
+			author = m[i].value;
+		else if (0 == strcmp(m[i].key, "rcsauthor"))
+			author = rcsauthor2str(m[i].value);
+		else if (0 == strcmp(m[i].key, "rcsdate"))
+			date = rcsdate2str(m[i].value);
+		else if (0 == strcmp(m[i].key, "date"))
+			date = date2str(m[i].value);
+
+	/* FIXME: convert to buf without strftime. */
+
+	if (NULL == date) {
+		t = time(NULL);
+		tm = localtime(&t);
+		strftime(buf, sizeof(buf), "%F", tm);
+		date = buf;
+	}
+
+	if ( ! st->mdoc) {
+		HBUF_PUTSL(ob, ".nr PS 10\n");
+		HBUF_PUTSL(ob, ".nr GROWPS 3\n");
+		hbuf_printf(ob, ".DA %s\n.TL\n", date);
+		hbuf_puts(ob, title);
+		HBUF_PUTSL(ob, "\n");
+		if (NULL != author)
+			for (cp = author; '\0' != *cp; ) {
+				HBUF_PUTSL(ob, ".AU\n");
+				while ('\0' != *cp) {
+					if ( ! isspace((int)cp[0]) ||
+					     ! isspace((int)cp[1])) {
+						hbuf_putc(ob, *cp);
+						cp++;
+						continue;
+					}
+					cp += 2;
+					while (isspace((int)*cp))
+						cp++;
+					break;
+				}
+				HBUF_PUTSL(ob, "\n");
+			}
+	} else {
+		HBUF_PUTSL(ob, ".TH \"");
+		hbuf_puts(ob, title);
+		hbuf_printf(ob, "\" 7 %s\n", date);
+	}
+}
+
 void
 lowdown_nroff_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 {
@@ -709,6 +858,11 @@ lowdown_nroff_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 		break;
 	case (LOWDOWN_BLOCKQUOTE):
 		rndr_blockquote(ob, tmp, ref);
+		break;
+	case (LOWDOWN_DOC_HEADER):
+		rndr_doc_header(ob, 
+			root->rndr_doc_header.m, 
+			root->rndr_doc_header.msz, ref);
 		break;
 	case (LOWDOWN_HEADER):
 		rndr_header(ob, tmp, 
