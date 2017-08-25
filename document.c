@@ -3625,7 +3625,7 @@ hdoc_parse(hdoc *doc, const uint8_t *data,
 {
 	static const uint8_t UTF8_BOM[] = {0xEF, 0xBB, 0xBF};
 	hbuf		*text, *divert;
-	size_t		 beg, end;
+	size_t		 beg, end, i;
 	int		 footnotes_enabled;
 	const uint8_t	*sv;
 	struct lowdown_node *n, *root;
@@ -3713,6 +3713,16 @@ hdoc_parse(hdoc *doc, const uint8_t *data,
 	/* Second pass: actual rendering. */
 
 	n = pushnode(doc, LOWDOWN_DOC_HEADER);
+	n->rndr_doc_header.msz = doc->msz;
+	n->rndr_doc_header.m = 
+		xcalloc(doc->msz, sizeof(struct lowdown_meta));
+	for (i = 0; i < doc->msz; i++) {
+		n->rndr_doc_header.m[i].key = 
+			xstrdup(doc->m[i].key);
+		n->rndr_doc_header.m[i].value = 
+			xstrdup(doc->m[i].value);
+
+	}
 	popnode(doc, n);
 
 	if (text->size) {
@@ -3760,8 +3770,16 @@ void
 lowdown_node_free(struct lowdown_node *root)
 {
 	struct lowdown_node *n;
+	size_t	 i;
 
 	switch (root->type) {
+	case (LOWDOWN_DOC_HEADER):
+		for (i = 0; i < root->rndr_doc_header.msz; i++) {
+			free(root->rndr_doc_header.m[i].key);
+			free(root->rndr_doc_header.m[i].value);
+		}
+		free(root->rndr_doc_header.m);
+		break;
 	case (LOWDOWN_NORMAL_TEXT):
 		hbuf_free(&root->rndr_normal_text.text);
 		break;

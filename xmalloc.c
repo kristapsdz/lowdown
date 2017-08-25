@@ -86,3 +86,14 @@ xstrndup(const char *p, size_t sz)
 
 	return(pp);
 }
+
+char *
+xstrdup(const char *p)
+{
+	char	*pp;
+
+	if ((pp = strdup(p)) == NULL)
+		err(EXIT_FAILURE, NULL);
+
+	return(pp);
+}
