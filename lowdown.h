@@ -43,7 +43,8 @@
 enum	lowdown_type {
 	LOWDOWN_HTML,
 	LOWDOWN_MAN,
-	LOWDOWN_NROFF
+	LOWDOWN_NROFF,
+	LOWDOWN_TREE
 };
 
 enum	lowdown_err {
@@ -133,12 +134,25 @@ typedef enum hlist_fl {
 } hlist_fl;
 
 /*
+ * Meta-data keys and values.
+ * Both of these are non-NULL (but possibly empty).
+ */
+struct	lowdown_meta {
+	char		*key;
+	char		*value;
+};
+
+/*
  * Node parsed from input document.
  * Each node is part of the parse tree.
  */
 struct	lowdown_node {
 	enum lowdown_rndrt	 type;
 	union {
+		struct rndr_doc_header {
+			struct lowdown_meta *m; /* unescaped */
+			size_t msz;
+		} rndr_doc_header;
 		struct rndr_list {
 			hlist_fl flags;
 		} rndr_list; 
@@ -205,11 +219,6 @@ struct	lowdown_node {
 	struct lowdown_node *parent;
 	struct lowdown_nodeq children;
 	TAILQ_ENTRY(lowdown_node) entries;
-};
-
-struct	lowdown_meta {
-	char		*key;
-	char		*value;
 };
 
 /*
