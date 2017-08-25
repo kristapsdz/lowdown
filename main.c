@@ -340,7 +340,7 @@ main(int argc, char *argv[])
 	/* FIXME: make into an output feature. */
 
 	if (standalone)
-		opts.oflags |= LOWDOWN_DOC_HEADER;
+		opts.oflags |= LOWDOWN_STANDALONE;
 
 	if ( ! lowdown_file(&opts, fin, &ret, &retsz, &m, &msz))
 		err(EXIT_FAILURE, "%s", fnin);

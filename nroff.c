@@ -776,7 +776,7 @@ rndr_doc_header(hbuf *ob,
 	size_t		 i;
 	nroff_state	*st = data;
 
-	if ( ! (LOWDOWN_DOCHEADER & st->flags))
+	if ( ! (LOWDOWN_STANDALONE & st->flags))
 		return;
 
 	/* Acquire metadata that we'll fill in. */
