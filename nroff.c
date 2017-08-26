@@ -871,7 +871,8 @@ rndr_doc_header(hbuf *ob,
 		HBUF_PUTSL(ob, ".nr PS 10\n");
 		HBUF_PUTSL(ob, ".nr GROWPS 3\n");
 		hbuf_printf(ob, ".DA %s\n.TL\n", date);
-		escape_block(ob, title, strlen(title));
+		escape_block(ob, 
+			(const uint8_t *)title, strlen(title));
 		HBUF_PUTSL(ob, "\n");
 		if (NULL != author)
 			for (cp = author; '\0' != *cp; ) {
@@ -894,12 +895,14 @@ rndr_doc_header(hbuf *ob,
 				if (0 == sz)
 					continue;
 				HBUF_PUTSL(ob, ".AU\n");
-				hesc_nroff(ob, start, sz, 0, 1);
+				hesc_nroff(ob, 
+					(const uint8_t *)start, sz, 0, 1);
 				HBUF_PUTSL(ob, "\n");
 			}
 	} else {
 		HBUF_PUTSL(ob, ".TH \"");
-		escape_oneline_span(ob, title, strlen(title));
+		escape_oneline_span(ob, 
+			(const uint8_t *)title, strlen(title));
 		hbuf_printf(ob, "\" 7 %s\n", date);
 	}
 }

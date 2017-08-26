@@ -772,7 +772,7 @@ rndr_doc_header(hbuf *ob,
 			HBUF_PUTSL(ob, 
 				"<meta name=\"author\""
 				" content=\"");
-			hesc_html(ob, start, sz, 0);
+			hesc_html(ob, (const uint8_t *)start, sz, 0);
 			HBUF_PUTSL(ob, "\" />\n");
 		}
 	}
@@ -783,7 +783,7 @@ rndr_doc_header(hbuf *ob,
 		title++;
 
 	HBUF_PUTSL(ob, "<title>");
-	hesc_html(ob, title, strlen(title), 0);
+	hesc_html(ob, (const uint8_t *)title, strlen(title), 0);
 	HBUF_PUTSL(ob, 
 	      "</title>\n"
 	      "</head>\n"
