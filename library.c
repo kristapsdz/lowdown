@@ -51,7 +51,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 	struct lowdown_meta **m, size_t *msz)
 {
 	hbuf	 	 *ob, *spb;
-	void 		 *renderer;
+	void 		 *renderer = NULL;
 	hdoc 		 *document;
 	size_t		  i;
 	enum lowdown_type t;
