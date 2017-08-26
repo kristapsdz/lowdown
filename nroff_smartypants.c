@@ -435,7 +435,7 @@ sm_cb_dquote(hbuf *ob, struct sm_dat *smrt,
 void
 hsmrt_nroff(hbuf *ob, const uint8_t *text, size_t size)
 {
-	size_t 		 i, org;
+	size_t 		 i, org, bscan;
 	struct sm_dat	 smrt;
 	uint8_t		 action = 0;
 
@@ -455,6 +455,22 @@ hsmrt_nroff(hbuf *ob, const uint8_t *text, size_t size)
 
 		if (i > org)
 			hbuf_put(ob, text + org, i - org);
+
+		/* Don't convert quotes on macro lines. */
+
+		if ('"' == text[i]) {
+			assert('\n' != text[i]);
+			for (bscan = i; bscan > 0; bscan--)
+				if ('\n' == text[bscan]) {
+					bscan++;
+					break;
+				}
+			assert(bscan <= i);
+			if ('.' == text[bscan]) {
+				hbuf_putc(ob, '"');
+				continue;
+			}
+		}
 
 		if (i < size)
 			i += sm_cb_ptrs[(int)action](ob,
