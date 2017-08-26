@@ -467,19 +467,11 @@ tag_length(const uint8_t *data, size_t size, halink_type *autolink)
  * Parses inline markdown elements.
  * This function is important because it handles raw input that we pass
  * directly to the output formatter ("normal_text").
- * The "nln" business is entirely for the nroff.c frontend, which needs
- * to understand newline status in the output buffer: it indicates to
- * parse_inline that the currently-known output is starting on a fresh
- * line.
- * Recursive invocations of parse_inline, which reset "ob" (and thus
- * we'll lose whether we're on a newline or not) need to respect this.
- * This is a limitation of the design of the compiler, which, in my
- * honest opinion, is pretty ad hoc and unstructured.
  */
 static void
-parse_inline(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int nln)
+parse_inline(hdoc *doc, uint8_t *data, size_t size, int nln)
 {
-	size_t	 i = 0, end = 0, consumed = 0, svsz;
+	size_t	 i = 0, end = 0, consumed = 0;
 	hbuf	 work;
 	uint8_t	*active_char = doc->active_char;
 	struct lowdown_node *n;
@@ -487,12 +479,8 @@ parse_inline(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int nln)
 	memset(&work, 0, sizeof(hbuf));
 	
 	while (i < size) {
-		/* 
-		 * Copying non-macro chars into the output. 
-		 * Keep track of where we started in the output buffer.
-		 */
+		/* Copying non-macro chars into the output. */
 
-		svsz = ob->size;
 		while (end < size && active_char[data[end]] == 0)
 			end++;
 
@@ -506,15 +494,7 @@ parse_inline(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int nln)
 		if (end >= size)
 			break;
 
-		/* 
-		 * If we've written something to our output buffer, keep
-		 * track of whether it ended with a newline.
-		 * This is 
-		 */
-
 		i = end;
-		nln = svsz != ob->size ? buf_newln(ob) : nln;
-
 		end = markdown_char_ptrs[(int)active_char[data[end]]]
 			(doc, data + i, i - consumed, size - i, nln);
 
@@ -526,23 +506,6 @@ parse_inline(hbuf *ob, hdoc *doc, uint8_t *data, size_t size, int nln)
 		} else {
 			i += end;
 			end = consumed = i;
-		}
-
-		/* 
-		 * If we're in nroff mode, some of our inline macros
-		 * produce newlines so we should crunch trailing
-		 * whitespace.
-		 */
-
-		if (ob->size && '\n' == ob->data[ob->size - 1])
-			nln = 1;
-		else
-			nln = 0;
-
-		if (nln && doc->link_nospace) {
-			while (i < size && xisspace((int)data[i]))
-				i++;
-			consumed = end = i;
 		}
 	}
 }
@@ -685,7 +648,6 @@ static size_t
 parse_emph1(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 {
 	size_t	 i = 0, len;
-	hbuf	*work = NULL;
 	struct lowdown_node *n;
 
 	/* Skipping one symbol if coming from emph3. */
@@ -708,11 +670,8 @@ parse_emph1(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 					continue;
 
 			n = pushnode(doc, LOWDOWN_EMPHASIS);
-			work = hbuf_new(64);
-			parse_inline(work, doc, data, i, 1);
+			parse_inline(doc, data, i, 1);
 			popnode(doc, n);
-			hbuf_free(work);
-
 			return i + 1;
 		}
 	}
@@ -727,7 +686,6 @@ static size_t
 parse_emph2(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 {
 	size_t	 i = 0, len;
-	hbuf	*work = NULL;
 	struct lowdown_node *n;
 	enum lowdown_rndrt t;
 
@@ -740,8 +698,6 @@ parse_emph2(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 		if (i + 1 < size && data[i] == c && 
 		    data[i + 1] == c && i && 
 		    ! xisspace(data[i - 1])) {
-			work = hbuf_new(64);
-
 			if (c == '~')
 				t = LOWDOWN_STRIKETHROUGH;
 			else if (c == '=')
@@ -750,10 +706,8 @@ parse_emph2(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 				t = LOWDOWN_DOUBLE_EMPHASIS;
 
 			n = pushnode(doc, t);
-			parse_inline(work, doc, data, i, 1);
+			parse_inline(doc, data, i, 1);
 			popnode(doc, n);
-
-			hbuf_free(work);
 			return i + 2;
 		}
 		i++;
@@ -769,7 +723,6 @@ static size_t
 parse_emph3(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 {
 	size_t	 i = 0, len;
-	hbuf	*work;
 	struct lowdown_node *n;
 
 	while (i < size) {
@@ -789,9 +742,7 @@ parse_emph3(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 			 * Triple symbol (***) found. 
 			 */
 			n = pushnode(doc, LOWDOWN_TRIPLE_EMPHASIS);
-			work = hbuf_new(64);
-			parse_inline(work, doc, data, i, 1);
-			hbuf_free(work);
+			parse_inline(doc, data, i, 1);
 			popnode(doc, n);
 			return i + 3;
 		} else if (i + 1 < size && data[i + 1] == c) {
@@ -1626,18 +1577,18 @@ again:
 	 */
 
 	if (txt_e > 1) {
-		content = hbuf_new(64);
 		if ( ! is_img) {
 			/* 
 			 * Disable autolinking when parsing inline the
 			 * content of a link.
 			 */
 			doc->in_link_body = 1;
-			parse_inline(content, doc, 
-				data + 1, txt_e - 1, nln);
+			parse_inline(doc, data + 1, txt_e - 1, nln);
 			doc->in_link_body = 0;
-		} else
+		} else {
+			content = hbuf_new(64);
 			hbuf_put(content, data + 1, txt_e - 1);
+		}
 	}
 
 	if (link) {
@@ -1687,7 +1638,6 @@ char_superscript(hdoc *doc, uint8_t *data,
 	size_t offset, size_t size, int nln)
 {
 	size_t	 sup_start, sup_len;
-	hbuf	*sup;
 	struct lowdown_node *n;
 
 	if (size < 2)
@@ -1709,13 +1659,9 @@ char_superscript(hdoc *doc, uint8_t *data,
 
 	n = pushnode(doc, LOWDOWN_SUPERSCRIPT);
 
-	sup = hbuf_new(64);
-	parse_inline(sup, doc, data + sup_start, 
+	parse_inline(doc, data + sup_start, 
 		sup_len - sup_start, nln);
-
 	popnode(doc, n);
-	hbuf_free(sup);
-
 	return (sup_start == 2) ? sup_len + 1 : sup_len;
 }
 
@@ -2057,7 +2003,6 @@ static size_t
 parse_paragraph(hdoc *doc, uint8_t *data, size_t size)
 {
 	hbuf		 work;
-	hbuf		*tmp, *header_work;
 	struct lowdown_node *n;
 	size_t		 i = 0, end = 0, beg;
 	int		 level = 0;
@@ -2101,12 +2046,10 @@ parse_paragraph(hdoc *doc, uint8_t *data, size_t size)
 		work.size--;
 
 	if ( ! level) {
-		tmp = hbuf_new(256);
 		n = pushnode(doc, LOWDOWN_PARAGRAPH);
-		parse_inline(tmp, doc, work.data, work.size, 1);
+		parse_inline(doc, work.data, work.size, 1);
 		popnode(doc, n);
 		doc->cur_par++;
-		hbuf_free(tmp);
 	} else {
 		if (work.size) {
 			i = work.size;
@@ -2120,26 +2063,21 @@ parse_paragraph(hdoc *doc, uint8_t *data, size_t size)
 				work.size -= 1;
 
 			if (work.size > 0) {
-				tmp = hbuf_new(256);
 				n = pushnode(doc, LOWDOWN_PARAGRAPH);
-				parse_inline(tmp, doc, work.data, 
+				parse_inline(doc, work.data, 
 					work.size, 1);
 				popnode(doc, n);
 				doc->cur_par++;
-				hbuf_free(tmp);
 				work.data += beg;
 				work.size = i - beg;
 			} else 
 				work.size = i;
 		}
 
-		header_work = hbuf_new(64);
 		n = pushnode(doc, LOWDOWN_HEADER);
 		n->rndr_header.level = level;
-		parse_inline(header_work, doc, 
-			work.data, work.size, 1);
+		parse_inline(doc, work.data, work.size, 1);
 		popnode(doc, n);
-		hbuf_free(header_work);
 	}
 
 	return end;
@@ -2398,14 +2336,14 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 	} else {
 		/* intermediate render of inline li */
 		if (sublist && sublist < work->size) {
-			parse_inline(inter, doc, 
-				work->data, sublist, buf_newln(ob));
+			parse_inline(doc, work->data, 
+				sublist, buf_newln(ob));
 			parse_block(inter, doc, 
 				work->data + sublist, 
 				work->size - sublist);
 		} else
-			parse_inline(inter, doc, 
-				work->data, work->size, buf_newln(ob));
+			parse_inline(doc, work->data, 
+				work->size, buf_newln(ob));
 	}
 
 	popnode(doc, n);
@@ -2449,7 +2387,6 @@ static size_t
 parse_atxheader(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 {
 	size_t 	 level = 0, i, end, skip;
-	hbuf	*work;
 	struct lowdown_node *n;
 
 	while (level < size && level < 6 && data[level] == '#')
@@ -2471,11 +2408,8 @@ parse_atxheader(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 	if (end > i) {
 		n = pushnode(doc, LOWDOWN_HEADER);
 		n->rndr_header.level = level;
-		work = hbuf_new(64);
-		parse_inline(work, doc, 
-			data + i, end - i, buf_newln(ob));
+		parse_inline(doc, data + i, end - i, buf_newln(ob));
 		popnode(doc, n);
-		hbuf_free(work);
 	}
 
 	return skip;
@@ -2772,7 +2706,6 @@ parse_table_row(hbuf *ob, hdoc *doc, uint8_t *data,
 	*col_data, htbl_flags header_flag)
 {
 	size_t	 i = 0, col, len, cell_start, cell_end;
-	hbuf 	*cell_work;
 	hbuf 	 empty_cell;
 	struct lowdown_node *n, *nn;
 
@@ -2782,8 +2715,6 @@ parse_table_row(hbuf *ob, hdoc *doc, uint8_t *data,
 	n = pushnode(doc, LOWDOWN_TABLE_ROW);
 
 	for (col = 0; col < columns && i < size; ++col) {
-		cell_work = hbuf_new(64);
-
 		while (i < size && xisspace(data[i]))
 			i++;
 
@@ -2815,10 +2746,9 @@ parse_table_row(hbuf *ob, hdoc *doc, uint8_t *data,
 		nn->rndr_table_cell.col = col;
 		nn->rndr_table_cell.columns = columns;
 
-		parse_inline(cell_work, doc, data + cell_start, 
+		parse_inline(doc, data + cell_start, 
 			1 + cell_end - cell_start, buf_newln(ob));
 		popnode(doc, nn);
-		hbuf_free(cell_work);
 		i++;
 	}
 
