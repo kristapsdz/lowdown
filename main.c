@@ -293,6 +293,8 @@ main(int argc, char *argv[])
 				opts.type = LOWDOWN_HTML;
 			else if (0 == strcasecmp(optarg, "man"))
 				opts.type = LOWDOWN_MAN;
+			else if (0 == strcasecmp(optarg, "tree"))
+				opts.type = LOWDOWN_TREE;
 			else
 				goto usage;
 			break;

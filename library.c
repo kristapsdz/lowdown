@@ -50,34 +50,51 @@ lowdown_buf(const struct lowdown_opts *opts,
 	unsigned char **res, size_t *rsz,
 	struct lowdown_meta **m, size_t *msz)
 {
-	hbuf	 	*ob, *spb;
-	void 		*renderer;
-	hdoc 		*document;
-	size_t		 i;
+	hbuf	 	 *ob, *spb;
+	void 		 *renderer;
+	hdoc 		 *document;
+	size_t		  i;
+	enum lowdown_type t;
 	struct lowdown_node *n;
 
-	/*
-	 * Begin by creating our buffers, renderer, and document.
-	 */
+	/* Create our buffers, renderer, and document. */
 
 	ob = hbuf_new(DEF_OUNIT);
-
-	renderer = NULL == opts || LOWDOWN_HTML == opts->type ?
-		hrend_html_new(opts) : hrend_nroff_new(opts);
-
 	document = hdoc_new(opts);
+	t = NULL == opts ? LOWDOWN_HTML : opts->type;
+
+	switch (t) {
+	case (LOWDOWN_HTML):
+		renderer = hrend_html_new(opts);
+		break;
+	case (LOWDOWN_MAN):
+	case (LOWDOWN_NROFF):
+		renderer = hrend_nroff_new(opts);
+		break;
+	case (LOWDOWN_TREE):
+		renderer = hrend_tree_new();
+		break;
+	}
 
 	/* Parse the output and free resources. */
 
 	n = hdoc_parse(document, data, datasz, m, msz);
 	hdoc_free(document);
 
-	if (NULL == opts || LOWDOWN_HTML == opts->type) {
+	switch (t) {
+	case (LOWDOWN_HTML):
 		lowdown_html_rndr(ob, renderer, n);
 		hrend_html_free(renderer);
-	} else {
+		break;
+	case (LOWDOWN_MAN):
+	case (LOWDOWN_NROFF):
 		lowdown_nroff_rndr(ob, renderer, n);
 		hrend_nroff_free(renderer);
+		break;
+	case (LOWDOWN_TREE):
+		lowdown_tree_rndr(ob, renderer, n);
+		hrend_tree_free(renderer);
+		break;
 	}
 
 	lowdown_node_free(n);
@@ -90,27 +107,29 @@ lowdown_buf(const struct lowdown_opts *opts,
 	 * Which we should never do!
 	 */
 
-	for (i = 0; i < *msz; i++) {
-		spb = hbuf_new(DEF_OUNIT);
-		if (NULL == opts ||
-		    LOWDOWN_HTML == opts->type)
-			hesc_html(spb, (uint8_t *)(*m)[i].value, 
-				strlen((*m)[i].value), 0);
-		else
-			hesc_nroff(spb, (uint8_t *)(*m)[i].value, 
-				strlen((*m)[i].value), 0, 1);
-		free((*m)[i].value);
-		(*m)[i].value = xstrndup
-			((char *)spb->data, spb->size);
-		hbuf_free(spb);
-	}
+	if (LOWDOWN_TREE != t) 
+		for (i = 0; i < *msz; i++) {
+			spb = hbuf_new(DEF_OUNIT);
+			if (LOWDOWN_HTML == t)
+				hesc_html(spb, 
+					(uint8_t *)(*m)[i].value, 
+					strlen((*m)[i].value), 0);
+			else
+				hesc_nroff(spb, 
+					(uint8_t *)(*m)[i].value, 
+					strlen((*m)[i].value), 0, 1);
+			free((*m)[i].value);
+			(*m)[i].value = xstrndup
+				((char *)spb->data, spb->size);
+			hbuf_free(spb);
+		}
 
 	/* Reprocess the output as smartypants. */
 
-	if (NULL != opts && 
-	    LOWDOWN_SMARTY & opts->oflags) {
+	if (LOWDOWN_TREE != t &&
+	    NULL != opts && LOWDOWN_SMARTY & opts->oflags) {
 		spb = hbuf_new(DEF_OUNIT);
-		if (LOWDOWN_HTML == opts->type)
+		if (LOWDOWN_HTML == t)
 			hsmrt_html(spb, ob->data, ob->size);
 		else
 			hsmrt_nroff(spb, ob->data, ob->size);
@@ -120,8 +139,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 		hbuf_free(spb);
 		for (i = 0; i < *msz; i++) {
 			spb = hbuf_new(DEF_OUNIT);
-			if (NULL == opts ||
-			    LOWDOWN_HTML == opts->type)
+			if (LOWDOWN_HTML == t)
 				hsmrt_html(spb, 
 					(uint8_t *)(*m)[i].value, 
 					strlen((*m)[i].value));

@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "lowdown.h"
 #include "extern.h"
@@ -72,155 +73,35 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 {
 	const struct lowdown_node *n;
 	hbuf	*tmp;
-	size_t	 i;
+	size_t	 i, j;
 
 	for (i = 0; i < indent; i++)
 		HBUF_PUTSL(ob, "  ");
 	hbuf_puts(ob, names[root->type]);
 	HBUF_PUTSL(ob, "\n");
 
-	tmp = hbuf_new(64);
-
-	TAILQ_FOREACH(n, &root->children, entries)
-		rndr(tmp, n, indent + 1);
-#if 0
 	switch (root->type) {
-	case (LOWDOWN_BLOCKCODE):
-		rndr_blockcode(ob, 
-			&root->rndr_blockcode.text, 
-			&root->rndr_blockcode.lang, 
-			ref->opaque);
-		break;
-	case (LOWDOWN_BLOCKQUOTE):
-		rndr_blockquote(ob, tmp, ref->opaque);
-		break;
-	case (LOWDOWN_HEADER):
-		rndr_header(ob, tmp, 
-			root->rndr_header.level,
-			ref->opaque);
-		break;
-	case (LOWDOWN_HRULE):
-		rndr_hrule(ob, ref->opaque);
-		break;
-	case (LOWDOWN_LIST):
-		rndr_list(ob, tmp, 
-			root->rndr_list.flags, 
-			ref->opaque);
-		break;
-	case (LOWDOWN_LISTITEM):
-		rndr_listitem(ob, tmp, 
-			root->rndr_listitem.flags,
-			ref->opaque, root->rndr_listitem.num);
-		break;
-	case (LOWDOWN_PARAGRAPH):
-		rndr_paragraph(ob, tmp, ref->opaque, nln);
-		break;
-	case (LOWDOWN_TABLE_BLOCK):
-		rndr_table(ob, tmp, ref->opaque);
-		break;
-	case (LOWDOWN_TABLE_HEADER):
-		rndr_table_header(ob, tmp, ref->opaque,
-			root->rndr_table_header.flags,
-			root->rndr_table_header.columns);
-		break;
-	case (LOWDOWN_TABLE_BODY):
-		rndr_table_body(ob, tmp, ref->opaque);
-		break;
-	case (LOWDOWN_TABLE_ROW):
-		rndr_tablerow(ob, tmp, ref->opaque);
-		break;
-	case (LOWDOWN_TABLE_CELL):
-		rndr_tablecell(ob, tmp, 
-			root->rndr_table_cell.flags,
-			ref->opaque,
-			root->rndr_table_cell.col,
-			root->rndr_table_cell.columns);
-		break;
-	case (LOWDOWN_FOOTNOTES_BLOCK):
-		rndr_footnotes(ob, tmp, ref->opaque);
-		break;
-	case (LOWDOWN_FOOTNOTE_DEF):
-		rndr_footnote_def(ob, tmp, 
-			root->rndr_footnote_def.num,
-			ref->opaque);
-		break;
-	case (LOWDOWN_BLOCKHTML):
-		rndr_raw_block(ob, tmp, ref->opaque);
-		break;
-	case (LOWDOWN_LINK_AUTO):
-		rndr_autolink(ob, 
-			&root->rndr_autolink.link,
-			root->rndr_autolink.type,
-			ref->opaque, nln);
-		break;
-	case (LOWDOWN_CODESPAN):
-		rndr_codespan(ob, 
-			&root->rndr_codespan.text, 
-			ref->opaque, nln);
-		break;
-	case (LOWDOWN_DOUBLE_EMPHASIS):
-		rndr_double_emphasis(ob, tmp, ref->opaque, nln);
-		break;
-	case (LOWDOWN_EMPHASIS):
-		rndr_emphasis(ob, tmp, ref->opaque, nln);
-		break;
-	case (LOWDOWN_HIGHLIGHT):
-		rndr_highlight(ob, tmp, ref->opaque, nln);
-		break;
-	case (LOWDOWN_IMAGE):
-		rndr_image(ob, 
-			&root->rndr_image.link,
-			&root->rndr_image.title,
-			&root->rndr_image.dims,
-			&root->rndr_image.alt,
-			ref->opaque);
-		break;
-	case (LOWDOWN_LINEBREAK):
-		rndr_linebreak(ob, ref->opaque);
-		break;
-	case (LOWDOWN_LINK):
-		rndr_link(ob, tmp,
-			&root->rndr_link.link,
-			&root->rndr_link.title,
-			ref->opaque, nln);
-		break;
-	case (LOWDOWN_TRIPLE_EMPHASIS):
-		rndr_triple_emphasis(ob, tmp, ref->opaque, nln);
-		break;
-	case (LOWDOWN_STRIKETHROUGH):
-		rndr_strikethrough(ob, tmp, ref->opaque, nln);
-		break;
-	case (LOWDOWN_SUPERSCRIPT):
-		rndr_superscript(ob, tmp, ref->opaque, nln);
-		break;
-	case (LOWDOWN_FOOTNOTE_REF):
-		rndr_footnote_ref(ob, 
-			root->rndr_footnote_ref.num, 
-			ref->opaque);
-		break;
-	case (LOWDOWN_MATH_BLOCK):
-		rndr_math(ob, tmp, 
-			root->rndr_math.displaymode,
-			ref->opaque);
-		break;
-	case (LOWDOWN_RAW_HTML):
-		rndr_raw_html(ob, tmp, ref->opaque);
+	case (LOWDOWN_DOC_HEADER):
+		for (i = 0; i < root->rndr_doc_header.msz; i++) {
+			for (j = 0; j < indent + 1; j++)
+				HBUF_PUTSL(ob, "  ");
+			hbuf_printf(ob, "metadata: %s, %zu Bytes\n",
+				root->rndr_doc_header.m[i].key,
+				strlen(root->rndr_doc_header.m[i].value));
+		}
 		break;
 	case (LOWDOWN_NORMAL_TEXT):
-		rndr_normal_text(ob, 
-			&root->rndr_normal_text.text, 
-			ref->opaque, nln);
-		break;
-	case (LOWDOWN_ENTITY):
-		hbuf_put(ob,
-			root->rndr_entity.text.data,
-			root->rndr_entity.text.size);
-		break;
+		for (i = 0; i < indent + 1; i++)
+			HBUF_PUTSL(ob, "  ");
+		hbuf_printf(ob, "data: %zu Bytes\n",
+			root->rndr_normal_text.text.size);
 	default:
-		hbuf_put(ob, tmp->data, tmp->size);
 		break;
 	}
-#endif
+
+	tmp = hbuf_new(64);
+	TAILQ_FOREACH(n, &root->children, entries)
+		rndr(tmp, n, indent + 1);
 	hbuf_put(ob, tmp->data, tmp->size);
 	hbuf_free(tmp);
 }
