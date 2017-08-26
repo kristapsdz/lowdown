@@ -21,6 +21,7 @@
 
 #include <sys/queue.h>
 
+#include <assert.h>
 #include <ctype.h>
 #if HAVE_ERR
 # include <err.h>
@@ -39,15 +40,57 @@
 		hbuf_putc((_ob), '\n'); \
 	while (/* CONSTCOND */ 0)
 
-typedef struct nroff_state {
-	int mdoc;
-	struct {
-		int header_count;
-		int current_level;
-		int level_offset;
-	} toc_data;
-	unsigned int flags;
-} nroff_state;
+/*
+ * This relates to the roff output, not the node type.
+ * If NSCOPE_BLOCK, the output is newline-terminated.
+ * Otherwise, it is not.
+ */
+enum	nscope {
+	NSCOPE_BLOCK,
+	NSCOPE_SPAN
+};
+
+struct 	nstate {
+	int 		 mdoc; /* whether mdoc(7) */
+	unsigned int 	 flags; /* output flags */
+};
+
+static const enum nscope nscopes[LOWDOWN__MAX] = {
+	NSCOPE_BLOCK, /* LOWDOWN_ROOT */
+	NSCOPE_BLOCK, /* LOWDOWN_BLOCKCODE */
+	NSCOPE_BLOCK, /* LOWDOWN_BLOCKQUOTE */
+	NSCOPE_BLOCK, /* LOWDOWN_HEADER */
+	NSCOPE_BLOCK, /* LOWDOWN_HRULE */
+	NSCOPE_BLOCK, /* LOWDOWN_LIST */
+	NSCOPE_BLOCK, /* LOWDOWN_LISTITEM */
+	NSCOPE_BLOCK, /* LOWDOWN_PARAGRAPH */
+	NSCOPE_BLOCK, /* LOWDOWN_TABLE_BLOCK */
+	NSCOPE_BLOCK, /* LOWDOWN_TABLE_HEADER */
+	NSCOPE_BLOCK, /* LOWDOWN_TABLE_BODY */
+	NSCOPE_BLOCK, /* LOWDOWN_TABLE_ROW */
+	NSCOPE_BLOCK, /* LOWDOWN_TABLE_CELL */
+	NSCOPE_BLOCK, /* LOWDOWN_FOOTNOTES_BLOCK */
+	NSCOPE_BLOCK, /* LOWDOWN_FOOTNOTE_DEF */
+	NSCOPE_BLOCK, /* LOWDOWN_BLOCKHTML */
+	NSCOPE_BLOCK, /* LOWDOWN_LINK_AUTO */
+	NSCOPE_SPAN, /* LOWDOWN_CODESPAN */
+	NSCOPE_SPAN, /* LOWDOWN_DOUBLE_EMPHASIS */
+	NSCOPE_SPAN, /* LOWDOWN_EMPHASIS */
+	NSCOPE_SPAN, /* LOWDOWN_HIGHLIGHT */
+	NSCOPE_SPAN, /* LOWDOWN_IMAGE */
+	NSCOPE_BLOCK, /* LOWDOWN_LINEBREAK */
+	NSCOPE_BLOCK, /* LOWDOWN_LINK */
+	NSCOPE_SPAN, /* LOWDOWN_TRIPLE_EMPHASIS */
+	NSCOPE_SPAN, /* LOWDOWN_STRIKETHROUGH */
+	NSCOPE_SPAN, /* LOWDOWN_SUPERSCRIPT */
+	NSCOPE_SPAN, /* LOWDOWN_FOOTNOTE_REF */
+	NSCOPE_BLOCK, /* LOWDOWN_MATH_BLOCK */
+	NSCOPE_SPAN, /* LOWDOWN_RAW_HTML */
+	NSCOPE_SPAN, /* LOWDOWN_ENTITY */
+	NSCOPE_SPAN, /* LOWDOWN_NORMAL_TEXT */
+	NSCOPE_BLOCK, /* LOWDOWN_DOC_HEADER */
+	NSCOPE_BLOCK /* LOWDOWN_DOC_FOOTER */
+};
 
 static void
 escape_span(hbuf *ob, const uint8_t *source, size_t length)
@@ -72,9 +115,8 @@ escape_oneline_span(hbuf *ob, const uint8_t *source, size_t length)
 
 static int
 rndr_autolink(hbuf *ob, const hbuf *link, 
-	halink_type type, void *data, int nln)
+	halink_type type, const struct nstate *st, int nln)
 {
-	nroff_state	*st = data;
 
 	if (NULL == link || 0 == link->size)
 		return 0;
@@ -111,9 +153,9 @@ rndr_autolink(hbuf *ob, const hbuf *link,
 }
 
 static void
-rndr_blockcode(hbuf *ob, const hbuf *content, const hbuf *lang, void *data)
+rndr_blockcode(hbuf *ob, const hbuf *content, 
+	const hbuf *lang, const struct nstate *st)
 {
-	nroff_state 	*st = data;
 
 	if (NULL == content || 0 == content->size)
 		return;
@@ -136,7 +178,7 @@ rndr_blockcode(hbuf *ob, const hbuf *content, const hbuf *lang, void *data)
 }
 
 static void
-rndr_blockquote(hbuf *ob, const hbuf *content, void *data)
+rndr_blockquote(hbuf *ob, const hbuf *content)
 {
 
 	if (NULL == content || 0 == content->size)
@@ -149,7 +191,7 @@ rndr_blockquote(hbuf *ob, const hbuf *content, void *data)
 }
 
 static int
-rndr_codespan(hbuf *ob, const hbuf *content, void *data, int nln)
+rndr_codespan(hbuf *ob, const hbuf *content)
 {
 
 	if (NULL == content || 0 == content->size)
@@ -165,7 +207,7 @@ rndr_codespan(hbuf *ob, const hbuf *content, void *data, int nln)
  * FIXME: not supported.
  */
 static int
-rndr_strikethrough(hbuf *ob, const hbuf *content, void *data, int nln)
+rndr_strikethrough(hbuf *ob, const hbuf *content)
 {
 
 	if (NULL == content || 0 == content->size)
@@ -176,114 +218,58 @@ rndr_strikethrough(hbuf *ob, const hbuf *content, void *data, int nln)
 }
 
 static int
-rndr_double_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
+rndr_double_emphasis(hbuf *ob, const hbuf *content)
 {
-	nroff_state *st	= data;
 
 	if (NULL == content || 0 == content->size)
 		return(0);
 
-	if ('.' == content->data[0]) {
-		if ( ! nln)
-			HBUF_PUTSL(ob, "\n");
-		/* FIXME: for man(7), this is next-line scope. */
-		HBUF_PUTSL(ob, ".B\n");
-		hbuf_put(ob, content->data, content->size);
-		if (content->size && 
-		    '\n' != content->data[content->size - 1])
-			HBUF_PUTSL(ob, "\n");
-		if ( ! st->mdoc)
-			HBUF_PUTSL(ob, ".R\n");
-	} else { 
-		HBUF_PUTSL(ob, "\\fB");
-		hbuf_put(ob, content->data, content->size);
-		HBUF_PUTSL(ob, "\\fP");
-	}
+	HBUF_PUTSL(ob, "\\fB");
+	hbuf_put(ob, content->data, content->size);
+	HBUF_PUTSL(ob, "\\fP");
 
 	return 1;
 }
 
 static int
-rndr_triple_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
+rndr_triple_emphasis(hbuf *ob, const hbuf *content)
 {
-	nroff_state	*st = data;
 
 	if (NULL == content || 0 == content->size)
 		return(0);
 
-	if ('.' == content->data[0]) {
-		if ( ! nln)
-			HBUF_PUTSL(ob, "\n");
-		/* FIXME: for man(7), this is next-line scope. */
-		HBUF_PUTSL(ob, ".BI\n");
-		hbuf_put(ob, content->data, content->size);
-		if (content->size && 
-		    '\n' != content->data[content->size - 1])
-			HBUF_PUTSL(ob, "\n");
-		if ( ! st->mdoc)
-			HBUF_PUTSL(ob, ".R\n");
-	} else { 
-		HBUF_PUTSL(ob, "\\f[BI]");
-		hbuf_put(ob, content->data, content->size);
-		HBUF_PUTSL(ob, "\\fP");
-	}
+	HBUF_PUTSL(ob, "\\f[BI]");
+	hbuf_put(ob, content->data, content->size);
+	HBUF_PUTSL(ob, "\\fP");
 
 	return 1;
 }
 
 
 static int
-rndr_emphasis(hbuf *ob, const hbuf *content, void *data, int nln)
+rndr_emphasis(hbuf *ob, const hbuf *content)
 {
-	nroff_state	*st = data;
 
 	if (NULL == content || 0 == content->size)
 		return(0);
 
-	if ('.' == content->data[0]) {
-		if ( ! nln)
-			HBUF_PUTSL(ob, "\n");
-		/* FIXME: for man(7), this is next-line scope. */
-		HBUF_PUTSL(ob, ".I\n");
-		hbuf_put(ob, content->data, content->size);
-		if (content->size && 
-		    '\n' != content->data[content->size - 1])
-			HBUF_PUTSL(ob, "\n");
-		if ( ! st->mdoc)
-			HBUF_PUTSL(ob, ".R\n");
-	} else {
-		HBUF_PUTSL(ob, "\\fI");
-		hbuf_put(ob, content->data, content->size);
-		HBUF_PUTSL(ob, "\\fP");
-	}
+	HBUF_PUTSL(ob, "\\fI");
+	hbuf_put(ob, content->data, content->size);
+	HBUF_PUTSL(ob, "\\fP");
 
 	return 1;
 }
 
 static int
-rndr_highlight(hbuf *ob, const hbuf *content, void *data, int nln)
+rndr_highlight(hbuf *ob, const hbuf *content)
 {
-	nroff_state	*st = data;
 
 	if (NULL == content || 0 == content->size)
 		return(0);
 
-	if ('.' == content->data[0]) {
-		if ( ! nln)
-			HBUF_PUTSL(ob, "\n");
-		/* FIXME: for man(7), this is next-line scope. */
-		HBUF_PUTSL(ob, ".B\n");
-		hbuf_put(ob, content->data, content->size);
-		if (content->size && 
-		    '\n' != content->data[content->size - 1])
-			HBUF_PUTSL(ob, "\n");
-		if ( ! st->mdoc)
-			HBUF_PUTSL(ob, ".R\n");
-	} else {
-		HBUF_PUTSL(ob, "\\fB");
-		hbuf_put(ob, content->data, content->size);
-		HBUF_PUTSL(ob, "\\fP");
-	}
+	HBUF_PUTSL(ob, "\\fB");
+	hbuf_put(ob, content->data, content->size);
+	HBUF_PUTSL(ob, "\\fP");
 
 	return 1;
 }
@@ -301,7 +287,7 @@ rndr_linebreak(hbuf *ob, void *data)
 static void
 rndr_header(hbuf *ob, const hbuf *content, int level, void *data)
 {
-	nroff_state	*st = data;
+	struct nstate	*st = data;
 
 	if (NULL == content || 0 == content->size)
 		return;
@@ -325,10 +311,9 @@ rndr_header(hbuf *ob, const hbuf *content, int level, void *data)
 }
 
 static int
-rndr_link(hbuf *ob, const hbuf *content, 
-	const hbuf *link, const hbuf *title, void *data, int nln)
+rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, 
+	const hbuf *title, const struct nstate *st, int nln)
 {
-	nroff_state	*st = data;
 
 	if ((NULL == content || 0 == content->size) &&
 	    (NULL == title || 0 == title->size) &&
@@ -413,9 +398,9 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 }
 
 static void
-rndr_paragraph(hbuf *ob, const hbuf *content, void *data, size_t par_count)
+rndr_paragraph(hbuf *ob, const hbuf *content, void *data)
 {
-	nroff_state	*state = data;
+	struct nstate	*state = data;
 	size_t	 	 i = 0, org;
 
 	if (NULL == content || 0 == content->size)
@@ -458,7 +443,7 @@ rndr_paragraph(hbuf *ob, const hbuf *content, void *data, size_t par_count)
 static void
 rndr_raw_block(hbuf *ob, const hbuf *content, void *data)
 {
-	nroff_state *state = data;
+	struct nstate *state = data;
 	size_t org, sz;
 
 	if (NULL == content)
@@ -495,7 +480,7 @@ rndr_raw_block(hbuf *ob, const hbuf *content, void *data)
 static void
 rndr_hrule(hbuf *ob, void *data)
 {
-	nroff_state 	*st = data;
+	struct nstate 	*st = data;
 
 	/*
 	 * I'm not sure how else to do horizontal lines.
@@ -519,7 +504,7 @@ rndr_image(hbuf *ob, const hbuf *link, const hbuf *title,
 static int
 rndr_raw_html(hbuf *ob, const hbuf *text, void *data)
 {
-	nroff_state 	*state = data;
+	struct nstate 	*state = data;
 
 	if ((state->flags & LOWDOWN_NROFF_SKIP_HTML) != 0)
 		return 1;
@@ -594,7 +579,7 @@ rndr_tablecell(hbuf *ob, const hbuf *content,
 }
 
 static int
-rndr_superscript(hbuf *ob, const hbuf *content, void *data, int nln)
+rndr_superscript(hbuf *ob, const hbuf *content, void *data)
 {
 
 	if (NULL == content || 0 == content->size)
@@ -626,22 +611,26 @@ rndr_superscript(hbuf *ob, const hbuf *content, void *data, int nln)
 }
 
 static void
-rndr_normal_text(hbuf *ob, const hbuf *content, void *data, int nl)
+rndr_normal_text(hbuf *ob, const hbuf *content, int nl)
 {
+	size_t	 i;
 
 	if (NULL == content || 0 == content->size)
 		return;
 
-	if (nl)
-		escape_block(ob, content->data, content->size);
-	else
+	if (nl) {
+		for (i = 0; i < content->size; i++)
+			if (' ' != content->data[i])
+				break;
+		escape_block(ob, content->data + i, content->size - i);
+	} else
 		escape_span(ob, content->data, content->size);
 }
 
 static void
 rndr_footnotes(hbuf *ob, const hbuf *content, void *data)
 {
-	nroff_state 	*st = data;
+	struct nstate 	*st = data;
 
 	if (NULL == content || 0 == content->size)
 		return;
@@ -767,7 +756,7 @@ rcsdate2str(const char *v)
 static void
 rndr_doc_header(hbuf *ob, 
 	const struct lowdown_meta *m, size_t msz, 
-	const struct nroff_state *st)
+	const struct nstate *st)
 {
 	const char	*date = NULL, *author = NULL, *cp,
 	      		*title = "Untitled article", *start;
@@ -851,18 +840,21 @@ lowdown_nroff_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 {
 	const struct lowdown_node *n;
 	hbuf	*tmp;
-	int	 nln;
+	int	 pnln;
+
+	assert(NULL != root);
 
 	tmp = hbuf_new(64);
 
 	TAILQ_FOREACH(n, &root->children, entries)
 		lowdown_nroff_rndr(tmp, ref, n);
 
-	/*
-	 * Doesn't work, but good enough to get started.
-	 */
+	/* Compute whether the previous output has a newline. */
 
-	nln = ob->size ? '\n' == ob->data[ob->size - 1] : 1;
+	if (NULL == root->parent ||
+	    NULL == (n = TAILQ_PREV(root, lowdown_nodeq, entries)))
+		n = root->parent;
+	pnln = NULL == n || NSCOPE_BLOCK == nscopes[n->type];
 
 	switch (root->type) {
 	case (LOWDOWN_BLOCKCODE):
@@ -871,7 +863,7 @@ lowdown_nroff_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 			&root->rndr_blockcode.lang, ref);
 		break;
 	case (LOWDOWN_BLOCKQUOTE):
-		rndr_blockquote(ob, tmp, ref);
+		rndr_blockquote(ob, tmp);
 		break;
 	case (LOWDOWN_DOC_HEADER):
 		rndr_doc_header(ob, 
@@ -896,7 +888,7 @@ lowdown_nroff_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 			ref, root->rndr_listitem.num);
 		break;
 	case (LOWDOWN_PARAGRAPH):
-		rndr_paragraph(ob, tmp, ref, nln);
+		rndr_paragraph(ob, tmp, ref);
 		break;
 	case (LOWDOWN_TABLE_BLOCK):
 		rndr_table(ob, tmp, ref);
@@ -932,21 +924,19 @@ lowdown_nroff_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 		rndr_autolink(ob, 
 			&root->rndr_autolink.link,
 			root->rndr_autolink.type,
-			ref, nln);
+			ref, pnln);
 		break;
 	case (LOWDOWN_CODESPAN):
-		rndr_codespan(ob, 
-			&root->rndr_codespan.text, 
-			ref, nln);
+		rndr_codespan(ob, &root->rndr_codespan.text);
 		break;
 	case (LOWDOWN_DOUBLE_EMPHASIS):
-		rndr_double_emphasis(ob, tmp, ref, nln);
+		rndr_double_emphasis(ob, tmp);
 		break;
 	case (LOWDOWN_EMPHASIS):
-		rndr_emphasis(ob, tmp, ref, nln);
+		rndr_emphasis(ob, tmp);
 		break;
 	case (LOWDOWN_HIGHLIGHT):
-		rndr_highlight(ob, tmp, ref, nln);
+		rndr_highlight(ob, tmp);
 		break;
 	case (LOWDOWN_IMAGE):
 		rndr_image(ob, 
@@ -962,16 +952,16 @@ lowdown_nroff_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 		rndr_link(ob, tmp,
 			&root->rndr_link.link,
 			&root->rndr_link.title,
-			ref, nln);
+			ref, pnln);
 		break;
 	case (LOWDOWN_TRIPLE_EMPHASIS):
-		rndr_triple_emphasis(ob, tmp, ref, nln);
+		rndr_triple_emphasis(ob, tmp);
 		break;
 	case (LOWDOWN_STRIKETHROUGH):
-		rndr_strikethrough(ob, tmp, ref, nln);
+		rndr_strikethrough(ob, tmp);
 		break;
 	case (LOWDOWN_SUPERSCRIPT):
-		rndr_superscript(ob, tmp, ref, nln);
+		rndr_superscript(ob, tmp, ref);
 		break;
 	case (LOWDOWN_FOOTNOTE_REF):
 		rndr_footnote_ref(ob, 
@@ -988,8 +978,7 @@ lowdown_nroff_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 		break;
 	case (LOWDOWN_NORMAL_TEXT):
 		rndr_normal_text(ob, 
-			&root->rndr_normal_text.text, 
-			ref, nln);
+			&root->rndr_normal_text.text, pnln);
 		break;
 	case (LOWDOWN_ENTITY):
 		hbuf_put(ob,
@@ -1007,24 +996,21 @@ lowdown_nroff_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 void *
 hrend_nroff_new(const struct lowdown_opts *opts)
 {
-	nroff_state 	*state;
+	struct nstate 	*state;
 
 	/* Prepare the state pointer. */
 
-	state = xcalloc(1, sizeof(nroff_state));
+	state = xcalloc(1, sizeof(struct nstate));
 
 	state->flags = NULL != opts ? opts->oflags : 0;
 	state->mdoc = NULL != opts && LOWDOWN_MAN == opts->type;
-
-	/* Prepare the renderer. */
 
 	return state;
 }
 
 void
-hrend_nroff_free(void *renderer)
+hrend_nroff_free(void *data)
 {
-	nroff_state	*state = renderer;
 
-	free(state);
+	free(data);
 }
