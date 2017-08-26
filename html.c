@@ -703,9 +703,8 @@ rcsauthor2str(const char *v)
 }
 
 static void
-rndr_doc_footer(hbuf *ob, void *data)
+rndr_doc_footer(hbuf *ob, const struct html_state *st)
 {
-	html_state	*st = data;
 
 	if (LOWDOWN_STANDALONE & st->flags)
 		HBUF_PUTSL(ob, "</body>\n</html>\n");
@@ -713,12 +712,12 @@ rndr_doc_footer(hbuf *ob, void *data)
 
 static void
 rndr_doc_header(hbuf *ob, 
-	const struct lowdown_meta *m, size_t msz, void *data)
+	const struct lowdown_meta *m, size_t msz, 
+	const struct html_state *st)
 {
-	const char	*author = NULL, *cp,
+	const char	*author = NULL, *cp, *start,
 	      		*title = "Untitled article";
-	size_t		 i;
-	html_state	*st = data;
+	size_t		 i, sz;
 
 	if ( ! (LOWDOWN_STANDALONE & st->flags))
 		return;
@@ -747,32 +746,44 @@ rndr_doc_header(hbuf *ob,
 	/*
 	 * We might have multiple multi-white-space separated authors,
 	 * so loop through looking for that.
-	 * FIXME: HTML-escape.
+	 * HTML-escape and trim the author names.
 	 */
 
 	if (NULL != author) {
 		for (cp = author; '\0' != *cp; ) {
-			HBUF_PUTSL(ob, 
-				"<meta name=\"author\""
-				" content=\"");
+			while (isspace((int)*cp))
+				cp++;
+			if ('\0' == *cp)
+				continue;
+			start = cp;
+			sz = 0;
 			while ('\0' != *cp) {
 				if ( ! isspace((int)cp[0]) ||
 				     ! isspace((int)cp[1])) {
-					hbuf_putc(ob, *cp);
+					sz++;
 					cp++;
 					continue;
 				}
 				cp += 2;
-				while (isspace((int)*cp))
-					cp++;
 				break;
 			}
+			if (0 == sz)
+				continue;
+			HBUF_PUTSL(ob, 
+				"<meta name=\"author\""
+				" content=\"");
+			hesc_html(ob, start, sz, 0);
 			HBUF_PUTSL(ob, "\" />\n");
 		}
 	}
 
+	/* HTML-escape and trim the title (0-length ok but weird). */
+
+	while (isspace((int)*title))
+		title++;
+
 	HBUF_PUTSL(ob, "<title>");
-	hbuf_puts(ob, title);
+	hesc_html(ob, title, strlen(title), 0);
 	HBUF_PUTSL(ob, 
 	      "</title>\n"
 	      "</head>\n"
