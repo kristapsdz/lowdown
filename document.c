@@ -3402,7 +3402,7 @@ hdoc_new(const struct lowdown_opts *opts)
 
 	extensions = opts ? opts->feat : 0;
 
-	doc = xmalloc(sizeof(hdoc));
+	doc = xcalloc(1, sizeof(hdoc));
 
 	doc->current = NULL;
 	doc->opts = opts;
@@ -3724,7 +3724,6 @@ hdoc_parse(hdoc *doc, const uint8_t *data,
 				xstrdup(doc->m[i].key);
 			n->rndr_doc_header.m[i].value = 
 				xstrdup(doc->m[i].value);
-
 		}
 	}
 	popnode(doc, n);

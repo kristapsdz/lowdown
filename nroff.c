@@ -766,15 +766,15 @@ rcsdate2str(const char *v)
 
 static void
 rndr_doc_header(hbuf *ob, 
-	const struct lowdown_meta *m, size_t msz, void *data)
+	const struct lowdown_meta *m, size_t msz, 
+	const struct nroff_state *st)
 {
 	const char	*date = NULL, *author = NULL, *cp,
-	      		*title = "Untitled article";
+	      		*title = "Untitled article", *start;
 	time_t		 t;
 	char		 buf[32];
 	struct tm	*tm;
-	size_t		 i;
-	nroff_state	*st = data;
+	size_t		 i, sz;
 
 	if ( ! (LOWDOWN_STANDALONE & st->flags))
 		return;
@@ -802,32 +802,46 @@ rndr_doc_header(hbuf *ob,
 		date = buf;
 	}
 
+	/* Strip leading newlines (empty ok but weird) */
+
+	while (isspace((int)*title))
+		title++;
+
+	/* Emit our authors and title. */
+
 	if ( ! st->mdoc) {
 		HBUF_PUTSL(ob, ".nr PS 10\n");
 		HBUF_PUTSL(ob, ".nr GROWPS 3\n");
 		hbuf_printf(ob, ".DA %s\n.TL\n", date);
-		hbuf_puts(ob, title);
+		escape_block(ob, title, strlen(title));
 		HBUF_PUTSL(ob, "\n");
 		if (NULL != author)
 			for (cp = author; '\0' != *cp; ) {
-				HBUF_PUTSL(ob, ".AU\n");
+				while (isspace((int)*cp))
+					cp++;
+				if ('\0' == *cp)
+					continue;
+				start = cp;
+				sz = 0;
 				while ('\0' != *cp) {
 					if ( ! isspace((int)cp[0]) ||
 					     ! isspace((int)cp[1])) {
-						hbuf_putc(ob, *cp);
+						sz++;
 						cp++;
 						continue;
 					}
 					cp += 2;
-					while (isspace((int)*cp))
-						cp++;
 					break;
 				}
+				if (0 == sz)
+					continue;
+				HBUF_PUTSL(ob, ".AU\n");
+				hesc_nroff(ob, start, sz, 0, 1);
 				HBUF_PUTSL(ob, "\n");
 			}
 	} else {
 		HBUF_PUTSL(ob, ".TH \"");
-		hbuf_puts(ob, title);
+		escape_oneline_span(ob, title, strlen(title));
 		hbuf_printf(ob, "\" 7 %s\n", date);
 	}
 }
