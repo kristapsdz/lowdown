@@ -113,9 +113,69 @@ escape_oneline_span(hbuf *ob, const uint8_t *source, size_t length)
 	hesc_nroff(ob, source, length, 1, 1);
 }
 
+/*
+ * Manage hypertext linking with the groff "pdfhref" macro.
+ */
+static void
+putlink(hbuf *ob, const hbuf *link, const hbuf *text,
+	const struct lowdown_node *next)
+{
+	const hbuf	*buf;
+	size_t		 i;
+
+	HBUF_PUTSL(ob, ".pdfhref W ");
+
+	/*
+	 * If we're followed by normal text that doesn't begin with a
+	 * space, use the "-A" (affix) option to prevent a space before
+	 * what follows.
+	 */
+
+	if (NULL != next && 
+	    LOWDOWN_NORMAL_TEXT == next->type &&
+	    next->rndr_normal_text.text.size > 0 &&
+	    ' ' != next->rndr_normal_text.text.data[0]) {
+		buf = &next->rndr_normal_text.text;
+		HBUF_PUTSL(ob, "-A \"");
+		for (i = 0; i < buf->size; i++) {
+			if (isspace((int)buf->data[i]))
+				break;
+			/* Be sure to escape... */
+			if ('"' == buf->data[i]) {
+				HBUF_PUTSL(ob, "\\(dq");
+				continue;
+			} else if ('\\' == buf->data[i]) {
+				HBUF_PUTSL(ob, "\\e");
+				continue;
+			}
+			hbuf_putc(ob, buf->data[i]);
+		}
+		HBUF_PUTSL(ob, "\" ");
+	}
+
+	/* Encode the URL. */
+
+	HBUF_PUTSL(ob, "-D ");
+	for (i = 0; i < link->size; i++) {
+		if ( ! isprint((int)link->data[i]) ||
+		    NULL != strchr("<>\\^`{|}\"", link->data[i]))
+			hbuf_printf(ob, "%%%.2X", link->data[i]);
+		else
+			hbuf_putc(ob, link->data[i]);
+	}
+	HBUF_PUTSL(ob, " ");
+	if (NULL == text)
+		hbuf_put(ob, link->data, link->size);
+	else
+		hbuf_put(ob, text->data, text->size);
+
+	HBUF_PUTSL(ob, "\n");
+}
+
 static int
 rndr_autolink(hbuf *ob, const hbuf *link, 
-	halink_type type, const struct nstate *st, int nln)
+	halink_type type, const struct lowdown_node *next,
+	const struct nstate *st, int nln)
 {
 
 	if (NULL == link || 0 == link->size)
@@ -146,9 +206,7 @@ rndr_autolink(hbuf *ob, const hbuf *link,
 		return 1;
 	}
 
-	HBUF_PUTSL(ob, ".pdfhref W ");
-	hbuf_put(ob, link->data, link->size);
-	HBUF_PUTSL(ob, "\n");
+	putlink(ob, link, NULL, next);
 	return 1;
 }
 
@@ -312,7 +370,8 @@ rndr_header(hbuf *ob, const hbuf *content, int level, void *data)
 
 static int
 rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, 
-	const hbuf *title, const struct nstate *st, int nln)
+	const hbuf *title, const struct nstate *st, 
+	const struct lowdown_node *next, int nln)
 {
 
 	if ((NULL == content || 0 == content->size) &&
@@ -348,14 +407,7 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link,
 		return 1;
 	}
 
-	HBUF_PUTSL(ob, ".pdfhref W -D ");
-	if (NULL != link && link->size)
-		escape_oneline_span(ob, 
-			link->data, link->size);
-	HBUF_PUTSL(ob, " ");
-	if (NULL != content && content->size)
-		hbuf_put(ob, content->data, content->size);
-	HBUF_PUTSL(ob, "\n");
+	putlink(ob, link, content, next);
 	return 1;
 }
 
@@ -611,20 +663,37 @@ rndr_superscript(hbuf *ob, const hbuf *content, void *data)
 }
 
 static void
-rndr_normal_text(hbuf *ob, const hbuf *content, int nl)
+rndr_normal_text(hbuf *ob, const hbuf *content, 
+	const struct lowdown_node *prev, 
+	const struct nstate *st, int nl)
 {
-	size_t	 i;
+	size_t	 	 i, size;
+	const uint8_t 	*data;
 
 	if (NULL == content || 0 == content->size)
 		return;
 
-	if (nl) {
-		for (i = 0; i < content->size; i++)
-			if (' ' != content->data[i])
+	data = content->data;
+	size = content->size;
+
+	if (NULL != prev && 
+	    (LOWDOWN_LINK_AUTO == prev->type ||
+	     LOWDOWN_LINK == prev->type) &&
+	    LOWDOWN_NROFF_GROFF & st->flags && ! st->mdoc) {
+		for (i = 0; i < size; i++)
+			if (isspace((int)data[i]))
 				break;
-		escape_block(ob, content->data + i, content->size - i);
+		data += i;
+		size -= i;
+	}
+
+	if (nl) {
+		for (i = 0; i < size; i++)
+			if (' ' != data[i])
+				break;
+		escape_block(ob, data + i, size - i);
 	} else
-		escape_span(ob, content->data, content->size);
+		escape_span(ob, data, size);
 }
 
 static void
@@ -924,6 +993,7 @@ lowdown_nroff_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 		rndr_autolink(ob, 
 			&root->rndr_autolink.link,
 			root->rndr_autolink.type,
+			TAILQ_NEXT(root, entries),
 			ref, pnln);
 		break;
 	case (LOWDOWN_CODESPAN):
@@ -952,7 +1022,7 @@ lowdown_nroff_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 		rndr_link(ob, tmp,
 			&root->rndr_link.link,
 			&root->rndr_link.title,
-			ref, pnln);
+			ref, TAILQ_NEXT(root, entries), pnln);
 		break;
 	case (LOWDOWN_TRIPLE_EMPHASIS):
 		rndr_triple_emphasis(ob, tmp);
@@ -978,7 +1048,10 @@ lowdown_nroff_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 		break;
 	case (LOWDOWN_NORMAL_TEXT):
 		rndr_normal_text(ob, 
-			&root->rndr_normal_text.text, pnln);
+			&root->rndr_normal_text.text, 
+			NULL != root->parent ?
+			TAILQ_PREV(root, lowdown_nodeq, entries) :
+			NULL, ref, pnln);
 		break;
 	case (LOWDOWN_ENTITY):
 		hbuf_put(ob,
