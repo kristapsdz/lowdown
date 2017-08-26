@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate: March 27 2017 $
+.Dd $Mdocdate: August 4 2017 $
 .Dt LOWDOWN 1
 .Os
 .Sh NAME
@@ -121,9 +121,13 @@ package and needing table support, or
 for roff ouput using the classic
 .Fl man
 package.
+A debugging output mode,
+.Ar tree ,
+shows the parse tree of the input document.
 .It Fl v
 Verbose mode.
-Prints out warnings regarding Markdown syntax conformity.
+Prints out warnings regarding Markdown syntax conformity and other
+warnings.
 .It Fl X Ar keyword
 Instead of converting the file, extract the given metadata keyword and
 exit.
