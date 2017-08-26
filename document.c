@@ -133,7 +133,7 @@ struct 	hdoc {
 
 /* Some forward declarations. */
 
-static void parse_block(hbuf *, hdoc *, uint8_t *, size_t);
+static void parse_block(hdoc *, uint8_t *, size_t);
 
 static int
 buf_newln(hbuf *buf)
@@ -1951,10 +1951,8 @@ parse_blockquote(hdoc *doc, uint8_t *data, size_t size)
 {
 	size_t beg, end = 0, pre, work_size = 0;
 	uint8_t *work_data = NULL;
-	hbuf *out = NULL;
 	struct lowdown_node *n;
 
-	out = hbuf_new(256);
 	beg = 0;
 	while (beg < size) {
 		for (end = beg + 1; 
@@ -1988,9 +1986,8 @@ parse_blockquote(hdoc *doc, uint8_t *data, size_t size)
 	}
 
 	n = pushnode(doc, LOWDOWN_BLOCKQUOTE);
-	parse_block(out, doc, work_data, work_size);
+	parse_block(doc, work_data, work_size);
 	popnode(doc, n);
-	hbuf_free(out);
 	return end;
 }
 
@@ -2201,7 +2198,7 @@ static size_t
 parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 	size_t size, hlist_fl *flags, size_t num)
 {
-	hbuf		*work = NULL, *inter = NULL;
+	hbuf		*work = NULL;
 	size_t		 beg = 0, end, pre, sublist = 0, orgpre, i;
 	int		 in_empty = 0, has_inside_empty = 0,
 			 in_fence = 0;
@@ -2228,7 +2225,6 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 	/* Getting working buffers. */
 
 	work = hbuf_new(64);
-	inter = hbuf_new(64);
 
 	/* Putting the first line into the working buffer. */
 
@@ -2325,20 +2321,18 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 	if (*flags & HLIST_FL_BLOCK) {
 		/* intermediate render of block li */
 		if (sublist && sublist < work->size) {
-			parse_block(inter, doc, 
-				work->data, sublist);
-			parse_block(inter, doc, 
+			parse_block(doc, work->data, sublist);
+			parse_block(doc, 
 				work->data + sublist, 
 				work->size - sublist);
 		} else
-			parse_block(inter, doc, 
-				work->data, work->size);
+			parse_block(doc, work->data, work->size);
 	} else {
 		/* intermediate render of inline li */
 		if (sublist && sublist < work->size) {
 			parse_inline(doc, work->data, 
 				sublist, buf_newln(ob));
-			parse_block(inter, doc, 
+			parse_block(doc, 
 				work->data + sublist, 
 				work->size - sublist);
 		} else
@@ -2348,7 +2342,6 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 
 	popnode(doc, n);
 	hbuf_free(work);
-	hbuf_free(inter);
 	return beg;
 }
 
@@ -2384,7 +2377,7 @@ parse_list(hdoc *doc, uint8_t *data, size_t size, hlist_fl flags)
  * Parsing of atx-style headers.
  */
 static size_t
-parse_atxheader(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
+parse_atxheader(hdoc *doc, uint8_t *data, size_t size)
 {
 	size_t 	 level = 0, i, end, skip;
 	struct lowdown_node *n;
@@ -2408,7 +2401,7 @@ parse_atxheader(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 	if (end > i) {
 		n = pushnode(doc, LOWDOWN_HEADER);
 		n->rndr_header.level = level;
-		parse_inline(doc, data + i, end - i, buf_newln(ob));
+		parse_inline(doc, data + i, end - i, 0);
 		popnode(doc, n);
 	}
 
@@ -2421,16 +2414,12 @@ parse_atxheader(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 static void
 parse_footnote_def(hdoc *doc, unsigned int num, uint8_t *data, size_t size)
 {
-	hbuf	*work = NULL;
 	struct lowdown_node *n;
-
-	work = hbuf_new(64);
 
 	n = pushnode(doc, LOWDOWN_FOOTNOTE_DEF);
 	n->rndr_footnote_def.num = num;
-	parse_block(work, doc, data, size);
+	parse_block(doc, data, size);
 	popnode(doc, n);
-	hbuf_free(work);
 }
 
 /* 
@@ -2913,7 +2902,7 @@ parse_table(hdoc *doc, uint8_t *data, size_t size)
  * aligned.
  */
 static void
-parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
+parse_block(hdoc *doc, uint8_t *data, size_t size)
 {
 	size_t	 beg = 0, end, i;
 	uint8_t	*txt_data;
@@ -2931,7 +2920,7 @@ parse_block(hbuf *ob, hdoc *doc, uint8_t *data, size_t size)
 		/* We are at a #header. */
 
 		if (is_atxheader(doc, txt_data, end)) {
-			beg += parse_atxheader(ob, doc, txt_data, end);
+			beg += parse_atxheader(doc, txt_data, end);
 			continue;
 		}
 
@@ -3554,14 +3543,13 @@ hdoc_parse(hdoc *doc, const uint8_t *data,
 	size_t size, struct lowdown_meta **mp, size_t *mszp)
 {
 	static const uint8_t UTF8_BOM[] = {0xEF, 0xBB, 0xBF};
-	hbuf		*text, *divert;
+	hbuf		*text;
 	size_t		 beg, end, i;
 	int		 footnotes_enabled;
 	const uint8_t	*sv;
 	struct lowdown_node *n, *root;
 
 	text = hbuf_new(64);
-	divert = hbuf_new(64);
 	root = pushnode(doc, LOWDOWN_ROOT);
 
 	/*
@@ -3663,7 +3651,7 @@ hdoc_parse(hdoc *doc, const uint8_t *data,
 		if (text->data[text->size - 1] != '\n' &&
 		    text->data[text->size - 1] != '\r')
 			hbuf_putc(text, '\n');
-		parse_block(divert, doc, text->data, text->size);
+		parse_block(doc, text->data, text->size);
 	}
 
 	/* Footnotes. */
@@ -3694,7 +3682,6 @@ hdoc_parse(hdoc *doc, const uint8_t *data,
 		doc->msz = 0;
 	}
 
-	hbuf_free(divert);
 	popnode(doc, root);
 	return(root);
 }
