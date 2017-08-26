@@ -63,10 +63,26 @@ static	const char *const names[LOWDOWN__MAX] = {
 	"LOWDOWN_RAW_HTML",             /* LOWDOWN_RAW_HTML */
 	"LOWDOWN_ENTITY",               /* LOWDOWN_ENTITY */
 	"LOWDOWN_NORMAL_TEXT",          /* LOWDOWN_NORMAL_TEXT */
-	"LOWDOWN_BACKSPACE",            /* LOWDOWN_BACKSPACE */
 	"LOWDOWN_DOC_HEADER",           /* LOWDOWN_DOC_HEADER */
 	"LOWDOWN_DOC_FOOTER",           /* LOWDOWN_DOC_FOOTER */
 };
+
+static void
+rndr_short(hbuf *ob, const hbuf *b)
+{
+	size_t	 i;
+
+	for (i = 0; i < 10 && i < b->size; i++)
+		if ('\n' == b->data[i])
+			HBUF_PUTSL(ob, "\\n");
+		else if ('\t' == b->data[i])
+			HBUF_PUTSL(ob, "\\t");
+		else
+			hbuf_putc(ob, b->data[i]);
+
+	if (b->size >= 10)
+		HBUF_PUTSL(ob, "...");
+}
 
 static void
 rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
@@ -85,16 +101,19 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 		for (i = 0; i < root->rndr_doc_header.msz; i++) {
 			for (j = 0; j < indent + 1; j++)
 				HBUF_PUTSL(ob, "  ");
-			hbuf_printf(ob, "metadata: %s, %zu Bytes\n",
-				root->rndr_doc_header.m[i].key,
-				strlen(root->rndr_doc_header.m[i].value));
+			hbuf_printf(ob, "metadata: %zu Bytes: %s\n",
+				strlen(root->rndr_doc_header.m[i].value),
+				root->rndr_doc_header.m[i].key);
 		}
 		break;
 	case (LOWDOWN_NORMAL_TEXT):
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "data: %zu Bytes\n",
+		hbuf_printf(ob, "data: %zu Bytes: ",
 			root->rndr_normal_text.text.size);
+		rndr_short(ob, &root->rndr_normal_text.text);
+		HBUF_PUTSL(ob, "\n");
+		break;
 	default:
 		break;
 	}
