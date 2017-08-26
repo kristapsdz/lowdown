@@ -64,21 +64,21 @@ TAILQ_HEAD(footnote_refq, footnote_ref);
  * "offset" is the number of valid chars before data.
  */
 typedef size_t (*char_trigger)(hdoc *doc,
-	uint8_t *data, size_t offset, size_t size, int nln);
+	uint8_t *data, size_t offset, size_t size);
 
-static size_t char_emphasis(hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_linebreak(hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_codespan(hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_escape(hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_entity(hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_langle_tag(hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_autolink_url(hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_autolink_email(hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_autolink_www(hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_link(hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_image(hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_superscript(hdoc *, uint8_t *, size_t, size_t, int);
-static size_t char_math(hdoc *, uint8_t *, size_t, size_t, int);
+static size_t char_emphasis(hdoc *, uint8_t *, size_t, size_t);
+static size_t char_linebreak(hdoc *, uint8_t *, size_t, size_t);
+static size_t char_codespan(hdoc *, uint8_t *, size_t, size_t);
+static size_t char_escape(hdoc *, uint8_t *, size_t, size_t);
+static size_t char_entity(hdoc *, uint8_t *, size_t, size_t);
+static size_t char_langle_tag(hdoc *, uint8_t *, size_t, size_t);
+static size_t char_autolink_url(hdoc *, uint8_t *, size_t, size_t);
+static size_t char_autolink_email(hdoc *, uint8_t *, size_t, size_t);
+static size_t char_autolink_www(hdoc *, uint8_t *, size_t, size_t);
+static size_t char_link(hdoc *, uint8_t *, size_t, size_t);
+static size_t char_image(hdoc *, uint8_t *, size_t, size_t);
+static size_t char_superscript(hdoc *, uint8_t *, size_t, size_t);
+static size_t char_math(hdoc *, uint8_t *, size_t, size_t);
 
 enum markdown_char_t {
 	MD_CHAR_NONE = 0,
@@ -134,14 +134,6 @@ struct 	hdoc {
 /* Some forward declarations. */
 
 static void parse_block(hdoc *, uint8_t *, size_t);
-
-static int
-buf_newln(hbuf *buf)
-{
-
-	assert(NULL != buf);
-	return(0 == buf->size || '\n' == buf->data[buf->size - 1]);
-}
 
 static struct lowdown_node *
 pushnode(hdoc *doc, enum lowdown_rndrt t)
@@ -231,15 +223,15 @@ free_link_refs(struct link_refq *q)
 }
 
 static struct footnote_ref *
-find_footnote_ref(struct footnote_refq *q, uint8_t *name, size_t length)
+find_footnote_ref(struct footnote_refq *q, uint8_t *name, size_t sz)
 {
 	struct footnote_ref *ref;
 
 	TAILQ_FOREACH(ref, q, entries)
-		if ((NULL == ref->name && 0 == length) ||
+		if ((NULL == ref->name && 0 == sz) ||
 		    (NULL != ref->name &&
-		     ref->name->size == length &&
-		     0 == memcmp(ref->name->data, name, length)))
+		     ref->name->size == sz &&
+		     0 == memcmp(ref->name->data, name, sz)))
 			return(ref);
 
 	return NULL;
@@ -469,7 +461,7 @@ tag_length(const uint8_t *data, size_t size, halink_type *autolink)
  * directly to the output formatter ("normal_text").
  */
 static void
-parse_inline(hdoc *doc, uint8_t *data, size_t size, int nln)
+parse_inline(hdoc *doc, uint8_t *data, size_t size)
 {
 	size_t	 i = 0, end = 0, consumed = 0;
 	hbuf	 work;
@@ -496,7 +488,7 @@ parse_inline(hdoc *doc, uint8_t *data, size_t size, int nln)
 
 		i = end;
 		end = markdown_char_ptrs[(int)active_char[data[end]]]
-			(doc, data + i, i - consumed, size - i, nln);
+			(doc, data + i, i - consumed, size - i);
 
 		/* Check if no action from the callback. */
 
@@ -645,7 +637,7 @@ find_emph_char(const uint8_t *data, size_t size, uint8_t c)
  * symbol.
  */
 static size_t
-parse_emph1(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
+parse_emph1(hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 {
 	size_t	 i = 0, len;
 	struct lowdown_node *n;
@@ -670,7 +662,7 @@ parse_emph1(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 					continue;
 
 			n = pushnode(doc, LOWDOWN_EMPHASIS);
-			parse_inline(doc, data, i, 1);
+			parse_inline(doc, data, i);
 			popnode(doc, n);
 			return i + 1;
 		}
@@ -683,7 +675,7 @@ parse_emph1(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
  * Parsing single emphase.
  */
 static size_t
-parse_emph2(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
+parse_emph2(hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 {
 	size_t	 i = 0, len;
 	struct lowdown_node *n;
@@ -706,7 +698,7 @@ parse_emph2(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 				t = LOWDOWN_DOUBLE_EMPHASIS;
 
 			n = pushnode(doc, t);
-			parse_inline(doc, data, i, 1);
+			parse_inline(doc, data, i);
 			popnode(doc, n);
 			return i + 2;
 		}
@@ -720,7 +712,7 @@ parse_emph2(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
  * Finds the first closing tag, and delegates to the other emph.
  */
 static size_t
-parse_emph3(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
+parse_emph3(hdoc *doc, uint8_t *data, size_t size, uint8_t c)
 {
 	size_t	 i = 0, len;
 	struct lowdown_node *n;
@@ -742,15 +734,14 @@ parse_emph3(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 			 * Triple symbol (***) found. 
 			 */
 			n = pushnode(doc, LOWDOWN_TRIPLE_EMPHASIS);
-			parse_inline(doc, data, i, 1);
+			parse_inline(doc, data, i);
 			popnode(doc, n);
 			return i + 3;
 		} else if (i + 1 < size && data[i + 1] == c) {
 			/* 
 			 * Double symbol (**) found.
 			 */
-			len = parse_emph1(doc, 
-				data - 2, size + 2, c, nln);
+			len = parse_emph1(doc, data - 2, size + 2, c);
 			if (!len) 
 				return 0;
 			else 
@@ -760,7 +751,7 @@ parse_emph3(hdoc *doc, uint8_t *data, size_t size, uint8_t c, int nln)
 			 * Single symbol found.
 			 */
 			len = parse_emph2(doc, 
-				data - 1, size + 1, c, nln);
+				data - 1, size + 1, c);
 			if (!len) 
 				return 0;
 			else 
@@ -829,8 +820,7 @@ parse_math(hdoc *doc, uint8_t *data,
  * Single and double emphasis parsing.
  */
 static size_t
-char_emphasis(hdoc *doc, uint8_t *data, 
-	size_t offset, size_t size, int nln)
+char_emphasis(hdoc *doc, uint8_t *data, size_t offset, size_t size)
 {
 	uint8_t c = data[0];
 	size_t ret;
@@ -847,7 +837,7 @@ char_emphasis(hdoc *doc, uint8_t *data,
 		 */
 		if (c == '~' || c == '=' || xisspace(data[1]) || 
 		    (ret = parse_emph1(doc, 
-		     data + 1, size - 1, c, nln)) == 0)
+		     data + 1, size - 1, c)) == 0)
 			return 0;
 
 		return ret + 1;
@@ -856,7 +846,7 @@ char_emphasis(hdoc *doc, uint8_t *data,
 	if (size > 3 && data[1] == c && data[2] != c) {
 		if (xisspace(data[2]) || 
 		    (ret = parse_emph2(doc, 
-		     data + 2, size - 2, c, nln)) == 0)
+		     data + 2, size - 2, c)) == 0)
 			return 0;
 
 		return ret + 2;
@@ -865,7 +855,7 @@ char_emphasis(hdoc *doc, uint8_t *data,
 	if (size > 4 && data[1] == c && data[2] == c && data[3] != c) {
 		if (c == '~' || c == '=' || xisspace(data[3]) || 
 		    (ret = parse_emph3(doc, 
-		     data + 3, size - 3, c, nln)) == 0)
+		     data + 3, size - 3, c)) == 0)
 			return 0;
 
 		return ret + 3;
@@ -879,8 +869,7 @@ char_emphasis(hdoc *doc, uint8_t *data,
  * '\n' preceded by two spaces (assuming linebreak != 0) 
  */
 static size_t
-char_linebreak(hdoc *doc, uint8_t *data, 
-	size_t offset, size_t size, int nln)
+char_linebreak(hdoc *doc, uint8_t *data, size_t offset, size_t size)
 {
 	struct lowdown_node *n, *cur;
 
@@ -907,8 +896,7 @@ char_linebreak(hdoc *doc, uint8_t *data,
  * '`' parsing a code span (assuming codespan != 0) 
  */
 static size_t
-char_codespan(hdoc *doc, uint8_t *data, 
-	size_t offset, size_t size, int nln)
+char_codespan(hdoc *doc, uint8_t *data, size_t offset, size_t size)
 {
 	hbuf	 work;
 	size_t	 end, nb = 0, i, f_begin, f_end;
@@ -962,8 +950,7 @@ char_codespan(hdoc *doc, uint8_t *data,
  * '\\' backslash escape
  */
 static size_t
-char_escape(hdoc *doc, uint8_t *data, 
-	size_t offset, size_t size, int nln)
+char_escape(hdoc *doc, uint8_t *data, size_t offset, size_t size)
 {
 	static const char *escape_chars =
 		"\\`*_{}[]()#+-.!:|&<>^~=\"$";
@@ -1006,8 +993,7 @@ char_escape(hdoc *doc, uint8_t *data,
  * Valid entities are assumed to be anything matching &#?[A-Za-z0-9]+;
  */
 static size_t
-char_entity(hdoc *doc, uint8_t *data, 
-	size_t offset, size_t size, int nln)
+char_entity(hdoc *doc, uint8_t *data, size_t offset, size_t size)
 {
 	size_t	 end = 1;
 	hbuf	 work;
@@ -1036,8 +1022,7 @@ char_entity(hdoc *doc, uint8_t *data,
  * '<' when tags or autolinks are allowed.
  */
 static size_t
-char_langle_tag(hdoc *doc, uint8_t *data, 
-	size_t offset, size_t size, int nln)
+char_langle_tag(hdoc *doc, uint8_t *data, size_t offset, size_t size)
 {
 	hbuf	 	 work;
 	hbuf		*u_link;
@@ -1081,8 +1066,7 @@ char_langle_tag(hdoc *doc, uint8_t *data,
 }
 
 static size_t
-char_autolink_www(hdoc *doc, uint8_t *data, 
-	size_t offset, size_t size, int nln)
+char_autolink_www(hdoc *doc, uint8_t *data, size_t offset, size_t size)
 {
 	hbuf	*link, *link_url;
 	size_t	 link_len, rewind;
@@ -1129,8 +1113,7 @@ char_autolink_www(hdoc *doc, uint8_t *data,
  * FIXME: merge with char_autolink_url().
  */
 static size_t
-char_autolink_email(hdoc *doc, uint8_t *data, 
-	size_t offset, size_t size, int nln)
+char_autolink_email(hdoc *doc, uint8_t *data, size_t offset, size_t size)
 {
 	hbuf	*link;
 	size_t	 link_len, rewind;
@@ -1166,8 +1149,7 @@ char_autolink_email(hdoc *doc, uint8_t *data,
 }
 
 static size_t
-char_autolink_url(hdoc *doc, uint8_t *data, 
-	size_t offset, size_t size, int nln)
+char_autolink_url(hdoc *doc, uint8_t *data, size_t offset, size_t size)
 {
 	hbuf	*link;
 	size_t	 link_len, rewind;
@@ -1203,15 +1185,14 @@ char_autolink_url(hdoc *doc, uint8_t *data,
 }
 
 static size_t
-char_image(hdoc *doc, uint8_t *data, 
-	size_t offset, size_t size, int nln) 
+char_image(hdoc *doc, uint8_t *data, size_t offset, size_t size)
 {
 	size_t	 ret;
 
 	if (size < 2 || data[1] != '[') 
 		return 0;
 
-	ret = char_link(doc, data + 1, offset + 1, size - 1, nln);
+	ret = char_link(doc, data + 1, offset + 1, size - 1);
 
 	if (!ret) 
 		return 0;
@@ -1223,8 +1204,7 @@ char_image(hdoc *doc, uint8_t *data,
  * '[': parsing a link, footnote, metadata, or image.
  */
 static size_t
-char_link(hdoc *doc, uint8_t *data, 
-	size_t offset, size_t size, int nln)
+char_link(hdoc *doc, uint8_t *data, size_t offset, size_t size)
 {
 	hbuf 	*content = NULL, *link = NULL , *title = NULL, 
 		*u_link = NULL, *dims = NULL, *idp = NULL,
@@ -1583,7 +1563,7 @@ again:
 			 * content of a link.
 			 */
 			doc->in_link_body = 1;
-			parse_inline(doc, data + 1, txt_e - 1, nln);
+			parse_inline(doc, data + 1, txt_e - 1);
 			doc->in_link_body = 0;
 		} else {
 			content = hbuf_new(64);
@@ -1634,8 +1614,7 @@ cleanup:
 }
 
 static size_t
-char_superscript(hdoc *doc, uint8_t *data, 
-	size_t offset, size_t size, int nln)
+char_superscript(hdoc *doc, uint8_t *data, size_t offset, size_t size)
 {
 	size_t	 sup_start, sup_len;
 	struct lowdown_node *n;
@@ -1660,14 +1639,13 @@ char_superscript(hdoc *doc, uint8_t *data,
 	n = pushnode(doc, LOWDOWN_SUPERSCRIPT);
 
 	parse_inline(doc, data + sup_start, 
-		sup_len - sup_start, nln);
+		sup_len - sup_start);
 	popnode(doc, n);
 	return (sup_start == 2) ? sup_len + 1 : sup_len;
 }
 
 static size_t
-char_math(hdoc *doc, uint8_t *data, 
-	size_t offset, size_t size, int nln)
+char_math(hdoc *doc, uint8_t *data, size_t offset, size_t size)
 {
 
 	/* Double dollar. */
@@ -2044,7 +2022,7 @@ parse_paragraph(hdoc *doc, uint8_t *data, size_t size)
 
 	if ( ! level) {
 		n = pushnode(doc, LOWDOWN_PARAGRAPH);
-		parse_inline(doc, work.data, work.size, 1);
+		parse_inline(doc, work.data, work.size);
 		popnode(doc, n);
 		doc->cur_par++;
 	} else {
@@ -2061,8 +2039,7 @@ parse_paragraph(hdoc *doc, uint8_t *data, size_t size)
 
 			if (work.size > 0) {
 				n = pushnode(doc, LOWDOWN_PARAGRAPH);
-				parse_inline(doc, work.data, 
-					work.size, 1);
+				parse_inline(doc, work.data, work.size);
 				popnode(doc, n);
 				doc->cur_par++;
 				work.data += beg;
@@ -2073,7 +2050,7 @@ parse_paragraph(hdoc *doc, uint8_t *data, size_t size)
 
 		n = pushnode(doc, LOWDOWN_HEADER);
 		n->rndr_header.level = level;
-		parse_inline(doc, work.data, work.size, 1);
+		parse_inline(doc, work.data, work.size);
 		popnode(doc, n);
 	}
 
@@ -2330,14 +2307,12 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
 	} else {
 		/* intermediate render of inline li */
 		if (sublist && sublist < work->size) {
-			parse_inline(doc, work->data, 
-				sublist, buf_newln(ob));
+			parse_inline(doc, work->data, sublist);
 			parse_block(doc, 
 				work->data + sublist, 
 				work->size - sublist);
 		} else
-			parse_inline(doc, work->data, 
-				work->size, buf_newln(ob));
+			parse_inline(doc, work->data, work->size);
 	}
 
 	popnode(doc, n);
@@ -2401,7 +2376,7 @@ parse_atxheader(hdoc *doc, uint8_t *data, size_t size)
 	if (end > i) {
 		n = pushnode(doc, LOWDOWN_HEADER);
 		n->rndr_header.level = level;
-		parse_inline(doc, data + i, end - i, 0);
+		parse_inline(doc, data + i, end - i);
 		popnode(doc, n);
 	}
 
@@ -2736,7 +2711,7 @@ parse_table_row(hbuf *ob, hdoc *doc, uint8_t *data,
 		nn->rndr_table_cell.columns = columns;
 
 		parse_inline(doc, data + cell_start, 
-			1 + cell_end - cell_start, buf_newln(ob));
+			1 + cell_end - cell_start);
 		popnode(doc, nn);
 		i++;
 	}
