@@ -299,11 +299,11 @@ void	 hsmrt_html(hbuf *, const uint8_t *, size_t);
 void	 hsmrt_nroff(hbuf *, const uint8_t *, size_t);
 
 void 	 lowdown_html_rndr(hbuf *, void *, 
-		const struct lowdown_node *);
+		struct lowdown_node *);
 void 	 lowdown_nroff_rndr(hbuf *, void *, 
-		const struct lowdown_node *);
+		struct lowdown_node *);
 void 	 lowdown_tree_rndr(hbuf *, void *, 
-		const struct lowdown_node *);
+		struct lowdown_node *);
 void 	 lowdown_node_free(struct lowdown_node *);
 
 __END_DECLS
