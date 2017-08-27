@@ -63,7 +63,8 @@ index.xml README.xml index.pdf README.pdf: lowdown
 index.html README.html: template.xml
 
 .md.pdf:
-	./lowdown -s -Tms $< | groff -Tpdf -dpaper=a4 -P-pa4 -ms -mpdfmark > $@
+	./lowdown -Dnroff-numbered -s -Tms $< | \
+		groff -Tpdf -dpaper=a4 -P-pa4 -ms -mpdfmark > $@
 
 .xml.html:
 	sblg -t template.xml -o $@ -C $< $< versions.xml
