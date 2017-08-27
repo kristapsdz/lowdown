@@ -117,8 +117,8 @@ escape_oneline_span(hbuf *ob, const uint8_t *source, size_t length)
  * Manage hypertext linking with the groff "pdfhref" macro.
  */
 static int
-putlink(hbuf *ob, const hbuf *link, const hbuf *text,
-	const struct lowdown_node *next)
+putlink(hbuf *ob, const hbuf *link, 
+	const hbuf *text, struct lowdown_node *next)
 {
 	const hbuf	*buf;
 	size_t		 i;
@@ -152,6 +152,7 @@ putlink(hbuf *ob, const hbuf *link, const hbuf *text,
 			hbuf_putc(ob, buf->data[i]);
 		}
 		ret = i < buf->size;
+		next->rndr_normal_text.offs = i;
 		HBUF_PUTSL(ob, "\" ");
 	}
 
@@ -177,7 +178,7 @@ putlink(hbuf *ob, const hbuf *link, const hbuf *text,
 
 static int
 rndr_autolink(hbuf *ob, const hbuf *link, 
-	halink_type type, const struct lowdown_node *next,
+	halink_type type, struct lowdown_node *next,
 	const struct nstate *st, int nln)
 {
 
@@ -373,7 +374,7 @@ rndr_header(hbuf *ob, const hbuf *content, int level,
 static int
 rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, 
 	const hbuf *title, const struct nstate *st, 
-	const struct lowdown_node *next, int nln)
+	struct lowdown_node *next, int nln)
 {
 
 	if ((NULL == content || 0 == content->size) &&
@@ -659,7 +660,7 @@ rndr_superscript(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_normal_text(hbuf *ob, const hbuf *content, 
+rndr_normal_text(hbuf *ob, const hbuf *content, size_t offs,
 	const struct lowdown_node *prev, 
 	const struct lowdown_node *next, 
 	const struct nstate *st, int nl)
@@ -670,27 +671,23 @@ rndr_normal_text(hbuf *ob, const hbuf *content,
 	if (NULL == content || 0 == content->size)
 		return;
 
-	data = content->data;
-	size = content->size;
+	data = content->data + offs;
+	size = content->size - offs;
+
+	/* 
+	 * If we have a link next, and we have a trailing newline, don't
+	 * print the newline.
+	 * This is because the link will emit a newline based upon the
+	 * previous type, *not* looking at whether there's a newline.
+	 * We could do this there, but whatever.
+	 */
 
 	if (NULL != next &&
-	    NSCOPE_SPAN != nscopes[next->type] &&
+	    (LOWDOWN_LINK_AUTO == next->type ||
+	     LOWDOWN_LINK == next->type) &&
 	    '\n' == data[size - 1])
-		size--;
-
-	if (0 == size)
-		return;
-
-	if (NULL != prev && 
-	    (LOWDOWN_LINK_AUTO == prev->type ||
-	     LOWDOWN_LINK == prev->type) &&
-	    LOWDOWN_NROFF_GROFF & st->flags && ! st->mdoc) {
-		for (i = 0; i < size; i++)
-			if (isspace((int)data[i]))
-				break;
-		data += i;
-		size -= i;
-	}
+		if (0 == --size)
+			return;
 
 	if (nl) {
 		for (i = 0; i < size; i++)
@@ -1052,6 +1049,7 @@ rndr(hbuf *ob, const struct nstate *ref,
 	case (LOWDOWN_NORMAL_TEXT):
 		rndr_normal_text(ob, 
 			&root->rndr_normal_text.text, 
+			root->rndr_normal_text.offs,
 			prev, next, ref, pnln);
 		break;
 	case (LOWDOWN_ENTITY):
