@@ -118,7 +118,7 @@ will omit graphics and equations.
 will only support specific types of graphics.)
 
 ```sh
-lowdown -s -Tms README.md | groff -t -ms > README.ps
+lowdown -s -Tms README.md | groff -k -Dutf8 -t -ms -mpdfmark > README.ps
 ```
 
 On OpenBSD or other BSD systems, you can run *lowdown* within the base
@@ -181,14 +181,11 @@ The parse is started in
 It is preceded by meta-data parsing, if applicable, which occurs before
 document parsing but after the BOM.
 
-Document parsing is the cruddiest part of the imported code, although
-I've made some efforts to clean it up whenever I touch it.  *lowdown*
-parses recursively, building the output document bottom-up.  It looks
-something like this:
+The document is parsed into an AST (abstract syntax tree) that describes
+the document as a tree of nodes, each node corresponding an input token.
 
-1. Begin parsing a component.
-2. Parse out subcomponents, creating a recursive step.
-3. Render the component, pasting in the subcomponents' renderered output.
+Once the entire tree has been generated, the AST is passed into the
+front-end renderers, which construct output depth-first.
 
 ### Example
 
@@ -204,9 +201,25 @@ then render the subcomponents in order: first the regular text "Hello",
 then a bold section.  The bold section would be its own subcomponent
 with its own regular text child, "world".
 
-Both of these subcomponents would be appended into a buffer, which would
-then be passed back into the subsection parser.  It would paste the
-buffer into `<h2>` blocks (in HTML5) or a `.SH` block (troff outputs).
+When run through the **-Ttree** output, it would generate:
+
+```
+LOWDOWN\_ROOT
+  LOWDOWN\_DOC\_HEADER
+  LOWDOWN\_HEADER
+    LOWDOWN_NORMAL_TEXT
+      data: 6 Bytes: Hello 
+    LOWDOWN_DOUBLE_EMPHASIS
+      LOWDOWN_NORMAL_TEXT
+        data: 5 Bytes: world
+  LOWDOWN\_DOC\_FOOTER
+```
+
+This tree would then be passed into a front-end, such as the HTML5
+front-end with **-Thtml**.  The nodes would be appended into a buffer,
+which would then be passed back into the subsection parser.  It would
+paste the buffer into `<h2>` blocks (in HTML5) or a `.SH` block (troff
+outputs).
 
 Finally, the subsection block would be fitted into whatever context it
 was invoked within.
@@ -222,83 +235,3 @@ renderers, you can see how the input is properly escaped by passing into
 After being fully parsed into an output buffer, the output buffer is
 passed into a "smartypants" rendering, one for each renderer type.
 
-### Problems
-
-**Warning: here be dragons.**
-
-The **-Tms** and **-Tman** output modes do not produce clean output due
-to the white-space issue.  To fix this, I'll need to create a proper AST
-of the input before formatting output.  Why the original authors did not
-do this is a mystery to me.
-
-The white-space issue is illustrated by the following:
-
-```markdown
-Read this *[linky](link)* here.
-```
-
-Looks benign.  But in GNU extension mode, we want to put that link into
-a hyperlink, which means using the line macro `pdfhref`, as in
-
-```roff
-.pdfhref W -D link linky
-```
-
-The first problem is that the italics are normally rendered using the
-roff `\fI` and `\fP` mode; which, if used, wouldn't render properly:
-
-```roff
-Read this 
-\fI
-.pdfhref W -D link linky
-\fP here.
-```
-
-Since the `\fP` is a control character, it's stripped and the line is
-considered verbatim (leading whitespace).
-
-To avoid all of this, I force inline formatters to recognise that the
-contained text is a macro and adjust accordingly.  Now, this becomes:
-
-```roff
-Read this
-.I
-.pdfhref W -D link linky
-.R
-here.
-```
-
-There's still a problem.  What if we have abutting text?
-
-```markdown
-Read this "[linky](link)".
-```
-
-The period will be on its own line.  To make up for this, I recognise
-(for the time being, only trailing) abutting text and adjust horizontal
-space manually:
-
-```roff
-Read this "
-.I
-.pdfhref W -D link linky
-.R
-\h[-0.4]".
-```
-
-This works, but not always.  For example, if the link occurs at the end
-of a sentence, there's no keep between the link and the abutting text.
-If the link is in italics and the subsequent text is not --- kerning
-issues.  It's actually extremely ugly and I hate it.
-
-The problem is the design of the parser: since content is parsed and
-appended to buffers as it's parsed, there's no knowledge of
-"look-ahead", and the output formatter can't properly know to do what
-should be done:
-
-```roff
-Read this
-.I
-.pdfhref W -P \(dq -A \(dq. -D link linky
-.R
-```
