@@ -164,6 +164,7 @@ struct	lowdown_node {
 		} rndr_header; 
 		struct rndr_normal_text {
 			hbuf text; /* basic text */
+			size_t offs; /* in-render offset */
 		} rndr_normal_text; 
 		struct rndr_entity {
 			hbuf text; /* entity text */
