@@ -1,6 +1,8 @@
 ## Synopsis
 
-**lowdown** is a fork of [hoedown](https://github.com/hoedown/hoedown).
+**lowdown** is a fork of [hoedown](https://github.com/hoedown/hoedown),
+although the parser and front-ends have changed significantly.
+
 This is a read-only repository for tracking development of the system.
 Stable releases are available at the [website](https://kristaps.bsd.lv/lowdown).
 
@@ -22,6 +24,9 @@ The fork features the following modifications to its predecessor:
 11. Remove "semantic quote" option, as it has no nroff basis.
 12. Remove "emphasis as underline" option, as it has no nroff basis and
     is confusing on the web.
+13. Have the back-end parser to generate an AST instead of directly
+    rendering.
+14. Several superfluous mechanisms (pools and stacks) removed.
 
 For the moment, **lowdown** output is the same as
 [hoedown](https://github.com/hoedown/hoedown) with the following presets:
@@ -47,6 +52,7 @@ The following major feature additions have been added:
 - extension output mode for GNU troff
 - "smartypants" mode for the troff outputs
 - metadata support
+- tree output for AST debugging
 
 It builds and runs on OpenBSD, Linux ([musl](https://www.musl-libc.org/)
 and glibc), and Mac OS X.
