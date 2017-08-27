@@ -126,7 +126,7 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 }
 
 void
-lowdown_tree_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
+lowdown_tree_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
 {
 
 	assert(NULL == ref);
