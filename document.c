@@ -476,10 +476,14 @@ parse_inline(hdoc *doc, uint8_t *data, size_t size)
 		while (end < size && active_char[data[end]] == 0)
 			end++;
 
-		n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
-		pushbuffer(&n->rndr_normal_text.text, 
-			data + i, end - i);
-		popnode(doc, n);
+		/* Only allocate if non-empty... */
+
+		if (end - i > 0) {
+			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
+			pushbuffer(&n->rndr_normal_text.text, 
+				data + i, end - i);
+			popnode(doc, n);
+		}
 
 		/* End of file? */
 
