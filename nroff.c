@@ -116,12 +116,13 @@ escape_oneline_span(hbuf *ob, const uint8_t *source, size_t length)
 /*
  * Manage hypertext linking with the groff "pdfhref" macro.
  */
-static void
+static int
 putlink(hbuf *ob, const hbuf *link, const hbuf *text,
 	const struct lowdown_node *next)
 {
 	const hbuf	*buf;
 	size_t		 i;
+	int		 ret = 1;
 
 	HBUF_PUTSL(ob, ".pdfhref W ");
 
@@ -150,6 +151,7 @@ putlink(hbuf *ob, const hbuf *link, const hbuf *text,
 			}
 			hbuf_putc(ob, buf->data[i]);
 		}
+		ret = i < buf->size;
 		HBUF_PUTSL(ob, "\" ");
 	}
 
@@ -170,6 +172,7 @@ putlink(hbuf *ob, const hbuf *link, const hbuf *text,
 		hbuf_put(ob, text->data, text->size);
 
 	HBUF_PUTSL(ob, "\n");
+	return ret;
 }
 
 static int
@@ -179,7 +182,7 @@ rndr_autolink(hbuf *ob, const hbuf *link,
 {
 
 	if (NULL == link || 0 == link->size)
-		return 0;
+		return 1;
 
 	/*
 	 * If we're not using groff extensions, just italicise.
@@ -206,8 +209,7 @@ rndr_autolink(hbuf *ob, const hbuf *link,
 		return 1;
 	}
 
-	putlink(ob, link, NULL, next);
-	return 1;
+	return putlink(ob, link, NULL, next);
 }
 
 static void
@@ -333,7 +335,7 @@ rndr_highlight(hbuf *ob, const hbuf *content)
 }
 
 static int
-rndr_linebreak(hbuf *ob, void *data)
+rndr_linebreak(hbuf *ob)
 {
 
 	/* FIXME: should this always have a newline? */
@@ -343,9 +345,9 @@ rndr_linebreak(hbuf *ob, void *data)
 }
 
 static void
-rndr_header(hbuf *ob, const hbuf *content, int level, void *data)
+rndr_header(hbuf *ob, const hbuf *content, int level,
+	const struct nstate *st)
 {
-	struct nstate	*st = data;
 
 	if (NULL == content || 0 == content->size)
 		return;
@@ -377,7 +379,7 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link,
 	if ((NULL == content || 0 == content->size) &&
 	    (NULL == title || 0 == title->size) &&
 	    (NULL == link || 0 == link->size))
-		return 0;
+		return 1;
 
 	if ( ! nln)
 		HBUF_PUTSL(ob, "\n");
@@ -407,12 +409,11 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link,
 		return 1;
 	}
 
-	putlink(ob, link, content, next);
-	return 1;
+	return putlink(ob, link, content, next);
 }
 
 static void
-rndr_list(hbuf *ob, const hbuf *content, hlist_fl flags, void *data)
+rndr_list(hbuf *ob, const hbuf *content, hlist_fl flags)
 {
 
 	HBUF_PUTSL(ob, ".RS\n");
@@ -423,7 +424,7 @@ rndr_list(hbuf *ob, const hbuf *content, hlist_fl flags, void *data)
 
 static void
 rndr_listitem(hbuf *ob, const hbuf *content, 
-	hlist_fl flags, void *data, size_t num)
+	hlist_fl flags, size_t num)
 {
 
 	if (NULL == content || 0 == content->size)
@@ -450,9 +451,8 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 }
 
 static void
-rndr_paragraph(hbuf *ob, const hbuf *content, void *data)
+rndr_paragraph(hbuf *ob, const hbuf *content, const struct nstate *st)
 {
-	struct nstate	*state = data;
 	size_t	 	 i = 0, org;
 
 	if (NULL == content || 0 == content->size)
@@ -464,7 +464,7 @@ rndr_paragraph(hbuf *ob, const hbuf *content, void *data)
 
 	HBUF_PUTSL(ob, ".LP\n");
 
-	if (state->flags & LOWDOWN_NROFF_HARD_WRAP) {
+	if (st->flags & LOWDOWN_NROFF_HARD_WRAP) {
 		while (i < content->size) {
 			org = i;
 			while (i < content->size && content->data[i] != '\n')
@@ -480,7 +480,7 @@ rndr_paragraph(hbuf *ob, const hbuf *content, void *data)
 			if (i >= content->size - 1)
 				break;
 
-			rndr_linebreak(ob, data);
+			rndr_linebreak(ob);
 			i++;
 		}
 	} else
@@ -493,15 +493,14 @@ rndr_paragraph(hbuf *ob, const hbuf *content, void *data)
  * FIXME: verify behaviour.
  */
 static void
-rndr_raw_block(hbuf *ob, const hbuf *content, void *data)
+rndr_raw_block(hbuf *ob, const hbuf *content, const struct nstate *st)
 {
-	struct nstate *state = data;
 	size_t org, sz;
 
 	if (NULL == content)
 		return;
 
-	if (state->flags & LOWDOWN_NROFF_SKIP_HTML) {
+	if (st->flags & LOWDOWN_NROFF_SKIP_HTML) {
 		escape_block(ob, content->data, content->size);
 		return;
 	}
@@ -530,9 +529,8 @@ rndr_raw_block(hbuf *ob, const hbuf *content, void *data)
 }
 
 static void
-rndr_hrule(hbuf *ob, void *data)
+rndr_hrule(hbuf *ob, const struct nstate *st)
 {
-	struct nstate 	*st = data;
 
 	/*
 	 * I'm not sure how else to do horizontal lines.
@@ -545,8 +543,7 @@ rndr_hrule(hbuf *ob, void *data)
 }
 
 static int
-rndr_image(hbuf *ob, const hbuf *link, const hbuf *title, 
-	const hbuf *dims, const hbuf *alt, void *data)
+rndr_image(void)
 {
 
 	warnx("warning: graphics not supported");
@@ -554,11 +551,10 @@ rndr_image(hbuf *ob, const hbuf *link, const hbuf *title,
 }
 
 static int
-rndr_raw_html(hbuf *ob, const hbuf *text, void *data)
+rndr_raw_html(hbuf *ob, const hbuf *text, const struct nstate *st)
 {
-	struct nstate 	*state = data;
 
-	if ((state->flags & LOWDOWN_NROFF_SKIP_HTML) != 0)
+	if ((st->flags & LOWDOWN_NROFF_SKIP_HTML) != 0)
 		return 1;
 
 	escape_block(ob, text->data, text->size);
@@ -566,7 +562,7 @@ rndr_raw_html(hbuf *ob, const hbuf *text, void *data)
 }
 
 static void
-rndr_table(hbuf *ob, const hbuf *content, void *data)
+rndr_table(hbuf *ob, const hbuf *content)
 {
 
 	HBUF_PUTSL(ob, ".TS\n");
@@ -578,7 +574,7 @@ rndr_table(hbuf *ob, const hbuf *content, void *data)
 
 static void
 rndr_table_header(hbuf *ob, const hbuf *content,
-	void *data, const htbl_flags *fl, size_t columns)
+	const htbl_flags *fl, size_t columns)
 {
 	size_t	 i;
 
@@ -602,14 +598,14 @@ rndr_table_header(hbuf *ob, const hbuf *content,
 }
 
 static void
-rndr_table_body(hbuf *ob, const hbuf *content, void *data)
+rndr_table_body(hbuf *ob, const hbuf *content)
 {
 
 	hbuf_put(ob, content->data, content->size);
 }
 
 static void
-rndr_tablerow(hbuf *ob, const hbuf *content, void *data)
+rndr_tablerow(hbuf *ob, const hbuf *content)
 {
 
 	hbuf_put(ob, content->data, content->size);
@@ -618,7 +614,7 @@ rndr_tablerow(hbuf *ob, const hbuf *content, void *data)
 
 static void
 rndr_tablecell(hbuf *ob, const hbuf *content,
-	htbl_flags flags, void *data, size_t col, size_t columns)
+	htbl_flags flags, size_t col, size_t columns)
 {
 
 	if (col > 0)
@@ -631,7 +627,7 @@ rndr_tablecell(hbuf *ob, const hbuf *content,
 }
 
 static int
-rndr_superscript(hbuf *ob, const hbuf *content, void *data)
+rndr_superscript(hbuf *ob, const hbuf *content)
 {
 
 	if (NULL == content || 0 == content->size)
@@ -665,6 +661,7 @@ rndr_superscript(hbuf *ob, const hbuf *content, void *data)
 static void
 rndr_normal_text(hbuf *ob, const hbuf *content, 
 	const struct lowdown_node *prev, 
+	const struct lowdown_node *next, 
 	const struct nstate *st, int nl)
 {
 	size_t	 	 i, size;
@@ -675,6 +672,14 @@ rndr_normal_text(hbuf *ob, const hbuf *content,
 
 	data = content->data;
 	size = content->size;
+
+	if (NULL != next &&
+	    NSCOPE_SPAN != nscopes[next->type] &&
+	    '\n' == data[size - 1])
+		size--;
+
+	if (0 == size)
+		return;
 
 	if (NULL != prev && 
 	    (LOWDOWN_LINK_AUTO == prev->type ||
@@ -689,7 +694,7 @@ rndr_normal_text(hbuf *ob, const hbuf *content,
 
 	if (nl) {
 		for (i = 0; i < size; i++)
-			if (' ' != data[i])
+			if ( ! isspace((int)data[i]))
 				break;
 		escape_block(ob, data + i, size - i);
 	} else
@@ -697,9 +702,8 @@ rndr_normal_text(hbuf *ob, const hbuf *content,
 }
 
 static void
-rndr_footnotes(hbuf *ob, const hbuf *content, void *data)
+rndr_footnotes(hbuf *ob, const hbuf *content, const struct nstate *st)
 {
-	struct nstate 	*st = data;
 
 	if (NULL == content || 0 == content->size)
 		return;
@@ -715,7 +719,7 @@ rndr_footnotes(hbuf *ob, const hbuf *content, void *data)
 }
 
 static void
-rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num, void *data)
+rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num)
 {
 
 	HBUF_PUTSL(ob, ".LP\n");
@@ -727,7 +731,7 @@ rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num, void *data)
 }
 
 static int
-rndr_footnote_ref(hbuf *ob, unsigned int num, void *data)
+rndr_footnote_ref(hbuf *ob, unsigned int num)
 {
 
 	hbuf_printf(ob, "\\u\\s-3%u\\s+3\\d", num);
@@ -735,7 +739,7 @@ rndr_footnote_ref(hbuf *ob, unsigned int num, void *data)
 }
 
 static int
-rndr_math(hbuf *ob, const hbuf *text, int displaymode, void *data)
+rndr_math(void)
 {
 
 	warnx("warning: math not supported");
@@ -907,26 +911,33 @@ rndr_doc_header(hbuf *ob,
 	}
 }
 
-void
-lowdown_nroff_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
+static void
+rndr(hbuf *ob, const struct nstate *ref, 
+	struct lowdown_node *root)
 {
-	const struct lowdown_node *n;
+	struct lowdown_node *n, *next, *prev;
 	hbuf	*tmp;
-	int	 pnln;
+	int	 pnln, keep;
 
 	assert(NULL != root);
 
 	tmp = hbuf_new(64);
 
 	TAILQ_FOREACH(n, &root->children, entries)
-		lowdown_nroff_rndr(tmp, ref, n);
+		rndr(tmp, ref, n);
 
 	/* Compute whether the previous output has a newline. */
 
 	if (NULL == root->parent ||
 	    NULL == (n = TAILQ_PREV(root, lowdown_nodeq, entries)))
 		n = root->parent;
+
 	pnln = NULL == n || NSCOPE_BLOCK == nscopes[n->type];
+
+	prev = NULL == root->parent ? NULL : 
+		TAILQ_PREV(root, lowdown_nodeq, entries);
+	next = TAILQ_NEXT(root, entries);
+	keep = 1;
 
 	switch (root->type) {
 	case (LOWDOWN_BLOCKCODE):
@@ -950,35 +961,33 @@ lowdown_nroff_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 		rndr_hrule(ob, ref);
 		break;
 	case (LOWDOWN_LIST):
-		rndr_list(ob, tmp, 
-			root->rndr_list.flags, 
-			ref);
+		rndr_list(ob, tmp, root->rndr_list.flags);
 		break;
 	case (LOWDOWN_LISTITEM):
 		rndr_listitem(ob, tmp, 
 			root->rndr_listitem.flags,
-			ref, root->rndr_listitem.num);
+			root->rndr_listitem.num);
 		break;
 	case (LOWDOWN_PARAGRAPH):
 		rndr_paragraph(ob, tmp, ref);
 		break;
 	case (LOWDOWN_TABLE_BLOCK):
-		rndr_table(ob, tmp, ref);
+		rndr_table(ob, tmp);
 		break;
 	case (LOWDOWN_TABLE_HEADER):
-		rndr_table_header(ob, tmp, ref,
+		rndr_table_header(ob, tmp, 
 			root->rndr_table_header.flags,
 			root->rndr_table_header.columns);
 		break;
 	case (LOWDOWN_TABLE_BODY):
-		rndr_table_body(ob, tmp, ref);
+		rndr_table_body(ob, tmp);
 		break;
 	case (LOWDOWN_TABLE_ROW):
-		rndr_tablerow(ob, tmp, ref);
+		rndr_tablerow(ob, tmp);
 		break;
 	case (LOWDOWN_TABLE_CELL):
 		rndr_tablecell(ob, tmp, 
-			root->rndr_table_cell.flags, ref,
+			root->rndr_table_cell.flags, 
 			root->rndr_table_cell.col,
 			root->rndr_table_cell.columns);
 		break;
@@ -987,17 +996,16 @@ lowdown_nroff_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 		break;
 	case (LOWDOWN_FOOTNOTE_DEF):
 		rndr_footnote_def(ob, tmp, 
-			root->rndr_footnote_def.num, ref);
+			root->rndr_footnote_def.num);
 		break;
 	case (LOWDOWN_BLOCKHTML):
 		rndr_raw_block(ob, tmp, ref);
 		break;
 	case (LOWDOWN_LINK_AUTO):
-		rndr_autolink(ob, 
+		keep = rndr_autolink(ob, 
 			&root->rndr_autolink.link,
 			root->rndr_autolink.type,
-			TAILQ_NEXT(root, entries),
-			ref, pnln);
+			next, ref, pnln);
 		break;
 	case (LOWDOWN_CODESPAN):
 		rndr_codespan(ob, &root->rndr_codespan.text);
@@ -1012,20 +1020,16 @@ lowdown_nroff_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 		rndr_highlight(ob, tmp);
 		break;
 	case (LOWDOWN_IMAGE):
-		rndr_image(ob, 
-			&root->rndr_image.link,
-			&root->rndr_image.title,
-			&root->rndr_image.dims,
-			&root->rndr_image.alt, ref);
+		rndr_image();
 		break;
 	case (LOWDOWN_LINEBREAK):
-		rndr_linebreak(ob, ref);
+		rndr_linebreak(ob);
 		break;
 	case (LOWDOWN_LINK):
-		rndr_link(ob, tmp,
+		keep = rndr_link(ob, tmp,
 			&root->rndr_link.link,
 			&root->rndr_link.title,
-			ref, TAILQ_NEXT(root, entries), pnln);
+			ref, next, pnln);
 		break;
 	case (LOWDOWN_TRIPLE_EMPHASIS):
 		rndr_triple_emphasis(ob, tmp);
@@ -1034,17 +1038,13 @@ lowdown_nroff_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 		rndr_strikethrough(ob, tmp);
 		break;
 	case (LOWDOWN_SUPERSCRIPT):
-		rndr_superscript(ob, tmp, ref);
+		rndr_superscript(ob, tmp);
 		break;
 	case (LOWDOWN_FOOTNOTE_REF):
-		rndr_footnote_ref(ob, 
-			root->rndr_footnote_ref.num, 
-			ref);
+		rndr_footnote_ref(ob, root->rndr_footnote_ref.num);
 		break;
 	case (LOWDOWN_MATH_BLOCK):
-		rndr_math(ob, tmp, 
-			root->rndr_math.displaymode,
-			ref);
+		rndr_math();
 		break;
 	case (LOWDOWN_RAW_HTML):
 		rndr_raw_html(ob, tmp, ref);
@@ -1052,9 +1052,7 @@ lowdown_nroff_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 	case (LOWDOWN_NORMAL_TEXT):
 		rndr_normal_text(ob, 
 			&root->rndr_normal_text.text, 
-			NULL != root->parent ?
-			TAILQ_PREV(root, lowdown_nodeq, entries) :
-			NULL, ref, pnln);
+			prev, next, ref, pnln);
 		break;
 	case (LOWDOWN_ENTITY):
 		hbuf_put(ob,
@@ -1067,6 +1065,19 @@ lowdown_nroff_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
 	}
 
 	hbuf_free(tmp);
+
+	if ( ! keep) {
+		assert(NULL != root->parent);
+		TAILQ_REMOVE(&next->parent->children, next, entries);
+		lowdown_node_free(next);
+	}
+}
+
+void
+lowdown_nroff_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
+{
+
+	rndr(ob, ref, root);
 }
 
 void *
