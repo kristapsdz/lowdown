@@ -791,9 +791,9 @@ rndr_doc_header(hbuf *ob,
 }
 
 void
-lowdown_html_rndr(hbuf *ob, void *ref, const struct lowdown_node *root)
+lowdown_html_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
 {
-	const struct lowdown_node *n;
+	struct lowdown_node *n;
 	hbuf	*tmp;
 
 	tmp = hbuf_new(64);
