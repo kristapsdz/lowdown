@@ -117,11 +117,11 @@ escape_oneline_span(hbuf *ob, const uint8_t *source, size_t length)
  * Manage hypertext linking with the groff "pdfhref" macro.
  */
 static int
-putlink(hbuf *ob, const hbuf *link, 
-	const hbuf *text, struct lowdown_node *next)
+putlink(hbuf *ob, const hbuf *link, const hbuf *text, 
+	struct lowdown_node *next, struct lowdown_node *prev)
 {
 	const hbuf	*buf;
-	size_t		 i;
+	size_t		 i, pos;
 	int		 ret = 1;
 
 	HBUF_PUTSL(ob, ".pdfhref W ");
@@ -138,22 +138,50 @@ putlink(hbuf *ob, const hbuf *link,
 	    ' ' != next->rndr_normal_text.text.data[0]) {
 		buf = &next->rndr_normal_text.text;
 		HBUF_PUTSL(ob, "-A \"");
-		for (i = 0; i < buf->size; i++) {
-			if (isspace((int)buf->data[i]))
+		for (pos = 0; pos < buf->size; pos++) {
+			if (isspace((int)buf->data[pos]))
 				break;
 			/* Be sure to escape... */
-			if ('"' == buf->data[i]) {
+			if ('"' == buf->data[pos]) {
 				HBUF_PUTSL(ob, "\\(dq");
 				continue;
-			} else if ('\\' == buf->data[i]) {
+			} else if ('\\' == buf->data[pos]) {
 				HBUF_PUTSL(ob, "\\e");
 				continue;
 			}
-			hbuf_putc(ob, buf->data[i]);
+			hbuf_putc(ob, buf->data[pos]);
 		}
-		ret = i < buf->size;
-		next->rndr_normal_text.offs = i;
+		ret = pos < buf->size;
+		next->rndr_normal_text.offs = pos;
 		HBUF_PUTSL(ob, "\" ");
+	}
+
+	/*
+	 * If we're preceded by normal text that doesn't end with space,
+	 * then put that text into the "-P" (prefix) argument.
+	 */
+
+	if (NULL != prev &&
+	    LOWDOWN_NORMAL_TEXT == prev->type) {
+		buf = &prev->rndr_normal_text.text;
+		i = buf->size;
+		while (i && ! isspace((int)buf->data[i - 1]))
+			i--;
+		if (i != buf->size) 
+			HBUF_PUTSL(ob, "-P \"");
+		for (pos = i; pos < buf->size; pos++) {
+			/* Be sure to escape... */
+			if ('"' == buf->data[pos]) {
+				HBUF_PUTSL(ob, "\\(dq");
+				continue;
+			} else if ('\\' == buf->data[pos]) {
+				HBUF_PUTSL(ob, "\\e");
+				continue;
+			}
+			hbuf_putc(ob, buf->data[pos]);
+		}
+		if (i != buf->size) 
+			HBUF_PUTSL(ob, "\" ");
 	}
 
 	/* Encode the URL. */
@@ -177,8 +205,8 @@ putlink(hbuf *ob, const hbuf *link,
 }
 
 static int
-rndr_autolink(hbuf *ob, const hbuf *link, 
-	halink_type type, struct lowdown_node *next,
+rndr_autolink(hbuf *ob, const hbuf *link, halink_type type, 
+	struct lowdown_node *prev, struct lowdown_node *next,
 	const struct nstate *st, int nln)
 {
 
@@ -210,7 +238,7 @@ rndr_autolink(hbuf *ob, const hbuf *link,
 		return 1;
 	}
 
-	return putlink(ob, link, NULL, next);
+	return putlink(ob, link, NULL, next, prev);
 }
 
 static void
@@ -374,7 +402,7 @@ rndr_header(hbuf *ob, const hbuf *content, int level,
 static int
 rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, 
 	const hbuf *title, const struct nstate *st, 
-	struct lowdown_node *next, int nln)
+	struct lowdown_node *prev, struct lowdown_node *next, int nln)
 {
 
 	if ((NULL == content || 0 == content->size) &&
@@ -410,7 +438,7 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link,
 		return 1;
 	}
 
-	return putlink(ob, link, content, next);
+	return putlink(ob, link, content, next, prev);
 }
 
 static void
@@ -677,17 +705,27 @@ rndr_normal_text(hbuf *ob, const hbuf *content, size_t offs,
 	/* 
 	 * If we have a link next, and we have a trailing newline, don't
 	 * print the newline.
+	 * Furthermore, if we don't have trailing space, omit the final
+	 * word because we'll put that in the link's pdfhref.
 	 * This is because the link will emit a newline based upon the
 	 * previous type, *not* looking at whether there's a newline.
 	 * We could do this there, but whatever.
 	 */
 
-	if (NULL != next &&
+	if (NULL != next && ! st->mdoc &&
+	    (st->flags & LOWDOWN_NROFF_GROFF) &&
 	    (LOWDOWN_LINK_AUTO == next->type ||
-	     LOWDOWN_LINK == next->type) &&
-	    '\n' == data[size - 1])
-		if (0 == --size)
-			return;
+	     LOWDOWN_LINK == next->type)) {
+		if ('\n' == data[size - 1]) {
+			if (0 == --size)
+				return;
+		} else if ( ! isspace((int)data[size - 1])) {
+			while (size && ! isspace((int)data[size - 1]))
+				size--;
+			if (0 == size)
+				return;
+		}
+	}
 
 	if (nl) {
 		for (i = 0; i < size; i++)
@@ -1002,7 +1040,7 @@ rndr(hbuf *ob, const struct nstate *ref,
 		keep = rndr_autolink(ob, 
 			&root->rndr_autolink.link,
 			root->rndr_autolink.type,
-			next, ref, pnln);
+			prev, next, ref, pnln);
 		break;
 	case (LOWDOWN_CODESPAN):
 		rndr_codespan(ob, &root->rndr_codespan.text);
@@ -1026,7 +1064,7 @@ rndr(hbuf *ob, const struct nstate *ref,
 		keep = rndr_link(ob, tmp,
 			&root->rndr_link.link,
 			&root->rndr_link.title,
-			ref, next, pnln);
+			ref, prev, next, pnln);
 		break;
 	case (LOWDOWN_TRIPLE_EMPHASIS):
 		rndr_triple_emphasis(ob, tmp);
