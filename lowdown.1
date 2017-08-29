@@ -1,6 +1,6 @@
 .\"	$Id$
 .\"
-.\" Copyright (c) 2016 Kristaps Dzonsons <kristaps@bsd.lv>
+.\" Copyright (c) 2016--2017 Kristaps Dzonsons <kristaps@bsd.lv>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -91,23 +91,12 @@ unless it's
 in which case fall back to the default of standard output.
 .It Fl s
 Standalone mode.
-This emits a minimal HTML5 or roff document surrounding the output.
-You will probably need to hand-edit it.
-If you have the
+This emits an HTML5 or roff document envelope surrounding the output.
+See the 
 .Ar metadata
-feature enabled (the default), the title for the document is pulled from
-the metadata key
-.Dq title
-and the date from the
-.Dq rcsdate
-.Pq in RCS $Date$ format, see Xr rcs 1
-or
-.Dq date
-.Pq ISO-8601 YYYY-MM-DD or YYYY/MM/DD
-metadata keys.
-Else these are set to
-.Dq Untitled article
-and the current date.
+key of
+.Sx Input features
+on providing information to the document envelope.
 .It Fl T Ar mode
 The output mode.
 This may be
@@ -246,6 +235,58 @@ Both may also be specified, in any order.
 For example,
 .Li ![alt](url "title" =23x24) .
 These are fairly standard Markdown extensions.
+.Pp
+If the
+.Ar metadata
+input feature is requested, the following metadata keys are used when in
+standalone
+.Pq Fl s
+mode:
+.Bl -tag -width Ds
+.It Li date
+Document date in ISO-8601 YYYY-MM-DD or YYYY/MM/DD format.
+Overriden by 
+.Li rcsdate .
+Defaults to current date.
+Only used in
+.Fl T Ar man
+and
+.Fl T Ar ms
+mode.
+.It Li rcsdate
+Document date in RCS date format.
+Overrides
+.Li date .
+Defaults to current date.
+Only used in
+.Fl T Ar man
+and
+.Fl T Ar ms
+mode.
+.It Li title
+Document title, defaulting to
+.Dq Untitled article .
+Used in all output modes.
+.It Li author
+Document author.
+Multiple authors may be separated by more than one space (including
+newlines).
+Overrides
+.Li rcsauthor .
+Used in all output modes.
+.It Li rcsauthor
+Document author in RCS author format.
+Overriden by
+.Li author .
+Used in all output modes.
+.It Li css
+A CSS file included in the HTML5 document head.
+Multiple CSS files (in order) may be separated by more than one space
+(including newlines).
+Only used in
+.Fl T Ar html
+mode.
+.El
 .Ss Output features
 .Nm
 allows for limited control over output features.
