@@ -702,6 +702,48 @@ rcsauthor2str(const char *v)
 	return(buf);
 }
 
+/*
+ * Itereate through multiple multi-white-space separated values in
+ * "val", filling them in to "env".
+ * If "href", escape the value as an HTML attribute.
+ * Otherwise, just do the minimal HTML escaping.
+ */
+static void
+rndr_doc_header_multi(hbuf *ob, int href,
+	const char *val, const char *env)
+{
+	const char	*cp, *start;
+	size_t		 sz;
+
+	for (cp = val; '\0' != *cp; ) {
+		while (isspace((int)*cp))
+			cp++;
+		if ('\0' == *cp)
+			continue;
+		start = cp;
+		sz = 0;
+		while ('\0' != *cp) {
+			if ( ! isspace((int)cp[0]) ||
+			     ! isspace((int)cp[1])) {
+				sz++;
+				cp++;
+				continue;
+			}
+			cp += 2;
+			break;
+		}
+		if (0 == sz)
+			continue;
+		hbuf_puts(ob, env);
+		hbuf_putc(ob, '"');
+		if (href)
+			hesc_href(ob, (const uint8_t *)start, sz);
+		else
+			hesc_html(ob, (const uint8_t *)start, sz, 0);
+		HBUF_PUTSL(ob, "\" />\n");
+	}
+}
+
 static void
 rndr_doc_footer(hbuf *ob, const struct html_state *st)
 {
@@ -715,9 +757,9 @@ rndr_doc_header(hbuf *ob,
 	const struct lowdown_meta *m, size_t msz, 
 	const struct html_state *st)
 {
-	const char	*author = NULL, *cp, *start,
-	      		*title = "Untitled article";
-	size_t		 i, sz;
+	const char	*author = NULL, *title = "Untitled article", 
+	     	 	*css = NULL;
+	size_t		 i;
 
 	if ( ! (LOWDOWN_STANDALONE & st->flags))
 		return;
@@ -734,6 +776,8 @@ rndr_doc_header(hbuf *ob,
 			author = m[i].value;
 		else if (0 == strcmp(m[i].key, "rcsauthor"))
 			author = rcsauthor2str(m[i].value);
+		else if (0 == strcmp(m[i].key, "css"))
+			css = m[i].value;
 
 	HBUF_PUTSL(ob, 
 	      "<!DOCTYPE html>\n"
@@ -743,39 +787,12 @@ rndr_doc_header(hbuf *ob,
 	      "<meta name=\"viewport\" content=\""
 	       "width=device-width,initial-scale=1\" />\n");
 
-	/*
-	 * We might have multiple multi-white-space separated authors,
-	 * so loop through looking for that.
-	 * HTML-escape and trim the author names.
-	 */
-
-	if (NULL != author) {
-		for (cp = author; '\0' != *cp; ) {
-			while (isspace((int)*cp))
-				cp++;
-			if ('\0' == *cp)
-				continue;
-			start = cp;
-			sz = 0;
-			while ('\0' != *cp) {
-				if ( ! isspace((int)cp[0]) ||
-				     ! isspace((int)cp[1])) {
-					sz++;
-					cp++;
-					continue;
-				}
-				cp += 2;
-				break;
-			}
-			if (0 == sz)
-				continue;
-			HBUF_PUTSL(ob, 
-				"<meta name=\"author\""
-				" content=\"");
-			hesc_html(ob, (const uint8_t *)start, sz, 0);
-			HBUF_PUTSL(ob, "\" />\n");
-		}
-	}
+	if (NULL != author)
+		rndr_doc_header_multi(ob, 0, author, 
+			"<meta name=\"author\" content=");
+	if (NULL != css)
+		rndr_doc_header_multi(ob, 1, css, 
+			"<link rel=\"stylesheet\" href=");
 
 	/* HTML-escape and trim the title (0-length ok but weird). */
 
