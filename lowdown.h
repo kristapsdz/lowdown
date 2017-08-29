@@ -234,7 +234,9 @@ struct	lowdown_opts {
 #define LOWDOWN_FOOTNOTES	 0x04
 #define LOWDOWN_AUTOLINK	 0x08
 #define LOWDOWN_STRIKE		 0x10
+/* Omitted 			 0x20 */
 #define LOWDOWN_HILITE		 0x40
+/* Omitted 			 0x80 */
 #define LOWDOWN_SUPER		 0x100
 #define LOWDOWN_MATH		 0x200
 #define LOWDOWN_NOINTEM		 0x400
@@ -246,13 +248,13 @@ struct	lowdown_opts {
 #define LOWDOWN_HTML_SKIP_HTML	 0x01
 #define LOWDOWN_HTML_ESCAPE	 0x02
 #define LOWDOWN_HTML_HARD_WRAP	 0x04
-#define LOWDOWN_HTML_HEAD_IDS	 0x80
 #define LOWDOWN_NROFF_SKIP_HTML	 0x08
 #define LOWDOWN_NROFF_HARD_WRAP	 0x10
 #define LOWDOWN_NROFF_GROFF	 0x20
-#define LOWDOWN_NROFF_NUMBERED	 0x80
 #define	LOWDOWN_SMARTY	  	 0x40
-#define LOWDOWN_STANDALONE	 0x100
+#define LOWDOWN_NROFF_NUMBERED	 0x80
+#define LOWDOWN_HTML_HEAD_IDS	 0x100
+#define LOWDOWN_STANDALONE	 0x200
 };
 
 struct hdoc;
