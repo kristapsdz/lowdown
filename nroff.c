@@ -35,6 +35,9 @@
 #include "lowdown.h"
 #include "extern.h"
 
+/*
+ * Emit a newline if and only if the given buffer doesn't end in one.
+ */
 #define	BUFFER_NEWLINE(_buf, _sz, _ob) \
 	do if ((_sz) > 0 && '\n' != (_buf)[(_sz) - 1]) \
 		hbuf_putc((_ob), '\n'); \
@@ -219,7 +222,9 @@ rndr_autolink(hbuf *ob, const hbuf *link, halink_type type,
 	 */
 
 	if ( ! nln)
-		HBUF_PUTSL(ob, "\n");
+		if (NULL == prev ||
+		    (ob->size && '\n' != ob->data[ob->size - 1]))
+			HBUF_PUTSL(ob, "\n");
 
 	if ( ! (st->flags & LOWDOWN_NROFF_GROFF)) {
 		HBUF_PUTSL(ob, ".I\n");
@@ -411,7 +416,9 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link,
 		return 1;
 
 	if ( ! nln)
-		HBUF_PUTSL(ob, "\n");
+		if (NULL == prev ||
+		    (ob->size && '\n' != ob->data[ob->size - 1]))
+			HBUF_PUTSL(ob, "\n");
 
 	if ( ! (st->flags & LOWDOWN_NROFF_GROFF)) {
 		HBUF_PUTSL(ob, ".I\n");
@@ -688,7 +695,8 @@ rndr_superscript(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_normal_text(hbuf *ob, const hbuf *content, size_t offs,
+rndr_normal_text(hbuf *ob, const hbuf *content, 
+	size_t offs, size_t *roffs,
 	const struct lowdown_node *prev, 
 	const struct lowdown_node *next, 
 	const struct nstate *st, int nl)
@@ -703,29 +711,16 @@ rndr_normal_text(hbuf *ob, const hbuf *content, size_t offs,
 	size = content->size - offs;
 
 	/* 
-	 * If we have a link next, and we have a trailing newline, don't
-	 * print the newline.
-	 * Furthermore, if we don't have trailing space, omit the final
-	 * word because we'll put that in the link's pdfhref.
-	 * This is because the link will emit a newline based upon the
-	 * previous type, *not* looking at whether there's a newline.
-	 * We could do this there, but whatever.
+	 * If we don't have trailing space, omit the final word because
+	 * we'll put that in the link's pdfhref.
 	 */
 
 	if (NULL != next && ! st->mdoc &&
 	    (st->flags & LOWDOWN_NROFF_GROFF) &&
 	    (LOWDOWN_LINK_AUTO == next->type ||
-	     LOWDOWN_LINK == next->type)) {
-		if ('\n' == data[size - 1]) {
-			if (0 == --size)
-				return;
-		} else if ( ! isspace((int)data[size - 1])) {
-			while (size && ! isspace((int)data[size - 1]))
-				size--;
-			if (0 == size)
-				return;
-		}
-	}
+	     LOWDOWN_LINK == next->type))
+		while (size && ! isspace((int)data[size - 1]))
+			size--;
 
 	if (nl) {
 		for (i = 0; i < size; i++)
@@ -946,13 +941,17 @@ rndr_doc_header(hbuf *ob,
 	}
 }
 
+/*
+ * Actually render the node "root" and all of its children into the
+ * output buffer "ob".
+ * Return whether we should remove nodes relative to "root".
+ */
 static void
-rndr(hbuf *ob, const struct nstate *ref, 
-	struct lowdown_node *root)
+rndr(hbuf *ob, const struct nstate *ref, struct lowdown_node *root)
 {
 	struct lowdown_node *n, *next, *prev;
-	hbuf	*tmp;
-	int	 pnln, keep;
+	hbuf		*tmp;
+	int		 pnln, keepnext;
 
 	assert(NULL != root);
 
@@ -972,7 +971,7 @@ rndr(hbuf *ob, const struct nstate *ref,
 	prev = NULL == root->parent ? NULL : 
 		TAILQ_PREV(root, lowdown_nodeq, entries);
 	next = TAILQ_NEXT(root, entries);
-	keep = 1;
+	keepnext = 1;
 
 	switch (root->type) {
 	case (LOWDOWN_BLOCKCODE):
@@ -1037,7 +1036,7 @@ rndr(hbuf *ob, const struct nstate *ref,
 		rndr_raw_block(ob, tmp, ref);
 		break;
 	case (LOWDOWN_LINK_AUTO):
-		keep = rndr_autolink(ob, 
+		keepnext = rndr_autolink(ob, 
 			&root->rndr_autolink.link,
 			root->rndr_autolink.type,
 			prev, next, ref, pnln);
@@ -1061,7 +1060,7 @@ rndr(hbuf *ob, const struct nstate *ref,
 		rndr_linebreak(ob);
 		break;
 	case (LOWDOWN_LINK):
-		keep = rndr_link(ob, tmp,
+		keepnext = rndr_link(ob, tmp,
 			&root->rndr_link.link,
 			&root->rndr_link.title,
 			ref, prev, next, pnln);
@@ -1088,6 +1087,7 @@ rndr(hbuf *ob, const struct nstate *ref,
 		rndr_normal_text(ob, 
 			&root->rndr_normal_text.text, 
 			root->rndr_normal_text.offs,
+			&root->rndr_normal_text.roffs,
 			prev, next, ref, pnln);
 		break;
 	case (LOWDOWN_ENTITY):
@@ -1102,8 +1102,13 @@ rndr(hbuf *ob, const struct nstate *ref,
 
 	hbuf_free(tmp);
 
-	if ( ! keep) {
-		assert(NULL != root->parent);
+	/* 
+	 * Our processors might want to remove the current or next node,
+	 * so return that knowledge to the parent step.
+	 */
+
+	if ( ! keepnext) {
+		assert(NULL != next->parent);
 		TAILQ_REMOVE(&next->parent->children, next, entries);
 		lowdown_node_free(next);
 	}
