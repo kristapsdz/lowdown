@@ -695,8 +695,7 @@ rndr_superscript(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_normal_text(hbuf *ob, const hbuf *content, 
-	size_t offs, size_t *roffs,
+rndr_normal_text(hbuf *ob, const hbuf *content, size_t offs, 
 	const struct lowdown_node *prev, 
 	const struct lowdown_node *next, 
 	const struct nstate *st, int nl)
@@ -1087,7 +1086,6 @@ rndr(hbuf *ob, const struct nstate *ref, struct lowdown_node *root)
 		rndr_normal_text(ob, 
 			&root->rndr_normal_text.text, 
 			root->rndr_normal_text.offs,
-			&root->rndr_normal_text.roffs,
 			prev, next, ref, pnln);
 		break;
 	case (LOWDOWN_ENTITY):
