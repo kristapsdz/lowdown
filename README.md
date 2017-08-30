@@ -11,8 +11,8 @@ The fork features the following modifications to its predecessor:
 1. Put all header files into one and clean up source layout.
 2. Remove all macro cruft (Microsoft checks and builtins).
 3. Remove all option handling.
-4. Use [err(3)](http://man.openbsd.org/err.3).
-5. Use [pledge(2)](http://man.openbsd.org/pledge.2), Mac OS X's sandbox,
+4. Use [err(3)](https://man.openbsd.org/err.3).
+5. Use [pledge(2)](https://man.openbsd.org/pledge.2), Mac OS X's sandbox,
    or FreeBDS's
    [capsicum(4)](https://www.freebsd.org/cgi/man.cgi?query=capsicum),
    if applicable.
@@ -39,6 +39,8 @@ For the moment, **lowdown** output is the same as
 - footnotes
 - disabled inline HTML (truly an evil feature of Markdown)
 - "smartypants" enabled
+
+Individual features can be emabled and disabled at will.
 
 The following modifications to the HTML5 output have been made:
 
