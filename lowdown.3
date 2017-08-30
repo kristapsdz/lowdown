@@ -21,9 +21,7 @@
 .Nm lowdown ,
 .Nm lowdown_buf ,
 .Nm lowdown_errstr ,
-.Nm lowdown_file ,
-.Nm lowdown_standalone_close ,
-.Nm lowdown_standalone_open
+.Nm lowdown_file
 .Nd simple markdown translator library
 .Sh LIBRARY
 .Lb liblowdown
@@ -52,20 +50,6 @@
 .Fa "size_t *retsz"
 .Fa "struct lowdown_meta **meta"
 .Fa "size_t *metasz"
-.Fc
-.Ft void
-.Fo lowdown_standalone_close
-.Fa "const struct lowdown_opts *opts"
-.Fa "unsigned char **ret"
-.Fa "size_t *retsz"
-.Fc
-.Ft void
-.Fo lowdown_standalone_open
-.Fa "const struct lowdown_opts *opts"
-.Fa "const struct lowdown_meta *meta"
-.Fa "size_t metasz"
-.Fa "unsigned char **ret"
-.Fa "size_t *retsz"
 .Fc
 .Sh DESCRIPTION
 The
@@ -176,6 +160,9 @@ Takes precedence over
 .Dv LOWDOWN_HTML_ESCAPE .
 .It Dv LOWDOWN_HTML_HARD_WRAP
 Retain line-breaks within paragraphs.
+.It Dv LOWDOWN_HTML_HEAD_IDS
+Have an identifier written with each header element consisting of an
+HTML-escaped version of the header contents.
 .El
 .Pp
 And for
@@ -212,6 +199,14 @@ For any mode, you may specify:
 Don't use
 .Dq smartypants
 formatting.
+.It Dv LOWDOWN_STANDALONE
+Emit a full document instead of a document fragment.
+Parts of this envelope may be populated from metadata if
+.Dv LOWDOWN_METADATA
+was provided as an option.
+See
+.Xr lowdown 1
+for details.
 .El
 .It Va type
 May be set to
@@ -225,6 +220,10 @@ macros, or
 for
 .Fl ms
 macros.
+The
+.Dv LOWDOWN_TREE
+type causes a debug tree to be written.
+.Pp
 Both
 .Dv LOWDOWN_MAN
 and
@@ -260,40 +259,6 @@ The
 is provided to return a human-readable version of
 .Vt "enum lowdown_err" .
 It returns a generic (en_GB) description.
-.Pp
-The
-.Nm lowdown_standalone_open
-and
-.Nm lowdown_standalone_close
-are utility functions for outputting a document header and footer (in
-the given output format) given document meta-data.
-The recognised meta-data keys are
-.Dq title
-.Pq free-form text of the title ,
-.Dq author
-.Pq free-form text of one or more names ,
-and
-.Dq date
-.Pq ISO-8601 yy/mm/dd .
-.Pp
-The
-.Dq rcsdate
-may be specified instead of
-.Dq date ,
-and should consists of the
-.Xr rcs 1
-.Li $\&Date$
-keyword.
-The
-.Dq rcsauthor
-may be similarly used and consists of the
-.Xr rcs 1
-.Li $\&Author$
-keyword.
-.Pp
-Two or more consecutive white-space (newlines, tabs, spaces) in the
-.Dq author
-value indicates multiple authors.
 .Sh RETURN VALUES
 The
 .Nm lowdown_file
