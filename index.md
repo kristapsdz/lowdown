@@ -3,10 +3,11 @@ author: Kristaps Dzonsons
 
 # [%title]
 
-*lowdown* is just another Markdown translator.  It can output
-traditional HTML or a document for your *troff* type-setter of choice,
-such as [groff(1)](https://www.gnu.org/s/groff/), [Heirloom
-troff](http://heirloom.sourceforge.net/doctools.html), or even
+*lowdown* is just another Markdown translator.
+
+It can output traditional HTML or a document for your *troff*
+type-setter of choice, such as [groff(1)](https://www.gnu.org/s/groff/),
+[Heirloom troff](http://heirloom.sourceforge.net/doctools.html), or even
 [mandoc(1)](http://man.openbsd.org/mandoc).  *lowdown* doesn't require
 XSLT, Python, or even Perl -- it's just clean, secure, [open
 source](http://opensource.org/licenses/ISC) C code with no dependencies.
@@ -39,6 +40,11 @@ then run `doas make install` (or use `sudo`).  *lowdown* is a
 [BSD.lv](https://bsd.lv) project.
 [Homebrew](https://brew.sh) users can use BSD.lv's
 [tap](https://github.com/kristapsdz/homebrew-repo).
+
+If you can help it,
+don't use Markdown.  Why? Read [Ingo's comments on
+Markdown](https://undeadly.org/cgi?action=article&sid=20170304230520)
+for a good explanation.
 
 ## Output
 
@@ -116,9 +122,12 @@ The troff output modes work well to make PS or PDF files, although they
 will omit graphics and equations.
 (There is a possibility to later add support for PIC, but even then, it
 will only support specific types of graphics.)
+The extra groff arguments are for UTF-8 processing, tables, and
+clickable links.
 
 ```sh
-lowdown -s -Tms README.md | groff -k -Dutf8 -t -ms -mpdfmark > README.ps
+lowdown -s -Tms README.md | \
+  groff -k -Dutf8 -t -ms -mpdfmark > README.ps
 ```
 
 On OpenBSD or other BSD systems, you can run *lowdown* within the base
@@ -235,3 +244,16 @@ renderers, you can see how the input is properly escaped by passing into
 After being fully parsed into an output buffer, the output buffer is
 passed into a "smartypants" rendering, one for each renderer type.
 
+## Known Issues
+
+There are some known issues in PDF (**-Tms** and **-Tman**) output
+regarding linking.
+
+Foremost, there needs to be a font modifier stack, as this feature is
+not supported directly in the roff language.
+For example, if one execute \*foo \*\*bar\*\* baz\*, the output will be
+confused because this translate to \fIfoo \fBbar\fP baz\fP. 
+
+Second, there needs to be logic to handle when a link is the first or
+last component of a font change.  For example, \*\[foo\](...)\* will put
+the font markers on different lines.
