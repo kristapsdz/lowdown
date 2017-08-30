@@ -117,17 +117,64 @@ escape_oneline_span(hbuf *ob, const uint8_t *source, size_t length)
 }
 
 /*
- * Manage hypertext linking with the groff "pdfhref" macro.
+ * Manage hypertext linking with the groff "pdfhref" macro or simply
+ * using italics.
+ * We use italics because the UR/UE macro doesn't support leading
+ * un-spaced content, so "[foo](https://foo.com)" wouldn't work.
+ * Until a solution is found, let's just italicise the link text (or
+ * link, if no text is found).
  */
 static int
-putlink(hbuf *ob, const hbuf *link, const hbuf *text, 
+putlink(hbuf *ob, const struct nstate *st,
+	const hbuf *link, const hbuf *text, 
 	struct lowdown_node *next, struct lowdown_node *prev)
 {
 	const hbuf	*buf;
 	size_t		 i, pos;
-	int		 ret = 1;
+	int		 ret = 1, usepdf;
 
-	HBUF_PUTSL(ob, ".pdfhref W ");
+	usepdf = ! st->mdoc && LOWDOWN_NROFF_GROFF & st->flags;
+
+	if (usepdf)
+		HBUF_PUTSL(ob, ".usepdf W ");
+
+	/*
+	 * If we're preceded by normal text that doesn't end with space,
+	 * then put that text into the "-P" (prefix) argument.
+	 * If we're not in groff mode, emit the data, but without -P.
+	 */
+
+	if (NULL != prev &&
+	    LOWDOWN_NORMAL_TEXT == prev->type) {
+		buf = &prev->rndr_normal_text.text;
+		i = buf->size;
+		while (i && ! isspace((int)buf->data[i - 1]))
+			i--;
+		if (i != buf->size && usepdf)
+			HBUF_PUTSL(ob, "-P \"");
+		for (pos = i; pos < buf->size; pos++) {
+			/* Be sure to escape... */
+			if ('"' == buf->data[pos]) {
+				HBUF_PUTSL(ob, "\\(dq");
+				continue;
+			} else if ('\\' == buf->data[pos]) {
+				HBUF_PUTSL(ob, "\\e");
+				continue;
+			}
+			hbuf_putc(ob, buf->data[pos]);
+		}
+		if (i != buf->size && usepdf)
+			HBUF_PUTSL(ob, "\" ");
+	}
+
+	if ( ! usepdf) {
+		HBUF_PUTSL(ob, "\\fI");
+		if (NULL == text)
+			hbuf_put(ob, link->data, link->size);
+		else
+			hbuf_put(ob, text->data, text->size);
+		HBUF_PUTSL(ob, "\\fP");
+	}
 
 	/*
 	 * If we're followed by normal text that doesn't begin with a
@@ -140,7 +187,8 @@ putlink(hbuf *ob, const hbuf *link, const hbuf *text,
 	    next->rndr_normal_text.text.size > 0 &&
 	    ' ' != next->rndr_normal_text.text.data[0]) {
 		buf = &next->rndr_normal_text.text;
-		HBUF_PUTSL(ob, "-A \"");
+		if (usepdf)
+			HBUF_PUTSL(ob, "-A \"");
 		for (pos = 0; pos < buf->size; pos++) {
 			if (isspace((int)buf->data[pos]))
 				break;
@@ -156,52 +204,28 @@ putlink(hbuf *ob, const hbuf *link, const hbuf *text,
 		}
 		ret = pos < buf->size;
 		next->rndr_normal_text.offs = pos;
-		HBUF_PUTSL(ob, "\" ");
-	}
-
-	/*
-	 * If we're preceded by normal text that doesn't end with space,
-	 * then put that text into the "-P" (prefix) argument.
-	 */
-
-	if (NULL != prev &&
-	    LOWDOWN_NORMAL_TEXT == prev->type) {
-		buf = &prev->rndr_normal_text.text;
-		i = buf->size;
-		while (i && ! isspace((int)buf->data[i - 1]))
-			i--;
-		if (i != buf->size) 
-			HBUF_PUTSL(ob, "-P \"");
-		for (pos = i; pos < buf->size; pos++) {
-			/* Be sure to escape... */
-			if ('"' == buf->data[pos]) {
-				HBUF_PUTSL(ob, "\\(dq");
-				continue;
-			} else if ('\\' == buf->data[pos]) {
-				HBUF_PUTSL(ob, "\\e");
-				continue;
-			}
-			hbuf_putc(ob, buf->data[pos]);
-		}
-		if (i != buf->size) 
+		if (usepdf)
 			HBUF_PUTSL(ob, "\" ");
 	}
 
+
 	/* Encode the URL. */
 
-	HBUF_PUTSL(ob, "-D ");
-	for (i = 0; i < link->size; i++) {
-		if ( ! isprint((int)link->data[i]) ||
-		    NULL != strchr("<>\\^`{|}\"", link->data[i]))
-			hbuf_printf(ob, "%%%.2X", link->data[i]);
+	if (usepdf) {
+		HBUF_PUTSL(ob, "-D ");
+		for (i = 0; i < link->size; i++) {
+			if ( ! isprint((int)link->data[i]) ||
+			    NULL != strchr("<>\\^`{|}\"", link->data[i]))
+				hbuf_printf(ob, "%%%.2X", link->data[i]);
+			else
+				hbuf_putc(ob, link->data[i]);
+		}
+		HBUF_PUTSL(ob, " ");
+		if (NULL == text)
+			hbuf_put(ob, link->data, link->size);
 		else
-			hbuf_putc(ob, link->data[i]);
+			hbuf_put(ob, text->data, text->size);
 	}
-	HBUF_PUTSL(ob, " ");
-	if (NULL == text)
-		hbuf_put(ob, link->data, link->size);
-	else
-		hbuf_put(ob, text->data, text->size);
 
 	HBUF_PUTSL(ob, "\n");
 	return ret;
@@ -216,34 +240,12 @@ rndr_autolink(hbuf *ob, const hbuf *link, halink_type type,
 	if (NULL == link || 0 == link->size)
 		return 1;
 
-	/*
-	 * If we're not using groff extensions, just italicise.
-	 * Otherwise, use UR/UE in -man mode and pdfhref in -ms.
-	 */
-
 	if ( ! nln)
 		if (NULL == prev ||
 		    (ob->size && '\n' != ob->data[ob->size - 1]))
 			HBUF_PUTSL(ob, "\n");
 
-	if ( ! (st->flags & LOWDOWN_NROFF_GROFF)) {
-		HBUF_PUTSL(ob, ".I\n");
-		if (hbuf_prefix(link, "mailto:") == 0)
-			escape_oneline_span(ob, 
-				link->data + 7, link->size - 7);
-		else
-			escape_oneline_span(ob, 
-				link->data, link->size);
-		HBUF_PUTSL(ob, "\n.R\n");
-		return 1;
-	} else if (st->mdoc) {
-		HBUF_PUTSL(ob, ".UR ");
-		hbuf_put(ob, link->data, link->size);
-		HBUF_PUTSL(ob, "\n.UE\n");
-		return 1;
-	}
-
-	return putlink(ob, link, NULL, next, prev);
+	return putlink(ob, st, link, NULL, next, prev);
 }
 
 static void
@@ -339,7 +341,6 @@ rndr_triple_emphasis(hbuf *ob, const hbuf *content)
 	return 1;
 }
 
-
 static int
 rndr_emphasis(hbuf *ob, const hbuf *content)
 {
@@ -406,12 +407,11 @@ rndr_header(hbuf *ob, const hbuf *content, int level,
 
 static int
 rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, 
-	const hbuf *title, const struct nstate *st, 
-	struct lowdown_node *prev, struct lowdown_node *next, int nln)
+	const struct nstate *st, struct lowdown_node *prev, 
+	struct lowdown_node *next, int nln)
 {
 
 	if ((NULL == content || 0 == content->size) &&
-	    (NULL == title || 0 == title->size) &&
 	    (NULL == link || 0 == link->size))
 		return 1;
 
@@ -420,32 +420,7 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link,
 		    (ob->size && '\n' != ob->data[ob->size - 1]))
 			HBUF_PUTSL(ob, "\n");
 
-	if ( ! (st->flags & LOWDOWN_NROFF_GROFF)) {
-		HBUF_PUTSL(ob, ".I\n");
-		if (NULL != content && content->size)
-			hbuf_put(ob, content->data, content->size);
-		else if (NULL != title && title->size)
-			escape_block(ob, title->data, title->size);
-		else if (NULL != link && link->size)
-			escape_block(ob, link->data, link->size);
-		if (ob->size && '\n' != ob->data[ob->size - 1])
-			HBUF_PUTSL(ob, "\n");
-		if ( ! st->mdoc)
-			HBUF_PUTSL(ob, ".R\n");
-		return 1;
-	} else if (st->mdoc) {
-		HBUF_PUTSL(ob, ".UR ");
-		if (NULL != link && link->size)
-			escape_oneline_span(ob, 
-				link->data, link->size);
-		HBUF_PUTSL(ob, "\n");
-		if (NULL != content && content->size)
-			hbuf_put(ob, content->data, content->size);
-		HBUF_PUTSL(ob, "\n.UE\n");
-		return 1;
-	}
-
-	return putlink(ob, link, content, next, prev);
+	return putlink(ob, st, link, content, next, prev);
 }
 
 static void
@@ -1061,7 +1036,6 @@ rndr(hbuf *ob, const struct nstate *ref, struct lowdown_node *root)
 	case (LOWDOWN_LINK):
 		keepnext = rndr_link(ob, tmp,
 			&root->rndr_link.link,
-			&root->rndr_link.title,
 			ref, prev, next, pnln);
 		break;
 	case (LOWDOWN_TRIPLE_EMPHASIS):
