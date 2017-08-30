@@ -217,17 +217,26 @@
 		<header>
 			<h1>0.2.0</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2017-07-18">2017-07-18</time>
+			<time datetime="2017-08-30">2017-08-30</time>
 		</header>
 		<aside>
 			<p>
 				Significant internal re-write, moving from <q>in-line</q> production of output to production of a parse tree,
 				which in turn is used to create output.
 				This removed a tremendous amount of cruft from <i>document.c</i>, including several structural elements such as pools and stacks.
-				The only notable difference is that PDF output with hyperlinks might look better.
+				The only notable difference is that PDF output with hyperlinks looks better.
+				(HTML output should look the same.)
 			</p>
 			<p>
 				Add <code>html-head-ids</code> as a tunable output option for HTML.
+			</p>
+			<p>
+				Add the <code>CSS</code> metadata key recognised in the HTML standalone output.
+				Also, document the accepted metadata keys better in the manpage.
+			</p>
+			<p>
+				The library functions have been simplified, with the standalone functions being removed in favour of output options.
+				The next releases will include more library functions currently undocumented in the header file.
 			</p>
 		</aside>
 	</article>
