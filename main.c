@@ -243,7 +243,8 @@ main(int argc, char *argv[])
 		LOWDOWN_NROFF_SKIP_HTML |
 		LOWDOWN_HTML_SKIP_HTML |
 		LOWDOWN_NROFF_GROFF |
-		LOWDOWN_SMARTY;
+		LOWDOWN_SMARTY |
+		LOWDOWN_HTML_HEAD_IDS;
 
 	sandbox_pre();
 
