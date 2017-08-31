@@ -41,17 +41,13 @@ struct	hentry {
 	TAILQ_ENTRY(hentry) entries;
 };
 
-typedef struct html_state {
-	struct {
-		int header_count;
-		int current_level;
-		int level_offset;
-		int nesting_level;
-	} toc_data;
+/*
+ * Our internal state object.
+ */
+struct 	hstate {
 	TAILQ_HEAD(, hentry) headers_used;
-	unsigned int flags;
-	unsigned int feats;
-} html_state;
+	unsigned int flags; /* output flags */
+};
 
 static void
 escape_html(hbuf *ob, const uint8_t *source, size_t length)
@@ -199,7 +195,7 @@ rndr_linebreak(hbuf *ob, void *data)
  * This will reference-count the header so we don't have duplicates.
  */
 static void
-rndr_header_id(hbuf *ob, const hbuf *header, html_state *state)
+rndr_header_id(hbuf *ob, const hbuf *header, struct hstate *state)
 {
 	struct hentry	*hentry;
 
@@ -245,16 +241,12 @@ rndr_header_id(hbuf *ob, const hbuf *header, html_state *state)
 static void
 rndr_header(hbuf *ob, const hbuf *content, int level, void *data)
 {
-	html_state	*state = data;
+	struct hstate	*state = data;
 
 	if (ob->size)
 		hbuf_putc(ob, '\n');
 
-	if (level <= state->toc_data.nesting_level) {
-		hbuf_printf(ob, "<h%d id=\"toc_%d\">", 
-			level, state->toc_data.header_count);
-		state->toc_data.header_count++;
-	} else if (NULL != content && content->size &&
+	if (NULL != content && content->size &&
 	   	   LOWDOWN_HTML_HEAD_IDS & state->flags) {
 		hbuf_printf(ob, "<h%d id=\"", level);
 		rndr_header_id(ob, content, state);
@@ -327,7 +319,7 @@ rndr_listitem(hbuf *ob, const hbuf *content, hlist_fl flags, void *data, size_t 
 static void
 rndr_paragraph(hbuf *ob, const hbuf *content, void *data)
 {
-	html_state *state = data;
+	struct hstate *state = data;
 	size_t i = 0;
 
 	if (ob->size) hbuf_putc(ob, '\n');
@@ -373,7 +365,7 @@ rndr_paragraph(hbuf *ob, const hbuf *content, void *data)
 static void
 rndr_raw_block(hbuf *ob, const hbuf *text, void *data)
 {
-	html_state *state = data;
+	struct hstate *state = data;
 	size_t org, sz;
 
 	if (NULL == text)
@@ -477,7 +469,7 @@ rndr_image(hbuf *ob, const hbuf *link, const hbuf *title,
 static int
 rndr_raw_html(hbuf *ob, const hbuf *text, void *data)
 {
-	html_state *state = data;
+	struct hstate *state = data;
 
 	/* ESCAPE overrides SKIP_HTML. It doesn't look to see if
 	 * there are any valid tags, just escapes all of them. */
@@ -745,7 +737,7 @@ rndr_doc_header_multi(hbuf *ob, int href,
 }
 
 static void
-rndr_doc_footer(hbuf *ob, const struct html_state *st)
+rndr_doc_footer(hbuf *ob, const struct hstate *st)
 {
 
 	if (LOWDOWN_STANDALONE & st->flags)
@@ -755,7 +747,7 @@ rndr_doc_footer(hbuf *ob, const struct html_state *st)
 static void
 rndr_doc_header(hbuf *ob, 
 	const struct lowdown_meta *m, size_t msz, 
-	const struct html_state *st)
+	const struct hstate *st)
 {
 	const char	*author = NULL, *title = "Untitled article", 
 	     	 	*css = NULL;
@@ -959,17 +951,12 @@ lowdown_html_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
 void *
 hrend_html_new(const struct lowdown_opts *opts)
 {
-	html_state *state;
+	struct hstate *state;
 
-	/* Prepare the state pointer */
-	state = xmalloc(sizeof(html_state));
-	memset(state, 0x0, sizeof(html_state));
+	state = xcalloc(1, sizeof(struct hstate));
+
 	TAILQ_INIT(&state->headers_used);
-
 	state->flags = NULL == opts ? 0 : opts->oflags;
-	state->feats = NULL == opts ? 0 : opts->feat;
-	/* TODO: not yet used. */
-	state->toc_data.nesting_level = 0;
 
 	return state;
 }
@@ -980,7 +967,7 @@ hrend_html_new(const struct lowdown_opts *opts)
 void
 hrend_html_free(void *renderer)
 {
-	html_state	*state = renderer;
+	struct hstate	*state = renderer;
 	struct hentry	*hentry;
 
 	while (NULL != (hentry = TAILQ_FIRST(&state->headers_used))) {
