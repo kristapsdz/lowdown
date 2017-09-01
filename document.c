@@ -3302,12 +3302,9 @@ lowdown_doc_new(const struct lowdown_opts *opts)
 
 	doc = xcalloc(1, sizeof(hdoc));
 
-	doc->current = NULL;
 	doc->opts = opts;
 	doc->link_nospace = NULL != opts && 
 		LOWDOWN_NROFF == opts->type;
-	doc->m = NULL;
-	doc->msz = 0;
 
 	memset(doc->active_char, 0, 256);
 
@@ -3339,7 +3336,6 @@ lowdown_doc_new(const struct lowdown_opts *opts)
 		doc->active_char['$'] = MD_CHAR_MATH;
 
 	doc->ext_flags = extensions;
-	doc->in_link_body = 0;
 
 	return doc;
 }
@@ -3527,6 +3523,11 @@ lowdown_doc_parse(hdoc *doc, const uint8_t *data,
 	int		 footnotes_enabled;
 	const uint8_t	*sv;
 	struct lowdown_node *n, *root;
+
+	doc->current = NULL;
+	doc->m = NULL;
+	doc->msz = 0;
+	doc->in_link_body = 0;
 
 	text = hbuf_new(64);
 	root = pushnode(doc, LOWDOWN_ROOT);
