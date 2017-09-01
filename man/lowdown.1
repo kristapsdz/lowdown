@@ -1,0 +1,403 @@
+.\"	$Id$
+.\"
+.\" Copyright (c) 2016--2017 Kristaps Dzonsons <kristaps@bsd.lv>
+.\"
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\"
+.Dd $Mdocdate$
+.Dt LOWDOWN 1
+.Os
+.Sh NAME
+.Nm lowdown
+.Nd simple markdown translator
+.Sh SYNOPSIS
+.Nm lowdown
+.Op Fl sv
+.Op Fl D Ar feature
+.Op Fl d Ar feature
+.Op Fl E Ar feature
+.Op Fl e Ar feature
+.Op Fl o Ar file
+.Op Fl T Ar mode
+.Op Ar file
+.Nm lowdown
+.Op Fl v
+.Op Fl o Ar file
+.Op Fl X Ar keyword
+.Op Ar file
+.Sh DESCRIPTION
+The
+.Nm
+utility translates from markdown into HTML5 in XML mode (the default) or
+roff using the
+.Fl ms
+or
+.Fl man
+macro packages.
+If not given a
+.Ar file ,
+or if
+.Ar file
+is
+.Dq - ,
+.Nm
+reads from standard input.
+The results are written to standard output.
+Its arguments are as follows:
+.Bl -tag -width Ds
+.It Fl D Ar feature
+Disable the given
+.Ar feature
+.Pq see Sx Output features .
+See
+.Fl E .
+You can specify this multiple times for different features.
+.It Fl d Ar feature
+Disable the given
+.Ar feature
+.Pq see Sx Input features .
+See
+.Fl e .
+You can specify this multiple times for different features.
+.It Fl E Ar feature
+Enable the given
+.Ar feature
+.Pq see Sx Output features .
+See
+.Fl D .
+You can specify this multiple times for different features.
+.It Fl e Ar feature
+Enable the given
+.Ar feature
+.Pq see Sx Input features .
+See
+.Fl d .
+You can specify this multiple times for different features.
+.It Fl o Ar file
+Send output to
+.Ar file
+unless it's
+.Dq - ,
+in which case fall back to the default of standard output.
+.It Fl s
+Standalone mode.
+This emits an HTML5 or roff document envelope surrounding the output.
+See the
+.Ar metadata
+key of
+.Sx Input features
+on providing information to the document envelope.
+.It Fl T Ar mode
+The output mode.
+This may be
+.Ar html
+for HTML5 output,
+.Ar ms
+for roff output using the classic (i.e., no-extension)
+.Fl ms
+package and needing table support, or
+.Ar man
+for roff ouput using the classic
+.Fl man
+package.
+A debugging output mode,
+.Ar tree ,
+shows the parse tree of the input document.
+.It Fl v
+Verbose mode.
+Prints out warnings regarding Markdown syntax conformity and other
+warnings.
+.It Fl X Ar keyword
+Instead of converting the file, extract the given metadata keyword and
+exit.
+These will be escaped according to the output mode
+.Fl T ;
+for example, a title of
+.Dq <foo>
+in
+.Ar html
+mode will be extracted as
+.Dq &lt;foo&gt; .
+In either
+.Ar ms
+or
+.Ar man ,
+a title of
+.Dq .foo\ebar
+will be
+.Dq \e&.foo\eebar .
+.El
+.Pp
+For best results, use the
+.Fl T Ar html
+output, as it includes graphics and equations.
+The
+.Ar ms
+and
+.Ar man
+modes will elide graphics and equations.
+.Pp
+By default,
+.Nm
+enables the
+.Ar autolink ,
+.Ar fenced ,
+.Ar footnotes ,
+.Ar metadata ,
+.Ar strike ,
+.Ar super ,
+and
+.Ar tables
+features.
+You can see a full list of features in
+.Sx Input features .
+The
+.Ar html-skiphtml ,
+.Ar html-head-ids ,
+.Ar nroff-groff ,
+.Ar nroff-skiphtml ,
+and
+.Ar smarty
+output features are enabled by default.
+See
+.Sx Output features
+for a full list.
+.Ss Input features
+There are a number of Markdown (and Markdown extension) features supported by
+.Nm .
+These can be enabled with
+.Fl e
+and disabled with
+.Fl d .
+They are as follows:
+.Bl -tag -width Ds
+.It Ar autolink
+Autolink
+.Li http ,
+.Li https ,
+.Li ftp ,
+.Li mailto ,
+and relative links or link fragments.
+.It Ar fenced
+Allow for GFM fenced (language-specific) code blocks.
+.It Ar footnotes
+MMD style footnotes.
+This only supports one-liner footnotes on the same line as the footnote
+definition (not the in-line referent).
+.It Ar hilite
+Highlight.
+Do not use this option.
+.It Ar math
+Recognise single-dollar math mode.
+.It Ar mathexp
+Recognise double-dollar math mode.
+This only works if
+.Ar math
+has also been enabled.
+.It Ar metadata
+Accept MMD metadata.
+For the first paragraph to count as meta-data, the first line must have
+a colon in it.
+Otherwise it's considered a regular paragraph.
+Meta-data is escaped according to the output mode; and if the
+.Ar smarty
+flag is set, also smartypantsed.
+.It Ar nocodeind
+Do not indent code blocks.
+.It Ar nointem
+Disable emphasis with links.
+.It Ar sphd
+Require a space between hash marks and header.
+.It Ar strike
+Strikethrough support.
+.It Ar super
+Allow for super-scripts.
+This accepts foo^bar, which puts the parts following the caret until
+whitespace in superscripts; or foo^(bar), which puts only the parts in
+parenthesis.
+.It Ar tables
+Allow for GFM tables.
+.El
+.Pp
+The parser also accepts link titles (quoted alongside the link address)
+and image dimensions (=WxH or =Wx).
+Both may also be specified, in any order.
+For example,
+.Li ![alt](url "title" =23x24) .
+These are fairly standard Markdown extensions.
+.Pp
+If the
+.Ar metadata
+input feature is requested, the following metadata keys are used when in
+standalone
+.Pq Fl s
+mode:
+.Bl -tag -width Ds
+.It Li date
+Document date in ISO-8601 YYYY-MM-DD or YYYY/MM/DD format.
+Overriden by
+.Li rcsdate .
+Defaults to current date.
+Only used in
+.Fl T Ar man
+and
+.Fl T Ar ms
+mode.
+.It Li rcsdate
+Document date in RCS date format.
+Overrides
+.Li date .
+Defaults to current date.
+Only used in
+.Fl T Ar man
+and
+.Fl T Ar ms
+mode.
+.It Li title
+Document title, defaulting to
+.Dq Untitled article .
+Used in all output modes.
+.It Li author
+Document author.
+Multiple authors may be separated by more than one space (including
+newlines).
+Overrides
+.Li rcsauthor .
+Used in all output modes.
+.It Li rcsauthor
+Document author in RCS author format.
+Overriden by
+.Li author .
+Used in all output modes.
+.It Li css
+A CSS file included in the HTML5 document head.
+Multiple CSS files (in order) may be separated by more than one space
+(including newlines).
+Only used in
+.Fl T Ar html
+mode.
+.El
+.Ss Output features
+.Nm
+allows for limited control over output features.
+These can be enabled with
+.Fl E
+and disabled with
+.Fl D .
+They are as follows, prefixed by
+.Dq html
+or
+.Dq nroff
+depending upon the output mode:
+.Bl -tag -width Ds
+.It Ar html-escape
+Leaves in-line HTML in its source form as if it were opaque text.
+.It Ar html-hardwrap
+Retain line-breaks within paragraphs.
+.It Ar html-skiphtml
+Do not render in-document HTML at all.
+Note that
+.Ar html-escape
+takes priority if both are specified.
+Text within HTML elements remains.
+.It Ar html-head-ids
+Give each header an identifier created by encoding its content.
+.It Ar nroff-numbered
+Use numbered sections.
+Only applies to the
+.Fl T Ar ms
+output mode.
+.It Ar nroff-groff
+Use GNU extensions (i.e., for
+.Xr groff 1 )
+when rendering output.
+You'll need to include
+.Fl m Ar pdfmark
+when invoking
+.Xr groff 1
+for formatting links.
+.It Ar nroff-hardwrap
+Retain line-breaks within paragraphs.
+.It Ar nroff-skiphtml
+Do not render in-document HTML at all.
+Text within HTML elements remains.
+.It Ar smarty
+Don't use
+.Dq smartypants
+formatting.
+.Pq Applies to all output modes.
+.El
+.Sh EXAMPLE
+To emit a standalone HTML5 document from a file
+.Pa foo.md :
+.Pp
+.Dl lowdown -s foo.md > foo.html
+.Pp
+To do the same but using
+.Xr groff 1
+to format as a PS file:
+.Bd -literal -offset indent
+lowdown -s -Tms foo.md | \e
+  groff -t -ms -mpdfmark > foo.ps
+.Ed
+.Pp
+Note the
+.Fl t :
+since
+.Nm
+may emit tables, you'll need it.
+Moreover, the
+.Fl m Ar pdfmark
+is for the groff extensions.
+Alternatively, using only
+.Xr mandoc 1 :
+.Pp
+.Dl lowdown -sT man foo.md | mandoc -Tps > foo.ps
+.Pp
+If your document uses UTF-8 without the byte-order mark, you may need to
+specifically set the encoding in either formatter:
+.Pp
+.Dl lowdown -sT man foo.md | mandoc -Tps -Kutf-8 > foo.ps
+.Bd -literal -offset indent
+lowdown -sT ms foo.md | \e
+  groff -k -Dutf8 -t -ms -mpdfmark > foo.ps
+.Ed
+.Pp
+To extract the HTML-escaped title from a file's metadata:
+.Pp
+.Dl lowdown -X title foo.md
+.Sh EXIT STATUS
+.Ex -std
+.Pp
+If the
+.Fl X
+flag is used,
+.Nm
+exits with an error if the given keyword is not found.
+.Sh STANDARDS
+.Nm
+implements the classic Markdown specification along with some
+extensions.
+See
+.Sx Input features
+and
+.Sx Output features
+for a list.
+.Sh AUTHORS
+The
+.Nm
+utility was forked by
+.An Kristaps Dzonsons ,
+.Mt kristaps@bsd.lv ,
+from
+.Lk https://github.com/hoedown/hoedown hoedown .
