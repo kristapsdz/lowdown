@@ -284,11 +284,11 @@ int	 lowdown_file(const struct lowdown_opts *,
  * ways.
  */
 
-hdoc 	*hdoc_new(const struct lowdown_opts *);
+hdoc 	*lowdown_doc_new(const struct lowdown_opts *);
 struct lowdown_node
-	*hdoc_parse(hdoc *, const uint8_t *, size_t, 
+	*lowdown_doc_parse(hdoc *, const uint8_t *, size_t, 
 		struct lowdown_meta **, size_t *);
-void	 hdoc_free(hdoc *);
+void	 lowdown_doc_free(hdoc *);
 
 void	 hrend_html_free(void *);
 void	 hrend_nroff_free(void *);
