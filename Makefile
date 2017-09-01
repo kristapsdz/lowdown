@@ -29,6 +29,7 @@ HTMLS		 = archive.html \
 		   man/lowdown.1.html \
 		   man/lowdown.3.html \
 		   man/lowdown_buf.3.html \
+		   man/lowdown_doc_new.3.html \
 		   man/lowdown_errstr.3.html \
 		   man/lowdown_file.3.html
 PDFS		 = index.pdf README.pdf
@@ -36,6 +37,7 @@ MDS		 = index.md README.md
 CSSS		 = template.css mandoc.css
 MAN3S		 = man/lowdown.3 \
 		   man/lowdown_buf.3 \
+		   man/lowdown_doc_new.3 \
 		   man/lowdown_errstr.3 \
 		   man/lowdown_file.3
 
