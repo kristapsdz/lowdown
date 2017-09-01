@@ -23,10 +23,21 @@ COMPAT_OBJS	 = compat_err.o \
 		   compat_strtonum.o
 
 WWWDIR		 = /var/www/vhosts/kristaps.bsd.lv/htdocs/lowdown
-HTMLS		 = archive.html index.html lowdown.1.html lowdown.3.html README.html
+HTMLS		 = archive.html \
+		   index.html \
+		   README.html \
+		   man/lowdown.1.html \
+		   man/lowdown.3.html \
+		   man/lowdown_buf.3.html \
+		   man/lowdown_errstr.3.html \
+		   man/lowdown_file.3.html
 PDFS		 = index.pdf README.pdf
 MDS		 = index.md README.md
 CSSS		 = template.css mandoc.css
+MAN3S		 = man/lowdown.3 \
+		   man/lowdown_buf.3 \
+		   man/lowdown_errstr.3 \
+		   man/lowdown_file.3
 
 all: lowdown
 
@@ -55,8 +66,8 @@ install: all
 	install -m 0755 lowdown $(DESTDIR)$(BINDIR)
 	install -m 0644 liblowdown.a $(DESTDIR)$(LIBDIR)
 	install -m 0644 lowdown.h $(DESTDIR)$(INCLUDEDIR)
-	install -m 0644 lowdown.1 $(DESTDIR)$(MANDIR)/man1
-	install -m 0644 lowdown.3 $(DESTDIR)$(MANDIR)/man3
+	install -m 0644 man/lowdown.1 $(DESTDIR)$(MANDIR)/man1
+	install -m 0644 $(MAN3S) $(DESTDIR)$(MANDIR)/man3
 
 index.xml README.xml index.pdf README.pdf: lowdown
 
@@ -88,7 +99,9 @@ lowdown.tar.gz.sha512: lowdown.tar.gz
 
 lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/
-	install -m 0644 *.c *.h Makefile *.1 *.3 .dist/lowdown-$(VERSION)
+	mkdir -p .dist/lowdown-$(VERSION)/man
+	install -m 0644 *.c *.h Makefile .dist/lowdown-$(VERSION)
+	install -m 0644 man/*.1 man/*.3 .dist/lowdown-$(VERSION)/man
 	install -m 0755 configure .dist/lowdown-$(VERSION)
 	( cd .dist/ && tar zcf ../$@ ./ )
 	rm -rf .dist/
