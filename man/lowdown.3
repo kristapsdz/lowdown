@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate: August 30 2017 $
+.Dd $Mdocdate: September 1 2017 $
 .Dt LOWDOWN 3
 .Os
 .Sh NAME
@@ -46,9 +46,9 @@ and
 then a series of low-level interfaces directly to the parsers and
 renderers.
 .Pp
-All functions use the
+Most functions use the
 .Vt struct lowdown_opts
-structure to manage input and output features.
+structure to manage features.
 It has the following fields:
 .Bl -tag -width Ds
 .It Va arg
@@ -111,7 +111,9 @@ flag is set, also smartypantsed.
 .Pp
 The default value is zero (none).
 .It Va msg
-Message function for logging messages.
+Message function
+.Pq Vt lowdown_msg
+for logging messages.
 If
 .Dv NULL ,
 messages are not logged.
@@ -264,3 +266,4 @@ library was forked by
 .An Kristaps Dzonsons Aq Mt kristaps@bsd.lv
 from
 .Lk https://github.com/hoedown/hoedown hoedown .
+It has been considerably changed since then.

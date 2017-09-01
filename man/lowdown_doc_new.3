@@ -15,65 +15,30 @@
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
 .Dd $Mdocdate: September 1 2017 $
-.Dt LOWDOWN_FILE 3
+.Dt LOWDOWN_DOC_NEW 3
 .Os
 .Sh NAME
-.Nm lowdown_file
-.Nd parse a Markdown file into formatted output
+.Nm lowdown_doc_new
+.Nd allocate a Markdown parser
 .Sh LIBRARY
 .Lb liblowdown
 .Sh SYNOPSIS
 .In stdio.h
 .In lowdown.h
-.Ft int
-.Fo lowdown_file
+.Ft hdoc *
+.Fo lowdown_doc_new
 .Fa "const struct lowdown_opts *opts"
-.Fa "FILE *in"
-.Fa "unsigned char **ret"
-.Fa "size_t *retsz"
-.Fa "struct lowdown_meta **meta"
-.Fa "size_t *metasz"
 .Fc
 .Sh DESCRIPTION
 The
-.Nm
-function is a convenience function to parse a Markdown file stream
-.Fa in
-into an output buffer
-.Fa ret
-of size
-.Fa retsz
-in one of several formats defined in
+.Fn
+function allocates a Markdown parser instance with configuration
 .Fa opts .
-If metadata parsing is enabled in the options,
-.Fa meta
-is returned as an array of metadata of size
-.Fa metasz
-rendered in the given output format.
-See
-.Xr lowdown 3
-for a description of the
-.Fa opts
-variable and metadata.
-.Pp
-Internally,
-.Nm
-invokes
-.Xr lowdown_buf 3
-with the contents of
-.Fa in .
-.Pp
-The caller is responsible for freeing the output buffer and metadata
-contents.
+It must be freed with a call to
+.Xr lowdown_doc_free 3 .
+The returned pointer may be used with multiple invocations of
+.Xr lowdown_doc_parse 3 .
 .Sh RETURN VALUES
-Returns zero on failure, non-zero on success.
-Failure occurs when the file read failed.
+Always returns a valid pointer.
 .Sh SEE ALSO
 .Xr lowdown 3
-.Sh CAVEATS
-The
-.Nm
-function will invoke
-.Xr exit 3
-if internal memory allocation fails.
-There is no way to catch this condition.
