@@ -44,6 +44,9 @@ lowdown_errstr(enum lowdown_err err)
 	return(errs[err]);
 }
 
+/*
+ * Documented in lowdown_buf(3).
+ */
 void
 lowdown_buf(const struct lowdown_opts *opts,
 	const unsigned char *data, size_t datasz,
@@ -65,14 +68,14 @@ lowdown_buf(const struct lowdown_opts *opts,
 
 	switch (t) {
 	case (LOWDOWN_HTML):
-		renderer = hrend_html_new(opts);
+		renderer = lowdown_html_new(opts);
 		break;
 	case (LOWDOWN_MAN):
 	case (LOWDOWN_NROFF):
-		renderer = hrend_nroff_new(opts);
+		renderer = lowdown_nroff_new(opts);
 		break;
 	case (LOWDOWN_TREE):
-		renderer = hrend_tree_new();
+		renderer = lowdown_tree_new();
 		break;
 	}
 
@@ -84,16 +87,16 @@ lowdown_buf(const struct lowdown_opts *opts,
 	switch (t) {
 	case (LOWDOWN_HTML):
 		lowdown_html_rndr(ob, renderer, n);
-		hrend_html_free(renderer);
+		lowdown_html_free(renderer);
 		break;
 	case (LOWDOWN_MAN):
 	case (LOWDOWN_NROFF):
 		lowdown_nroff_rndr(ob, renderer, n);
-		hrend_nroff_free(renderer);
+		lowdown_nroff_free(renderer);
 		break;
 	case (LOWDOWN_TREE):
 		lowdown_tree_rndr(ob, renderer, n);
-		hrend_tree_free(renderer);
+		lowdown_tree_free(renderer);
 		break;
 	}
 
@@ -130,9 +133,9 @@ lowdown_buf(const struct lowdown_opts *opts,
 	    NULL != opts && LOWDOWN_SMARTY & opts->oflags) {
 		spb = hbuf_new(DEF_OUNIT);
 		if (LOWDOWN_HTML == t)
-			hsmrt_html(spb, ob->data, ob->size);
+			lowdown_html_smrt(spb, ob->data, ob->size);
 		else
-			hsmrt_nroff(spb, ob->data, ob->size);
+			lowdown_nroff_smrt(spb, ob->data, ob->size);
 		*res = spb->data;
 		*rsz = spb->size;
 		spb->data = NULL;
@@ -140,11 +143,11 @@ lowdown_buf(const struct lowdown_opts *opts,
 		for (i = 0; i < *msz; i++) {
 			spb = hbuf_new(DEF_OUNIT);
 			if (LOWDOWN_HTML == t)
-				hsmrt_html(spb, 
+				lowdown_html_smrt(spb, 
 					(uint8_t *)(*m)[i].value, 
 					strlen((*m)[i].value));
 			else
-				hsmrt_nroff(spb, 
+				lowdown_nroff_smrt(spb, 
 					(uint8_t *)(*m)[i].value, 
 					strlen((*m)[i].value));
 			free((*m)[i].value);
@@ -160,6 +163,9 @@ lowdown_buf(const struct lowdown_opts *opts,
 	hbuf_free(ob);
 }
 
+/*
+ * Documented in lowdown_file(3).
+ */
 int
 lowdown_file(const struct lowdown_opts *opts,
 	FILE *fin, unsigned char **res, size_t *rsz,

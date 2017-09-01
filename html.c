@@ -941,7 +941,7 @@ lowdown_html_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
 
 /* allocates a regular HTML renderer */
 void *
-hrend_html_new(const struct lowdown_opts *opts)
+lowdown_html_new(const struct lowdown_opts *opts)
 {
 	struct hstate *state;
 
@@ -957,7 +957,7 @@ hrend_html_new(const struct lowdown_opts *opts)
  * Deallocate an HTML renderer. 
  */
 void
-hrend_html_free(void *renderer)
+lowdown_html_free(void *renderer)
 {
 	struct hstate	*state = renderer;
 	struct hentry	*hentry;

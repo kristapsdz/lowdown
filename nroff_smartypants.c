@@ -433,7 +433,7 @@ sm_cb_dquote(hbuf *ob, struct sm_dat *smrt,
  * Process a nroff snippet using SmartyPants for smart punctuation.
  */
 void
-hsmrt_nroff(hbuf *ob, const uint8_t *text, size_t size)
+lowdown_nroff_smrt(hbuf *ob, const uint8_t *text, size_t size)
 {
 	size_t 		 i, org, bscan;
 	struct sm_dat	 smrt;
