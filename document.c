@@ -125,7 +125,6 @@ struct 	hdoc {
 	unsigned int	 ext_flags;
 	size_t	 	 cur_par; /* XXX: not used */
 	int		 in_link_body;
-	int		 link_nospace; /* XXX: remove */
 	struct lowdown_meta *m; /* document meta-data */
 	size_t		 msz; /* entries in "m" */
 	struct lowdown_node *current;
@@ -3303,9 +3302,6 @@ lowdown_doc_new(const struct lowdown_opts *opts)
 	doc = xcalloc(1, sizeof(hdoc));
 
 	doc->opts = opts;
-	doc->link_nospace = NULL != opts && 
-		LOWDOWN_NROFF == opts->type;
-
 	memset(doc->active_char, 0, 256);
 
 	doc->active_char['*'] = MD_CHAR_EMPHASIS;
