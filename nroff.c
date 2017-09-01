@@ -1094,7 +1094,7 @@ lowdown_nroff_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
 }
 
 void *
-hrend_nroff_new(const struct lowdown_opts *opts)
+lowdown_nroff_new(const struct lowdown_opts *opts)
 {
 	struct nstate 	*state;
 
@@ -1109,7 +1109,7 @@ hrend_nroff_new(const struct lowdown_opts *opts)
 }
 
 void
-hrend_nroff_free(void *data)
+lowdown_nroff_free(void *data)
 {
 
 	free(data);

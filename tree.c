@@ -134,14 +134,14 @@ lowdown_tree_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
 }
 
 void *
-hrend_tree_new(void)
+lowdown_tree_new(void)
 {
 
 	return(NULL);
 }
 
 void
-hrend_tree_free(void *renderer)
+lowdown_tree_free(void *renderer)
 {
 	/* Do nothing. */
 }
