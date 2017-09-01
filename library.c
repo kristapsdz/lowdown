@@ -60,7 +60,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 	/* Create our buffers, renderer, and document. */
 
 	ob = hbuf_new(DEF_OUNIT);
-	document = hdoc_new(opts);
+	document = lowdown_doc_new(opts);
 	t = NULL == opts ? LOWDOWN_HTML : opts->type;
 
 	switch (t) {
@@ -78,8 +78,8 @@ lowdown_buf(const struct lowdown_opts *opts,
 
 	/* Parse the output and free resources. */
 
-	n = hdoc_parse(document, data, datasz, m, msz);
-	hdoc_free(document);
+	n = lowdown_doc_parse(document, data, datasz, m, msz);
+	lowdown_doc_free(document);
 
 	switch (t) {
 	case (LOWDOWN_HTML):
