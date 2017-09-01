@@ -1,0 +1,266 @@
+.\"	$Id$
+.\"
+.\" Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
+.\"
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\"
+.Dd $Mdocdate$
+.Dt LOWDOWN 3
+.Os
+.Sh NAME
+.Nm lowdown
+.Nd simple markdown translator library
+.Sh LIBRARY
+.Lb liblowdown
+.Sh SYNOPSIS
+.In stdio.h
+.In lowdown.h
+.Vt "struct lowdown_opts"
+.Vt "struct lowdown_metadata"
+.Vt "enum lowdown_err"
+.Ft "typedef void"
+.Fo "(*lowdown_msg)"
+.Fa "enum lowdown_err err"
+.Fa "void *arg"
+.Fa "const char *msg"
+.Fc
+.Sh DESCRIPTION
+The
+.Nm lowdown
+library parses Markdown into HTML or roff
+.Pq Fl ms No or Fl man No macro sets .
+It consists of both a high-level interface consisting of
+.Xr lowdown_buf 3
+and
+.Xr lowdown_file 3 ,
+then a series of low-level interfaces directly to the parsers and
+renderers.
+.Pp
+All functions use the
+.Vt struct lowdown_opts
+structure to manage input and output features.
+It has the following fields:
+.Bl -tag -width Ds
+.It Va arg
+Pointer passed to
+.Va msg ,
+if not
+.Dv NULL .
+.It Va feat
+Features used during the parse.
+This bit-field may have the following bits OR'd:
+.Pp
+.Bl -tag -width Ds -compact
+.It Dv LOWDOWN_TABLES
+Allow for GFM tables.
+.It Dv LOWDOWN_FENCED
+Allow for GFM fenced (language-specific) code blocks.
+.It Dv LOWDOWN_FOOTNOTES
+MMD style footnotes.
+This only supports one-liner footnotes on the same line as the footnote
+definition (not the in-line referent).
+.It Dv LOWDOWN_AUTOLINK
+Autolink
+.Li http ,
+.Li https ,
+.Li ftp ,
+.Li mailto ,
+and relative links or link fragments.
+.It Dv LOWDOWN_STRIKE
+Strikethrough support.
+.It Dv LOWDOWN_HILITE
+Highlight.
+Do not use this option.
+.It Dv LOWDOWN_SUPER
+Allow for super-scripts.
+This accepts foo^bar, which puts the parts following the caret until
+whitespace in superscripts; or foo^(bar), which puts only the parts in
+parenthesis.
+.It Dv LOWDOWN_MATH
+Recognise single-dollar math mode.
+.It Dv LOWDOWN_NOINTEM
+Disable emphasis with links.
+.It Dv LOWDOWN_SPHD
+Require a space between hash marks and header.
+.It Dv LOWDOWN_MATHEXP
+Recognise double-dollar math mode.
+This only works if
+.Dv LOWDOWN_MATH
+has also been set.
+.It Dv LOWDOWN_NOCODEIND
+Do not indent code blocks.
+.It Dv LOWDOWN_METADATA
+Accept MMD metadata.
+For the first paragraph to count as meta-data, the first line must have
+a colon in it.
+Otherwise it's considered a regular paragraph.
+Meta-data is escaped according to the output mode; and if the
+.Dv LOWDOWN_SMARTY
+flag is set, also smartypantsed.
+.El
+.Pp
+The default value is zero (none).
+.It Va msg
+Message function for logging messages.
+If
+.Dv NULL ,
+messages are not logged.
+.It Va ofeat
+Features used by the output generators.
+This bit-field may have the following enabled.
+Note that bits are by definition specific to an output
+.Va type .
+.Pp
+For
+.Dv LOWDOWN_HTML :
+.Pp
+.Bl -tag -width Ds -compact
+.It Dv LOWDOWN_HTML_SKIP_HTML
+Do not render in-document HTML at all.
+Note that
+.Dv LOWDOWN_HTML_ESCAPE
+takes priority if both are specified.
+Text within HTML elements remains.
+.It Dv LOWDOWN_HTML_ESCAPE
+Leaves in-line HTML in its source form as if it were opaque text.
+Takes precedence over
+.Dv LOWDOWN_HTML_ESCAPE .
+.It Dv LOWDOWN_HTML_HARD_WRAP
+Retain line-breaks within paragraphs.
+.It Dv LOWDOWN_HTML_HEAD_IDS
+Have an identifier written with each header element consisting of an
+HTML-escaped version of the header contents.
+.El
+.Pp
+And for
+.Dv LOWDOWN_MAN
+and
+.Dv LOWDOWN_NROFF :
+.Pp
+.Bl -tag -width Ds -compact
+.It Dv LOWDOWN_NROFF_SKIP_HTML
+Do not render in-document HTML at all.
+Text within HTML elements remains.
+.It Dv LOWDOWN_NROFF_HARD_WRAP
+Retain line-breaks within paragraphs.
+.It Dv LOWDOWN_NROFF_NUMBERED
+Use numbered sections.
+Only applies to the
+.Dv LOWDOWN_NROFF
+output type.
+.It Dv LOWDOWN_NROFF_GROFF
+Use GNU extensions (i.e., for
+.Xr groff 1 )
+when rendering output.
+You'll need to include
+.Fl m Ar pdfmark
+when invoking
+.Xr groff 1
+for formatting links.
+.El
+.Pp
+For any mode, you may specify:
+.Pp
+.Bl -tag -width Ds -compact
+.It Dv LOWDOWN_SMARTY
+Don't use
+.Dq smartypants
+formatting.
+.It Dv LOWDOWN_STANDALONE
+Emit a full document instead of a document fragment.
+Parts of this envelope may be populated from metadata if
+.Dv LOWDOWN_METADATA
+was provided as an option.
+See
+.Xr lowdown 1
+for details.
+.El
+.It Va type
+May be set to
+.Dv LOWDOWN_HTML
+for HTML5 output,
+.Dv LOWDOWN_MAN
+for
+.Fl man
+macros, or
+.Dv LOWDOWN_NROFF
+for
+.Fl ms
+macros.
+The
+.Dv LOWDOWN_TREE
+type causes a debug tree to be written.
+.Pp
+Both
+.Dv LOWDOWN_MAN
+and
+.Dv LOWDOWN_MS
+will use troff tables, which usually require the
+.Xr tbl 1
+preprocessor.
+.El
+.Pp
+Another common structure is
+.Vt "struct lowdown_metadata" ,
+which is used to hold parsed (and output-formatted) metadata keys and
+values if
+.Dv LOWDOWN_METADATA
+has been provided was provided as an input bit.
+This structure consists of the following fields:
+.Bl -tag -width Ds
+.It Va key
+The metadata key in its lowercase, canonical form.
+.It Va value
+The metadata value as rendered in the current output format.
+.El
+.Pp
+A error message function of type
+.Vt lowdown_msg
+is given in
+.Vt "struct lowdown_opts"
+and accepts the following arguments:
+.Bl -tag -width Ds
+.It Fa err
+An error code programmatically describing the error.
+.It Fa arg
+An opaque pointer provided in
+.Vt "struct lowdown_opts" .
+.It Fa msg
+Additional information about the error.
+.El
+.Pp
+The error code may be one of:
+.Bl -tag -width Ds
+.It Dv LOWDOWN_ERR_SPACE_BEFORE_LINK
+Spaces before the URL portion of a link.
+This is not portable.
+.It Dv LOWDOWN_ERR_METADATA_BAD_CHAR
+A bad character in a metadata key (it is converted into
+.Dq ? ) .
+.It Dv LOWDOWN_ERR_UNKNOWN_FOOTNOTE
+A footnote reference to an unknown footnote, and is thus being ignored.
+.It Dv LOWDOWN_ERR_DUPE_FOOTNOTE
+A duplicate footnote reference was encountered, and is thus being ignored.
+.El
+.Sh SEE ALSO
+.Xr lowdown 1 ,
+.Xr lowdown_buf 3 ,
+.Xr lowdown_errstr 3 ,
+.Xr lowdown_file 3
+.Sh AUTHORS
+The
+.Nm
+library was forked by
+.An Kristaps Dzonsons Aq Mt kristaps@bsd.lv
+from
+.Lk https://github.com/hoedown/hoedown hoedown .
