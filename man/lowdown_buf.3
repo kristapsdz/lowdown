@@ -1,0 +1,85 @@
+.\"	$Id$
+.\"
+.\" Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
+.\"
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\"
+.Dd $Mdocdate: August 30 2017 $
+.Dt LOWDOWN_BUF 3
+.Os
+.Sh NAME
+.Nm lowdown_buf
+.Nd parse a Markdown buffer into formatted output
+.Sh LIBRARY
+.Lb liblowdown
+.Sh SYNOPSIS
+.In stdio.h
+.In lowdown.h
+.Ft void
+.Fo lowdown_buf
+.Fa "const struct lowdown_opts *opts"
+.Fa "const unsigned char *buf"
+.Fa "size_t bufsz"
+.Fa "unsigned char **ret"
+.Fa "size_t *retsz"
+.Fa "struct lowdown_meta **meta"
+.Fa "size_t *metasz"
+.Fc
+.Sh DESCRIPTION
+The
+.Nm
+function is a convenience function to parse a Markdown buffer
+.Fa buf
+of size
+.Fa bufsz
+into an output buffer
+.Fa ret
+of size
+.Fa retsz
+in one of several formats defined in
+.Fa opts .
+If metadata parsing is enabled in the options,
+.Fa meta
+is returned as an array of metadata of size
+.Fa metasz
+rendered in the given output format.
+See
+.Xr lowdown 3
+for a description of the
+.Fa opts
+variable.
+.Pp
+Internally,
+.Nm
+invokes
+.Xr lowdown_doc_new 3
+with the given
+.Fa opts ,
+creates a renderer for the output format,
+parses the input with
+.Xr lowdown_doc_parse 3 ,
+renders the AST in the given output format,
+and returns the rendered content as a buffer along with any parsed
+metadata (if applicable).
+.Pp
+The caller is responsible for freeing the output buffer and metadata
+contents.
+.Sh SEE ALSO
+.Xr lowdown 3
+.Sh CAVEATS
+The
+.Nm
+function will invoke
+.Xr exit 3
+if internal memory allocation fails.
+There is no way to catch this condition.
