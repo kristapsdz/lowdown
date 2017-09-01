@@ -476,7 +476,7 @@ static struct {
 
 /* process an HTML snippet using SmartyPants for smart punctuation */
 void
-hsmrt_html(hbuf *ob, const uint8_t *text, size_t size)
+lowdown_html_smrt(hbuf *ob, const uint8_t *text, size_t size)
 {
 	size_t i;
 	struct smartypants_data smrt = {0, 0};
