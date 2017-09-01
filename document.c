@@ -3293,7 +3293,7 @@ expand_tabs(hbuf *ob, const uint8_t *line, size_t size)
  * Allocate a new document processor instance.
  */
 hdoc *
-hdoc_new(const struct lowdown_opts *opts)
+lowdown_doc_new(const struct lowdown_opts *opts)
 {
 	hdoc 		*doc = NULL;
 	unsigned int	 extensions;
@@ -3518,7 +3518,7 @@ parse_metadata(hdoc *doc, const uint8_t *data, size_t sz)
  * (Obviously only applicable if LOWDOWN_METADATA has been set.)
  */
 struct lowdown_node *
-hdoc_parse(hdoc *doc, const uint8_t *data,
+lowdown_doc_parse(hdoc *doc, const uint8_t *data,
 	size_t size, struct lowdown_meta **mp, size_t *mszp)
 {
 	static const uint8_t UTF8_BOM[] = {0xEF, 0xBB, 0xBF};
@@ -3731,7 +3731,7 @@ lowdown_node_free(struct lowdown_node *root)
  * Deallocate a document processor instance.
  */
 void
-hdoc_free(hdoc *doc)
+lowdown_doc_free(hdoc *doc)
 {
 	size_t	 i;
 
