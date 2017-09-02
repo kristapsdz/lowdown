@@ -232,7 +232,7 @@ putlink(hbuf *ob, const struct nstate *st,
 }
 
 static int
-rndr_autolink(hbuf *ob, const hbuf *link, halink_type type, 
+rndr_autolink(hbuf *ob, const hbuf *link, enum halink_type type, 
 	struct lowdown_node *prev, struct lowdown_node *next,
 	const struct nstate *st, int nln)
 {

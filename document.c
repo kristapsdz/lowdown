@@ -362,7 +362,7 @@ is_mail_autolink(const uint8_t *data, size_t size)
  * Returns the length of the given tag, or 0 is it's not valid.
  */
 static size_t
-tag_length(const uint8_t *data, size_t size, halink_type *autolink)
+tag_length(const uint8_t *data, size_t size, enum halink_type *ltype)
 {
 	size_t i, j;
 
@@ -399,7 +399,7 @@ tag_length(const uint8_t *data, size_t size, halink_type *autolink)
 
 	/* Scheme test. */
 
-	*autolink = HALINK_NONE;
+	*ltype = HALINK_NONE;
 
 	/* Try to find the beginning of an URI. */
 
@@ -409,20 +409,20 @@ tag_length(const uint8_t *data, size_t size, halink_type *autolink)
 
 	if (i > 1 && data[i] == '@')
 		if ((j = is_mail_autolink(data + i, size - i)) != 0) {
-			*autolink = HALINK_EMAIL;
+			*ltype = HALINK_EMAIL;
 			return i + j;
 		}
 
 	if (i > 2 && data[i] == ':') {
-		*autolink = HALINK_NORMAL;
+		*ltype = HALINK_NORMAL;
 		i++;
 	}
 
 	/* Completing autolink test: no spacing or ' or ". */
 
 	if (i >= size)
-		*autolink = HALINK_NONE;
-	else if (*autolink) {
+		*ltype = HALINK_NONE;
+	else if (*ltype) {
 		j = i;
 		while (i < size) {
 			if (data[i] == '\\')
@@ -442,7 +442,7 @@ tag_length(const uint8_t *data, size_t size, halink_type *autolink)
 
 		/* One of the forbidden chars has been found. */
 
-		*autolink = HALINK_NONE;
+		*ltype = HALINK_NONE;
 	}
 
 	/* Looking for something looking like a tag end. */
@@ -1029,7 +1029,7 @@ char_langle_tag(hdoc *doc, uint8_t *data, size_t offset, size_t size)
 {
 	hbuf	 	 work;
 	hbuf		*u_link;
-	halink_type 	 altype = HALINK_NONE;
+	enum halink_type altype = HALINK_NONE;
 	size_t 	 	 end = tag_length(data, size, &altype);
 	int 		 ret = 0;
 	struct lowdown_node *n;
