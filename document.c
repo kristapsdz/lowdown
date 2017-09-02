@@ -2669,8 +2669,8 @@ parse_htmlblock(hdoc *doc, uint8_t *data, size_t size)
 
 static void
 parse_table_row(hbuf *ob, hdoc *doc, uint8_t *data, 
-	size_t size, size_t columns, htbl_flags 
-	*col_data, htbl_flags header_flag)
+	size_t size, size_t columns, enum htbl_flags *col_data, 
+	enum htbl_flags header_flag)
 {
 	size_t	 i = 0, col, len, cell_start, cell_end;
 	hbuf 	 empty_cell;
@@ -2734,7 +2734,8 @@ parse_table_row(hbuf *ob, hdoc *doc, uint8_t *data,
 static size_t
 parse_table_header(struct lowdown_node **np, 
 	hbuf *ob, hdoc *doc, uint8_t *data, 
-	size_t size, size_t *columns, htbl_flags **column_data)
+	size_t size, size_t *columns, 
+	enum htbl_flags **column_data)
 {
 	size_t	 i = 0, col, header_end, under_end, dashes;
 	ssize_t	 pipes = 0;
@@ -2762,7 +2763,7 @@ parse_table_header(struct lowdown_node **np,
 		return 0;
 
 	*columns = pipes + 1;
-	*column_data = xcalloc(*columns, sizeof(htbl_flags));
+	*column_data = xcalloc(*columns, sizeof(enum htbl_flags));
 
 	/* Parse the header underline */
 
@@ -2832,7 +2833,7 @@ parse_table(hdoc *doc, uint8_t *data, size_t size)
 	size_t		 i, columns, row_start, pipes;
 	hbuf		 *header_work = NULL, 
 			 *body_work = NULL;
-	htbl_flags	*col_data = NULL;
+	enum htbl_flags	*col_data = NULL;
 	struct lowdown_node *n = NULL, *nn;
 
 	header_work = hbuf_new(64);
