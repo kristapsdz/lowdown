@@ -156,7 +156,7 @@ struct	lowdown_node {
 			hlist_fl flags;
 		} rndr_list; 
 		struct rndr_listitem {
-			int flags; /* see rndr_list */
+			hlist_fl flags; /* see rndr_list */
 			size_t num; /* index in ordered */
 		} rndr_listitem; 
 		struct rndr_header {
