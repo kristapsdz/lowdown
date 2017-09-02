@@ -64,7 +64,7 @@ escape_href(hbuf *ob, const uint8_t *source, size_t length)
 }
 
 static int
-rndr_autolink(hbuf *ob, const hbuf *link, halink_type type)
+rndr_autolink(hbuf *ob, const hbuf *link, enum halink_type type)
 {
 
 	if (!link || !link->size)

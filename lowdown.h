@@ -118,12 +118,11 @@ enum 	htbl_flags {
 	HTBL_FL_HEADER = 4
 };
 
-/* XXX: un-typedef */
-typedef enum halink_type {
+enum 	halink_type {
 	HALINK_NONE, /* used internally when it is not an autolink */
 	HALINK_NORMAL, /* normal http/http/ftp/mailto/etc link */
 	HALINK_EMAIL /* e-mail link without explit mailto: */
-} halink_type;
+};
 
 /* XXX: un-typedef */
 typedef enum hlist_fl {
@@ -171,7 +170,7 @@ struct	lowdown_node {
 		struct rndr_autolink {
 			hbuf link; /* link address */
 			hbuf text; /* shown address */
-			halink_type type; /* type of link */
+			enum halink_type type; /* type of link */
 		} rndr_autolink; 
 		struct rndr_raw_html {
 			hbuf text; /* raw html buffer */
