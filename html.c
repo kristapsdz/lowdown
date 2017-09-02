@@ -283,7 +283,7 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title)
 }
 
 static void
-rndr_list(hbuf *ob, const hbuf *content, hlist_fl flags)
+rndr_list(hbuf *ob, const hbuf *content, enum hlist_fl flags)
 {
 
 	if (ob->size)
@@ -301,7 +301,8 @@ rndr_list(hbuf *ob, const hbuf *content, hlist_fl flags)
 }
 
 static void
-rndr_listitem(hbuf *ob, const hbuf *content, hlist_fl flags, size_t num)
+rndr_listitem(hbuf *ob, const hbuf *content, 
+	enum hlist_fl flags, size_t num)
 {
 	size_t	 size;
 

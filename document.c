@@ -2176,7 +2176,7 @@ parse_blockcode(hdoc *doc, uint8_t *data, size_t size)
  */
 static size_t
 parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
-	size_t size, hlist_fl *flags, size_t num)
+	size_t size, enum hlist_fl *flags, size_t num)
 {
 	hbuf		*work = NULL;
 	size_t		 beg = 0, end, pre, sublist = 0, orgpre, i;
@@ -2328,7 +2328,7 @@ parse_listitem(hbuf *ob, hdoc *doc, uint8_t *data,
  * Parsing ordered or unordered list block.
  */
 static size_t
-parse_list(hdoc *doc, uint8_t *data, size_t size, hlist_fl flags)
+parse_list(hdoc *doc, uint8_t *data, size_t size, enum hlist_fl flags)
 {
 	hbuf	*work = NULL;
 	size_t	 i = 0, j, k = 1;
