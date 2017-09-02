@@ -64,48 +64,48 @@ struct lowdown_node {
 		} rndr_doc_header;
 		struct rndr_list {
 			enum hlist_fl flags;
-		} rndr_list; 
+		} rndr_list;
 		struct rndr_listitem {
 			enum hlist_fl flags;
 			size_t num;
-		} rndr_listitem; 
+		} rndr_listitem;
 		struct rndr_header {
 			size_t level;
-		} rndr_header; 
+		} rndr_header;
 		struct rndr_normal_text {
 			hbuf text;
-		} rndr_normal_text; 
+		} rndr_normal_text;
 		struct rndr_entity {
 			hbuf text;
-		} rndr_entity; 
+		} rndr_entity;
 		struct rndr_autolink {
 			hbuf link;
 			hbuf text;
 			enum halink_type type;
-		} rndr_autolink; 
+		} rndr_autolink;
 		struct rndr_raw_html {
 			hbuf text;
-		} rndr_raw_html; 
+		} rndr_raw_html;
 		struct rndr_link {
 			hbuf link;
 			hbuf title;
-		} rndr_link; 
+		} rndr_link;
 		struct rndr_blockcode {
 			hbuf text;
 			hbuf lang;
-		} rndr_blockcode; 
+		} rndr_blockcode;
 		struct rndr_codespan {
 			hbuf text;
-		} rndr_codespan; 
+		} rndr_codespan;
 		struct rndr_table_header {
 			enum htbl_flags *flags;
 			size_t columns;
-		} rndr_table_header; 
+		} rndr_table_header;
 		struct rndr_table_cell {
 			enum htbl_flags flags;
 			size_t col;
 			size_t columns;
-		} rndr_table_cell; 
+		} rndr_table_cell;
 		struct rndr_footnote_def {
 			size_t num;
 		} rndr_footnote_def;
