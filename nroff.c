@@ -424,7 +424,7 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link,
 }
 
 static void
-rndr_list(hbuf *ob, const hbuf *content, hlist_fl flags)
+rndr_list(hbuf *ob, const hbuf *content, enum hlist_fl flags)
 {
 
 	HBUF_PUTSL(ob, ".RS\n");
@@ -435,7 +435,7 @@ rndr_list(hbuf *ob, const hbuf *content, hlist_fl flags)
 
 static void
 rndr_listitem(hbuf *ob, const hbuf *content, 
-	hlist_fl flags, size_t num)
+	enum hlist_fl flags, size_t num)
 {
 
 	if (NULL == content || 0 == content->size)

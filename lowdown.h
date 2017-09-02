@@ -124,11 +124,10 @@ enum 	halink_type {
 	HALINK_EMAIL /* e-mail link without explit mailto: */
 };
 
-/* XXX: un-typedef */
-typedef enum hlist_fl {
+enum	hlist_fl {
 	HLIST_FL_ORDERED = (1 << 0),
 	HLIST_FL_BLOCK = (1 << 1) /* <li> containing block data */
-} hlist_fl;
+};
 
 /*
  * Meta-data keys and values.
@@ -151,10 +150,10 @@ struct	lowdown_node {
 			size_t msz;
 		} rndr_doc_header;
 		struct rndr_list {
-			hlist_fl flags;
+			enum hlist_fl flags;
 		} rndr_list; 
 		struct rndr_listitem {
-			hlist_fl flags; /* see rndr_list */
+			enum hlist_fl flags; /* see rndr_list */
 			size_t num; /* index in ordered */
 		} rndr_listitem; 
 		struct rndr_header {
