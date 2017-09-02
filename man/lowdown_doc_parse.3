@@ -63,10 +63,10 @@ struct lowdown_node {
 			size_t msz;
 		} rndr_doc_header;
 		struct rndr_list {
-			hlist_fl flags;
+			enum hlist_fl flags;
 		} rndr_list; 
 		struct rndr_listitem {
-			hlist_fl flags;
+			enum hlist_fl flags;
 			size_t num;
 		} rndr_listitem; 
 		struct rndr_header {
@@ -81,7 +81,7 @@ struct lowdown_node {
 		struct rndr_autolink {
 			hbuf link;
 			hbuf text;
-			halink_type type;
+			enum halink_type type;
 		} rndr_autolink; 
 		struct rndr_raw_html {
 			hbuf text;
@@ -98,11 +98,11 @@ struct lowdown_node {
 			hbuf text;
 		} rndr_codespan; 
 		struct rndr_table_header {
-			htbl_flags *flags;
+			enum htbl_flags *flags;
 			size_t columns;
 		} rndr_table_header; 
 		struct rndr_table_cell {
-			htbl_flags flags;
+			enum htbl_flags flags;
 			size_t col;
 			size_t columns;
 		} rndr_table_cell; 
