@@ -15,29 +15,28 @@
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
 .Dd $Mdocdate: September 1 2017 $
-.Dt LOWDOWN_DOC_NEW 3
+.Dt LOWDOWN_TREE_NEW 3
 .Os
 .Sh NAME
-.Nm lowdown_doc_new
-.Nd allocate a Markdown parser
+.Nm lowdown_tree_new
+.Nd allocate an debugging renderer for lowdown documents
 .Sh LIBRARY
 .Lb liblowdown
 .Sh SYNOPSIS
 .In stdio.h
 .In lowdown.h
-.Ft hdoc *
-.Fo lowdown_doc_new
-.Fa "const struct lowdown_opts *opts"
+.Ft void *
+.Fo lowdown_tree_new
 .Fc
 .Sh DESCRIPTION
 The
 .Nm
-function allocates a Markdown parser instance with configuration
-.Fa opts .
+function allocates an debugging renderer that simply prints out the
+parse tree.
 It must be freed with a call to
-.Xr lowdown_doc_free 3 .
+.Xr lowdown_tree_free 3 .
 The returned pointer may be used with multiple invocations of
-.Xr lowdown_doc_parse 3 .
+.Xr lowdown_tree_rndr 3 .
 .Sh RETURN VALUES
 Always returns a valid pointer.
 .Sh SEE ALSO
