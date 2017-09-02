@@ -585,7 +585,7 @@ rndr_table(hbuf *ob, const hbuf *content)
 
 static void
 rndr_table_header(hbuf *ob, const hbuf *content,
-	const htbl_flags *fl, size_t columns)
+	const enum htbl_flags *fl, size_t columns)
 {
 	size_t	 i;
 
@@ -625,7 +625,7 @@ rndr_tablerow(hbuf *ob, const hbuf *content)
 
 static void
 rndr_tablecell(hbuf *ob, const hbuf *content,
-	htbl_flags flags, size_t col, size_t columns)
+	enum htbl_flags flags, size_t col, size_t columns)
 {
 
 	if (col > 0)

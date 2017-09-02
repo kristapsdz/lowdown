@@ -110,14 +110,13 @@ typedef struct hbuf {
  */
 TAILQ_HEAD(lowdown_nodeq, lowdown_node);
 
-/* XXX: remove */
-typedef enum htbl_flags {
+enum 	htbl_flags {
 	HTBL_FL_ALIGN_LEFT = 1,
 	HTBL_FL_ALIGN_RIGHT = 2,
 	HTBL_FL_ALIGN_CENTER = 3,
 	HTBL_FL_ALIGNMASK = 3,
 	HTBL_FL_HEADER = 4
-} htbl_flags;
+};
 
 /* XXX: un-typedef */
 typedef enum halink_type {
@@ -189,11 +188,11 @@ struct	lowdown_node {
 			hbuf text; /* raw code buffer */
 		} rndr_codespan; 
 		struct rndr_table_header {
-			htbl_flags *flags; /* per-column flags */
+			enum htbl_flags *flags; /* per-column flags */
 			size_t columns; /* number of columns */
 		} rndr_table_header; 
 		struct rndr_table_cell {
-			htbl_flags flags; /* flags for cell */
+			enum htbl_flags flags; /* flags for cell */
 			size_t col; /* column number */
 			size_t columns; /* number of columns */
 		} rndr_table_cell; 
