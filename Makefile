@@ -30,6 +30,7 @@ HTMLS		 = archive.html \
 		   man/lowdown.3.html \
 		   man/lowdown_buf.3.html \
 		   man/lowdown_doc_new.3.html \
+		   man/lowdown_doc_parse.3.html \
 		   man/lowdown_errstr.3.html \
 		   man/lowdown_file.3.html
 PDFS		 = index.pdf README.pdf

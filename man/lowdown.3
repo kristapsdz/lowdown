@@ -49,6 +49,16 @@ renderers.
 Most functions use the
 .Vt struct lowdown_opts
 structure to manage features.
+.Bd -literal
+struct lowdown_opts {
+	lowdown_msg msg;
+	enum lowdown_type type;
+	void *arg;
+	unsigned int feat;
+	unsigned int oflags;
+};
+.Ed
+.Pp
 It has the following fields:
 .Bl -tag -width Ds
 .It Va arg
@@ -218,6 +228,13 @@ which is used to hold parsed (and output-formatted) metadata keys and
 values if
 .Dv LOWDOWN_METADATA
 has been provided was provided as an input bit.
+.Bd -literal
+struct lowdown_meta {
+	char *key;
+	char *value;
+};
+.Ed
+.Pp
 This structure consists of the following fields:
 .Bl -tag -width Ds
 .It Va key
@@ -229,8 +246,13 @@ The metadata value as rendered in the current output format.
 A error message function of type
 .Vt lowdown_msg
 is given in
-.Vt "struct lowdown_opts"
-and accepts the following arguments:
+.Vt "struct lowdown_opts" .
+.Bd -literal
+typedef	void (*lowdown_msg)
+	(enum lowdown_err, void *, const char *);
+.Ed
+.Pp
+It accepts the following arguments:
 .Bl -tag -width Ds
 .It Fa err
 An error code programmatically describing the error.
