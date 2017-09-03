@@ -3652,6 +3652,10 @@ lowdown_doc_parse(hdoc *doc, const uint8_t *data,
 	 * Do this only if both pointers are provided.
 	 */
 
+	/* 
+	 * FIXME: free these values if they're not copied.
+	 */
+
 	if (NULL != mp && NULL != mszp) {
 		*mp = doc->m;
 		*mszp = doc->msz;
@@ -3668,6 +3672,9 @@ lowdown_node_free(struct lowdown_node *root)
 {
 	struct lowdown_node *n;
 	size_t	 i;
+
+	if (NULL == root)
+		return;
 
 	switch (root->type) {
 	case (LOWDOWN_DOC_HEADER):
@@ -3732,6 +3739,9 @@ void
 lowdown_doc_free(hdoc *doc)
 {
 	size_t	 i;
+
+	if (NULL == doc)
+		return;
 
 	for (i = 0; i < doc->msz; i++) {
 		free(doc->m[i].key);
