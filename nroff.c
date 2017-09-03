@@ -180,7 +180,12 @@ putlink(hbuf *ob, const struct nstate *st,
 	 * If we're followed by normal text that doesn't begin with a
 	 * space, use the "-A" (affix) option to prevent a space before
 	 * what follows.
+	 * But first, initialise the offset.
 	 */
+
+	if (NULL != next && 
+	    LOWDOWN_NORMAL_TEXT == next->type)
+		next->rndr_normal_text.offs = 0;
 
 	if (NULL != next && 
 	    LOWDOWN_NORMAL_TEXT == next->type &&
@@ -207,7 +212,6 @@ putlink(hbuf *ob, const struct nstate *st,
 		if (usepdf)
 			HBUF_PUTSL(ob, "\" ");
 	}
-
 
 	/* Encode the URL. */
 
