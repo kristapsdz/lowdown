@@ -1,0 +1,51 @@
+.\"	$Id$
+.\"
+.\" Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
+.\"
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\"
+.Dd $Mdocdate$
+.Dt LOWDOWN_TREE_RNDR 3
+.Os
+.Sh NAME
+.Nm lowdown_tree_rndr
+.Nd render Markdown into debugging ouptut
+.Sh LIBRARY
+.Lb liblowdown
+.Sh SYNOPSIS
+.In stdio.h
+.In lowdown.h
+.Ft void
+.Fo lowdown_tree_rndr
+.Fa "hbuf *out"
+.Fa "void *arg"
+.Fa "struct lowdown_node *root"
+.Fc
+.Sh DESCRIPTION
+The
+.Nm
+function renders a node tree
+.Fa root
+using the debugging renderer
+.Fa out
+created by
+.Xr lowdown_tree_new 3
+into the output buffer
+.Fa out .
+.Sh SEE ALSO
+.Xr lowdown 3
+.Sh CAVEATS
+The contents of
+.Fa root
+may be changed, but not in a way that will change the output with
+multiple passes at rendering.
