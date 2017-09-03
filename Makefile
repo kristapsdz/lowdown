@@ -21,12 +21,12 @@ COMPAT_OBJS	 = compat_err.o \
 		   compat_strlcat.o \
 		   compat_strlcpy.o \
 		   compat_strtonum.o
-
 WWWDIR		 = /var/www/vhosts/kristaps.bsd.lv/htdocs/lowdown
 HTMLS		 = archive.html \
 		   index.html \
 		   README.html \
-		   man/lowdown.1.html \
+		   $(MANS)
+MANS		 = man/lowdown.1.html \
 		   man/lowdown.3.html \
 		   man/lowdown_buf.3.html \
 		   man/lowdown_doc_free.3.html \
@@ -34,22 +34,15 @@ HTMLS		 = archive.html \
 		   man/lowdown_doc_parse.3.html \
 		   man/lowdown_errstr.3.html \
 		   man/lowdown_file.3.html \
+		   man/lowdown_html_free.3.html \
 		   man/lowdown_html_new.3.html \
+		   man/lowdown_nroff_free.3.html \
 		   man/lowdown_nroff_new.3.html \
+		   man/lowdown_tree_free.3.html \
 		   man/lowdown_tree_new.3.html
 PDFS		 = index.pdf README.pdf
 MDS		 = index.md README.md
 CSSS		 = template.css mandoc.css
-MAN3S		 = man/lowdown.3 \
-		   man/lowdown_buf.3 \
-		   man/lowdown_doc_free.3 \
-		   man/lowdown_doc_new.3 \
-		   man/lowdown_doc_parse.3 \
-		   man/lowdown_errstr.3 \
-		   man/lowdown_file.3 \
-		   man/lowdown_html_new.3 \
-		   man/lowdown_nroff_new.3 \
-		   man/lowdown_tree_new.3
 
 all: lowdown
 
@@ -79,7 +72,9 @@ install: all
 	install -m 0644 liblowdown.a $(DESTDIR)$(LIBDIR)
 	install -m 0644 lowdown.h $(DESTDIR)$(INCLUDEDIR)
 	install -m 0644 man/lowdown.1 $(DESTDIR)$(MANDIR)/man1
-	install -m 0644 $(MAN3S) $(DESTDIR)$(MANDIR)/man3
+	for f in $(MANS) ; do \
+		install -m 0644 $$f $(DESTDIR)$(MANDIR)/man3 ; \
+	done
 
 index.xml README.xml index.pdf README.pdf: lowdown
 
