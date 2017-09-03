@@ -561,6 +561,7 @@ static int
 rndr_image(void)
 {
 
+	/* FIXME: use lowdown_opts warnings. */
 	warnx("warning: graphics not supported");
 	return 1;
 }
@@ -750,6 +751,7 @@ static int
 rndr_math(void)
 {
 
+	/* FIXME: use lowdown_opts warnings. */
 	warnx("warning: math not supported");
 	return 1;
 }
