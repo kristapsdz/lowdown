@@ -3648,20 +3648,25 @@ lowdown_doc_parse(hdoc *doc, const uint8_t *data,
 
 	/* 
 	 * Copy our metadata to the given pointers.
-	 * If we do this, they'll be freed by the caller, so zero them.
+	 * If we do this, they'll be freed by the caller.
 	 * Do this only if both pointers are provided.
-	 */
-
-	/* 
-	 * FIXME: free these values if they're not copied.
+	 * Otherwise, free the pointers---we won't be needing them any
+	 * more.
 	 */
 
 	if (NULL != mp && NULL != mszp) {
 		*mp = doc->m;
 		*mszp = doc->msz;
-		doc->m = NULL;
-		doc->msz = 0;
+	} else {
+		for (i = 0; i < doc->msz; i++) {
+			free(doc->m[i].key);
+			free(doc->m[i].value);
+		}
+		free(doc->m);
 	}
+
+	doc->m = NULL;
+	doc->msz = 0;
 
 	popnode(doc, root);
 	return(root);
@@ -3732,22 +3737,9 @@ lowdown_node_free(struct lowdown_node *root)
 	free(root);
 }
 
-/*
- * Deallocate a document processor instance.
- */
 void
 lowdown_doc_free(hdoc *doc)
 {
-	size_t	 i;
 
-	if (NULL == doc)
-		return;
-
-	for (i = 0; i < doc->msz; i++) {
-		free(doc->m[i].key);
-		free(doc->m[i].value);
-	}
-
-	free(doc->m);
 	free(doc);
 }
