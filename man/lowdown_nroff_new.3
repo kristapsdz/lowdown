@@ -37,11 +37,29 @@ function allocates a roff renderer (using the
 or
 .Ar ms
 macros) using the flags in
-.Fa opts .
+.Fa opts ,
+which may be
+.Dv NULL .
 It must be freed with a call to
 .Xr lowdown_nroff_free 3 .
 The returned pointer may be used with multiple invocations of
 .Xr lowdown_nroff_rndr 3 .
+If
+.Fa opts
+is not
+.Dv NULL
+and the renderer type is 
+.Dv LOWDOWN_MAN ,
+.Ar man
+formatting is used.
+Otherwise,
+.Ar ms .
+.Pp
+If
+.Fa opts
+is
+.Dv NULL ,
+the renderer uses no extensions and does not emit warnings.
 .Sh RETURN VALUES
 Always returns a valid pointer.
 .Sh SEE ALSO
