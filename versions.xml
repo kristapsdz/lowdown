@@ -244,14 +244,35 @@
 		<header>
 			<h1>0.2.1</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2017-09-03">2017-09-03</time>
+			<time datetime="2017-09-04">2017-09-04</time>
 		</header>
 		<aside>
 			<p>
-				Fully document the new <a href="lowdown.3.html">lowdown(3)</a> interface.
 				Also fix the configure script to inherit <code>CFLAGS</code> thanks to Anton Lindqvist.
 				Replaced use of <code>uint8_t</code> in favour of traditional <code>char</code>, where appropriate.
 			</p>
+			<p>
+				Most of all, fully document the new <a href="lowdown.3.html">lowdown(3)</a> interface.
+				These are listed here:
+			</p>
+			<ul>
+				<li><a href="lowdown.3.html">lowdown(3)</a></li>
+				<li><a href="lowdown_buf.3.html">lowdown_buf(3)</a></li>
+				<li><a href="lowdown_doc_free.3.html">lowdown_doc_free(3)</a></li>
+				<li><a href="lowdown_doc_new.3.html">lowdown_doc_new(3)</a></li>
+				<li><a href="lowdown_doc_parse.3.html">lowdown_doc_parse(3)</a></li>
+				<li><a href="lowdown_errstr.3.html">lowdown_errstr(3)</a></li>
+				<li><a href="lowdown_file.3.html">lowdown_file(3)</a></li>
+				<li><a href="lowdown_html_free.3.html">lowdown_html_free(3)</a></li>
+				<li><a href="lowdown_html_new.3.html">lowdown_html_new(3)</a></li>
+				<li><a href="lowdown_html_rndr.3.html">lowdown_html_rndr(3)</a></li>
+				<li><a href="lowdown_nroff_free.3.html">lowdown_nroff_free(3)</a></li>
+				<li><a href="lowdown_nroff_new.3.html">lowdown_nroff_new(3)</a></li>
+				<li><a href="lowdown_nroff_rndr.3.html">lowdown_nroff_rndr(3)</a></li>
+				<li><a href="lowdown_tree_free.3.html">lowdown_tree_free(3)</a></li>
+				<li><a href="lowdown_tree_new.3.html">lowdown_tree_new(3)</a></li>
+				<li><a href="lowdown_tree_rndr.3.html">lowdown_tree_rndr(3)</a></li>
+			</ul>
 		</aside>
 	</article>
 </articles>
