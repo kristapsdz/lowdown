@@ -76,7 +76,7 @@ install: all
 	install -m 0644 lowdown.h $(DESTDIR)$(INCLUDEDIR)
 	install -m 0644 man/lowdown.1 $(DESTDIR)$(MANDIR)/man1
 	for f in $(MANS) ; do \
-		install -m 0644 $$f $(DESTDIR)$(MANDIR)/man3 ; \
+		install -m 0644 man/`basename $$f .html` $(DESTDIR)$(MANDIR)/man3 ; \
 	done
 
 index.xml README.xml index.pdf README.pdf: lowdown
