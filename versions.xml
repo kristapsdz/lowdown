@@ -275,4 +275,16 @@
 			</ul>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.2.2</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2017-09-05">2017-09-05</time>
+		</header>
+		<aside>
+			<p>
+				Hot-fix in installing manpages.
+			</p>
+		</aside>
+	</article>
 </articles>
