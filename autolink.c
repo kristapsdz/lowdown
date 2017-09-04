@@ -48,7 +48,7 @@ static const char *const valid_uris[VALID_URIS_SZ] = {
  * Verify that a URL has a safe protocol.
  */
 static int
-halink_is_safe(const uint8_t *data, size_t size)
+halink_is_safe(const char *data, size_t size)
 {
 	size_t	 i, len;
 
@@ -68,10 +68,10 @@ halink_is_safe(const uint8_t *data, size_t size)
  * Returns the position of the end.
  */
 static size_t
-autolink_delim(uint8_t *data,
+autolink_delim(char *data,
 	size_t link_end, size_t max_rewind, size_t size)
 {
-	uint8_t	 cclose, copen = 0;
+	char	 cclose, copen = 0;
 	size_t	 closing, opening, i, new_end;
 
 	for (i = 0; i < link_end; ++i)
@@ -165,7 +165,7 @@ autolink_delim(uint8_t *data,
  * XXX: this function needs to be replaced.
  */
 static size_t
-check_domain(uint8_t *data, size_t size)
+check_domain(char *data, size_t size)
 {
 	size_t i, np = 0;
 
@@ -187,7 +187,7 @@ check_domain(uint8_t *data, size_t size)
  * Search for the next www link in data.
  */
 size_t
-halink_www(size_t *rewind_p, hbuf *link, uint8_t *data,
+halink_www(size_t *rewind_p, hbuf *link, char *data,
 	size_t max_rewind, size_t size)
 {
 	size_t link_end;
@@ -221,12 +221,12 @@ halink_www(size_t *rewind_p, hbuf *link, uint8_t *data,
  * Search for the next email in data.
  */
 size_t
-halink_email(size_t *rewind_p, hbuf *link, uint8_t *data,
+halink_email(size_t *rewind_p, hbuf *link, char *data,
 	size_t max_rewind, size_t size)
 {
 	size_t	 link_end, rewind;
 	int	 nb = 0, np = 0;
-	uint8_t	 c;
+	char	 c;
 
 	for (rewind = 0; rewind < max_rewind; ++rewind) {
 		c = data[-1 - rewind];
@@ -277,7 +277,7 @@ halink_email(size_t *rewind_p, hbuf *link, uint8_t *data,
  */
 size_t
 halink_url(size_t *rewind_p, hbuf *link,
-	uint8_t *data, size_t max_rewind, size_t size)
+	char *data, size_t max_rewind, size_t size)
 {
 	size_t link_end, rewind = 0, domain_len;
 

@@ -99,7 +99,7 @@ enum	lowdown_rndrt {
 };
 
 typedef struct hbuf {
-	uint8_t		*data;	/* actual character data */
+	char		*data;	/* actual character data */
 	size_t		 size;	/* size of the string */
 	size_t		 asize;	/* allocated size (0 = volatile) */
 	size_t		 unit;	/* realloc unit size (0 = read-only) */
@@ -268,11 +268,11 @@ const char *lowdown_errstr(enum lowdown_err);
  * content, and extract that content from a buffer, file, or descriptor.
  */
 void	 lowdown_buf(const struct lowdown_opts *, 
-		const unsigned char *, size_t,
-		unsigned char **, size_t *,
+		const char *, size_t,
+		char **, size_t *,
 		struct lowdown_meta **, size_t *);
 int	 lowdown_file(const struct lowdown_opts *, 
-		FILE *, unsigned char **, size_t *,
+		FILE *, char **, size_t *,
 		struct lowdown_meta **, size_t *);
 
 /* 
@@ -283,7 +283,7 @@ int	 lowdown_file(const struct lowdown_opts *,
 
 hdoc 	*lowdown_doc_new(const struct lowdown_opts *);
 struct lowdown_node
-	*lowdown_doc_parse(hdoc *, const uint8_t *, size_t, 
+	*lowdown_doc_parse(hdoc *, const char *, size_t, 
 		struct lowdown_meta **, size_t *);
 void	 lowdown_doc_free(hdoc *);
 
@@ -304,9 +304,10 @@ void	*lowdown_tree_new(void);
 void 	 lowdown_tree_rndr(hbuf *, void *, 
 		struct lowdown_node *);
 
-/* XXX: might be deprecated. */
-void	 lowdown_html_smrt(hbuf *, const uint8_t *, size_t);
-void	 lowdown_nroff_smrt(hbuf *, const uint8_t *, size_t);
+/* XXX: will be deprecated. */
+
+void	 lowdown_html_smrt(hbuf *, const char *, size_t);
+void	 lowdown_nroff_smrt(hbuf *, const char *, size_t);
 
 __END_DECLS
 

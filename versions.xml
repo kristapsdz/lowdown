@@ -240,4 +240,17 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.2.1</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2017-09-03">2017-09-03</time>
+		</header>
+		<aside>
+			<p>
+				Fully document the new <a href="lowdown.3.html">lowdown(3)</a> interface.
+				Also fix the configure script to inherit <code>CFLAGS</code> thanks to Anton Lindqvist.
+			</p>
+		</aside>
+	</article>
 </articles>
