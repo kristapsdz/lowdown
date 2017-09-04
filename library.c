@@ -49,8 +49,8 @@ lowdown_errstr(enum lowdown_err err)
  */
 void
 lowdown_buf(const struct lowdown_opts *opts,
-	const unsigned char *data, size_t datasz,
-	unsigned char **res, size_t *rsz,
+	const char *data, size_t datasz,
+	char **res, size_t *rsz,
 	struct lowdown_meta **m, size_t *msz)
 {
 	hbuf	 	 *ob, *spb;
@@ -114,12 +114,10 @@ lowdown_buf(const struct lowdown_opts *opts,
 		for (i = 0; i < *msz; i++) {
 			spb = hbuf_new(DEF_OUNIT);
 			if (LOWDOWN_HTML == t)
-				hesc_html(spb, 
-					(uint8_t *)(*m)[i].value, 
+				hesc_html(spb, (*m)[i].value, 
 					strlen((*m)[i].value), 0);
 			else
-				hesc_nroff(spb, 
-					(uint8_t *)(*m)[i].value, 
+				hesc_nroff(spb, (*m)[i].value, 
 					strlen((*m)[i].value), 0, 1);
 			free((*m)[i].value);
 			(*m)[i].value = xstrndup
@@ -143,12 +141,10 @@ lowdown_buf(const struct lowdown_opts *opts,
 		for (i = 0; i < *msz; i++) {
 			spb = hbuf_new(DEF_OUNIT);
 			if (LOWDOWN_HTML == t)
-				lowdown_html_smrt(spb, 
-					(uint8_t *)(*m)[i].value, 
+				lowdown_html_smrt(spb, (*m)[i].value, 
 					strlen((*m)[i].value));
 			else
-				lowdown_nroff_smrt(spb, 
-					(uint8_t *)(*m)[i].value, 
+				lowdown_nroff_smrt(spb, (*m)[i].value, 
 					strlen((*m)[i].value));
 			free((*m)[i].value);
 			(*m)[i].value = xstrndup
@@ -168,7 +164,7 @@ lowdown_buf(const struct lowdown_opts *opts,
  */
 int
 lowdown_file(const struct lowdown_opts *opts,
-	FILE *fin, unsigned char **res, size_t *rsz,
+	FILE *fin, char **res, size_t *rsz,
 	struct lowdown_meta **m, size_t *msz)
 {
 	hbuf *ib = NULL;

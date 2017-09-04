@@ -224,8 +224,8 @@ main(int argc, char *argv[])
 	struct lowdown_opts opts;
 	const char	*pname;
 	int		 c, standalone = 0, status = EXIT_SUCCESS;
-	unsigned char	*ret = NULL;
-	unsigned int	 feat;
+	char		*ret = NULL;
+	int	 	 feat;
 	size_t		 i, retsz = 0, msz = 0;
 	struct lowdown_meta *m = NULL;
 

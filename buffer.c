@@ -87,7 +87,7 @@ hbuf_grow(hbuf *buf, size_t neosz)
 
 /* append raw data to a buffer */
 void
-hbuf_put(hbuf *buf, const uint8_t *data, size_t size)
+hbuf_put(hbuf *buf, const char *data, size_t size)
 {
 	assert(buf && buf->unit);
 
@@ -104,12 +104,12 @@ hbuf_puts(hbuf *buf, const char *str)
 {
 
 	assert(buf && str);
-	hbuf_put(buf, (const uint8_t *)str, strlen(str));
+	hbuf_put(buf, str, strlen(str));
 }
 
 /* append a single char to a buffer */
 void
-hbuf_putc(hbuf *buf, uint8_t c)
+hbuf_putc(hbuf *buf, char c)
 {
 	assert(buf && buf->unit);
 

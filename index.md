@@ -151,8 +151,6 @@ Read [lowdown(1)](lowdown.1.html) for details on running the system.
 This effectively wraps around everything invoked by
 [lowdown(1)](lowdown.1.html), so it's basically the same but... a
 library.
-I haven't done much work in documenting the library; so if you'd like to
-help out, this is a great place to start.
 
 ## Testing
 
@@ -264,10 +262,6 @@ the font markers on different lines.
 In all modes, the "smartypants" formatting should be embedded in
 document output --- not in a separate step as implemented in the
 original sources.
-
-The library interface is only partially documented.  Functions and
-definitions will need to be renamed to reflect the new name of the
-system.
 
 Lastly, I'd like a full reference of the Markdown language accepted as a
 manpage.  Markdown is incredibly inconsistent, so a simple, readable
