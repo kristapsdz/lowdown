@@ -279,11 +279,23 @@
 		<header>
 			<h1>0.2.2</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2017-09-05">2017-09-05</time>
+			<time datetime="2017-09-04T14:30:00Z">2017-09-04</time>
 		</header>
 		<aside>
 			<p>
 				Hot-fix in installing manpages.
+			</p>
+		</aside>
+	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.2.3</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2017-09-04T14:32:00Z">2017-09-04</time>
+		</header>
+		<aside>
+			<p>
+				Hot-fix number two: fix that <code>.pdfhref</code> was typo'd into <code>.usepdf</code>.
 			</p>
 		</aside>
 	</article>
