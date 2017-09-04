@@ -61,7 +61,7 @@ void	 hbuf_puts(hbuf *, const char *);
 
 /* Optimized hbuf_puts of a string literal. */
 #define HBUF_PUTSL(output, literal) \
-	hbuf_put(output, (const char *)literal, sizeof(literal) - 1)
+	hbuf_put(output, literal, sizeof(literal) - 1)
 
 size_t	 halink_email(size_t *, hbuf *, char *, size_t, size_t);
 size_t	 halink_url(size_t *, hbuf *, char *, size_t, size_t);
