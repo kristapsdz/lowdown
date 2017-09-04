@@ -250,6 +250,7 @@
 			<p>
 				Fully document the new <a href="lowdown.3.html">lowdown(3)</a> interface.
 				Also fix the configure script to inherit <code>CFLAGS</code> thanks to Anton Lindqvist.
+				Replaced use of <code>uint8_t</code> in favour of traditional <code>char</code>, where appropriate.
 			</p>
 		</aside>
 	</article>
