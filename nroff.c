@@ -136,7 +136,7 @@ putlink(hbuf *ob, const struct nstate *st,
 	usepdf = ! st->mdoc && LOWDOWN_NROFF_GROFF & st->flags;
 
 	if (usepdf)
-		HBUF_PUTSL(ob, ".usepdf W ");
+		HBUF_PUTSL(ob, ".pdfhref W ");
 
 	/*
 	 * If we're preceded by normal text that doesn't end with space,
