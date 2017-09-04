@@ -191,11 +191,24 @@ the document as a tree of nodes, each node corresponding an input token.
 Once the entire tree has been generated, the AST is passed into the
 front-end renderers, which construct output depth-first.
 
-There are two renderers supported:
+There are three renderers supported:
 [html.c](https://github.com/kristapsdz/lowdown/blob/master/html.c) for
-HTML5 output and
+HTML5 output,
 [nroff.c](https://github.com/kristapsdz/lowdown/blob/master/nroff.c) for
-**-ms** and **-man** output.
+**-ms** and **-man** output,
+and a debugging renderer
+[tree.c](https://github.com/kristapsdz/lowdown/blob/master/tree.c).
+
+A note on "real text".
+
+The only time that input is passed directly into the output renderer is
+when then `normal_text` callback is invoked, blockcode or codespan, raw
+HTML, or hyperlink components.  In both renderers, you can see how the
+input is properly escaped by passing into
+[escape.c](https://github.com/kristapsdz/lowdown/blob/master/escape.c).
+
+After being fully parsed into an output buffer, the output buffer is
+passed into a "smartypants" rendering, one for each renderer type.
 
 ### Example
 
@@ -233,17 +246,6 @@ outputs).
 
 Finally, the subsection block would be fitted into whatever context it
 was invoked within.
-
-### Escaping
-
-The only time that "real text" is passed directly from the input buffer
-into the output renderer is when then `normal_text` callback is invoked,
-blockcode or codespan, raw HTML, or hyperlink components.  In both
-renderers, you can see how the input is properly escaped by passing into
-[escape.c](https://github.com/kristapsdz/lowdown/blob/master/escape.c).
-
-After being fully parsed into an output buffer, the output buffer is
-passed into a "smartypants" rendering, one for each renderer type.
 
 ## Known Issues (or, How You Can Help)
 
