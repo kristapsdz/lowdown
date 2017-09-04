@@ -472,7 +472,8 @@ parse_inline(hdoc *doc, char *data, size_t size)
 	while (i < size) {
 		/* Copying non-macro chars into the output. */
 
-		while (end < size && active_char[(unsigned char)data[end]] == 0)
+		while (end < size && 
+		       active_char[(unsigned char)data[end]] == 0)
 			end++;
 
 		/* Only allocate if non-empty... */
@@ -490,7 +491,8 @@ parse_inline(hdoc *doc, char *data, size_t size)
 			break;
 
 		i = end;
-		end = markdown_char_ptrs[active_char[(unsigned char)data[end]]]
+		end = markdown_char_ptrs[
+			active_char[(unsigned char)data[end]]]
 			(doc, data + i, i - consumed, size - i);
 
 		/* Check if no action from the callback. */
@@ -527,7 +529,8 @@ is_escaped(const char *data, size_t loc)
 static size_t
 find_emph_char(const char *data, size_t size, char c)
 {
-	size_t i = 0;
+	size_t 	 i = 0, span_nb, bt, tmp_i;
+	char 	 cc;
 
 	while (i < size) {
 		while (i < size && data[i] != c &&
@@ -550,8 +553,8 @@ find_emph_char(const char *data, size_t size, char c)
 		/* Skipping a codespan. */
 
 		if (data[i] == '`') {
-			size_t span_nb = 0, bt;
-			size_t tmp_i = 0;
+			span_nb = 0;
+			tmp_i = 0;
 
 			/* Counting the number of opening backticks. */
 
@@ -584,8 +587,7 @@ find_emph_char(const char *data, size_t size, char c)
 			if (bt < span_nb && i >= size)
 				return tmp_i;
 		} else if (data[i] == '[') {
-			size_t tmp_i = 0;
-			char cc;
+			tmp_i = 0;
 
 			/* Skipping a link. */
 
