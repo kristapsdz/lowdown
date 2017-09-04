@@ -54,7 +54,7 @@
  * All other characters will be escaped to %XX.
  *
  */
-static const uint8_t HREF_SAFE[UINT8_MAX+1] = {
+static const int HREF_SAFE[UINT8_MAX+1] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -75,7 +75,7 @@ static const uint8_t HREF_SAFE[UINT8_MAX+1] = {
 
 /* escape (part of) a URL inside HTML */
 void
-hesc_href(hbuf *ob, const uint8_t *data, size_t size)
+hesc_href(hbuf *ob, const char *data, size_t size)
 {
 	static const char hex_chars[] = "0123456789ABCDEF";
 	size_t  i = 0, mark;
@@ -85,7 +85,8 @@ hesc_href(hbuf *ob, const uint8_t *data, size_t size)
 
 	while (i < size) {
 		mark = i;
-		while (i < size && HREF_SAFE[data[i]]) i++;
+		while (i < size && HREF_SAFE[(unsigned char)data[i]]) 
+			i++;
 
 		/* Optimization for cases where there's nothing to escape */
 		if (mark == 0 && i >= size) {
@@ -129,7 +130,7 @@ hesc_href(hbuf *ob, const uint8_t *data, size_t size)
 		default:
 			hex_str[1] = hex_chars[(data[i] >> 4) & 0xF];
 			hex_str[2] = hex_chars[data[i] & 0xF];
-			hbuf_put(ob, (uint8_t *)hex_str, 3);
+			hbuf_put(ob, hex_str, 3);
 		}
 
 		i++;
@@ -148,7 +149,7 @@ hesc_href(hbuf *ob, const uint8_t *data, size_t size)
  * / --> &#x2F;     forward slash is included as it helps end an HTML entity
  *
  */
-static const uint8_t HTML_ESCAPE_TABLE[UINT8_MAX+1] = {
+static const int HTML_ESCAPE_TABLE[UINT8_MAX+1] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 1, 0, 0, 0, 2, 3, 0, 0, 0, 0, 0, 0, 0, 4,
@@ -181,7 +182,7 @@ static const char *HTML_ESCAPES[] = {
  * FIXME: merge with re-written hesc_nroff.
  */
 static void
-hesc_nroff_oneline(hbuf *ob, const uint8_t *data, size_t sz, int span)
+hesc_nroff_oneline(hbuf *ob, const char *data, size_t sz, int span)
 {
 	size_t	 i;
 
@@ -224,7 +225,7 @@ hesc_nroff_oneline(hbuf *ob, const uint8_t *data, size_t sz, int span)
  * This only happens (I think?) when pasting metadata.
  */
 void
-hesc_nroff(hbuf *ob, const uint8_t *data, 
+hesc_nroff(hbuf *ob, const char *data, 
 	size_t size, int span, int oneline)
 {
 	size_t	 i = 0, mark, slash;
@@ -271,13 +272,14 @@ hesc_nroff(hbuf *ob, const uint8_t *data,
  * Escape HTML.
  */
 void
-hesc_html(hbuf *ob, const uint8_t *data, size_t size, int secure)
+hesc_html(hbuf *ob, const char *data, size_t size, int secure)
 {
 	size_t i = 0, mark;
 
 	while (1) {
 		mark = i;
-		while (i < size && HTML_ESCAPE_TABLE[data[i]] == 0) 
+		while (i < size && 
+		       HTML_ESCAPE_TABLE[(unsigned char)data[i]] == 0) 
 			i++;
 
 		/* Optimization for cases where there's nothing to escape */
@@ -298,7 +300,7 @@ hesc_html(hbuf *ob, const uint8_t *data, size_t size, int secure)
 			hbuf_putc(ob, '/');
 		else
 			hbuf_puts(ob, HTML_ESCAPES
-				[HTML_ESCAPE_TABLE[data[i]]]);
+				[HTML_ESCAPE_TABLE[(unsigned char)data[i]]]);
 		i++;
 	}
 }

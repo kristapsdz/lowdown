@@ -96,21 +96,21 @@ static const enum nscope nscopes[LOWDOWN__MAX] = {
 };
 
 static void
-escape_span(hbuf *ob, const uint8_t *source, size_t length)
+escape_span(hbuf *ob, const char *source, size_t length)
 {
 
 	hesc_nroff(ob, source, length, 1, 0);
 }
 
 static void
-escape_block(hbuf *ob, const uint8_t *source, size_t length)
+escape_block(hbuf *ob, const char *source, size_t length)
 {
 
 	hesc_nroff(ob, source, length, 0, 0);
 }
 
 static void
-escape_oneline_span(hbuf *ob, const uint8_t *source, size_t length)
+escape_oneline_span(hbuf *ob, const char *source, size_t length)
 {
 
 	hesc_nroff(ob, source, length, 1, 1);
@@ -681,7 +681,7 @@ rndr_normal_text(hbuf *ob, const hbuf *content, size_t offs,
 	const struct nstate *st, int nl)
 {
 	size_t	 	 i, size;
-	const uint8_t 	*data;
+	const char 	*data;
 
 	if (NULL == content || 0 == content->size)
 		return;
@@ -885,8 +885,7 @@ rndr_doc_header(hbuf *ob,
 		HBUF_PUTSL(ob, ".nr PS 10\n");
 		HBUF_PUTSL(ob, ".nr GROWPS 3\n");
 		hbuf_printf(ob, ".DA %s\n.TL\n", date);
-		escape_block(ob, 
-			(const uint8_t *)title, strlen(title));
+		escape_block(ob, title, strlen(title));
 		HBUF_PUTSL(ob, "\n");
 		if (NULL != author)
 			for (cp = author; '\0' != *cp; ) {
@@ -909,14 +908,12 @@ rndr_doc_header(hbuf *ob,
 				if (0 == sz)
 					continue;
 				HBUF_PUTSL(ob, ".AU\n");
-				hesc_nroff(ob, 
-					(const uint8_t *)start, sz, 0, 1);
+				hesc_nroff(ob, start, sz, 0, 1);
 				HBUF_PUTSL(ob, "\n");
 			}
 	} else {
 		HBUF_PUTSL(ob, ".TH \"");
-		escape_oneline_span(ob, 
-			(const uint8_t *)title, strlen(title));
+		escape_oneline_span(ob, title, strlen(title));
 		hbuf_printf(ob, "\" 7 %s\n", date);
 	}
 }

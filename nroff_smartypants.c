@@ -41,26 +41,26 @@ struct 	sm_dat {
 };
 
 typedef	size_t (*sm_cb_ptr)(hbuf *, struct sm_dat *,
-	uint8_t, const uint8_t *, size_t);
+	char, const char *, size_t);
 
 static size_t sm_cb_amp(hbuf *, struct sm_dat *,
-	uint8_t, const uint8_t *, size_t);
+	char, const char *, size_t);
 static size_t sm_cb_backtick(hbuf *, struct sm_dat *,
-	uint8_t, const uint8_t *, size_t);
+	char, const char *, size_t);
 static size_t sm_cb_dash(hbuf *, struct sm_dat *,
-	uint8_t, const uint8_t *, size_t);
+	char, const char *, size_t);
 static size_t sm_cb_dot(hbuf *, struct sm_dat *,
-	uint8_t, const uint8_t *, size_t);
+	char, const char *, size_t);
 static size_t sm_cb_dquote(hbuf *, struct sm_dat *,
-	uint8_t, const uint8_t *, size_t);
+	char, const char *, size_t);
 static size_t sm_cb_esc(hbuf *, struct sm_dat *,
-	uint8_t, const uint8_t *, size_t);
+	char, const char *, size_t);
 static size_t sm_cb_number(hbuf *, struct sm_dat *,
-	uint8_t, const uint8_t *, size_t);
+	char, const char *, size_t);
 static size_t sm_cb_parens(hbuf *, struct sm_dat *,
-	uint8_t, const uint8_t *, size_t);
+	char, const char *, size_t);
 static size_t sm_cb_squote(hbuf *, struct sm_dat *,
-	uint8_t, const uint8_t *, size_t);
+	char, const char *, size_t);
 
 static	sm_cb_ptr sm_cb_ptrs[] = {
 	NULL,		/* 0 */
@@ -76,7 +76,7 @@ static	sm_cb_ptr sm_cb_ptrs[] = {
 	NULL,		/* 10 */
 };
 
-static const uint8_t sm_cb_chars[UINT8_MAX+1] = {
+static const int sm_cb_chars[UINT8_MAX+1] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* nul -- si */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* dle -- us */
 	0, 0, 4, 0, 0, 0, 5, 3, 2, 0, 0, 0, 0, 1, 8, 0, /* sp -- / */
@@ -96,7 +96,7 @@ static const uint8_t sm_cb_chars[UINT8_MAX+1] = {
 };
 
 static int
-word_boundary(uint8_t c)
+word_boundary(char c)
 {
 
 	return c == 0 || isspace(c) || ispunct(c);
@@ -108,7 +108,7 @@ word_boundary(uint8_t c)
  * the single- quote.  Otherwise, returns zero.
  */
 static size_t
-squote_len(const uint8_t *text, size_t size)
+squote_len(const char *text, size_t size)
 {
 	const char	 **p;
 	size_t		   len;
@@ -130,8 +130,8 @@ squote_len(const uint8_t *text, size_t size)
  * quote.
  */
 static int
-sm_quotes(hbuf *ob, uint8_t previous_char,
-	uint8_t next_char, uint8_t quote, int *is_open)
+sm_quotes(hbuf *ob, char previous_char,
+	char next_char, char quote, int *is_open)
 {
 
 	if (*is_open && !word_boundary(next_char))
@@ -159,11 +159,11 @@ sm_quotes(hbuf *ob, uint8_t previous_char,
  * single-quote, e.g. "'" or ";".
  */
 static size_t
-sm_squote(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char,
-	const uint8_t *text, size_t size,
-	const uint8_t *squote_text, size_t squote_size)
+sm_squote(hbuf *ob, struct sm_dat *smrt, char previous_char,
+	const char *text, size_t size,
+	const char *squote_text, size_t squote_size)
 {
-	uint8_t	 t1, t2, next_char;
+	char	 t1, t2, next_char;
 	size_t	 next_squote_len;
 
 	if (size >= 2) {
@@ -212,7 +212,7 @@ sm_squote(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char,
  * Converts ' to left or right single quote.
  */
 static size_t
-sm_cb_squote(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
+sm_cb_squote(hbuf *ob, struct sm_dat *smrt, char previous_char, const char *text, size_t size)
 {
 	return sm_squote(ob, smrt,
 		previous_char, text, size, text, 1);
@@ -222,9 +222,9 @@ sm_cb_squote(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const uint8_t
  * Converts (c), (r), (tm).
  */
 static size_t
-sm_cb_parens(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
+sm_cb_parens(hbuf *ob, struct sm_dat *smrt, char previous_char, const char *text, size_t size)
 {
-	uint8_t	 t1, t2;
+	char	 t1, t2;
 
 	if (size >= 3) {
 		t1 = tolower((int)text[1]);
@@ -255,7 +255,7 @@ sm_cb_parens(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const uint8_t
  * Converts "--" to em-dash, etc.
  */
 static size_t
-sm_cb_dash(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const uint8_t *text, size_t size)
+sm_cb_dash(hbuf *ob, struct sm_dat *smrt, char previous_char, const char *text, size_t size)
 {
 
 	if (size >= 3 && text[1] == '-' && text[2] == '-') {
@@ -277,7 +277,7 @@ sm_cb_dash(hbuf *ob, struct sm_dat *smrt, uint8_t previous_char, const uint8_t *
  */
 static size_t
 sm_cb_amp(hbuf *ob, struct sm_dat *smrt,
-	uint8_t previous_char, const uint8_t *text, size_t size)
+	char previous_char, const char *text, size_t size)
 {
 	size_t	len;
 
@@ -305,10 +305,10 @@ sm_cb_amp(hbuf *ob, struct sm_dat *smrt,
  */
 static size_t
 sm_cb_esc(hbuf *ob, struct sm_dat *smrt,
-	uint8_t previous_char, const uint8_t *text, size_t size)
+	char previous_char, const char *text, size_t size)
 {
 	size_t	 	 i = 0;
-	const uint8_t	*cp;
+	const char	*cp;
 
 	if ((size >= 5 && 0 == memcmp(text + 1, "f[CR]", 5))) {
 		i = 5;
@@ -330,10 +330,10 @@ sm_cb_esc(hbuf *ob, struct sm_dat *smrt,
  */
 static size_t
 sm_cb_dot(hbuf *ob, struct sm_dat *smrt,
-	uint8_t previous_char, const uint8_t *text, size_t size)
+	char previous_char, const char *text, size_t size)
 {
 	size_t	 	 i = 0;
-	const uint8_t	*cp;
+	const char	*cp;
 
 	if ((0 == previous_char || '\n' == previous_char) &&
 	    (size >= 6 && 0 == memcmp(text + 1, "ft CR\n", 6))) {
@@ -355,7 +355,7 @@ sm_cb_dot(hbuf *ob, struct sm_dat *smrt,
  */
 static size_t
 sm_cb_backtick(hbuf *ob, struct sm_dat *smrt,
-	uint8_t previous_char, const uint8_t *text, size_t size)
+	char previous_char, const char *text, size_t size)
 {
 
 	if (size >= 2 && text[1] == '`') {
@@ -373,7 +373,7 @@ sm_cb_backtick(hbuf *ob, struct sm_dat *smrt,
  */
 static size_t
 sm_cb_number(hbuf *ob, struct sm_dat *smrt,
-	uint8_t previous_char, const uint8_t *text, size_t size)
+	char previous_char, const char *text, size_t size)
 {
 
 	if (word_boundary(previous_char) && size >= 3) {
@@ -419,7 +419,7 @@ sm_cb_number(hbuf *ob, struct sm_dat *smrt,
  */
 static size_t
 sm_cb_dquote(hbuf *ob, struct sm_dat *smrt,
-	uint8_t previous_char, const uint8_t *text, size_t size)
+	char previous_char, const char *text, size_t size)
 {
 
 	if ( ! sm_quotes(ob, previous_char,
@@ -433,11 +433,11 @@ sm_cb_dquote(hbuf *ob, struct sm_dat *smrt,
  * Process a nroff snippet using SmartyPants for smart punctuation.
  */
 void
-lowdown_nroff_smrt(hbuf *ob, const uint8_t *text, size_t size)
+lowdown_nroff_smrt(hbuf *ob, const char *text, size_t size)
 {
 	size_t 		 i, org, bscan;
 	struct sm_dat	 smrt;
-	uint8_t		 action = 0;
+	char		 action = 0;
 
 	if (NULL == text || 0 == size)
 		return;
@@ -450,7 +450,8 @@ lowdown_nroff_smrt(hbuf *ob, const uint8_t *text, size_t size)
 		action = 0;
 
 		org = i;
-		while (i < size && (action = sm_cb_chars[text[i]]) == 0)
+		while (i < size && 
+		       (action = sm_cb_chars[(unsigned char)text[i]]) == 0)
 			i++;
 
 		if (i > org)
@@ -458,7 +459,7 @@ lowdown_nroff_smrt(hbuf *ob, const uint8_t *text, size_t size)
 
 		/* Don't convert quotes on macro lines. */
 
-		if ('"' == text[i]) {
+		if (i < size && '"' == text[i]) {
 			assert('\n' != text[i]);
 			for (bscan = i; bscan > 0; bscan--)
 				if ('\n' == text[bscan]) {

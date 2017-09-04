@@ -54,22 +54,22 @@ hbuf	*hbuf_new(size_t) __attribute__((malloc));
 int	 hbuf_prefix(const hbuf *, const char *);
 void	 hbuf_printf(hbuf *, const char *, ...) 
 		__attribute__((format (printf, 2, 3)));
-void	 hbuf_put(hbuf *, const uint8_t *, size_t);
-void	 hbuf_putc(hbuf *, uint8_t);
+void	 hbuf_put(hbuf *, const char *, size_t);
+void	 hbuf_putc(hbuf *, char);
 int	 hbuf_putf(hbuf *, FILE *);
 void	 hbuf_puts(hbuf *, const char *);
 
 /* Optimized hbuf_puts of a string literal. */
 #define HBUF_PUTSL(output, literal) \
-	hbuf_put(output, (const uint8_t *)literal, sizeof(literal) - 1)
+	hbuf_put(output, (const char *)literal, sizeof(literal) - 1)
 
-size_t	 halink_email(size_t *, hbuf *, uint8_t *, size_t, size_t);
-size_t	 halink_url(size_t *, hbuf *, uint8_t *, size_t, size_t);
-size_t	 halink_www(size_t *, hbuf *, uint8_t *, size_t, size_t);
+size_t	 halink_email(size_t *, hbuf *, char *, size_t, size_t);
+size_t	 halink_url(size_t *, hbuf *, char *, size_t, size_t);
+size_t	 halink_www(size_t *, hbuf *, char *, size_t, size_t);
 
-void	 hesc_href(hbuf *, const uint8_t *, size_t);
-void	 hesc_html(hbuf *, const uint8_t *, size_t, int);
-void	 hesc_nroff(hbuf *, const uint8_t *, size_t, int, int);
+void	 hesc_href(hbuf *, const char *, size_t);
+void	 hesc_html(hbuf *, const char *, size_t, int);
+void	 hesc_nroff(hbuf *, const char *, size_t, int, int);
 
 void	 lmsg(const struct lowdown_opts *, enum lowdown_err, const char *, ...)
 		__attribute__ ((format(printf, 3, 4)));
