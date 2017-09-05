@@ -74,9 +74,10 @@ install: all
 	install -m 0755 lowdown $(DESTDIR)$(BINDIR)
 	install -m 0644 liblowdown.a $(DESTDIR)$(LIBDIR)
 	install -m 0644 lowdown.h $(DESTDIR)$(INCLUDEDIR)
-	install -m 0644 man/lowdown.1 $(DESTDIR)$(MANDIR)/man1
 	for f in $(MANS) ; do \
-		install -m 0644 man/`basename $$f .html` $(DESTDIR)$(MANDIR)/man3 ; \
+		name=`basename $$f .html` ; \
+		section=$${name##*.} ; \
+		install -m 0644 man/$$name $(DESTDIR)$(MANDIR)/man$$section ; \
 	done
 
 index.xml README.xml index.pdf README.pdf: lowdown
