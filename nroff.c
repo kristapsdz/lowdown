@@ -228,7 +228,7 @@ putlink(hbuf *ob, const struct nstate *st,
 		if (NULL == text)
 			hbuf_put(ob, link->data, link->size);
 		else
-			hbuf_put(ob, text->data, text->size);
+			hesc_nroff(ob, text->data, text->size, 0, 1);
 	}
 
 	HBUF_PUTSL(ob, "\n");
