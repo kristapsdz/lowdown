@@ -309,7 +309,7 @@
 			<p>
 				Fix installation of manpages (in Makefile) thanks to Anton Lindqvist.
 				Clean up the code some more&#8212;no functional changes, just removing useless casts and improving documentation style.
-				Add required <code>&lt;sys/queue.h&gt; header to library manpages.
+				Add required <code>&lt;sys/queue.h&gt;</code> header to library manpages.
 			</p>
 		</aside>
 	</article>
