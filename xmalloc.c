@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2004 Marius Aamodt Eriksen <marius@monkey.org>
- * Copyright (c) 2016--2017 Kristaps Dzonsons <kristaps@bsd.l>
+ * Copyright (c) 2016--2017 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
