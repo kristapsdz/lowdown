@@ -45,7 +45,11 @@ hbuf_init(hbuf *buf, size_t unit, int buffer_free)
 	buf->buffer_free = buffer_free;
 }
 
-/* allocate a new buffer */
+/* 
+ * Allocate a new buffer.
+ * FIXME: the "unit" value is stupid (see hbuf_grow()).
+ * Always returns a valid pointer (ENOMEM aborts).
+ */
 hbuf *
 hbuf_new(size_t unit)
 {
@@ -54,7 +58,10 @@ hbuf_new(size_t unit)
 	return ret;
 }
 
-/* free the buffer */
+/* 
+ * Free the buffer.
+ * Passing NULL is a noop.
+ */
 void
 hbuf_free(hbuf *buf)
 {
@@ -67,11 +74,23 @@ hbuf_free(hbuf *buf)
 		free(buf);
 }
 
-/* increase the allocated size to the given value */
+/* 
+ * Increase the allocated size to the given value.
+ * May not be NULL.
+ * Always succeeds: ENOMEM will abort.
+ * Note: "unit" must be defined (grow size).
+ */
 void
 hbuf_grow(hbuf *buf, size_t neosz)
 {
 	size_t neoasz;
+
+	/* 
+	 * FIXME: this is a stupid assertion.
+	 * hbuf_new should have a default value that doesn't change
+	 * depending on whether we're a block/span, which is just a
+	 * useless micro optimisation.
+	 */
 	assert(buf && buf->unit);
 
 	if (buf->asize >= neosz)
@@ -85,7 +104,11 @@ hbuf_grow(hbuf *buf, size_t neosz)
 	buf->asize = neoasz;
 }
 
-/* append raw data to a buffer */
+/* 
+ * Append raw data to a buffer.
+ * May not be NULL.
+ * See hbuf_grow().
+ */
 void
 hbuf_put(hbuf *buf, const char *data, size_t size)
 {
@@ -98,7 +121,11 @@ hbuf_put(hbuf *buf, const char *data, size_t size)
 	buf->size += size;
 }
 
-/* append a nil-terminated string to a buffer */
+/* 
+ * Append a nil-terminated string to a buffer.
+ * Neither may be NULL.
+ * See hbuf_put().
+ */
 void
 hbuf_puts(hbuf *buf, const char *str)
 {
@@ -107,7 +134,11 @@ hbuf_puts(hbuf *buf, const char *str)
 	hbuf_put(buf, str, strlen(str));
 }
 
-/* append a single char to a buffer */
+/* 
+ * Append a single char to a buffer.
+ * May not be NULL.
+ * See hbuf_grow().
+ */
 void
 hbuf_putc(hbuf *buf, char c)
 {
@@ -120,7 +151,10 @@ hbuf_putc(hbuf *buf, char c)
 	buf->size += 1;
 }
 
-/* read from a file and append to a buffer, until EOF or error */
+/* 
+ * Read from a file and append to a buffer, until EOF or error.
+ * Returns ferror(3).
+ */
 int
 hbuf_putf(hbuf *buf, FILE *file)
 {
@@ -134,14 +168,17 @@ hbuf_putf(hbuf *buf, FILE *file)
 	return ferror(file);
 }
 
-/* compare the beginning of a buffer with a string */
+/* 
+ * Compare the beginning of a buffer with a string.
+ * Returns zero on no match, otherwise non-zero.
+ */
 int
 hbuf_prefix(const hbuf *buf, const char *prefix)
 {
 	size_t i;
 
 	for (i = 0; i < buf->size; ++i) {
-		if (prefix[i] == 0)
+		if (prefix[i] == '\0')
 			return 0;
 
 		if (buf->data[i] != prefix[i])
@@ -151,7 +188,9 @@ hbuf_prefix(const hbuf *buf, const char *prefix)
 	return 0;
 }
 
-/* formatted printing to a buffer */
+/* 
+ * Formatted printing to a buffer.
+ */
 void
 hbuf_printf(hbuf *buf, const char *fmt, ...)
 {
@@ -164,7 +203,7 @@ hbuf_printf(hbuf *buf, const char *fmt, ...)
 		hbuf_grow(buf, buf->size + 1);
 
 	va_start(ap, fmt);
-	n = vsnprintf((char *)buf->data + buf->size, buf->asize - buf->size, fmt, ap);
+	n = vsnprintf(buf->data + buf->size, buf->asize - buf->size, fmt, ap);
 	va_end(ap);
 
 	if (n < 0)
@@ -174,7 +213,7 @@ hbuf_printf(hbuf *buf, const char *fmt, ...)
 		hbuf_grow(buf, buf->size + n + 1);
 
 		va_start(ap, fmt);
-		n = vsnprintf((char *)buf->data + buf->size, buf->asize - buf->size, fmt, ap);
+		n = vsnprintf(buf->data + buf->size, buf->asize - buf->size, fmt, ap);
 		va_end(ap);
 	}
 
