@@ -299,4 +299,18 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.2.4</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2017-09-05">2017-09-05</time>
+		</header>
+		<aside>
+			<p>
+				Fix installation of manpages (in Makefile) thanks to Anton Lindqvist.
+				Clean up the code some more&#8212;no functional changes, just removing useless casts and improving documentation style.
+				Add required <code>&lt;sys/queue.h&gt; header to library manpages.
+			</p>
+		</aside>
+	</article>
 </articles>
