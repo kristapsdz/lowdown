@@ -55,7 +55,7 @@ halink_is_safe(const char *data, size_t size)
 	for (i = 0; i < VALID_URIS_SZ; ++i) {
 		len = strlen(valid_uris[i]);
 		if (size > len &&
-		    strncasecmp((char *)data, valid_uris[i], len) == 0 &&
+		    strncasecmp(data, valid_uris[i], len) == 0 &&
 		    isalnum(data[len]))
 			return 1;
 	}
