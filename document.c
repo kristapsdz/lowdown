@@ -1306,8 +1306,7 @@ char_link(hdoc *doc, char *data, size_t offset, size_t size)
 		for (j = 0; j < doc->msz; j++) {
 			sz = strlen(doc->m[j].key);
 			if (sz == id.size && 
-			    0 == strncmp(doc->m[j].key, 
-				  	 (char *)id.data, sz)) {
+			    0 == strncmp(doc->m[j].key, id.data, sz)) {
 				n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 				memset(&work, 0, sizeof(hbuf));
 				work.data = doc->m[j].value;
@@ -2443,7 +2442,7 @@ htmlblock_is_end(const char *tag, size_t tag_len,
 
 	if (i > size ||
 		data[1] != '/' ||
-		strncasecmp((char *)data + 2, tag, tag_len) != 0 ||
+		strncasecmp(data + 2, tag, tag_len) != 0 ||
 		data[tag_len + 2] != '>')
 		return 0;
 
@@ -2580,7 +2579,7 @@ parse_htmlblock(hdoc *doc, char *data, size_t size)
 		i++;
 
 	if (i < size)
-		curtag = hhtml_find_block((char *)data + 1, i - 1);
+		curtag = hhtml_find_block(data + 1, i - 1);
 
 	/* Handling of special cases. */
 
@@ -3462,9 +3461,9 @@ parse_metadata(hdoc *doc, const char *data, size_t sz)
 		m = &doc->m[doc->msz++];
 		memset(m, 0, sizeof(struct lowdown_meta));
 
-		m->key = xstrndup((char *)key, i - pos);
+		m->key = xstrndup(key, i - pos);
 		if (i == sz) {
-			m->value = xstrndup((char *)key, 0);
+			m->value = xstrndup(key, 0);
 			break;
 		}
 
@@ -3472,7 +3471,7 @@ parse_metadata(hdoc *doc, const char *data, size_t sz)
 
 		i++;
 		val = parse_metadata_val(&data[i], sz - i, &valsz);
-		m->value = xstrndup((const char *)val, valsz);
+		m->value = xstrndup(val, valsz);
 		pos = i + valsz + 1;
 	}
 
