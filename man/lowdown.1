@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate: August 30 2017 $
+.Dd $Mdocdate: September 1 2017 $
 .Dt LOWDOWN 1
 .Os
 .Sh NAME
@@ -315,17 +315,33 @@ Give each header an identifier created by encoding its content.
 .It Ar nroff-numbered
 Use numbered sections.
 Only applies to the
-.Fl T Ar ms
+.Fl T Ns Ar ms
 output mode.
 .It Ar nroff-groff
 Use GNU extensions (i.e., for
 .Xr groff 1 )
 when rendering output.
+Only applies to the
+.Fl T Ns Ar ms
+output mode.
 You'll need to include
-.Fl m Ar pdfmark
+.Fl m Ns Ar pdfmark
 when invoking
 .Xr groff 1
-for formatting links.
+for formatting links,
+.Fl t
+for the table extension, and
+.Fl m Ns Ar pspic
+.Pq not necessary to specify
+for images.
+Note that
+.Ar pspic
+will only work with
+.Fl T Ns Ar ps
+output or via
+.Xr pdfroff 1
+as noted in the
+.Sx EXAMPLES .
 .It Ar nroff-hardwrap
 Retain line-breaks within paragraphs.
 .It Ar nroff-skiphtml
@@ -348,29 +364,38 @@ To do the same but using
 to format as a PS file:
 .Bd -literal -offset indent
 lowdown -s -Tms foo.md | \e
-  groff -t -ms -mpdfmark > foo.ps
+  groff -t -ms -mpdfmark -k -Kutf8 > foo.ps
 .Ed
 .Pp
-Note the
-.Fl t :
-since
-.Nm
-may emit tables, you'll need it.
-Moreover, the
-.Fl m Ar pdfmark
-is for the groff extensions.
+The arguments to
+.Xr groff 1
+dictate input type
+.Pq Fl m Ns Ar s , Fl m Ns Ar pdfmark ,
+input encoding
+.Pq Fl k , Fl K Ns Ar utf8 ,
+and extensions
+.Pq Fl t .
+.Pp
 Alternatively, using only
 .Xr mandoc 1 :
-.Pp
-.Dl lowdown -sT man foo.md | mandoc -Tps > foo.ps
-.Pp
-If your document uses UTF-8 without the byte-order mark, you may need to
-specifically set the encoding in either formatter:
-.Pp
-.Dl lowdown -sT man foo.md | mandoc -Tps -Kutf-8 > foo.ps
 .Bd -literal -offset indent
-lowdown -sT ms foo.md | \e
-  groff -k -Dutf8 -t -ms -mpdfmark > foo.ps
+lowdown -sTman foo.md | mandoc -Tps > foo.ps
+.Ed
+.Pp
+To have PDF output, use the
+.Xr pdfroff 1
+utility instead of the
+.Fl T Ns Ar pdf
+output to
+.Xr groff 1 ,
+as it manages image conversion.
+The
+.Fl i
+flag notes standard input; other flags are passed to
+.Xr groff 1 .
+.Bd -literal -offset indent
+lowdown -sTms foo.d | \e
+  pdfroff -i -t -ms -mpdfmark -k -Kutf8 > foo.pdf
 .Ed
 .Pp
 To extract the HTML-escaped title from a file's metadata:
