@@ -43,6 +43,13 @@
 		hbuf_putc((_ob), '\n'); \
 	while (/* CONSTCOND */ 0)
 
+enum	nfont {
+	NFONT_ITALIC = 0, /* italic */
+	NFONT_BOLD, /* bold */
+	NFONT_FIXED, /* fixed-width */
+	NFONT__MAX
+};
+
 /*
  * This relates to the roff output, not the node type.
  * If NSCOPE_BLOCK, the output is newline-terminated.
@@ -56,6 +63,7 @@ enum	nscope {
 struct 	nstate {
 	int 		 mdoc; /* whether mdoc(7) */
 	unsigned int 	 flags; /* output flags */
+	enum nfont	 fonts[NFONT__MAX]; /* see nstate_fonts() */
 };
 
 static const enum nscope nscopes[LOWDOWN__MAX] = {
@@ -117,6 +125,42 @@ escape_oneline_span(hbuf *ob, const char *source, size_t length)
 }
 
 /*
+ * Return the font string for the current set of fonts.
+ * FIXME: I don't think this works for combinations of fixed-width,
+ * bold, and italic.
+ */
+static const char *
+nstate_fonts(const struct nstate *st)
+{
+	static char 	 fonts[10];
+	char		*cp = fonts;
+
+	(*cp++) = '\\';
+	(*cp++) = 'f';
+	(*cp++) = '[';
+
+	if (st->fonts[NFONT_FIXED])
+		(*cp++) = 'C';
+	if (st->fonts[NFONT_BOLD])
+		(*cp++) = 'B';
+	if (st->fonts[NFONT_ITALIC])
+		(*cp++) = 'I';
+	if (st->fonts[NFONT_FIXED] &&
+	    (0 == st->fonts[NFONT_BOLD] &&
+	     0 == st->fonts[NFONT_ITALIC]))
+		(*cp++) = 'R';
+
+	/* Reset. */
+	if (0 == st->fonts[NFONT_BOLD] &&
+	    0 == st->fonts[NFONT_FIXED] &&
+	    0 == st->fonts[NFONT_ITALIC])
+		(*cp++) = 'R';
+	(*cp++) = ']';
+	(*cp++) = '\0';
+	return(fonts);
+}
+
+/*
  * Manage hypertext linking with the groff "pdfhref" macro or simply
  * using italics.
  * We use italics because the UR/UE macro doesn't support leading
@@ -125,7 +169,7 @@ escape_oneline_span(hbuf *ob, const char *source, size_t length)
  * link, if no text is found).
  */
 static int
-putlink(hbuf *ob, const struct nstate *st,
+putlink(hbuf *ob, struct nstate *st, 
 	const hbuf *link, const hbuf *text, 
 	struct lowdown_node *next, struct lowdown_node *prev)
 {
@@ -168,12 +212,14 @@ putlink(hbuf *ob, const struct nstate *st,
 	}
 
 	if ( ! usepdf) {
-		HBUF_PUTSL(ob, "\\fI");
+		st->fonts[NFONT_ITALIC]++;
+		hbuf_puts(ob, nstate_fonts(st));
 		if (NULL == text)
 			hbuf_put(ob, link->data, link->size);
 		else
 			hbuf_put(ob, text->data, text->size);
-		HBUF_PUTSL(ob, "\\fP");
+		st->fonts[NFONT_ITALIC]--;
+		hbuf_puts(ob, nstate_fonts(st));
 	}
 
 	/*
@@ -238,7 +284,7 @@ putlink(hbuf *ob, const struct nstate *st,
 static int
 rndr_autolink(hbuf *ob, const hbuf *link, enum halink_type type, 
 	struct lowdown_node *prev, struct lowdown_node *next,
-	const struct nstate *st, int nln)
+	struct nstate *st, int nln)
 {
 
 	if (NULL == link || 0 == link->size)
@@ -290,17 +336,14 @@ rndr_blockquote(hbuf *ob, const hbuf *content)
 	HBUF_PUTSL(ob, ".B2\n");
 }
 
-static int
+static void
 rndr_codespan(hbuf *ob, const hbuf *content)
 {
 
 	if (NULL == content || 0 == content->size)
-		return(0);
+		return;
 
-	HBUF_PUTSL(ob, "\\f[CR]");
 	escape_span(ob, content->data, content->size);
-	HBUF_PUTSL(ob, "\\fR");
-	return 1;
 }
 
 /*
@@ -314,62 +357,6 @@ rndr_strikethrough(hbuf *ob, const hbuf *content)
 		return(0);
 
 	hbuf_put(ob, content->data, content->size);
-	return 1;
-}
-
-static int
-rndr_double_emphasis(hbuf *ob, const hbuf *content)
-{
-
-	if (NULL == content || 0 == content->size)
-		return(0);
-
-	HBUF_PUTSL(ob, "\\fB");
-	hbuf_put(ob, content->data, content->size);
-	HBUF_PUTSL(ob, "\\fP");
-
-	return 1;
-}
-
-static int
-rndr_triple_emphasis(hbuf *ob, const hbuf *content)
-{
-
-	if (NULL == content || 0 == content->size)
-		return(0);
-
-	HBUF_PUTSL(ob, "\\f[BI]");
-	hbuf_put(ob, content->data, content->size);
-	HBUF_PUTSL(ob, "\\fP");
-
-	return 1;
-}
-
-static int
-rndr_emphasis(hbuf *ob, const hbuf *content)
-{
-
-	if (NULL == content || 0 == content->size)
-		return(0);
-
-	HBUF_PUTSL(ob, "\\fI");
-	hbuf_put(ob, content->data, content->size);
-	HBUF_PUTSL(ob, "\\fP");
-
-	return 1;
-}
-
-static int
-rndr_highlight(hbuf *ob, const hbuf *content)
-{
-
-	if (NULL == content || 0 == content->size)
-		return(0);
-
-	HBUF_PUTSL(ob, "\\fB");
-	hbuf_put(ob, content->data, content->size);
-	HBUF_PUTSL(ob, "\\fP");
-
 	return 1;
 }
 
@@ -411,7 +398,7 @@ rndr_header(hbuf *ob, const hbuf *content, int level,
 
 static int
 rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, 
-	const struct nstate *st, struct lowdown_node *prev, 
+	struct nstate *st, struct lowdown_node *prev, 
 	struct lowdown_node *next, int nln)
 {
 
@@ -726,8 +713,7 @@ rndr_normal_text(hbuf *ob, const hbuf *content, size_t offs,
 	 * we'll put that in the link's pdfhref.
 	 */
 
-	if (NULL != next && ! st->mdoc &&
-	    (st->flags & LOWDOWN_NROFF_GROFF) &&
+	if (NULL != next &&
 	    (LOWDOWN_LINK_AUTO == next->type ||
 	     LOWDOWN_LINK == next->type))
 		while (size && ! isspace((int)data[size - 1]))
@@ -762,6 +748,11 @@ rndr_footnotes(hbuf *ob, const hbuf *content, const struct nstate *st)
 static void
 rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num)
 {
+
+	/*
+	 * We don't need to worry about the font stack because we're
+	 * guaranteed not to have any inner parts.
+	 */
 
 	HBUF_PUTSL(ob, ".LP\n");
 	hbuf_printf(ob, "\\fI%u.\\fP\n", num);
@@ -956,15 +947,47 @@ rndr_doc_header(hbuf *ob,
  * Return whether we should remove nodes relative to "root".
  */
 static void
-rndr(hbuf *ob, const struct nstate *ref, struct lowdown_node *root)
+rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 {
 	struct lowdown_node *n, *next, *prev;
 	hbuf		*tmp;
 	int		 pnln, keepnext;
+	enum nfont	 fonts[NFONT__MAX];
 
 	assert(NULL != root);
 
 	tmp = hbuf_new(64);
+
+	memcpy(fonts, ref->fonts, sizeof(fonts));
+
+	/*
+	 * Font management.
+	 * roff doesn't handle its own font stack, so we can't set fonts
+	 * and step out of them in a nested way.
+	 */
+
+	switch (root->type) {
+	case (LOWDOWN_CODESPAN):
+		ref->fonts[NFONT_FIXED]++;
+		hbuf_puts(ob, nstate_fonts(ref));
+		break;
+	case (LOWDOWN_EMPHASIS):
+		ref->fonts[NFONT_ITALIC]++;
+		hbuf_puts(ob, nstate_fonts(ref));
+		break;
+	case (LOWDOWN_HIGHLIGHT):
+	case (LOWDOWN_DOUBLE_EMPHASIS):
+		ref->fonts[NFONT_BOLD]++;
+		hbuf_puts(ob, nstate_fonts(ref));
+		break;
+	case (LOWDOWN_TRIPLE_EMPHASIS):
+		ref->fonts[NFONT_ITALIC]++;
+		ref->fonts[NFONT_BOLD]++;
+		hbuf_puts(ob, nstate_fonts(ref));
+		break;
+	default:
+		break;
+	}
 
 	TAILQ_FOREACH(n, &root->children, entries)
 		rndr(tmp, ref, n);
@@ -1053,15 +1076,6 @@ rndr(hbuf *ob, const struct nstate *ref, struct lowdown_node *root)
 	case (LOWDOWN_CODESPAN):
 		rndr_codespan(ob, &root->rndr_codespan.text);
 		break;
-	case (LOWDOWN_DOUBLE_EMPHASIS):
-		rndr_double_emphasis(ob, tmp);
-		break;
-	case (LOWDOWN_EMPHASIS):
-		rndr_emphasis(ob, tmp);
-		break;
-	case (LOWDOWN_HIGHLIGHT):
-		rndr_highlight(ob, tmp);
-		break;
 	case (LOWDOWN_IMAGE):
 		rndr_image(ob, &root->rndr_image.link,
 			ref, pnln, prev);
@@ -1073,9 +1087,6 @@ rndr(hbuf *ob, const struct nstate *ref, struct lowdown_node *root)
 		keepnext = rndr_link(ob, tmp,
 			&root->rndr_link.link,
 			ref, prev, next, pnln);
-		break;
-	case (LOWDOWN_TRIPLE_EMPHASIS):
-		rndr_triple_emphasis(ob, tmp);
 		break;
 	case (LOWDOWN_STRIKETHROUGH):
 		rndr_strikethrough(ob, tmp);
@@ -1108,6 +1119,21 @@ rndr(hbuf *ob, const struct nstate *ref, struct lowdown_node *root)
 		break;
 	}
 
+	/* Restore the font stack. */
+
+	switch (root->type) {
+	case (LOWDOWN_CODESPAN):
+	case (LOWDOWN_EMPHASIS):
+	case (LOWDOWN_HIGHLIGHT):
+	case (LOWDOWN_DOUBLE_EMPHASIS):
+	case (LOWDOWN_TRIPLE_EMPHASIS):
+		memcpy(ref->fonts, fonts, sizeof(fonts));
+		hbuf_puts(ob, nstate_fonts(ref));
+		break;
+	default:
+		break;
+	}
+
 	hbuf_free(tmp);
 
 	/* 
@@ -1125,7 +1151,9 @@ rndr(hbuf *ob, const struct nstate *ref, struct lowdown_node *root)
 void
 lowdown_nroff_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
 {
+	struct nstate	*st = ref;
 
+	memset(st->fonts, 0, sizeof(st->fonts));
 	rndr(ob, ref, root);
 }
 
