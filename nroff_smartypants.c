@@ -310,11 +310,11 @@ sm_cb_esc(hbuf *ob, struct sm_dat *smrt,
 	size_t	 	 i = 0;
 	const char	*cp;
 
-	if ((size >= 5 && 0 == memcmp(text + 1, "f[CR]", 5))) {
-		i = 5;
+	if ((size >= 3 && 0 == memcmp(text + 1, "f[C", 3))) {
+		i = 3;
 		hbuf_put(ob, text, i);
 		/* FIXME: check size - i >= 3 */
-		cp = memmem(text + i, size - i, "\\fR", 3);
+		cp = memmem(text + i, size - i, "\\f[", 3);
 		assert(NULL != cp);
 		hbuf_put(ob, text + i, cp - (text + i));
 		i += cp - (text + i) - 1;
