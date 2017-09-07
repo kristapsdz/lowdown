@@ -124,16 +124,20 @@ This can use the document's meta-data to populate the title, CSS file,
 and so on.
 
 The troff output modes work well to make PS or PDF files, although they
-will omit graphics and equations.
-There is a possibility to later add support for PIC, but even then, it
-will only support specific types of graphics.
+will omit equations and only use local PS/EPS images in **-Tms** mode.
 The extra groff arguments in the following invocation are for UTF-8
-processing (**-k** and **-Dutf8**), tables (**-t**), and clickable links
+processing (**-k** and **-Kutf8**), tables (**-t**), and clickable links
 (**-mpdfmark**).
+
+If outputting PDF, use the pdfroff script instead of **-Tpdf** output.
+This allows image generation to work properly.  If not, a blank square
+will be output in places of your images.
 
 ```sh
 lowdown -s -Tms README.md | \
-  groff -k -Dutf8 -t -ms -mpdfmark > README.ps
+  groff -k -Kutf8 -t -ms -mpdfmark > README.ps
+lowdown -s -Tms README.md | \
+  pdfroff -i -k -Kutf8 -t -ms -pdfmark > README.pdf
 ```
 
 On OpenBSD or other BSD systems, you can run *lowdown* within the base
@@ -252,12 +256,7 @@ was invoked within.
 There are some known issues, mostly in PDF (**-Tms** and **-Tman**)
 output.
 
-Foremost, there needs to be a font modifier stack, as this feature is
-not supported directly in the roff language.
-For example, if one execute \*foo \*\*bar\*\* baz\*, the output will be
-confused because this translate to \fIfoo \fBbar\fP baz\fP. 
-
-Second, there needs to be logic to handle when a link is the first or
+Foremost, there needs to be logic to handle when a link is the first or
 last component of a font change.  For example, \*\[foo\](...)\* will put
 the font markers on different lines.
 
