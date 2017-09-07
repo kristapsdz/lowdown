@@ -80,7 +80,7 @@ static const enum nscope nscopes[LOWDOWN__MAX] = {
 	NSCOPE_SPAN, /* LOWDOWN_DOUBLE_EMPHASIS */
 	NSCOPE_SPAN, /* LOWDOWN_EMPHASIS */
 	NSCOPE_SPAN, /* LOWDOWN_HIGHLIGHT */
-	NSCOPE_SPAN, /* LOWDOWN_IMAGE */
+	NSCOPE_BLOCK, /* LOWDOWN_IMAGE */
 	NSCOPE_BLOCK, /* LOWDOWN_LINEBREAK */
 	NSCOPE_BLOCK, /* LOWDOWN_LINK */
 	NSCOPE_SPAN, /* LOWDOWN_TRIPLE_EMPHASIS */
@@ -557,13 +557,45 @@ rndr_hrule(hbuf *ob, const struct nstate *st)
 		HBUF_PUTSL(ob, "\\l\'\\n(.lu-\\n(\\n[.in]u\'\n");
 }
 
-static int
-rndr_image(void)
+static void
+rndr_image(hbuf *ob, const hbuf *link, const struct nstate *st, 
+	int nln, const struct lowdown_node *prev)
 {
+	const char	*cp;
+	size_t		 sz;
 
-	/* FIXME: use lowdown_opts warnings. */
-	warnx("warning: graphics not supported");
-	return 1;
+	if (st->mdoc) {
+		warnx("warning: images not supported");
+		return;
+	}
+
+	cp = memrchr(link->data, '.', link->size);
+	if (NULL == cp) {
+		warnx("warning: no image suffix (ignoring)");
+		return;
+	}
+
+	cp++;
+	sz = link->size - (cp - link->data);
+
+	if (0 == sz) {
+		warnx("warning: empty image suffix (ignoring)");
+		return;
+	}
+
+	if ( ! (2 == sz && 0 == memcmp(cp, "ps", 2)) &&
+	     ! (3 == sz && 0 == memcmp(cp, "eps", 3))) {
+		warnx("warning: unknown image suffix (ignoring)");
+		return;
+	}
+
+	if ( ! nln)
+		if (NULL == prev ||
+		    (ob->size && '\n' != ob->data[ob->size - 1]))
+			HBUF_PUTSL(ob, "\n");
+
+	hbuf_printf(ob, ".PSPIC %.*s\n", 
+		(int)link->size, link->data);
 }
 
 static int
@@ -1031,7 +1063,8 @@ rndr(hbuf *ob, const struct nstate *ref, struct lowdown_node *root)
 		rndr_highlight(ob, tmp);
 		break;
 	case (LOWDOWN_IMAGE):
-		rndr_image();
+		rndr_image(ob, &root->rndr_image.link,
+			ref, pnln, prev);
 		break;
 	case (LOWDOWN_LINEBREAK):
 		rndr_linebreak(ob);
