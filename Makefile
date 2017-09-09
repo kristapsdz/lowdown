@@ -86,7 +86,7 @@ index.html README.html: template.xml
 
 .md.pdf:
 	./lowdown -Dnroff-numbered -s -Tms $< | \
-		groff -Tpdf -dpaper=a4 -P-pa4 -ms -mpdfmark > $@
+		pdfroff -i -mspdf -t -k -Kutf8 > $@
 
 .xml.html:
 	sblg -t template.xml -o $@ -C $< $< versions.xml
