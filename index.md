@@ -127,7 +127,7 @@ The troff output modes work well to make PS or PDF files, although they
 will omit equations and only use local PS/EPS images in **-Tms** mode.
 The extra groff arguments in the following invocation are for UTF-8
 processing (**-k** and **-Kutf8**), tables (**-t**), and clickable links
-(**-mpdfmark**).
+and a table of contents (**-mspdf**).
 
 If outputting PDF, use the pdfroff script instead of **-Tpdf** output.
 This allows image generation to work properly.  If not, a blank square
@@ -135,9 +135,9 @@ will be output in places of your images.
 
 ```sh
 lowdown -s -Tms README.md | \
-  groff -k -Kutf8 -t -ms -mpdfmark > README.ps
+  groff -k -Kutf8 -t -mspdf > README.ps
 lowdown -s -Tms README.md | \
-  pdfroff -i -k -Kutf8 -t -ms -pdfmark > README.pdf
+  pdfroff -i -k -Kutf8 -t -mspdf > README.pdf
 ```
 
 On OpenBSD or other BSD systems, you can run *lowdown* within the base
