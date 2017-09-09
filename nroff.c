@@ -370,6 +370,17 @@ rndr_linebreak(hbuf *ob)
 	return 1;
 }
 
+/*
+ * For man(7), we use SH for the first-level section, SS for other
+ * sections.
+ * FIXME: use PP then italics or something for third-level etc.
+ * For ms(7), just use SH.
+ * (Again, see above FIXME.)
+ * If we're using ms(7) w/groff extensions, used the numbered version of
+ * the SH macro.
+ * If we're numbered ms(7), use NH.
+ * If we're numbered ms(7) w/extensions, use NH and XN (-mspdf).
+ */
 static void
 rndr_header(hbuf *ob, const hbuf *content, int level,
 	const struct nstate *st)
@@ -383,17 +394,27 @@ rndr_header(hbuf *ob, const hbuf *content, int level,
 			HBUF_PUTSL(ob, ".SH ");
 		else 
 			HBUF_PUTSL(ob, ".SS ");
-	} else {
-		if (st->flags & LOWDOWN_NROFF_NUMBERED) 
-			hbuf_printf(ob, ".NH %d\n", level);
-		else if (st->flags & LOWDOWN_NROFF_GROFF) 
-			hbuf_printf(ob, ".SH %d\n", level);
-		else
-			hbuf_printf(ob, ".SH\n");
-	}
+		escape_oneline_span(ob, content->data, content->size);
+		HBUF_PUTSL(ob, "\n");
+		return;
+	} 
 
-	hbuf_put(ob, content->data, content->size);
-	BUFFER_NEWLINE(content->data, content->size, ob);
+	if (st->flags & LOWDOWN_NROFF_NUMBERED)
+		hbuf_printf(ob, ".NH %d\n", level);
+	else if (st->flags & LOWDOWN_NROFF_GROFF) 
+		hbuf_printf(ob, ".SH %d\n", level);
+	else
+		hbuf_printf(ob, ".SH\n");
+
+	if ((st->flags & LOWDOWN_NROFF_NUMBERED) &&
+	    (st->flags & LOWDOWN_NROFF_GROFF)) {
+		HBUF_PUTSL(ob, ".XN ");
+		escape_oneline_span(ob, content->data, content->size);
+		HBUF_PUTSL(ob, "\n");
+	} else {
+		hbuf_put(ob, content->data, content->size);
+		BUFFER_NEWLINE(content->data, content->size, ob);
+	}
 }
 
 static int
