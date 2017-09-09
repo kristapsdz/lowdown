@@ -150,10 +150,10 @@ struct	lowdown_node {
 			size_t msz;
 		} rndr_doc_header;
 		struct rndr_list {
-			enum hlist_fl flags;
+			enum hlist_fl flags; /* only HLIST_FL_ORDERED */
 		} rndr_list; 
 		struct rndr_listitem {
-			enum hlist_fl flags; /* see rndr_list */
+			enum hlist_fl flags; /* all possible flags */
 			size_t num; /* index in ordered */
 		} rndr_listitem; 
 		struct rndr_header {
