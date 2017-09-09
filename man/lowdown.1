@@ -317,6 +317,9 @@ Use numbered sections.
 Only applies to the
 .Fl T Ns Ar ms
 output mode.
+If this and
+.Ar nroff-groff
+are provided, the document outline will be exported.
 .It Ar nroff-groff
 Use GNU extensions (i.e., for
 .Xr groff 1 )
@@ -364,17 +367,27 @@ To do the same but using
 to format as a PS file:
 .Bd -literal -offset indent
 lowdown -s -Tms foo.md | \e
-  groff -t -ms -mpdfmark -k -Kutf8 > foo.ps
+  groff -t -mspdf -k -Kutf8 > foo.ps
 .Ed
 .Pp
 The arguments to
 .Xr groff 1
 dictate input type
-.Pq Fl m Ns Ar s , Fl m Ns Ar pdfmark ,
+.Pq Fl m Ns Ar spdf ,
 input encoding
 .Pq Fl k , Fl K Ns Ar utf8 ,
 and extensions
 .Pq Fl t .
+Note that
+.Fl m Ns Ar spdf
+is used instead of
+.Fl m Ns Ar s
+and
+.Fl m Ns Ar pdfmark
+to allow for the
+.Dq XN
+macro, which generates a table of contents for the output PS or PDF.
+This macro is otherwise ignored.
 .Pp
 Alternatively, using only
 .Xr mandoc 1 :
@@ -394,13 +407,21 @@ The
 flag notes standard input; other flags are passed to
 .Xr groff 1 .
 .Bd -literal -offset indent
-lowdown -sTms foo.d | \e
-  pdfroff -i -t -ms -mpdfmark -k -Kutf8 > foo.pdf
+lowdown -sTms foo.md | \e
+  pdfroff -i -t -mspdf -k -Kutf8 > foo.pdf
 .Ed
 .Pp
 To extract the HTML-escaped title from a file's metadata:
 .Pp
 .Dl lowdown -X title foo.md
+.Pp
+Lastly, using a traditional
+.Xr troff 1 ,
+use the following:
+.Bd -literal -offset indent
+lowdown -Dnroff-groff -sTms foo.md | \e
+  tbl | troff -Tps -ms -mpdfmark > foo.ps
+.Ed
 .Sh EXIT STATUS
 .Ex -std
 .Pp
