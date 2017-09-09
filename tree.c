@@ -97,6 +97,20 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 	HBUF_PUTSL(ob, "\n");
 
 	switch (root->type) {
+	case (LOWDOWN_LISTITEM):
+		for (i = 0; i < indent + 1; i++)
+			HBUF_PUTSL(ob, "  ");
+		hbuf_printf(ob, "item scope: %s\n",
+			HLIST_FL_BLOCK & root->rndr_listitem.flags ? 
+			"block" : "span");
+		break;
+	case (LOWDOWN_LIST):
+		for (i = 0; i < indent + 1; i++)
+			HBUF_PUTSL(ob, "  ");
+		hbuf_printf(ob, "list type: %s\n",
+			HLIST_FL_ORDERED & root->rndr_list.flags ? 
+			"ordered" : "unordered");
+		break;
 	case (LOWDOWN_DOC_HEADER):
 		for (i = 0; i < root->rndr_doc_header.msz; i++) {
 			for (j = 0; j < indent + 1; j++)
