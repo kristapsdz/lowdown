@@ -313,4 +313,23 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.2.5</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2017-09-05">2017-09-05</time>
+		</header>
+		<aside>
+			<p>
+				Considerable clean-up of <b>-Tms</b> and <b>-Tman</b>, with the aim of much higher PDF output quality:
+				proper nested list support, hyperlinks, PS/PDF TOC, and even some images (PS/EPS only&#8212;experimental!).
+				Also, after some pointers on the <a href="https://www.gnu.org/s/groff/">groff</a> mailing list, use the correct
+				invocation for generating PDF output.
+				Fix up footnote printing to use automatic <b>-ms</b> macros and registers, if applicable.
+			</p>
+			<p>
+				Also added support for the <q>affiliation</q> metadata keyword.
+			</p>
+		</aside>
+	</article>
 </articles>
