@@ -2408,19 +2408,33 @@ static void
 parse_footnote_list(hdoc *doc)
 {
 	struct footnote_ref	*ref;
-	struct lowdown_node	*n;
+	struct lowdown_node	*n = NULL;
+	size_t			 i, first = 1;
 
 	if (TAILQ_EMPTY(&doc->footnotes))
 		return;
 
-	n = pushnode(doc, LOWDOWN_FOOTNOTES_BLOCK);
-	TAILQ_FOREACH(ref, &doc->footnotes, entries) {
-		if ( ! ref->is_used)
-			continue;
-		parse_footnote_def(doc, ref->num,
-			ref->contents->data, ref->contents->size);
-	}
-	popnode(doc, n);
+	/*
+	 * Print out our footnotes in order.
+	 * Only emit the footnote block if we have some.
+	 */
+
+	for (i = 0; i <= doc->footnotesz; i++)
+		TAILQ_FOREACH(ref, &doc->footnotes, entries) {
+			if (ref->num != i || ! ref->is_used)
+				continue;
+			if (first) {
+				n = pushnode(doc, 
+					LOWDOWN_FOOTNOTES_BLOCK);
+				first = 0;
+			}
+			parse_footnote_def(doc, ref->num,
+				ref->contents->data, 
+				ref->contents->size);
+		}
+
+	if (NULL != n)
+		popnode(doc, n);
 }
 
 /* 
