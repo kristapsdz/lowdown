@@ -459,7 +459,8 @@ lowdown_nroff_smrt(hbuf *ob, const char *text, size_t size)
 
 		/* Don't convert quotes on macro lines. */
 
-		if (i < size && '"' == text[i]) {
+		if (i < size && 
+		    ('"' == text[i] || '\'' == text[i])) {
 			assert('\n' != text[i]);
 			for (bscan = i; bscan > 0; bscan--)
 				if ('\n' == text[bscan]) {
@@ -468,7 +469,7 @@ lowdown_nroff_smrt(hbuf *ob, const char *text, size_t size)
 				}
 			assert(bscan <= i);
 			if ('.' == text[bscan]) {
-				hbuf_putc(ob, '"');
+				hbuf_putc(ob, text[i]);
 				continue;
 			}
 		}
