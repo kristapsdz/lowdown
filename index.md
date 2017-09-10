@@ -256,14 +256,17 @@ was invoked within.
 There are some known issues, mostly in PDF (**-Tms** and **-Tman**)
 output.
 
-Foremost, there needs to be logic to handle when a link is the first or
-last component of a font change.  For example, \*\[foo\](...)\* will put
+- There needs to be logic to handle when a link is the first or last
+component of a font change.  For example, \*\[foo\](...)\* will put
 the font markers on different lines.
 
-In all modes, the "smartypants" formatting should be embedded in
+- Footnotes in **-Tms** with groff extensions should use pdfmark to link
+to and from the definition.
+
+- In all modes, the "smartypants" formatting should be embedded in
 document output --- not in a separate step as implemented in the
 original sources.
 
-Lastly, I'd like a full reference of the Markdown language accepted as a
+- I'd like a full reference of the Markdown language accepted as a
 manpage.  Markdown is incredibly inconsistent, so a simple, readable
 document would be very helpful.
