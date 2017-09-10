@@ -330,10 +330,10 @@ rndr_blockquote(hbuf *ob, const hbuf *content)
 	if (NULL == content || 0 == content->size)
 		return;
 
-	HBUF_PUTSL(ob, ".B1\n");
+	HBUF_PUTSL(ob, ".RS\n");
 	hbuf_put(ob, content->data, content->size);
 	BUFFER_NEWLINE(content->data, content->size, ob);
-	HBUF_PUTSL(ob, ".B2\n");
+	HBUF_PUTSL(ob, ".RE\n");
 }
 
 static void
@@ -436,16 +436,6 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link,
 }
 
 static void
-rndr_list(hbuf *ob, const hbuf *content, enum hlist_fl flags)
-{
-
-	HBUF_PUTSL(ob, ".RS\n");
-	if (NULL != content && content->size)
-		hbuf_put(ob, content->data, content->size);
-	HBUF_PUTSL(ob, ".RE\n");
-}
-
-static void
 rndr_listitem(hbuf *ob, const hbuf *content, 
 	enum hlist_fl flags, size_t num)
 {
@@ -453,28 +443,40 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 	if (NULL == content || 0 == content->size)
 		return;
 
-	if (HLIST_FL_ORDERED & flags)
-		hbuf_printf(ob, ".IP %zu.\n", num);
-	else
-		HBUF_PUTSL(ob, ".IP \\(bu\n");
-
 	/* 
-	 * Don't have a superfluous `LP' following the IP.
-	 * This would create useless whitespace following the number of
-	 * bullet.
+	 * Start out with a vertical spacing, then put us into an
+	 * indented paragraph.
 	 */
 
-	if (content->size > 4 && 
-	    0 == strncmp((const char *)content->data, ".LP\n", 4))
+	HBUF_PUTSL(ob, ".sp 0.5\n");
+	HBUF_PUTSL(ob, ".RS\n");
+
+	/* 
+	 * Now back out by the size of our list glyph(s) and print the
+	 * glyph(s) (padding with two spaces).
+	 */
+
+	if (HLIST_FL_ORDERED & flags)
+		hbuf_printf(ob, ".ti -\\w'%zu.  \'u\n%zu.  ", 
+			num, num);
+	else
+		HBUF_PUTSL(ob, ".ti -\\w'\\(bu  \'u\n\\(bu  ");
+
+	/* Strip out any leading paragraph marker. */
+
+	if (content->size > 3 &&
+	    0 == memcmp(content->data, ".LP\n", 4))
 		hbuf_put(ob, content->data + 4, content->size - 4);
 	else
 		hbuf_put(ob, content->data, content->size);
 
 	BUFFER_NEWLINE(content->data, content->size, ob);
+	HBUF_PUTSL(ob, ".RE\n");
 }
 
 static void
-rndr_paragraph(hbuf *ob, const hbuf *content, const struct nstate *st)
+rndr_paragraph(hbuf *ob, const hbuf *content, 
+	const struct nstate *st, const struct lowdown_node *np)
 {
 	size_t	 	 i = 0, org;
 
@@ -1047,16 +1049,13 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 	case (LOWDOWN_HRULE):
 		rndr_hrule(ob, ref);
 		break;
-	case (LOWDOWN_LIST):
-		rndr_list(ob, tmp, root->rndr_list.flags);
-		break;
 	case (LOWDOWN_LISTITEM):
 		rndr_listitem(ob, tmp, 
 			root->rndr_listitem.flags,
 			root->rndr_listitem.num);
 		break;
 	case (LOWDOWN_PARAGRAPH):
-		rndr_paragraph(ob, tmp, ref);
+		rndr_paragraph(ob, tmp, ref, root->parent);
 		break;
 	case (LOWDOWN_TABLE_BLOCK):
 		rndr_table(ob, tmp);
