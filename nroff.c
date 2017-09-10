@@ -42,6 +42,8 @@
 	do if ((_sz) > 0 && '\n' != (_buf)[(_sz) - 1]) \
 		hbuf_putc((_ob), '\n'); \
 	while (/* CONSTCOND */ 0)
+#define	HBUF_NEWLINE(_buf, _ob) \
+	BUFFER_NEWLINE((_buf)->data, (_buf)->size, (_ob))
 
 enum	nfont {
 	NFONT_ITALIC = 0, /* italic */
@@ -314,7 +316,7 @@ rndr_blockcode(hbuf *ob, const hbuf *content,
 
 	HBUF_PUTSL(ob, ".ft CR\n");
 	escape_block(ob, content->data, content->size);
-	BUFFER_NEWLINE(content->data, content->size, ob);
+	HBUF_NEWLINE(content, ob);
 	HBUF_PUTSL(ob, ".ft\n");
 
 	if (st->mdoc)
@@ -332,7 +334,7 @@ rndr_blockquote(hbuf *ob, const hbuf *content)
 
 	HBUF_PUTSL(ob, ".RS\n");
 	hbuf_put(ob, content->data, content->size);
-	BUFFER_NEWLINE(content->data, content->size, ob);
+	HBUF_NEWLINE(content, ob);
 	HBUF_PUTSL(ob, ".RE\n");
 }
 
@@ -413,7 +415,7 @@ rndr_header(hbuf *ob, const hbuf *content, int level,
 		HBUF_PUTSL(ob, "\n");
 	} else {
 		hbuf_put(ob, content->data, content->size);
-		BUFFER_NEWLINE(content->data, content->size, ob);
+		HBUF_NEWLINE(content, ob);
 	}
 }
 
@@ -470,7 +472,7 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 	else
 		hbuf_put(ob, content->data, content->size);
 
-	BUFFER_NEWLINE(content->data, content->size, ob);
+	HBUF_NEWLINE(content, ob);
 	HBUF_PUTSL(ob, ".RE\n");
 }
 
@@ -482,6 +484,9 @@ rndr_paragraph(hbuf *ob, const hbuf *content,
 
 	if (NULL == content || 0 == content->size)
 		return;
+
+	/* Strip away initial white-space. */
+
 	while (i < content->size && isspace((int)content->data[i]))
 		i++;
 	if (i == content->size)
@@ -626,7 +631,7 @@ rndr_table(hbuf *ob, const hbuf *content)
 	HBUF_PUTSL(ob, ".TS\n");
 	HBUF_PUTSL(ob, "tab(|) allbox;\n");
 	hbuf_put(ob, content->data, content->size);
-	BUFFER_NEWLINE(content->data, content->size, ob);
+	HBUF_NEWLINE(content, ob);
 	HBUF_PUTSL(ob, ".TE\n");
 }
 
@@ -758,39 +763,69 @@ rndr_footnotes(hbuf *ob, const hbuf *content, const struct nstate *st)
 	if (NULL == content || 0 == content->size)
 		return;
 
-	/* The LP is to reset the margins. */
+	/* Put a horizontal line in the case of man(7). */
 
-	HBUF_PUTSL(ob, ".LP\n");
-	if ( ! st->mdoc) {
-		HBUF_PUTSL(ob, ".sp 2\n");
-		HBUF_PUTSL(ob, "\\l\'\\n(.lu-\\n(\\n[.in]u\'\n");
+	if (st->mdoc) {
+		HBUF_PUTSL(ob, ".LP\n");
+		HBUF_PUTSL(ob, ".sp 3\n");
+		HBUF_PUTSL(ob, "\\l\'2i'\n");
 	}
 	hbuf_put(ob, content->data, content->size);
 }
 
 static void
-rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num)
+rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num,
+	const struct nstate *st)
 {
 
+	/* 
+	 * Use groff_ms(7)-style footnotes.
+	 * We know that the definitions are delivered in the same order
+	 * as the footnotes are made, so we can use the automatic
+	 * ordering facilities.
+	 */
+
+	if ( ! st->mdoc) {
+		HBUF_PUTSL(ob, ".FS\n");
+		/* Ignore leading paragraph marker. */
+		if (content->size > 3 &&
+		    0 == memcmp(content->data, ".LP\n", 4))
+			hbuf_put(ob, content->data + 4, content->size - 4);
+		else
+			hbuf_put(ob, content->data, content->size);
+		HBUF_NEWLINE(content, ob);
+		HBUF_PUTSL(ob, ".FE\n");
+		return;
+	}
+
 	/*
-	 * We don't need to worry about the font stack because we're
-	 * guaranteed not to have any inner parts.
+	 * For man(7), just print as normal, with a leading footnote
+	 * number in italics and superscripted.
 	 */
 
 	HBUF_PUTSL(ob, ".LP\n");
-	hbuf_printf(ob, "\\fI%u.\\fP\n", num);
-	HBUF_PUTSL(ob, ".RS\n");
-	hbuf_put(ob, content->data, content->size);
-	BUFFER_NEWLINE(content->data, content->size, ob);
-	HBUF_PUTSL(ob, ".RE\n");
+	hbuf_printf(ob, "\\0\\fI\\u\\s-3%u\\s+3\\d\\fP\\0", num);
+	if (content->size > 3 &&
+	    0 == memcmp(content->data, ".LP\n", 4))
+		hbuf_put(ob, content->data + 4, content->size - 4);
+	else
+		hbuf_put(ob, content->data, content->size);
+	HBUF_NEWLINE(content, ob);
 }
 
-static int
-rndr_footnote_ref(hbuf *ob, unsigned int num)
+static void
+rndr_footnote_ref(hbuf *ob, unsigned int num, const struct nstate *st)
 {
 
-	hbuf_printf(ob, "\\u\\s-3%u\\s+3\\d", num);
-	return 1;
+	/* 
+	 * Use groff_ms(7)-style automatic footnoting, else just put a
+	 * reference number in small superscripts.
+	 */
+
+	if ( ! st->mdoc)
+		HBUF_PUTSL(ob, "\\**");
+	else
+		hbuf_printf(ob, "\\u\\s-3%u\\s+3\\d", num);
 }
 
 static int
@@ -882,17 +917,52 @@ rcsdate2str(const char *v)
 	return(buf);
 }
 
+/*
+ * Itereate through multiple multi-white-space separated values in
+ * "val", filling them in to "env".
+ */
+static void
+rndr_doc_header_multi(hbuf *ob, const char *val, const char *env)
+{
+	const char	*cp, *start;
+	size_t		 sz;
+
+	for (cp = val; '\0' != *cp; ) {
+		while (isspace((int)*cp))
+			cp++;
+		if ('\0' == *cp)
+			continue;
+		start = cp;
+		sz = 0;
+		while ('\0' != *cp) {
+			if ( ! isspace((int)cp[0]) ||
+			     ! isspace((int)cp[1])) {
+				sz++;
+				cp++;
+				continue;
+			}
+			cp += 2;
+			break;
+		}
+		if (0 == sz)
+			continue;
+		hbuf_printf(ob, ".%s\n", env);
+		hesc_nroff(ob, start, sz, 0, 1);
+		hbuf_putc(ob, '\n');
+	}
+}
+
 static void
 rndr_doc_header(hbuf *ob, 
 	const struct lowdown_meta *m, size_t msz, 
 	const struct nstate *st)
 {
-	const char	*date = NULL, *author = NULL, *cp,
-	      		*title = "Untitled article", *start;
+	const char	*date = NULL, *author = NULL,
+	      		*title = "Untitled article", *affil = NULL;
 	time_t		 t;
 	char		 buf[32];
 	struct tm	*tm;
-	size_t		 i, sz;
+	size_t		 i;
 
 	if ( ! (LOWDOWN_STANDALONE & st->flags))
 		return;
@@ -902,6 +972,8 @@ rndr_doc_header(hbuf *ob,
 	for (i = 0; i < msz; i++) 
 		if (0 == strcmp(m[i].key, "title"))
 			title = m[i].value;
+		else if (0 == strcmp(m[i].key, "affiliation"))
+			affil = m[i].value;
 		else if (0 == strcmp(m[i].key, "author"))
 			author = m[i].value;
 		else if (0 == strcmp(m[i].key, "rcsauthor"))
@@ -934,29 +1006,9 @@ rndr_doc_header(hbuf *ob,
 		escape_block(ob, title, strlen(title));
 		HBUF_PUTSL(ob, "\n");
 		if (NULL != author)
-			for (cp = author; '\0' != *cp; ) {
-				while (isspace((int)*cp))
-					cp++;
-				if ('\0' == *cp)
-					continue;
-				start = cp;
-				sz = 0;
-				while ('\0' != *cp) {
-					if ( ! isspace((int)cp[0]) ||
-					     ! isspace((int)cp[1])) {
-						sz++;
-						cp++;
-						continue;
-					}
-					cp += 2;
-					break;
-				}
-				if (0 == sz)
-					continue;
-				HBUF_PUTSL(ob, ".AU\n");
-				hesc_nroff(ob, start, sz, 0, 1);
-				HBUF_PUTSL(ob, "\n");
-			}
+			rndr_doc_header_multi(ob, author, "AU");
+		if (NULL != affil)
+			rndr_doc_header_multi(ob, affil, "AI");
 	} else {
 		HBUF_PUTSL(ob, ".TH \"");
 		escape_oneline_span(ob, title, strlen(title));
@@ -1082,7 +1134,7 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 		break;
 	case (LOWDOWN_FOOTNOTE_DEF):
 		rndr_footnote_def(ob, tmp, 
-			root->rndr_footnote_def.num);
+			root->rndr_footnote_def.num, ref);
 		break;
 	case (LOWDOWN_BLOCKHTML):
 		rndr_raw_block(ob, tmp, ref);
@@ -1115,7 +1167,8 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 		rndr_superscript(ob, tmp);
 		break;
 	case (LOWDOWN_FOOTNOTE_REF):
-		rndr_footnote_ref(ob, root->rndr_footnote_ref.num);
+		rndr_footnote_ref(ob, 
+			root->rndr_footnote_ref.num, ref);
 		break;
 	case (LOWDOWN_MATH_BLOCK):
 		rndr_math();
