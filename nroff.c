@@ -310,7 +310,7 @@ rndr_blockcode(hbuf *ob, const hbuf *content,
 		HBUF_PUTSL(ob, ".sp 1\n");
 		HBUF_PUTSL(ob, ".nf\n");
 	} else
-		HBUF_PUTSL(ob, ".DS\n");
+		HBUF_PUTSL(ob, ".LD\n");
 
 	HBUF_PUTSL(ob, ".ft CR\n");
 	escape_block(ob, content->data, content->size);
