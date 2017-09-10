@@ -748,7 +748,7 @@ rndr_doc_header(hbuf *ob,
 	const struct hstate *st)
 {
 	const char	*author = NULL, *title = "Untitled article", 
-	     	 	*css = NULL;
+	     	 	*css = NULL, *affil = NULL;
 	size_t		 i;
 
 	if ( ! (LOWDOWN_STANDALONE & st->flags))
@@ -762,6 +762,8 @@ rndr_doc_header(hbuf *ob,
 	for (i = 0; i < msz; i++) 
 		if (0 == strcmp(m[i].key, "title"))
 			title = m[i].value;
+		else if (0 == strcmp(m[i].key, "affiliation"))
+			affil = m[i].value;
 		else if (0 == strcmp(m[i].key, "author"))
 			author = m[i].value;
 		else if (0 == strcmp(m[i].key, "rcsauthor"))
@@ -780,6 +782,9 @@ rndr_doc_header(hbuf *ob,
 	if (NULL != author)
 		rndr_doc_header_multi(ob, 0, author, 
 			"<meta name=\"author\" content=");
+	if (NULL != affil)
+		rndr_doc_header_multi(ob, 0, author, 
+			"<meta name=\"creator\" content=");
 	if (NULL != css)
 		rndr_doc_header_multi(ob, 1, css, 
 			"<link rel=\"stylesheet\" href=");
