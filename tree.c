@@ -97,6 +97,14 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 	HBUF_PUTSL(ob, "\n");
 
 	switch (root->type) {
+	case (LOWDOWN_BLOCKCODE):
+		for (i = 0; i < indent + 1; i++)
+			HBUF_PUTSL(ob, "  ");
+		hbuf_printf(ob, "data: %zu Bytes: ",
+			root->rndr_blockcode.text.size);
+		rndr_short(ob, &root->rndr_blockcode.text);
+		HBUF_PUTSL(ob, "\n");
+		break;
 	case (LOWDOWN_LISTITEM):
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
