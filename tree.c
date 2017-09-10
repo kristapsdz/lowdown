@@ -97,6 +97,18 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 	HBUF_PUTSL(ob, "\n");
 
 	switch (root->type) {
+	case (LOWDOWN_FOOTNOTE_REF):
+		for (i = 0; i < indent + 1; i++)
+			HBUF_PUTSL(ob, "  ");
+		hbuf_printf(ob, "number: %zu\n",
+			root->rndr_footnote_ref.num);
+		break;
+	case (LOWDOWN_FOOTNOTE_DEF):
+		for (i = 0; i < indent + 1; i++)
+			HBUF_PUTSL(ob, "  ");
+		hbuf_printf(ob, "number: %zu\n",
+			root->rndr_footnote_def.num);
+		break;
 	case (LOWDOWN_BLOCKCODE):
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
