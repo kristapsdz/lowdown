@@ -237,10 +237,10 @@ struct	lowdown_opts {
 #define LOWDOWN_SUPER		 0x100
 #define LOWDOWN_MATH		 0x200
 #define LOWDOWN_NOINTEM		 0x400
-#define LOWDOWN_SPHD		 0x800
 #define LOWDOWN_MATHEXP		 0x1000
 #define LOWDOWN_NOCODEIND	 0x2000
 #define	LOWDOWN_METADATA	 0x4000
+#define	LOWDOWN_COMMONMARK	 0x8000
 	unsigned int		 oflags;
 #define LOWDOWN_HTML_SKIP_HTML	 0x01
 #define LOWDOWN_HTML_ESCAPE	 0x02
