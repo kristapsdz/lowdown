@@ -876,24 +876,35 @@ char_emphasis(hdoc *doc, char *data, size_t offset, size_t size)
 static size_t
 char_linebreak(hdoc *doc, char *data, size_t offset, size_t size)
 {
-	struct lowdown_node *n, *cur;
+	struct lowdown_node *n;
+	size_t		 w;
+	hbuf		*b;
 
 	if (offset < 2 || data[-1] != ' ' || data[-2] != ' ')
 		return 0;
 
 	/* Removing the last space from nodes. */
 
-	if (NULL != (cur = doc->current) && 
-	    NULL != (n = TAILQ_LAST(&cur->children, lowdown_nodeq)) &&
-	    LOWDOWN_NORMAL_TEXT == n->type)
-		while (n->rndr_normal_text.text.size &&
-		       n->rndr_normal_text.text.data
-		       [n->rndr_normal_text.text.size - 1] == ' ')
-			n->rndr_normal_text.text.size--;
+	assert(NULL != doc->current);
+	n = TAILQ_LAST(&doc->current->children, lowdown_nodeq);
+	assert(NULL != n && LOWDOWN_NORMAL_TEXT == n->type);
+	b = &n->rndr_normal_text.text;
+
+	while (b->size && b->data[b->size - 1] == ' ')
+		b->size--;
+
+	/* 
+	 * Swallow leading white-space of next line. 
+	 * XXX: is this just CommonMark?
+	 */
+
+	for (w = 1; w < size; w++)
+		if (' ' != data[w])
+			break;
 
 	n = pushnode(doc, LOWDOWN_LINEBREAK);
 	popnode(doc, n);
-	return 1;
+	return w;
 }
 
 
@@ -976,6 +987,17 @@ char_escape(hdoc *doc, char *data, size_t offset, size_t size)
 				size, end, 3, data[2] == '[');
 			if (w)
 				return w;
+		}
+
+		if (LOWDOWN_COMMONMARK & doc->ext_flags &&
+		    data[1] == '\n') {
+			/* Swallow leading white-space of next line. */
+			for (w = 2; w < size; w++)
+				if (' ' != data[w])
+					break;
+			n = pushnode(doc, LOWDOWN_LINEBREAK);
+			popnode(doc, n);
+			return w;
 		}
 
 		if (strchr(escape_chars, data[1]) == NULL)
@@ -1797,7 +1819,12 @@ is_atxheader(hdoc *doc, const char *data, size_t size)
 	if (data[0] != '#')
 		return 0;
 
-	if (doc->ext_flags & LOWDOWN_SPHD) {
+	/* 
+	 * CommonMark requires a space.
+	 * Classical Markdown does not.
+	 */
+
+	if (doc->ext_flags & LOWDOWN_COMMONMARK) {
 		level = 0;
 		while (level < size && level < 6 && data[level] == '#')
 			level++;
