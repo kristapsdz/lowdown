@@ -156,11 +156,13 @@ enables the
 .Ar metadata ,
 .Ar strike ,
 .Ar super ,
+.Ar commonmark ,
 and
 .Ar tables
 features.
 You can see a full list of features in
 .Sx Input features .
+.Pp
 The
 .Ar html-skiphtml ,
 .Ar html-head-ids ,
@@ -188,6 +190,11 @@ Autolink
 .Li ftp ,
 .Li mailto ,
 and relative links or link fragments.
+.It Ar commonmark
+Assume input conforms to the CommonMark specification.
+In most cases, this is simply less laxist than the original Markdown.
+This feature is
+.Em experimental .
 .It Ar fenced
 Allow for GFM fenced (language-specific) code blocks.
 .It Ar footnotes
@@ -216,8 +223,6 @@ flag is set, also smartypantsed.
 Do not indent code blocks.
 .It Ar nointem
 Disable emphasis with links.
-.It Ar sphd
-Require a space between hash marks and header.
 .It Ar strike
 Strikethrough support.
 .It Ar super
@@ -309,6 +314,8 @@ depending upon the output mode:
 Leaves in-line HTML in its source form as if it were opaque text.
 .It Ar html-hardwrap
 Retain line-breaks within paragraphs.
+This option is retained for compatibility\(emdon't use it.
+Instead, use proper escaping of newlines.
 .It Ar html-skiphtml
 Do not render in-document HTML at all.
 Note that
