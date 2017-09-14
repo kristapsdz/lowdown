@@ -202,14 +202,14 @@ feature_in(const char *v)
 		return(LOWDOWN_MATH);
 	if (0 == strcasecmp(v, "nointem"))
 		return(LOWDOWN_NOINTEM);
-	if (0 == strcasecmp(v, "sphd"))
-		return(LOWDOWN_SPHD);
 	if (0 == strcasecmp(v, "mathexp"))
 		return(LOWDOWN_MATHEXP);
 	if (0 == strcasecmp(v, "nocodeind"))
 		return(LOWDOWN_NOCODEIND);
 	if (0 == strcasecmp(v, "metadata"))
 		return(LOWDOWN_METADATA);
+	if (0 == strcasecmp(v, "commonmark"))
+		return(LOWDOWN_COMMONMARK);
 
 	warnx("%s: unknown feature", v);
 	return(0);
@@ -238,6 +238,7 @@ main(int argc, char *argv[])
 		LOWDOWN_SUPER |
 		LOWDOWN_STRIKE |
 		LOWDOWN_FENCED |
+		LOWDOWN_COMMONMARK |
 		LOWDOWN_METADATA;
 	opts.oflags = 
 		LOWDOWN_NROFF_SKIP_HTML |
