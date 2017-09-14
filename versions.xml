@@ -330,6 +330,11 @@
 			<p>
 				Also added support for the <q>affiliation</q> metadata keyword.
 			</p>
+			<p>
+				Added some <a href="http://spec.commonmark.org">CommonMark</a> support, initially just escaped newlines,
+				supported only when the <b>commonmark</b> input flag is specified.
+				Removed the <b>sphd</b> input flag in favour of <b>commonmark</b>.
+			</p>
 		</aside>
 	</article>
 </articles>
