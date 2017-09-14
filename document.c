@@ -1845,17 +1845,19 @@ is_headerline(const char *data, size_t size)
 {
 	size_t	 i;
 	char	 hchr;
+	int	 level;
 
-	if ('=' == *data || '-' == *data)
+	if ('=' == *data || '-' == *data) {
+		level = '=' == *data ? 1 : 2;
 		hchr = *data;
-	else
+	} else
 		return 0;
 
 	for (i = 1; i < size && data[i] == hchr; i++)
 		continue;
 	i = countspaces(data, i, size, 0);
 
-	return (i >= size || data[i] == '\n') ? 1 : 0;
+	return (i >= size || data[i] == '\n') ? level : 0;
 }
 
 static int
