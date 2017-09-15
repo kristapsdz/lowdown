@@ -1174,7 +1174,7 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 		rndr_math();
 		break;
 	case (LOWDOWN_RAW_HTML):
-		rndr_raw_html(ob, tmp, ref);
+		rndr_raw_html(ob, &root->rndr_raw_html.text, ref);
 		break;
 	case (LOWDOWN_NORMAL_TEXT):
 		rndr_normal_text(ob, 
