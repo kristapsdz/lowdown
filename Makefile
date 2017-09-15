@@ -6,12 +6,13 @@ VERSION		 = 0.2.4
 OBJS		 = autolink.o \
 		   buffer.o \
 		   document.o \
-		   escape.o \
 		   html.o \
+		   html_escape.o \
 		   html_smartypants.o \
 		   library.o \
 		   log.o \
 		   nroff.o \
+		   nroff_escape.o \
 		   nroff_smartypants.o \
 		   tree.o \
 		   xmalloc.o
