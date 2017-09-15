@@ -469,9 +469,13 @@ static int
 rndr_raw_html(hbuf *ob, const hbuf *text, const struct hstate *state)
 {
 
-	/* ESCAPE overrides SKIP_HTML. It doesn't look to see if
-	 * there are any valid tags, just escapes all of them. */
-	if((state->flags & LOWDOWN_HTML_ESCAPE) != 0) {
+	/* 
+	 * ESCAPE overrides SKIP_HTML. 
+	 * It doesn't look to see if there are any valid tags, just
+	 * escapes all of them. 
+	 */
+
+	if ((state->flags & LOWDOWN_HTML_ESCAPE) != 0) {
 		escape_html(ob, text->data, text->size);
 		return 1;
 	}
@@ -928,7 +932,7 @@ lowdown_html_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
 		rndr_math(ob, tmp, root->rndr_math.displaymode);
 		break;
 	case (LOWDOWN_RAW_HTML):
-		rndr_raw_html(ob, tmp, ref);
+		rndr_raw_html(ob, &root->rndr_raw_html.text, ref);
 		break;
 	case (LOWDOWN_NORMAL_TEXT):
 		rndr_normal_text(ob, &root->rndr_normal_text.text);
