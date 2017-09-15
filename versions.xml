@@ -334,6 +334,7 @@
 				Added some <a href="http://spec.commonmark.org">CommonMark</a> support, initially just escaped newlines,
 				supported only when the <b>commonmark</b> input flag is specified.
 				Removed the <b>sphd</b> input flag in favour of <b>commonmark</b>.
+				Also fixed raw HTML block outputting and setext-style level-two headers.
 			</p>
 		</aside>
 	</article>
