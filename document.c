@@ -1904,27 +1904,35 @@ prefix_code(const char *data, size_t size)
  * Returns ordered list item prefix.
  */
 static size_t
-prefix_oli(char *data, size_t size, char **num, size_t *numsz)
+prefix_oli(hdoc *doc, char *data, size_t size, char **num, size_t *numsz)
 {
 	size_t i, st;
 
 	i = countspaces(data, 0, size, 3);
 
-	if (i >= size || data[i] < '0' || data[i] > '9')
+	if (i >= size || ! isdigit((int)data[i]))
 		return 0;
 
 	st = i;
 	if (NULL != num)
 		*num = &data[i];
 
-	while (i < size && data[i] >= '0' && data[i] <= '9')
+	while (i < size && isdigit((int)data[i]))
 		i++;
 
 	if (NULL != numsz)
 		*numsz = i - st;
 
-	if (i + 1 >= size || data[i] != '.' || data[i + 1] != ' ')
-		return 0;
+	if (LOWDOWN_COMMONMARK & doc->ext_flags) {
+		if (i + 1 >= size || 
+		    (data[i] != '.' && data[i] != ')') || 
+		    data[i + 1] != ' ')
+			return 0;
+	} else {
+		if (i + 1 >= size || data[i] != '.' || data[i + 1] != ' ')
+			return 0;
+	}
+
 
 	if (is_next_headerline(data + i, size - i))
 		return 0;
@@ -2222,7 +2230,7 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 	beg = prefix_uli(data, size);
 
 	if ( ! beg)
-		beg = prefix_oli(data, size, NULL, NULL);
+		beg = prefix_oli(doc, data, size, NULL, NULL);
 	if ( ! beg)
 		return 0;
 
@@ -2276,7 +2284,7 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 			has_next_uli = prefix_uli
 				(data + beg + i, end - beg - i);
 			has_next_oli = prefix_oli
-				(data + beg + i, end - beg - i,
+				(doc, data + beg + i, end - beg - i,
 				 NULL, NULL);
 		}
 
@@ -3016,7 +3024,7 @@ parse_block(hdoc *doc, char *data, size_t size)
 
 		/* An ordered list. */
 
-		if (prefix_oli(txt_data, end, NULL, NULL)) {
+		if (prefix_oli(doc, txt_data, end, NULL, NULL)) {
 			beg += parse_list(doc, 
 				txt_data, end, HLIST_FL_ORDERED);
 			continue;
