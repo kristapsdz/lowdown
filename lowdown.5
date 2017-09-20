@@ -98,6 +98,15 @@ ordinal list from your input as long as you start your list with (1.).
 1. So. (Not 1. again!)
 .Ed
 .Pp
+Note that starting a line with a single word that consists of any number and
+ending it with a period could invoke an ordered list.
+To escape this, use a blackslash before the period. 
+.Bd -literal -offset indent
+1987. 	The year TNG premiered. 
+
+1987\e. The year TNG premiered.
+.Ed
+.Pp
 Unordered lists, on the other hand, can be invoked using either
 asterisks (*), pluses (+), and hyphens (-), and can be a mix of all
 three, but are rendered as bullet points.
@@ -369,7 +378,8 @@ underscore
 .Sh SEE ALSO
 .Xr lowdown 1
 .Sh STANDARDS
-Which version of markdown.
+This manpage by default describes John Gruber's version of Markdown.
+Extensions and other implementations are specifically noted. 
 .Sh AUTHORS
 The
 .Nm
