@@ -54,7 +54,7 @@ www: $(HTMLS) $(PDFS) lowdown.tar.gz lowdown.tar.gz.sha512
 
 installwww: www
 	mkdir -p $(WWWDIR)/snapshots
-	install -m 0444 $(HTMLS) $(CSSS) $(PDFS) $(WWWDIR)
+	install -m 0444 $(MDS) $(HTMLS) $(CSSS) $(PDFS) $(WWWDIR)
 	install -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots/lowdown-$(VERSION).tar.gz
 	install -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots/lowdown-$(VERSION).tar.gz.sha512
 	install -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots
