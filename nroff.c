@@ -194,7 +194,7 @@ putlink(hbuf *ob, struct nstate *st,
 	    LOWDOWN_NORMAL_TEXT == prev->type) {
 		buf = &prev->rndr_normal_text.text;
 		i = buf->size;
-		while (i && ! isspace((int)buf->data[i - 1]))
+		while (i && ! isspace((unsigned char)buf->data[i - 1]))
 			i--;
 		if (i != buf->size && usepdf)
 			HBUF_PUTSL(ob, "-P \"");
@@ -243,7 +243,7 @@ putlink(hbuf *ob, struct nstate *st,
 		if (usepdf)
 			HBUF_PUTSL(ob, "-A \"");
 		for (pos = 0; pos < buf->size; pos++) {
-			if (isspace((int)buf->data[pos]))
+			if (isspace((unsigned char)buf->data[pos]))
 				break;
 			/* Be sure to escape... */
 			if ('"' == buf->data[pos]) {
@@ -266,7 +266,7 @@ putlink(hbuf *ob, struct nstate *st,
 	if (usepdf) {
 		HBUF_PUTSL(ob, "-D ");
 		for (i = 0; i < link->size; i++) {
-			if ( ! isprint((int)link->data[i]) ||
+			if ( ! isprint((unsigned char)link->data[i]) ||
 			    NULL != strchr("<>\\^`{|}\"", link->data[i]))
 				hbuf_printf(ob, "%%%.2X", link->data[i]);
 			else
@@ -487,7 +487,8 @@ rndr_paragraph(hbuf *ob, const hbuf *content,
 
 	/* Strip away initial white-space. */
 
-	while (i < content->size && isspace((int)content->data[i]))
+	while (i < content->size && 
+	       isspace((unsigned char)content->data[i]))
 		i++;
 	if (i == content->size)
 		return;
@@ -744,12 +745,13 @@ rndr_normal_text(hbuf *ob, const hbuf *content, size_t offs,
 	if (NULL != next &&
 	    (LOWDOWN_LINK_AUTO == next->type ||
 	     LOWDOWN_LINK == next->type))
-		while (size && ! isspace((int)data[size - 1]))
+		while (size && 
+		       ! isspace((unsigned char)data[size - 1]))
 			size--;
 
 	if (nl) {
 		for (i = 0; i < size; i++)
-			if ( ! isspace((int)data[i]))
+			if ( ! isspace((unsigned char)data[i]))
 				break;
 		escape_block(ob, data + i, size - i);
 	} else
@@ -928,15 +930,15 @@ rndr_doc_header_multi(hbuf *ob, const char *val, const char *env)
 	size_t		 sz;
 
 	for (cp = val; '\0' != *cp; ) {
-		while (isspace((int)*cp))
+		while (isspace((unsigned char)*cp))
 			cp++;
 		if ('\0' == *cp)
 			continue;
 		start = cp;
 		sz = 0;
 		while ('\0' != *cp) {
-			if ( ! isspace((int)cp[0]) ||
-			     ! isspace((int)cp[1])) {
+			if ( ! isspace((unsigned char)cp[0]) ||
+			     ! isspace((unsigned char)cp[1])) {
 				sz++;
 				cp++;
 				continue;
@@ -994,7 +996,7 @@ rndr_doc_header(hbuf *ob,
 
 	/* Strip leading newlines (empty ok but weird) */
 
-	while (isspace((int)*title))
+	while (isspace((unsigned char)*title))
 		title++;
 
 	/* Emit our authors and title. */
