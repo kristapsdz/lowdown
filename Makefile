@@ -90,10 +90,10 @@ index.html README.html: template.xml
 		pdfroff -i -mspdf -t -k -Kutf8 > $@
 
 .xml.html:
-	sblg -t template.xml -o $@ -C $< $< versions.xml
+	sblg -t template.xml -s date -o $@ -C $< $< versions.xml
 
 archive.html: archive.xml versions.xml
-	sblg -t archive.xml -o $@ versions.xml
+	sblg -t archive.xml -s date -o $@ versions.xml
 
 $(HTMLS): versions.xml
 
