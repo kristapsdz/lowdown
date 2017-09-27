@@ -35,10 +35,8 @@ then run `doas make install` (or use `sudo`).  *lowdown* is a
 [Homebrew](https://brew.sh) users can use BSD.lv's
 [tap](https://github.com/kristapsdz/homebrew-repo).
 
-If you can help it, however,
-don't use Markdown.  Why? Read [Ingo's comments on
-Markdown](https://undeadly.org/cgi?action=article&sid=20170304230520)
-for a good explanation.
+For an argument against using Markdown at all, read [Ingo's comments on
+Markdown](https://undeadly.org/cgi?action=article&sid=20170304230520).
 
 ## Output
 
