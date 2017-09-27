@@ -1,3 +1,19 @@
+.\"	$Id$
+.\"
+.\" Copyright (c) 2017 Christina Sophonpanich <huck@divelog.blue>
+.\"
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\"
 .Dd $Mdocdate$
 .Dt LOWDOWN 5
 .Os
@@ -10,11 +26,37 @@
 .
 .Sh DESCRIPTION
 Markdown is an easy-to-read, easy-to-write plain text formatting syntax.
-A document written using Markdown is essentially meant to be generated
-as-is, containing as little formatting and mark-up as possible.
-Markdown was intended as a writing format for the web, only, but serves
+A document written using Markdown is meant to be generated as-is, containing as
+little formatting and mark-up as possible.
+Markdown was intended as a writing format for the web only, but also serves
 as a quick and easy writing tool to generate documents that require
 minimal stylistic formatting.
+.
+.Ss EXAMPLE
+Here is an example page that touches on the syntax listed below. 
+.Bd -literal -offset indent
+# How to be a Picard fan
+## Introduction
+In order to develop fandom skills one must first and foremost
+know *whom* it is one is idolizing. We therefore first ask: 
+**who is Captain Picard**?
+
+1. Picard was named the \e*Best Star Trek Captain\e*, according
+to a [5-week poll](poll.html).
+
+	> Picard continued his winning ways in the final week,
+	> with fans naming him the most inspiring captain.
+
+2. Picard is handsome. ![Picard](image.jpeg)
+3. Picard knows how to code: `make engage`
+
+---------------------------------
+## Picard Fandom 
+Here's why everyone wants to be a fan.
+.Ed
+.Pp
+Contents separated by empty lines are block level elements.
+Those within that line are span level elements.
 .
 .
 .Sh BLOCK ELEMENTS
@@ -23,21 +65,21 @@ and right) of the page available.
 A block element can contain a span element.
 .
 .Ss Paragraphs and Line Breaks
-A paragraph is made up of one or more lines of text, and paragraphs are
-separated by blank lines.
+A paragraph is made up of one or more lines of text.
+Paragraphs are separated by blank lines.
 To insert a hard line break: insert two spaces at the end of the line.
 .
 .Ss Headers
 Markdown supports two styles of headers: Setext ("underlined") and
 atx ("hash-marked").
-For Setext headers, underline the given word using equal (=) signs for
+For Setext headers: underline the given word using equal (=) signs for
 first-level headers and dashes (-) for second-level headers.
 .Bd -literal -offset indent
 This is a setext Header 1
 ========================
 .Ed
 .Pp
-For axt headers, use the corresponding number of hash characters to the
+For axt headers: use the corresponding number of hash characters to the
 corresponding level of header, up to 6 levels, at the start of the line
 separated by one space followed by the header.
 .Bd -literal -offset indent
@@ -46,26 +88,27 @@ separated by one space followed by the header.
 .
 .Ss Block Quotes
 Markdown supports block quoting by invoking a single right-angle bracket
-(>) indented by either four spaces or one tab, followed by a space at
-the start of each line.
+(>) followed by a space at the start of each line and between paragraphs.
 .Bd -literal -offset indent
-> The Prime Directive is not just a set of rules; it is a philosophy...
-> and a very correct one.
+> The Prime Directive is not just a set of rules;
+> it is a philosophy... and a very correct one.
 >
-> History has proven again and again that whenever mankind interferes
-> with a less developed civilization... the results are invariably
-> disastrous.
+> (It goes on for a few paragraphs). 
 .Ed
 .Pp
 Markdown also allows you to be lazy with block quotes: you can choose to
-only invoke the right-angle bracket at the start of paragraph and omit
+only invoke the right-angle bracket at the start of a paragraph and omit
 it entirely between paragraphs.
 .Bd -literal -offset indent
-> It is possible to commit no mistakes and still lose.
+> You cannot explain away a wantonly immoral act because 
+you think it is connected to some higher purpose.
 
-> The road from legitimate suspicion to rampant paranoia is much shorter
-than we think.
+> Here is another paragraph about Picard wisdom.
 .Ed
+.Pp
+Consecutive blockquotes as above will be merged as paragraphs within a
+single block quote on output, even if styles ("lazy" and otherwise) are
+mixed.
 .Pp
 Markdown supports nested block quotes as well as other Markdown elements
 within block quotes, such as headers, ordered/unordered lists, and code
@@ -73,15 +116,14 @@ blocks.
 .Bd -literal -offset indent
 > ### atx header 3
 >
-> > I'd be delighted to offer any advice I have on understanding women.
-> > When I have
-> > some, I'll let you know.
+> > I'd be delighted to offer any advice 
+> > I have on understanding women.
+> > When I have some, I'll let you know.
 >
 > 1.  advice list item 1
 > 2.  advice list item 2
-> 3.  advice list item 3
 >
-> Here’s the code to implement advice JLP’s advice:
+> Here’s the code to implement JLP’s advice:
 > 	return shell_exec("echo $input | $womenadvice_script")
 .Ed
 .
@@ -89,9 +131,9 @@ blocks.
 Markdown supports both ordered and unordered lists.
 Ordered lists are invoked as numbers followed by periods (1.) and
 rendered in the same format.
-Note: it does not matter which order or
-which numbers you use in your ordered lists, Markdown will generate an
-ordinal list from your input as long as you start your list with (1.).
+Note: it does not matter which order or which numbers you use in your ordered
+lists, Markdown will generate an ordinal list from your input as long as you
+start your list with number one (1.).
 .Bd -literal -offset indent
 1. Make.
 2. It.
@@ -103,12 +145,11 @@ ending it with a period could invoke an ordered list.
 To escape this, use a blackslash before the period. 
 .Bd -literal -offset indent
 1987. 	The year TNG premiered. 
-
 1987\e. The year TNG premiered.
 .Ed
 .Pp
 Unordered lists, on the other hand, can be invoked using either
-asterisks (*), pluses (+), and hyphens (-), and can be a mix of all
+asterisks (*), pluses (+), or hyphens (-), and can be a mix of all
 three, but are rendered as bullet points.
 .Bd -literal -offset indent
 - Earl Grey tea.
@@ -123,36 +164,33 @@ four spaces or one tab.
 
 	Courage can be an emotion too.
 
-	No being is so important that he can usurp the rights of another.
+	Things are only impossible until they're not. 
 + Second list item
 + Third list item
 .Ed
 .Pp
 To insert block quotes into a list item, indent the block quote with
-four spaces of one tab.
-Code blocks need to be indented twice to be inserted into a listen item
-– either with eight spaces or two tabs.
+four spaces or one tab.
+Code blocks need to be indented twice to be inserted into a list item
+\(em either with eight spaces or two tabs.
 .Bd -literal -offset indent
 ∗ List item 1
 ∗ List item 2
 
-	> Winds shall rise
-	> and fog descend
-	> So leave here all
-	> or meet your end
+	> I am Locutus of Borg. 
+	> That is the cutest of Borg.
 
-∗ That was “very bad poetry, Captain”
-∗ Here is an indented code block
+∗ Here is an indented code block:
 	<alias path='echo -e ${PATH//:/\\n}'>
 .Ed
 .
 .Ss Code Blocks
 Markdown supports source code text through pre-formatted code blocks.
 Each code block contains opaque/literal text.
-This means that new lines and white spaces are retained – they’re not
+This means that new lines and white spaces are retained \(em they’re not
 formatted in any way, and any text inside the code block is not
 interpreted.
-To invoke a code block, indent each line with 4 spaces or 1 tab.
+To invoke a code block, indent each line with four spaces or one tab.
 .Bd -literal -offset indent
 Here is a paragraph about Bridge protocol
 
@@ -182,7 +220,7 @@ characters.
 - - -
 ___
 _ _ _
-_______________________________________________________________
+___________________________
 .Ed
 .
 .
@@ -213,7 +251,7 @@ Markdown supports emphasis within the middle of a word:
 En**ter*prise
 .Ed
 .Pp
-In order to produce a literal asterisks (*) or underscore (_) simply
+In order to produce a literal asterisk (*) or underscore (_) simply
 surround the character by white space.
 .Bd -literal -offset indent
 * USS Enterprise * will not be emphasized
@@ -221,11 +259,11 @@ surround the character by white space.
 .
 .Ss Links
 Markdown supports two types of links: inline and reference.
-In both cases, the linked text is denoted by [square brackets].
-n inline link uses parentheses containing the URL immediately following
+In both cases, the linked text is denoted by square brackets [].
+An inline link uses parentheses () containing the URL immediately following
 the linked text in square brackets to invoke the link.
 .Bd -literal -offset indent
-[text to link](http://click.here.to.go.to.link.com)
+[text to link](http://click.to.link.com)
 .Ed
 .Pp
 For local referencing on the same server, Markdown supports relative
@@ -237,28 +275,26 @@ paths:
 A reference link on the other hand, keeps the URL outside of the text,
 usually in the footnotes, and has the benefit of making the text more
 readable.
-Invoke a reference link by defining it using with a title
-[square brackets] followed a colon followed by its corresponding URL or
+Invoke a reference link by defining it using a title
+square brackets [] followed a colon (:) followed by its corresponding URL or
 path to image:
 .Bd -literal -offset indent
-[link1]: http://url.to.see.cool.captain.picard.quotes
+[link1]: http://www.picard.quotes
 .Ed
 .Pp
-then reference it anywhere in your text using [text to the link] and the
-same [link title], both in [square brackets] next to each other:
+Following that, reference it anywhere in your text using [text to the link] and
+the same [link title], both in square brackets [] next to each other:
 .Bd -literal -offset indent
-here is some text about Captain Jean Luc Picard [text to link][link1].
+here is some text about Captain Picard [text to link][link1].
 .Ed
 .
 .Ss Automatic Links
-Automatic links are links to URLs or emails that do not require text to
-links, rather they show the full link or email address that works
-simultaneously as the clickable link.
+Automatic links are links to URLs or emails addresses that do not require text
+to links, rather the full link or email address is shown and works as a hyperlink.
 To invoke an automatic link, surround the link or email address with
 angle brackets < >
 .Bd -literal -offset indent
 <http://captainmarkdownpicard.com/>
-
 <markdown@captainpicard.com>
 .Ed
 .
@@ -266,7 +302,7 @@ angle brackets < >
 Markdown uses a plain text image syntax that very much resembles the
 links syntax.
 The key difference is that images require an exclamation
-mark (!) before the text to link surrounded by square brackets [ ].
+mark (!) before the text to link surrounded by square brackets [].
 .Bd -literal -offset indent
 ![Image text]
 .Ed
@@ -275,23 +311,23 @@ Just like with links, Markdown also supports inline and reference
 images.
 Markdown invokes inline style images by an exclamation mark (!) followed
 by the optional text for the image (also known as the caption)
-surrounded by square brackets [ ] followed by the URL or the path to
-image surrounded by parentheses ( ).
+surrounded by square brackets [] followed by the URL or the path to
+image surrounded by parentheses ().
 .Bd -literal -offset indent
-![Picture of Picard](http://picard.pictures.for.markdown.net)
+![Picture of Picard](http://picard.pix.for.markdown)
 .Ed
 .Pp
 Markdown invokes reference style images by defining the image reference
-in your footnote or endnote using an image ID surrounded by square
-brackets [ ] followed by a colon followed by an image URL or path to
-image and optional title attribute in quotation marks “ ”.
+using an image ID surrounded by square brackets [] followed by a colon (:)
+followed by an image URL or path to image and optional title attribute in
+quotation marks “ ”.
 .Bd -literal -offset -indent
-[image1]: http://picard.pictures.for.markdown.net “Picture of Picard”
+[image1]: http://picard.pix.for.markdown “Picture of Picard”
 .Ed
 .Pp
 Invoking the image reference in your text document will look like this
 .Bd -literal -offset indent
-Here is some text about Captain Picard. Now I want to include a picture:
+Here is some text about Picard. Now I'll include a picture:
 ![Captain Picard][image1]
 .Ed
 .
@@ -327,7 +363,6 @@ Markdown supports automatic escapes where these characters do not need
 to be escaped and can be used literally.
 .Bd -literal -offset indent
 Kirk < Picard
-
 Picard & Riker = great team.
 .Ed
 .
@@ -369,7 +404,7 @@ period
 .It Li +
 plus sign
 .It Li \&[
-square brackets
+square bracket
 .It Li _
 underscore
 .El
@@ -379,7 +414,7 @@ underscore
 .Xr lowdown 1
 .Sh STANDARDS
 This manpage by default describes John Gruber's version of Markdown.
-Extensions and other implementations are specifically noted. 
+Extensions and other implementations are specifically noted.
 .Sh AUTHORS
 The
 .Nm
