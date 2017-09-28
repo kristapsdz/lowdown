@@ -44,7 +44,7 @@ to a [5-week poll](poll.html).
 	> Picard continued his winning ways in the final week,
 	> with fans naming him the most inspiring captain.
 
-2. Picard is handsome. ![Picard](image.jpeg)
+2. Picard is handsome. ![Picard](image.jpg)
 3. Picard knows how to code: `make engage`
 
 ---------------------------------
@@ -123,6 +123,7 @@ blocks.
 > 2.  advice list item 2
 >
 > Here’s the code to implement JLP’s advice:
+
 > 	return shell_exec("echo $input | $womenadvice_script")
 .Ed
 .
@@ -262,7 +263,7 @@ In both cases, the linked text is denoted by square brackets [].
 An inline link uses parentheses () containing the URL immediately following
 the linked text in square brackets to invoke the link.
 .Bd -literal -offset indent
-[text to link](http://click.to.link.com)
+[text to link](http://bsd.lv)
 .Ed
 .Pp
 For local referencing on the same server, Markdown supports relative
@@ -278,7 +279,7 @@ Invoke a reference link by defining it using a title
 square brackets [] followed a colon (:) followed by its corresponding URL or
 path to image:
 .Bd -literal -offset indent
-[link1]: http://www.picard.quotes
+[link1]: http://www.bsd.lv/picard.jpg
 .Ed
 .Pp
 Following that, reference it anywhere in your text using [text to the link] and
@@ -293,8 +294,8 @@ to links, rather the full link or email address is shown and works as a hyperlin
 To invoke an automatic link, surround the link or email address with
 angle brackets < >
 .Bd -literal -offset indent
-<http://captainmarkdownpicard.com/>
-<markdown@captainpicard.com>
+<http://bsd.lv/>
+<huck@divelog.blue>
 .Ed
 .
 .Ss Images
@@ -313,7 +314,7 @@ by the optional text for the image (also known as the caption)
 surrounded by square brackets [] followed by the URL or the path to
 image surrounded by parentheses ().
 .Bd -literal -offset indent
-![Picture of Picard](http://picard.pix.for.markdown)
+![Picture of Picard](http://openbsd.org)
 .Ed
 .Pp
 Markdown invokes reference style images by defining the image reference
@@ -321,7 +322,7 @@ using an image ID surrounded by square brackets [] followed by a colon (:)
 followed by an image URL or path to image and optional title attribute in
 quotation marks “ ”.
 .Bd -literal -offset -indent
-[image1]: http://picard.pix.for.markdown “Picture of Picard”
+[image1]: http://openbsd.org “Picture of Picard”
 .Ed
 .Pp
 Invoking the image reference in your text document will look like this
@@ -336,7 +337,7 @@ paragraphs).
 To invoke a span of code, surround the code using backtick quotes (`).
 .Bd -literal -offset indent
 I need your IP address to send you Picard pix. Use the `ifconfig
-en(0)`command.
+iwm0`command.
 .Ed
 .Pp
 Markdown supports literal backticks (`) within a code of span.
