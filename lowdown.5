@@ -122,7 +122,7 @@ blocks.
 > 1.  advice list item 1
 > 2.  advice list item 2
 >
-> Here’s the code to implement JLP’s advice:
+> Here's the code to implement JLP's advice:
 
 > 	return shell_exec("echo $input | $womenadvice_script")
 .Ed
@@ -153,7 +153,7 @@ asterisks (*), pluses (+), or hyphens (-), and can be a mix of all
 three, but are rendered as bullet points.
 .Bd -literal -offset indent
 - Earl Grey tea.
-∗ Shakespeare.
+* Shakespeare.
 + Exotic fish.
 .Ed
 .Pp
@@ -174,20 +174,20 @@ four spaces or one tab.
 Code blocks need to be indented twice to be inserted into a list item
 \(em either with eight spaces or two tabs.
 .Bd -literal -offset indent
-∗ List item 1
-∗ List item 2
+* List item 1
+* List item 2
 
 	> I am Locutus of Borg. 
 	> That is the cutest of Borg.
 
-∗ Here is an indented code block:
+* Here is an indented code block:
 	<alias path='echo -e ${PATH//:/\\n}'>
 .Ed
 .
 .Ss Code Blocks
 Markdown supports source code text through pre-formatted code blocks.
 Each code block contains opaque/literal text.
-This means that new lines and white spaces are retained \(em they’re not
+This means that new lines and white spaces are retained \(em they're not
 formatted in any way, and any text inside the code block is not
 interpreted.
 To invoke a code block, indent each line with four spaces or one tab.
@@ -322,9 +322,9 @@ image surrounded by parentheses ().
 Markdown invokes reference style images by defining the image reference
 using an image ID surrounded by square brackets [] followed by a colon (:)
 followed by an image URL or path to image and optional title attribute in
-quotation marks “ ”.
+quotation marks \(dq \(dq.
 .Bd -literal -offset -indent
-[image1]: http://openbsd.org “Picture of Picard”
+[image1]: http://openbsd.org "Picture of Picard"
 .Ed
 .Pp
 Invoking the image reference in your text document will look like this
