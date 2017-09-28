@@ -25,20 +25,17 @@
 .
 .
 .Sh DESCRIPTION
-Markdown is an easy-to-read, easy-to-write plain text formatting syntax.
-A document written using Markdown is meant to be generated as-is, containing as
-little formatting and mark-up as possible.
-Markdown was intended as a writing format for the web only, but also serves
-as a quick and easy writing tool to generate documents that require
-minimal stylistic formatting.
-.
+Markdown is an plain text formatting syntax that's used as a quick and easy
+tool to generate documents.
+Plain text syntax means that the document looks almost the same on output,
+containing as little formatting and mark-up as possible so that it's easy to
+read whilst writing.
 .Ss EXAMPLE
-Here is an example page that touches on the syntax listed below. 
 .Bd -literal -offset indent
 # How to be a Picard fan
 ## Introduction
 In order to develop fandom skills one must first and foremost
-know *whom* it is one is idolizing. We therefore first ask: 
+know *whom* it is one idolises. We therefore ask: 
 **who is Captain Picard**?
 
 1. Picard was named the \e*Best Star Trek Captain\e*, according
@@ -55,13 +52,15 @@ to a [5-week poll](poll.html).
 Here's why everyone wants to be a fan.
 .Ed
 .Pp
-Contents separated by empty lines are block level elements.
-Those within that line are span level elements.
+This example consists of a series of block elements: section, sub-section, a
+paragraph, a set of list elements, a horizontal rule, then another section.
+Each of the block elements contains span elements: emphasised text (bold and
+italised), an image, a link, and finally, a span of code.  
 .
 .
 .Sh BLOCK ELEMENTS
-A block element starts on a new line and takes up the full-width (left
-and right) of the page available.
+A block element starts on a new line and extends to the next blank line or
+next block element.
 A block element can contain a span element.
 .
 .Ss Paragraphs and Line Breaks
