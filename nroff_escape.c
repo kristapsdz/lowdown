@@ -18,100 +18,57 @@
 
 #include <sys/queue.h>
 
-#include <assert.h>
-#include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 
 #include "lowdown.h"
 #include "extern.h"
 
 /*
- * FIXME: merge with re-written hesc_nroff.
- */
-static void
-hesc_nroff_oneline(hbuf *ob, const char *data, size_t sz, int span)
-{
-	size_t	 i;
-
-	if (0 == sz)
-		return;
-
-	assert(NULL != data);
-
-	/* Pre-terminate. */
-
-	if (0 == span && '.' == data[0])
-		HBUF_PUTSL(ob, "\\&");
-
-	for (i = 0; i < sz; i++) {
-		if ('\n' == data[i]) {
-			HBUF_PUTSL(ob, " ");
-			continue;
-		} else if ('\\' == data[i]) {
-			HBUF_PUTSL(ob, "\\e");
-			continue;
-		}
-		hbuf_putc(ob, data[i]);
-	}
-}
-
-/*
  * Escape nroff.
- * This function was just copied from hesc_html and needs re-writing.
- * There are two ways to do this: block and span (controlled by the
- * "span" variable).
- * Then there's "oneline", which removes all newlines.
- * If "span" is non-zero, then we only escape characters following the
- * first.
- * If "span" is zero, then we also check the first character.
- * The intuition is that a "block" has its initial character after a
- * newline, and thus needs the newline check.
- * Finally, "oneline" strips out newlines.
- *
- * FIXME: after newline, strip leading spaces.
- * This only happens (I think?) when pasting metadata.
+ * If "span" is non-zero, don't test for leading periods.
+ * Otherwise, a leading period will be escaped.
+ * If "oneline" is non-zero, newlines are replaced with spaces.
  */
 void
 hesc_nroff(hbuf *ob, const char *data, 
 	size_t size, int span, int oneline)
 {
-	size_t	 i = 0, mark, slash;
+	size_t	 i;
 
-	if (oneline) {
-		hesc_nroff_oneline(ob, data, size, span);
+	if (0 == size)
 		return;
-	}
 
-	while (1) {
-		slash = 0;
-		for (mark = i; i < size; i++) {
-			if ('\\' == data[i]) {
-				slash = 1;
-				break;
-			}
-			if (i > 0 && '.' == data[i] &&
-			    '\n' == data[i - 1])
-				break;
-			if (0 == span && i == 0 && '.' == data[i])
-				break;
-		}
+	if ( ! span && '.' == data[0])
+		HBUF_PUTSL(ob, "\\&");
 
-		if (mark == 0 && i >= size) {
-			hbuf_put(ob, data, size);
-			return;
-		}
+	/*
+	 * According to mandoc_char(7), we need to escape the backtick,
+	 * single apostrophe, and tilde or else they'll be considered as
+	 * special Unicode output.
+	 * Slashes need to be escaped too, and newlines if appropriate
+	 */
 
-		if (i > mark)
-			hbuf_put(ob, data + mark, i - mark);
-
-		if (i >= size)
+	for (i = 0; i < size; i++) {
+		switch (data[i]) {
+		case '~':
+			HBUF_PUTSL(ob, "\\(ti");
 			break;
-
-		if (slash)
-			hbuf_puts(ob, "\\e");
-		else
-			hbuf_puts(ob, "\\&.");
-		i++;
+		case '`':
+			HBUF_PUTSL(ob, "\\(ga");
+			break;
+		case '\n':
+			hbuf_putc(ob, oneline ? ' ' : '\n');
+			break;
+		case '\\':
+			HBUF_PUTSL(ob, "\\e");
+			break;
+		case '.':
+			if ( ! oneline && i && '\n' == data[i - 1])
+				HBUF_PUTSL(ob, "\\&");
+			/* FALLTHROUGH */
+		default:
+			hbuf_putc(ob, data[i]);
+			break;
+		}
 	}
 }
