@@ -1,5 +1,5 @@
-#ifdef __linux__
-# define _GNU_SOURCE
+#if defined(__linux__) || defined(__MINT__)
+#define _GNU_SOURCE	/* See test-*.c what needs this. */
 #endif
 #include <string.h>
 
