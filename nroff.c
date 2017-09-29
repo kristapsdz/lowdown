@@ -171,9 +171,9 @@ nstate_fonts(const struct nstate *st)
  * link, if no text is found).
  */
 static int
-putlink(hbuf *ob, struct nstate *st, 
-	const hbuf *link, const hbuf *text, 
-	struct lowdown_node *next, struct lowdown_node *prev)
+putlink(hbuf *ob, struct nstate *st, const hbuf *link, 
+	const hbuf *text, struct lowdown_node *next, 
+	struct lowdown_node *prev, enum halink_type type)
 {
 	const hbuf	*buf;
 	size_t		 i, pos;
@@ -216,9 +216,12 @@ putlink(hbuf *ob, struct nstate *st,
 	if ( ! usepdf) {
 		st->fonts[NFONT_ITALIC]++;
 		hbuf_puts(ob, nstate_fonts(st));
-		if (NULL == text)
-			hbuf_put(ob, link->data, link->size);
-		else
+		if (NULL == text) {
+			if (0 == hbuf_prefix(link, "mailto:"))
+				hbuf_put(ob, link->data + 7, link->size - 7);
+			else
+				hbuf_put(ob, link->data, link->size);
+		} else
 			hbuf_put(ob, text->data, text->size);
 		st->fonts[NFONT_ITALIC]--;
 		hbuf_puts(ob, nstate_fonts(st));
@@ -265,6 +268,8 @@ putlink(hbuf *ob, struct nstate *st,
 
 	if (usepdf) {
 		HBUF_PUTSL(ob, "-D ");
+		if (HALINK_EMAIL == type)
+			HBUF_PUTSL(ob, "mailto:");
 		for (i = 0; i < link->size; i++) {
 			if ( ! isprint((unsigned char)link->data[i]) ||
 			    NULL != strchr("<>\\^`{|}\"", link->data[i]))
@@ -273,9 +278,12 @@ putlink(hbuf *ob, struct nstate *st,
 				hbuf_putc(ob, link->data[i]);
 		}
 		HBUF_PUTSL(ob, " ");
-		if (NULL == text)
-			hbuf_put(ob, link->data, link->size);
-		else
+		if (NULL == text) {
+			if (0 == hbuf_prefix(link, "mailto:"))
+				hbuf_put(ob, link->data + 7, link->size - 7);
+			else
+				hbuf_put(ob, link->data, link->size);
+		} else
 			hesc_nroff(ob, text->data, text->size, 0, 1);
 	}
 
@@ -297,7 +305,7 @@ rndr_autolink(hbuf *ob, const hbuf *link, enum halink_type type,
 		    (ob->size && '\n' != ob->data[ob->size - 1]))
 			HBUF_PUTSL(ob, "\n");
 
-	return putlink(ob, st, link, NULL, next, prev);
+	return putlink(ob, st, link, NULL, next, prev, type);
 }
 
 static void
@@ -434,7 +442,8 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link,
 		    (ob->size && '\n' != ob->data[ob->size - 1]))
 			HBUF_PUTSL(ob, "\n");
 
-	return putlink(ob, st, link, content, next, prev);
+	return putlink(ob, st, link, 
+		content, next, prev, HALINK_NORMAL);
 }
 
 static void
