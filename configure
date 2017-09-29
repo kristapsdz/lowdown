@@ -86,6 +86,7 @@ INSTALL_DATA=
 
 HAVE_CAPSICUM=
 HAVE_ERR=
+HAVE_MEMRCHR=
 HAVE_PATH_MAX=
 HAVE_PLEDGE=
 HAVE_PROGNAME=
@@ -197,6 +198,7 @@ runtest() {
 
 runtest capsicum	CAPSICUM			  || true
 runtest err		ERR				  || true
+runtest memrchr		MEMRCHR				  || true
 runtest PATH_MAX	PATH_MAX			  || true
 runtest pledge		PLEDGE				  || true
 runtest progname	PROGNAME			  || true
@@ -246,6 +248,7 @@ __HEREDOC__
 cat << __HEREDOC__
 #define HAVE_CAPSICUM ${HAVE_CAPSICUM}
 #define HAVE_ERR ${HAVE_ERR}
+#define HAVE_MEMRCHR ${HAVE_MEMRCHR}
 #define HAVE_PLEDGE ${HAVE_PLEDGE}
 #define HAVE_PROGNAME ${HAVE_PROGNAME}
 #define HAVE_REALLOCARRAY ${HAVE_REALLOCARRAY}
@@ -262,6 +265,10 @@ if [ ${HAVE_ERR} -eq 0 ]; then
 	echo "extern void errx(int, const char *, ...);"
 	echo "extern void warn(const char *, ...);"
 	echo "extern void warnx(const char *, ...);"
+fi
+
+if [ ${HAVE_MEMRCHR} -eq 0 ]; then
+	echo "extern void *memrchr(const void *, int, size_t);"
 fi
 
 if [ ${HAVE_PROGNAME} -eq 0 ]; then
