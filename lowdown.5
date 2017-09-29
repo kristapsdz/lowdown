@@ -248,7 +248,7 @@ __Jean-Luc Picard__
 .Pp
 Markdown supports emphasis within the middle of a word:
 .Bd -literal -offset indent
-En**ter*prise
+En*ter*prise
 .Ed
 .Pp
 In order to produce a literal asterisk (*) or underscore (_) simply
@@ -316,7 +316,7 @@ by the optional text for the image (also known as the caption)
 surrounded by square brackets [] followed by the URL or the path to
 image surrounded by parentheses ().
 .Bd -literal -offset indent
-![Picture of Picard](http://openbsd.org)
+![Picture of Picard](https://bsd.lv/picard.jpg)
 .Ed
 .Pp
 Markdown invokes reference style images by defining the image reference
@@ -324,7 +324,7 @@ using an image ID surrounded by square brackets [] followed by a colon (:)
 followed by an image URL or path to image and optional title attribute in
 quotation marks \(dq \(dq.
 .Bd -literal -offset -indent
-[image1]: http://openbsd.org "Picture of Picard"
+[image1]: https://bsd.lv/picard.jpg "Picture of Picard"
 .Ed
 .Pp
 Invoking the image reference in your text document will look like this
@@ -339,7 +339,7 @@ paragraphs).
 To invoke a span of code, surround the code using backtick quotes (`).
 .Bd -literal -offset indent
 I need your IP address to send you Picard pix. Use the `ifconfig
-iwm0`command.
+iwm0` command.
 .Ed
 .Pp
 Markdown supports literal backticks (`) within a code of span.
