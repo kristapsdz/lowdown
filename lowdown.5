@@ -145,6 +145,7 @@ ending it with a period could invoke an ordered list.
 To escape this, use a blackslash before the period. 
 .Bd -literal -offset indent
 1987. 	The year TNG premiered. 
+
 1987\e. The year TNG premiered.
 .Ed
 .Pp
@@ -157,6 +158,8 @@ three, but are rendered as bullet points.
 + Exotic fish.
 .Ed
 .Pp
+All nested block elements need a new line break, otherwise they will be
+rendered on the same line as the list item on output.
 To insert paragraphs into a list item, indent each paragraph with either
 four spaces or one tab.
 .Bd -literal -offset indent
@@ -164,24 +167,28 @@ four spaces or one tab.
 
     Courage can be an emotion too.
 
-    Things are only impossible until they're not. 
+    Things are only impossible until they're not.
 + Second list item
 + Third list item
 .Ed
 .Pp
 To insert block quotes into a list item, indent the block quote with
-four spaces or one tab.
-Code blocks need to be indented twice to be inserted into a list item
-\(em either with eight spaces or two tabs.
+four spaces or one tab prior to the right-angle bracket.
 .Bd -literal -offset indent
 * List item 1
 * List item 2
 
-    > I am Locutus of Borg. 
-    > That is the cutest of Borg.
+     > I am Locutus of Borg. 
+   
+     > That is the cutest of Borg.
+.Ed
+.Pp
+Code blocks need to be indented twice (two tabs or eight leading spaces): once
+for being recognised within the list item, another for the code block itself.
+.Bd -literal -offset indent
+* Here is a list item for an indented code block:
 
-* Here is an indented code block:
-	<alias path='echo -e ${PATH//:/\\n}'>
+        alias path='echo -e ${PATH//:/\\n}'
 .Ed
 .
 .Ss Code Blocks
@@ -190,7 +197,8 @@ Each code block contains opaque/literal text.
 This means that new lines and white spaces are retained \(em they're not
 formatted in any way, and any text inside the code block is not
 interpreted.
-To invoke a code block, indent each line with four spaces or one tab.
+To invoke a code block, create a line break then indent each line with four
+spaces or one tab.
 .Bd -literal -offset indent
 Here is a paragraph about Bridge protocol
 
@@ -254,7 +262,7 @@ En*ter*prise
 In order to produce a literal asterisk (*) or underscore (_) simply
 surround the character by white space.
 .Bd -literal -offset indent
-* USS Enterprise * will not be emphasized
+The ship * USS Enterprise * will not be emphasized
 .Ed
 .
 .Ss Links
@@ -352,7 +360,7 @@ backticks within the span of code to show up as literal characters.
 If you have a literal backtick at the start or end of the span of code,
 leave a space between the literal backtick and the delimiting backticks.
 .Bd -literal -offset indent
-```So many backticks```
+`` `So many backticks` ``
 .Ed
 .
 .
