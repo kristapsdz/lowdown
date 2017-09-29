@@ -1,5 +1,6 @@
-#include <string.h>
-
+#ifdef __linux__
+# define _GNU_SOURCE
+#endif
 #include <string.h>
 
 int
