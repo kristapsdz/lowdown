@@ -50,6 +50,9 @@ hesc_nroff(hbuf *ob, const char *data,
 
 	for (i = 0; i < size; i++) {
 		switch (data[i]) {
+		case '^':
+			HBUF_PUTSL(ob, "\\(ha");
+			break;
 		case '~':
 			HBUF_PUTSL(ob, "\\(ti");
 			break;
