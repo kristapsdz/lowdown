@@ -338,4 +338,16 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.2.6</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2017-09-28">2017-09-28</time>
+		</header>
+		<aside>
+			<p>
+				Fixed compilation on Linux and Mac OS X by adding <code>memrchr</code> compatibility.
+			</p>
+		</aside>
+	</article>
 </articles>
