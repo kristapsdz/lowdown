@@ -29,8 +29,8 @@
 Markdown is a simple, plain-text formatting language.
 .Dq Plain-text
 in this case means the document input looks similar to the output, less
-the formatting niceties (boxed tables, clickable links, etc.) provided
-by the output medium.
+the formatting niceties (boxed tables, italics, clickable links, etc.)
+provided by the output medium.
 For example:
 .Bd -literal -offset indent
 # How to be a Picard fan
@@ -213,7 +213,23 @@ for being recognised within the list item, another for the code block itself.
 
         alias path='echo -e ${PATH//:/\\n}'
 .Ed
-.
+.Pp
+To make list elements occur in tight sequence \(em like a grocery list
+\(em don't have an empty line between the items.
+.Bd -literal -offset indent
+- Phaser
+- Communicator
+.Ed
+.Pp
+On the other hand, if you want to render lists separated by white-space,
+use the following syntax:
+.Bd -literal -offset indent
+- A phaser is a type of weapon.
+
+- A communicator keeps Riker in contact with Troy.
+.Ed
+.Pp
+This applies to ordered and unordered list types.
 .Ss Code Blocks
 Code blocks consist of pre-formatted text, such as source code.
 Each code block contains opaque/literal text.
