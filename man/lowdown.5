@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate$
+.Dd $Mdocdate: September 30 2017 $
 .Dt LOWDOWN 5
 .Os
 .
@@ -25,18 +25,19 @@
 .
 .
 .Sh DESCRIPTION
-Markdown is an plain text formatting syntax that's used as a quick and easy
-tool to generate documents.
-Plain text syntax means that the document looks almost the same on output,
-containing as little formatting and mark-up as possible so that it's easy to
-read whilst writing.
-.Ss EXAMPLE
+Markdown is a simple, plain-text formatting language.
+.Dq Plain-text
+in this case means the document input looks similar to the output, less
+the formatting niceties (boxed tables, clickable links, etc.) provided
+by the output medium.
+For example:
 .Bd -literal -offset indent
 # How to be a Picard fan
+
 ## Introduction
+
 In order to develop fandom skills one must first and foremost
-know *whom* it is one idolises. We therefore ask:
-**who is Captain Picard**?
+know *whom* one idolises. Therefore: **who is Captain Picard**?
 
 1. Picard was named the \e*Best Star Trek Captain\e*, according
 to a [5-week poll](poll.html).
@@ -48,14 +49,20 @@ to a [5-week poll](poll.html).
 3. Picard knows how to code: `make engage`
 
 ---------------------------------
+
 ## Picard Fandom
-Here's why everyone wants to be a fan.
+
+Here's why everyone wants to be a fan...
 .Ed
 .Pp
-This example consists of a series of block elements: section, sub-section, a
-paragraph, a set of list elements, a horizontal rule, then another section.
-Each of the block elements contains span elements: emphasised text (bold and
-italised), an image, a link, and finally, a span of code.
+This example consists of a series of block elements: section header,
+sub-section header, paragraph, set of list elements, horizontal rule,
+then another sub-section header.
+Each block element contains span elements: normal text, emphasised text
+(bold and italised), an image, a link, and a span of code.
+.Pp
+This document describes the Markdown syntax accepted by
+.Xr lowdown 1 .
 .
 .
 .Sh BLOCK ELEMENTS
