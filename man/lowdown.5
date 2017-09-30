@@ -170,7 +170,7 @@ Unordered lists, on the other hand, can be invoked using either
 asterisk
 .Pq Dq * ,
 pluses
-.Pq Dq + , 
+.Pq Dq + ,
 or hyphens
 .Pq Dq \- ,
 and can be a mix of all three styles.
@@ -312,79 +312,108 @@ The ship * USS Enterprise * will not be emphasized
 .
 .Ss Links
 Markdown supports two types of links: inline and reference.
-In both cases, the linked text is denoted by square brackets [].
-An inline link uses parentheses () containing the URL immediately following
-the linked text in square brackets to invoke the link.
+In both cases, the linked text is denoted by square brackets
+.Pq Dq \&[] .
+An inline link uses parentheses
+.Pq Dq \&()
+containing the URL immediately following the linked text in square
+brackets to invoke the link.
 .Bd -literal -offset indent
-[text to link](http://bsd.lv)
+[text to link](https://bsd.lv)
 .Ed
 .Pp
-For local referencing on the same server, Markdown supports relative
-paths:
+For local references, Markdown supports relative paths:
 .Bd -literal -offset indent
-[Picard](/Picard/)
+[Picard](/Picard)
 .Ed
 .Pp
-A reference link on the other hand, keeps the URL outside of the text,
-usually in the footnotes, and has the benefit of making the text more
-readable.
-Invoke a reference link by defining it using a title
-square brackets [] followed a colon (:) followed by its corresponding URL or
-path to image:
+A reference link, on the other hand, keeps the URL outside of the text
+\(em usually in the footnotes.
+Define a reference link anywhere in a document by a title in square
+brackets
+.Pq Dq \&[]
+followed a colon
+.Pq Dq \&:
+followed by the corresponding URL or path:
 .Bd -literal -offset indent
-[link1]: http://www.bsd.lv/picard.jpg
+[link1]: https://www.bsd.lv/picard.jpg
 .Ed
 .Pp
-Following that, reference it anywhere in your text using [text to the link] and
-the same [link title], both in square brackets [] next to each other:
+The definition must be on its own line.
+.Pp
+Reference the link anywhere in your text using [text to the link] and
+the same [link title], both in square brackets
+.Pq Dq \&[]
+next to each other:
 .Bd -literal -offset indent
-here is some text about Captain Picard [text to link][link1].
+Text about [Captain Picard][link1].
 .Ed
+.Pp
+References need not follow the definition: both may appear anywhere in
+relation to the other.
 .
 .Ss Automatic Links
 Automatic links are links to URLs or emails addresses that do not require text
-to links, rather the full link or email address is shown and works as a hyperlink.
+to links; rather, the full link or email address is inferred from the
+text.
 To invoke an automatic link, surround the link or email address with
-angle brackets < >
+angle brackets
+.Pq Dq \&<> ,
+for example:
 .Bd -literal -offset indent
-<http://bsd.lv/>
+<https://bsd.lv/>
 <huck@divelog.blue>
 .Ed
 .Pp
-Note that these are only enabled if the "autolink" input option is specified.
+In
+.Xr lowdown 1 ,
+these are only enabled if the
+.Ar autolink
+input option is specified.
 By default, it is.
+.
 .Ss Images
-Markdown uses a plain text image syntax that very much resembles the
-links syntax.
+Markdown uses an image syntax that resembles the links syntax.
 The key difference is that images require an exclamation
-mark (!) before the text to link surrounded by square brackets [].
+mark
+.Pq Dq \&!
+before the text to link surrounded by square brackets
+.Pq Dq \&[] .
 .Bd -literal -offset indent
-![Image text]
+![Image text](imageurl.jpg)
 .Ed
 .Pp
-Just like with links, Markdown also supports inline and reference
-images.
-Markdown invokes inline style images by an exclamation mark (!) followed
-by the optional text for the image (also known as the caption)
-surrounded by square brackets [] followed by the URL or the path to
-image surrounded by parentheses ().
+Just like with links, Markdown supports both inline and reference
+image links.
+The former consist of an exclamation mark
+.Pq Dq \&!
+followed by the text for the image (which may be empty) surrounded by
+square brackets
+.Dq Pq \&[]
+followed by the URL or the path to image in parentheses
+.Dq Pq \&() .
 .Bd -literal -offset indent
 ![Picture of Picard](https://bsd.lv/picard.jpg)
 .Ed
 .Pp
-Markdown invokes reference style images by defining the image reference
-using an image ID surrounded by square brackets [] followed by a colon (:)
-followed by an image URL or path to image and optional title attribute in
-quotation marks \(dq \(dq.
+The reference style definition consists of an image identifier
+surrounded by square brackets
+.Dq Pq \&[]
+followed by a colon
+.Dq Pq \&:
+followed by an image URL or path to image and optional title attribute
+in double quotation marks.
 .Bd -literal -offset -indent
 [image1]: https://bsd.lv/picard.jpg "Picture of Picard"
 .Ed
 .Pp
-Invoking the image reference in your text document will look like this
+Invoking the image reference is as follows:
 .Bd -literal -offset indent
-Here is some text about Picard. Now I'll include a picture:
-![Captain Picard][image1]
+A picture of the captain: ![Captain Picard][image1]
 .Ed
+.Pp
+As with regular reference links, the definition and references may occur
+anywhere in relation to each other.
 .
 .Ss Code
 In addition to code blocks, Markdown also supports inline code (within
