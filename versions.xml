@@ -347,6 +347,25 @@
 		<aside>
 			<p>
 				Fixed compilation on Linux and Mac OS X by adding <code>memrchr</code> compatibility.
+				Noted by <a href="https://github.com/vulcasian">Christina Sophonpanich</a> &#8212; thanks!
+			</p>
+		</aside>
+	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.2.7</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2017-09-29">2017-09-29</time>
+		</header>
+		<aside>
+			<p>
+				Re-wrote escape parser to <b>-Tms</b> and <b>-Tman</b> to respect <i>roff</i> special characters.
+				Have e-mail autolinks respect the <code>mailto:</code> in pdfhref'd output, and have links with
+				<code>mailto:</code> omit the schema in display just like in <b>-Thtml</b>.
+				Also introduce <a href="lowdown.5.html">lowdown(5)</a>, a work-in-progress to document the Markdown formatting
+				accepting by this system.
+				The first two were noted, and the last contributed in full, by <a href="https://github.com/vulcasian">Christina
+					Sophonpanich</a> &#8212; thanks!
 			</p>
 		</aside>
 	</article>
