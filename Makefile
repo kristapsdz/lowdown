@@ -74,6 +74,7 @@ install: all
 	mkdir -p $(DESTDIR)$(INCLUDEDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
 	mkdir -p $(DESTDIR)$(MANDIR)/man3
+	mkdir -p $(DESTDIR)$(MANDIR)/man5
 	install -m 0755 lowdown $(DESTDIR)$(BINDIR)
 	install -m 0644 liblowdown.a $(DESTDIR)$(LIBDIR)
 	install -m 0644 lowdown.h $(DESTDIR)$(INCLUDEDIR)
