@@ -7,8 +7,9 @@ author: Kristaps Dzonsons
 in the **ms** and **man** formats.  It doesn't require XSLT, Python, or
 external libraries -- it's just clean, secure, [open
 source](http://opensource.org/licenses/ISC) C code with no dependencies.
-Its canonical documentation is the [lowdown(1)](lowdown.1.html) manpage
-with the library interface at [lowdown(3)](lowdown.3.html).
+Its canonical documentation is [lowdown(1)](lowdown.1.html) for the
+formatter, [lowdown(5)](lowdown.5.html) for the syntax, and the library
+interface at [lowdown(3)](lowdown.3.html).
 
 *lowdown* started as a fork of
 [hoedown](https://github.com/hoedown/hoedown) to add sandboxing
@@ -264,7 +265,3 @@ to and from the definition.
 - In all modes, the "smartypants" formatting should be embedded in
 document output --- not in a separate step as implemented in the
 original sources.
-
-- I'd like a full reference of the Markdown language accepted as a
-manpage.  Markdown is incredibly inconsistent, so a simple, readable
-document would be very helpful.
