@@ -1,0 +1,427 @@
+.\"	$Id$
+.\"
+.\" Copyright (c) 2017 Christina Sophonpanich <huck@divelog.blue>
+.\"
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\"
+.Dd $Mdocdate$
+.Dt LOWDOWN 5
+.Os
+.
+.
+.Sh NAME
+.Nm lowdown
+.Nd Markdown reference for lowdown
+.
+.
+.Sh DESCRIPTION
+Markdown is an plain text formatting syntax that's used as a quick and easy
+tool to generate documents.
+Plain text syntax means that the document looks almost the same on output,
+containing as little formatting and mark-up as possible so that it's easy to
+read whilst writing.
+.Ss EXAMPLE
+.Bd -literal -offset indent
+# How to be a Picard fan
+## Introduction
+In order to develop fandom skills one must first and foremost
+know *whom* it is one idolises. We therefore ask:
+**who is Captain Picard**?
+
+1. Picard was named the \e*Best Star Trek Captain\e*, according
+to a [5-week poll](poll.html).
+
+    > Picard continued his winning ways in the final week,
+    > with fans naming him the most inspiring captain.
+
+2. Picard is handsome. ![Picard](image.jpg)
+3. Picard knows how to code: `make engage`
+
+---------------------------------
+## Picard Fandom
+Here's why everyone wants to be a fan.
+.Ed
+.Pp
+This example consists of a series of block elements: section, sub-section, a
+paragraph, a set of list elements, a horizontal rule, then another section.
+Each of the block elements contains span elements: emphasised text (bold and
+italised), an image, a link, and finally, a span of code.
+.
+.
+.Sh BLOCK ELEMENTS
+A block element starts on a new line and extends to the next blank line or
+next block element.
+A block element can contain a span element.
+.
+.Ss Paragraphs and Line Breaks
+A paragraph is made up of one or more lines of text.
+Paragraphs are separated by blank lines.
+To insert a hard line break: insert two spaces at the end of the line.
+.
+.Ss Headers
+Markdown supports two styles of headers: Setext ("underlined") and
+atx ("hash-marked").
+For Setext headers: underline the given word using equal (=) signs for
+first-level headers and dashes (-) for second-level headers.
+.Bd -literal -offset indent
+This is a setext Header 1
+========================
+.Ed
+.Pp
+For axt headers: use the corresponding number of hash characters to the
+corresponding level of header, up to 6 levels, at the start of the line
+separated by one space followed by the header.
+.Bd -literal -offset indent
+## This is an atx Header 2
+.Ed
+.
+.Ss Block Quotes
+Markdown supports block quoting by invoking a single right-angle bracket
+(>) followed by a space at the start of each line and between paragraphs.
+.Bd -literal -offset indent
+> The Prime Directive is not just a set of rules;
+> it is a philosophy... and a very correct one.
+>
+> (It goes on for a few paragraphs).
+.Ed
+.Pp
+Markdown also allows you to be lazy with block quotes: you can choose to
+only invoke the right-angle bracket at the start of a paragraph and omit
+it entirely between paragraphs.
+.Bd -literal -offset indent
+> You cannot explain away a wantonly immoral act because
+you think it is connected to some higher purpose.
+
+> Here is another paragraph about Picard wisdom.
+.Ed
+.Pp
+Consecutive blockquotes as above will be merged as paragraphs within a
+single block quote on output, even if styles ("lazy" and otherwise) are
+mixed.
+.Pp
+Markdown supports nested block quotes as well as other Markdown elements
+within block quotes, such as headers, ordered/unordered lists, and code
+blocks.
+.Bd -literal -offset indent
+> ### atx header 3
+>
+> > I'd be delighted to offer any advice
+> > I have on understanding women.
+> > When I have some, I'll let you know.
+>
+> 1.  advice list item 1
+> 2.  advice list item 2
+>
+> Here's the code to implement JLP's advice:
+
+>     return shell_exec("echo $input | $womenadvice_script")
+.Ed
+.
+.Ss Lists
+Markdown supports both ordered and unordered lists.
+Ordered lists are invoked as numbers followed by periods (1.) and
+rendered in the same format.
+Note: it does not matter which order or which numbers you use in your ordered
+lists, Markdown will generate an ordinal list from your input as long as you
+start your list with number one (1.).
+.Bd -literal -offset indent
+1. Make.
+2. It.
+1. So. (Not 1. again!)
+.Ed
+.Pp
+Note that starting a line with a single word that consists of any number and
+ending it with a period could invoke an ordered list.
+To escape this, use a blackslash before the period.
+.Bd -literal -offset indent
+1987. The year TNG premiered.
+
+1987\e. The year TNG premiered.
+.Ed
+.Pp
+Unordered lists, on the other hand, can be invoked using either
+asterisks (*), pluses (+), or hyphens (-), and can be a mix of all
+three, but are rendered as bullet points.
+.Bd -literal -offset indent
+- Earl Grey tea.
+* Shakespeare.
++ Exotic fish.
+.Ed
+.Pp
+All nested block elements need a new line break, otherwise they will be
+rendered on the same line as the list item on output.
+To insert paragraphs into a list item, indent each paragraph with either
+four spaces or one tab.
+.Bd -literal -offset indent
+- First list item
+
+    Courage can be an emotion too.
+
+    Things are only impossible until they're not.
++ Second list item
++ Third list item
+.Ed
+.Pp
+To insert block quotes into a list item, indent the block quote with
+four spaces or one tab prior to the right-angle bracket.
+.Bd -literal -offset indent
+* List item 1
+* List item 2
+
+     > I am Locutus of Borg.
+
+     > That is the cutest of Borg.
+.Ed
+.Pp
+Code blocks need to be indented twice (two tabs or eight leading spaces): once
+for being recognised within the list item, another for the code block itself.
+.Bd -literal -offset indent
+* Here is a list item for an indented code block:
+
+        alias path='echo -e ${PATH//:/\\n}'
+.Ed
+.
+.Ss Code Blocks
+Markdown supports source code text through pre-formatted code blocks.
+Each code block contains opaque/literal text.
+This means that new lines and white spaces are retained \(em they're not
+formatted in any way, and any text inside the code block is not
+interpreted.
+To invoke a code block, create a line break then indent each line with four
+spaces or one tab.
+.Bd -literal -offset indent
+Here is a paragraph about Bridge protocol
+
+    Here is a code block for the command "Engage"
+.Ed
+.Pp
+Within a code block, text is escaped given the output format.
+Therefore, characters that would normally need to be escaped in other
+text processing languages such as ampersands (&) do not need to be
+escaped.
+.Bd -literal -offset indent
+Here is how you start the program xterm:
+
+    xterm &
+.Ed
+.
+.Ss Horizontal Rules
+A horizontal rule is a line that goes across a web page.
+Markdown supports horizontal rules by invoking three or more asterisks
+(*), hyphens (-), or underscores (_), on their own line.
+Markdown disregards whether or not there are spaces between these
+characters.
+.Bd -literal -offset indent
+**
+* *
+---
+- - -
+___
+_ _ _
+___________________________
+.Ed
+.
+.
+.Sh SPAN ELEMENTS
+A span element does not have to start on a new line and only takes up as
+much width as necessary.
+A span element cannot contain a block element.
+.
+.Ss Emphasis
+Markdown supports different styles of emphasis, where strong is usually
+rendered as bold and emphasis is usually rendered as italics.
+Text surrounded by a single asterisk (*) or underscore (_) will be
+rendered as italic.
+.Bd -literal -offset indent
+*Captain Picard*
+_Captain Picard_
+.Ed
+.Pp
+Text surrounded by a double asterisk (**) or underscore (__) will be
+rendered as bold.
+.Bd -literal -offset indent
+**Jean-Luc Picard**
+__Jean-Luc Picard__
+.Ed
+.Pp
+Markdown supports emphasis within the middle of a word:
+.Bd -literal -offset indent
+En*ter*prise
+.Ed
+.Pp
+In order to produce a literal asterisk (*) or underscore (_) simply
+surround the character by white space.
+.Bd -literal -offset indent
+The ship * USS Enterprise * will not be emphasized
+.Ed
+.
+.Ss Links
+Markdown supports two types of links: inline and reference.
+In both cases, the linked text is denoted by square brackets [].
+An inline link uses parentheses () containing the URL immediately following
+the linked text in square brackets to invoke the link.
+.Bd -literal -offset indent
+[text to link](http://bsd.lv)
+.Ed
+.Pp
+For local referencing on the same server, Markdown supports relative
+paths:
+.Bd -literal -offset indent
+[Picard](/Picard/)
+.Ed
+.Pp
+A reference link on the other hand, keeps the URL outside of the text,
+usually in the footnotes, and has the benefit of making the text more
+readable.
+Invoke a reference link by defining it using a title
+square brackets [] followed a colon (:) followed by its corresponding URL or
+path to image:
+.Bd -literal -offset indent
+[link1]: http://www.bsd.lv/picard.jpg
+.Ed
+.Pp
+Following that, reference it anywhere in your text using [text to the link] and
+the same [link title], both in square brackets [] next to each other:
+.Bd -literal -offset indent
+here is some text about Captain Picard [text to link][link1].
+.Ed
+.
+.Ss Automatic Links
+Automatic links are links to URLs or emails addresses that do not require text
+to links, rather the full link or email address is shown and works as a hyperlink.
+To invoke an automatic link, surround the link or email address with
+angle brackets < >
+.Bd -literal -offset indent
+<http://bsd.lv/>
+<huck@divelog.blue>
+.Ed
+.Pp
+Note that these are only enabled if the "autolink" input option is specified.
+By default, it is.
+.Ss Images
+Markdown uses a plain text image syntax that very much resembles the
+links syntax.
+The key difference is that images require an exclamation
+mark (!) before the text to link surrounded by square brackets [].
+.Bd -literal -offset indent
+![Image text]
+.Ed
+.Pp
+Just like with links, Markdown also supports inline and reference
+images.
+Markdown invokes inline style images by an exclamation mark (!) followed
+by the optional text for the image (also known as the caption)
+surrounded by square brackets [] followed by the URL or the path to
+image surrounded by parentheses ().
+.Bd -literal -offset indent
+![Picture of Picard](https://bsd.lv/picard.jpg)
+.Ed
+.Pp
+Markdown invokes reference style images by defining the image reference
+using an image ID surrounded by square brackets [] followed by a colon (:)
+followed by an image URL or path to image and optional title attribute in
+quotation marks \(dq \(dq.
+.Bd -literal -offset -indent
+[image1]: https://bsd.lv/picard.jpg "Picture of Picard"
+.Ed
+.Pp
+Invoking the image reference in your text document will look like this
+.Bd -literal -offset indent
+Here is some text about Picard. Now I'll include a picture:
+![Captain Picard][image1]
+.Ed
+.
+.Ss Code
+In addition to code blocks, Markdown also supports inline code (within
+paragraphs).
+To invoke a span of code, surround the code using backtick quotes (`).
+.Bd -literal -offset indent
+I need your IP address to send you Picard pix. Use the `ifconfig
+iwm0` command.
+.Ed
+.Pp
+Markdown supports literal backticks (`) within a code of span.
+Surround the code using multiple backticks (``) if you want the
+backticks within the span of code to show up as literal characters.
+.Bd -literal -offset indent
+``Here is a span of code with `back ticks` inside it.``
+.Ed
+.Pp
+If you have a literal backtick at the start or end of the span of code,
+leave a space between the literal backtick and the delimiting backticks.
+.Bd -literal -offset indent
+`` `So many backticks` ``
+.Ed
+.
+.
+.Sh Escaping
+.
+.Ss Automatic Escapes
+Markdown supports automatic escapes where angle brackets (<) and ampersands (&) do
+not need to be escaped and can be used literally.
+.
+.Ss Backslash Escapes
+Markdown supports backslash escapes to render literal characters that
+would otherwise invoke a particular Markdown element.
+Surrounding a phrase with single asterisks renders it as italic.
+.Bd -literal -offset indent
+*Captain Picard*
+.Ed
+.Pp
+However, if you want to invoke those italics as literal characters,
+Markdown allows you to escape those asterisks using backslashes.
+.Bd -literal -offset indent
+\e*Captain Picard\e*
+.Ed
+.Pp
+Markdown supports backslash escapes for the following characters:
+.Pp
+.Bl -tag -width Ds -compact
+.It Li *
+asterisk
+.It Li \e
+backslash
+.It Li `
+backtick
+.It Li {
+curly brace
+.It Li \&!
+exclamation mark
+.It Li #
+hash mark
+.It Li -
+minus sign
+.It Li \&(
+parentheses
+.It Li \&.
+period
+.It Li +
+plus sign
+.It Li \&[
+square bracket
+.It Li _
+underscore
+.El
+.
+.
+.Sh SEE ALSO
+.Xr lowdown 1
+.Sh STANDARDS
+This manpage by default describes John Gruber's version of Markdown.
+Extensions and other implementations are specifically noted.
+.Sh AUTHORS
+The
+.Nm
+reference was written by
+.An Christina Sophonpanich ,
+.Mt huck@divelog.blue .
