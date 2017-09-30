@@ -448,6 +448,7 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link,
 
 static void
 rndr_listitem(hbuf *ob, const hbuf *content, 
+	const struct lowdown_node *prev,
 	enum hlist_fl flags, size_t num)
 {
 
@@ -455,11 +456,16 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 		return;
 
 	/* 
-	 * Start out with a vertical spacing, then put us into an
-	 * indented paragraph.
+	 * If we're in a "block" list item or are starting the list,
+	 * start vertical spacing.
+	 * Then put us into an indented paragraph.
 	 */
 
-	HBUF_PUTSL(ob, ".sp 0.5\n");
+	if (NULL == prev || 
+	    (content->size > 3 &&
+	     0 == memcmp(content->data, ".LP\n", 4)))
+		HBUF_PUTSL(ob, ".sp 0.5\n");
+
 	HBUF_PUTSL(ob, ".RS\n");
 
 	/* 
@@ -1113,7 +1119,7 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 		rndr_hrule(ob, ref);
 		break;
 	case (LOWDOWN_LISTITEM):
-		rndr_listitem(ob, tmp, 
+		rndr_listitem(ob, tmp, prev,
 			root->rndr_listitem.flags,
 			root->rndr_listitem.num);
 		break;
