@@ -1,4 +1,4 @@
-.SUFFIXES: .xml .md .html .pdf .1 .1.html .3 .3.html
+.SUFFIXES: .xml .md .html .pdf .1 .1.html .3 .3.html .5 .5.html
 
 include Makefile.configure
 
@@ -30,6 +30,7 @@ HTMLS		 = archive.html \
 		   $(MANS)
 MANS		 = man/lowdown.1.html \
 		   man/lowdown.3.html \
+		   man/lowdown.5.html \
 		   man/lowdown_buf.3.html \
 		   man/lowdown_doc_free.3.html \
 		   man/lowdown_doc_new.3.html \
@@ -104,7 +105,7 @@ $(HTMLS): versions.xml
 	  ./lowdown $< ; \
 	  echo "</article>" ; ) >$@
 
-.1.1.html .3.3.html:
+.1.1.html .3.3.html .5.5.html:
 	mandoc -Thtml -Ostyle=mandoc.css $< >$@
 
 lowdown.tar.gz.sha512: lowdown.tar.gz
