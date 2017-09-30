@@ -2,7 +2,7 @@
 
 include Makefile.configure
 
-VERSION		 = 0.2.6
+VERSION		 = 0.2.7
 OBJS		 = autolink.o \
 		   buffer.o \
 		   document.o \
@@ -115,7 +115,7 @@ lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/
 	mkdir -p .dist/lowdown-$(VERSION)/man
 	install -m 0644 *.c *.h Makefile .dist/lowdown-$(VERSION)
-	install -m 0644 man/*.1 man/*.3 .dist/lowdown-$(VERSION)/man
+	install -m 0644 man/*.1 man/*.3 man/*.5 .dist/lowdown-$(VERSION)/man
 	install -m 0755 configure .dist/lowdown-$(VERSION)
 	( cd .dist/ && tar zcf ../$@ ./ )
 	rm -rf .dist/
