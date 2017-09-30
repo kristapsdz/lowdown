@@ -67,30 +67,36 @@ This document describes the Markdown syntax accepted by
 .
 .
 .Sh BLOCK ELEMENTS
-A block element starts on a new line and extends to the next blank line or
-next block element.
-A block element can contain a span element.
+A block element starts on a new line and extends to the next blank line
+or block element.
+A block element contains span elements.
 .
 .Ss Paragraphs and Line Breaks
-A paragraph is made up of one or more lines of text.
+A paragraph is made up of one or more lines of text possibly containing
+span elements.
 Paragraphs are separated by blank lines.
-To insert a hard line break: insert two spaces at the end of the line.
+To insert a hard line break, insert two spaces at the end of the line.
 .
 .Ss Headers
-Markdown supports two styles of headers: Setext ("underlined") and
-atx ("hash-marked").
-For Setext headers: underline the given word using equal (=) signs for
-first-level headers and dashes (-) for second-level headers.
+Markdown specifies two styles of headers: underlined
+.Pq Dq setext
+hash-marked
+.Pq Dq atx .
+For underlined headers, underline the given word using equal signs
+.Pq Dq =
+for first-level headers and dashes
+.Pq Dq \&-
+for second-level headers.
 .Bd -literal -offset indent
-This is a setext Header 1
-========================
+This is an underlined header 1
+==============================
 .Ed
 .Pp
-For axt headers: use the corresponding number of hash characters to the
-corresponding level of header, up to 6 levels, at the start of the line
-separated by one space followed by the header.
+For hash-marked headers, use the corresponding number of hash characters
+to the corresponding level of header, up to 6 levels, at the start of
+the line separated by one space followed by the header.
 .Bd -literal -offset indent
-## This is an atx Header 2
+## This is a hash-marked header 2
 .Ed
 .
 .Ss Block Quotes
