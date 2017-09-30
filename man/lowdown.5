@@ -78,7 +78,7 @@ Paragraphs are separated by blank lines.
 To insert a hard line break, insert two spaces at the end of the line.
 .
 .Ss Headers
-Markdown specifies two styles of headers: underlined
+There are two styles of headers: underlined
 .Pq Dq setext
 and hash-marked
 .Pq Dq atx .
@@ -100,7 +100,7 @@ the line separated by one space followed by the header.
 .Ed
 .
 .Ss Block Quotes
-Markdown supports block quoting by invoking a single right-angle bracket
+Block quoted sections are invoked with a single right-angle bracket
 .Pq Dq >
 followed by a space at the start of each line and between paragraphs.
 .Bd -literal -offset indent
@@ -110,9 +110,9 @@ followed by a space at the start of each line and between paragraphs.
 > (It goes on for a few paragraphs).
 .Ed
 .Pp
-Markdown allows you to be lazy with block quotes: you need only invoke
-the right-angle bracket at the start of a paragraph and omit it entirely
-between paragraphs.
+Block quotes may also have a non-multiline invocation: you need only
+invoke the right-angle bracket at the start of a paragraph and omit it
+entirely between paragraphs.
 .Bd -literal -offset indent
 > You cannot explain away a wantonly immoral act because
 you think it is connected to some higher purpose.
@@ -122,11 +122,11 @@ you think it is connected to some higher purpose.
 .Pp
 Consecutive blockquotes as above will be merged as paragraphs within a
 single block quote on output, even if styles
-.Dq ( lazy
-and otherwise) are mixed.
+.Pq non-multiline and otherwise
+are mixed.
 .Pp
-Markdown supports nested block quotes as well as other block elements
-within block quotes, such as headers, ordered/unordered lists, and code
+Block quotes may be nested within other block quotes, as may any other
+block elements such as headers, ordered/unordered lists, and code
 blocks.
 .Bd -literal -offset indent
 > ### hash-marked header 3
@@ -144,14 +144,13 @@ blocks.
 .Ed
 .
 .Ss Lists
-Markdown supports ordered and unordered lists.
+Lists may be specified as ordered (numbered) or unordered.
 Ordered lists are invoked as numbers followed by periods
 .Pq e.g., Dq 1.
 and rendered in a similar format.
 .Em Note :
 it does not matter which order or which numbers you use in your ordered
-lists, as Markdown will generate an ordinal list from your input
-regardless.
+lists, as all ordered lists start at one.
 .Bd -literal -offset indent
 1. Make.
 2. It.
@@ -216,7 +215,7 @@ for being recognised within the list item, another for the code block itself.
 .Ed
 .
 .Ss Code Blocks
-Markdown supports source code text through pre-formatted code blocks.
+Code blocks consist of pre-formatted text, such as source code.
 Each code block contains opaque/literal text.
 This means that new lines and white spaces are retained \(em they're not
 formatted in any way, and any text inside the code block is not
@@ -242,15 +241,14 @@ Here is how you start the program xterm:
 .
 .Ss Horizontal Rules
 A horizontal rule is a line that goes across an output page.
-Markdown supports horizontal rules by invoking three or more asterisks
+These are invoked with three or more asterisks
 .Pq Dq * ,
 hyphens
 .Pq Dq \- ,
 or underscores
 .Pq Dq _
 on their own line.
-Markdown disregards whether or not there are spaces between these
-characters.
+Spaces between these characters are disregarded.
 .Bd -literal -offset indent
 ***
 * * *
@@ -269,8 +267,8 @@ A span element cannot contain a block element, but can contain other
 span elements.
 .
 .Ss Emphasis
-Markdown supports different styles of emphasis: strong, usually rendered
-as bold; and emphasis, usually rendered as italics.
+There are two different styles of emphasis: strong, usually rendered as
+bold; and emphasis, usually rendered as italics.
 This is confusing, so sometimes the former is referred to as a
 .Dq double-emphasis
 while the latter is a
@@ -296,7 +294,7 @@ the double-emphasis variant, is traditionally rendered as bold.
 __Jean-Luc Picard__
 .Ed
 .Pp
-Markdown supports emphasis within the middle of a word:
+Emphasis may occur within the middle of a word:
 .Bd -literal -offset indent
 En*ter*prise
 .Ed
@@ -311,7 +309,7 @@ The ship * USS Enterprise * will not be emphasized
 .Ed
 .
 .Ss Links
-Markdown supports two types of links: inline and reference.
+There are two types of links: inline and reference.
 In both cases, the linked text is denoted by square brackets
 .Pq Dq \&[] .
 An inline link uses parentheses
@@ -322,7 +320,7 @@ brackets to invoke the link.
 [text to link](https://bsd.lv)
 .Ed
 .Pp
-For local references, Markdown supports relative paths:
+Local references may be absolute or relative paths:
 .Bd -literal -offset indent
 [Picard](/Picard)
 .Ed
@@ -373,7 +371,7 @@ input option is specified.
 By default, it is.
 .
 .Ss Images
-Markdown uses an image syntax that resembles the links syntax.
+The image syntax resembles the links syntax.
 The key difference is that images require an exclamation
 mark
 .Pq Dq \&!
@@ -383,8 +381,7 @@ before the text to link surrounded by square brackets
 ![Image text](imageurl.jpg)
 .Ed
 .Pp
-Just like with links, Markdown supports both inline and reference
-image links.
+Just like with links, there are both inline and reference image links.
 The former consist of an exclamation mark
 .Pq Dq \&!
 followed by the text for the image (which may be empty) surrounded by
@@ -416,49 +413,61 @@ As with regular reference links, the definition and references may occur
 anywhere in relation to each other.
 .
 .Ss Code
-In addition to code blocks, Markdown also supports inline code (within
-paragraphs).
-To invoke a span of code, surround the code using backtick quotes (`).
+In addition to code blocks, inline code spans may be specified within
+paragraphs or other block or span elements.
+To invoke a span of code, surround the code using backtick quotes
+.Pq Dq \&` .
 .Bd -literal -offset indent
-I need your IP address to send you Picard pix. Use the `ifconfig
-iwm0` command.
+I need your IP address to scp you Picard pics.
+Use the `ifconfig iwm0` command.
 .Ed
 .Pp
-Markdown supports literal backticks (`) within a code of span.
-Surround the code using multiple backticks (``) if you want the
-backticks within the span of code to show up as literal characters.
+To include literal backticks
+.Pq Dq \&`
+within a code of span,
+surround the code using multiple backticks
+.Pq Dq \&(`` .
 .Bd -literal -offset indent
-``Here is a span of code with `back ticks` inside it.``
+``Here is a span of code with `backticks` inside it.``
 .Ed
 .Pp
 If you have a literal backtick at the start or end of the span of code,
 leave a space between the literal backtick and the delimiting backticks.
 .Bd -literal -offset indent
-`` `So many backticks` ``
+`` `So many backticks.` ``
 .Ed
 .
 .
-.Sh Escaping
+.Sh ESCAPES
 .
 .Ss Automatic Escapes
-Markdown supports automatic escapes where angle brackets (<) and ampersands (&) do
-not need to be escaped and can be used literally.
+Output is automatically escaped depending upon the medium.
+For example, HTML output will properly escape angle brackets
+.Dq Pq \&<
+and ampersands
+.Dq Pq \&&
+to produce conformant HTML.
+The same goes with
+.Xr man 7
+output in escaping leading periods and so forth.
 .
 .Ss Backslash Escapes
-Markdown supports backslash escapes to render literal characters that
-would otherwise invoke a particular Markdown element.
-Surrounding a phrase with single asterisks renders it as italic.
+Backslash escapes render literal characters that would otherwise invoke
+a particular block or span element.
+For example, surrounding a phrase with single asterisks renders it as an
+emphasis:
 .Bd -literal -offset indent
 *Captain Picard*
 .Ed
 .Pp
 However, if you want to invoke those italics as literal characters,
-Markdown allows you to escape those asterisks using backslashes.
+escape those asterisks using backslashes
+.Pq Dq \e .
 .Bd -literal -offset indent
 \e*Captain Picard\e*
 .Ed
 .Pp
-Markdown supports backslash escapes for the following characters:
+The following characters may be escaped to produce literal text:
 .Pp
 .Bl -tag -width Ds -compact
 .It Li *
