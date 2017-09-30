@@ -101,7 +101,8 @@ the line separated by one space followed by the header.
 .
 .Ss Block Quotes
 Markdown supports block quoting by invoking a single right-angle bracket
-(>) followed by a space at the start of each line and between paragraphs.
+.Pq Dq >
+followed by a space at the start of each line and between paragraphs.
 .Bd -literal -offset indent
 > The Prime Directive is not just a set of rules;
 > it is a philosophy... and a very correct one.
@@ -109,9 +110,9 @@ Markdown supports block quoting by invoking a single right-angle bracket
 > (It goes on for a few paragraphs).
 .Ed
 .Pp
-Markdown also allows you to be lazy with block quotes: you can choose to
-only invoke the right-angle bracket at the start of a paragraph and omit
-it entirely between paragraphs.
+Markdown allows you to be lazy with block quotes: you need only invoke
+the right-angle bracket at the start of a paragraph and omit it entirely
+between paragraphs.
 .Bd -literal -offset indent
 > You cannot explain away a wantonly immoral act because
 you think it is connected to some higher purpose.
@@ -120,14 +121,15 @@ you think it is connected to some higher purpose.
 .Ed
 .Pp
 Consecutive blockquotes as above will be merged as paragraphs within a
-single block quote on output, even if styles ("lazy" and otherwise) are
-mixed.
+single block quote on output, even if styles
+.Dq ( lazy
+and otherwise) are mixed.
 .Pp
-Markdown supports nested block quotes as well as other Markdown elements
+Markdown supports nested block quotes as well as other block elements
 within block quotes, such as headers, ordered/unordered lists, and code
 blocks.
 .Bd -literal -offset indent
-> ### atx header 3
+> ### hash-marked header 3
 >
 > > I'd be delighted to offer any advice
 > > I have on understanding women.
@@ -138,25 +140,26 @@ blocks.
 >
 > Here's the code to implement JLP's advice:
 
->     return shell_exec("echo $input | $womenadvice_script")
+>     yes | read engage
 .Ed
 .
 .Ss Lists
-Markdown supports both ordered and unordered lists.
-Ordered lists are invoked as numbers followed by periods (1.) and
-rendered in the same format.
-Note: it does not matter which order or which numbers you use in your ordered
-lists, Markdown will generate an ordinal list from your input as long as you
-start your list with number one (1.).
+Markdown supports ordered and unordered lists.
+Ordered lists are invoked as numbers followed by periods
+.Pq e.g., Dq 1.
+and rendered in a similar format.
+.Em Note :
+it does not matter which order or which numbers you use in your ordered
+lists, as Markdown will generate an ordinal list from your input
+regardless.
 .Bd -literal -offset indent
 1. Make.
 2. It.
 1. So. (Not 1. again!)
 .Ed
 .Pp
-Note that starting a line with a single word that consists of any number and
-ending it with a period could invoke an ordered list.
-To escape this, use a blackslash before the period.
+To prevent lists erroneously started by a paragraph beginning with a
+number and period, use a backslash before the period.
 .Bd -literal -offset indent
 1987. The year TNG premiered.
 
@@ -164,8 +167,14 @@ To escape this, use a blackslash before the period.
 .Ed
 .Pp
 Unordered lists, on the other hand, can be invoked using either
-asterisks (*), pluses (+), or hyphens (-), and can be a mix of all
-three, but are rendered as bullet points.
+asterisk
+.Pq Dq * ,
+pluses
+.Pq Dq + , 
+or hyphens
+.Pq Dq \- ,
+and can be a mix of all three styles.
+Regardless the style, list items are rendered the same way.
 .Bd -literal -offset indent
 - Earl Grey tea.
 * Shakespeare.
@@ -187,7 +196,8 @@ four spaces or one tab.
 .Ed
 .Pp
 To insert block quotes into a list item, indent the block quote with
-four spaces or one tab prior to the right-angle bracket.
+four spaces or one tab prior to the right-angle bracket
+.Pq Dq > .
 .Bd -literal -offset indent
 * List item 1
 * List item 2
