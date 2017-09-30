@@ -80,7 +80,7 @@ To insert a hard line break, insert two spaces at the end of the line.
 .Ss Headers
 Markdown specifies two styles of headers: underlined
 .Pq Dq setext
-hash-marked
+and hash-marked
 .Pq Dq atx .
 For underlined headers, underline the given word using equal signs
 .Pq Dq =
@@ -231,8 +231,9 @@ Here is a paragraph about Bridge protocol
 .Pp
 Within a code block, text is escaped given the output format.
 Therefore, characters that would normally need to be escaped in other
-text processing languages such as ampersands (&) do not need to be
-escaped.
+text processing languages such as ampersands
+.Pq Dq &
+do not need to be escaped.
 .Bd -literal -offset indent
 Here is how you start the program xterm:
 
@@ -240,14 +241,19 @@ Here is how you start the program xterm:
 .Ed
 .
 .Ss Horizontal Rules
-A horizontal rule is a line that goes across a web page.
+A horizontal rule is a line that goes across an output page.
 Markdown supports horizontal rules by invoking three or more asterisks
-(*), hyphens (-), or underscores (_), on their own line.
+.Pq Dq * ,
+hyphens
+.Pq Dq \- ,
+or underscores
+.Pq Dq _
+on their own line.
 Markdown disregards whether or not there are spaces between these
 characters.
 .Bd -literal -offset indent
-**
-* *
+***
+* * *
 ---
 - - -
 ___
@@ -257,22 +263,34 @@ ___________________________
 .
 .
 .Sh SPAN ELEMENTS
-A span element does not have to start on a new line and only takes up as
-much width as necessary.
-A span element cannot contain a block element.
+Span elements are inline elements (including normal text) within block
+elements, for example, a span of emphasised text or a hyperlink.
+A span element cannot contain a block element, but can contain other
+span elements.
 .
 .Ss Emphasis
-Markdown supports different styles of emphasis, where strong is usually
-rendered as bold and emphasis is usually rendered as italics.
-Text surrounded by a single asterisk (*) or underscore (_) will be
-rendered as italic.
+Markdown supports different styles of emphasis: strong, usually rendered
+as bold; and emphasis, usually rendered as italics.
+This is confusing, so sometimes the former is referred to as a
+.Dq double-emphasis
+while the latter is a
+.Dq single-emphasis .
+.Pp
+Text surrounded by a single asterisk
+.Pq Dq *
+or underscore
+.Pq Dq _ ,
+the single-emphasis variant, is traditionally rendered with italics.
 .Bd -literal -offset indent
 *Captain Picard*
 _Captain Picard_
 .Ed
 .Pp
-Text surrounded by a double asterisk (**) or underscore (__) will be
-rendered as bold.
+Text surrounded by a double asterisk
+.Pq Dq **
+or underscore
+.Pq Dq __ ,
+the double-emphasis variant, is traditionally rendered as bold.
 .Bd -literal -offset indent
 **Jean-Luc Picard**
 __Jean-Luc Picard__
@@ -283,8 +301,11 @@ Markdown supports emphasis within the middle of a word:
 En*ter*prise
 .Ed
 .Pp
-In order to produce a literal asterisk (*) or underscore (_) simply
-surround the character by white space.
+In order to produce a literal asterisk
+.Pq Dq *
+or underscore
+.Pq Dq _
+simply surround the character by white space.
 .Bd -literal -offset indent
 The ship * USS Enterprise * will not be emphasized
 .Ed
