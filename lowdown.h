@@ -144,6 +144,7 @@ struct	lowdown_meta {
  */
 struct	lowdown_node {
 	enum lowdown_rndrt	 type;
+	size_t			 id; /* unique identifier */
 	union {
 		struct rndr_doc_header {
 			struct lowdown_meta *m; /* unescaped */
