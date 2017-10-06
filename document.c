@@ -127,6 +127,7 @@ struct 	hdoc {
 	int		 in_link_body;
 	struct lowdown_meta *m; /* document meta-data */
 	size_t		 msz; /* entries in "m" */
+	size_t		 nodes; /* number of nodes */
 	struct lowdown_node *current;
 };
 
@@ -140,6 +141,7 @@ pushnode(hdoc *doc, enum lowdown_rndrt t)
 	struct lowdown_node *n;
 
 	n = xcalloc(1, sizeof(struct lowdown_node));
+	n->id = doc->nodes++;
 	n->type = t;
 	n->parent = doc->current;
 	TAILQ_INIT(&n->children);
