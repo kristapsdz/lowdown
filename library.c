@@ -120,8 +120,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 				hesc_nroff(spb, (*m)[i].value, 
 					strlen((*m)[i].value), 0, 1);
 			free((*m)[i].value);
-			(*m)[i].value = xstrndup
-				((char *)spb->data, spb->size);
+			(*m)[i].value = xstrndup(spb->data, spb->size);
 			hbuf_free(spb);
 		}
 
@@ -147,8 +146,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 				lowdown_nroff_smrt(spb, (*m)[i].value, 
 					strlen((*m)[i].value));
 			free((*m)[i].value);
-			(*m)[i].value = xstrndup
-				((char *)spb->data, spb->size);
+			(*m)[i].value = xstrndup(spb->data, spb->size);
 			hbuf_free(spb);
 		}
 	} else {
