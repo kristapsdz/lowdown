@@ -47,7 +47,7 @@
 #if HAVE_PLEDGE
 
 static void
-sandbox_post(int fdin, int fdout)
+sandbox_post(int fdin, int fddin, int fdout)
 {
 
 	if (-1 == pledge("stdio", NULL))
@@ -65,7 +65,7 @@ sandbox_pre(void)
 #elif HAVE_SANDBOX_INIT
 
 static void
-sandbox_post(int fdin, int fdout)
+sandbox_post(int fdin, int fddin, int fdout)
 {
 	char	*ep;
 	int	 rc;
@@ -87,7 +87,7 @@ sandbox_pre(void)
 #elif HAVE_CAPSICUM
 
 static void
-sandbox_post(int fdin, int fdout)
+sandbox_post(int fdin, int fddin, int fdout)
 {
 	cap_rights_t	 rights;
 
@@ -96,6 +96,13 @@ sandbox_post(int fdin, int fdout)
 	cap_rights_init(&rights, CAP_EVENT, CAP_READ, CAP_FSTAT);
 	if (cap_rights_limit(fdin, &rights) < 0)
  		err(EXIT_FAILURE, "cap_rights_limit");
+
+	if (-1 != fddin) {
+		cap_rights_init(&rights, 
+			CAP_EVENT, CAP_READ, CAP_FSTAT);
+		if (cap_rights_limit(fddin, &rights) < 0)
+			err(EXIT_FAILURE, "cap_rights_limit");
+	}
 
 	cap_rights_init(&rights, CAP_EVENT, CAP_WRITE, CAP_FSTAT);
 	if (cap_rights_limit(STDERR_FILENO, &rights) < 0)
@@ -121,7 +128,7 @@ sandbox_pre(void)
 #warning Compiling without sandbox support.
 
 static void
-sandbox_post(int fdin, int fdout)
+sandbox_post(int fdin, int fddin, int fdout)
 {
 
 	/* Do nothing. */
@@ -218,12 +225,12 @@ feature_in(const char *v)
 int
 main(int argc, char *argv[])
 {
-	FILE		*fin = stdin, *fout = stdout;
+	FILE		*fin = stdin, *fout = stdout, *din = NULL;
 	const char	*fnin = "<stdin>", *fnout = NULL,
-			*extract = NULL;
-	struct lowdown_opts opts;
-	const char	*pname;
-	int		 c, standalone = 0, status = EXIT_SUCCESS;
+	      	 	*fndin = NULL, *extract = NULL;
+	struct lowdown_opts opts, dopts;
+	int		 c, standalone = 0, status = EXIT_SUCCESS,
+			 diff = 0;
 	char		*ret = NULL;
 	int	 	 feat;
 	size_t		 i, retsz = 0, msz = 0;
@@ -249,16 +256,8 @@ main(int argc, char *argv[])
 
 	sandbox_pre();
 
-#ifdef __linux__
-	pname = argv[0];
-#else
-	if (argc < 1)
-		pname = "lowdown";
-	else if (NULL == (pname = strrchr(argv[0], '/')))
-		pname = argv[0];
-	else
-		++pname;
-#endif
+	if (0 == strcasecmp(getprogname(), "lowdown-diff")) 
+		diff = 1;
 
 	while (-1 != (c = getopt(argc, argv, "D:d:E:e:sT:o:vX:")))
 		switch (c) {
@@ -313,43 +312,67 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	if (argc > 1)
-		goto usage;
-
-	if (argc > 0 && strcmp(argv[0], "-")) {
-		fnin = argv[0];
-		if (NULL == (fin = fopen(fnin, "r")))
-			err(EXIT_FAILURE, "%s", fnin);
-	}
-
-	if (NULL != fnout && strcmp(fnout, "-")) {
-		if (NULL == (fout = fopen(fnout, "w")))
-			err(EXIT_FAILURE, "%s", fnout);
-	}
-
-	sandbox_post(fileno(fin), fileno(fout));
-
-	/*
-	 * We're now completely sandboxed.
-	 * Nothing more is allowed to happen.
+	/* 
+	 * Diff mode takes two arguments: the first is mandatory (the
+	 * old file) and the second (the new one) is optional.
+	 * Non-diff mode takes an optional single argument.
 	 */
 
-	opts.arg = (void *)fnin;
+	if (diff && NULL != extract)
+		errx(EXIT_FAILURE, "-X not applicable to diff mode");
+
+	if ((diff && (0 == argc || argc > 2)) ||
+	    ( ! diff && argc > 0))
+		goto usage;
+
+	if (diff) {
+		if (argc > 1 && strcmp(argv[1], "-")) {
+			fnin = argv[1];
+			if (NULL == (fin = fopen(fnin, "r")))
+				err(EXIT_FAILURE, "%s", fnin);
+		}
+		fndin = argv[0];
+		if (NULL == (din = fopen(fndin, "r")))
+			err(EXIT_FAILURE, "%s", fndin);
+	} else {
+		if (argc && strcmp(argv[0], "-")) {
+			fnin = argv[0];
+			if (NULL == (fin = fopen(fnin, "r")))
+				err(EXIT_FAILURE, "%s", fnin);
+		}
+	}
+
+	/* Configure the output file. */
+
+	if (NULL != fnout && strcmp(fnout, "-") &&
+	    NULL == (fout = fopen(fnout, "w")))
+		err(EXIT_FAILURE, "%s", fnout);
+
+	sandbox_post(fileno(fin), NULL == din ? 
+		-1 : fileno(din), fileno(fout));
+
+	/* We're now completely sandboxed. */
 
 	/* Require metadata when extracting. */
 
 	if (extract)
 		opts.feat |= LOWDOWN_METADATA;
-
-	/* FIXME: make into an output feature. */
-
 	if (standalone)
 		opts.oflags |= LOWDOWN_STANDALONE;
 
-	if ( ! lowdown_file(&opts, fin, &ret, &retsz, &m, &msz))
-		err(EXIT_FAILURE, "%s", fnin);
-	if (fin != stdin)
-		fclose(fin);
+	if (diff) {
+		dopts = opts;
+		opts.arg = (void *)fnin;
+		dopts.arg = (void *)fndin;
+		if ( ! lowdown_file_diff(&opts, fin, &dopts, din, &ret, &retsz))
+			err(EXIT_FAILURE, "%s", fnin);
+	} else {
+		opts.arg = (void *)fnin;
+		if ( ! lowdown_file(&opts, fin, &ret, &retsz, &m, &msz))
+			err(EXIT_FAILURE, "%s", fnin);
+		if (fin != stdin)
+			fclose(fin);
+	}
 
 	if (NULL != extract) {
 		for (i = 0; i < msz; i++) 
@@ -367,6 +390,8 @@ main(int argc, char *argv[])
 	free(ret);
 	if (fout != stdout)
 		fclose(fout);
+	if (NULL != din)
+		fclose(din);
 	for (i = 0; i < msz; i++) {
 		free(m[i].key);
 		free(m[i].value);
@@ -383,6 +408,6 @@ usage:
 		"[-o output] "
 		"[-T mode] "
 		"[-X keyword] "
-		"[file]\n", pname);
+		"[file]\n", getprogname());
 	return(EXIT_FAILURE);
 }
