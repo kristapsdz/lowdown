@@ -283,6 +283,20 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 }
 
 static void
+diff_print_char(const hbuf *txt)
+{
+	size_t	 i, len;
+
+	len = txt->size > 20 ? 20 : txt->size;
+
+	for (i = 0; i < len; i++)
+		if ('\n' == txt->data[i])
+			fputs("\\n", stdout);
+		else
+			putchar(txt->data[i]);
+}
+
+static void
 diff_print(const struct lowdown_node *from,
 	const struct xmap *xfrom, size_t tabs)
 {
@@ -292,9 +306,15 @@ diff_print(const struct lowdown_node *from,
 	for (i = 0; i < tabs; i++)
 		printf("  ");
 
-	printf("%zu: %s: %zu\n", from->id,
+	printf("%zu: %s: %zu", from->id,
 		names[from->type], 
 		xfrom->nodes[from->id].weight);
+
+	if (LOWDOWN_NORMAL_TEXT == from->type) {
+		printf(": ");
+		diff_print_char(&from->rndr_normal_text.text);
+	} 
+	printf("\n");
 
 	TAILQ_FOREACH(nn, &from->children, entries)
 		diff_print(nn, xfrom, tabs + 1);
@@ -412,6 +432,7 @@ match_up(struct xnode *xnew, struct xmap *xnewmap,
 		xnew = &xnewmap->nodes[xnew->node->parent->id];
 		xold = &xoldmap->nodes[xold->node->parent->id];
 		xnew->match = xold->node;
+		xold->match = xnew->node;
 		i++;
 	}
 }
@@ -466,7 +487,9 @@ lowdown_diff(const struct lowdown_node *nold,
 
 	/* XXX: debug. */
 
+	printf("--Old------------------------\n");
 	diff_print(nold, &xoldmap, 0);
+	printf("--New------------------------\n");
 	diff_print(nnew, &xnewmap, 0);
 
 	/* Next, prime the priority queue. */
@@ -534,7 +557,7 @@ lowdown_diff(const struct lowdown_node *nold,
 		if (NULL == xnewmap.nodes[i].node)
 			continue;
 		if (NULL == xnewmap.nodes[i].match)
-			warnx("Insert into old: %zu", 
+			warnx("Insert into new: %zu", 
 				xnewmap.nodes[i].node->id);
 	}
 
