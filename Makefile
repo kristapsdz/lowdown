@@ -5,6 +5,7 @@ include Makefile.configure
 VERSION		 = 0.2.7
 OBJS		 = autolink.o \
 		   buffer.o \
+		   diff.o \
 		   document.o \
 		   html.o \
 		   html_escape.o \
@@ -50,7 +51,7 @@ PDFS		 = index.pdf README.pdf
 MDS		 = index.md README.md
 CSSS		 = template.css mandoc.css
 
-all: lowdown
+all: lowdown lowdown-diff
 
 www: $(HTMLS) $(PDFS) lowdown.tar.gz lowdown.tar.gz.sha512
 
@@ -64,6 +65,9 @@ installwww: www
 
 lowdown: liblowdown.a main.o
 	$(CC) -o $@ main.o liblowdown.a
+
+lowdown-diff: lowdown
+	ln -f lowdown lowdown-diff
 
 liblowdown.a: $(OBJS) $(COMPAT_OBJS)
 	$(AR) rs $@ $(OBJS) $(COMPAT_OBJS)
@@ -129,7 +133,7 @@ main.o: lowdown.h
 
 clean:
 	rm -f $(OBJS) $(COMPAT_OBJS) $(PDFS) $(HTMLS) main.o
-	rm -f lowdown liblowdown.a index.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
+	rm -f lowdown lowdown-diff liblowdown.a index.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
 
 distclean: clean
 	rm -f Makefile.configure config.h config.log
