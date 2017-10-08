@@ -93,6 +93,10 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 
 	for (i = 0; i < indent; i++)
 		HBUF_PUTSL(ob, "  ");
+	if (LOWDOWN_CHNG_INSERT == root->chng)
+		HBUF_PUTSL(ob, "INSERT: ");
+	else if (LOWDOWN_CHNG_DELETE == root->chng)
+		HBUF_PUTSL(ob, "DELETE: ");
 	hbuf_puts(ob, names[root->type]);
 	HBUF_PUTSL(ob, "\n");
 
