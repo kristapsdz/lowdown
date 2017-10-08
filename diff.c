@@ -141,6 +141,8 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 	/* Recursive step. */
 
 	MD5Init(&ctx);
+	MD5Updatev(&ctx, &n->type, sizeof(enum lowdown_rndrt));
+
 	TAILQ_FOREACH(nn, &n->children, entries)
 		xn->weight += assign_sigs(&ctx, map, nn);
 
@@ -332,8 +334,7 @@ pqueue(const struct lowdown_node *n,
 	struct pnode	*p, *pp;
 	struct xnode	*xnew, *xold;
 
-	if (NULL == (p = malloc(sizeof(struct pnode))))
-		err(EXIT_FAILURE, NULL);
+	p = xmalloc(sizeof(struct pnode));
 	p->node = n;
 
 	xnew = &map->nodes[n->id];
@@ -459,6 +460,269 @@ match_down(struct xnode *xnew, struct xmap *xnewmap,
 	}
 }
 
+static struct lowdown_node *
+node_clone(const struct lowdown_node *v, size_t id)
+{
+	struct lowdown_node *n;
+
+	n = xcalloc(1, sizeof(struct lowdown_node));
+	TAILQ_INIT(&n->children);
+	n->type = v->type;
+	n->id = id;
+
+	switch (n->type) {
+	case LOWDOWN_LIST:
+		n->rndr_list.flags = v->rndr_list.flags;
+		break;
+	case LOWDOWN_LISTITEM:
+		n->rndr_listitem.flags = v->rndr_listitem.flags;
+		n->rndr_listitem.num = v->rndr_listitem.num;
+		break;
+	case LOWDOWN_HEADER:
+		n->rndr_header.level = v->rndr_header.level;
+		break;
+	case LOWDOWN_NORMAL_TEXT:
+		hbuf_clone(&v->rndr_normal_text.text,
+			&n->rndr_normal_text.text);
+		break;
+	case LOWDOWN_ENTITY:
+		hbuf_clone(&v->rndr_entity.text,
+			&n->rndr_entity.text);
+		break;
+	case LOWDOWN_LINK_AUTO:
+		hbuf_clone(&v->rndr_autolink.link,
+			&n->rndr_autolink.link);
+		hbuf_clone(&v->rndr_autolink.text,
+			&n->rndr_autolink.text);
+		n->rndr_autolink.type = v->rndr_autolink.type;
+		break;
+	case LOWDOWN_RAW_HTML:
+		hbuf_clone(&v->rndr_raw_html.text,
+			&n->rndr_raw_html.text);
+		break;
+	case LOWDOWN_LINK:
+		hbuf_clone(&v->rndr_link.link,
+			&n->rndr_link.link);
+		hbuf_clone(&v->rndr_link.title,
+			&n->rndr_link.title);
+		break;
+	case LOWDOWN_BLOCKCODE:
+		hbuf_clone(&v->rndr_blockcode.text,
+			&n->rndr_blockcode.text);
+		hbuf_clone(&v->rndr_blockcode.lang,
+			&n->rndr_blockcode.lang);
+		break;
+	case LOWDOWN_CODESPAN:
+		hbuf_clone(&v->rndr_codespan.text,
+			&n->rndr_codespan.text);
+		break;
+	case LOWDOWN_TABLE_HEADER:
+		/* Don't use the column metrics: mutable. */
+		break;
+	case LOWDOWN_TABLE_CELL:
+		n->rndr_table_cell.flags = 
+			v->rndr_table_cell.flags;
+		/* Don't use the column number/count: mutable. */
+		break;
+	case LOWDOWN_FOOTNOTE_DEF:
+	case LOWDOWN_FOOTNOTE_REF:
+		/* Don't use footnote number: mutable. */
+		break;
+	case LOWDOWN_IMAGE:
+		hbuf_clone(&v->rndr_image.link,
+			&n->rndr_image.link);
+		hbuf_clone(&v->rndr_image.title,
+			&n->rndr_image.title);
+		hbuf_clone(&v->rndr_image.dims,
+			&n->rndr_image.dims);
+		hbuf_clone(&v->rndr_image.alt,
+			&n->rndr_image.alt);
+		break;
+	case LOWDOWN_MATH_BLOCK:
+		n->rndr_math.displaymode = 
+			v->rndr_math.displaymode;
+		break;
+	case LOWDOWN_BLOCKHTML:
+		hbuf_clone(&v->rndr_blockhtml.text,
+			&n->rndr_blockhtml.text);
+		break;
+	default:
+		break;
+	}
+
+	return(n);
+}
+
+static struct lowdown_node *
+node_clonetree(const struct lowdown_node *v, size_t *id)
+{
+	struct lowdown_node *n, *nn;
+	const struct lowdown_node *vv;
+
+	n = node_clone(v, *id++);
+
+	TAILQ_FOREACH(vv, &v->children, entries) {
+		nn = node_clonetree(vv, id);
+		nn->parent = n;
+		TAILQ_INSERT_TAIL(&n->children, nn, entries);
+	}
+
+	return(n);
+}
+
+/*
+ * Merge the new tree "nnew" with the old tree "nold".
+ * The produced tree will show the new tree with deleted nodes from the
+ * old and added ones to the new.
+ * It will also show moved nodes by delete/add pairs.
+ */
+static struct lowdown_node *
+node_merge(const struct lowdown_node *nold,
+	const struct xmap *xoldmap,
+	const struct lowdown_node *nnew,
+	const struct xmap *xnewmap,
+	size_t *id)
+{
+	const struct xnode *xnew, *xold;
+	struct lowdown_node *n, *nn;
+	const struct lowdown_node *nnold;
+
+	warnx("%s: %zu (%s)", __func__, nnew->id, names[nnew->type]);
+
+	/* Basis: the current nodes are matched. */
+
+	assert(NULL != nnew && NULL != nold);
+	xnew = &xnewmap->nodes[nnew->id];
+	xold = &xoldmap->nodes[nold->id];
+	assert(xnew->match == xold->node);
+
+	n = node_clone(nnew, *id++);
+
+	/* Now walk through the children on both sides. */
+
+	nold = TAILQ_FIRST(&nold->children);
+	nnew = TAILQ_FIRST(&nnew->children);
+
+	while (NULL != nnew) {
+		/* 
+		 * Begin by flushing out all of the nodes that have been
+		 * deleted from the old tree at this level.
+		 */
+
+		while (NULL != nold) {
+			xold = &xoldmap->nodes[nold->id];
+			if (NULL != xold->match) 
+				break;
+			warnx("%s: flushing old %zu (%s)", 
+				__func__, nold->id, 
+				names[nold->type]);
+			nn = node_clonetree(nold, id);
+			nn->parent = n;
+			nn->chng = LOWDOWN_CHNG_DELETE;
+			TAILQ_INSERT_TAIL(&n->children, nn, entries);
+			nold = TAILQ_NEXT(nold, entries);
+		}
+
+		/* Now flush added nodes. */
+
+		while (NULL != nnew) {
+			/* FIXME: make an insertion. */
+			xnew = &xnewmap->nodes[nnew->id];
+			if (NULL != xnew->match)
+				break;
+			warnx("%s: flushing new %zu (%s)", 
+				__func__, nnew->id, 
+				names[nnew->type]);
+			nn = node_clonetree(nnew, id);
+			TAILQ_INSERT_TAIL(&n->children, nn, entries);
+			nn->parent = n;
+			nn->chng = LOWDOWN_CHNG_INSERT;
+			nnew = TAILQ_NEXT(nnew, entries);
+		}
+
+		/* 
+		 * If there are no more in the new tree, then flush out
+		 * all that's in the old tree as a deletion.
+		 * We do this in our exit statement.
+		 */
+
+		if (NULL == nnew) {
+			warnx("%s: nothing more at this level", __func__);
+			break;
+		}
+
+		xnew = &xnewmap->nodes[nnew->id];
+		assert(NULL != xnew->match);
+
+		/* Scan ahead to match with an old. */
+		
+		for (nnold = nold; NULL != nnold ; ) {
+			xold = &xoldmap->nodes[nnold->id];
+			if (xnew->node == xold->match) 
+				break;
+			nnold = TAILQ_NEXT(nnold, entries);
+		}
+
+		/* 
+		 * We did not find a match.
+		 * Add the node and continue on.
+		 */
+
+		if (NULL == nnold) {
+			warnx("%s: could not find match: %s",
+				__func__, names[nnew->type]);
+			nn = node_clonetree(nnew, id);
+			TAILQ_INSERT_TAIL(&n->children, nn, entries);
+			nn->parent = n;
+			nn->chng = LOWDOWN_CHNG_INSERT;
+			nnew = TAILQ_NEXT(nnew, entries);
+			continue;
+		}
+
+		/*
+		 * We did find a match.
+		 * First flush up until the match.
+		 * Then, descend into the matched pair.
+		 */
+
+		while (NULL != nold) {
+			xold = &xoldmap->nodes[nold->id];
+			if (xnew->node == xold->match) 
+				break;
+			nn = node_clonetree(nold, id);
+			TAILQ_INSERT_TAIL(&n->children, nn, entries);
+			nn->parent = n;
+			nn->chng = LOWDOWN_CHNG_DELETE;
+			nold = TAILQ_NEXT(nold, entries);
+		}
+
+		assert(NULL != nold);
+
+		warnx("%s: match found: %s", 
+			__func__, names[nnew->type]);
+
+		nn = node_merge(nold, xoldmap, nnew, xnewmap, id);
+		nn->parent = n;
+		TAILQ_INSERT_TAIL(&n->children, nn, entries);
+
+		nold = TAILQ_NEXT(nold, entries);
+		nnew = TAILQ_NEXT(nnew, entries);
+	}
+
+	/* Flush remaining old nodes. */
+
+	while (NULL != nold) {
+		/* FIXME: make a deletion. */
+		xold = &xoldmap->nodes[nold->id];
+		nn = node_clonetree(nold, id);
+		TAILQ_INSERT_TAIL(&n->children, nn, entries);
+		nn->parent = n;
+		nold = TAILQ_NEXT(nold, entries);
+	}
+
+	return(n);
+}
+
 /*
  * Algorithm: Detecting Changes in XML Documents.
  * Gregory Cobena, Serge Abiteboul, Amelie Marian.
@@ -473,6 +737,7 @@ lowdown_diff(const struct lowdown_node *nold,
 	struct pnodeq	 pq;
 	struct pnode	*p;
 	const struct lowdown_node *n, *nn;
+	struct lowdown_node *comp;
 	size_t		 i;
 
 	memset(&xoldmap, 0, sizeof(struct xmap));
@@ -561,6 +826,9 @@ lowdown_diff(const struct lowdown_node *nold,
 				xnewmap.nodes[i].node->id);
 	}
 
+	i = 0;
+	comp = node_merge(nold, &xoldmap, nnew, &xnewmap, &i);
+
 	free(xoldmap.nodes);
 	free(xnewmap.nodes);
 
@@ -569,6 +837,5 @@ lowdown_diff(const struct lowdown_node *nold,
 		free(p);
 	}
 
-	exit(EXIT_FAILURE);
-	return(NULL);
+	return(comp);
 }
