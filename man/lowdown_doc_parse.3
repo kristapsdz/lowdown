@@ -59,6 +59,7 @@ nodes, the structure consisting of:
 struct lowdown_node {
 	enum lowdown_rndrt type;
 	size_t id;
+	enum lowdown_chng chng;
 	union {
 		struct rndr_doc_header {
 			struct lowdown_meta *m;
@@ -146,6 +147,13 @@ monotonically increasing point during the parse.
 The parent of the node, or
 .Dv NULL
 at the root.
+.It Vt "enum lowdown_chng" Va chng
+Change tracking: whether this node was inserted
+.Pq Dv LOWDOWN_CHNG_INSERT ,
+deleted
+.Pq Dv LOWDOWN_CHNG_DELETE ,
+or neither
+.Pq Dv LOWDOWN_CHNG_NONE .
 .It Vt "struct lowdown_nodeq" Va children
 A possibly-empty list of child nodes.
 .It Va entries
