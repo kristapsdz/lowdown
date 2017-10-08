@@ -50,6 +50,7 @@ char	*xstrdup(const char *);
 
 void	 hbuf_free(hbuf *);
 void	 hbuf_grow(hbuf *, size_t);
+hbuf	*hbuf_clone(const hbuf *, hbuf *);
 hbuf	*hbuf_new(size_t) __attribute__((malloc));
 int	 hbuf_prefix(const hbuf *, const char *);
 void	 hbuf_printf(hbuf *, const char *, ...) 
