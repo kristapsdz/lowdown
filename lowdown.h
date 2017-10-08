@@ -138,12 +138,19 @@ struct	lowdown_meta {
 	char		*value;
 };
 
+enum	lowdown_chng {
+	LOWDOWN_CHNG_NONE = 0,
+	LOWDOWN_CHNG_INSERT,
+	LOWDOWN_CHNG_DELETE,
+};
+
 /*
  * Node parsed from input document.
  * Each node is part of the parse tree.
  */
 struct	lowdown_node {
 	enum lowdown_rndrt	 type;
+	enum lowdown_chng	 chng; /* change type */
 	size_t			 id; /* unique identifier */
 	union {
 		struct rndr_doc_header {
