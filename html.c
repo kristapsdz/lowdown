@@ -817,6 +817,11 @@ lowdown_html_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
 	TAILQ_FOREACH(n, &root->children, entries)
 		lowdown_html_rndr(tmp, ref, n);
 
+	if (LOWDOWN_CHNG_INSERT == root->chng)
+		HBUF_PUTSL(ob, "<ins>");
+	else if (LOWDOWN_CHNG_DELETE == root->chng)
+		HBUF_PUTSL(ob, "<del>");
+
 	switch (root->type) {
 	case (LOWDOWN_BLOCKCODE):
 		rndr_blockcode(ob, 
@@ -946,6 +951,11 @@ lowdown_html_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
 		hbuf_put(ob, tmp->data, tmp->size);
 		break;
 	}
+
+	if (LOWDOWN_CHNG_INSERT == root->chng)
+		HBUF_PUTSL(ob, "</ins>");
+	else if (LOWDOWN_CHNG_DELETE == root->chng)
+		HBUF_PUTSL(ob, "</del>");
 
 	hbuf_free(tmp);
 }
