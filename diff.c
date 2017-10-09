@@ -306,17 +306,17 @@ diff_print(const struct lowdown_node *from,
 	size_t	 i;
 
 	for (i = 0; i < tabs; i++)
-		printf("  ");
+		fprintf(stderr, "  ");
 
-	printf("%zu: %s: %zu", from->id,
+	fprintf(stderr, "%zu: %s: %zu", from->id,
 		names[from->type], 
 		xfrom->nodes[from->id].weight);
 
 	if (LOWDOWN_NORMAL_TEXT == from->type) {
-		printf(": ");
+		fprintf(stderr, ": ");
 		diff_print_char(&from->rndr_normal_text.text);
 	} 
-	printf("\n");
+	fprintf(stderr, "\n");
 
 	TAILQ_FOREACH(nn, &from->children, entries)
 		diff_print(nn, xfrom, tabs + 1);
@@ -752,9 +752,9 @@ lowdown_diff(const struct lowdown_node *nold,
 
 	/* XXX: debug. */
 
-	printf("--Old------------------------\n");
+	fprintf(stderr, "--Old------------------------\n");
 	diff_print(nold, &xoldmap, 0);
-	printf("--New------------------------\n");
+	fprintf(stderr, "--New------------------------\n");
 	diff_print(nnew, &xnewmap, 0);
 
 	/* Next, prime the priority queue. */
