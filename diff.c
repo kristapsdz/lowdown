@@ -293,9 +293,9 @@ diff_print_char(const hbuf *txt)
 
 	for (i = 0; i < len; i++)
 		if ('\n' == txt->data[i])
-			fputs("\\n", stdout);
+			fputs("\\n", stderr);
 		else
-			putchar(txt->data[i]);
+			fputc(txt->data[i], stderr);
 }
 
 static void
