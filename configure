@@ -63,6 +63,7 @@ CFLAGS=`printf "all:\\n\\t@echo \\\$(CFLAGS)\\n" | env -i make -sf -`
 CFLAGS="${CFLAGS} -g -W -Wall -Wextra -Wmissing-prototypes -Wstrict-prototypes"
 CFLAGS="${CFLAGS} -Wwrite-strings -Wno-unused-parameter"
 LDADD=
+CPPFLAGS=
 LDFLAGS=
 PREFIX="/usr/local"
 BINDIR=
@@ -77,6 +78,43 @@ INSTALL_MAN=
 INSTALL_DATA=
 
 #----------------------------------------------------------------------
+# Allow certain variables to be overriden on the command line.
+#----------------------------------------------------------------------
+
+for keyvals in $@ 
+do
+	key=`echo $keyvals | cut -s -d '=' -f 1`
+	if [ -z "$key" ]
+	then
+		echo "$0: invalid key-value: $keyvals" 1>&2
+		exit 1
+	fi
+	val=`echo $keyvals | cut -d '=' -f 2-`
+	case "$key" in
+	LDFLAGS)
+		LDFLAGS="$val" ;;
+	CPPFLAGS)
+		CPPFLAGS="$val" ;;
+	PREFIX)
+		PREFIX="$val" ;;
+	MANDIR)
+		MANDIR="$val" ;;
+	LIBDIR)
+		LIBDIR="$val" ;;
+	BINDIR)
+		BINDIR="$val" ;;
+	SBINDIR)
+		SBINDIR="$val" ;;
+	INCLUDEDIR)
+		INCLUDEDIR="$val" ;;
+	*)
+		echo "$0: invalid key: $key" 1>&2
+		exit 1
+	esac
+done
+
+
+#----------------------------------------------------------------------
 # These are the values that will be pushed into config.h after we test
 # for whether they're supported or not.
 # Each of these must have a runtest(), below.
@@ -86,19 +124,20 @@ INSTALL_DATA=
 
 HAVE_CAPSICUM=
 HAVE_ERR=
-HAVE_MEMRCHR=
+HAVE_EXPLICIT_BZERO=
 HAVE_PATH_MAX=
 HAVE_PLEDGE=
 HAVE_PROGNAME=
 HAVE_REALLOCARRAY=
+HAVE_RECALLOCARRAY=
 HAVE_SANDBOX_INIT=
 HAVE_STRLCAT=
 HAVE_STRLCPY=
 HAVE_STRTONUM=
 
 #----------------------------------------------------------------------
-# Allow configure.local to override all variables, default settings and
-# tested features, above.
+# Allow configure.local to override all variables, default settings, 
+# command-line arguments, and tested features, above.
 # You PROBABLY DO NOT want to change this.
 #----------------------------------------------------------------------
 
@@ -121,7 +160,7 @@ echo 1>&3
 # You DO NOT want to change this.
 #----------------------------------------------------------------------
 
-COMP="${CC} ${CFLAGS} -Wno-unused -Werror"
+COMP="${CC} ${CFLAGS} ${CPPFLAGS} -Wno-unused -Werror"
 
 # Check whether this HAVE_ setting is manually overridden.
 # If yes, use the override, if no, do not decide anything yet.
@@ -198,11 +237,12 @@ runtest() {
 
 runtest capsicum	CAPSICUM			  || true
 runtest err		ERR				  || true
-runtest memrchr		MEMRCHR				  || true
+runtest explicit_bzero	EXPLICIT_BZERO			  || true
 runtest PATH_MAX	PATH_MAX			  || true
 runtest pledge		PLEDGE				  || true
 runtest progname	PROGNAME			  || true
 runtest reallocarray	REALLOCARRAY			  || true
+runtest recallocarray	RECALLOCARRAY			  || true
 runtest sandbox_init	SANDBOX_INIT	"-Wno-deprecated" || true
 runtest strlcat		STRLCAT				  || true
 runtest strlcpy		STRLCPY				  || true
@@ -222,7 +262,7 @@ exec > config.h
 
 cat << __HEREDOC__
 #ifdef __cplusplus
-#error "Do not use C++.  See the INSTALL file."
+#error "Do not use C++: this is a C application."
 #endif
 #if !defined(__GNUC__) || (__GNUC__ < 4)
 #define __attribute__(x)
@@ -235,6 +275,7 @@ __HEREDOC__
 # For the function declaration variables...
 
 [ ${HAVE_REALLOCARRAY} -eq 0 -o \
+  ${HAVE_RECALLOCARRAY} -eq 0 -o \
   ${HAVE_STRLCAT} -eq 0 -o \
   ${HAVE_STRLCPY} -eq 0 ] \
 	&& echo "#include <sys/types.h>"
@@ -248,10 +289,11 @@ __HEREDOC__
 cat << __HEREDOC__
 #define HAVE_CAPSICUM ${HAVE_CAPSICUM}
 #define HAVE_ERR ${HAVE_ERR}
-#define HAVE_MEMRCHR ${HAVE_MEMRCHR}
+#define HAVE_EXPLICIT_BZERO ${HAVE_EXPLICIT_BZERO}
 #define HAVE_PLEDGE ${HAVE_PLEDGE}
 #define HAVE_PROGNAME ${HAVE_PROGNAME}
 #define HAVE_REALLOCARRAY ${HAVE_REALLOCARRAY}
+#define HAVE_RECALLOCARRAY ${HAVE_RECALLOCARRAY}
 #define HAVE_SANDBOX_INIT ${HAVE_SANDBOX_INIT}
 #define HAVE_STRLCAT ${HAVE_STRLCAT}
 #define HAVE_STRLCPY ${HAVE_STRLCPY}
@@ -267,8 +309,8 @@ if [ ${HAVE_ERR} -eq 0 ]; then
 	echo "extern void warnx(const char *, ...);"
 fi
 
-if [ ${HAVE_MEMRCHR} -eq 0 ]; then
-	echo "extern void *memrchr(const void *, int, size_t);"
+if [ ${HAVE_EXPLICIT_BZERO} -eq 0 ]; then
+	echo "extern void explicit_bzero(void *, size_t);"
 fi
 
 if [ ${HAVE_PROGNAME} -eq 0 ]; then
@@ -278,6 +320,10 @@ fi
 
 if [ ${HAVE_REALLOCARRAY} -eq 0 ]; then
 	echo "extern void *reallocarray(void *, size_t, size_t);"
+fi
+
+if [ ${HAVE_RECALLOCARRAY} -eq 0 ]; then
+	echo "extern void *recallocarray(void *, size_t, size_t, size_t);"
 fi
 
 if [ ${HAVE_STRLCAT} -eq 0 ]; then
@@ -318,6 +364,7 @@ exec > Makefile.configure
 cat << __HEREDOC__
 CC		= ${CC}
 CFLAGS		= ${CFLAGS}
+CPPFLAGS	= ${CPPFLAGS}
 LDADD		= ${LDADD}
 LDFLAGS		= ${LDFLAGS}
 STATIC		= ${STATIC}
