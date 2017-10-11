@@ -23,7 +23,9 @@
 #if HAVE_ERR
 # include <err.h>
 #endif
-#include <md5.h>
+#if HAVE_MD5
+# include <md5.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -93,7 +95,7 @@ static void
 MD5Updatebuf(MD5_CTX *ctx, const hbuf *v)
 {
 
-	MD5Update(ctx, v->data, v->size);
+	MD5Update(ctx, (const u_int8_t *)v->data, v->size);
 }
 
 static void
