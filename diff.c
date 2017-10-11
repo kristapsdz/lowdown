@@ -278,7 +278,7 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 	MD5End(&ctx, xn->sig);
 
 	if (NULL != parent)
-		MD5Update(parent, xn->sig, 
+		MD5Update(parent, (u_int8_t *)xn->sig, 
 			MD5_DIGEST_STRING_LENGTH - 1);
 
 	return(xn->weight);
