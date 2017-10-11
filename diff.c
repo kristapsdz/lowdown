@@ -123,12 +123,10 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 	/* Get our node slot. */
 
 	if (n->id >= map->maxsize) {
-		map->nodes = recallocarray
+		map->nodes = xrecallocarray
 			(map->nodes, map->maxsize, 
 			 map->maxsize + 64,
 			 sizeof(struct xnode));
-		if (NULL == map->nodes)
-			err(EXIT_FAILURE, NULL);
 		map->maxsize += 64;
 	}
 
