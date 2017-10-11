@@ -125,6 +125,7 @@ done
 HAVE_CAPSICUM=
 HAVE_ERR=
 HAVE_EXPLICIT_BZERO=
+HAVE_MD5=
 HAVE_MEMSET_S=
 HAVE_PATH_MAX=
 HAVE_PLEDGE=
@@ -239,6 +240,7 @@ runtest() {
 runtest capsicum	CAPSICUM			  || true
 runtest err		ERR				  || true
 runtest explicit_bzero	EXPLICIT_BZERO			  || true
+runtest md5		MD5				  || true
 runtest memset_s	MEMSET_S			  || true
 runtest PATH_MAX	PATH_MAX			  || true
 runtest pledge		PLEDGE				  || true
@@ -276,7 +278,8 @@ __HEREDOC__
 
 # For the function declaration variables...
 
-[ ${HAVE_REALLOCARRAY} -eq 0 -o \
+[ ${HAVE_MD5} -eq 0 -o \
+  ${HAVE_REALLOCARRAY} -eq 0 -o \
   ${HAVE_RECALLOCARRAY} -eq 0 -o \
   ${HAVE_STRLCAT} -eq 0 -o \
   ${HAVE_STRLCPY} -eq 0 ] \
@@ -309,6 +312,13 @@ if [ ${HAVE_ERR} -eq 0 ]; then
 	echo "extern void errx(int, const char *, ...);"
 	echo "extern void warn(const char *, ...);"
 	echo "extern void warnx(const char *, ...);"
+fi
+
+if [ ${HAVE_MD5} -eq 0 ]; then
+	echo "void MD5Init(MD5_CTX *);"
+	echo "void MD5Update(MD5_CTX *, const u_int8_t *, size_t);"
+	echo "void MD5Pad(MD5_CTX *);"
+	echo "void MD5Final(u_int8_t [MD5_DIGEST_LENGTH], MD5_CTX *);";
 fi
 
 if [ ${HAVE_EXPLICIT_BZERO} -eq 0 ]; then
