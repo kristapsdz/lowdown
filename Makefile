@@ -18,9 +18,12 @@ OBJS		 = autolink.o \
 		   tree.o \
 		   xmalloc.o
 COMPAT_OBJS	 = compat_err.o \
+		   compat_explicit_bzero.o \
+		   compat_md5.o \
 		   compat_memrchr.o \
 		   compat_progname.o \
 		   compat_reallocarray.o \
+		   compat_recallocarray.o \
 		   compat_strlcat.o \
 		   compat_strlcpy.o \
 		   compat_strtonum.o
