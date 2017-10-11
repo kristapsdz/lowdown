@@ -26,6 +26,7 @@ int dummy;
  */
 
 #include <sys/types.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define PUT_64BIT_LE(cp, value) do {					\
@@ -256,15 +257,15 @@ char *
 MD5End(MD5_CTX *ctx, char *buf)
 {
 	int i;
-	unsigned char digest[LENGTH];
+	unsigned char digest[MD5_DIGEST_LENGTH];
 	static const char hex[]="0123456789abcdef";
 
 	if (!buf)
-		buf = malloc(2*LENGTH + 1);
+		buf = malloc(2*MD5_DIGEST_LENGTH + 1);
 	if (!buf)
 		return 0;
 	MD5Final(digest, ctx);
-	for (i = 0; i < LENGTH; i++) {
+	for (i = 0; i < MD5_DIGEST_LENGTH; i++) {
 		buf[i+i] = hex[digest[i] >> 4];
 		buf[i+i+1] = hex[digest[i] & 0x0f];
 	}
