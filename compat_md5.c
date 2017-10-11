@@ -252,4 +252,24 @@ MD5Transform(u_int32_t state[4], const u_int8_t block[MD5_BLOCK_LENGTH])
 	state[3] += d;
 }
 
+char *
+MD5End(MD5_CTX *ctx, char *buf)
+{
+	int i;
+	unsigned char digest[LENGTH];
+	static const char hex[]="0123456789abcdef";
+
+	if (!buf)
+		buf = malloc(2*LENGTH + 1);
+	if (!buf)
+		return 0;
+	MD5Final(digest, ctx);
+	for (i = 0; i < LENGTH; i++) {
+		buf[i+i] = hex[digest[i] >> 4];
+		buf[i+i+1] = hex[digest[i] & 0x0f];
+	}
+	buf[i+i] = '\0';
+	return buf;
+}
+
 #endif
