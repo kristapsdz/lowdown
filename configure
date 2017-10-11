@@ -328,6 +328,8 @@ typedef struct MD5Context {
 	echo "extern void MD5Init(MD5_CTX *);"
 	echo "extern void MD5Update(MD5_CTX *, const u_int8_t *, size_t);"
 	echo "extern void MD5Pad(MD5_CTX *);"
+	echo "extern void MD5Transform(u_int32_t [4], const u_int8_t [MD5_BLOCK_LENGTH]);"
+	echo "extern char *MD5End(MD5_CTX *, char *);"
 	echo "extern void MD5Final(u_int8_t [MD5_DIGEST_LENGTH], MD5_CTX *);";
 fi
 
