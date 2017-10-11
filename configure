@@ -325,10 +325,10 @@ typedef struct MD5Context {
 	u_int8_t buffer[MD5_BLOCK_LENGTH];
 } MD5_CTX;
 !!
-	echo "void MD5Init(MD5_CTX *);"
-	echo "void MD5Update(MD5_CTX *, const u_int8_t *, size_t);"
-	echo "void MD5Pad(MD5_CTX *);"
-	echo "void MD5Final(u_int8_t [MD5_DIGEST_LENGTH], MD5_CTX *);";
+	echo "extern void MD5Init(MD5_CTX *);"
+	echo "extern void MD5Update(MD5_CTX *, const u_int8_t *, size_t);"
+	echo "extern void MD5Pad(MD5_CTX *);"
+	echo "extern void MD5Final(u_int8_t [MD5_DIGEST_LENGTH], MD5_CTX *);";
 fi
 
 if [ ${HAVE_EXPLICIT_BZERO} -eq 0 ]; then
