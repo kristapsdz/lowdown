@@ -19,7 +19,7 @@ int dummy;
  * explicit_bzero - don't let the compiler optimize away bzero
  */
 
-#ifdef HAVE_MEMSET_S
+#if HAVE_MEMSET_S
 
 void
 explicit_bzero(void *p, size_t n)
