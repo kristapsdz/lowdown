@@ -315,6 +315,16 @@ if [ ${HAVE_ERR} -eq 0 ]; then
 fi
 
 if [ ${HAVE_MD5} -eq 0 ]; then
+	echo "#define	MD5_BLOCK_LENGTH 64"
+	echo "#define	MD5_DIGEST_LENGTH 16"
+	echo "#define	MD5_DIGEST_STRING_LENGTH (MD5_DIGEST_LENGTH * 2 + 1)"
+	cat <<!!
+typedef struct MD5Context {
+	u_int32_t state[4];
+	u_int64_t count;
+	u_int8_t buffer[MD5_BLOCK_LENGTH];
+} MD5_CTX;
+!!
 	echo "void MD5Init(MD5_CTX *);"
 	echo "void MD5Update(MD5_CTX *, const u_int8_t *, size_t);"
 	echo "void MD5Pad(MD5_CTX *);"
