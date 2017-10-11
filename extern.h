@@ -45,6 +45,7 @@ void	*xmalloc(size_t) __attribute__((malloc));
 void	*xcalloc(size_t, size_t) __attribute__((malloc));
 void	*xrealloc(void *, size_t);
 void	*xreallocarray(void *, size_t, size_t);
+void	*xrecallocarray(void *, size_t, size_t, size_t);
 char	*xstrndup(const char *, size_t);
 char	*xstrdup(const char *);
 

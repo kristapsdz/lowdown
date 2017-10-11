@@ -67,6 +67,16 @@ xrealloc(void *p, size_t sz)
 }
 
 void *
+xrecallocarray(void *p, size_t old, size_t nm, size_t sz)
+{
+
+	if ((p = recallocarray(p, old, nm, sz)) == NULL)
+		err(EXIT_FAILURE, NULL);
+
+	return (p);
+}
+
+void *
 xreallocarray(void *p, size_t nm, size_t sz)
 {
 
