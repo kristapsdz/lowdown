@@ -18,7 +18,8 @@
 .Dt LOWDOWN 1
 .Os
 .Sh NAME
-.Nm lowdown
+.Nm lowdown ,
+.Nm lowdown-diff
 .Nd simple markdown translator
 .Sh SYNOPSIS
 .Nm lowdown
@@ -35,18 +36,30 @@
 .Op Fl o Ar file
 .Op Fl X Ar keyword
 .Op Ar file
+.Nm lowdown-diff
+.Op Fl sv
+.Op Fl D Ar feature
+.Op Fl d Ar feature
+.Op Fl E Ar feature
+.Op Fl e Ar feature
+.Op Fl o Ar file
+.Op Fl T Ar mode
+.Ar oldfile
+.Op Ar file
 .Sh DESCRIPTION
 The
-.Nm
-utility translates from markdown into HTML5 in XML mode (the default) or
-roff using the
+.Nm lowdown
+and
+.Nm lowdown-diff
+utilities translate from markdown into HTML5 in XML mode (the default)
+or roff using the
 .Fl ms
 or
 .Fl man
 macro packages.
 See
 .Xr lowdown 5
-for a reference to the accepted syntax.
+for a reference of the accepted syntax.
 If not given a
 .Ar file ,
 or if
@@ -55,8 +68,14 @@ is
 .Dq - ,
 .Nm
 reads from standard input.
-The results are written to standard output.
-Its arguments are as follows:
+In
+.Dq diff
+mode, the
+.Ar oldfile
+must be provided.
+The results in either case are written to standard output.
+.Pp
+The arguments are as follows:
 .Bl -tag -width Ds
 .It Fl D Ar feature
 Disable the given
