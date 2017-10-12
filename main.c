@@ -322,7 +322,7 @@ main(int argc, char *argv[])
 		errx(EXIT_FAILURE, "-X not applicable to diff mode");
 
 	if ((diff && (0 == argc || argc > 2)) ||
-	    ( ! diff && argc > 0))
+	    ( ! diff && argc > 1))
 		goto usage;
 
 	if (diff) {
