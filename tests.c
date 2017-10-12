@@ -50,7 +50,6 @@ main(void)
 }
 #endif /* TEST_CAPSICUM */
 #if TEST_ERR
-/*	$Id$	*/
 /*
  * Copyright (c) 2015 Ingo Schwarze <schwarze@openbsd.org>
  *
@@ -153,6 +152,9 @@ main(void)
 }
 #endif /* TEST_PLEDGE */
 #if TEST_PROGRAM_INVOCATION_SHORT_NAME
+#define _GNU_SOURCE         /* See feature_test_macros(7) */
+#include <errno.h>
+
 int
 main(void)
 {
@@ -216,7 +218,6 @@ main(void)
 }
 #endif /* TEST_STRLCPY */
 #if TEST_STRTONUM
-/*	$Id$	*/
 /*
  * Copyright (c) 2015 Ingo Schwarze <schwarze@openbsd.org>
  *
