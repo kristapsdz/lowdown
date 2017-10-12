@@ -51,9 +51,12 @@ hbuf *
 hbuf_clone(const hbuf *buf, hbuf *v)
 {
 
-	v->data = xmalloc(buf->size);
+	v->data = NULL;
+	if (buf->size) {
+		v->data = xmalloc(buf->size);
+		memcpy(v->data, buf->data, buf->size);
+	} 
 	v->size = buf->size;
-	memcpy(v->data, buf->data, buf->size);
 	v->asize = buf->asize;
 	v->unit = buf->unit;
 	v->buffer_free = buf->buffer_free;
