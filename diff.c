@@ -161,7 +161,6 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 	case LOWDOWN_RAW_HTML:
 	case LOWDOWN_NORMAL_TEXT:
 	case LOWDOWN_ENTITY:
-		warnx("%g: %zu: %d", xn->weight, xn->node->id, xn->node->type);
 		assert(0.0 == xn->weight);
 		xn->weight = 1.0 + log(weight);
 		break;
@@ -381,9 +380,27 @@ candidate(struct xnode *xnew, struct xmap *xnewmap,
 }
 
 static int
-match_equal(const struct lowdown_node *n1, 
+match_eq(const struct lowdown_node *n1, 
 	const struct lowdown_node *n2)
 {
+
+	if (n1->type != n2->type)
+		return(0);
+
+	if (LOWDOWN_LINK == n1->type) {
+		/*
+		 * Links have both contained nodes (for the alt text,
+		 * which can be nested) and also attributes.
+		 */
+		if ( ! hbuf_eq(&n1->rndr_link.link,
+			       &n2->rndr_link.link))
+			return(0);
+		if ( ! hbuf_eq(&n1->rndr_link.title,
+			       &n2->rndr_link.title))
+			return(0);
+	}
+
+	return(1);
 }
 
 /*
@@ -411,8 +428,8 @@ match_up(struct xnode *xnew, struct xmap *xnewmap,
 		 * FIXME: for some labels (e.g., links), this is not
 		 * sufficient: we also need to check equality. 
 		 */
-		if (xnew->node->parent->type !=
-		    xold->node->parent->type)
+		if ( ! match_eq
+		    (xnew->node->parent, xold->node->parent))
 			break;
 		xnew = &xnewmap->nodes[xnew->node->parent->id];
 		xold = &xoldmap->nodes[xold->node->parent->id];
@@ -461,6 +478,7 @@ static struct lowdown_node *
 node_clone(const struct lowdown_node *v, size_t id)
 {
 	struct lowdown_node *n;
+	size_t		 i;
 
 	n = xcalloc(1, sizeof(struct lowdown_node));
 	TAILQ_INIT(&n->children);
@@ -468,6 +486,21 @@ node_clone(const struct lowdown_node *v, size_t id)
 	n->id = id;
 
 	switch (n->type) {
+	case LOWDOWN_DOC_HEADER:
+		n->rndr_doc_header.msz =
+			v->rndr_doc_header.msz;
+		if (0 == n->rndr_doc_header.msz)
+			break;
+		n->rndr_doc_header.m = xcalloc
+			(v->rndr_doc_header.msz,
+			 sizeof(struct lowdown_meta));
+		for (i = 0; i < n->rndr_doc_header.msz; i++) {
+			n->rndr_doc_header.m[i].key = xstrdup
+				(v->rndr_doc_header.m[i].key);
+			n->rndr_doc_header.m[i].value = xstrdup
+				(v->rndr_doc_header.m[i].value);
+		}
+		break;
 	case LOWDOWN_LIST:
 		n->rndr_list.flags = v->rndr_list.flags;
 		break;
