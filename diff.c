@@ -23,6 +23,7 @@
 #if HAVE_ERR
 # include <err.h>
 #endif
+#include <math.h>
 #if HAVE_MD5
 # include <md5.h>
 #endif
@@ -35,61 +36,25 @@
 
 struct	xnode {
 	char		 sig[MD5_DIGEST_STRING_LENGTH]; /* signature */
-	size_t		 weight; /* priority queue weight */
+	double		 weight; /* priority queue weight */
 	const struct lowdown_node *node; /* basis node */
-	const struct lowdown_node *match;
-	size_t		 optimality;
+	const struct lowdown_node *match; /* matching node */
+	size_t		 optimality; /* optimality of match */
 };
 
 struct	xmap {
-	struct xnode	*nodes;
-	size_t		 maxid;
-	size_t		 maxsize;
+	struct xnode	*nodes; /* all of the nodes (dense table) */
+	size_t		 maxid; /* maximum id in nodes */
+	size_t		 maxsize; /* size of "nodes" (allocation) */
+	double		 maxweight; /* maximum node weight */
 };
 
 struct	pnode {
-	const struct lowdown_node *node;
+	const struct lowdown_node *node; /* priority node */
 	TAILQ_ENTRY(pnode) entries;
 };
 
 TAILQ_HEAD(pnodeq, pnode);
-
-static	const char *const names[LOWDOWN__MAX] = {
-	"LOWDOWN_ROOT",			/* LOWDOWN_ROOT */
-	"LOWDOWN_BLOCKCODE",            /* LOWDOWN_BLOCKCODE */
-	"LOWDOWN_BLOCKQUOTE",           /* LOWDOWN_BLOCKQUOTE */
-	"LOWDOWN_HEADER",               /* LOWDOWN_HEADER */
-	"LOWDOWN_HRULE",                /* LOWDOWN_HRULE */
-	"LOWDOWN_LIST",                 /* LOWDOWN_LIST */
-	"LOWDOWN_LISTITEM",             /* LOWDOWN_LISTITEM */
-	"LOWDOWN_PARAGRAPH",            /* LOWDOWN_PARAGRAPH */
-	"LOWDOWN_TABLE_BLOCK",          /* LOWDOWN_TABLE_BLOCK */
-	"LOWDOWN_TABLE_HEADER",         /* LOWDOWN_TABLE_HEADER */
-	"LOWDOWN_TABLE_BODY",           /* LOWDOWN_TABLE_BODY */
-	"LOWDOWN_TABLE_ROW",            /* LOWDOWN_TABLE_ROW */
-	"LOWDOWN_TABLE_CELL",           /* LOWDOWN_TABLE_CELL */
-	"LOWDOWN_FOOTNOTES_BLOCK",      /* LOWDOWN_FOOTNOTES_BLOCK */
-	"LOWDOWN_FOOTNOTE_DEF",         /* LOWDOWN_FOOTNOTE_DEF */
-	"LOWDOWN_BLOCKHTML",            /* LOWDOWN_BLOCKHTML */
-	"LOWDOWN_LINK_AUTO",            /* LOWDOWN_LINK_AUTO */
-	"LOWDOWN_CODESPAN",             /* LOWDOWN_CODESPAN */
-	"LOWDOWN_DOUBLE_EMPHASIS",      /* LOWDOWN_DOUBLE_EMPHASIS */
-	"LOWDOWN_EMPHASIS",             /* LOWDOWN_EMPHASIS */
-	"LOWDOWN_HIGHLIGHT",            /* LOWDOWN_HIGHLIGHT */
-	"LOWDOWN_IMAGE",                /* LOWDOWN_IMAGE */
-	"LOWDOWN_LINEBREAK",            /* LOWDOWN_LINEBREAK */
-	"LOWDOWN_LINK",                 /* LOWDOWN_LINK */
-	"LOWDOWN_TRIPLE_EMPHASIS",      /* LOWDOWN_TRIPLE_EMPHASIS */
-	"LOWDOWN_STRIKETHROUGH",        /* LOWDOWN_STRIKETHROUGH */
-	"LOWDOWN_SUPERSCRIPT",          /* LOWDOWN_SUPERSCRIPT */
-	"LOWDOWN_FOOTNOTE_REF",         /* LOWDOWN_FOOTNOTE_REF */
-	"LOWDOWN_MATH_BLOCK",           /* LOWDOWN_MATH_BLOCK */
-	"LOWDOWN_RAW_HTML",             /* LOWDOWN_RAW_HTML */
-	"LOWDOWN_ENTITY",               /* LOWDOWN_ENTITY */
-	"LOWDOWN_NORMAL_TEXT",          /* LOWDOWN_NORMAL_TEXT */
-	"LOWDOWN_DOC_HEADER",           /* LOWDOWN_DOC_HEADER */
-	"LOWDOWN_DOC_FOOTER",           /* LOWDOWN_DOC_FOOTER */
-};
 
 static void
 MD5Updatebuf(MD5_CTX *ctx, const hbuf *v)
@@ -107,18 +72,19 @@ MD5Updatev(MD5_CTX *ctx, const void *v, size_t sz)
 
 /*
  * Assign signatures and weights.
- * This is defined by "Phase 2" in 5.2, Detailed description.
- * We use the MD5 algorithm for computing hashes; and for the time
- * being, use the linear case of weighing.
+ * This is defined by "Phase 2" in sec. 5.2., along with the specific
+ * heuristics given in the "Tuning" section.
+ * We use the MD5 algorithm for computing hashes.
  * Returns the weight of the node rooted at "n".
  * If "parent" is not NULL, its hash is updated with the hash computed
  * for the current "n" and its children.
  */
-static size_t
+static double
 assign_sigs(MD5_CTX *parent, struct xmap *map, 
 	const struct lowdown_node *n)
 {
 	const struct lowdown_node *nn;
+	size_t		 weight = 0;
 	MD5_CTX		 ctx;
 	struct xnode	*xn;
 
@@ -134,6 +100,7 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 
 	xn = &map->nodes[n->id];
 	assert(NULL == xn->node);
+	assert(0.0 == xn->weight);
 	xn->node = n;
 	if (n->id > map->maxid)
 		map->maxid = n->id;
@@ -148,54 +115,58 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 
 	/*
 	 * Compute our weight.
-	 * The weight is either the contained text length for leaf nodes
-	 * or the accumulated sub-element weight for non-terminal nodes
-	 * plus one.
+	 * The weight is either the log of the contained text length for
+	 * leaf nodes or the accumulated sub-element weight for
+	 * non-terminal nodes plus one.
 	 */
 
 	switch (n->type) {
 	case LOWDOWN_BLOCKCODE:
-		assert(0 == xn->weight);
-		xn->weight = n->rndr_blockcode.text.size;
+		weight = n->rndr_blockcode.text.size;
 		break;
 	case LOWDOWN_BLOCKHTML:
-		assert(0 == xn->weight);
-		xn->weight = n->rndr_blockhtml.text.size;
+		weight = n->rndr_blockhtml.text.size;
 		break;
 	case LOWDOWN_LINK_AUTO:
-		assert(0 == xn->weight);
-		xn->weight = n->rndr_autolink.link.size;
+		weight = n->rndr_autolink.link.size;
 		break;
 	case LOWDOWN_CODESPAN:
-		assert(0 == xn->weight);
-		xn->weight = n->rndr_codespan.text.size;
+		weight = n->rndr_codespan.text.size;
 		break;
 	case LOWDOWN_IMAGE:
-		assert(0 == xn->weight);
-		xn->weight = n->rndr_image.link.size +
+		weight = n->rndr_image.link.size +
 			n->rndr_image.title.size +
 			n->rndr_image.dims.size +
 			n->rndr_image.alt.size;
 		break;
-	case LOWDOWN_LINK:
-		assert(0 == xn->weight);
-		xn->weight = n->rndr_link.link.size +
-			n->rndr_link.title.size;
-		break;
 	case LOWDOWN_RAW_HTML:
-		assert(0 == xn->weight);
-		xn->weight = n->rndr_raw_html.text.size;
+		weight = n->rndr_raw_html.text.size;
 		break;
 	case LOWDOWN_NORMAL_TEXT:
-		assert(0 == xn->weight);
-		xn->weight = n->rndr_normal_text.text.size;
+		weight = n->rndr_normal_text.text.size;
 		break;
 	case LOWDOWN_ENTITY:
-		assert(0 == xn->weight);
-		xn->weight = n->rndr_entity.text.size;
+		weight = n->rndr_entity.text.size;
 		break;
 	default:
-		xn->weight++;
+		break;
+	}
+
+	switch (n->type) {
+	case LOWDOWN_BLOCKCODE:
+	case LOWDOWN_BLOCKHTML:
+	case LOWDOWN_LINK_AUTO:
+	case LOWDOWN_CODESPAN:
+	case LOWDOWN_IMAGE:
+	case LOWDOWN_RAW_HTML:
+	case LOWDOWN_NORMAL_TEXT:
+	case LOWDOWN_ENTITY:
+		warnx("%g: %zu: %d", xn->weight, xn->node->id, xn->node->type);
+		assert(0.0 == xn->weight);
+		xn->weight = 1.0 + log(weight);
+		break;
+	default:
+		xn->weight += 1.0;
 		break;
 	}
 
@@ -281,51 +252,17 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 		MD5Update(parent, (u_int8_t *)xn->sig, 
 			MD5_DIGEST_STRING_LENGTH - 1);
 
+	if (xn->weight > map->maxweight)
+		map->maxweight = xn->weight;
+
 	return(xn->weight);
-}
-
-static void
-diff_print_char(const hbuf *txt)
-{
-	size_t	 i, len;
-
-	len = txt->size > 20 ? 20 : txt->size;
-
-	for (i = 0; i < len; i++)
-		if ('\n' == txt->data[i])
-			fputs("\\n", stderr);
-		else
-			fputc(txt->data[i], stderr);
-}
-
-static void
-diff_print(const struct lowdown_node *from,
-	const struct xmap *xfrom, size_t tabs)
-{
-	const struct lowdown_node *nn;
-	size_t	 i;
-
-	for (i = 0; i < tabs; i++)
-		fprintf(stderr, "  ");
-
-	fprintf(stderr, "%zu: %s: %zu", from->id,
-		names[from->type], 
-		xfrom->nodes[from->id].weight);
-
-	if (LOWDOWN_NORMAL_TEXT == from->type) {
-		fprintf(stderr, ": ");
-		diff_print_char(&from->rndr_normal_text.text);
-	} 
-	fprintf(stderr, "\n");
-
-	TAILQ_FOREACH(nn, &from->children, entries)
-		diff_print(nn, xfrom, tabs + 1);
 }
 
 /*
  * Enqueue "n" into a priority queue "pq".
  * Priority is given to weights; and if weights are equal, then
  * proximity to the parse root given by a pre-order identity.
+ * FIXME: use a priority heap.
  */
 static void
 pqueue(const struct lowdown_node *n, 
@@ -366,15 +303,24 @@ pqueue(const struct lowdown_node *n,
 }
 
 /*
- * Candidate optimality between "xnew" and "xold".
- * Climb the tree for a variable number of steps and see whether we've
- * already matched.
+ * Candidate optimality between "xnew" and "xold" as described in "Phase
+ * 3" of sec. 5.2.
+ * This also uses the heuristic described in "Tuning" for how many
+ * levels to search upward.
  */
 static size_t
 optimality(struct xnode *xnew, struct xmap *xnewmap,
 	struct xnode *xold, struct xmap *xoldmap)
 {
-	size_t	 opt = 1, d = 2, i = 0;
+	size_t	 opt = 1, d, i = 0;
+
+	/* Height: log(n) * W/W_0 or at least 1. */
+
+	d = ceil(log(xnewmap->maxid) * 
+		xnew->weight / xnewmap->maxweight);
+
+	if (0 == d)
+		d = 1;
 
 	while (NULL != xnew->node->parent &&
 	       NULL != xold->node->parent && i < d) {
@@ -389,17 +335,21 @@ optimality(struct xnode *xnew, struct xmap *xnewmap,
 }
 
 /*
- * Compute the candidacy of "xnew" to "xold".
+ * Compute the candidacy of "xnew" to "xold" as described in "Phase 3"
+ * of sec. 5.2 and using the optimality() function as a basis.
  * If "xnew" does not have a match assigned (no prior candidacy), assign
  * it immediately to "xold".
  * If it does, then compute the optimality and select the greater of the
  * two optimalities.
+ * As an extension to the paper, if the optimalities are equal, use the
+ * "closer" node to the current identifier.
  */
 static void
 candidate(struct xnode *xnew, struct xmap *xnewmap,
 	struct xnode *xold, struct xmap *xoldmap)
 {
-	size_t	opt;
+	size_t		 opt;
+	long long	 dnew, dold;
 
 	assert(NULL != xnew->node);
 	assert(NULL != xold->node);
@@ -412,21 +362,55 @@ candidate(struct xnode *xnew, struct xmap *xnewmap,
 	}
 
 	opt = optimality(xnew, xnewmap, xold, xoldmap);
-	if (opt > xnew->optimality) {
+
+	if (opt == xnew->optimality) {
+		/*
+		 * Use a simple norm over the identifier space.
+		 * Choose the lesser of the norms.
+		 */
+		dold = llabs(xnew->match->id - xnew->node->id);
+		dnew = llabs(xold->node->id - xnew->node->id);
+		if (dold > dnew) {
+			xnew->match = xold->node;
+			xnew->optimality = opt;
+		}
+	} else if (opt > xnew->optimality) {
 		xnew->match = xold->node;
 		xnew->optimality = opt;
 	}
 }
 
+static int
+match_equal(const struct lowdown_node *n1, 
+	const struct lowdown_node *n2)
+{
+}
+
+/*
+ * Algorithm to "propogate up" according to "Phase 4" of sec. 5.2.
+ * This also uses the heuristic described in "Tuning" for how many
+ * levels to search upward.
+ */
 static void
 match_up(struct xnode *xnew, struct xmap *xnewmap,
 	struct xnode *xold, struct xmap *xoldmap)
 {
-	size_t	 d = 2, i = 0;
+	size_t	 d, i = 0;
+
+	/* Height: log(n) * W/W_0 or at least 1. */
+
+	d = ceil(log(xnewmap->maxid) * 
+		xnew->weight / xnewmap->maxweight);
+	if (0 == d)
+		d = 1;
 
 	while (NULL != xnew->node->parent &&
 	       NULL != xold->node->parent && i < d) {
 		/* Are the "labels" the same? */
+		/* 
+		 * FIXME: for some labels (e.g., links), this is not
+		 * sufficient: we also need to check equality. 
+		 */
 		if (xnew->node->parent->type !=
 		    xold->node->parent->type)
 			break;
@@ -438,6 +422,11 @@ match_up(struct xnode *xnew, struct xmap *xnewmap,
 	}
 }
 
+/*
+ * Algorithm that "propogates down" according to "Phase 4" of sec. 5.2.
+ * This (recursively) makes sure that a matched tree has all of the
+ * subtree nodes also matched.
+ */
 static void
 match_down(struct xnode *xnew, struct xmap *xnewmap,
 	struct xnode *xold, struct xmap *xoldmap)
@@ -460,6 +449,14 @@ match_down(struct xnode *xnew, struct xmap *xnewmap,
 	}
 }
 
+/*
+ * Clone a single node and all of its "attributes".
+ * That is, its type and "leaf node" data.
+ * Assign the identifier as given.
+ * Note that some attributes, such as the table column array, aren't
+ * copied.
+ * We'll re-create those later.
+ */
 static struct lowdown_node *
 node_clone(const struct lowdown_node *v, size_t id)
 {
@@ -553,6 +550,11 @@ node_clone(const struct lowdown_node *v, size_t id)
 	return(n);
 }
 
+/*
+ * Take the sub-tree "v" and clone it and all of the nodes beneath it,
+ * returning the cloned node.
+ * This starts using identifiers at "id".
+ */
 static struct lowdown_node *
 node_clonetree(const struct lowdown_node *v, size_t *id)
 {
@@ -571,10 +573,13 @@ node_clonetree(const struct lowdown_node *v, size_t *id)
 }
 
 /*
- * Merge the new tree "nnew" with the old tree "nold".
+ * Merge the new tree "nnew" with the old "nold" using a depth-first
+ * algorithm.
  * The produced tree will show the new tree with deleted nodes from the
- * old and added ones to the new.
+ * old and inserted ones.
  * It will also show moved nodes by delete/add pairs.
+ * This uses "Phase 5" semantics, but implements the merge algorithm
+ * without notes from the paper.
  */
 static struct lowdown_node *
 node_merge(const struct lowdown_node *nold,
@@ -587,9 +592,10 @@ node_merge(const struct lowdown_node *nold,
 	struct lowdown_node *n, *nn;
 	const struct lowdown_node *nnold;
 
-	warnx("%s: %zu (%s)", __func__, nnew->id, names[nnew->type]);
-
-	/* Basis: the current nodes are matched. */
+	/* 
+	 * Invariant: the current nodes are matched.
+	 * Start by putting that node into the current output.
+	 */
 
 	assert(NULL != nnew && NULL != nold);
 	xnew = &xnewmap->nodes[nnew->id];
@@ -607,15 +613,15 @@ node_merge(const struct lowdown_node *nold,
 		/* 
 		 * Begin by flushing out all of the nodes that have been
 		 * deleted from the old tree at this level.
+		 * According to the paper, deleted nodes have no match.
+		 * These will leave us with old nodes that are in the
+		 * new tree (not necessarily at this level, though).
 		 */
 
 		while (NULL != nold) {
 			xold = &xoldmap->nodes[nold->id];
 			if (NULL != xold->match) 
 				break;
-			warnx("%s: flushing old %zu (%s)", 
-				__func__, nold->id, 
-				names[nold->type]);
 			nn = node_clonetree(nold, id);
 			nn->parent = n;
 			nn->chng = LOWDOWN_CHNG_DELETE;
@@ -623,16 +629,17 @@ node_merge(const struct lowdown_node *nold,
 			nold = TAILQ_NEXT(nold, entries);
 		}
 
-		/* Now flush added nodes. */
+		/* 
+		 * Now flush inserted nodes.
+		 * According to the paper, these have no match.
+		 * This leaves us with nodes that are matched somewhere
+		 * (not necessarily at this level) with the old.
+		 */
 
 		while (NULL != nnew) {
-			/* FIXME: make an insertion. */
 			xnew = &xnewmap->nodes[nnew->id];
 			if (NULL != xnew->match)
 				break;
-			warnx("%s: flushing new %zu (%s)", 
-				__func__, nnew->id, 
-				names[nnew->type]);
 			nn = node_clonetree(nnew, id);
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
@@ -640,21 +647,24 @@ node_merge(const struct lowdown_node *nold,
 			nnew = TAILQ_NEXT(nnew, entries);
 		}
 
-		/* 
-		 * If there are no more in the new tree, then flush out
-		 * all that's in the old tree as a deletion.
-		 * We do this in our exit statement.
-		 */
+		/* Nothing more to do at this level? */
 
-		if (NULL == nnew) {
-			warnx("%s: nothing more at this level", __func__);
+		if (NULL == nnew)
 			break;
-		}
+
+		/*
+		 * Now we take the current new node and see if it's a
+		 * match with a node in the current level.
+		 * If it is, then we can flush out old nodes (moved,
+		 * which we call deleted and re-inserted) until we get
+		 * to the matching one.
+		 * Then we'll be in lock-step with the old tree.
+		 */
 
 		xnew = &xnewmap->nodes[nnew->id];
 		assert(NULL != xnew->match);
 
-		/* Scan ahead to match with an old. */
+		/* Scan ahead to find a matching old. */
 		
 		for (nnold = nold; NULL != nnold ; ) {
 			xold = &xoldmap->nodes[nnold->id];
@@ -665,12 +675,11 @@ node_merge(const struct lowdown_node *nold,
 
 		/* 
 		 * We did not find a match.
-		 * Add the node and continue on.
+		 * This means that the new node has been moved from
+		 * somewhere else in the tree.
 		 */
 
 		if (NULL == nnold) {
-			warnx("%s: could not find match: %s",
-				__func__, names[nnew->type]);
 			nn = node_clonetree(nnew, id);
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
@@ -679,11 +688,7 @@ node_merge(const struct lowdown_node *nold,
 			continue;
 		}
 
-		/*
-		 * We did find a match.
-		 * First flush up until the match.
-		 * Then, descend into the matched pair.
-		 */
+		/* Match found: flush old nodes til the match. */
 
 		while (NULL != nold) {
 			xold = &xoldmap->nodes[nold->id];
@@ -698,8 +703,11 @@ node_merge(const struct lowdown_node *nold,
 
 		assert(NULL != nold);
 
-		warnx("%s: match found: %s", 
-			__func__, names[nnew->type]);
+		/*
+		 * Now we're in lock-step.
+		 * Do the recursive step between the matched pair.
+		 * Then continue on to the next nodes.
+		 */
 
 		nn = node_merge(nold, xoldmap, nnew, xnewmap, id);
 		nn->parent = n;
@@ -712,11 +720,11 @@ node_merge(const struct lowdown_node *nold,
 	/* Flush remaining old nodes. */
 
 	while (NULL != nold) {
-		/* FIXME: make a deletion. */
 		xold = &xoldmap->nodes[nold->id];
 		nn = node_clonetree(nold, id);
 		TAILQ_INSERT_TAIL(&n->children, nn, entries);
 		nn->parent = n;
+		nn->chng = LOWDOWN_CHNG_DELETE;
 		nold = TAILQ_NEXT(nold, entries);
 	}
 
@@ -745,97 +753,82 @@ lowdown_diff(const struct lowdown_node *nold,
 
 	TAILQ_INIT(&pq);
 
-	/* First, assign signatures and weights. */
+	/* 
+	 * First, assign signatures and weights.
+	 * See "Phase 2", sec 5.2.
+	 */
 
 	(void)assign_sigs(NULL, &xoldmap, nold);
 	(void)assign_sigs(NULL, &xnewmap, nnew);
 
-	/* XXX: debug. */
-
-	fprintf(stderr, "--Old------------------------\n");
-	diff_print(nold, &xoldmap, 0);
-	fprintf(stderr, "--New------------------------\n");
-	diff_print(nnew, &xnewmap, 0);
-
-	/* Next, prime the priority queue. */
+	/* Prime the priority queue with the root. */
 
 	pqueue(nnew, &xnewmap, &pq);
 
 	/* 
 	 * Match-make while we have nodes in the priority queue.
-	 * This is guaranteed to be finite because with each step, we
-	 * either add descendents or not.
+	 * This is guaranteed to be finite.
+	 * See "Phase 3" and "Phase 4", sec 5.2.
 	 */
 
 	while (NULL != (p = TAILQ_FIRST(&pq))) {
+		/* TODO: cache of pnodes. */
 		TAILQ_REMOVE(&pq, p, entries);
 		n = p->node;
 		free(p);
+
 		xnew = &xnewmap.nodes[n->id];
 		assert(NULL == xnew->match);
 		assert(0 == xnew->optimality);
-		for (i = 0; i < xoldmap.maxid; i++) {
+
+		/*
+		 * Look for candidates: if we have a matching signature,
+		 * test for optimality.
+		 * Highest optimality gets to be matched.
+		 * See "Phase 3", sec. 5.2.
+		 */
+
+		for (i = 0; i < xoldmap.maxid + 1; i++) {
 			xold = &xoldmap.nodes[i];
 			if (strcmp(xnew->sig, xold->sig))
 				continue;
-			/* Match found: test optimality. */
-
 			candidate(xnew, &xnewmap, xold, &xoldmap);
-			warnx("Candidate: %zu -> %zu (optimality %zu)",
-				xnew->node->id,
-				xold->node->id,
-				xnew->optimality);
 		}
 
-		if (NULL != xnew->match) {
-			warnx("Match: %zu -> %zu (optimality %zu)",
-				xnew->node->id,
-				xnew->match->id,
-				xnew->optimality);
+		/* No match: enqueue children ("Phase 3" cont.). */
 
-			/* Propogate match. */
-			match_down(xnew, &xnewmap, 
-				&xoldmap.nodes[xnew->match->id], 
-				&xoldmap);
-			match_up(xnew, &xnewmap, 
-				&xoldmap.nodes[xnew->match->id], 
-				&xoldmap);
+		if (NULL == xnew->match) {
+			TAILQ_FOREACH(nn, &n->children, entries)
+				pqueue(nn, &xnewmap, &pq);
 			continue;
 		}
 
-		warnx("No match: %zu", xnew->node->id);
+		/*
+		 * Match found and is optimal.
+		 * Now optimise using the bottom-up and top-down
+		 * (doesn't matter which order) algorithms.
+		 * See "Phase 4", sec. 5.2.
+		 */
 
-		/* No match found: recursive step. */
-		TAILQ_FOREACH(nn, &n->children, entries)
-			pqueue(nn, &xnewmap, &pq);
+		match_down(xnew, &xnewmap, 
+			&xoldmap.nodes[xnew->match->id], &xoldmap);
+		match_up(xnew, &xnewmap, 
+			&xoldmap.nodes[xnew->match->id], &xoldmap);
 	}
 
-	for (i = 0; i < xoldmap.maxid; i++) {
-		if (NULL == xoldmap.nodes[i].node)
-			continue;
-		if (NULL == xoldmap.nodes[i].match)
-			warnx("Deleted from old: %zu", 
-				xoldmap.nodes[i].node->id);
-	}
-
-	for (i = 0; i < xnewmap.maxid; i++) {
-		if (NULL == xnewmap.nodes[i].node)
-			continue;
-		if (NULL == xnewmap.nodes[i].match)
-			warnx("Insert into new: %zu", 
-				xnewmap.nodes[i].node->id);
-	}
+	/*
+	 * All nodes have been processed.
+	 * Now we need to compute the delta and merge the trees.
+	 * See "Phase 5", sec. 5.2.
+	 */
 
 	i = 0;
 	comp = node_merge(nold, &xoldmap, nnew, &xnewmap, &i);
 
+	/* Clean up and exit. */
+
+	assert(TAILQ_EMPTY(&pq));
 	free(xoldmap.nodes);
 	free(xnewmap.nodes);
-
-	while (NULL != (p = TAILQ_FIRST(&pq))) {
-		TAILQ_REMOVE(&pq, p, entries);
-		free(p);
-	}
-
 	return(comp);
 }
