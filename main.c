@@ -399,15 +399,32 @@ main(int argc, char *argv[])
 	free(m);
 	return(status);
 usage:
-	fprintf(stderr, "usage: %s "
+	fprintf(stderr, "usage: lowdown "
 		"[-sv] "
 		"[-D feature] "
 		"[-d feature] "
 		"[-E feature] "
-		"[-e feature] "
+		"[-e feature]\n"
+		"               "
+		"[-o output] "
+		"[-T mode] "
+		"[file]\n");
+	fprintf(stderr, "       lowdown "
+		"[-v] "
 		"[-o output] "
 		"[-T mode] "
 		"[-X keyword] "
-		"[file]\n", getprogname());
+		"[file]\n");
+	fprintf(stderr, "       lowdown-diff "
+		"[-sv] "
+		"[-D feature] "
+		"[-d feature] "
+		"[-E feature]\n"
+		"                    "
+		"[-e feature] "
+		"[-o output] "
+		"[-T mode] "
+		"oldfile "
+		"[file]\n");
 	return(EXIT_FAILURE);
 }
