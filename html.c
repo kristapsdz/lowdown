@@ -817,6 +817,11 @@ lowdown_html_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
 	TAILQ_FOREACH(n, &root->children, entries)
 		lowdown_html_rndr(tmp, ref, n);
 
+	/*
+	 * These elements can be put in either a block or an inline
+	 * context, so we're safe to just use them and forget.
+	 */
+
 	if (LOWDOWN_CHNG_INSERT == root->chng)
 		HBUF_PUTSL(ob, "<ins>");
 	else if (LOWDOWN_CHNG_DELETE == root->chng)
