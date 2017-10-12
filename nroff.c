@@ -1043,7 +1043,7 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 {
 	struct lowdown_node *n, *next, *prev;
 	hbuf		*tmp;
-	int		 pnln, keepnext;
+	int		 pnln, keepnext = 1;
 	enum nfont	 fonts[NFONT__MAX];
 
 	assert(NULL != root);
@@ -1084,18 +1084,40 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 	TAILQ_FOREACH(n, &root->children, entries)
 		rndr(tmp, ref, n);
 
-	/* Compute whether the previous output has a newline. */
+	/* 
+	 * Compute whether the previous output does have a newline:
+	 * if we don't have a previous node, scan up to the parent and
+	 * see if it's a block node.
+	 * If it's a block node, we're absolutely starting on a newline;
+	 * otherwise, we don't know.
+	 */
 
 	if (NULL == root->parent ||
 	    NULL == (n = TAILQ_PREV(root, lowdown_nodeq, entries)))
 		n = root->parent;
-
 	pnln = NULL == n || NSCOPE_BLOCK == nscopes[n->type];
+
+	/* Get the last and next emitted node. */
 
 	prev = NULL == root->parent ? NULL : 
 		TAILQ_PREV(root, lowdown_nodeq, entries);
 	next = TAILQ_NEXT(root, entries);
-	keepnext = 1;
+
+	if (NSCOPE_BLOCK == nscopes[root->type]) {
+		if (LOWDOWN_CHNG_INSERT == root->chng)
+			HBUF_PUTSL(ob, ".gcolor blue\n");
+		else if (LOWDOWN_CHNG_DELETE == root->chng)
+			HBUF_PUTSL(ob, ".gcolor red\n");
+	} else {
+		/*
+		 * FIXME: this is going to disrupt our newline
+		 * computation.
+		 */
+		if (LOWDOWN_CHNG_INSERT == root->chng)
+			HBUF_PUTSL(ob, "\\m[blue]");
+		else if (LOWDOWN_CHNG_DELETE == root->chng)
+			HBUF_PUTSL(ob, "\\m[red]");
+	}
 
 	switch (root->type) {
 	case (LOWDOWN_BLOCKCODE):
@@ -1207,6 +1229,15 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 	default:
 		hbuf_put(ob, tmp->data, tmp->size);
 		break;
+	}
+
+
+	if (LOWDOWN_CHNG_INSERT == root->chng ||
+	    LOWDOWN_CHNG_DELETE == root->chng) {
+		if (NSCOPE_BLOCK == nscopes[root->type])
+			HBUF_PUTSL(ob, ".gcolor\n");
+		else
+			HBUF_PUTSL(ob, "\\m[]");
 	}
 
 	/* Restore the font stack. */
