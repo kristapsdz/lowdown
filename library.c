@@ -159,19 +159,19 @@ lowdown_buf(const struct lowdown_opts *opts,
 }
 
 void
-lowdown_buf_diff(const struct lowdown_opts *optsrc,
-	const char *src, size_t srcsz,
-	const struct lowdown_opts *optdst,
-	const char *dst, size_t dstsz,
+lowdown_buf_diff(const struct lowdown_opts *optnew,
+	const char *new, size_t newsz,
+	const struct lowdown_opts *optold,
+	const char *old, size_t oldsz,
 	char **res, size_t *rsz)
 {
 	hbuf	 	 *ob, *spb;
 	void 		 *renderer = NULL;
 	hdoc 		 *doc;
 	enum lowdown_type t;
-	struct lowdown_node *nsrc, *ndst, *ndiff;
+	struct lowdown_node *nnew, *nold, *ndiff;
 
-	t = NULL == optsrc ? LOWDOWN_HTML : optsrc->type;
+	t = NULL == optnew ? LOWDOWN_HTML : optnew->type;
 
 	/*
 	 * XXX: for the renderer, the lodwown_opts used is not
@@ -181,11 +181,11 @@ lowdown_buf_diff(const struct lowdown_opts *optsrc,
 
 	switch (t) {
 	case (LOWDOWN_HTML):
-		renderer = lowdown_html_new(optsrc);
+		renderer = lowdown_html_new(optnew);
 		break;
 	case (LOWDOWN_MAN):
 	case (LOWDOWN_NROFF):
-		renderer = lowdown_nroff_new(optsrc);
+		renderer = lowdown_nroff_new(optnew);
 		break;
 	case (LOWDOWN_TREE):
 		renderer = lowdown_tree_new();
@@ -194,20 +194,20 @@ lowdown_buf_diff(const struct lowdown_opts *optsrc,
 
 	/* Parse the output and free resources. */
 
-	doc = lowdown_doc_new(optsrc);
-	nsrc = lowdown_doc_parse(doc, src, srcsz, NULL, NULL);
+	doc = lowdown_doc_new(optnew);
+	nnew = lowdown_doc_parse(doc, new, newsz, NULL, NULL);
 	lowdown_doc_free(doc);
 
-	doc = lowdown_doc_new(optdst);
-	ndst = lowdown_doc_parse(doc, dst, dstsz, NULL, NULL);
+	doc = lowdown_doc_new(optold);
+	nold = lowdown_doc_parse(doc, old, oldsz, NULL, NULL);
 	lowdown_doc_free(doc);
 
 	/* Get the difference tree. */
 
-	ndiff = lowdown_diff(nsrc, ndst);
+	ndiff = lowdown_diff(nold, nnew);
 
-	lowdown_node_free(nsrc);
-	lowdown_node_free(ndst);
+	lowdown_node_free(nnew);
+	lowdown_node_free(nold);
 
 	ob = hbuf_new(DEF_OUNIT);
 
@@ -232,7 +232,7 @@ lowdown_buf_diff(const struct lowdown_opts *optsrc,
 	/* Reprocess the output as smartypants. */
 
 	if (LOWDOWN_TREE != t &&
-	    NULL != optsrc && LOWDOWN_SMARTY & optsrc->oflags) {
+	    NULL != optnew && LOWDOWN_SMARTY & optnew->oflags) {
 		spb = hbuf_new(DEF_OUNIT);
 		if (LOWDOWN_HTML == t)
 			lowdown_html_smrt(spb, ob->data, ob->size);
@@ -275,8 +275,8 @@ lowdown_file(const struct lowdown_opts *opts,
 }
 
 int
-lowdown_file_diff(const struct lowdown_opts *optsrc, FILE *fsrc, 
-	const struct lowdown_opts *optdst, FILE *fdst, 
+lowdown_file_diff(const struct lowdown_opts *optnew, FILE *fnew, 
+	const struct lowdown_opts *optold, FILE *fold, 
 	char **res, size_t *rsz)
 {
 	hbuf *src, *dst;
@@ -286,14 +286,14 @@ lowdown_file_diff(const struct lowdown_opts *optsrc, FILE *fsrc,
 	dst = hbuf_new(DEF_IUNIT);
 	assert(NULL != dst);
 
-	if (hbuf_putf(dst, fdst) || hbuf_putf(src, fsrc)) {
+	if (hbuf_putf(dst, fold) || hbuf_putf(src, fnew)) {
 		hbuf_free(src);
 		hbuf_free(dst);
 		return(0);
 	}
 
-	lowdown_buf_diff(optsrc, src->data, src->size, 
-		optdst, dst->data, dst->size, res, rsz);
+	lowdown_buf_diff(optnew, src->data, src->size, 
+		optold, dst->data, dst->size, res, rsz);
 	hbuf_free(src);
 	hbuf_free(dst);
 	return(1);
