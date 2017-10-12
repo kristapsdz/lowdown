@@ -63,6 +63,14 @@ hbuf_clone(const hbuf *buf, hbuf *v)
 	return(v);
 }
 
+int
+hbuf_eq(const hbuf *buf1, const hbuf *buf2)
+{
+
+	return(buf1->size == buf2->size &&
+	       0 == memcmp(buf1->data, buf2->data, buf1->size));
+}
+
 /* 
  * Allocate a new buffer.
  * FIXME: the "unit" value is stupid (see hbuf_grow()).
