@@ -17,16 +17,7 @@ OBJS		 = autolink.o \
 		   nroff_smartypants.o \
 		   tree.o \
 		   xmalloc.o
-COMPAT_OBJS	 = compat_err.o \
-		   compat_explicit_bzero.o \
-		   compat_md5.o \
-		   compat_memrchr.o \
-		   compat_progname.o \
-		   compat_reallocarray.o \
-		   compat_recallocarray.o \
-		   compat_strlcat.o \
-		   compat_strlcpy.o \
-		   compat_strtonum.o
+COMPAT_OBJS	 = compats.o
 WWWDIR		 = /var/www/vhosts/kristaps.bsd.lv/htdocs/lowdown
 HTMLS		 = archive.html \
 		   index.html \
@@ -67,7 +58,7 @@ installwww: www
 	install -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots
 
 lowdown: liblowdown.a main.o
-	$(CC) -o $@ main.o liblowdown.a
+	$(CC) -o $@ main.o liblowdown.a -lm
 
 lowdown-diff: lowdown
 	ln -f lowdown lowdown-diff
@@ -83,6 +74,7 @@ install: all
 	mkdir -p $(DESTDIR)$(MANDIR)/man3
 	mkdir -p $(DESTDIR)$(MANDIR)/man5
 	install -m 0755 lowdown $(DESTDIR)$(BINDIR)
+	ln -f $(DESTDIR)$(BINDIR)/lowdown $(DESTDIR)$(BINDIR)/lowdown-diff
 	install -m 0644 liblowdown.a $(DESTDIR)$(LIBDIR)
 	install -m 0644 lowdown.h $(DESTDIR)$(INCLUDEDIR)
 	for f in $(MANS) ; do \
