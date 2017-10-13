@@ -753,7 +753,6 @@ node_merge(const struct lowdown_node *nold,
 	/* Flush remaining old nodes. */
 
 	while (NULL != nold) {
-		xold = &xoldmap->nodes[nold->id];
 		nn = node_clonetree(nold, id);
 		TAILQ_INSERT_TAIL(&n->children, nn, entries);
 		nn->parent = n;
