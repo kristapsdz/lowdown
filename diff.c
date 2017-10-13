@@ -86,19 +86,21 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 	const struct lowdown_node *nn;
 	size_t		 weight = 0;
 	MD5_CTX		 ctx;
+	double		 v;
 	struct xnode	*xn;
 
 	/* Get our node slot. */
 
 	if (n->id >= map->maxsize) {
-		map->nodes = xrecallocarray
-			(map->nodes, map->maxsize, 
-			 map->maxsize + 64,
+		map->nodes = xreallocarray
+			(map->nodes, n->id + 64,
 			 sizeof(struct xnode));
-		map->maxsize += 64;
+		map->maxsize = n->id + 64;
 	}
 
+	assert(n->id < map->maxsize);
 	xn = &map->nodes[n->id];
+	memset(xn, 0, sizeof(struct xnode));
 	assert(NULL == xn->node);
 	assert(0.0 == xn->weight);
 	xn->node = n;
@@ -110,8 +112,14 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 	MD5Init(&ctx);
 	MD5Updatev(&ctx, &n->type, sizeof(enum lowdown_rndrt));
 
+	v = 0.0;
 	TAILQ_FOREACH(nn, &n->children, entries)
-		xn->weight += assign_sigs(&ctx, map, nn);
+		v += assign_sigs(&ctx, map, nn);
+
+	/* Re-assign "xn": child might have reallocated. */
+
+	xn = &map->nodes[n->id];
+	xn->weight = v;
 
 	/*
 	 * Compute our weight.
