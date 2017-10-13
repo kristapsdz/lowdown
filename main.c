@@ -370,8 +370,6 @@ main(int argc, char *argv[])
 		opts.arg = (void *)fnin;
 		if ( ! lowdown_file(&opts, fin, &ret, &retsz, &m, &msz))
 			err(EXIT_FAILURE, "%s", fnin);
-		if (fin != stdin)
-			fclose(fin);
 	}
 
 	if (NULL != extract) {
@@ -392,6 +390,8 @@ main(int argc, char *argv[])
 		fclose(fout);
 	if (NULL != din)
 		fclose(din);
+	if (fin != stdin)
+		fclose(fin);
 	for (i = 0; i < msz; i++) {
 		free(m[i].key);
 		free(m[i].value);
