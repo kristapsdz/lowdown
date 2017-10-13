@@ -367,8 +367,10 @@ candidate(struct xnode *xnew, struct xmap *xnewmap,
 		 * Use a simple norm over the identifier space.
 		 * Choose the lesser of the norms.
 		 */
-		dold = llabs(xnew->match->id - xnew->node->id);
-		dnew = llabs(xold->node->id - xnew->node->id);
+		dold = llabs((long long)
+			(xnew->match->id - xnew->node->id));
+		dnew = llabs((long long)
+			(xold->node->id - xnew->node->id));
 		if (dold > dnew) {
 			xnew->match = xold->node;
 			xnew->optimality = opt;
