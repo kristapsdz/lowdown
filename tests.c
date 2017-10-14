@@ -195,6 +195,19 @@ main(void)
 	return(-1 == rc);
 }
 #endif /* TEST_SANDBOX_INIT */
+#if TEST_SECCOMP-FILTER
+#include <sys/prctl.h>
+#include <linux/seccomp.h>
+#include <errno.h>
+
+int
+main(void)
+{
+
+	prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, 0);
+	return(EFAULT == errno ? 0 : 1);
+}
+#endif /* TEST_SECCOMP-FILTER */
 #if TEST_STRLCAT
 #include <string.h>
 

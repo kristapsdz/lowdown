@@ -1,6 +1,5 @@
 #include "config.h"
 #if !HAVE_ERR
-/* $Id$ */
 /*
  * Copyright (c) 1993
  *      The Regents of the University of California.  All rights reserved.
@@ -102,10 +101,9 @@ warnx(const char *fmt, ...)
 	va_end(ap);
 	fputc('\n', stderr);
 }
-#endif /* !HAVE_ERR */ 
+#endif /* !HAVE_ERR */
 #if !HAVE_EXPLICIT_BZERO
 /* OPENBSD ORIGINAL: lib/libc/string/explicit_bzero.c */
-/*	$OpenBSD: explicit_bzero.c,v 1.1 2014/01/22 21:06:45 tedu Exp $ */
 /*
  * Public domain.
  * Written by Ted Unangst
@@ -155,7 +153,7 @@ explicit_bzero(void *p, size_t n)
 }
 
 #endif /* HAVE_MEMSET_S */
-#endif /* !HAVE_EXPLICIT_BZERO */ 
+#endif /* !HAVE_EXPLICIT_BZERO */
 #if !HAVE_GETPROGNAME
 /*
  * Copyright (c) 2016 Nicholas Marriott <nicholas.marriott@gmail.com>
@@ -195,10 +193,8 @@ getprogname(void)
 #else
 #error No getprogname available.
 #endif
-#endif /* !HAVE_GETPROGNAME */ 
+#endif /* !HAVE_GETPROGNAME */
 #if !HAVE_MD5
-/*	$OpenBSD: md5.c,v 1.9 2014/01/08 06:14:57 tedu Exp $	*/
-
 /*
  * This code implements the MD5 message-digest algorithm.
  * The algorithm is due to Ron Rivest.	This code was
@@ -463,16 +459,8 @@ MD5End(MD5_CTX *ctx, char *buf)
 	buf[i+i] = '\0';
 	return buf;
 }
-#endif /* !HAVE_MD5 */ 
+#endif /* !HAVE_MD5 */
 #if !HAVE_MEMRCHR
-#include "config.h"
-
-#if HAVE_MEMRCHR
-
-int dummy;
-
-#else
-
 /*
  * Copyright (c) 2007 Todd C. Miller <Todd.Miller@courtesan.com>
  *
@@ -510,12 +498,8 @@ memrchr(const void *s, int c, size_t n)
     }
     return(NULL);
 }
-
-#endif
-#endif /* !HAVE_MEMRCHR */ 
+#endif /* !HAVE_MEMRCHR */
 #if !HAVE_REALLOCARRAY
-/*	$Id$	*/
-/*	$OpenBSD: reallocarray.c,v 1.2 2014/12/08 03:45:00 bcook Exp $	*/
 /*
  * Copyright (c) 2008 Otto Moerbeek <otto@drijf.net>
  *
@@ -553,9 +537,8 @@ reallocarray(void *optr, size_t nmemb, size_t size)
 	}
 	return realloc(optr, size * nmemb);
 }
-#endif /* !HAVE_REALLOCARRAY */ 
+#endif /* !HAVE_REALLOCARRAY */
 #if !HAVE_RECALLOCARRAY
-/*	$OpenBSD: recallocarray.c,v 1.1 2017/03/06 18:44:21 otto Exp $	*/
 /*
  * Copyright (c) 2008, 2017 Otto Moerbeek <otto@drijf.net>
  *
@@ -637,10 +620,8 @@ recallocarray(void *ptr, size_t oldnmemb, size_t newnmemb, size_t size)
 
 	return newptr;
 }
-#endif /* !HAVE_RECALLOCARRAY */ 
+#endif /* !HAVE_RECALLOCARRAY */
 #if !HAVE_STRLCAT
-/*	$OpenBSD: strlcat.c,v 1.13 2005/08/08 08:05:37 espie Exp $	*/
-
 /*
  * Copyright (c) 1998 Todd C. Miller <Todd.Miller@courtesan.com>
  *
@@ -694,10 +675,8 @@ strlcat(char *dst, const char *src, size_t siz)
 
 	return(dlen + (s - src));	/* count does not include NUL */
 }
-#endif /* !HAVE_STRLCAT */ 
+#endif /* !HAVE_STRLCAT */
 #if !HAVE_STRLCPY
-/*	$OpenBSD: strlcpy.c,v 1.11 2006/05/05 15:27:38 millert Exp $	*/
-
 /*
  * Copyright (c) 1998 Todd C. Miller <Todd.Miller@courtesan.com>
  *
@@ -747,11 +726,8 @@ strlcpy(char *dst, const char *src, size_t siz)
 
 	return(s - src - 1);	/* count does not include NUL */
 }
-#endif /* !HAVE_STRLCPY */ 
+#endif /* !HAVE_STRLCPY */
 #if !HAVE_STRTONUM
-/*	$Id$	*/
-/*	$OpenBSD: strtonum.c,v 1.7 2013/04/17 18:40:58 tedu Exp $	*/
-
 /*
  * Copyright (c) 2004 Ted Unangst and Todd Miller
  * All rights reserved.
@@ -815,4 +791,4 @@ strtonum(const char *numstr, long long minval, long long maxval,
 
 	return (ll);
 }
-#endif /* !HAVE_STRTONUM */ 
+#endif /* !HAVE_STRTONUM */
