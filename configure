@@ -135,6 +135,7 @@ HAVE_PROGRAM_INVOCATION_SHORT_NAME=
 HAVE_REALLOCARRAY=
 HAVE_RECALLOCARRAY=
 HAVE_SANDBOX_INIT=
+HAVE_SECCOMP_FILTER=
 HAVE_STRLCAT=
 HAVE_STRLCPY=
 HAVE_STRTONUM=
@@ -247,6 +248,7 @@ runtest program_invocation_short_name	PROGRAM_INVOCATION_SHORT_NAME || true
 runtest reallocarray	REALLOCARRAY			  || true
 runtest recallocarray	RECALLOCARRAY			  || true
 runtest sandbox_init	SANDBOX_INIT	"-Wno-deprecated" || true
+runtest seccomp-filter	SECCOMP_FILTER			  || true
 runtest strlcat		STRLCAT				  || true
 runtest strlcpy		STRLCPY				  || true
 runtest strtonum	STRTONUM			  || true
@@ -305,6 +307,7 @@ cat << __HEREDOC__
 #define HAVE_REALLOCARRAY ${HAVE_REALLOCARRAY}
 #define HAVE_RECALLOCARRAY ${HAVE_RECALLOCARRAY}
 #define HAVE_SANDBOX_INIT ${HAVE_SANDBOX_INIT}
+#define HAVE_SECCOMP_FILTER ${HAVE_SECCOMP_FILTER}
 #define HAVE_STRLCAT ${HAVE_STRLCAT}
 #define HAVE_STRLCPY ${HAVE_STRLCPY}
 #define HAVE_STRTONUM ${HAVE_STRTONUM}
