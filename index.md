@@ -21,6 +21,11 @@ and *roff* output to securely generate PDFs on
 [OpenBSD](http://www.openbsd.org) with just
 [mandoc(1)](http://man.openbsd.org/mandoc).
 
+It can also be used to show the difference between two Markdown
+documents with *lowdown-diff*.
+This uses a tree-based difference algorithm to show semantically-valid
+Markdown differences.
+
 Want an example?  For starters: this page, [index.md](index.md).  The
 Markdown input is rendered an HTML5 fragment using *lowdown*, then
 further using [sblg](https://kristaps.bsd.lv/sblg).  You
@@ -81,6 +86,7 @@ following Markdown features and extensions:
 - disabled inline HTML
 - "smartypants"
 - metadata
+- commonmark (**in progress**)
 
 You can control which parser features are used by using the **-d**
 (disable feature) and **-e** (enable feature) flags documented in
@@ -167,9 +173,6 @@ compiled sources with no failures --- definitely a credit to
 the [hoedown](https://github.com/hoedown/hoedown) authors (and those
 from who they forked their own sources).  I'll also regularly run the system
 through [valgrind](http://valgrind.org/), also without issue.
-
-*lowdown* has a [Coverity](https://scan.coverity.com/projects/lowdown)
-registration for static analysis.
 
 ## Hacking
 
@@ -265,3 +268,6 @@ to and from the definition.
 - In all modes, the "smartypants" formatting should be embedded in
 document output --- not in a separate step as implemented in the
 original sources.
+
+- Diffing needs work.  In particular, matching text components should
+use an embedded LCS diff tool for local changes.
