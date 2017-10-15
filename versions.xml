@@ -370,4 +370,20 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.3.0</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2017-09-30">2017-09-30</time>
+		</header>
+		<aside>
+			<p>
+				Add a <q>diff</q> tool, <a href="lowdown.1.html">lowdown-diff(1)</a>.
+				This utility uses an algorithm adapted from <a
+					href="https://www.cs.rutgers.edu/~amelie/papers/2002/diff.pdf">Detecting Changes in XML Documents</a> 
+				to compute the semantic difference between two parse trees.
+				While there, also add more inter-paragraph spacing to <b>-Tms</b> output, producing more elegant documents.
+			</p>
+		</aside>
+	</article>
 </articles>
