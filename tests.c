@@ -1,35 +1,3 @@
-#if TEST_PATH_MAX
-/*
- * POSIX allows PATH_MAX to not be defined, see
- * http://pubs.opengroup.org/onlinepubs/9699919799/functions/sysconf.html;
- * the GNU Hurd is an example of a system not having it.
- *
- * Arguably, it would be better to test sysconf(_SC_PATH_MAX),
- * but since the individual *.c files include "config.h" before
- * <limits.h>, overriding an excessive value of PATH_MAX from
- * "config.h" is impossible anyway, so for now, the simplest
- * fix is to provide a value only on systems not having any.
- * So far, we encountered no system defining PATH_MAX to an
- * impractically large value, even though POSIX explicitly
- * allows that.
- *
- * The real fix would be to replace all static buffers of size
- * PATH_MAX by dynamically allocated buffers.  But that is
- * somewhat intrusive because it touches several files and
- * because it requires changing struct mlink in mandocdb.c.
- * So i'm postponing that for now.
- */
-
-#include <limits.h>
-#include <stdio.h>
-
-int
-main(void)
-{
-	printf("PATH_MAX is defined to be %ld\n", (long)PATH_MAX);
-	return 0;
-}
-#endif /* TEST_PATH_MAX */
 #if TEST___PROGNAME
 int
 main(void)
@@ -39,6 +7,15 @@ main(void)
 	return !__progname;
 }
 #endif /* TEST___PROGNAME */
+#if TEST_ARC4RANDOM
+#include <stdlib.h>
+
+int
+main(void)
+{
+	return (arc4random() + 1) ? 0 : 1;
+}
+#endif /* TEST_ARC4RANDOM */
 #if TEST_CAPSICUM
 #include <sys/capability.h>
 
@@ -102,6 +79,21 @@ main(void)
 	return progname == NULL;
 }
 #endif /* TEST_GETPROGNAME */
+#if TEST_INFTIM
+/*
+ * Linux doesn't (always?) have this.
+ */
+
+#include <poll.h>
+#include <stdio.h>
+
+int
+main(void)
+{
+	printf("INFTIM is defined to be %ld\n", (long)INFTIM);
+	return 0;
+}
+#endif /* TEST_INFTIM */
 #if TEST_MD5
 #include <sys/types.h>
 #include <md5.h>
@@ -116,6 +108,17 @@ int main(void)
 	return 0;
 }
 #endif /* TEST_MD5 */
+#if TEST_MEMMEM
+#define _GNU_SOURCE
+#include <string.h>
+
+int
+main(void)
+{
+	char *a = memmem("hello, world", strlen("hello, world"), "world", strlen("world"));
+	return(NULL == a);
+}
+#endif /* TEST_MEMMEM */
 #if TEST_MEMRCHR
 #if defined(__linux__) || defined(__MINT__)
 #define _GNU_SOURCE	/* See test-*.c what needs this. */
@@ -142,6 +145,38 @@ int main(void)
 	return 0;
 }
 #endif /* TEST_MEMSET_S */
+#if TEST_PATH_MAX
+/*
+ * POSIX allows PATH_MAX to not be defined, see
+ * http://pubs.opengroup.org/onlinepubs/9699919799/functions/sysconf.html;
+ * the GNU Hurd is an example of a system not having it.
+ *
+ * Arguably, it would be better to test sysconf(_SC_PATH_MAX),
+ * but since the individual *.c files include "config.h" before
+ * <limits.h>, overriding an excessive value of PATH_MAX from
+ * "config.h" is impossible anyway, so for now, the simplest
+ * fix is to provide a value only on systems not having any.
+ * So far, we encountered no system defining PATH_MAX to an
+ * impractically large value, even though POSIX explicitly
+ * allows that.
+ *
+ * The real fix would be to replace all static buffers of size
+ * PATH_MAX by dynamically allocated buffers.  But that is
+ * somewhat intrusive because it touches several files and
+ * because it requires changing struct mlink in mandocdb.c.
+ * So i'm postponing that for now.
+ */
+
+#include <limits.h>
+#include <stdio.h>
+
+int
+main(void)
+{
+	printf("PATH_MAX is defined to be %ld\n", (long)PATH_MAX);
+	return 0;
+}
+#endif /* TEST_PATH_MAX */
 #if TEST_PLEDGE
 #include <unistd.h>
 
@@ -195,7 +230,7 @@ main(void)
 	return(-1 == rc);
 }
 #endif /* TEST_SANDBOX_INIT */
-#if TEST_SECCOMP-FILTER
+#if TEST_SECCOMP_FILTER
 #include <sys/prctl.h>
 #include <linux/seccomp.h>
 #include <errno.h>
@@ -207,7 +242,22 @@ main(void)
 	prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, 0);
 	return(EFAULT == errno ? 0 : 1);
 }
-#endif /* TEST_SECCOMP-FILTER */
+#endif /* TEST_SECCOMP_FILTER */
+#if TEST_SOCK_NONBLOCK
+/*
+ * Linux doesn't (always?) have this.
+ */
+
+#include <sys/socket.h>
+
+int
+main(void)
+{
+	int fd[2];
+	socketpair(AF_UNIX, SOCK_STREAM|SOCK_NONBLOCK, 0, fd);
+	return 0;
+}
+#endif /* TEST_SOCK_NONBLOCK */
 #if TEST_STRLCAT
 #include <string.h>
 
@@ -273,3 +323,16 @@ main(void)
 	return 0;
 }
 #endif /* TEST_STRTONUM */
+#if TEST_SYSTRACE
+#include <sys/param.h>
+#include <dev/systrace.h>
+
+#include <stdlib.h>
+
+int
+main(void)
+{
+
+	return(0);
+}
+#endif /* TEST_SYSTRACE */
