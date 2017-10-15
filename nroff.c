@@ -464,7 +464,7 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 	if (NULL == prev || 
 	    (content->size > 3 &&
 	     0 == memcmp(content->data, ".LP\n", 4)))
-		HBUF_PUTSL(ob, ".sp 0.5\n");
+		HBUF_PUTSL(ob, ".sp 1.0v\n");
 
 	HBUF_PUTSL(ob, ".RS\n");
 
@@ -1019,6 +1019,7 @@ rndr_doc_header(hbuf *ob,
 	if ( ! st->mdoc) {
 		HBUF_PUTSL(ob, ".nr PS 10\n");
 		HBUF_PUTSL(ob, ".nr GROWPS 3\n");
+		HBUF_PUTSL(ob, ".nr PD 1.0v\n");
 		hbuf_printf(ob, ".DA %s\n.TL\n", date);
 		escape_block(ob, title, strlen(title));
 		HBUF_PUTSL(ob, "\n");
