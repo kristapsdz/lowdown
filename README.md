@@ -56,6 +56,7 @@ The following major feature additions have been added:
 - "smartypants" mode for the troff outputs
 - metadata support
 - tree output for AST debugging
+- "diff" engine for semantic differences between documents
 
 It builds and runs on OpenBSD, Linux ([musl](https://www.musl-libc.org/)
 and glibc), and Mac OS X.
