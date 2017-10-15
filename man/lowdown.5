@@ -75,7 +75,17 @@ A block element contains span elements.
 A paragraph is made up of one or more lines of text possibly containing
 span elements.
 Paragraphs are separated by blank lines.
-To insert a hard line break, insert two spaces at the end of the line.
+.Pp
+To insert a hard line break (i.e., a line-break in the input that is
+reproduced in the output), insert two spaces at the end of the line.
+If the
+.Ar commonmark
+input option is specified, this may also be effected by escaping the
+newline:
+.Bd -literal -offset indent
+Darmok and Jalad...\e
+at Tanagra.
+.Ed
 .
 .Ss Headers
 There are two styles of headers: underlined
@@ -98,6 +108,11 @@ the line separated by one space followed by the header.
 .Bd -literal -offset indent
 ## This is a hash-marked header 2
 .Ed
+.Pp
+If the
+.Ar commonmark
+input option is specified, the space is required after the hash-marks in
+any hash-marked header.
 .
 .Ss Block Quotes
 Block quoted sections are invoked with a single right-angle bracket
@@ -155,6 +170,15 @@ lists, as all ordered lists start at one.
 1. Make.
 2. It.
 1. So. (Not 1. again!)
+.Ed
+.Pp
+If the
+.Ar commonmark
+input option is specified, list items may alternatively terminate with
+the right parenthesis:
+.Bd -literal -offset indent
+1) Live long
+2) Prosper
 .Ed
 .Pp
 To prevent lists erroneously started by a paragraph beginning with a
