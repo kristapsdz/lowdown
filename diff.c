@@ -23,6 +23,7 @@
 #if HAVE_ERR
 # include <err.h>
 #endif
+#include <float.h>
 #include <math.h>
 #if HAVE_MD5
 # include <md5.h>
@@ -55,6 +56,46 @@ struct	pnode {
 };
 
 TAILQ_HEAD(pnodeq, pnode);
+
+#if 0
+static	const char *const names[LOWDOWN__MAX] = {
+	"LOWDOWN_ROOT",			/* LOWDOWN_ROOT */
+	"LOWDOWN_BLOCKCODE",            /* LOWDOWN_BLOCKCODE */
+	"LOWDOWN_BLOCKQUOTE",           /* LOWDOWN_BLOCKQUOTE */
+	"LOWDOWN_HEADER",               /* LOWDOWN_HEADER */
+	"LOWDOWN_HRULE",                /* LOWDOWN_HRULE */
+	"LOWDOWN_LIST",                 /* LOWDOWN_LIST */
+	"LOWDOWN_LISTITEM",             /* LOWDOWN_LISTITEM */
+	"LOWDOWN_PARAGRAPH",            /* LOWDOWN_PARAGRAPH */
+	"LOWDOWN_TABLE_BLOCK",          /* LOWDOWN_TABLE_BLOCK */
+	"LOWDOWN_TABLE_HEADER",         /* LOWDOWN_TABLE_HEADER */
+	"LOWDOWN_TABLE_BODY",           /* LOWDOWN_TABLE_BODY */
+	"LOWDOWN_TABLE_ROW",            /* LOWDOWN_TABLE_ROW */
+	"LOWDOWN_TABLE_CELL",           /* LOWDOWN_TABLE_CELL */
+	"LOWDOWN_FOOTNOTES_BLOCK",      /* LOWDOWN_FOOTNOTES_BLOCK */
+	"LOWDOWN_FOOTNOTE_DEF",         /* LOWDOWN_FOOTNOTE_DEF */
+	"LOWDOWN_BLOCKHTML",            /* LOWDOWN_BLOCKHTML */
+	"LOWDOWN_LINK_AUTO",            /* LOWDOWN_LINK_AUTO */
+	"LOWDOWN_CODESPAN",             /* LOWDOWN_CODESPAN */
+	"LOWDOWN_DOUBLE_EMPHASIS",      /* LOWDOWN_DOUBLE_EMPHASIS */
+	"LOWDOWN_EMPHASIS",             /* LOWDOWN_EMPHASIS */
+	"LOWDOWN_HIGHLIGHT",            /* LOWDOWN_HIGHLIGHT */
+	"LOWDOWN_IMAGE",                /* LOWDOWN_IMAGE */
+	"LOWDOWN_LINEBREAK",            /* LOWDOWN_LINEBREAK */
+	"LOWDOWN_LINK",                 /* LOWDOWN_LINK */
+	"LOWDOWN_TRIPLE_EMPHASIS",      /* LOWDOWN_TRIPLE_EMPHASIS */
+	"LOWDOWN_STRIKETHROUGH",        /* LOWDOWN_STRIKETHROUGH */
+	"LOWDOWN_SUPERSCRIPT",          /* LOWDOWN_SUPERSCRIPT */
+	"LOWDOWN_FOOTNOTE_REF",         /* LOWDOWN_FOOTNOTE_REF */
+	"LOWDOWN_MATH_BLOCK",           /* LOWDOWN_MATH_BLOCK */
+	"LOWDOWN_RAW_HTML",             /* LOWDOWN_RAW_HTML */
+	"LOWDOWN_ENTITY",               /* LOWDOWN_ENTITY */
+	"LOWDOWN_NORMAL_TEXT",          /* LOWDOWN_NORMAL_TEXT */
+	"LOWDOWN_DOC_HEADER",           /* LOWDOWN_DOC_HEADER */
+	"LOWDOWN_DOC_FOOTER",           /* LOWDOWN_DOC_FOOTER */
+};
+#endif
+
 
 static void
 MD5Updatebuf(MD5_CTX *ctx, const hbuf *v)
@@ -389,6 +430,12 @@ candidate(struct xnode *xnew, struct xmap *xnewmap,
 	}
 }
 
+/*
+ * Do the two internal nodes equal each other?
+ * This depends upon the node type.
+ * By default, all similarly-labelled (typed) nodes are equal.
+ * We special-case as noted.
+ */
 static int
 match_eq(const struct lowdown_node *n1, 
 	const struct lowdown_node *n2)
@@ -414,9 +461,24 @@ match_eq(const struct lowdown_node *n1,
 }
 
 /*
- * Algorithm to "propogate up" according to "Phase 4" of sec. 5.2.
+ * Return non-zero if this node is the only child.
+ */
+static int
+match_singleton(const struct lowdown_node *n)
+{
+
+	if (NULL == n->parent)
+		return(1);
+
+	return(TAILQ_NEXT(n, entries) == 
+	       TAILQ_PREV(n, lowdown_nodeq, entries));
+}
+
+/*
+ * Algorithm to "propogate up" according to "Phase 3" of sec. 5.2.
  * This also uses the heuristic described in "Tuning" for how many
  * levels to search upward.
+ * I augment this by making singleton children pass upward.
  */
 static void
 match_up(struct xnode *xnew, struct xmap *xnewmap,
@@ -434,10 +496,6 @@ match_up(struct xnode *xnew, struct xmap *xnewmap,
 	while (NULL != xnew->node->parent &&
 	       NULL != xold->node->parent && i < d) {
 		/* Are the "labels" the same? */
-		/* 
-		 * FIXME: for some labels (e.g., links), this is not
-		 * sufficient: we also need to check equality. 
-		 */
 		if ( ! match_eq
 		    (xnew->node->parent, xold->node->parent))
 			break;
@@ -447,10 +505,32 @@ match_up(struct xnode *xnew, struct xmap *xnewmap,
 		xold->match = xnew->node;
 		i++;
 	}
+
+	if (i != d)
+		return;
+
+	/* 
+	 * Pass up singletons.
+	 * This is an extension of the algorithm.
+	 */
+
+	while (NULL != xnew->node->parent &&
+	       NULL != xold->node->parent) {
+		if ( ! match_singleton(xnew->node) ||
+		     ! match_singleton(xold->node))
+			break;
+		if ( ! match_eq
+		    (xnew->node->parent, xold->node->parent))
+			break;
+		xnew = &xnewmap->nodes[xnew->node->parent->id];
+		xold = &xoldmap->nodes[xold->node->parent->id];
+		xnew->match = xold->node;
+		xold->match = xnew->node;
+	}
 }
 
 /*
- * Algorithm that "propogates down" according to "Phase 4" of sec. 5.2.
+ * Algorithm that "propogates down" according to "Phase 3" of sec. 5.2.
  * This (recursively) makes sure that a matched tree has all of the
  * subtree nodes also matched.
  */
@@ -773,6 +853,122 @@ node_merge(const struct lowdown_node *nold,
 	return(n);
 }
 
+#if 0
+static void
+node_print(const struct lowdown_node *n, const struct xmap *map, size_t ind)
+{
+	const struct lowdown_node *nn;
+	const struct xnode *xn;
+	size_t	 i;
+
+	xn = &map->nodes[n->id];
+	for (i = 0; i < ind; i++)
+		fputc(' ', stderr);
+
+	fprintf(stderr, "%zu:%s (%g)", n->id,names[n->type], xn->weight);
+	if (xn->match) {
+		fprintf(stderr, " -> %zu", xn->match->id);
+	}
+
+	fputc('\n', stderr);
+
+
+	TAILQ_FOREACH(nn, &n->children, entries)
+		node_print(nn, map, ind + 1);
+}
+#endif
+
+/*
+ * Our optimising phase is a bit complicated.
+ * It is not reflect in any part of the paper.
+ * In short, we want to look, from bottom-up, at all nodes that aren't
+ * matched.
+ * We then examine all the children of the un-matched nodes and see
+ * which of their matches, if found, are under a root that's the same
+ * node as we are.
+ * This lets us compuate the largest fraction of un-matched nodes'
+ * children that are in the same tree.
+ * If that fraction is >50%, then we consider that the subtrees are
+ * matched.
+ */
+static void
+node_optimise(const struct lowdown_node *n, 
+	struct xmap *newmap, struct xmap *oldmap)
+{
+	const struct lowdown_node *nn, *on, *nnn, *maxn = NULL;
+	double		w, maxw = 0.0, tw = 0.0;
+
+	/* Do a depth-first pre-order search. */
+
+	if (TAILQ_EMPTY(&n->children))
+		return;
+
+	TAILQ_FOREACH(nn, &n->children, entries) {
+		tw += newmap->nodes[nn->id].weight;
+		node_optimise(nn, newmap, oldmap);
+	}
+
+	/*
+	 * We're now at a non-leaf node.
+	 * If we're already matched, then move on.
+	 */
+
+	if (NULL != newmap->nodes[n->id].match)
+		return;
+
+	TAILQ_FOREACH(nn, &n->children, entries) {
+		if (NULL == newmap->nodes[nn->id].match)
+			continue;
+		if (NULL == (on = newmap->nodes[nn->id].match->parent))
+			continue;
+		if (on == maxn)
+			continue;
+		if ( ! match_eq(n, on))
+			continue;
+		
+		/*
+		 * We've now established "on" as the parent of the
+		 * matched node, and that "on" is equivalent.
+		 * See what fraction of on's children are matched to our
+		 * children.
+		 * FIXME: this will harmlessly (except in time) look at
+		 * the same parent multiple times.
+		 */
+
+		w = 0.0;
+		TAILQ_FOREACH(nnn, &n->children, entries) {
+			if (NULL == newmap->nodes[nnn->id].match)
+				continue;
+			if (on != newmap->nodes[nnn->id].match->parent)
+				continue;
+			w += newmap->nodes[nnn->id].weight;
+		}
+
+		/* Is this the highest fraction? */
+
+		if (w > maxw) {
+			maxw = w;
+			maxn = on;
+		}
+	}
+
+	/* See if we found any similar sub-trees. */
+
+	if (NULL == maxn)
+		return;
+
+	/*
+	 * Our magic breakpoint is 50%.
+	 * If the matched sub-tree has a greater than 50% match by
+	 * weight, then set us as a match!
+	 */
+
+	if (maxw / tw >= 0.5) {
+		newmap->nodes[n->id].match = maxn;
+		oldmap->nodes[maxn->id].match = n;
+	}
+}
+
 /*
  * Algorithm: Detecting Changes in XML Documents.
  * Gregory Cobena, Serge Abiteboul, Amelie Marian.
@@ -810,7 +1006,7 @@ lowdown_diff(const struct lowdown_node *nold,
 	/* 
 	 * Match-make while we have nodes in the priority queue.
 	 * This is guaranteed to be finite.
-	 * See "Phase 3" and "Phase 4", sec 5.2.
+	 * See "Phase 3", sec 5.2.
 	 */
 
 	while (NULL != (p = TAILQ_FIRST(&pq))) {
@@ -847,9 +1043,9 @@ lowdown_diff(const struct lowdown_node *nold,
 
 		/*
 		 * Match found and is optimal.
-		 * Now optimise using the bottom-up and top-down
-		 * (doesn't matter which order) algorithms.
-		 * See "Phase 4", sec. 5.2.
+		 * Now use the bottom-up and top-down (doesn't matter
+		 * which order) algorithms.
+		 * See "Phase 3", sec. 5.2.
 		 */
 
 		match_down(xnew, &xnewmap, 
@@ -860,6 +1056,20 @@ lowdown_diff(const struct lowdown_node *nold,
 
 	/*
 	 * All nodes have been processed.
+	 * Now we need to optimise, so run a "Phase 4", sec. 5.2.
+	 * Our optimisation is nothing like the paper's.
+	 */
+
+#if 0
+	node_print(nnew, &xnewmap, 0);
+#endif
+	node_optimise(nnew, &xnewmap, &xoldmap);
+#if 0
+	node_print(nnew, &xnewmap, 0);
+#endif
+
+	/*
+	 * The tree is optimal.
 	 * Now we need to compute the delta and merge the trees.
 	 * See "Phase 5", sec. 5.2.
 	 */
