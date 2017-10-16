@@ -40,7 +40,8 @@ struct	xnode {
 	double		 weight; /* priority queue weight */
 	const struct lowdown_node *node; /* basis node */
 	const struct lowdown_node *match; /* matching node */
-	size_t		 optimality; /* optimality of match */
+	size_t		 opt; /* optimality of match */
+	const struct lowdown_node *optmatch; /* current optimal match */
 };
 
 struct	xmap {
@@ -403,15 +404,15 @@ candidate(struct xnode *xnew, struct xmap *xnewmap,
 	assert(NULL != xold->node);
 
 	if (NULL == xnew->match) {
-		xnew->match = xold->node;
-		xnew->optimality = optimality
+		xnew->optmatch = xold->node;
+		xnew->opt = optimality
 			(xnew, xnewmap, xold, xoldmap);
 		return;
 	}
 
 	opt = optimality(xnew, xnewmap, xold, xoldmap);
 
-	if (opt == xnew->optimality) {
+	if (opt == xnew->opt) {
 		/*
 		 * Use a simple norm over the identifier space.
 		 * Choose the lesser of the norms.
@@ -421,12 +422,12 @@ candidate(struct xnode *xnew, struct xmap *xnewmap,
 		dnew = llabs((long long)
 			(xold->node->id - xnew->node->id));
 		if (dold > dnew) {
-			xnew->match = xold->node;
-			xnew->optimality = opt;
+			xnew->optmatch = xold->node;
+			xnew->opt = opt;
 		}
-	} else if (opt > xnew->optimality) {
-		xnew->match = xold->node;
-		xnew->optimality = opt;
+	} else if (opt > xnew->opt) {
+		xnew->optmatch = xold->node;
+		xnew->opt = opt;
 	}
 }
 
@@ -479,6 +480,8 @@ match_singleton(const struct lowdown_node *n)
  * This also uses the heuristic described in "Tuning" for how many
  * levels to search upward.
  * I augment this by making singleton children pass upward.
+ * FIXME: right now, this doesn't clobber existing upward matches.  Is
+ * that correct behaviour?
  */
 static void
 match_up(struct xnode *xnew, struct xmap *xnewmap,
@@ -501,6 +504,8 @@ match_up(struct xnode *xnew, struct xmap *xnewmap,
 			break;
 		xnew = &xnewmap->nodes[xnew->node->parent->id];
 		xold = &xoldmap->nodes[xold->node->parent->id];
+		if (NULL != xold->match || NULL != xnew->match)
+			break;
 		xnew->match = xold->node;
 		xold->match = xnew->node;
 		i++;
@@ -524,6 +529,8 @@ match_up(struct xnode *xnew, struct xmap *xnewmap,
 			break;
 		xnew = &xnewmap->nodes[xnew->node->parent->id];
 		xold = &xoldmap->nodes[xold->node->parent->id];
+		if (NULL != xold->match || NULL != xnew->match)
+			break;
 		xnew->match = xold->node;
 		xold->match = xnew->node;
 	}
@@ -539,6 +546,9 @@ match_down(struct xnode *xnew, struct xmap *xnewmap,
 	struct xnode *xold, struct xmap *xoldmap)
 {
 	struct lowdown_node *nnew, *nold;
+
+	assert(NULL == xnew->match);
+	assert(NULL == xold->match);
 
 	xnew->match = xold->node;
 	xold->match = xnew->node;
@@ -723,6 +733,9 @@ node_merge(const struct lowdown_node *nold,
 	assert(NULL != nnew && NULL != nold);
 	xnew = &xnewmap->nodes[nnew->id];
 	xold = &xoldmap->nodes[nold->id];
+	assert(NULL != xnew->match);
+	assert(NULL != xold->match);
+
 	assert(xnew->match == xold->node);
 
 	n = node_clone(nnew, *id++);
@@ -1017,7 +1030,8 @@ lowdown_diff(const struct lowdown_node *nold,
 
 		xnew = &xnewmap.nodes[n->id];
 		assert(NULL == xnew->match);
-		assert(0 == xnew->optimality);
+		assert(NULL == xnew->optmatch);
+		assert(0 == xnew->opt);
 
 		/*
 		 * Look for candidates: if we have a matching signature,
@@ -1028,14 +1042,17 @@ lowdown_diff(const struct lowdown_node *nold,
 
 		for (i = 0; i < xoldmap.maxid + 1; i++) {
 			xold = &xoldmap.nodes[i];
+			if (NULL != xold->match)
+				continue;
 			if (strcmp(xnew->sig, xold->sig))
 				continue;
+			assert(NULL == xold->match);
 			candidate(xnew, &xnewmap, xold, &xoldmap);
 		}
 
 		/* No match: enqueue children ("Phase 3" cont.). */
 
-		if (NULL == xnew->match) {
+		if (NULL == xnew->optmatch) {
 			TAILQ_FOREACH(nn, &n->children, entries)
 				pqueue(nn, &xnewmap, &pq);
 			continue;
@@ -1048,10 +1065,13 @@ lowdown_diff(const struct lowdown_node *nold,
 		 * See "Phase 3", sec. 5.2.
 		 */
 
+		assert(NULL == xnew->match);
+		assert(NULL == xoldmap.nodes[xnew->optmatch->id].match);
+
 		match_down(xnew, &xnewmap, 
-			&xoldmap.nodes[xnew->match->id], &xoldmap);
+			&xoldmap.nodes[xnew->optmatch->id], &xoldmap);
 		match_up(xnew, &xnewmap, 
-			&xoldmap.nodes[xnew->match->id], &xoldmap);
+			&xoldmap.nodes[xnew->optmatch->id], &xoldmap);
 	}
 
 	/*
