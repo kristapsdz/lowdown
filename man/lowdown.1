@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate: October 12 2017 $
+.Dd $Mdocdate: October 15 2017 $
 .Dt LOWDOWN 1
 .Os
 .Sh NAME
@@ -307,6 +307,13 @@ Used in all output modes.
 .It Li css
 A CSS file included in the HTML5 document head.
 Multiple CSS files (in order) may be separated by more than one space
+(including newlines).
+Only used in
+.Fl T Ar html
+mode.
+.It Li javascript
+A JavaScript file included in the HTML5 document head.
+Multiple script files (in order) may be separated by more than one space
 (including newlines).
 Only used in
 .Fl T Ar html
