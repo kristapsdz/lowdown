@@ -20,6 +20,7 @@ OBJS		 = autolink.o \
 COMPAT_OBJS	 = compats.o
 WWWDIR		 = /var/www/vhosts/kristaps.bsd.lv/htdocs/lowdown
 HTMLS		 = archive.html \
+		   diff.html \
 		   index.html \
 		   README.html \
 		   $(MANS)
@@ -43,7 +44,8 @@ MANS		 = man/lowdown.1.html \
 		   man/lowdown_tree_rndr.3.html
 PDFS		 = index.pdf README.pdf
 MDS		 = index.md README.md
-CSSS		 = template.css mandoc.css
+CSSS		 = diff.css template.css mandoc.css
+JSS		 = diff.js
 
 all: lowdown lowdown-diff
 
@@ -51,7 +53,7 @@ www: $(HTMLS) $(PDFS) lowdown.tar.gz lowdown.tar.gz.sha512
 
 installwww: www
 	mkdir -p $(WWWDIR)/snapshots
-	install -m 0444 $(MDS) $(HTMLS) $(CSSS) $(PDFS) $(WWWDIR)
+	install -m 0444 $(MDS) $(HTMLS) $(CSSS) $(JSS) $(PDFS) $(WWWDIR)
 	install -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots/lowdown-$(VERSION).tar.gz
 	install -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots/lowdown-$(VERSION).tar.gz.sha512
 	install -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots
@@ -97,9 +99,12 @@ index.html README.html: template.xml
 archive.html: archive.xml versions.xml
 	sblg -t archive.xml -s date -o $@ versions.xml
 
+diff.html: diff.md lowdown
+	./lowdown -s diff.md >$@
+
 $(HTMLS): versions.xml
 
-.md.xml:
+.md.xml: lowdown
 	( echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" ; \
 	  echo "<article data-sblg-article=\"1\">" ; \
 	  ./lowdown $< ; \
@@ -128,7 +133,7 @@ main.o: lowdown.h
 
 clean:
 	rm -f $(OBJS) $(COMPAT_OBJS) $(PDFS) $(HTMLS) main.o
-	rm -f lowdown lowdown-diff liblowdown.a index.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
+	rm -f lowdown lowdown-diff liblowdown.a index.xml diff.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
 
 distclean: clean
 	rm -f Makefile.configure config.h config.log
