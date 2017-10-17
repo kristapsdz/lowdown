@@ -698,13 +698,13 @@ rcsauthor2str(const char *v)
 
 /*
  * Itereate through multiple multi-white-space separated values in
- * "val", filling them in to "env".
+ * "val", filling them in between "start" and "end".
  * If "href", escape the value as an HTML attribute.
  * Otherwise, just do the minimal HTML escaping.
  */
 static void
 rndr_doc_header_multi(hbuf *ob, int href,
-	const char *val, const char *env)
+	const char *val, const char *starttag, const char *endtag)
 {
 	const char	*cp, *start;
 	size_t		 sz;
@@ -728,13 +728,15 @@ rndr_doc_header_multi(hbuf *ob, int href,
 		}
 		if (0 == sz)
 			continue;
-		hbuf_puts(ob, env);
+		hbuf_puts(ob, starttag);
 		hbuf_putc(ob, '"');
 		if (href)
 			hesc_href(ob, start, sz);
 		else
 			hesc_html(ob, start, sz, 0);
-		HBUF_PUTSL(ob, "\" />\n");
+		hbuf_putc(ob, '"');
+		hbuf_puts(ob, endtag);
+		hbuf_putc(ob, '\n');
 	}
 }
 
@@ -752,7 +754,7 @@ rndr_doc_header(hbuf *ob,
 	const struct hstate *st)
 {
 	const char	*author = NULL, *title = "Untitled article", 
-	     	 	*css = NULL, *affil = NULL;
+	     	 	*css = NULL, *affil = NULL, *script = NULL;
 	size_t		 i;
 
 	if ( ! (LOWDOWN_STANDALONE & st->flags))
@@ -774,6 +776,8 @@ rndr_doc_header(hbuf *ob,
 			author = rcsauthor2str(m[i].value);
 		else if (0 == strcmp(m[i].key, "css"))
 			css = m[i].value;
+		else if (0 == strcmp(m[i].key, "javascript"))
+			script = m[i].value;
 
 	HBUF_PUTSL(ob, 
 	      "<!DOCTYPE html>\n"
@@ -783,15 +787,18 @@ rndr_doc_header(hbuf *ob,
 	      "<meta name=\"viewport\" content=\""
 	       "width=device-width,initial-scale=1\" />\n");
 
-	if (NULL != author)
-		rndr_doc_header_multi(ob, 0, author, 
-			"<meta name=\"author\" content=");
-	if (NULL != affil)
-		rndr_doc_header_multi(ob, 0, author, 
-			"<meta name=\"creator\" content=");
+	if (NULL != script)
+		rndr_doc_header_multi(ob, 1, script, 
+			"<script src=", "></script>");
 	if (NULL != css)
 		rndr_doc_header_multi(ob, 1, css, 
-			"<link rel=\"stylesheet\" href=");
+			"<link rel=\"stylesheet\" href=", " />");
+	if (NULL != author)
+		rndr_doc_header_multi(ob, 0, author, 
+			"<meta name=\"author\" content=", " />");
+	if (NULL != affil)
+		rndr_doc_header_multi(ob, 0, author, 
+			"<meta name=\"creator\" content=", " />");
 
 	/* HTML-escape and trim the title (0-length ok but weird). */
 
