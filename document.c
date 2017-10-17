@@ -3422,7 +3422,7 @@ parse_metadata_val(const char *data, size_t sz, size_t *len)
 	*len = i;
 
 	/* 
-	 * Find zero or more following multilines.
+	 * Iterate through zero or more following multilines.
 	 * Multilines are terminated by a line containing a colon (that
 	 * is not offset by whitespace) or a blank line.
 	 */
@@ -3432,37 +3432,45 @@ parse_metadata_val(const char *data, size_t sz, size_t *len)
 		 '\t' == data[i + 1]);
 
 	for (i++; i < sz; i++) {
+		/*
+		 * This block is executed within the line.
+		 * We use "peek" to see how far into the line we are;
+		 * thus, if we encounter a colon without leading
+		 * whitespace, we know that we're in the next metadata
+		 * and should stop.
+		 */
+
 		if (0 == startws && ':' == data[i])
 			break;
+
 		peek++;
+		if ('\n' != data[i]) 
+			continue;
 
-		if ('\n' == data[i]) {
-			nlines++;
-			*len += peek;
+		/*
+		 * We're at a newline: start the loop again by seeing if
+		 * the next line starts with whitespace.
+		 */
 
-			/* 
-			 * We shouldn't have double-newlines: they're
-			 * filtered out prior to calling parse_metdata().
-			 */
+		nlines++;
+		*len += peek;
+		peek = 0;
 
-			assert( ! (i + 1 < sz && '\n' == data[i + 1]));
+		/* (Filtered out prior to calling parse_metdata().) */
 
-			/* Do we have leading whitespace? */
+		assert( ! (i + 1 < sz && '\n' == data[i + 1]));
 
-			startws = i + 1 < sz &&
-				(' ' == data[i + 1] || 
-				 '\t' == data[i + 1]);
-			peek = 0;
-		}
+		/* Check if the next line has leading whitespace. */
+
+		startws = i + 1 < sz &&
+			(' ' == data[i + 1] || 
+			 '\t' == data[i + 1]);
 	}
 
-	/* 
-	 * If we have peek data, that means that we hit the end of the
-	 * metadata section and have already read ahead.
-	 */
+	/* Last metadata in section. */
 
 	if (i == sz && peek)
-		*len += peek;
+		*len += peek + 1;
 
 	/* Only remove trailing whitespace from a single line. */
 
