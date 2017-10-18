@@ -374,7 +374,7 @@
 		<header>
 			<h1>0.3.0</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2017-09-30">2017-09-30</time>
+			<time datetime="2017-10-15">2017-10-15</time>
 		</header>
 		<aside>
 			<p>
@@ -382,7 +382,9 @@
 				This utility uses an algorithm adapted from <a
 					href="https://www.cs.rutgers.edu/~amelie/papers/2002/diff.pdf">Detecting Changes in XML Documents</a> 
 				to compute the semantic difference between two parse trees.
-				While there, also add more inter-paragraph spacing to <b>-Tms</b> output, producing more elegant documents.
+				It is <a href="diff.html">fully documented</a>.
+				While there, also add more inter-paragraph spacing to <b>-Tms</b> output, producing more elegant documents,
+				and continue fleshing out <a href="lowdown.5.html">lowdown(5)</a>.
 			</p>
 		</aside>
 	</article>
