@@ -1,10 +1,10 @@
-javascript: https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js
-  diff.js
-author: Kristaps Dzonsons
-title: Lowdown Diffing Engine
-css: https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css
-  https://fonts.googleapis.com/css?family=Alegreya+Sans:400,400italic,500,700
-  diff.css
+javascript: https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js  
+  diff.js  
+author: Kristaps Dzonsons  
+title: Lowdown Diffing Engine  
+css: https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css  
+  https://fonts.googleapis.com/css?family=Alegreya+Sans:400,400italic,500,700  
+  diff.css  
 
 # Lowdown Diffing Engine
 
