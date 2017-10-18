@@ -9,10 +9,17 @@ css: https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.m
 # Lowdown Diffing Engine
 
 In this paper, I briefly describe the "diff" engine used in
-[lowdown-diff(1)](lowdown.1.html) tool in [lowdown](index.html).
-The work is motivated by the need to provide formatted output describing
-the difference between two documents---specifically, formatted PDF via
-the **-Tms** output.
+[lowdown-diff(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) tool
+in [lowdown](https://kristaps.bsd.lv/lowdown/index.html).  The work is
+motivated by the need to provide formatted output describing the
+difference between two documents---specifically, formatted PDF via the
+**-Tms** output.
+
+This documents a work in progress.  The source is documented fully in
+[diff.c](https://github.com/kristapsdz/lowdown/blob/master/diff.c).
+This paper itself is available as
+[diff.md](https://github.com/kristapsdz/lowdown/blob/master/diff.md).
+Please direct comments to me by e-mail or just use the GitHub interface.
 
 ## Introduction
 
@@ -109,7 +116,8 @@ re-structuring the difference does not easily produce a document of the
 same style or readability as the PDFs themselves.
 
 The most elegant (and reliable) solution is to attack the problem from
-the language-level itself.  Since the [lowdown(3)](lowdown.3.html)
+the language-level itself.  Since the
+[lowdown(3)](https://kristaps.bsd.lv/lowdown/lowdown.3.html)
 library is able to produce a full parse tree for analysis, it stands to
 reason, given the wealth of literature on tree differences (instead of
 the usual linear difference, as in the case of
@@ -124,7 +132,7 @@ differences.  (The HTML difference tools described above inherit from
 those algorithms.) For an overview of algorithms, see Change Detection
 in XML Trees: a Survey[^Peters2005].
 
-I base the [lowdown-diff(1)](lowdown.1.html) algorithm off of Detecting
+I base the [lowdown-diff(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) algorithm off of Detecting
 Changes in XML Documents[^Cobena2002].
 
 The reason for this choice instead of another is primarily the ease in
@@ -209,7 +217,7 @@ number allowed by the sub-tree weight.
 
 ### Optimisation
 
-The [lowdown-diff(1)](lowdown.1.html) algorithm has only one
+The [lowdown-diff(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) algorithm has only one
 optimisation that extends the "propogate up" algorithm.  In the upward
 propogation, the weight of any given sub-tree is used to compute how
 high a match will propogate.  However, I add an optimisation that looks
