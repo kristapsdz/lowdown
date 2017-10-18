@@ -15,16 +15,12 @@ motivated by the need to provide formatted output describing the
 difference between two documents---specifically, formatted PDF via the
 **-Tms** output.
 
-This documents a work in progress---both source code and documentation.
+**This is a work in progress---both source code and documentation.**
 The source is documented fully in
 [diff.c](https://github.com/kristapsdz/lowdown/blob/master/diff.c).
 This paper itself is available as
 [diff.md](https://github.com/kristapsdz/lowdown/blob/master/diff.md).
 Please direct comments to me by e-mail or just use the GitHub interface.
-
-For a quick example of this functionality, see
-[diff.diff.html](diff.diff.html), which shows the difference between
-this document and a [fabricated] earlier version.
 
 ## Introduction
 
@@ -149,43 +145,27 @@ The BULD algorithm described in this paper is straightforward:
 
 1. Annotate each node in the parse tree with a hash of the subtree
    rooted at the node, inclusive.
-   ([diff.c](https://github.com/kristapsdz/lowdown/blob/master/diff.c),
-   `annotate_sigs()`)
 
 2. Annotate each node with a weight corresponding to the subtree rooted
    at thd node.
-   ([diff.c](https://github.com/kristapsdz/lowdown/blob/master/diff.c),
-   `annotate_sigs()`)
 
 3. Enqueue the new document's root node in a priority queue ordered by
    weight. Then, while the priority queue is non-empty:
-   ([diff.c](https://github.com/kristapsdz/lowdown/blob/master/diff.c),
-   `lowdown_diff()`)
 
     1. Pop the first node of the priority queue.
     2. Look for candidates in the old document whose hash matches the
        popped node's hash.
-       ([diff.c](https://github.com/kristapsdz/lowdown/blob/master/diff.c),
-       `candidate()`)
     3. Choose an optimal candidate and mark it as matched.
-       ([diff.c](https://github.com/kristapsdz/lowdown/blob/master/diff.c),
-       `optimality()`)
     4. If the no candidates were found, enqueue the node's children into
        the priority queue.
     5. A a candidate was selected, mark all of its subtree nodes as
        matching the corresponding nodes in the old tree ("propogate
        down"), then mark ancestor nodes similarly ("propogate up").
-       ([diff.c](https://github.com/kristapsdz/lowdown/blob/master/diff.c),
-       `match_up()`, `match_down()`)
 
 4. Run an optimisation phase over the new document's root node.
-   ([diff.c](https://github.com/kristapsdz/lowdown/blob/master/diff.c),
-   `node_optimise()`)
 
 5. Step through both trees and create a new tree with nodes cloned from
    both and marked as inserted or deleted.
-   ([diff.c](https://github.com/kristapsdz/lowdown/blob/master/diff.c),
-   `node_merge()`)
 
 My implementation changes or extends the BULD algorithm in several small
 ways, described in the per-step documentation below.
@@ -194,9 +174,8 @@ ways, described in the per-step documentation below.
 
 Each node in the tree is annotated with a hash and a weight.  The hash,
 MD5, is computed in all data concerning a node.  For example, normal
-text nodes (`LOWDOWN_NORMAL_TEXT`) have the hash produced from the
-enclosed text.  Autolinks (`LOWDOWN_LINK_AUTO`) use the link text, link,
-and type.
+text nodes have the hash produced from the enclosed text.  Autolinks use
+the link text, link, and type.
 
 There are some nodes whose data is not hashed.  For example, list
 numbers: since these may change when nodes are moved, the numbers are
@@ -208,6 +187,21 @@ Non-leaf nodes compute their hashes from the node type and the hashes of
 all of their children.  Thus, this step is a bottom-up search.
 
 Node weight is computed exactly as noted in the paper.
+
+### Notes on the Prime Directive
+
+In keeping with
+[lowdown(5)](https://kristaps.bsd.lv/lowdown/lowdown.5.html), it's
+important to state some facts about the Prime Directive.
+
+From the [Memory Alpha
+article](http://memory-alpha.wikia.com/wiki/Prime_Directive):
+
+> The Prime Directive, also known as Starfleet General Order 1 or the
+> Non-Interference Directive, was the embodiment of one of Starfleet's
+> most important ethical principles: noninterference with other cultures
+> and civilizations.
+
 
 ### Optimal candidacy
 
@@ -287,28 +281,6 @@ produces the merged tree.
 
 A set of convenience functions, `lowdown_buf_diff()` and
 `lowdown_file_diff()`, also provide this functionality.
-
-## Future work
-
-There are many possible improvements to the algorithm.
-
-Foremost is the issue of normal text nodes.  There should be a process
-first that merges consecutive text nodes.  This happens, for example,
-when the `w` character is encountered at any time and might signify a
-link.  The parsing algorithm will start a new text node at each such
-character. 
-
-With longer text nodes, the merging algorithm can recognise adjacent
-text and use an LCS algorithm within the text instead of marking the
-entire node as being inserted or deleted.  This would allow for sparse
-changes within a long block of text to be properly handled.
-
-The merging algorithm can also take advantage of LCS when ordering the
-output of inserted and deleted components.  Right now, the algorithm is
-simple in the sense of stopping at the earliest matched node without
-considering subsequences.
-
-Lastly, the **-Tms** and **-Tman** output need a lot of work.
 
 [^Cobena2002]: [Detecting Changes in XML
     Documents](https://www.cs.rutgers.edu/~amelie/papers/2002/diff.pdf)

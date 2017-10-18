@@ -21,6 +21,7 @@ COMPAT_OBJS	 = compats.o
 WWWDIR		 = /var/www/vhosts/kristaps.bsd.lv/htdocs/lowdown
 HTMLS		 = archive.html \
 		   diff.html \
+		   diff.diff.html \
 		   index.html \
 		   README.html \
 		   $(MANS)
@@ -102,6 +103,9 @@ archive.html: archive.xml versions.xml
 diff.html: diff.md lowdown
 	./lowdown -s diff.md >$@
 
+diff.diff.html: diff.md diff.old.md lowdown
+	./lowdown-diff -s diff.old.md diff.md >$@
+
 $(HTMLS): versions.xml
 
 .md.xml: lowdown
@@ -133,7 +137,8 @@ main.o: lowdown.h
 
 clean:
 	rm -f $(OBJS) $(COMPAT_OBJS) $(PDFS) $(HTMLS) main.o
-	rm -f lowdown lowdown-diff liblowdown.a index.xml diff.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
+	rm -f index.xml diff.xml diff.diff.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
+	rm -f lowdown lowdown-diff liblowdown.a 
 
 distclean: clean
 	rm -f Makefile.configure config.h config.log
