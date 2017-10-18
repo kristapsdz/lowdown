@@ -370,6 +370,8 @@ optimality(struct xnode *xnew, struct xmap *xnewmap,
 
 	if (0 == d)
 		d = 1;
+	
+	/* FIXME: are we supposed to bound to "d"? */
 
 	while (NULL != xnew->node->parent &&
 	       NULL != xold->node->parent && i < d) {
