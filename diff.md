@@ -1,6 +1,7 @@
 javascript: https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js  
   diff.js  
 author: Kristaps Dzonsons  
+affiliation: BSD.lv
 rcsdate: $Date$
 title: Lowdown Diffing Engine  
 css: https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css  
@@ -20,7 +21,8 @@ This documents an early work in progress---both source code and
 documentation.  The source is documented fully in
 [diff.c](https://github.com/kristapsdz/lowdown/blob/master/diff.c).
 This paper itself is available as
-[diff.md](https://github.com/kristapsdz/lowdown/blob/master/diff.md).
+[diff.md](https://github.com/kristapsdz/lowdown/blob/master/diff.md), or downloadable as
+[diff.pdf](https://kristaps.bsd.lv/lowdown/diff.pdf).
 Please direct comments to me by e-mail or just use the [GitHub
 interface](https://github.com/kristapsdz/lowdown).
 
@@ -314,6 +316,8 @@ considering subsequences.
 
 Lastly, the **-Tms** and **-Tman** output needs work to make sure that
 the insert/delete macros don't disrupt the flow of text.
+
+Document last updated: [%rcsdate]
 
 [^Cobena2002]: [Detecting Changes in XML
     Documents](https://www.cs.rutgers.edu/~amelie/papers/2002/diff.pdf)
