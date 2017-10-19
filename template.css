@@ -26,8 +26,13 @@ nav#versions > ul 		{ list-style-type: none;
 nav#versions > ul > li + li	{ margin-top: 1.5em; 
 				  border-top: thin solid #ddd; }
 nav#versions > ul > li > div.version
-				{ color: #666; 
-			  	  margin-top: 1em; }
+				{ margin-top: 1em; }
+nav#versions > ul > li		{ color: rgba(0, 0, 0, 0.5); }
+nav#versions > ul > li a	{ color: rgba(0, 0, 255, 0.5); }
+nav#versions > ul > li:first-child
+				{ color: #000; }
+nav#versions > ul > li:first-child a	
+				{ color: blue; }
 nav a				{ color: blue; }
 nav span			{ color: #444; }
 footer				{ margin: 24pt 0;
