@@ -937,6 +937,13 @@ rndr_doc_header(hbuf *ob,
 	while (isspace((unsigned char)*title))
 		title++;
 
+	if (NULL != copy)
+		while (isspace((unsigned char)*copy))
+			copy++;
+	if (NULL != affil)
+		while (isspace((unsigned char)*affil))
+			affil++;
+
 	/* Emit our authors and title. */
 
 	if ( ! st->mdoc) {
@@ -944,7 +951,8 @@ rndr_doc_header(hbuf *ob,
 		HBUF_PUTSL(ob, ".nr GROWPS 3\n");
 		HBUF_PUTSL(ob, ".nr PD 1.0v\n");
 		if (NULL != copy) {
-			hbuf_printf(ob, ".ds LF \\s-2%s\\s+2\n", copy);
+			hbuf_printf(ob, ".ds LF \\s-2"
+				"Copyright \\(co %s\\s+2\n", copy);
 			hbuf_printf(ob, ".ds RF \\s-2%s\\s+2\n", date);
 		} else
 			hbuf_printf(ob, ".DA \\s-2%s\\s+2\n", date);
