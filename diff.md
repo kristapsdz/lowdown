@@ -1,6 +1,7 @@
 javascript: https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js  
   diff.js  
 author: Kristaps Dzonsons  
+rcsdate: $Date$
 title: Lowdown Diffing Engine  
 css: https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css  
   https://fonts.googleapis.com/css?family=Alegreya+Sans:400,400italic,500,700  
@@ -15,16 +16,18 @@ motivated by the need to provide formatted output describing the
 difference between two documents---specifically, formatted PDF via the
 **-Tms** output.
 
-This documents a work in progress---both source code and documentation.
-The source is documented fully in
+This documents an early work in progress---both source code and
+documentation.  The source is documented fully in
 [diff.c](https://github.com/kristapsdz/lowdown/blob/master/diff.c).
 This paper itself is available as
 [diff.md](https://github.com/kristapsdz/lowdown/blob/master/diff.md).
-Please direct comments to me by e-mail or just use the GitHub interface.
+Please direct comments to me by e-mail or just use the [GitHub
+interface](https://github.com/kristapsdz/lowdown).
 
 For a quick example of this functionality, see
-[diff.diff.html](diff.diff.html), which shows the difference between
-this document and a [fabricated] earlier version.
+[diff.diff.html](https://kristaps.bsd.lv/lowdown/diff.diff.html), which
+shows the difference between this document and a [fabricated] earlier
+version.
 
 ## Introduction
 
@@ -89,8 +92,9 @@ consequat. Duis [-aute irure-] {+*aute irure*+} dolor in
 reprehenderit...
 ```
 
-I could then extend the Markdown language to accept the insertion and
+One could then extend the Markdown language to accept the insertion and
 deletion operations and let the output flow from there.
+(In fact, that was my first approach to solving the problem.)
 
 Unfortunately, doing so entails extending a language already prone to
 extension and non-standardisation.  More unfortunately, a word-based
@@ -98,10 +102,10 @@ diff will not be sensitive to the Markdown language itself, and in
 establishing context-free sequences of similar words, will overrun block
 and span element boundaries.
 
-On the other end of the spectrum, I can consider difference tools for
-the output media.
+On the other end of the spectrum are difference tools specific to the
+output media.
 
-I can directly analyse PDF output using (for example) the
+One can directly analyse PDF output using (for example) the
 [poppler](https://poppler.freedesktop.org/) tools, which would extract
 text, then examine the output with a linear difference engine such as
 [Diff, Match,
@@ -126,7 +130,7 @@ the language-level itself.  Since the
 library is able to produce a full parse tree for analysis, it stands to
 reason, given the wealth of literature on tree differences (instead of
 the usual linear difference, as in the case of
-[diff(1)](https://man.openbsd.org/diff.1) and friends), I can work
+[diff(1)](https://man.openbsd.org/diff.1) and friends), one can work
 within the language to produce differences.
 
 ## Algorithm
@@ -238,11 +242,11 @@ number allowed by the sub-tree weight.
 
 ### Optimisation
 
-The [lowdown-diff(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) algorithm has only one
-optimisation that extends the "propogate up" algorithm.  In the upward
-propogation, the weight of any given sub-tree is used to compute how
-high a match will propogate.  However, I add an optimisation that looks
-at the cumulative weight of matching children.
+The [lowdown-diff(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html)
+algorithm has only one optimisation that extends the "propogate up"
+algorithm.  In the upward propogation, the weight of any given sub-tree
+is used to compute how high a match will propogate.  However, I add an
+optimisation that looks at the cumulative weight of matching children.
 
 This works well for Markdown documents, which are generally quite
 shallow and text-heavy.
@@ -299,16 +303,17 @@ link.  The parsing algorithm will start a new text node at each such
 character. 
 
 With longer text nodes, the merging algorithm can recognise adjacent
-text and use an LCS algorithm within the text instead of marking the
-entire node as being inserted or deleted.  This would allow for sparse
-changes within a long block of text to be properly handled.
+text and use an LCS algorithm[^McIlroy1976] within the text instead of
+marking the entire node as being inserted or deleted.  This would allow
+for sparse changes within a long block of text to be properly handled.
 
 The merging algorithm can also take advantage of LCS when ordering the
 output of inserted and deleted components.  Right now, the algorithm is
 simple in the sense of stopping at the earliest matched node without
 considering subsequences.
 
-Lastly, the **-Tms** and **-Tman** output need a lot of work.
+Lastly, the **-Tms** and **-Tman** output needs work to make sure that
+the insert/delete macros don't disrupt the flow of text.
 
 [^Cobena2002]: [Detecting Changes in XML
     Documents](https://www.cs.rutgers.edu/~amelie/papers/2002/diff.pdf)
@@ -317,3 +322,7 @@ Lastly, the **-Tms** and **-Tman** output need a lot of work.
 [^Peters2005]: [Change Detection in XML Trees: a
     Survey](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.73.8912&rep=rep1&type=pdf)
     (2005), Luuk Peters.
+
+[^McIlroy1976]: [An Algorithm for Differential File
+    Comparison](https://www.cs.dartmouth.edu/~doug/diff.pdf)(1976),
+    James W. Hunt, M. Douglas McIlroy.
