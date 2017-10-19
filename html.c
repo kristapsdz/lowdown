@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "lowdown.h"
 #include "extern.h"
@@ -726,8 +727,12 @@ rndr_doc_header(hbuf *ob,
 	const struct hstate *st)
 {
 	const char	*author = NULL, *title = "Untitled article", 
-	     	 	*css = NULL, *affil = NULL, *script = NULL;
+	     	 	*css = NULL, *affil = NULL, *script = NULL,
+			*date = NULL;
 	size_t		 i;
+	struct tm	*tm;
+	time_t		 t;
+	char		 buf[32];
 
 	if ( ! (LOWDOWN_STANDALONE & st->flags))
 		return;
@@ -750,6 +755,19 @@ rndr_doc_header(hbuf *ob,
 			css = m[i].value;
 		else if (0 == strcmp(m[i].key, "javascript"))
 			script = m[i].value;
+		else if (0 == strcmp(m[i].key, "rcsdate"))
+			date = rcsdate2str(m[i].value);
+		else if (0 == strcmp(m[i].key, "date"))
+			date = date2str(m[i].value);
+
+	/* FIXME: convert to buf without strftime. */
+
+	if (NULL == date) {
+		t = time(NULL);
+		tm = localtime(&t);
+		strftime(buf, sizeof(buf), "%F", tm);
+		date = buf;
+	}
 
 	HBUF_PUTSL(ob, 
 	      "<!DOCTYPE html>\n"
@@ -759,18 +777,20 @@ rndr_doc_header(hbuf *ob,
 	      "<meta name=\"viewport\" content=\""
 	       "width=device-width,initial-scale=1\" />\n");
 
+	hbuf_printf(ob, "<meta name=\"date\" content=\"%s\" "
+		"scheme=\"YYYY-MM-DD\" />\n", date);
+	if (NULL != author)
+		rndr_doc_header_multi(ob, 0, author, 
+			"<meta name=\"author\" content=", " />");
+	if (NULL != affil)
+		rndr_doc_header_multi(ob, 0, affil, 
+			"<meta name=\"creator\" content=", " />");
 	if (NULL != script)
 		rndr_doc_header_multi(ob, 1, script, 
 			"<script src=", "></script>");
 	if (NULL != css)
 		rndr_doc_header_multi(ob, 1, css, 
 			"<link rel=\"stylesheet\" href=", " />");
-	if (NULL != author)
-		rndr_doc_header_multi(ob, 0, author, 
-			"<meta name=\"author\" content=", " />");
-	if (NULL != affil)
-		rndr_doc_header_multi(ob, 0, author, 
-			"<meta name=\"creator\" content=", " />");
 
 	/* HTML-escape and trim the title (0-length ok but weird). */
 
