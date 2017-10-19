@@ -4,14 +4,13 @@
 		<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
 		<meta charset="utf-8" /> 
 		<title>lowdown: version history</title>
-		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Alegreya+Sans:400,400italic,500" />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Alegreya+Sans:400,400italic,500,700" />
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" />
 		<link rel="stylesheet" href="template.css" />
 	</head>
 	<body>
 		<header>
 			<div id="breadcrumbs">
-				BSD.lv tools for BCHS: 
 				<a href="https://www.bsd.lv">BSD.lv</a> tools for text processing: 
 				<a href="https://kristaps.bsd.lv/lowdown">lowdown</a>,
 				<a href="https://kristaps.bsd.lv/sblg">sblg</a>,
