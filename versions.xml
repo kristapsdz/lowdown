@@ -385,6 +385,8 @@
 				It is <a href="diff.html">fully documented</a>.
 				While there, also add more inter-paragraph spacing to <b>-Tms</b> output, producing more elegant documents,
 				and continue fleshing out <a href="lowdown.5.html">lowdown(5)</a>.
+				Also add some more metadata recognition in <b>-s</b> output for all modes (<code>copyright</code>,
+				<code>affiliation</code>, etc.).
 			</p>
 		</aside>
 	</article>
