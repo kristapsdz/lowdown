@@ -895,7 +895,8 @@ rndr_doc_header(hbuf *ob,
 	const struct nstate *st)
 {
 	const char	*date = NULL, *author = NULL,
-	      		*title = "Untitled article", *affil = NULL;
+	      		*title = "Untitled article", *affil = NULL,
+			*copy = NULL;
 	time_t		 t;
 	char		 buf[32];
 	struct tm	*tm;
@@ -919,6 +920,8 @@ rndr_doc_header(hbuf *ob,
 			date = rcsdate2str(m[i].value);
 		else if (0 == strcmp(m[i].key, "date"))
 			date = date2str(m[i].value);
+		else if (0 == strcmp(m[i].key, "copyright"))
+			copy = m[i].value;
 
 	/* FIXME: convert to buf without strftime. */
 
@@ -940,7 +943,12 @@ rndr_doc_header(hbuf *ob,
 		HBUF_PUTSL(ob, ".nr PS 10\n");
 		HBUF_PUTSL(ob, ".nr GROWPS 3\n");
 		HBUF_PUTSL(ob, ".nr PD 1.0v\n");
-		hbuf_printf(ob, ".DA %s\n.TL\n", date);
+		if (NULL != copy) {
+			hbuf_printf(ob, ".ds LF \\s-2%s\\s+2\n", copy);
+			hbuf_printf(ob, ".ds RF \\s-2%s\\s+2\n", date);
+		} else
+			hbuf_printf(ob, ".DA \\s-2%s\\s+2\n", date);
+		HBUF_PUTSL(ob, ".TL\n");
 		escape_block(ob, title, strlen(title));
 		HBUF_PUTSL(ob, "\n");
 		if (NULL != author)
