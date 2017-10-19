@@ -669,34 +669,6 @@ rndr_math(hbuf *ob, const hbuf *text, int displaymode)
 }
 
 /*
- * Convert the "$Author$" string to just the author in a static
- * buffer of a fixed length.
- * Returns NULL if the string is malformed (too long, too short, etc.)
- * at all or the author name otherwise.
- */
-static char *
-rcsauthor2str(const char *v)
-{
-	static char	buf[1024];
-	size_t		sz;
-
-	if (NULL == v ||
-	    strlen(v) < 12 ||
-	    strncmp(v, "$Author: ", 9))
-		return(NULL);
-
-	if ((sz = strlcpy(buf, v + 9, sizeof(buf))) >= sizeof(buf))
-		return(NULL);
-
-	if ('$' == buf[sz - 1])
-		buf[sz - 1] = '\0';
-	if (' ' == buf[sz - 2])
-		buf[sz - 2] = '\0';
-
-	return(buf);
-}
-
-/*
  * Itereate through multiple multi-white-space separated values in
  * "val", filling them in between "start" and "end".
  * If "href", escape the value as an HTML attribute.

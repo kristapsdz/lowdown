@@ -16,6 +16,7 @@ OBJS		 = autolink.o \
 		   nroff_escape.o \
 		   nroff_smartypants.o \
 		   tree.o \
+		   util.o \
 		   xmalloc.o
 COMPAT_OBJS	 = compats.o
 WWWDIR		 = /var/www/vhosts/kristaps.bsd.lv/htdocs/lowdown
@@ -43,7 +44,7 @@ MANS		 = man/lowdown.1.html \
 		   man/lowdown_tree_free.3.html \
 		   man/lowdown_tree_new.3.html \
 		   man/lowdown_tree_rndr.3.html
-PDFS		 = index.pdf README.pdf
+PDFS		 = diff.pdf index.pdf README.pdf
 MDS		 = index.md README.md
 CSSS		 = diff.css template.css mandoc.css
 JSS		 = diff.js
@@ -103,7 +104,7 @@ archive.html: archive.xml versions.xml
 diff.html: diff.md lowdown
 	./lowdown -s diff.md >$@
 
-diff.diff.html: diff.md diff.old.md lowdown
+diff.diff.html: diff.md diff.old.md lowdown-diff
 	./lowdown-diff -s diff.old.md diff.md >$@
 
 $(HTMLS): versions.xml
