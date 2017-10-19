@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate: October 15 2017 $
+.Dd $Mdocdate: October 17 2017 $
 .Dt LOWDOWN 1
 .Os
 .Sh NAME
@@ -263,26 +263,26 @@ standalone
 .Pq Fl s
 mode:
 .Bl -tag -width Ds
+.It Li copyright
+A document copyright (without the word
+.Dq Copyright ) ,
+for example,
+.Dq 2017, Kristaps Dzonsons .
+This is currently only used in the
+.Fl T Ar ms
+output mode.
 .It Li date
 Document date in ISO-8601 YYYY-MM-DD or YYYY/MM/DD format.
 Overriden by
 .Li rcsdate .
 Defaults to current date.
-Only used in
-.Fl T Ar man
-and
-.Fl T Ar ms
-mode.
+Used in all output modes.
 .It Li rcsdate
 Document date in RCS date format.
 Overrides
 .Li date .
 Defaults to current date.
-Only used in
-.Fl T Ar man
-and
-.Fl T Ar ms
-mode.
+Used in all output modes.
 .It Li title
 Document title, defaulting to
 .Dq Untitled article .
