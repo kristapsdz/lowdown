@@ -71,6 +71,7 @@ SBINDIR=
 INCLUDEDIR=
 LIBDIR=
 MANDIR=
+SHAREDIR=
 INSTALL="install"
 INSTALL_PROGRAM=
 INSTALL_LIB=
@@ -103,6 +104,8 @@ do
 		LIBDIR="$val" ;;
 	BINDIR)
 		BINDIR="$val" ;;
+	SHAREDIR)
+		SHAREDIR="$val" ;;
 	SBINDIR)
 		SBINDIR="$val" ;;
 	INCLUDEDIR)
@@ -189,15 +192,15 @@ ismanual() {
 # In case of success, enable the feature.
 # In case of failure, do not decide anything yet.
 # Arguments: lower-case test name, upper-case test name, additional
-# CFLAGS.
+# CFLAGS, additional LIBS.
 
 singletest() {
 	cat 1>&3 << __HEREDOC__
 ${1}: testing...
-${COMP} -DTEST_${2} ${3} -o test-${1} tests.c
+${COMP} -DTEST_${2} ${3} -o test-${1} tests.c ${4}
 __HEREDOC__
 
-	if ${COMP} -DTEST_${2} ${3} -o "test-${1}" tests.c 1>&3 2>&3; then
+	if ${COMP} -DTEST_${2} ${3} -o "test-${1}" tests.c ${4} 1>&3 2>&3; then
 		echo "${1}: ${CC} succeeded" 1>&3
 	else
 		echo "${1}: ${CC} failed with $?" 1>&3
@@ -227,7 +230,7 @@ __HEREDOC__
 runtest() {
 	eval _manual=\${HAVE_${2}}
 	ismanual "${1}" "${2}" "${_manual}" && return 0
-	singletest "${1}" "${2}" "${3}" "${test}" && return 0
+	singletest "${1}" "${2}" "${3}" "${4}" "${test}" && return 0
 	echo "${1}: no" 1>&2
 	eval HAVE_${2}=0
 	return 1
@@ -262,6 +265,7 @@ runtest strlcat		STRLCAT				  || true
 runtest strlcpy		STRLCPY				  || true
 runtest strtonum	STRTONUM			  || true
 runtest systrace	SYSTRACE			  || true
+runtest zlib		ZLIB		"" "-lz"	  || true
 runtest __progname	__PROGNAME			  || true
 
 #----------------------------------------------------------------------
@@ -286,6 +290,12 @@ cat << __HEREDOC__
 #if defined(__linux__) || defined(__MINT__)
 #define _GNU_SOURCE	/* See test-*.c what needs this. */
 #endif
+#if !defined(__BEGIN_DECLS)
+# define __BEGIN_DECLS
+#endif
+#if !defined(__END_DECLS)
+# define __END_DECLS
+#endif
 __HEREDOC__
 
 # For the function declaration variables...
@@ -302,6 +312,9 @@ __HEREDOC__
 
 [ ${HAVE_PATH_MAX} -eq 0 ] \
 	&& echo "#define PATH_MAX 4096"
+
+[ ${HAVE_INFTIM} -eq 0 ] \
+	&& echo "#define INFTIM (-1)"
 
 cat << __HEREDOC__
 #define HAVE_ARC4RANDOM ${HAVE_ARC4RANDOM}
@@ -326,6 +339,7 @@ cat << __HEREDOC__
 #define HAVE_STRLCPY ${HAVE_STRLCPY}
 #define HAVE_STRTONUM ${HAVE_STRTONUM}
 #define HAVE_SYSTRACE ${HAVE_SYSTRACE}
+#define HAVE_ZLIB ${HAVE_ZLIB}
 #define HAVE___PROGNAME ${HAVE___PROGNAME}
 __HEREDOC__
 
@@ -355,6 +369,21 @@ typedef struct MD5Context {
 	echo "extern void MD5Transform(u_int32_t [4], const u_int8_t [MD5_BLOCK_LENGTH]);"
 	echo "extern char *MD5End(MD5_CTX *, char *);"
 	echo "extern void MD5Final(u_int8_t [MD5_DIGEST_LENGTH], MD5_CTX *);";
+fi
+
+if [ ${HAVE_SECCOMP_FILTER} -eq 1 ]; then
+	arch=`uname -m 2>/dev/null || echo unknown`
+	case "$arch" in
+		x86_64)
+			echo "#define SECCOMP_AUDIT_ARCH AUDIT_ARCH_X86_64"
+			;;
+		i*86)
+			echo "#define SECCOMP_AUDIT_ARCH AUDIT_ARCH_I386"
+			;;
+		arm*)
+			echo "#define SECCOMP_AUDIT_ARCH AUDIT_ARCH_ARM"
+			;;
+	esac
 fi
 
 if [ ${HAVE_EXPLICIT_BZERO} -eq 0 ]; then
@@ -410,6 +439,7 @@ exec > Makefile.configure
 [ -z "${INCLUDEDIR}" ] && INCLUDEDIR="${PREFIX}/include"
 [ -z "${LIBDIR}"     ] && LIBDIR="${PREFIX}/lib"
 [ -z "${MANDIR}"     ] && MANDIR="${PREFIX}/man"
+[ -z "${SHAREDIR}"   ] && SHAREDIR="${PREFIX}/share"
 
 [ -z "${INSTALL_PROGRAM}" ] && INSTALL_PROGRAM="${INSTALL} -m 0555"
 [ -z "${INSTALL_LIB}"     ] && INSTALL_LIB="${INSTALL} -m 0444"
@@ -425,6 +455,7 @@ LDFLAGS		= ${LDFLAGS}
 STATIC		= ${STATIC}
 PREFIX		= ${PREFIX}
 BINDIR		= ${BINDIR}
+SHAREDIR	= ${SHAREDIR}
 SBINDIR		= ${SBINDIR}
 INCLUDEDIR	= ${INCLUDEDIR}
 LIBDIR		= ${LIBDIR}
