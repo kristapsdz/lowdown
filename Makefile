@@ -87,7 +87,7 @@ install: all
 		install -m 0644 man/$$name $(DESTDIR)$(MANDIR)/man$$section ; \
 	done
 
-index.xml README.xml index.pdf README.pdf: lowdown
+index.xml README.xml index.pdf diff.pdf README.pdf: lowdown
 
 index.html README.html: template.xml
 
