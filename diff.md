@@ -159,7 +159,7 @@ The BULD algorithm described in this paper is straightforward:
    `annotate_sigs()`)
 
 2. Annotate each node with a weight corresponding to the subtree rooted
-   at thd node.
+   at the node.
    ([diff.c](https://github.com/kristapsdz/lowdown/blob/master/diff.c),
    `annotate_sigs()`)
 
