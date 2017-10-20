@@ -1,0 +1,18 @@
+body			{ font-family: "Alegreya sans", sans-serif;
+			  font-size: 13pt;
+			  font-weight: 400; }
+body > *		{ width: 60%; 
+			  margin-left: auto;
+			  display: block;
+			  margin-right: auto;
+			  max-width: 1000px; }
+.hljs			{ background-color: transparent; }
+code			{ font-size: 11pt; 
+			  line-height: 14pt; }
+h1, h2, h3		{ font-weight: 500; }
+b, strong		{ font-weight: 700; }
+ins 			{ text-decoration: none;
+			  background-color: #d4fcbc; }
+del 			{ text-decoration: none;
+			  background-color: #fbb6c2; 
+			  color: #555; }

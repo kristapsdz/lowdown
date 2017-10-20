@@ -7,38 +7,49 @@ author: Kristaps Dzonsons
 in the **ms** and **man** formats.  It doesn't require XSLT, Python, or
 external libraries -- it's just clean, secure, [open
 source](http://opensource.org/licenses/ISC) C code with no dependencies.
-Its canonical documentation is the [lowdown(1)](lowdown.1.html) manpage
-with the library interface at [lowdown(3)](lowdown.3.html).
+Its canonical documentation is
+[lowdown(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) for the
+formatter, [lowdown(5)](https://kristaps.bsd.lv/lowdown/lowdown.5.html)
+for the syntax, and the library interface at
+[lowdown(3)](https://kristaps.bsd.lv/lowdown/lowdown.3.html).
 
 *lowdown* started as a fork of
 [hoedown](https://github.com/hoedown/hoedown) to add sandboxing
-([pledge(2)](http://man.openbsd.org/pledge),
+([pledge(2)](https://man.openbsd.org/pledge),
 [capsicum(4)](https://www.freebsd.org/cgi/man.cgi?query=capsicum&sektion=4),
 or
 [sandbox\_init(3)](https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man3/sandbox_init.3.html))
 and *roff* output to securely generate PDFs on
-[OpenBSD](http://www.openbsd.org) with just
-[mandoc(1)](http://man.openbsd.org/mandoc).
+[OpenBSD](https://www.openbsd.org) with just
+[mandoc(1)](https://man.openbsd.org/mandoc).
 
-Want an example?  For starters: this page, [index.md](index.md).  The
-Markdown input is rendered an HTML5 fragment using *lowdown*, then
-further using [sblg](https://kristaps.bsd.lv/sblg).  You
-can also see it as [index.pdf](index.pdf), generated from
+It can also be used to show the difference between two Markdown
+documents with *lowdown-diff*, documented as the [lowdown diffing
+engine](https://kristaps.bsd.lv/lowdown/diff.html).  This uses a
+tree-based difference algorithm to show semantically-valid Markdown
+differences.
+
+Want an example?  For starters: this page,
+[index.md](https://kristaps.bsd.lv/lowdown/index.md).  The Markdown
+input is rendered an HTML5 fragment using *lowdown*, then further using
+[sblg](https://kristaps.bsd.lv/sblg).  You can also see it as
+[index.pdf](https://kristaps.bsd.lv/lowdown/index.pdf), generated from
 [groff(1)](https://www.gnu.org/s/groff/) from **ms** output.  Another
-example is the GitHub [README.md](README.md) rendered as
-[README.html](README.html) or [README.pdf](README.pdf).
+example is the GitHub
+[README.md](https://kristaps.bsd.lv/lowdown/README.md) rendered as
+[README.html](https://kristaps.bsd.lv/lowdown/README.html) or
+[README.pdf](https://kristaps.bsd.lv/lowdown/README.pdf).
 
-To get *lowdown*, just [download](snapshots/lowdown.tar.gz),
-[verify](snapshots/lowdown.tar.gz.sha512), unpack, run `./configure`,
-then run `doas make install` (or use `sudo`).  *lowdown* is a
-[BSD.lv](https://bsd.lv) project.
+To get *lowdown*, just
+[download](https://kristaps.bsd.lv/lowdown/snapshots/lowdown.tar.gz),
+[verify](https://kristaps.bsd.lv/lowdown/snapshots/lowdown.tar.gz.sha512),
+unpack, run `./configure`, then run `doas make install` (or use `sudo`).
+*lowdown* is a [BSD.lv](https://bsd.lv) project.
 [Homebrew](https://brew.sh) users can use BSD.lv's
 [tap](https://github.com/kristapsdz/homebrew-repo).
 
-If you can help it, however,
-don't use Markdown.  Why? Read [Ingo's comments on
-Markdown](https://undeadly.org/cgi?action=article&sid=20170304230520)
-for a good explanation.
+For an argument against using Markdown at all, read [Ingo's comments on
+Markdown](https://undeadly.org/cgi?action=article&sid=20170304230520).
 
 ## Output
 
@@ -67,7 +78,7 @@ complexity of converting LaTeX to [eqn(7)](https://man.openbsd.org/eqn).
 
 You can control output features by using the **-D** (disable feature)
 and **-E** (enable feature) flags documented in
-[lowdown.1.html](lowdown.1.html).
+[lowdown.1.html](https://kristaps.bsd.lv/lowdown/lowdown.1.html).
 
 ## Input
 
@@ -82,10 +93,11 @@ following Markdown features and extensions:
 - disabled inline HTML
 - "smartypants"
 - metadata
+- commonmark (**in progress**)
 
 You can control which parser features are used by using the **-d**
 (disable feature) and **-e** (enable feature) flags documented in
-[lowdown.1.html](lowdown.1.html).
+[lowdown.1.html](https://kristaps.bsd.lv/lowdown/lowdown.1.html).
 
 ## Examples
 
@@ -141,20 +153,22 @@ lowdown -s -Tms README.md | \
 ```
 
 On OpenBSD or other BSD systems, you can run *lowdown* within the base
-system to produce PDF or PS files via [mandoc](http://mdocml.bsd.lv):
+system to produce PDF or PS files via [mandoc](https://mdocml.bsd.lv):
 
 ```sh
 lowdown -s -Tman README.md | mandoc -Tpdf > README.pdf
 ```
 
-Read [lowdown(1)](lowdown.1.html) for details on running the system.
+Read [lowdown(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) for
+details on running the system.
 
 ## Library
 
-*lowdown* is also available as a library, [lowdown(3)](lowdown.3.html).
-This effectively wraps around everything invoked by
-[lowdown(1)](lowdown.1.html), so it's basically the same but... a
-library.
+*lowdown* is also available as a library,
+[lowdown(3)](https://kristaps.bsd.lv/lowdown/lowdown.3.html).  This
+effectively wraps around everything invoked by
+[lowdown(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html), so it's
+basically the same but... a library.
 
 ## Testing
 
@@ -169,14 +183,11 @@ the [hoedown](https://github.com/hoedown/hoedown) authors (and those
 from who they forked their own sources).  I'll also regularly run the system
 through [valgrind](http://valgrind.org/), also without issue.
 
-*lowdown* has a [Coverity](https://scan.coverity.com/projects/lowdown)
-registration for static analysis.
-
 ## Hacking
 
 Want to hack on *lowdown*?  Of course you do.  (Or maybe you should
 focus on better PS and PDF output for
-[mandoc(1)](http://mdocml.bsd.lv).)
+[mandoc(1)](https://mdocml.bsd.lv).)
 
 First, start in
 [library.c](https://github.com/kristapsdz/lowdown/blob/master/library.c).
@@ -267,6 +278,6 @@ to and from the definition.
 document output --- not in a separate step as implemented in the
 original sources.
 
-- I'd like a full reference of the Markdown language accepted as a
-manpage.  Markdown is incredibly inconsistent, so a simple, readable
-document would be very helpful.
+- Diffing needs work.  In particular, matching text components should
+use an embedded LCS diff tool for local changes.  See the [lowdown
+diffing engine](https://kristaps.bsd.lv/lowdown/diff.html) for more.

@@ -27,6 +27,7 @@ The fork features the following modifications to its predecessor:
 13. Have the back-end parser to generate an AST instead of directly
     rendering.
 14. Several superfluous mechanisms (pools and stacks) removed.
+15. Document language syntax in a manpage.
 
 For the moment, **lowdown** output is the same as
 [hoedown](https://github.com/hoedown/hoedown) with the following presets:
@@ -55,6 +56,7 @@ The following major feature additions have been added:
 - "smartypants" mode for the troff outputs
 - metadata support
 - tree output for AST debugging
+- "diff" engine for semantic differences between documents
 
 It builds and runs on OpenBSD, Linux ([musl](https://www.musl-libc.org/)
 and glibc), and Mac OS X.

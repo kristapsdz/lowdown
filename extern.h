@@ -45,11 +45,14 @@ void	*xmalloc(size_t) __attribute__((malloc));
 void	*xcalloc(size_t, size_t) __attribute__((malloc));
 void	*xrealloc(void *, size_t);
 void	*xreallocarray(void *, size_t, size_t);
+void	*xrecallocarray(void *, size_t, size_t, size_t);
 char	*xstrndup(const char *, size_t);
 char	*xstrdup(const char *);
 
+int	 hbuf_eq(const hbuf *, const hbuf *);
 void	 hbuf_free(hbuf *);
 void	 hbuf_grow(hbuf *, size_t);
+hbuf	*hbuf_clone(const hbuf *, hbuf *);
 hbuf	*hbuf_new(size_t) __attribute__((malloc));
 int	 hbuf_prefix(const hbuf *, const char *);
 void	 hbuf_printf(hbuf *, const char *, ...) 
@@ -73,6 +76,10 @@ void	 hesc_nroff(hbuf *, const char *, size_t, int, int);
 
 void	 lmsg(const struct lowdown_opts *, enum lowdown_err, const char *, ...)
 		__attribute__ ((format(printf, 3, 4)));
+
+char 	*rcsdate2str(const char *);
+char 	*date2str(const char *);
+char 	*rcsauthor2str(const char *);
 
 __END_DECLS
 

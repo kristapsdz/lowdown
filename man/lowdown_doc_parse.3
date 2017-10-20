@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate: September 4 2017 $
+.Dd $Mdocdate: October 6 2017 $
 .Dt LOWDOWN_DOC_PARSE 3
 .Os
 .Sh NAME
@@ -58,6 +58,8 @@ nodes, the structure consisting of:
 .Bd -literal
 struct lowdown_node {
 	enum lowdown_rndrt type;
+	size_t id;
+	enum lowdown_chng chng;
 	union {
 		struct rndr_doc_header {
 			struct lowdown_meta *m;
@@ -134,16 +136,25 @@ struct lowdown_node {
 .Pp
 The field names consist of the following:
 .Bl -tag -width Ds
-.It Va type
-The
-.Vt "enum lowdown_rndrt"
-node type.
+.It Vt "enum lowdown_rndrt" Va type
+The node type.
 .Pq Described below.
-.It Va parent
+.It Vt size_t Va id
+An identifier unique within the document.
+This can be used as a table index since the number is assigned from a
+monotonically increasing point during the parse.
+.It Vt "struct lowdown_node *" Ns Va parent
 The parent of the node, or
 .Dv NULL
 at the root.
-.It Va children
+.It Vt "enum lowdown_chng" Va chng
+Change tracking: whether this node was inserted
+.Pq Dv LOWDOWN_CHNG_INSERT ,
+deleted
+.Pq Dv LOWDOWN_CHNG_DELETE ,
+or neither
+.Pq Dv LOWDOWN_CHNG_NONE .
+.It Vt "struct lowdown_nodeq" Va children
 A possibly-empty list of child nodes.
 .It Va entries
 The tail queue

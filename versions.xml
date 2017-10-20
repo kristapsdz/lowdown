@@ -317,7 +317,7 @@
 		<header>
 			<h1>0.2.5</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2017-09-05">2017-09-05</time>
+			<time datetime="2017-09-27">2017-09-27</time>
 		</header>
 		<aside>
 			<p>
@@ -335,6 +335,58 @@
 				supported only when the <b>commonmark</b> input flag is specified.
 				Removed the <b>sphd</b> input flag in favour of <b>commonmark</b>.
 				Also fixed raw HTML block outputting and setext-style level-two headers.
+			</p>
+		</aside>
+	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.2.6</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2017-09-28">2017-09-28</time>
+		</header>
+		<aside>
+			<p>
+				Fixed compilation on Linux and Mac OS X by adding <code>memrchr</code> compatibility.
+				Noted by <a href="https://github.com/vulcasian">Christina Sophonpanich</a> &#8212; thanks!
+			</p>
+		</aside>
+	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.2.7</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2017-09-30">2017-09-30</time>
+		</header>
+		<aside>
+			<p>
+				Re-wrote escape parser to <b>-Tms</b> and <b>-Tman</b> to respect <i>roff</i> special characters.
+				Have e-mail autolinks respect the <code>mailto:</code> in pdfhref'd output, and have links with
+				<code>mailto:</code> omit the schema in display just like in <b>-Thtml</b>.
+				Make block-list-items render properly in <b>-Tms</b> and <b>-Tman</b>.
+				Also introduce <a href="lowdown.5.html">lowdown(5)</a>, a work-in-progress to document the Markdown formatting
+				accepting by this system.
+				The first were noted, and the last contributed in full, by <a href="https://github.com/vulcasian">Christina
+					Sophonpanich</a> &#8212; thanks!
+			</p>
+		</aside>
+	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.3.0</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2017-10-15">2017-10-15</time>
+		</header>
+		<aside>
+			<p>
+				Add a <q>diff</q> tool, <a href="lowdown.1.html">lowdown-diff(1)</a>.
+				This utility uses an algorithm adapted from <a
+					href="https://www.cs.rutgers.edu/~amelie/papers/2002/diff.pdf">Detecting Changes in XML Documents</a> 
+				to compute the semantic difference between two parse trees.
+				It is <a href="diff.html">fully documented</a>.
+				While there, also add more inter-paragraph spacing to <b>-Tms</b> output, producing more elegant documents,
+				and continue fleshing out <a href="lowdown.5.html">lowdown(5)</a>.
+				Also add some more metadata recognition in <b>-s</b> output for all modes (<code>copyright</code>,
+				<code>affiliation</code>, etc.).
 			</p>
 		</aside>
 	</article>

@@ -171,9 +171,9 @@ nstate_fonts(const struct nstate *st)
  * link, if no text is found).
  */
 static int
-putlink(hbuf *ob, struct nstate *st, 
-	const hbuf *link, const hbuf *text, 
-	struct lowdown_node *next, struct lowdown_node *prev)
+putlink(hbuf *ob, struct nstate *st, const hbuf *link, 
+	const hbuf *text, struct lowdown_node *next, 
+	struct lowdown_node *prev, enum halink_type type)
 {
 	const hbuf	*buf;
 	size_t		 i, pos;
@@ -194,7 +194,7 @@ putlink(hbuf *ob, struct nstate *st,
 	    LOWDOWN_NORMAL_TEXT == prev->type) {
 		buf = &prev->rndr_normal_text.text;
 		i = buf->size;
-		while (i && ! isspace((int)buf->data[i - 1]))
+		while (i && ! isspace((unsigned char)buf->data[i - 1]))
 			i--;
 		if (i != buf->size && usepdf)
 			HBUF_PUTSL(ob, "-P \"");
@@ -216,9 +216,12 @@ putlink(hbuf *ob, struct nstate *st,
 	if ( ! usepdf) {
 		st->fonts[NFONT_ITALIC]++;
 		hbuf_puts(ob, nstate_fonts(st));
-		if (NULL == text)
-			hbuf_put(ob, link->data, link->size);
-		else
+		if (NULL == text) {
+			if (0 == hbuf_prefix(link, "mailto:"))
+				hbuf_put(ob, link->data + 7, link->size - 7);
+			else
+				hbuf_put(ob, link->data, link->size);
+		} else
 			hbuf_put(ob, text->data, text->size);
 		st->fonts[NFONT_ITALIC]--;
 		hbuf_puts(ob, nstate_fonts(st));
@@ -243,7 +246,7 @@ putlink(hbuf *ob, struct nstate *st,
 		if (usepdf)
 			HBUF_PUTSL(ob, "-A \"");
 		for (pos = 0; pos < buf->size; pos++) {
-			if (isspace((int)buf->data[pos]))
+			if (isspace((unsigned char)buf->data[pos]))
 				break;
 			/* Be sure to escape... */
 			if ('"' == buf->data[pos]) {
@@ -265,17 +268,22 @@ putlink(hbuf *ob, struct nstate *st,
 
 	if (usepdf) {
 		HBUF_PUTSL(ob, "-D ");
+		if (HALINK_EMAIL == type)
+			HBUF_PUTSL(ob, "mailto:");
 		for (i = 0; i < link->size; i++) {
-			if ( ! isprint((int)link->data[i]) ||
+			if ( ! isprint((unsigned char)link->data[i]) ||
 			    NULL != strchr("<>\\^`{|}\"", link->data[i]))
 				hbuf_printf(ob, "%%%.2X", link->data[i]);
 			else
 				hbuf_putc(ob, link->data[i]);
 		}
 		HBUF_PUTSL(ob, " ");
-		if (NULL == text)
-			hbuf_put(ob, link->data, link->size);
-		else
+		if (NULL == text) {
+			if (0 == hbuf_prefix(link, "mailto:"))
+				hbuf_put(ob, link->data + 7, link->size - 7);
+			else
+				hbuf_put(ob, link->data, link->size);
+		} else
 			hesc_nroff(ob, text->data, text->size, 0, 1);
 	}
 
@@ -297,7 +305,7 @@ rndr_autolink(hbuf *ob, const hbuf *link, enum halink_type type,
 		    (ob->size && '\n' != ob->data[ob->size - 1]))
 			HBUF_PUTSL(ob, "\n");
 
-	return putlink(ob, st, link, NULL, next, prev);
+	return putlink(ob, st, link, NULL, next, prev, type);
 }
 
 static void
@@ -434,11 +442,13 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link,
 		    (ob->size && '\n' != ob->data[ob->size - 1]))
 			HBUF_PUTSL(ob, "\n");
 
-	return putlink(ob, st, link, content, next, prev);
+	return putlink(ob, st, link, 
+		content, next, prev, HALINK_NORMAL);
 }
 
 static void
 rndr_listitem(hbuf *ob, const hbuf *content, 
+	const struct lowdown_node *prev,
 	enum hlist_fl flags, size_t num)
 {
 
@@ -446,11 +456,16 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 		return;
 
 	/* 
-	 * Start out with a vertical spacing, then put us into an
-	 * indented paragraph.
+	 * If we're in a "block" list item or are starting the list,
+	 * start vertical spacing.
+	 * Then put us into an indented paragraph.
 	 */
 
-	HBUF_PUTSL(ob, ".sp 0.5\n");
+	if (NULL == prev || 
+	    (content->size > 3 &&
+	     0 == memcmp(content->data, ".LP\n", 4)))
+		HBUF_PUTSL(ob, ".sp 1.0v\n");
+
 	HBUF_PUTSL(ob, ".RS\n");
 
 	/* 
@@ -487,7 +502,8 @@ rndr_paragraph(hbuf *ob, const hbuf *content,
 
 	/* Strip away initial white-space. */
 
-	while (i < content->size && isspace((int)content->data[i]))
+	while (i < content->size && 
+	       isspace((unsigned char)content->data[i]))
 		i++;
 	if (i == content->size)
 		return;
@@ -744,12 +760,13 @@ rndr_normal_text(hbuf *ob, const hbuf *content, size_t offs,
 	if (NULL != next &&
 	    (LOWDOWN_LINK_AUTO == next->type ||
 	     LOWDOWN_LINK == next->type))
-		while (size && ! isspace((int)data[size - 1]))
+		while (size && 
+		       ! isspace((unsigned char)data[size - 1]))
 			size--;
 
 	if (nl) {
 		for (i = 0; i < size; i++)
-			if ( ! isspace((int)data[i]))
+			if ( ! isspace((unsigned char)data[i]))
 				break;
 		escape_block(ob, data + i, size - i);
 	} else
@@ -838,86 +855,6 @@ rndr_math(void)
 }
 
 /*
- * Convert an ISO date (y/m/d or y-m-d) to a canonical form.
- * Returns NULL if the string is malformed at all or the date otherwise.
- */
-static char *
-date2str(const char *v)
-{
-	unsigned int	y, m, d;
-	int		rc;
-	static char	buf[32];
-
-	if (NULL == v)
-		return(NULL);
-
-	rc = sscanf(v, "%u/%u/%u", &y, &m, &d);
-	if (3 != rc) {
-		rc = sscanf(v, "%u-%u-%u", &y, &m, &d);
-		if (3 != rc)
-			return(NULL);
-	}
-
-	snprintf(buf, sizeof(buf), "%u-%.2u-%.2u", y, m, d);
-	return(buf);
-}
-
-/*
- * Convert the "$Author$" string to just the author in a static
- * buffer of a fixed length.
- * Returns NULL if the string is malformed (too long, too short, etc.)
- * at all or the author name otherwise.
- */
-static char *
-rcsauthor2str(const char *v)
-{
-	static char	buf[1024];
-	size_t		sz;
-
-	if (NULL == v ||
-	    strlen(v) < 12 ||
-	    strncmp(v, "$Author: ", 9))
-		return(NULL);
-
-	if ((sz = strlcpy(buf, v + 9, sizeof(buf))) >= sizeof(buf))
-		return(NULL);
-
-	if ('$' == buf[sz - 1])
-		buf[sz - 1] = '\0';
-	if (' ' == buf[sz - 2])
-		buf[sz - 2] = '\0';
-
-	return(buf);
-}
-
-/*
- * Convert the "$Date$" string to a simple ISO date in a
- * static buffer.
- * Returns NULL if the string is malformed at all or the date otherwise.
- */
-static char *
-rcsdate2str(const char *v)
-{
-	unsigned int	y, m, d, h, min, s;
-	int		rc;
-	static char	buf[32];
-
-	if (NULL == v ||
-	    strlen(v) < 10 ||
-	    strncmp(v, "$Date: ", 7))
-		return(NULL);
-
-	rc = sscanf(v + 7, "%u/%u/%u %u:%u:%u", 
-		&y, &m, &d, &h, &min, &s);
-
-	if (6 != rc)
-		return(NULL);
-
-	snprintf(buf, sizeof(buf), "%u-%.2u-%.2u", y, m, d);
-	return(buf);
-}
-
-/*
  * Itereate through multiple multi-white-space separated values in
  * "val", filling them in to "env".
  */
@@ -928,15 +865,15 @@ rndr_doc_header_multi(hbuf *ob, const char *val, const char *env)
 	size_t		 sz;
 
 	for (cp = val; '\0' != *cp; ) {
-		while (isspace((int)*cp))
+		while (isspace((unsigned char)*cp))
 			cp++;
 		if ('\0' == *cp)
 			continue;
 		start = cp;
 		sz = 0;
 		while ('\0' != *cp) {
-			if ( ! isspace((int)cp[0]) ||
-			     ! isspace((int)cp[1])) {
+			if ( ! isspace((unsigned char)cp[0]) ||
+			     ! isspace((unsigned char)cp[1])) {
 				sz++;
 				cp++;
 				continue;
@@ -958,7 +895,8 @@ rndr_doc_header(hbuf *ob,
 	const struct nstate *st)
 {
 	const char	*date = NULL, *author = NULL,
-	      		*title = "Untitled article", *affil = NULL;
+	      		*title = "Untitled article", *affil = NULL,
+			*copy = NULL;
 	time_t		 t;
 	char		 buf[32];
 	struct tm	*tm;
@@ -982,6 +920,8 @@ rndr_doc_header(hbuf *ob,
 			date = rcsdate2str(m[i].value);
 		else if (0 == strcmp(m[i].key, "date"))
 			date = date2str(m[i].value);
+		else if (0 == strcmp(m[i].key, "copyright"))
+			copy = m[i].value;
 
 	/* FIXME: convert to buf without strftime. */
 
@@ -994,15 +934,29 @@ rndr_doc_header(hbuf *ob,
 
 	/* Strip leading newlines (empty ok but weird) */
 
-	while (isspace((int)*title))
+	while (isspace((unsigned char)*title))
 		title++;
+
+	if (NULL != copy)
+		while (isspace((unsigned char)*copy))
+			copy++;
+	if (NULL != affil)
+		while (isspace((unsigned char)*affil))
+			affil++;
 
 	/* Emit our authors and title. */
 
 	if ( ! st->mdoc) {
 		HBUF_PUTSL(ob, ".nr PS 10\n");
 		HBUF_PUTSL(ob, ".nr GROWPS 3\n");
-		hbuf_printf(ob, ".DA %s\n.TL\n", date);
+		HBUF_PUTSL(ob, ".nr PD 1.0v\n");
+		if (NULL != copy) {
+			hbuf_printf(ob, ".ds LF \\s-2"
+				"Copyright \\(co %s\\s+2\n", copy);
+			hbuf_printf(ob, ".ds RF \\s-2%s\\s+2\n", date);
+		} else
+			hbuf_printf(ob, ".DA \\s-2%s\\s+2\n", date);
+		HBUF_PUTSL(ob, ".TL\n");
 		escape_block(ob, title, strlen(title));
 		HBUF_PUTSL(ob, "\n");
 		if (NULL != author)
@@ -1026,7 +980,7 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 {
 	struct lowdown_node *n, *next, *prev;
 	hbuf		*tmp;
-	int		 pnln, keepnext;
+	int		 pnln, keepnext = 1;
 	enum nfont	 fonts[NFONT__MAX];
 
 	assert(NULL != root);
@@ -1067,18 +1021,40 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 	TAILQ_FOREACH(n, &root->children, entries)
 		rndr(tmp, ref, n);
 
-	/* Compute whether the previous output has a newline. */
+	/* 
+	 * Compute whether the previous output does have a newline:
+	 * if we don't have a previous node, scan up to the parent and
+	 * see if it's a block node.
+	 * If it's a block node, we're absolutely starting on a newline;
+	 * otherwise, we don't know.
+	 */
 
 	if (NULL == root->parent ||
 	    NULL == (n = TAILQ_PREV(root, lowdown_nodeq, entries)))
 		n = root->parent;
-
 	pnln = NULL == n || NSCOPE_BLOCK == nscopes[n->type];
+
+	/* Get the last and next emitted node. */
 
 	prev = NULL == root->parent ? NULL : 
 		TAILQ_PREV(root, lowdown_nodeq, entries);
 	next = TAILQ_NEXT(root, entries);
-	keepnext = 1;
+
+	if (NSCOPE_BLOCK == nscopes[root->type]) {
+		if (LOWDOWN_CHNG_INSERT == root->chng)
+			HBUF_PUTSL(ob, ".gcolor blue\n");
+		else if (LOWDOWN_CHNG_DELETE == root->chng)
+			HBUF_PUTSL(ob, ".gcolor red\n");
+	} else {
+		/*
+		 * FIXME: this is going to disrupt our newline
+		 * computation.
+		 */
+		if (LOWDOWN_CHNG_INSERT == root->chng)
+			HBUF_PUTSL(ob, "\\m[blue]");
+		else if (LOWDOWN_CHNG_DELETE == root->chng)
+			HBUF_PUTSL(ob, "\\m[red]");
+	}
 
 	switch (root->type) {
 	case (LOWDOWN_BLOCKCODE):
@@ -1102,7 +1078,7 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 		rndr_hrule(ob, ref);
 		break;
 	case (LOWDOWN_LISTITEM):
-		rndr_listitem(ob, tmp, 
+		rndr_listitem(ob, tmp, prev,
 			root->rndr_listitem.flags,
 			root->rndr_listitem.num);
 		break;
@@ -1190,6 +1166,15 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 	default:
 		hbuf_put(ob, tmp->data, tmp->size);
 		break;
+	}
+
+
+	if (LOWDOWN_CHNG_INSERT == root->chng ||
+	    LOWDOWN_CHNG_DELETE == root->chng) {
+		if (NSCOPE_BLOCK == nscopes[root->type])
+			HBUF_PUTSL(ob, ".gcolor\n");
+		else
+			HBUF_PUTSL(ob, "\\m[]");
 	}
 
 	/* Restore the font stack. */

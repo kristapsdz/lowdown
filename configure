@@ -63,6 +63,7 @@ CFLAGS=`printf "all:\\n\\t@echo \\\$(CFLAGS)\\n" | env -i make -sf -`
 CFLAGS="${CFLAGS} -g -W -Wall -Wextra -Wmissing-prototypes -Wstrict-prototypes"
 CFLAGS="${CFLAGS} -Wwrite-strings -Wno-unused-parameter"
 LDADD=
+CPPFLAGS=
 LDFLAGS=
 PREFIX="/usr/local"
 BINDIR=
@@ -70,11 +71,51 @@ SBINDIR=
 INCLUDEDIR=
 LIBDIR=
 MANDIR=
+SHAREDIR=
 INSTALL="install"
 INSTALL_PROGRAM=
 INSTALL_LIB=
 INSTALL_MAN=
 INSTALL_DATA=
+
+#----------------------------------------------------------------------
+# Allow certain variables to be overriden on the command line.
+#----------------------------------------------------------------------
+
+for keyvals in $@ 
+do
+	key=`echo $keyvals | cut -s -d '=' -f 1`
+	if [ -z "$key" ]
+	then
+		echo "$0: invalid key-value: $keyvals" 1>&2
+		exit 1
+	fi
+	val=`echo $keyvals | cut -d '=' -f 2-`
+	case "$key" in
+	LDFLAGS)
+		LDFLAGS="$val" ;;
+	CPPFLAGS)
+		CPPFLAGS="$val" ;;
+	PREFIX)
+		PREFIX="$val" ;;
+	MANDIR)
+		MANDIR="$val" ;;
+	LIBDIR)
+		LIBDIR="$val" ;;
+	BINDIR)
+		BINDIR="$val" ;;
+	SHAREDIR)
+		SHAREDIR="$val" ;;
+	SBINDIR)
+		SBINDIR="$val" ;;
+	INCLUDEDIR)
+		INCLUDEDIR="$val" ;;
+	*)
+		echo "$0: invalid key: $key" 1>&2
+		exit 1
+	esac
+done
+
 
 #----------------------------------------------------------------------
 # These are the values that will be pushed into config.h after we test
@@ -84,20 +125,33 @@ INSTALL_DATA=
 # You WANT to change this.
 #----------------------------------------------------------------------
 
+HAVE_ARC4RANDOM=
 HAVE_CAPSICUM=
 HAVE_ERR=
+HAVE_EXPLICIT_BZERO=
+HAVE_GETPROGNAME=
+HAVE_INFTIM=
+HAVE_MD5=
+HAVE_MEMMEM=
+HAVE_MEMRCHR=
+HAVE_MEMSET_S=
 HAVE_PATH_MAX=
 HAVE_PLEDGE=
-HAVE_PROGNAME=
+HAVE_PROGRAM_INVOCATION_SHORT_NAME=
 HAVE_REALLOCARRAY=
+HAVE_RECALLOCARRAY=
 HAVE_SANDBOX_INIT=
+HAVE_SECCOMP_FILTER=
+HAVE_SOCK_NONBLOCK=
 HAVE_STRLCAT=
 HAVE_STRLCPY=
 HAVE_STRTONUM=
+HAVE_SYSTRACE=
+HAVE___PROGNAME=
 
 #----------------------------------------------------------------------
-# Allow configure.local to override all variables, default settings and
-# tested features, above.
+# Allow configure.local to override all variables, default settings, 
+# command-line arguments, and tested features, above.
 # You PROBABLY DO NOT want to change this.
 #----------------------------------------------------------------------
 
@@ -120,7 +174,7 @@ echo 1>&3
 # You DO NOT want to change this.
 #----------------------------------------------------------------------
 
-COMP="${CC} ${CFLAGS} -Wno-unused -Werror"
+COMP="${CC} ${CFLAGS} ${CPPFLAGS} -Wno-unused -Werror"
 
 # Check whether this HAVE_ setting is manually overridden.
 # If yes, use the override, if no, do not decide anything yet.
@@ -138,15 +192,15 @@ ismanual() {
 # In case of success, enable the feature.
 # In case of failure, do not decide anything yet.
 # Arguments: lower-case test name, upper-case test name, additional
-# CFLAGS
+# CFLAGS, additional LIBS.
 
 singletest() {
 	cat 1>&3 << __HEREDOC__
 ${1}: testing...
-${COMP} ${3} -o test-${1} test-${1}.c
+${COMP} -DTEST_${2} ${3} -o test-${1} tests.c ${4}
 __HEREDOC__
 
-	if ${COMP} ${3} -o "test-${1}" "test-${1}.c" 1>&3 2>&3; then
+	if ${COMP} -DTEST_${2} ${3} -o "test-${1}" tests.c ${4} 1>&3 2>&3; then
 		echo "${1}: ${CC} succeeded" 1>&3
 	else
 		echo "${1}: ${CC} failed with $?" 1>&3
@@ -176,13 +230,7 @@ __HEREDOC__
 runtest() {
 	eval _manual=\${HAVE_${2}}
 	ismanual "${1}" "${2}" "${_manual}" && return 0
-	if [ ! -r "test-${1}.c" ]
-	then
-		echo "${1}: skipping (no test file)" 1>&2
-		eval HAVE_${2}=0
-		return 1
-	fi
-	singletest "${1}" "${2}" "${3}" && return 0
+	singletest "${1}" "${2}" "${3}" "${4}" "${test}" && return 0
 	echo "${1}: no" 1>&2
 	eval HAVE_${2}=0
 	return 1
@@ -195,16 +243,30 @@ runtest() {
 # You WANT to change this.
 #----------------------------------------------------------------------
 
+runtest arc4random	ARC4RANDOM			  || true
 runtest capsicum	CAPSICUM			  || true
 runtest err		ERR				  || true
+runtest explicit_bzero	EXPLICIT_BZERO			  || true
+runtest getprogname	GETPROGNAME			  || true
+runtest INFTIM		INFTIM				  || true
+runtest md5		MD5				  || true
+runtest memmem		MEMMEM			  	  || true
+runtest memrchr		MEMRCHR			  	  || true
+runtest memset_s	MEMSET_S			  || true
 runtest PATH_MAX	PATH_MAX			  || true
 runtest pledge		PLEDGE				  || true
-runtest progname	PROGNAME			  || true
+runtest program_invocation_short_name	PROGRAM_INVOCATION_SHORT_NAME || true
 runtest reallocarray	REALLOCARRAY			  || true
+runtest recallocarray	RECALLOCARRAY			  || true
 runtest sandbox_init	SANDBOX_INIT	"-Wno-deprecated" || true
+runtest seccomp-filter	SECCOMP_FILTER			  || true
+runtest SOCK_NONBLOCK	SOCK_NONBLOCK			  || true
 runtest strlcat		STRLCAT				  || true
 runtest strlcpy		STRLCPY				  || true
 runtest strtonum	STRTONUM			  || true
+runtest systrace	SYSTRACE			  || true
+runtest zlib		ZLIB		"" "-lz"	  || true
+runtest __progname	__PROGNAME			  || true
 
 #----------------------------------------------------------------------
 # Output writing: generate the config.h file.
@@ -220,7 +282,7 @@ exec > config.h
 
 cat << __HEREDOC__
 #ifdef __cplusplus
-#error "Do not use C++.  See the INSTALL file."
+#error "Do not use C++: this is a C application."
 #endif
 #if !defined(__GNUC__) || (__GNUC__ < 4)
 #define __attribute__(x)
@@ -228,11 +290,19 @@ cat << __HEREDOC__
 #if defined(__linux__) || defined(__MINT__)
 #define _GNU_SOURCE	/* See test-*.c what needs this. */
 #endif
+#if !defined(__BEGIN_DECLS)
+# define __BEGIN_DECLS
+#endif
+#if !defined(__END_DECLS)
+# define __END_DECLS
+#endif
 __HEREDOC__
 
 # For the function declaration variables...
 
-[ ${HAVE_REALLOCARRAY} -eq 0 -o \
+[ ${HAVE_MD5} -eq 0 -o \
+  ${HAVE_REALLOCARRAY} -eq 0 -o \
+  ${HAVE_RECALLOCARRAY} -eq 0 -o \
   ${HAVE_STRLCAT} -eq 0 -o \
   ${HAVE_STRLCPY} -eq 0 ] \
 	&& echo "#include <sys/types.h>"
@@ -243,16 +313,34 @@ __HEREDOC__
 [ ${HAVE_PATH_MAX} -eq 0 ] \
 	&& echo "#define PATH_MAX 4096"
 
+[ ${HAVE_INFTIM} -eq 0 ] \
+	&& echo "#define INFTIM (-1)"
+
 cat << __HEREDOC__
+#define HAVE_ARC4RANDOM ${HAVE_ARC4RANDOM}
 #define HAVE_CAPSICUM ${HAVE_CAPSICUM}
 #define HAVE_ERR ${HAVE_ERR}
+#define HAVE_EXPLICIT_BZERO ${HAVE_EXPLICIT_BZERO}
+#define HAVE_GETPROGNAME ${HAVE_GETPROGNAME}
+#define HAVE_INFTIM ${HAVE_INFTIM}
+#define HAVE_MD5 ${HAVE_MD5}
+#define HAVE_MEMMEM ${HAVE_MEMMEM}
+#define HAVE_MEMRCHR ${HAVE_MEMRCHR}
+#define HAVE_MEMSET_S ${HAVE_MEMSET_S}
+#define HAVE_PATH_MAX ${HAVE_PATH_MAX}
 #define HAVE_PLEDGE ${HAVE_PLEDGE}
-#define HAVE_PROGNAME ${HAVE_PROGNAME}
+#define HAVE_PROGRAM_INVOCATION_SHORT_NAME ${HAVE_PROGRAM_INVOCATION_SHORT_NAME}
 #define HAVE_REALLOCARRAY ${HAVE_REALLOCARRAY}
+#define HAVE_RECALLOCARRAY ${HAVE_RECALLOCARRAY}
 #define HAVE_SANDBOX_INIT ${HAVE_SANDBOX_INIT}
+#define HAVE_SECCOMP_FILTER ${HAVE_SECCOMP_FILTER}
+#define HAVE_SOCK_NONBLOCK ${HAVE_SOCK_NONBLOCK}
 #define HAVE_STRLCAT ${HAVE_STRLCAT}
 #define HAVE_STRLCPY ${HAVE_STRLCPY}
 #define HAVE_STRTONUM ${HAVE_STRTONUM}
+#define HAVE_SYSTRACE ${HAVE_SYSTRACE}
+#define HAVE_ZLIB ${HAVE_ZLIB}
+#define HAVE___PROGNAME ${HAVE___PROGNAME}
 __HEREDOC__
 
 # Now we do our function declarations for missing functions.
@@ -264,13 +352,62 @@ if [ ${HAVE_ERR} -eq 0 ]; then
 	echo "extern void warnx(const char *, ...);"
 fi
 
-if [ ${HAVE_PROGNAME} -eq 0 ]; then
+if [ ${HAVE_MD5} -eq 0 ]; then
+	echo "#define MD5_BLOCK_LENGTH 64"
+	echo "#define MD5_DIGEST_LENGTH 16"
+	echo "#define MD5_DIGEST_STRING_LENGTH (MD5_DIGEST_LENGTH * 2 + 1)"
+	cat <<!!
+typedef struct MD5Context {
+	u_int32_t state[4];
+	u_int64_t count;
+	u_int8_t buffer[MD5_BLOCK_LENGTH];
+} MD5_CTX;
+!!
+	echo "extern void MD5Init(MD5_CTX *);"
+	echo "extern void MD5Update(MD5_CTX *, const u_int8_t *, size_t);"
+	echo "extern void MD5Pad(MD5_CTX *);"
+	echo "extern void MD5Transform(u_int32_t [4], const u_int8_t [MD5_BLOCK_LENGTH]);"
+	echo "extern char *MD5End(MD5_CTX *, char *);"
+	echo "extern void MD5Final(u_int8_t [MD5_DIGEST_LENGTH], MD5_CTX *);";
+fi
+
+if [ ${HAVE_SECCOMP_FILTER} -eq 1 ]; then
+	arch=`uname -m 2>/dev/null || echo unknown`
+	case "$arch" in
+		x86_64)
+			echo "#define SECCOMP_AUDIT_ARCH AUDIT_ARCH_X86_64"
+			;;
+		i*86)
+			echo "#define SECCOMP_AUDIT_ARCH AUDIT_ARCH_I386"
+			;;
+		arm*)
+			echo "#define SECCOMP_AUDIT_ARCH AUDIT_ARCH_ARM"
+			;;
+	esac
+fi
+
+if [ ${HAVE_EXPLICIT_BZERO} -eq 0 ]; then
+	echo "extern void explicit_bzero(void *, size_t);"
+fi
+
+if [ ${HAVE_MEMMEM} -eq 0 ]; then
+	echo "void *memmem(const void *, size_t, const void *, size_t);"
+fi
+
+if [ ${HAVE_MEMRCHR} -eq 0 ]; then
+	echo "void *memrchr(const void *b, int, size_t);"
+fi
+
+if [ ${HAVE_GETPROGNAME} -eq 0 ]; then
 	echo "extern const char *getprogname(void);"
-	echo "extern void setprogname(const char *);"
 fi
 
 if [ ${HAVE_REALLOCARRAY} -eq 0 ]; then
 	echo "extern void *reallocarray(void *, size_t, size_t);"
+fi
+
+if [ ${HAVE_RECALLOCARRAY} -eq 0 ]; then
+	echo "extern void *recallocarray(void *, size_t, size_t, size_t);"
 fi
 
 if [ ${HAVE_STRLCAT} -eq 0 ]; then
@@ -302,6 +439,7 @@ exec > Makefile.configure
 [ -z "${INCLUDEDIR}" ] && INCLUDEDIR="${PREFIX}/include"
 [ -z "${LIBDIR}"     ] && LIBDIR="${PREFIX}/lib"
 [ -z "${MANDIR}"     ] && MANDIR="${PREFIX}/man"
+[ -z "${SHAREDIR}"   ] && SHAREDIR="${PREFIX}/share"
 
 [ -z "${INSTALL_PROGRAM}" ] && INSTALL_PROGRAM="${INSTALL} -m 0555"
 [ -z "${INSTALL_LIB}"     ] && INSTALL_LIB="${INSTALL} -m 0444"
@@ -311,11 +449,13 @@ exec > Makefile.configure
 cat << __HEREDOC__
 CC		= ${CC}
 CFLAGS		= ${CFLAGS}
+CPPFLAGS	= ${CPPFLAGS}
 LDADD		= ${LDADD}
 LDFLAGS		= ${LDFLAGS}
 STATIC		= ${STATIC}
 PREFIX		= ${PREFIX}
 BINDIR		= ${BINDIR}
+SHAREDIR	= ${SHAREDIR}
 SBINDIR		= ${SBINDIR}
 INCLUDEDIR	= ${INCLUDEDIR}
 LIBDIR		= ${LIBDIR}

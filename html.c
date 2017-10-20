@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "lowdown.h"
 #include "extern.h"
@@ -669,42 +670,14 @@ rndr_math(hbuf *ob, const hbuf *text, int displaymode)
 }
 
 /*
- * Convert the "$Author$" string to just the author in a static
- * buffer of a fixed length.
- * Returns NULL if the string is malformed (too long, too short, etc.)
- * at all or the author name otherwise.
- */
-static char *
-rcsauthor2str(const char *v)
-{
-	static char	buf[1024];
-	size_t		sz;
-
-	if (NULL == v ||
-	    strlen(v) < 12 ||
-	    strncmp(v, "$Author: ", 9))
-		return(NULL);
-
-	if ((sz = strlcpy(buf, v + 9, sizeof(buf))) >= sizeof(buf))
-		return(NULL);
-
-	if ('$' == buf[sz - 1])
-		buf[sz - 1] = '\0';
-	if (' ' == buf[sz - 2])
-		buf[sz - 2] = '\0';
-
-	return(buf);
-}
-
-/*
  * Itereate through multiple multi-white-space separated values in
- * "val", filling them in to "env".
+ * "val", filling them in between "start" and "end".
  * If "href", escape the value as an HTML attribute.
  * Otherwise, just do the minimal HTML escaping.
  */
 static void
 rndr_doc_header_multi(hbuf *ob, int href,
-	const char *val, const char *env)
+	const char *val, const char *starttag, const char *endtag)
 {
 	const char	*cp, *start;
 	size_t		 sz;
@@ -728,13 +701,15 @@ rndr_doc_header_multi(hbuf *ob, int href,
 		}
 		if (0 == sz)
 			continue;
-		hbuf_puts(ob, env);
+		hbuf_puts(ob, starttag);
 		hbuf_putc(ob, '"');
 		if (href)
 			hesc_href(ob, start, sz);
 		else
 			hesc_html(ob, start, sz, 0);
-		HBUF_PUTSL(ob, "\" />\n");
+		hbuf_putc(ob, '"');
+		hbuf_puts(ob, endtag);
+		hbuf_putc(ob, '\n');
 	}
 }
 
@@ -752,8 +727,12 @@ rndr_doc_header(hbuf *ob,
 	const struct hstate *st)
 {
 	const char	*author = NULL, *title = "Untitled article", 
-	     	 	*css = NULL, *affil = NULL;
+	     	 	*css = NULL, *affil = NULL, *script = NULL,
+			*date = NULL;
 	size_t		 i;
+	struct tm	*tm;
+	time_t		 t;
+	char		 buf[32];
 
 	if ( ! (LOWDOWN_STANDALONE & st->flags))
 		return;
@@ -774,6 +753,21 @@ rndr_doc_header(hbuf *ob,
 			author = rcsauthor2str(m[i].value);
 		else if (0 == strcmp(m[i].key, "css"))
 			css = m[i].value;
+		else if (0 == strcmp(m[i].key, "javascript"))
+			script = m[i].value;
+		else if (0 == strcmp(m[i].key, "rcsdate"))
+			date = rcsdate2str(m[i].value);
+		else if (0 == strcmp(m[i].key, "date"))
+			date = date2str(m[i].value);
+
+	/* FIXME: convert to buf without strftime. */
+
+	if (NULL == date) {
+		t = time(NULL);
+		tm = localtime(&t);
+		strftime(buf, sizeof(buf), "%F", tm);
+		date = buf;
+	}
 
 	HBUF_PUTSL(ob, 
 	      "<!DOCTYPE html>\n"
@@ -783,15 +777,20 @@ rndr_doc_header(hbuf *ob,
 	      "<meta name=\"viewport\" content=\""
 	       "width=device-width,initial-scale=1\" />\n");
 
+	hbuf_printf(ob, "<meta name=\"date\" content=\"%s\" "
+		"scheme=\"YYYY-MM-DD\" />\n", date);
 	if (NULL != author)
 		rndr_doc_header_multi(ob, 0, author, 
-			"<meta name=\"author\" content=");
+			"<meta name=\"author\" content=", " />");
 	if (NULL != affil)
-		rndr_doc_header_multi(ob, 0, author, 
-			"<meta name=\"creator\" content=");
+		rndr_doc_header_multi(ob, 0, affil, 
+			"<meta name=\"creator\" content=", " />");
+	if (NULL != script)
+		rndr_doc_header_multi(ob, 1, script, 
+			"<script src=", "></script>");
 	if (NULL != css)
 		rndr_doc_header_multi(ob, 1, css, 
-			"<link rel=\"stylesheet\" href=");
+			"<link rel=\"stylesheet\" href=", " />");
 
 	/* HTML-escape and trim the title (0-length ok but weird). */
 
@@ -816,6 +815,16 @@ lowdown_html_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
 
 	TAILQ_FOREACH(n, &root->children, entries)
 		lowdown_html_rndr(tmp, ref, n);
+
+	/*
+	 * These elements can be put in either a block or an inline
+	 * context, so we're safe to just use them and forget.
+	 */
+
+	if (LOWDOWN_CHNG_INSERT == root->chng)
+		HBUF_PUTSL(ob, "<ins>");
+	else if (LOWDOWN_CHNG_DELETE == root->chng)
+		HBUF_PUTSL(ob, "<del>");
 
 	switch (root->type) {
 	case (LOWDOWN_BLOCKCODE):
@@ -946,6 +955,11 @@ lowdown_html_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
 		hbuf_put(ob, tmp->data, tmp->size);
 		break;
 	}
+
+	if (LOWDOWN_CHNG_INSERT == root->chng)
+		HBUF_PUTSL(ob, "</ins>");
+	else if (LOWDOWN_CHNG_DELETE == root->chng)
+		HBUF_PUTSL(ob, "</del>");
 
 	hbuf_free(tmp);
 }

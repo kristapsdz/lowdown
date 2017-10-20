@@ -1,0 +1,552 @@
+.\"	$Id$
+.\"
+.\" Copyright (c) 2017 Christina Sophonpanich <huck@divelog.blue>
+.\" Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
+.\"
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\"
+.Dd $Mdocdate: September 30 2017 $
+.Dt LOWDOWN 5
+.Os
+.
+.
+.Sh NAME
+.Nm lowdown
+.Nd Markdown reference for lowdown
+.
+.
+.Sh DESCRIPTION
+Markdown is a simple, plain-text formatting language.
+.Dq Plain-text
+in this case means the document input looks similar to the output, less
+the formatting niceties (boxed tables, italics, clickable links, etc.)
+provided by the output medium.
+For example:
+.Bd -literal -offset indent
+# How to be a Picard fan
+
+## Introduction
+
+In order to develop fandom skills one must first and foremost
+know *whom* one idolises. Therefore: **who is Captain Picard**?
+
+1. Picard was named the \e*Best Star Trek Captain\e*, according
+to a [5-week poll](poll.html).
+
+    > Picard continued his winning ways in the final week,
+    > with fans naming him the most inspiring captain.
+
+2. Picard is handsome. ![Picard](image.jpg)
+3. Picard knows how to code: `make engage`
+
+---------------------------------
+
+## Picard Fandom
+
+Here's why everyone wants to be a fan...
+.Ed
+.Pp
+This example consists of a series of block elements: section header,
+sub-section header, paragraph, set of list elements, horizontal rule,
+then another sub-section header.
+Each block element contains span elements: normal text, emphasised text
+(bold and italised), an image, a link, and a span of code.
+.Pp
+This document describes the Markdown syntax accepted by
+.Xr lowdown 1 .
+.
+.
+.Sh BLOCK ELEMENTS
+A block element starts on a new line and extends to the next blank line
+or block element.
+A block element contains span elements.
+.
+.Ss Paragraphs and Line Breaks
+A paragraph is made up of one or more lines of text possibly containing
+span elements.
+Paragraphs are separated by blank lines.
+.Pp
+To insert a hard line break (i.e., a line-break in the input that is
+reproduced in the output), insert two spaces at the end of the line.
+If the
+.Ar commonmark
+input option is specified, this may also be effected by escaping the
+newline:
+.Bd -literal -offset indent
+Darmok and Jalad...\e
+at Tanagra.
+.Ed
+.
+.Ss Headers
+There are two styles of headers: underlined
+.Pq Dq setext
+and hash-marked
+.Pq Dq atx .
+For underlined headers, underline the given word using equal signs
+.Pq Dq =
+for first-level headers and dashes
+.Pq Dq \&-
+for second-level headers.
+.Bd -literal -offset indent
+This is an underlined header 1
+==============================
+.Ed
+.Pp
+For hash-marked headers, use the corresponding number of hash characters
+to the corresponding level of header, up to 6 levels, at the start of
+the line separated by one space followed by the header.
+.Bd -literal -offset indent
+## This is a hash-marked header 2
+.Ed
+.Pp
+If the
+.Ar commonmark
+input option is specified, the space is required after the hash-marks in
+any hash-marked header.
+.
+.Ss Block Quotes
+Block quoted sections are invoked with a single right-angle bracket
+.Pq Dq >
+followed by a space at the start of each line and between paragraphs.
+.Bd -literal -offset indent
+> The Prime Directive is not just a set of rules;
+> it is a philosophy... and a very correct one.
+>
+> (It goes on for a few paragraphs).
+.Ed
+.Pp
+Block quotes may also have a non-multiline invocation: you need only
+invoke the right-angle bracket at the start of a paragraph and omit it
+entirely between paragraphs.
+.Bd -literal -offset indent
+> You cannot explain away a wantonly immoral act because
+you think it is connected to some higher purpose.
+
+> Here is another paragraph about Picard wisdom.
+.Ed
+.Pp
+Consecutive blockquotes as above will be merged as paragraphs within a
+single block quote on output, even if styles
+.Pq non-multiline and otherwise
+are mixed.
+.Pp
+Block quotes may be nested within other block quotes, as may any other
+block elements such as headers, ordered/unordered lists, and code
+blocks.
+.Bd -literal -offset indent
+> ### hash-marked header 3
+>
+> > I'd be delighted to offer any advice
+> > I have on understanding women.
+> > When I have some, I'll let you know.
+>
+> 1.  advice list item 1
+> 2.  advice list item 2
+>
+> Here's the code to implement JLP's advice:
+
+>     yes | read engage
+.Ed
+.
+.Ss Lists
+Lists may be specified as ordered (numbered) or unordered.
+Ordered lists are invoked as numbers followed by periods
+.Pq e.g., Dq 1.
+and rendered in a similar format.
+.Em Note :
+it does not matter which order or which numbers you use in your ordered
+lists, as all ordered lists start at one.
+.Bd -literal -offset indent
+1. Make.
+2. It.
+1. So. (Not 1. again!)
+.Ed
+.Pp
+If the
+.Ar commonmark
+input option is specified, list items may alternatively terminate with
+the right parenthesis:
+.Bd -literal -offset indent
+1) Live long
+2) Prosper
+.Ed
+.Pp
+To prevent lists erroneously started by a paragraph beginning with a
+number and period, use a backslash before the period.
+.Bd -literal -offset indent
+1987. The year TNG premiered.
+
+1987\e. The year TNG premiered.
+.Ed
+.Pp
+Unordered lists, on the other hand, can be invoked using either
+asterisk
+.Pq Dq * ,
+pluses
+.Pq Dq + ,
+or hyphens
+.Pq Dq \- ,
+and can be a mix of all three styles.
+Regardless the style, list items are rendered the same way.
+.Bd -literal -offset indent
+- Earl Grey tea.
+* Shakespeare.
++ Exotic fish.
+.Ed
+.Pp
+All nested block elements need a new line break, otherwise they will be
+rendered on the same line as the list item on output.
+To insert paragraphs into a list item, indent each paragraph with either
+four spaces or one tab.
+.Bd -literal -offset indent
+- First list item
+
+    Courage can be an emotion too.
+
+    Things are only impossible until they're not.
++ Second list item
++ Third list item
+.Ed
+.Pp
+To insert block quotes into a list item, indent the block quote with
+four spaces or one tab prior to the right-angle bracket
+.Pq Dq > .
+.Bd -literal -offset indent
+* List item 1
+* List item 2
+
+     > I am Locutus of Borg.
+
+     > That is the cutest of Borg.
+.Ed
+.Pp
+Code blocks need to be indented twice (two tabs or eight leading spaces): once
+for being recognised within the list item, another for the code block itself.
+.Bd -literal -offset indent
+* Here is a list item for an indented code block:
+
+        alias path='echo -e ${PATH//:/\\n}'
+.Ed
+.Pp
+To make list elements occur in tight sequence \(em like a grocery list
+\(em don't have an empty line between the items.
+.Bd -literal -offset indent
+- Phaser
+- Communicator
+.Ed
+.Pp
+On the other hand, if you want to render lists separated by white-space,
+use the following syntax:
+.Bd -literal -offset indent
+- A phaser is a type of weapon.
+
+- A communicator keeps Riker in contact with Troy.
+.Ed
+.Pp
+This applies to ordered and unordered list types.
+.Ss Code Blocks
+Code blocks consist of pre-formatted text, such as source code.
+Each code block contains opaque/literal text.
+This means that new lines and white spaces are retained \(em they're not
+formatted in any way, and any text inside the code block is not
+interpreted.
+To invoke a code block, create a line break then indent each line with four
+spaces or one tab.
+.Bd -literal -offset indent
+Here is a paragraph about Bridge protocol
+
+    Here is a code block for the command "Engage"
+.Ed
+.Pp
+Within a code block, text is escaped given the output format.
+Therefore, characters that would normally need to be escaped in other
+text processing languages such as ampersands
+.Pq Dq &
+do not need to be escaped.
+.Bd -literal -offset indent
+Here is how you start the program xterm:
+
+    xterm &
+.Ed
+.
+.Ss Horizontal Rules
+A horizontal rule is a line that goes across an output page.
+These are invoked with three or more asterisks
+.Pq Dq * ,
+hyphens
+.Pq Dq \- ,
+or underscores
+.Pq Dq _
+on their own line.
+Spaces between these characters are disregarded.
+.Bd -literal -offset indent
+***
+* * *
+---
+- - -
+___
+_ _ _
+___________________________
+.Ed
+.
+.
+.Sh SPAN ELEMENTS
+Span elements are inline elements (including normal text) within block
+elements, for example, a span of emphasised text or a hyperlink.
+A span element cannot contain a block element, but can contain other
+span elements.
+.
+.Ss Emphasis
+There are two different styles of emphasis: strong, usually rendered as
+bold; and emphasis, usually rendered as italics.
+This is confusing, so sometimes the former is referred to as a
+.Dq double-emphasis
+while the latter is a
+.Dq single-emphasis .
+.Pp
+Text surrounded by a single asterisk
+.Pq Dq *
+or underscore
+.Pq Dq _ ,
+the single-emphasis variant, is traditionally rendered with italics.
+.Bd -literal -offset indent
+*Captain Picard*
+_Captain Picard_
+.Ed
+.Pp
+Text surrounded by a double asterisk
+.Pq Dq **
+or underscore
+.Pq Dq __ ,
+the double-emphasis variant, is traditionally rendered as bold.
+.Bd -literal -offset indent
+**Jean-Luc Picard**
+__Jean-Luc Picard__
+.Ed
+.Pp
+Emphasis may occur within the middle of a word:
+.Bd -literal -offset indent
+En*ter*prise
+.Ed
+.Pp
+In order to produce a literal asterisk
+.Pq Dq *
+or underscore
+.Pq Dq _
+simply surround the character by white space.
+.Bd -literal -offset indent
+The ship * USS Enterprise * will not be emphasized
+.Ed
+.
+.Ss Links
+There are two types of links: inline and reference.
+In both cases, the linked text is denoted by square brackets
+.Pq Dq \&[] .
+An inline link uses parentheses
+.Pq Dq \&()
+containing the URL immediately following the linked text in square
+brackets to invoke the link.
+.Bd -literal -offset indent
+[text to link](https://bsd.lv)
+.Ed
+.Pp
+Local references may be absolute or relative paths:
+.Bd -literal -offset indent
+[Picard](/Picard)
+.Ed
+.Pp
+A reference link, on the other hand, keeps the URL outside of the text
+\(em usually in the footnotes.
+Define a reference link anywhere in a document by a title in square
+brackets
+.Pq Dq \&[]
+followed a colon
+.Pq Dq \&:
+followed by the corresponding URL or path:
+.Bd -literal -offset indent
+[link1]: https://www.bsd.lv/picard.jpg
+.Ed
+.Pp
+The definition must be on its own line.
+.Pp
+Reference the link anywhere in your text using [text to the link] and
+the same [link title], both in square brackets
+.Pq Dq \&[]
+next to each other:
+.Bd -literal -offset indent
+Text about [Captain Picard][link1].
+.Ed
+.Pp
+References need not follow the definition: both may appear anywhere in
+relation to the other.
+.
+.Ss Automatic Links
+Automatic links are links to URLs or emails addresses that do not require text
+to links; rather, the full link or email address is inferred from the
+text.
+To invoke an automatic link, surround the link or email address with
+angle brackets
+.Pq Dq \&<> ,
+for example:
+.Bd -literal -offset indent
+<https://bsd.lv/>
+<huck@divelog.blue>
+.Ed
+.Pp
+In
+.Xr lowdown 1 ,
+these are only enabled if the
+.Ar autolink
+input option is specified.
+By default, it is.
+.
+.Ss Images
+The image syntax resembles the links syntax.
+The key difference is that images require an exclamation
+mark
+.Pq Dq \&!
+before the text to link surrounded by square brackets
+.Pq Dq \&[] .
+.Bd -literal -offset indent
+![Image text](imageurl.jpg)
+.Ed
+.Pp
+Just like with links, there are both inline and reference image links.
+The former consist of an exclamation mark
+.Pq Dq \&!
+followed by the text for the image (which may be empty) surrounded by
+square brackets
+.Dq Pq \&[]
+followed by the URL or the path to image in parentheses
+.Dq Pq \&() .
+.Bd -literal -offset indent
+![Picture of Picard](https://bsd.lv/picard.jpg)
+.Ed
+.Pp
+The reference style definition consists of an image identifier
+surrounded by square brackets
+.Dq Pq \&[]
+followed by a colon
+.Dq Pq \&:
+followed by an image URL or path to image and optional title attribute
+in double quotation marks.
+.Bd -literal -offset -indent
+[image1]: https://bsd.lv/picard.jpg "Picture of Picard"
+.Ed
+.Pp
+Invoking the image reference is as follows:
+.Bd -literal -offset indent
+A picture of the captain: ![Captain Picard][image1]
+.Ed
+.Pp
+As with regular reference links, the definition and references may occur
+anywhere in relation to each other.
+.
+.Ss Code
+In addition to code blocks, inline code spans may be specified within
+paragraphs or other block or span elements.
+To invoke a span of code, surround the code using backtick quotes
+.Pq Dq \&` .
+.Bd -literal -offset indent
+I need your IP address to scp you Picard pics.
+Use the `ifconfig iwm0` command.
+.Ed
+.Pp
+To include literal backticks
+.Pq Dq \&`
+within a code of span,
+surround the code using multiple backticks
+.Pq Dq \&(`` .
+.Bd -literal -offset indent
+``Here is a span of code with `backticks` inside it.``
+.Ed
+.Pp
+If you have a literal backtick at the start or end of the span of code,
+leave a space between the literal backtick and the delimiting backticks.
+.Bd -literal -offset indent
+`` `So many backticks.` ``
+.Ed
+.
+.
+.Sh ESCAPES
+.
+.Ss Automatic Escapes
+Output is automatically escaped depending upon the medium.
+For example, HTML output will properly escape angle brackets
+.Dq Pq \&<
+and ampersands
+.Dq Pq \&&
+to produce conformant HTML.
+The same goes with
+.Xr man 7
+output in escaping leading periods and so forth.
+.
+.Ss Backslash Escapes
+Backslash escapes render literal characters that would otherwise invoke
+a particular block or span element.
+For example, surrounding a phrase with single asterisks renders it as an
+emphasis:
+.Bd -literal -offset indent
+*Captain Picard*
+.Ed
+.Pp
+However, if you want to invoke those italics as literal characters,
+escape those asterisks using backslashes
+.Pq Dq \e .
+.Bd -literal -offset indent
+\e*Captain Picard\e*
+.Ed
+.Pp
+The following characters may be escaped to produce literal text:
+.Pp
+.Bl -tag -width Ds -compact
+.It Li *
+asterisk
+.It Li \e
+backslash
+.It Li `
+backtick
+.It Li {
+curly brace
+.It Li \&!
+exclamation mark
+.It Li #
+hash mark
+.It Li -
+minus sign
+.It Li \&(
+parentheses
+.It Li \&.
+period
+.It Li +
+plus sign
+.It Li \&[
+square bracket
+.It Li _
+underscore
+.El
+.
+.
+.Sh SEE ALSO
+.Xr lowdown 1
+.Sh STANDARDS
+The Markdown syntax accepted by
+.Xr lowdown 1
+conforms to John Gruber's original Markdown implementation.
+Extensions to the language are specifically noted.
+.Sh AUTHORS
+The
+.Nm
+reference was written by
+.An Christina Sophonpanich ,
+.Mt huck@divelog.blue .

@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate: September 5 2017 $
+.Dd $Mdocdate: September 14 2017 $
 .Dt LOWDOWN 3
 .Os
 .Sh NAME
@@ -38,7 +38,9 @@
 .Sh DESCRIPTION
 The
 .Nm lowdown
-library parses Markdown into HTML or roff
+library parses Markdown as defined in
+.Xr lowdown 5
+into HTML or roff
 .Pq Fl ms No or Fl man No macro sets .
 It consists of both a high-level interface consisting of
 .Xr lowdown_buf 3
@@ -294,7 +296,8 @@ A duplicate footnote reference was encountered, and is thus being ignored.
 .Xr lowdown_nroff_rndr 3 ,
 .Xr lowdown_tree_free 3 ,
 .Xr lowdown_tree_new 3 ,
-.Xr lowdown_tree_rndr 3
+.Xr lowdown_tree_rndr 3 ,
+.Xr lowdown 5
 .Sh AUTHORS
 The
 .Nm

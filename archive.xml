@@ -4,23 +4,36 @@
 		<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
 		<meta charset="utf-8" /> 
 		<title>lowdown: version history</title>
-		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Alegreya+Sans:400,400italic,500" />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Alegreya+Sans:400,400italic,500,700" />
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" />
 		<link rel="stylesheet" href="template.css" />
 	</head>
 	<body>
-		<nav>
-			<a href="index.html">lowdown</a>
-			<nav class="cur" data-sblg-nav="1" data-sblg-navsz="1" data-sblg-navcontent="1" data-sblg-navtag="version">${sblg-title}</nav>:
-			<a href="https://github.com/kristapsdz/lowdown">GitHub</a>,
-			<a href="snapshots/lowdown.tar.gz">Download</a>,
-			<a href="snapshots">Archive</a>,
-			<a href="archive.html">Version history</a>
-		</nav>
+		<header>
+			<div id="breadcrumbs">
+				<a href="https://www.bsd.lv">BSD.lv</a> tools for text processing: 
+				<a href="https://kristaps.bsd.lv/lowdown">lowdown</a>,
+				<a href="https://kristaps.bsd.lv/sblg">sblg</a>,
+				<a href="https://mandoc.bsd.lv">mandoc</a>
+			</div>
+			<div id="version">
+				Version
+				<nav class="cur" data-sblg-nav="1" data-sblg-navsz="1" data-sblg-navcontent="1" data-sblg-navtag="version" data-sblg-navsort="date">
+					${sblg-title}
+				</nav>:
+				<nav>
+					<a href="https://github.com/kristapsdz/lowdown">GitHub</a>,
+					<a href="snapshots/lowdown.tar.gz">Download</a>,
+					<a href="snapshots">Archive</a>,
+					<a href="archive.html">Version history</a>
+				</nav>
+			</div>
+		</header>
 		<article>
+			<h1><a href="index.html">lowdown</a> &#8212; simple markdown translator</h1>
 			<nav id="versions" data-sblg-nav="1" data-sblg-navcontent="1" data-sblg-navtag="version">
 				<div>${sblg-aside}</div>
-				<div>Version ${sblg-titletext}, <time datetime="${sblg-date}">${sblg-date}</time></div>
+				<div class="version">Version ${sblg-titletext}, <time datetime="${sblg-date}">${sblg-date}</time></div>
 			</nav>
 		</article>
 		<footer>

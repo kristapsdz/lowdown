@@ -127,6 +127,7 @@ struct 	hdoc {
 	int		 in_link_body;
 	struct lowdown_meta *m; /* document meta-data */
 	size_t		 msz; /* entries in "m" */
+	size_t		 nodes; /* number of nodes */
 	struct lowdown_node *current;
 };
 
@@ -140,6 +141,7 @@ pushnode(hdoc *doc, enum lowdown_rndrt t)
 	struct lowdown_node *n;
 
 	n = xcalloc(1, sizeof(struct lowdown_node));
+	n->id = doc->nodes++;
 	n->type = t;
 	n->parent = doc->current;
 	TAILQ_INIT(&n->children);
@@ -1904,27 +1906,35 @@ prefix_code(const char *data, size_t size)
  * Returns ordered list item prefix.
  */
 static size_t
-prefix_oli(char *data, size_t size, char **num, size_t *numsz)
+prefix_oli(hdoc *doc, char *data, size_t size, char **num, size_t *numsz)
 {
 	size_t i, st;
 
 	i = countspaces(data, 0, size, 3);
 
-	if (i >= size || data[i] < '0' || data[i] > '9')
+	if (i >= size || ! isdigit((int)data[i]))
 		return 0;
 
 	st = i;
 	if (NULL != num)
 		*num = &data[i];
 
-	while (i < size && data[i] >= '0' && data[i] <= '9')
+	while (i < size && isdigit((int)data[i]))
 		i++;
 
 	if (NULL != numsz)
 		*numsz = i - st;
 
-	if (i + 1 >= size || data[i] != '.' || data[i + 1] != ' ')
-		return 0;
+	if (LOWDOWN_COMMONMARK & doc->ext_flags) {
+		if (i + 1 >= size || 
+		    (data[i] != '.' && data[i] != ')') || 
+		    data[i + 1] != ' ')
+			return 0;
+	} else {
+		if (i + 1 >= size || data[i] != '.' || data[i + 1] != ' ')
+			return 0;
+	}
+
 
 	if (is_next_headerline(data + i, size - i))
 		return 0;
@@ -2222,7 +2232,7 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 	beg = prefix_uli(data, size);
 
 	if ( ! beg)
-		beg = prefix_oli(data, size, NULL, NULL);
+		beg = prefix_oli(doc, data, size, NULL, NULL);
 	if ( ! beg)
 		return 0;
 
@@ -2276,7 +2286,7 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 			has_next_uli = prefix_uli
 				(data + beg + i, end - beg - i);
 			has_next_oli = prefix_oli
-				(data + beg + i, end - beg - i,
+				(doc, data + beg + i, end - beg - i,
 				 NULL, NULL);
 		}
 
@@ -3016,7 +3026,7 @@ parse_block(hdoc *doc, char *data, size_t size)
 
 		/* An ordered list. */
 
-		if (prefix_oli(txt_data, end, NULL, NULL)) {
+		if (prefix_oli(doc, txt_data, end, NULL, NULL)) {
 			beg += parse_list(doc, 
 				txt_data, end, HLIST_FL_ORDERED);
 			continue;
@@ -3412,7 +3422,7 @@ parse_metadata_val(const char *data, size_t sz, size_t *len)
 	*len = i;
 
 	/* 
-	 * Find zero or more following multilines.
+	 * Iterate through zero or more following multilines.
 	 * Multilines are terminated by a line containing a colon (that
 	 * is not offset by whitespace) or a blank line.
 	 */
@@ -3422,37 +3432,45 @@ parse_metadata_val(const char *data, size_t sz, size_t *len)
 		 '\t' == data[i + 1]);
 
 	for (i++; i < sz; i++) {
+		/*
+		 * This block is executed within the line.
+		 * We use "peek" to see how far into the line we are;
+		 * thus, if we encounter a colon without leading
+		 * whitespace, we know that we're in the next metadata
+		 * and should stop.
+		 */
+
 		if (0 == startws && ':' == data[i])
 			break;
+
 		peek++;
+		if ('\n' != data[i]) 
+			continue;
 
-		if ('\n' == data[i]) {
-			nlines++;
-			*len += peek;
+		/*
+		 * We're at a newline: start the loop again by seeing if
+		 * the next line starts with whitespace.
+		 */
 
-			/* 
-			 * We shouldn't have double-newlines: they're
-			 * filtered out prior to calling parse_metdata().
-			 */
+		nlines++;
+		*len += peek;
+		peek = 0;
 
-			assert( ! (i + 1 < sz && '\n' == data[i + 1]));
+		/* (Filtered out prior to calling parse_metdata().) */
 
-			/* Do we have leading whitespace? */
+		assert( ! (i + 1 < sz && '\n' == data[i + 1]));
 
-			startws = i + 1 < sz &&
-				(' ' == data[i + 1] || 
-				 '\t' == data[i + 1]);
-			peek = 0;
-		}
+		/* Check if the next line has leading whitespace. */
+
+		startws = i + 1 < sz &&
+			(' ' == data[i + 1] || 
+			 '\t' == data[i + 1]);
 	}
 
-	/* 
-	 * If we have peek data, that means that we hit the end of the
-	 * metadata section and have already read ahead.
-	 */
+	/* Last metadata in section. */
 
 	if (i == sz && peek)
-		*len += peek;
+		*len += peek + 1;
 
 	/* Only remove trailing whitespace from a single line. */
 

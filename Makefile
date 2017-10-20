@@ -1,33 +1,34 @@
-.SUFFIXES: .xml .md .html .pdf .1 .1.html .3 .3.html
+.SUFFIXES: .xml .md .html .pdf .1 .1.html .3 .3.html .5 .5.html
 
 include Makefile.configure
 
-VERSION		 = 0.2.4
+VERSION		 = 0.3.0
 OBJS		 = autolink.o \
 		   buffer.o \
+		   diff.o \
 		   document.o \
-		   escape.o \
 		   html.o \
+		   html_escape.o \
 		   html_smartypants.o \
 		   library.o \
 		   log.o \
 		   nroff.o \
+		   nroff_escape.o \
 		   nroff_smartypants.o \
 		   tree.o \
+		   util.o \
 		   xmalloc.o
-COMPAT_OBJS	 = compat_err.o \
-		   compat_progname.o \
-		   compat_reallocarray.o \
-		   compat_strlcat.o \
-		   compat_strlcpy.o \
-		   compat_strtonum.o
+COMPAT_OBJS	 = compats.o
 WWWDIR		 = /var/www/vhosts/kristaps.bsd.lv/htdocs/lowdown
 HTMLS		 = archive.html \
+		   diff.html \
+		   diff.diff.html \
 		   index.html \
 		   README.html \
 		   $(MANS)
 MANS		 = man/lowdown.1.html \
 		   man/lowdown.3.html \
+		   man/lowdown.5.html \
 		   man/lowdown_buf.3.html \
 		   man/lowdown_doc_free.3.html \
 		   man/lowdown_doc_new.3.html \
@@ -43,24 +44,28 @@ MANS		 = man/lowdown.1.html \
 		   man/lowdown_tree_free.3.html \
 		   man/lowdown_tree_new.3.html \
 		   man/lowdown_tree_rndr.3.html
-PDFS		 = index.pdf README.pdf
+PDFS		 = diff.pdf index.pdf README.pdf
 MDS		 = index.md README.md
-CSSS		 = template.css mandoc.css
+CSSS		 = diff.css template.css mandoc.css
+JSS		 = diff.js
 
-all: lowdown
+all: lowdown lowdown-diff
 
 www: $(HTMLS) $(PDFS) lowdown.tar.gz lowdown.tar.gz.sha512
 
 installwww: www
 	mkdir -p $(WWWDIR)/snapshots
-	install -m 0444 $(HTMLS) $(CSSS) $(PDFS) $(WWWDIR)
+	install -m 0444 $(MDS) $(HTMLS) $(CSSS) $(JSS) $(PDFS) $(WWWDIR)
 	install -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots/lowdown-$(VERSION).tar.gz
 	install -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots/lowdown-$(VERSION).tar.gz.sha512
 	install -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots
 	install -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots
 
 lowdown: liblowdown.a main.o
-	$(CC) -o $@ main.o liblowdown.a
+	$(CC) -o $@ main.o liblowdown.a -lm
+
+lowdown-diff: lowdown
+	ln -f lowdown lowdown-diff
 
 liblowdown.a: $(OBJS) $(COMPAT_OBJS)
 	$(AR) rs $@ $(OBJS) $(COMPAT_OBJS)
@@ -71,7 +76,9 @@ install: all
 	mkdir -p $(DESTDIR)$(INCLUDEDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
 	mkdir -p $(DESTDIR)$(MANDIR)/man3
+	mkdir -p $(DESTDIR)$(MANDIR)/man5
 	install -m 0755 lowdown $(DESTDIR)$(BINDIR)
+	ln -f $(DESTDIR)$(BINDIR)/lowdown $(DESTDIR)$(BINDIR)/lowdown-diff
 	install -m 0644 liblowdown.a $(DESTDIR)$(LIBDIR)
 	install -m 0644 lowdown.h $(DESTDIR)$(INCLUDEDIR)
 	for f in $(MANS) ; do \
@@ -89,20 +96,26 @@ index.html README.html: template.xml
 		pdfroff -i -mspdf -t -k -Kutf8 > $@
 
 .xml.html:
-	sblg -t template.xml -o $@ -C $< $< versions.xml
+	sblg -t template.xml -s date -o $@ -C $< $< versions.xml
 
 archive.html: archive.xml versions.xml
-	sblg -t archive.xml -o $@ versions.xml
+	sblg -t archive.xml -s date -o $@ versions.xml
+
+diff.html: diff.md lowdown
+	./lowdown -s diff.md >$@
+
+diff.diff.html: diff.md diff.old.md lowdown-diff
+	./lowdown-diff -s diff.old.md diff.md >$@
 
 $(HTMLS): versions.xml
 
-.md.xml:
+.md.xml: lowdown
 	( echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" ; \
 	  echo "<article data-sblg-article=\"1\">" ; \
 	  ./lowdown $< ; \
 	  echo "</article>" ; ) >$@
 
-.1.1.html .3.3.html:
+.1.1.html .3.3.html .5.5.html:
 	mandoc -Thtml -Ostyle=mandoc.css $< >$@
 
 lowdown.tar.gz.sha512: lowdown.tar.gz
@@ -112,7 +125,7 @@ lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/
 	mkdir -p .dist/lowdown-$(VERSION)/man
 	install -m 0644 *.c *.h Makefile .dist/lowdown-$(VERSION)
-	install -m 0644 man/*.1 man/*.3 .dist/lowdown-$(VERSION)/man
+	install -m 0644 man/*.1 man/*.3 man/*.5 .dist/lowdown-$(VERSION)/man
 	install -m 0755 configure .dist/lowdown-$(VERSION)
 	( cd .dist/ && tar zcf ../$@ ./ )
 	rm -rf .dist/
@@ -125,7 +138,8 @@ main.o: lowdown.h
 
 clean:
 	rm -f $(OBJS) $(COMPAT_OBJS) $(PDFS) $(HTMLS) main.o
-	rm -f lowdown liblowdown.a index.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
+	rm -f index.xml diff.xml diff.diff.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
+	rm -f lowdown lowdown-diff liblowdown.a 
 
 distclean: clean
 	rm -f Makefile.configure config.h config.log

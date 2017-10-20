@@ -22,11 +22,7 @@
 #include <sys/queue.h>
 
 #include <assert.h>
-#if HAVE_ERR
-# include <err.h>
-#endif
 #include <stdarg.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,6 +39,36 @@ hbuf_init(hbuf *buf, size_t unit, int buffer_free)
 	buf->size = buf->asize = 0;
 	buf->unit = unit;
 	buf->buffer_free = buffer_free;
+}
+
+/*
+ * Clone the buffer at "buf" into the one at "v".
+ * The storage of "v" is externally managed.
+ * This is a deep copy.
+ * Always returns a valid pointer to "v".
+ */
+hbuf *
+hbuf_clone(const hbuf *buf, hbuf *v)
+{
+
+	v->data = NULL;
+	if (buf->size) {
+		v->data = xmalloc(buf->size);
+		memcpy(v->data, buf->data, buf->size);
+	} 
+	v->size = buf->size;
+	v->asize = buf->asize;
+	v->unit = buf->unit;
+	v->buffer_free = buf->buffer_free;
+	return(v);
+}
+
+int
+hbuf_eq(const hbuf *buf1, const hbuf *buf2)
+{
+
+	return(buf1->size == buf2->size &&
+	       0 == memcmp(buf1->data, buf2->data, buf1->size));
 }
 
 /* 

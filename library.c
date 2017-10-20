@@ -18,6 +18,7 @@
 
 #include <sys/queue.h>
 
+#include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -120,8 +121,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 				hesc_nroff(spb, (*m)[i].value, 
 					strlen((*m)[i].value), 0, 1);
 			free((*m)[i].value);
-			(*m)[i].value = xstrndup
-				((char *)spb->data, spb->size);
+			(*m)[i].value = xstrndup(spb->data, spb->size);
 			hbuf_free(spb);
 		}
 
@@ -147,8 +147,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 				lowdown_nroff_smrt(spb, (*m)[i].value, 
 					strlen((*m)[i].value));
 			free((*m)[i].value);
-			(*m)[i].value = xstrndup
-				((char *)spb->data, spb->size);
+			(*m)[i].value = xstrndup(spb->data, spb->size);
 			hbuf_free(spb);
 		}
 	} else {
@@ -156,6 +155,99 @@ lowdown_buf(const struct lowdown_opts *opts,
 		*rsz = ob->size;
 		ob->data = NULL;
 	}
+	hbuf_free(ob);
+}
+
+void
+lowdown_buf_diff(const struct lowdown_opts *optnew,
+	const char *new, size_t newsz,
+	const struct lowdown_opts *optold,
+	const char *old, size_t oldsz,
+	char **res, size_t *rsz)
+{
+	hbuf	 	 *ob, *spb;
+	void 		 *renderer = NULL;
+	hdoc 		 *doc;
+	enum lowdown_type t;
+	struct lowdown_node *nnew, *nold, *ndiff;
+
+	t = NULL == optnew ? LOWDOWN_HTML : optnew->type;
+
+	/*
+	 * XXX: for the renderer, the lodwown_opts used is not
+	 * significant.
+	 * This is an ugly part of the interface.
+	 */
+
+	switch (t) {
+	case (LOWDOWN_HTML):
+		renderer = lowdown_html_new(optnew);
+		break;
+	case (LOWDOWN_MAN):
+	case (LOWDOWN_NROFF):
+		renderer = lowdown_nroff_new(optnew);
+		break;
+	case (LOWDOWN_TREE):
+		renderer = lowdown_tree_new();
+		break;
+	}
+
+	/* Parse the output and free resources. */
+
+	doc = lowdown_doc_new(optnew);
+	nnew = lowdown_doc_parse(doc, new, newsz, NULL, NULL);
+	lowdown_doc_free(doc);
+
+	doc = lowdown_doc_new(optold);
+	nold = lowdown_doc_parse(doc, old, oldsz, NULL, NULL);
+	lowdown_doc_free(doc);
+
+	/* Get the difference tree. */
+
+	ndiff = lowdown_diff(nold, nnew);
+
+	lowdown_node_free(nnew);
+	lowdown_node_free(nold);
+
+	ob = hbuf_new(DEF_OUNIT);
+
+	switch (t) {
+	case (LOWDOWN_HTML):
+		lowdown_html_rndr(ob, renderer, ndiff);
+		lowdown_html_free(renderer);
+		break;
+	case (LOWDOWN_MAN):
+	case (LOWDOWN_NROFF):
+		lowdown_nroff_rndr(ob, renderer, ndiff);
+		lowdown_nroff_free(renderer);
+		break;
+	case (LOWDOWN_TREE):
+		lowdown_tree_rndr(ob, renderer, ndiff);
+		lowdown_tree_free(renderer);
+		break;
+	}
+
+	lowdown_node_free(ndiff);
+
+	/* Reprocess the output as smartypants. */
+
+	if (LOWDOWN_TREE != t &&
+	    NULL != optnew && LOWDOWN_SMARTY & optnew->oflags) {
+		spb = hbuf_new(DEF_OUNIT);
+		if (LOWDOWN_HTML == t)
+			lowdown_html_smrt(spb, ob->data, ob->size);
+		else
+			lowdown_nroff_smrt(spb, ob->data, ob->size);
+		*res = spb->data;
+		*rsz = spb->size;
+		spb->data = NULL;
+		hbuf_free(spb);
+	} else {
+		*res = ob->data;
+		*rsz = ob->size;
+		ob->data = NULL;
+	}
+
 	hbuf_free(ob);
 }
 
@@ -167,9 +259,10 @@ lowdown_file(const struct lowdown_opts *opts,
 	FILE *fin, char **res, size_t *rsz,
 	struct lowdown_meta **m, size_t *msz)
 {
-	hbuf *ib = NULL;
+	hbuf *ib;
 
 	ib = hbuf_new(DEF_IUNIT);
+	assert(NULL != ib);
 
 	if (hbuf_putf(ib, fin)) {
 		hbuf_free(ib);
@@ -180,3 +273,29 @@ lowdown_file(const struct lowdown_opts *opts,
 	hbuf_free(ib);
 	return(1);
 }
+
+int
+lowdown_file_diff(const struct lowdown_opts *optnew, FILE *fnew, 
+	const struct lowdown_opts *optold, FILE *fold, 
+	char **res, size_t *rsz)
+{
+	hbuf *src, *dst;
+
+	src = hbuf_new(DEF_IUNIT);
+	assert(NULL != src);
+	dst = hbuf_new(DEF_IUNIT);
+	assert(NULL != dst);
+
+	if (hbuf_putf(dst, fold) || hbuf_putf(src, fnew)) {
+		hbuf_free(src);
+		hbuf_free(dst);
+		return(0);
+	}
+
+	lowdown_buf_diff(optnew, src->data, src->size, 
+		optold, dst->data, dst->size, res, rsz);
+	hbuf_free(src);
+	hbuf_free(dst);
+	return(1);
+}
+

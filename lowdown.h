@@ -138,12 +138,20 @@ struct	lowdown_meta {
 	char		*value;
 };
 
+enum	lowdown_chng {
+	LOWDOWN_CHNG_NONE = 0,
+	LOWDOWN_CHNG_INSERT,
+	LOWDOWN_CHNG_DELETE,
+};
+
 /*
  * Node parsed from input document.
  * Each node is part of the parse tree.
  */
 struct	lowdown_node {
 	enum lowdown_rndrt	 type;
+	enum lowdown_chng	 chng; /* change type */
+	size_t			 id; /* unique identifier */
 	union {
 		struct rndr_doc_header {
 			struct lowdown_meta *m; /* unescaped */
@@ -271,9 +279,17 @@ void	 lowdown_buf(const struct lowdown_opts *,
 		const char *, size_t,
 		char **, size_t *,
 		struct lowdown_meta **, size_t *);
+void	 lowdown_buf_diff(const struct lowdown_opts *, 
+		const char *, size_t,
+		const struct lowdown_opts *,
+		const char *, size_t,
+		char **, size_t *);
 int	 lowdown_file(const struct lowdown_opts *, 
 		FILE *, char **, size_t *,
 		struct lowdown_meta **, size_t *);
+int	 lowdown_file_diff(const struct lowdown_opts *, FILE *, 
+		const struct lowdown_opts *, FILE *,
+		char **, size_t *);
 
 /* 
  * Low-level functions.
@@ -285,6 +301,9 @@ hdoc 	*lowdown_doc_new(const struct lowdown_opts *);
 struct lowdown_node
 	*lowdown_doc_parse(hdoc *, const char *, size_t, 
 		struct lowdown_meta **, size_t *);
+struct lowdown_node
+	*lowdown_diff(const struct lowdown_node *,
+		const struct lowdown_node *);
 void	 lowdown_doc_free(hdoc *);
 
 void 	 lowdown_node_free(struct lowdown_node *);
