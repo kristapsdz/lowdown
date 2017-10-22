@@ -15,7 +15,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd $Mdocdate: September 30 2017 $
+.Dd $Mdocdate: October 15 2017 $
 .Dt LOWDOWN 5
 .Os
 .
@@ -298,6 +298,41 @@ ___
 _ _ _
 ___________________________
 .Ed
+.
+.
+.Ss Metadata
+Documents can include specific information that is not part of the main text,
+called metadata.
+The metadata is normally stripped from the document before it is genereated,
+however, certain output formats will display the metadata as
+regular plain text.
+.Pp
+To invoke metadata, you need a key and a value, separated by a colon, at the
+beginning of your document
+The key is the type of data, and the value is the corresponding data
+There must not be any white space before your metadata.
+The metadata block ends with the first white space-only line.
+.Bd -literal -offset indent
+Title: Captain's log
+Author: Captain J-L Picard
+	First Officer Riker
+Date: Stardate 43917.4.
+.Ed
+.Pp
+If you have multiple authors, list each one on a separate line indented with
+a space or tab.
+End each line with two spaces to ensure linebreaks are rendendered
+on output whenever that format option is applicable.
+.Pp
+Note that beginning a document with a regular sentence containing a colon might
+invoke metadata.
+To escape this, add 1 blank line to the beginning of your
+document.
+.Pp
+Metadata requires the
+.Ar commonmark
+input option is to be specified.
+By default, it is.
 .
 .
 .Sh SPAN ELEMENTS
