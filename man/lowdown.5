@@ -301,38 +301,48 @@ ___________________________
 .
 .
 .Ss Metadata
-Documents can include specific information that is not part of the main text,
-called metadata.
-The metadata is normally stripped from the document before it is genereated,
-however, certain output formats will display the metadata as
-regular plain text.
+Documents can include metadata that is not part of the main text.
+This requires the
+.Ar metadata
+input option, which is the default.
+The syntax loosely follows the
+.Qq Multimarkdown
+specification.
 .Pp
-To invoke metadata, you need a key and a value, separated by a colon, at the
-beginning of your document
-The key is the type of data, and the value is the corresponding data
-There must not be any white space before your metadata.
-The metadata block ends with the first white space-only line.
+The metadata block begins on the document's first line and continues
+until the first blank line.
+It consists of one or more key-value pairs, with keys and values
+separated by a colon, and pairs separated by a newline.
+A key (and following value) must exist on the line beginning the
+metadata pair, but the value may span multiple lines.
 .Bd -literal -offset indent
 Title: Captain's log
 Author: Captain J-L Picard
-	First Officer Riker
-Date: Stardate 43917.4.
+Summary: As part of an exchange program, we're taking
+ aboard a Klingon officer to return the recent visit
+ of Commander Riker to the cruiser Pagh.
+Stardate: 43917.4
 .Ed
 .Pp
-If you have multiple authors, list each one on a separate line indented with
-a space or tab.
-End each line with two spaces to ensure linebreaks are rendendered
-on output whenever that format option is applicable.
+If there are multiple lines of text in a metadata value, subsequent
+lines should (but need not) be offset with whitespace.
+Otherwise, they must not have a colon in the value, else they will be
+construed as a subsequent pair's key.
 .Pp
-Note that beginning a document with a regular sentence containing a colon might
-invoke metadata.
-To escape this, add 1 blank line to the beginning of your
-document.
+End each line with two spaces to ensure linebreaks are rendered on
+output for non-conforming Markdown renderers.
+Moreover, beginning a document with a regular sentence containing a
+colon might invoke metadata.
+To escape this, add one blank line to the beginning of the document.
 .Pp
-Metadata requires the
-.Ar commonmark
-input option is to be specified.
-By default, it is.
+Metadata keys must consist of alphanumeric ASCII characters, the hyphen
+.Pq Qq \&- ,
+or the underscore
+.Pq Qq \&_ .
+They must have at least one character.
+Keys are stripped of white-space and converted to lower case.
+Values have leading white-space stripped, i.e., space following the
+colon.
 .
 .
 .Sh SPAN ELEMENTS
@@ -579,6 +589,11 @@ The Markdown syntax accepted by
 .Xr lowdown 1
 conforms to John Gruber's original Markdown implementation.
 Extensions to the language are specifically noted.
+They include:
+.Bl -tag -width Ds
+.It Lk http://commonmark.org CommonMark
+.It Lk http://fletcherpenney.net/multimarkdown Multimarkdown
+.El
 .Sh AUTHORS
 The
 .Nm
