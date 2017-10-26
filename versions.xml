@@ -400,6 +400,7 @@
 			<p>
 				Document the <code>metadata</code> functionality in <a href="lowdown.5.html">lowdown(5)</a>, thanks to 
 				<a href="https://github.com/vulcasian">Christina Sophonpanich</a> (thanks!).
+				Also sync with newest <a href="https://github.com/kristapsdz/oconfigure">oconfigure</a>.
 			</p>
 		</aside>
 	</article>
