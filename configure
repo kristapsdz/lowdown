@@ -34,6 +34,8 @@
 #
 # You'll probably want to change parts of this file.  I've noted the
 # parts that you'll probably change in the section documentation.
+#
+# See https://github.com/kristapsdz/oconfigure for more.
 
 set -e
 
@@ -54,12 +56,11 @@ echo "config.log: writing..."
 
 #----------------------------------------------------------------------
 # Initialize all variables here such that nothing can leak in from the
-# environment.
-# You MIGHT want to change this.
+# environment except for CC and CFLAGS, which we might have passed in.
 #----------------------------------------------------------------------
 
-CC=`printf "all:\\n\\t@echo \\\$(CC)\\n" | env -i make -sf -`
-CFLAGS=`printf "all:\\n\\t@echo \\\$(CFLAGS)\\n" | env -i make -sf -`
+CC=`printf "all:\\n\\t@echo \\\$(CC)\\n" | make -sf -`
+CFLAGS=`printf "all:\\n\\t@echo \\\$(CFLAGS)\\n" | make -sf -`
 CFLAGS="${CFLAGS} -g -W -Wall -Wextra -Wmissing-prototypes -Wstrict-prototypes"
 CFLAGS="${CFLAGS} -Wwrite-strings -Wno-unused-parameter"
 LDADD=
