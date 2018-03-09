@@ -62,7 +62,7 @@ installwww: www
 	install -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots
 
 lowdown: liblowdown.a main.o
-	$(CC) -o $@ main.o liblowdown.a -lm
+	$(CC) -o $@ main.o liblowdown.a $(LDFLAGS) -lm
 
 lowdown-diff: lowdown
 	ln -f lowdown lowdown-diff
@@ -124,7 +124,7 @@ lowdown.tar.gz.sha512: lowdown.tar.gz
 lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/
 	mkdir -p .dist/lowdown-$(VERSION)/man
-	install -m 0644 *.c *.h Makefile .dist/lowdown-$(VERSION)
+	install -m 0644 *.c *.h Makefile LICENSE.md .dist/lowdown-$(VERSION)
 	install -m 0644 man/*.1 man/*.3 man/*.5 .dist/lowdown-$(VERSION)/man
 	install -m 0755 configure .dist/lowdown-$(VERSION)
 	( cd .dist/ && tar zcf ../$@ ./ )
