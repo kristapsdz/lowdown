@@ -3528,9 +3528,11 @@ parse_metadata(hdoc *doc, const char *data, size_t sz)
 			break;
 		}
 
-		/* Consume colon, value, then on to next token. */
+		/* Pass colon, space, value, then to next token. */
 
 		i++;
+		while (isspace((unsigned char)data[i]))
+			i++;
 		val = parse_metadata_val(&data[i], sz - i, &valsz);
 		m->value = xstrndup(val, valsz);
 		pos = i + valsz + 1;
