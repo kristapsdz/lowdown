@@ -17,7 +17,7 @@ main(void)
 }
 #endif /* TEST_ARC4RANDOM */
 #if TEST_CAPSICUM
-#include <sys/capability.h>
+#include <sys/capsicum.h>
 
 int
 main(void)
@@ -280,6 +280,32 @@ main(void)
 	    buf[0] == 'a' && buf[1] == '\0');
 }
 #endif /* TEST_STRLCPY */
+#if TEST_STRNDUP
+#include <string.h>
+
+int
+main(void)
+{
+	const char *foo = "bar";
+	char *baz;
+
+	baz = strndup(foo, 1);
+	return(0 != strcmp(baz, "b"));
+}
+#endif /* TEST_STRNDUP */
+#if TEST_STRNLEN
+#include <string.h>
+
+int
+main(void)
+{
+	const char *foo = "bar";
+	size_t sz;
+
+	sz = strnlen(foo, 1);
+	return(1 != sz);
+}
+#endif /* TEST_STRNLEN */
 #if TEST_STRTONUM
 /*
  * Copyright (c) 2015 Ingo Schwarze <schwarze@openbsd.org>

@@ -35,24 +35,21 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void vwarni(const char *, va_list);
-static void vwarnxi(const char *, va_list);
-
-static void
-vwarnxi(const char *fmt, va_list ap)
+void
+vwarnx(const char *fmt, va_list ap)
 {
 	fprintf(stderr, "%s: ", getprogname());
 	if (fmt != NULL)
 		vfprintf(stderr, fmt, ap);
 }
 
-static void
-vwarni(const char *fmt, va_list ap)
+void
+vwarn(const char *fmt, va_list ap)
 {
 	int sverrno;
 
 	sverrno = errno;
-	vwarnxi(fmt, ap);
+	vwarnx(fmt, ap);
 	if (fmt != NULL)
 		fputs(": ", stderr);
 	fprintf(stderr, "%s\n", strerror(sverrno));
@@ -64,7 +61,7 @@ err(int eval, const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	vwarni(fmt, ap);
+	vwarn(fmt, ap);
 	va_end(ap);
 	exit(eval);
 }
@@ -75,7 +72,7 @@ errx(int eval, const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	vwarnxi(fmt, ap);
+	vwarnx(fmt, ap);
 	va_end(ap);
 	fputc('\n', stderr);
 	exit(eval);
@@ -87,7 +84,7 @@ warn(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	vwarni(fmt, ap);
+	vwarn(fmt, ap);
 	va_end(ap);
 }
 
@@ -97,7 +94,7 @@ warnx(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	vwarnxi(fmt, ap);
+	vwarnx(fmt, ap);
 	va_end(ap);
 	fputc('\n', stderr);
 }
@@ -788,6 +785,79 @@ strlcpy(char *dst, const char *src, size_t siz)
 	return(s - src - 1);	/* count does not include NUL */
 }
 #endif /* !HAVE_STRLCPY */
+#if !HAVE_STRNDUP
+/*	$OpenBSD$	*/
+/*
+ * Copyright (c) 2010 Todd C. Miller <Todd.Miller@courtesan.com>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+#include <sys/types.h>
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+
+char *
+strndup(const char *str, size_t maxlen)
+{
+	char *copy;
+	size_t len;
+
+	len = strnlen(str, maxlen);
+	copy = malloc(len + 1);
+	if (copy != NULL) {
+		(void)memcpy(copy, str, len);
+		copy[len] = '\0';
+	}
+
+	return copy;
+}
+#endif /* !HAVE_STRNDUP */
+#if !HAVE_STRNLEN
+/*	$OpenBSD$	*/
+
+/*
+ * Copyright (c) 2010 Todd C. Miller <Todd.Miller@courtesan.com>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+#include <sys/types.h>
+#include <string.h>
+
+size_t
+strnlen(const char *str, size_t maxlen)
+{
+	const char *cp;
+
+	for (cp = str; maxlen != 0 && *cp != '\0'; cp++, maxlen--)
+		;
+
+	return (size_t)(cp - str);
+}
+#endif /* !HAVE_STRNLEN */
 #if !HAVE_STRTONUM
 /*
  * Copyright (c) 2004 Ted Unangst and Todd Miller
