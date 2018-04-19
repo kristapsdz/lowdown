@@ -41,7 +41,7 @@ For the moment, **lowdown** output is the same as
 - disabled inline HTML (truly an evil feature of Markdown)
 - "smartypants" enabled
 
-Individual features can be emabled and disabled at will.
+Individual features can be enabled and disabled at will.
 
 The following modifications to the HTML5 output have been made:
 
