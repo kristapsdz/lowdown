@@ -928,7 +928,7 @@ rndr_doc_header(hbuf *ob,
 	if (NULL == date) {
 		t = time(NULL);
 		tm = localtime(&t);
-		strftime(buf, sizeof(buf), "%F", tm);
+		strftime(buf, sizeof(buf), "%Y-%m-%d", tm);
 		date = buf;
 	}
 
