@@ -427,6 +427,7 @@
 			<p>
 				Portability: don't use <code>%F</code> for date formatting.
 				This doesn't work with some libc versions.
+				Also some documentation readability improvements.
 			</p>
 		</aside>
 	</article>
