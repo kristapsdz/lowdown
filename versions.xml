@@ -417,4 +417,17 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.3.3</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2018-06-09">2018-06-09</time>
+		</header>
+		<aside>
+			<p>
+				Portability: don't use <code>%F</code> for date formatting.
+				This doesn't work with some libc versions.
+			</p>
+		</aside>
+	</article>
 </articles>
