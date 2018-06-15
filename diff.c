@@ -973,10 +973,6 @@ node_merge(const struct lowdown_node *nold,
 			nnew = TAILQ_NEXT(nnew, entries);
 		}
 
-		/* Nothing more to do at this level? */
-
-		if (NULL == nnew)
-			break;
 
 		/*
 		 * If both nodes are text nodes, then we want to run the
@@ -984,15 +980,42 @@ node_merge(const struct lowdown_node *nold,
 		 * This is an extension of the BULD algorithm.
 		 */
 
-		if (LOWDOWN_NORMAL_TEXT == nold->type &&
+		if (NULL != nold && NULL != nnew &&
+		    LOWDOWN_NORMAL_TEXT == nold->type &&
 		    NULL == xold->match &&
 		    LOWDOWN_NORMAL_TEXT == nnew->type &&
 		    NULL == xnew->match) {
 			node_lcs(nold, nnew, n, id);
 			nold = TAILQ_NEXT(nold, entries);
 			nnew = TAILQ_NEXT(nnew, entries);
-			continue;
 		}
+
+		while (NULL != nold) {
+			xold = &xoldmap->nodes[nold->id];
+			if (NULL != xold->match)
+				break;
+			nn = node_clonetree(nold, id);
+			nn->parent = n;
+			nn->chng = LOWDOWN_CHNG_DELETE;
+			TAILQ_INSERT_TAIL(&n->children, nn, entries);
+			nold = TAILQ_NEXT(nold, entries);
+		}
+
+		while (NULL != nnew) {
+			xnew = &xnewmap->nodes[nnew->id];
+			if (NULL != xnew->match)
+				break;
+			nn = node_clonetree(nnew, id);
+			TAILQ_INSERT_TAIL(&n->children, nn, entries);
+			nn->parent = n;
+			nn->chng = LOWDOWN_CHNG_INSERT;
+			nnew = TAILQ_NEXT(nnew, entries);
+		}
+
+		/* Nothing more to do at this level? */
+
+		if (NULL == nnew)
+			break;
 
 		/*
 		 * Now we take the current new node and see if it's a
