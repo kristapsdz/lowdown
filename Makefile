@@ -62,7 +62,7 @@ installwww: www
 	install -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots
 
 lowdown: liblowdown.a main.o
-	$(CC) -o $@ main.o liblowdown.a $(LDFLAGS) -lm
+	$(CC) -o $@ main.o liblowdown.a $(LDFLAGS) -lm -ldiff
 
 lowdown-diff: lowdown
 	ln -f lowdown lowdown-diff
