@@ -20,6 +20,7 @@
 #include <sys/types.h>
 
 #include <assert.h>
+#include <ctype.h>
 #if HAVE_ERR
 # include <err.h>
 #endif
@@ -32,8 +33,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <diff.h>
+
 #include "lowdown.h"
 #include "extern.h"
+
+#define	DEBUG 0
 
 struct	xnode {
 	char		 sig[MD5_DIGEST_STRING_LENGTH]; /* signature */
@@ -58,7 +63,17 @@ struct	pnode {
 
 TAILQ_HEAD(pnodeq, pnode);
 
-#if 0
+/*
+ * A node used in computing the shortest edit script.
+ */
+struct	sesnode {
+	char		*buf; /* buffer */
+	size_t		 bufsz; /* length of buffer (less NUL) */
+	int		 tailsp; /* whether there's trailing space */
+	int		 headsp; /* whether there's leading space */
+};
+
+#if DEBUG
 static	const char *const names[LOWDOWN__MAX] = {
 	"LOWDOWN_ROOT",			/* LOWDOWN_ROOT */
 	"LOWDOWN_BLOCKCODE",            /* LOWDOWN_BLOCKCODE */
@@ -96,7 +111,6 @@ static	const char *const names[LOWDOWN__MAX] = {
 	"LOWDOWN_DOC_FOOTER",           /* LOWDOWN_DOC_FOOTER */
 };
 #endif
-
 
 static void
 MD5Updatebuf(MD5_CTX *ctx, const hbuf *v)
@@ -708,6 +722,178 @@ node_clonetree(const struct lowdown_node *v, size_t *id)
 }
 
 /*
+ * Count the number of words in a normal-text node.
+ */
+static size_t
+node_countwords(const struct lowdown_node *n)
+{
+	const char	*cp;
+	size_t		 i = 0, sz, words = 0;
+
+	cp = n->rndr_normal_text.text.data;
+	sz = n->rndr_normal_text.text.size;
+
+	/* Skip leading space. */
+
+	while (i < sz &&
+	       isspace((unsigned char)cp[i]))
+		i++;
+
+	/* First go through word, then trailing space. */
+
+	while (i < sz) {
+		assert( ! isspace((unsigned char)cp[i]));
+		words++;
+		while (i < sz &&
+		       ! isspace((unsigned char)cp[i]))
+			i++;
+		while (i < sz && 
+		       isspace((unsigned char)cp[i]))
+			i++;
+	}
+
+	return words;
+}
+
+/*
+ * Like node_countwords(), except dupping individual words into a
+ * structure.
+ */
+static void
+node_tokenise(const struct lowdown_node *n, 
+	struct sesnode *toks, size_t toksz, char **savep)
+{
+	char	*cp;
+	size_t	 i = 0, sz, words = 0;
+
+	*savep = NULL;
+
+	if (0 == toksz)
+		return;
+
+	sz = n->rndr_normal_text.text.size;
+	cp = xstrndup(n->rndr_normal_text.text.data, sz);
+
+	*savep = cp;
+
+	/* Skip leading space. */
+
+	if (i < sz)
+		toks[0].headsp = isspace((unsigned char)cp[0]);
+
+	while (i < sz &&
+	       isspace((unsigned char)cp[i]))
+		i++;
+
+	while (i < sz) {
+		assert(words < toksz);
+		assert( ! isspace((unsigned char)cp[i]));
+		toks[words].buf = &cp[i];
+		toks[words].bufsz = 0;
+		while (i < sz &&
+		       ! isspace((unsigned char)cp[i])) {
+			toks[words].bufsz++;
+			i++;
+		}
+		words++;
+		if (i == sz)
+			break;
+		toks[words - 1].tailsp = 1;
+		assert(isspace((unsigned char)cp[i]));
+		cp[i++] = '\0';
+		while (i < sz && 
+		       isspace((unsigned char)cp[i]))
+			i++;
+	}
+}
+
+static int
+node_word_cmp(const void *p1, const void *p2)
+{
+	const struct sesnode *l1 = p1, *l2 = p2;
+
+	if (l1->bufsz != l2->bufsz)
+		return 0;
+	return 0 == strncmp(l1->buf, l2->buf, l1->bufsz);
+}
+
+static void
+node_lcs(const struct lowdown_node *nold,
+	const struct lowdown_node *nnew,
+	struct lowdown_node *n, size_t *id)
+{
+	const struct sesnode *tmp;
+	struct lowdown_node *nn;
+	struct sesnode	*newtok, *oldtok;
+	char		*newtokbuf, *oldtokbuf;
+	size_t		 i, newtoksz, oldtoksz;
+	struct diff	 d;
+	int		 rc;
+
+	newtoksz = node_countwords(nnew);
+	oldtoksz = node_countwords(nold);
+
+	newtok = xcalloc(newtoksz, sizeof(struct sesnode));
+	oldtok = xcalloc(oldtoksz, sizeof(struct sesnode));
+
+	node_tokenise(nnew, newtok, newtoksz, &newtokbuf);
+	node_tokenise(nold, oldtok, oldtoksz, &oldtokbuf);
+
+	rc = diff(&d, node_word_cmp, sizeof(struct sesnode), 
+		oldtok, oldtoksz, newtok, newtoksz);
+
+	for (i = 0; i < d.sessz; i++) {
+		tmp = d.ses[i].e;
+
+		if (tmp->headsp) {
+			nn = xcalloc(1, sizeof(struct lowdown_node));
+			TAILQ_INIT(&nn->children);
+			TAILQ_INSERT_TAIL(&n->children, nn, entries);
+			nn->type = LOWDOWN_NORMAL_TEXT;
+			nn->id = (*id)++;
+			nn->parent = n;
+			nn->rndr_normal_text.text.size = 1;
+			nn->rndr_normal_text.text.data = xstrdup(" ");
+		}
+
+		nn = xcalloc(1, sizeof(struct lowdown_node));
+		TAILQ_INIT(&nn->children);
+		TAILQ_INSERT_TAIL(&n->children, nn, entries);
+		nn->type = LOWDOWN_NORMAL_TEXT;
+		nn->id = (*id)++;
+		nn->parent = n;
+		nn->rndr_normal_text.text.size = tmp->bufsz;
+		nn->rndr_normal_text.text.data = 
+			xcalloc(1, tmp->bufsz + 1);
+		memcpy(nn->rndr_normal_text.text.data,
+			tmp->buf, tmp->bufsz);
+		nn->chng = DIFF_DELETE == d.ses[i].type ?
+			LOWDOWN_CHNG_DELETE :
+			DIFF_ADD == d.ses[i].type ?
+			LOWDOWN_CHNG_INSERT :
+			LOWDOWN_CHNG_NONE;
+
+		if (tmp->tailsp) {
+			nn = xcalloc(1, sizeof(struct lowdown_node));
+			TAILQ_INIT(&nn->children);
+			TAILQ_INSERT_TAIL(&n->children, nn, entries);
+			nn->type = LOWDOWN_NORMAL_TEXT;
+			nn->id = (*id)++;
+			nn->parent = n;
+			nn->rndr_normal_text.text.size = 1;
+			nn->rndr_normal_text.text.data = xstrdup(" ");
+		}
+	}
+
+	free(d.ses);
+	free(d.lcs);
+	free(newtok);
+	free(oldtok);
+	free(newtokbuf);
+	free(oldtokbuf);
+}
+
+/*
  * Merge the new tree "nnew" with the old "nold" using a depth-first
  * algorithm.
  * The produced tree will show the new tree with deleted nodes from the
@@ -758,7 +944,8 @@ node_merge(const struct lowdown_node *nold,
 
 		while (NULL != nold) {
 			xold = &xoldmap->nodes[nold->id];
-			if (NULL != xold->match) 
+			if (NULL != xold->match ||
+			    LOWDOWN_NORMAL_TEXT == nold->type)
 				break;
 			nn = node_clonetree(nold, id);
 			nn->parent = n;
@@ -776,7 +963,8 @@ node_merge(const struct lowdown_node *nold,
 
 		while (NULL != nnew) {
 			xnew = &xnewmap->nodes[nnew->id];
-			if (NULL != xnew->match)
+			if (NULL != xnew->match ||
+			    LOWDOWN_NORMAL_TEXT == nnew->type)
 				break;
 			nn = node_clonetree(nnew, id);
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
@@ -789,6 +977,22 @@ node_merge(const struct lowdown_node *nold,
 
 		if (NULL == nnew)
 			break;
+
+		/*
+		 * If both nodes are text nodes, then we want to run the
+		 * LCS algorithm on them.
+		 * This is an extension of the BULD algorithm.
+		 */
+
+		if (LOWDOWN_NORMAL_TEXT == nold->type &&
+		    NULL == xold->match &&
+		    LOWDOWN_NORMAL_TEXT == nnew->type &&
+		    NULL == xnew->match) {
+			node_lcs(nold, nnew, n, id);
+			nold = TAILQ_NEXT(nold, entries);
+			nnew = TAILQ_NEXT(nnew, entries);
+			continue;
+		}
 
 		/*
 		 * Now we take the current new node and see if it's a
@@ -868,7 +1072,7 @@ node_merge(const struct lowdown_node *nold,
 	return(n);
 }
 
-#if 0
+#if DEBUG
 static void
 node_print(const struct lowdown_node *n, const struct xmap *map, size_t ind)
 {
@@ -1082,12 +1286,10 @@ lowdown_diff(const struct lowdown_node *nold,
 	 * Our optimisation is nothing like the paper's.
 	 */
 
-#if 0
-	node_print(nnew, &xnewmap, 0);
-#endif
 	node_optimise(nnew, &xnewmap, &xoldmap);
-#if 0
+#if DEBUG
 	node_print(nnew, &xnewmap, 0);
+	node_print(nold, &xoldmap, 0);
 #endif
 
 	/*
