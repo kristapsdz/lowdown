@@ -21,9 +21,6 @@
 
 #include <assert.h>
 #include <ctype.h>
-#if HAVE_ERR
-# include <err.h>
-#endif
 #include <float.h>
 #include <math.h>
 #if HAVE_MD5
@@ -38,7 +35,7 @@
 #include "lowdown.h"
 #include "extern.h"
 
-#define	DEBUG 0
+#define	DEBUG 1
 
 struct	xnode {
 	char		 sig[MD5_DIGEST_STRING_LENGTH]; /* signature */
@@ -148,8 +145,9 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 	/* Get our node slot. */
 
 	if (n->id >= map->maxsize) {
-		map->nodes = xreallocarray
-			(map->nodes, n->id + 64,
+		map->nodes = xrecallocarray
+			(map->nodes, 
+			 map->maxsize, n->id + 64,
 			 sizeof(struct xnode));
 		map->maxsize = n->id + 64;
 	}
@@ -419,7 +417,7 @@ candidate(struct xnode *xnew, struct xmap *xnewmap,
 	assert(NULL != xnew->node);
 	assert(NULL != xold->node);
 
-	if (NULL == xnew->match) {
+	if (NULL == xnew->optmatch) {
 		xnew->optmatch = xold->node;
 		xnew->opt = optimality
 			(xnew, xnewmap, xold, xoldmap);
@@ -434,7 +432,7 @@ candidate(struct xnode *xnew, struct xmap *xnewmap,
 		 * Choose the lesser of the norms.
 		 */
 		dold = llabs((long long)
-			(xnew->match->id - xnew->node->id));
+			(xnew->optmatch->id - xnew->node->id));
 		dnew = llabs((long long)
 			(xold->node->id - xnew->node->id));
 		if (dold > dnew) {
@@ -444,7 +442,7 @@ candidate(struct xnode *xnew, struct xmap *xnewmap,
 	} else if (opt > xnew->opt) {
 		xnew->optmatch = xold->node;
 		xnew->opt = opt;
-	}
+	} 
 }
 
 /*
@@ -1313,10 +1311,13 @@ lowdown_diff(const struct lowdown_node *nold,
 
 		for (i = 0; i < xoldmap.maxid + 1; i++) {
 			xold = &xoldmap.nodes[i];
+			if (NULL == xold->node)
+				continue;
 			if (NULL != xold->match)
 				continue;
 			if (strcmp(xnew->sig, xold->sig))
 				continue;
+
 			assert(NULL == xold->match);
 			candidate(xnew, &xnewmap, xold, &xoldmap);
 		}
