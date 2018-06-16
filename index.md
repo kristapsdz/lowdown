@@ -277,7 +277,3 @@ to and from the definition.
 - In all modes, the "smartypants" formatting should be embedded in
 document output --- not in a separate step as implemented in the
 original sources.
-
-- Diffing needs work.  In particular, matching text components should
-use an embedded LCS diff tool for local changes.  See the [lowdown
-diffing engine](https://kristaps.bsd.lv/lowdown/diff.html) for more.
