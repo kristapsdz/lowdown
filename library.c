@@ -158,6 +158,42 @@ lowdown_buf(const struct lowdown_opts *opts,
 	hbuf_free(ob);
 }
 
+/*
+ * Merge adjacent text nodes into single text nodes, freeing the
+ * duplicates along the way.
+ * This is only used when diffing, as it makes the diff algorithm hvae a
+ * more reasonable view of text in the tree.
+ */
+static void
+lowdown_merge_adjacent_text(struct lowdown_node *n)
+{
+	struct lowdown_node *nn, *next;
+	hbuf	*nb, *nextbuf;
+
+	TAILQ_FOREACH(nn, &n->children, entries) {
+		if (LOWDOWN_NORMAL_TEXT != nn->type) {
+			lowdown_merge_adjacent_text(nn);
+			continue;
+		}
+		nb = &nn->rndr_normal_text.text;
+		for (;;) {
+			next = TAILQ_NEXT(nn, entries);
+			if (NULL == next ||
+			    LOWDOWN_NORMAL_TEXT != next->type)
+				break;
+			nextbuf = &next->rndr_normal_text.text;
+			TAILQ_REMOVE(&n->children, next, entries);
+			nb->data = xrealloc(nb->data, 
+				nb->size + nextbuf->size + 1);
+			memcpy(nb->data + nb->size,
+				nextbuf->data, nextbuf->size);
+			nb->data[nb->size + nextbuf->size] = '\0';
+			nb->size += nextbuf->size;
+			lowdown_node_free(next);
+		}
+	}
+}
+
 void
 lowdown_buf_diff(const struct lowdown_opts *optnew,
 	const char *new, size_t newsz,
@@ -201,6 +237,11 @@ lowdown_buf_diff(const struct lowdown_opts *optnew,
 	doc = lowdown_doc_new(optold);
 	nold = lowdown_doc_parse(doc, old, oldsz, NULL, NULL);
 	lowdown_doc_free(doc);
+
+	/* Merge adjacent text nodes. */
+
+	lowdown_merge_adjacent_text(nnew);
+	lowdown_merge_adjacent_text(nold);
 
 	/* Get the difference tree. */
 
