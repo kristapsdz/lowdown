@@ -4,9 +4,9 @@ author: Kristaps Dzonsons
 # [%title]
 
 *lowdown* is a Markdown translator producing HTML5 and *roff* documents
-in the **ms** and **man** formats.  It doesn't require XSLT, Python, or
-external libraries -- it's just clean, secure, [open
-source](http://opensource.org/licenses/ISC) C code with no dependencies.
+in the **ms** and **man** formats.  It's just clean, secure, [open
+source](http://opensource.org/licenses/ISC) C code with only a single
+dependency ([libdiff](https://github.com/kristapsdz/libdiff)).
 Its canonical documentation is
 [lowdown(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) for the
 formatter, [lowdown(5)](https://kristaps.bsd.lv/lowdown/lowdown.5.html)
@@ -185,9 +185,7 @@ through [valgrind](http://valgrind.org/), also without issue.
 
 ## Hacking
 
-Want to hack on *lowdown*?  Of course you do.  (Or maybe you should
-focus on better PS and PDF output for
-[mandoc(1)](https://mdocml.bsd.lv).)
+Want to hack on *lowdown*?  Of course you do.
 
 First, start in
 [library.c](https://github.com/kristapsdz/lowdown/blob/master/library.c).
