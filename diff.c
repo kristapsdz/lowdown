@@ -154,7 +154,6 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 
 	assert(n->id < map->maxsize);
 	xn = &map->nodes[n->id];
-	memset(xn, 0, sizeof(struct xnode));
 	assert(NULL == xn->node);
 	assert(0.0 == xn->weight);
 	xn->node = n;
@@ -770,7 +769,9 @@ node_tokenise(const struct lowdown_node *n,
 		return;
 
 	sz = n->rndr_normal_text.text.size;
-	cp = xstrndup(n->rndr_normal_text.text.data, sz);
+	*savep = cp = xmalloc(sz + 1);
+	memcpy(cp, n->rndr_normal_text.text.data, sz);
+	cp[sz] = '\0';
 
 	*savep = cp;
 
@@ -826,7 +827,6 @@ node_lcs(const struct lowdown_node *nold,
 	char		*newtokbuf, *oldtokbuf;
 	size_t		 i, newtoksz, oldtoksz;
 	struct diff	 d;
-	int		 rc;
 
 	newtoksz = node_countwords(nnew);
 	oldtoksz = node_countwords(nold);
@@ -837,7 +837,7 @@ node_lcs(const struct lowdown_node *nold,
 	node_tokenise(nnew, newtok, newtoksz, &newtokbuf);
 	node_tokenise(nold, oldtok, oldtoksz, &oldtokbuf);
 
-	rc = diff(&d, node_word_cmp, sizeof(struct sesnode), 
+	diff(&d, node_word_cmp, sizeof(struct sesnode), 
 		oldtok, oldtoksz, newtok, newtoksz);
 
 	for (i = 0; i < d.sessz; i++) {
