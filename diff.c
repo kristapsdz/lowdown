@@ -35,7 +35,7 @@
 #include "lowdown.h"
 #include "extern.h"
 
-#define	DEBUG 1
+#define	DEBUG 0
 
 struct	xnode {
 	char		 sig[MD5_DIGEST_STRING_LENGTH]; /* signature */
