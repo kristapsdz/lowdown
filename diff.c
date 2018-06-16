@@ -1121,20 +1121,63 @@ node_print(const struct lowdown_node *n, const struct xmap *map, size_t ind)
 #endif
 
 /*
- * Our optimising phase is a bit complicated.
- * It is not reflect in any part of the paper.
- * In short, we want to look, from bottom-up, at all nodes that aren't
- * matched.
- * We then examine all the children of the un-matched nodes and see
- * which of their matches, if found, are under a root that's the same
- * node as we are.
- * This lets us compuate the largest fraction of un-matched nodes'
+ * Optimise from top down.
+ */
+static void
+node_optimise_topdown(const struct lowdown_node *n, 
+	struct xmap *newmap, struct xmap *oldmap)
+{
+	struct xnode *xn, *xmatch, *xnchild, *xmchild;
+	const struct lowdown_node *match, *nchild, *mchild;
+
+	xn = &newmap->nodes[n->id];
+	assert(NULL != xn);
+	assert(NULL != xn->match);
+
+	match = xn->match;
+	xmatch = &oldmap->nodes[match->id];
+	assert(NULL != xmatch);
+
+	TAILQ_FOREACH(nchild, &n->children, entries) {
+		/* Only process "inner" nodes. */
+		if (TAILQ_EMPTY(&nchild->children))
+			continue;
+		xnchild = &newmap->nodes[nchild->id];
+		assert(NULL != xnchild);
+		if (NULL != xnchild->match)
+			continue;
+		TAILQ_FOREACH(mchild, &match->children, entries) {
+			/* Only process "inner" nodes. */
+			if (TAILQ_EMPTY(&mchild->children))
+				continue;
+			xmchild = &oldmap->nodes[mchild->id];
+			assert(NULL != xmchild);
+			if (NULL != xmchild->match)
+				continue;
+			if ( ! match_eq(nchild, mchild))
+				continue;
+			warnx("matching!");
+			xnchild->match = mchild;
+			xmchild->match = nchild;
+			break;
+		}
+		if (NULL == mchild)
+			continue;
+		node_optimise_topdown(nchild, newmap, oldmap);
+	}
+}
+
+/*
+ * Optimise bottom-up over all un-matched nodes: examine all the
+ * children of the un-matched nodes and see which of their matches, if
+ * found, are under a root that's the same node as we are.
+ * This lets us compute the largest fraction of un-matched nodes'
  * children that are in the same tree.
  * If that fraction is >50%, then we consider that the subtrees are
  * matched.
  */
 static void
-node_optimise(const struct lowdown_node *n, 
+node_optimise_bottomup(const struct lowdown_node *n, 
 	struct xmap *newmap, struct xmap *oldmap)
 {
 	const struct lowdown_node *nn, *on, *nnn, *maxn = NULL;
@@ -1147,7 +1190,7 @@ node_optimise(const struct lowdown_node *n,
 
 	TAILQ_FOREACH(nn, &n->children, entries) {
 		tw += newmap->nodes[nn->id].weight;
-		node_optimise(nn, newmap, oldmap);
+		node_optimise_bottomup(nn, newmap, oldmap);
 	}
 
 	/*
@@ -1309,7 +1352,9 @@ lowdown_diff(const struct lowdown_node *nold,
 	 * Our optimisation is nothing like the paper's.
 	 */
 
-	node_optimise(nnew, &xnewmap, &xoldmap);
+	node_optimise_topdown(nnew, &xnewmap, &xoldmap);
+	node_optimise_bottomup(nnew, &xnewmap, &xoldmap);
+
 #if DEBUG
 	node_print(nnew, &xnewmap, 0);
 	node_print(nold, &xoldmap, 0);
