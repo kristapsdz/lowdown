@@ -15,7 +15,8 @@ In this paper, I briefly describe the "diff" engine used in
 in [lowdown](https://kristaps.bsd.lv/lowdown/index.html).  The work is
 motivated by the need to provide formatted output describing the
 difference between two documents---specifically, formatted PDF via the
-**-Tms** output.
+**-Tms** output, although **-Thtml** and the other output modes are of
+course supported.
 
 This documents an early work in progress---both source code and
 documentation.  The source is documented fully in
@@ -141,17 +142,17 @@ The algorithm is in effect an ordered tree diff.  I began with
 well-studied algorithms for a well-studied problem: XML tree
 differences.  (The HTML difference tools described above inherit from
 those algorithms.) For an overview of algorithms, see Change Detection
-in XML Trees: a Survey[^Peters2005].
-
-I base the [lowdown-diff(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) algorithm off of Detecting
-Changes in XML Documents[^Cobena2002].
+in XML Trees: a Survey[^Peters2005].  I base the
+[lowdown-diff(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) algorithm off
+of Detecting Changes in XML Documents[^Cobena2002].
 
 The reason for this choice instead of another is primarily the ease in
 implementation.  Moreover, since the programmatic output of the
 algorithm is a generic AST, it's feasible to re-implement the algorithm
 in different ways, or augment it at a later date.
 
-The BULD algorithm described in this paper is straightforward:
+The BULD algorithm described in this paper is straightforward.  It
+begins with a short sanitisation pass.
 
 1. Annotate each node in the parse tree with a hash of the subtree
    rooted at the node, inclusive.
@@ -195,6 +196,14 @@ The BULD algorithm described in this paper is straightforward:
 
 My implementation changes or extends the BULD algorithm in several small
 ways, described in the per-step documentation below.
+
+### Sanitise
+
+Before the BULD algorithm is run, the input tree is sanitised.  This
+process merges all adjacent text nodes into a single text node.  By
+doing so, possible differences are pushed into large blocks of
+contiguous text---which in this case are managed by the word-difference
+algorithm described later in this paper.
 
 ### Annotation
 
@@ -245,10 +254,25 @@ number allowed by the sub-tree weight.
 ### Optimisation
 
 The [lowdown-diff(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html)
-algorithm has only one optimisation that extends the "propogate up"
-algorithm.  In the upward propogation, the weight of any given sub-tree
-is used to compute how high a match will propogate.  However, I add an
-optimisation that looks at the cumulative weight of matching children.
+algorithm has two optimisations, both lightly derived from the paper:
+top-down and bottom-up propogation.
+
+#### Top-down
+
+The top-down optimisation, which is performed first, takes matched nodes
+and matches un-matched, non-terminal children by label.
+
+This is useful when, say, a document consists of several paragraphs
+where the text has changed within paragraphs.  It won't be able to match
+the text content, but it will match the paragraphs, which will push the
+difference downward in the tree.
+
+#### Bottom-up
+
+In the bottom-up propogation, the weight of any given sub-tree is used
+to compute how high a match will propogate.  I extend the paper's
+version optimisation by looking at the cumulative weight of matching
+children.
 
 This works well for Markdown documents, which are generally quite
 shallow and text-heavy.
@@ -258,8 +282,6 @@ matched child, the weights of all matched children with the same parents
 (where the parent node is equal in label and attributes to the examined
 node) are computed.  If any given parent of the matched children has
 greater than 50% of the possible weight, it is matched.
-
-This is performed bottom-up.
 
 ### Merging
 
@@ -281,6 +303,12 @@ root node of the new tree and the root node of the old tree.
 6. If not found, mark the new node as inserted and return to (2).
 7. Continue (after the recursive step) by moving after both matching
    nodes and returning to (2).
+
+If adjacent nodes are un-matched normal text, the normal text nodes are
+compared word-by-word to compute a shortest-edit script.  This is
+enabled by [libdiff](https://github.com/kristapsdz/libdiff), which
+implements an algorithm for computing the longest common
+subsequence[^Wu90].  See [^McIlroy1976] for background information.
 
 ## API
 
@@ -304,12 +332,8 @@ when the `w` character is encountered at any time and might signify a
 link.  The parsing algorithm will start a new text node at each such
 character. 
 
-With longer text nodes, the merging algorithm can recognise adjacent
-text and use an LCS algorithm[^McIlroy1976] within the text instead of
-marking the entire node as being inserted or deleted.  This would allow
-for sparse changes within a long block of text to be properly handled.
-
-The merging algorithm can also take advantage of LCS when ordering the
+The merging algorithm can also take advantage of
+[libdiff](https://github.com/kristapsdz/libdiff) when ordering the
 output of inserted and deleted components.  Right now, the algorithm is
 simple in the sense of stopping at the earliest matched node without
 considering subsequences.
@@ -330,3 +354,7 @@ Document last updated: [%rcsdate]
 [^McIlroy1976]: [An Algorithm for Differential File
     Comparison](https://www.cs.dartmouth.edu/~doug/diff.pdf)(1976),
     James W. Hunt, M. Douglas McIlroy.
+
+[^Wu90]: [An O(NP) sequence comparison
+    algorithm](https://publications.mpi-cbg.de/Wu_1990_6334.pdf) (1990),
+    Sun Wu, Udi Manber, Gene Myers.
