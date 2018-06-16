@@ -924,7 +924,7 @@ node_merge(const struct lowdown_node *nold,
 
 	assert(xnew->match == xold->node);
 
-	n = node_clone(nnew, *id++);
+	n = node_clone(nnew, (*id)++);
 
 	/* Now walk through the children on both sides. */
 
@@ -970,7 +970,6 @@ node_merge(const struct lowdown_node *nold,
 			nn->chng = LOWDOWN_CHNG_INSERT;
 			nnew = TAILQ_NEXT(nnew, entries);
 		}
-
 
 		/*
 		 * If both nodes are text nodes, then we want to run the
@@ -1090,7 +1089,7 @@ node_merge(const struct lowdown_node *nold,
 		nold = TAILQ_NEXT(nold, entries);
 	}
 
-	return(n);
+	return n;
 }
 
 #if DEBUG
