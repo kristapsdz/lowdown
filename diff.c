@@ -1,4 +1,4 @@
-/*	$Id$ */
+
 /*
  * Copyright (c) 2017, 2018 Kristaps Dzonsons <kristaps@bsd.lv>
  *
@@ -1119,48 +1119,83 @@ node_print(const struct lowdown_node *n, const struct xmap *map, size_t ind)
 
 /*
  * Optimise from top down.
+ * This works by selecting matching non-terminal nodes, both adjacent
+ * (i.e., children of the same adjacent nodes), and seeing if their
+ * immediate siblings may be matched by label.
+ * This works well when looking at pure-paragraph changes.
  */
 static void
 node_optimise_topdown(const struct lowdown_node *n, 
 	struct xmap *newmap, struct xmap *oldmap)
 {
-	struct xnode *xn, *xmatch, *xnchild, *xmchild;
-	const struct lowdown_node *match, *nchild, *mchild;
+	struct xnode	*xn, *xmatch, *xnchild, *xmchild,
+			*xnnext, *xmnext;
+	const struct lowdown_node 
+			*match, *nchild, *mchild, *nnext, 
+			*mnext;
+
+	if (TAILQ_EMPTY(&n->children))
+		return;
 
 	xn = &newmap->nodes[n->id];
 	assert(NULL != xn);
-	assert(NULL != xn->match);
 
-	match = xn->match;
+	if (NULL == (match = xn->match))
+		return;
+
 	xmatch = &oldmap->nodes[match->id];
 	assert(NULL != xmatch);
 
 	TAILQ_FOREACH(nchild, &n->children, entries) {
-		/* Only process "inner" nodes. */
 		if (TAILQ_EMPTY(&nchild->children))
 			continue;
 		xnchild = &newmap->nodes[nchild->id];
 		assert(NULL != xnchild);
-		if (NULL != xnchild->match)
+		if (NULL == (mchild = xnchild->match))
 			continue;
-		TAILQ_FOREACH(mchild, &match->children, entries) {
-			/* Only process "inner" nodes. */
-			if (TAILQ_EMPTY(&mchild->children))
-				continue;
-			xmchild = &oldmap->nodes[mchild->id];
-			assert(NULL != xmchild);
-			if (NULL != xmchild->match)
-				continue;
-			if ( ! match_eq(nchild, mchild))
-				continue;
-			xnchild->match = mchild;
-			xmchild->match = nchild;
-			break;
-		}
-		if (NULL == mchild)
+		if (mchild->parent->id != match->id)
 			continue;
-		node_optimise_topdown(nchild, newmap, oldmap);
+		xmchild = &oldmap->nodes[mchild->id];
+		assert(NULL != xmchild);
+
+		/* 
+		 * Do we have a non-terminal sibling after us without a
+		 * match? 
+		 */
+
+		if (NULL == (nnext = TAILQ_NEXT(nchild, entries)))
+			continue;
+		if (TAILQ_EMPTY(&nnext->children))
+			continue;
+		xnnext = &newmap->nodes[nnext->id];
+		assert(NULL != xnnext);
+		if (NULL != xnnext->match)
+			continue;
+
+		if (NULL == (mnext = TAILQ_NEXT(mchild, entries)))
+			continue;
+		if (TAILQ_EMPTY(&mnext->children))
+			continue;
+		xmnext = &oldmap->nodes[mnext->id];
+		assert(NULL != xmnext);
+		if (NULL != xmnext->match)
+			continue;
+
+		if ( ! match_eq(nnext, mnext))
+			continue;
+
+#if DEBUG
+		warnx("%s (%zu): subtree match: %s (%zu) -> %zu",
+			names[n->type], n->id, 
+			names[nchild->type], nchild->id, mchild->id);
+#endif
+
+		xnnext->match = mnext;
+		xmnext->match = nnext;
 	}
+
+	TAILQ_FOREACH(nchild, &n->children, entries)
+		node_optimise_topdown(nchild, newmap, oldmap);
 }
 
 /*
