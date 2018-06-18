@@ -431,4 +431,21 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.4.0</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2018-06-18">2018-06-18</time>
+		</header>
+		<aside>
+			<p>
+				Significantly update the <a href="diff.html">diffing algorithm</a>.
+				First, make some general fixes to the algorithm.
+				Second, improve the <q>optimisations</q> phase by adding top-down analysis that matches un-matched, non-terminal
+				adjacent children.
+				This helps with text changes in text-only paragraphs.
+				Third, add a SES (shortest edit script) computation for matched adjacent text nodes.
+			</p>
+		</aside>
+	</article>
 </articles>
