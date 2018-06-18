@@ -1,6 +1,6 @@
 .\"	$Id$
 .\"
-.\" Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
+.\" Copyright (c) 2018 Kristaps Dzonsons <kristaps@bsd.lv>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -15,11 +15,11 @@
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
 .Dd $Mdocdate$
-.Dt LOWDOWN_FILE 3
+.Dt LOWDOWN_FILE_DIFF 3
 .Os
 .Sh NAME
-.Nm lowdown_file
-.Nd parse a Markdown file into formatted output
+.Nm lowdown_file_diff
+.Nd parse and diff Markdown files into formatted output
 .Sh LIBRARY
 .Lb liblowdown
 .Sh SYNOPSIS
@@ -28,44 +28,43 @@
 .In lowdown.h
 .Ft int
 .Fo lowdown_file
-.Fa "const struct lowdown_opts *opts"
-.Fa "FILE *in"
+.Fa "const struct lowdown_opts *otarget"
+.Fa "FILE *ftarget"
+.Fa "const struct lowdown_opts *oorigin"
+.Fa "FILE *forigin"
 .Fa "char **ret"
 .Fa "size_t *retsz"
-.Fa "struct lowdown_meta **meta"
-.Fa "size_t *metasz"
 .Fc
 .Sh DESCRIPTION
 The
 .Fn lowdown_file
-function parses a Markdown file stream
-.Fa in
-into an output buffer
+function parses two Markdown file streams
+.Fa ftarget
+and
+.Fa forigin
+and produces an edit script in
 .Fa ret
 of size
 .Fa retsz
-according to configuration
-.Fa opts .
+according to configurations
+.Fa oorigin
+and
+.Fa otarget
+for the origin and target, respectively.
 The output format is specified by
-.Fa opts->type .
-If metadata parsing is enabled in
-.Fa opts->feat ,
-.Fa meta
-is returned as an array of metadata of size
-.Fa metasz
-rendered in the given output format.
+.Fa otarget->type .
 .Pp
 Internally,
-.Fn lowdown_file
+.Fn lowdown_file_diff
 invokes
-.Xr lowdown_buf 3
-with the contents of
-.Fa in .
-.Pp
-The caller is responsible for freeing
-.Fa ret
+.Xr lowdown_buf_diff 3
+with the read contents of
+.Fa ftarget
 and
-.Fa meta .
+.Fa forigin .
+.Pp
+On success, the caller is responsible for freeing
+.Fa ret .
 .Sh RETURN VALUES
 Returns zero on failure, non-zero on success.
 Failure occurs when the file read failed.
@@ -73,7 +72,7 @@ Failure occurs when the file read failed.
 .Xr lowdown 3
 .Sh CAVEATS
 The
-.Fn lowdown_file
+.Fn lowdown_file_diff
 function will invoke
 .Xr exit 3
 if internal memory allocation fails.
