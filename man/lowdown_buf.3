@@ -29,17 +29,17 @@
 .Ft void
 .Fo lowdown_buf
 .Fa "const struct lowdown_opts *opts"
-.Fa "const unsigned char *buf"
+.Fa "const char *buf"
 .Fa "size_t bufsz"
-.Fa "unsigned char **ret"
+.Fa "char **ret"
 .Fa "size_t *retsz"
 .Fa "struct lowdown_meta **meta"
 .Fa "size_t *metasz"
 .Fc
 .Sh DESCRIPTION
 The
-.Nm
-function is a convenience function to parse a Markdown buffer
+.Fn lowdown_buf
+function parses a Markdown buffer
 .Fa buf
 of size
 .Fa bufsz
@@ -47,21 +47,19 @@ into an output buffer
 .Fa ret
 of size
 .Fa retsz
-in one of several formats defined in
+according to a configuration
 .Fa opts .
-If metadata parsing is enabled in the options,
+The output format is specified by
+.Fa opts->type .
+If metadata parsing is enabled in
+.Fa opts->feat ,
 .Fa meta
 is returned as an array of metadata of size
 .Fa metasz
 rendered in the given output format.
-See
-.Xr lowdown 3
-for a description of the
-.Fa opts
-variable and metadata.
 .Pp
 Internally,
-.Nm
+.Fn lowdown_buf
 invokes
 .Xr lowdown_doc_new 3
 with the given
@@ -73,8 +71,10 @@ renders the AST in the given output format,
 and returns the rendered content as a buffer along with any parsed
 metadata (if applicable).
 .Pp
-The caller is responsible for freeing the output buffer and metadata
-contents.
+On success, the caller is responsible for freeing
+.Fa ret
+and
+.Fa meta .
 .Sh SEE ALSO
 .Xr lowdown 3
 .Sh CAVEATS

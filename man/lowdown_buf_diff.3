@@ -15,64 +15,72 @@
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
 .Dd $Mdocdate$
-.Dt LOWDOWN_FILE_DIFF 3
+.Dt LOWDOWN_BUF_DIFF 3
 .Os
 .Sh NAME
-.Nm lowdown_file_diff
-.Nd parse and diff Markdown files into formatted output
+.Nm lowdown_buf
+.Nd parse and diff Markdown buffers into formatted output
 .Sh LIBRARY
 .Lb liblowdown
 .Sh SYNOPSIS
 .In sys/queue.h
 .In stdio.h
 .In lowdown.h
-.Ft int
-.Fo lowdown_file
+.Ft void
+.Fo lowdown_buf
 .Fa "const struct lowdown_opts *otarget"
-.Fa "FILE *ftarget"
+.Fa "const char *btarget"
+.Fa "size_t btargetsz"
 .Fa "const struct lowdown_opts *oorigin"
-.Fa "FILE *forigin"
+.Fa "const char *otarget"
+.Fa "size_t otargetsz"
 .Fa "char **ret"
 .Fa "size_t *retsz"
 .Fc
 .Sh DESCRIPTION
 The
-.Fn lowdown_file
-function parses Markdown file streams
-.Fa ftarget
+.Fn lowdown_buf
+function parses Markdown buffers
+.Fa btarget
+of size
+.Fa btargetsz
 and
-.Fa forigin
+.Fa otarget
+of size
+.Fa otargetsz
 and produces an edit script in
 .Fa ret
 of size
 .Fa retsz
 according to configurations
-.Fa oorigin
-and
 .Fa otarget
-for the origin and target, respectively.
+and
+.Fa oorigin
+for the target and origin, respectively.
 The output format is specified by
-.Fa otarget->type .
+.Fa opts->type .
 .Pp
 Internally,
-.Fn lowdown_file_diff
+.Fn lowdown_buf_diff
 invokes
-.Xr lowdown_buf_diff 3
-with the read contents of
-.Fa ftarget
+.Xr lowdown_doc_new 3
+with the given
+.Fa otarget
 and
-.Fa forigin .
+.Fa oorigin ,
+creates a renderer for the output format,
+parses the inputs with
+.Xr lowdown_doc_parse 3 ,
+creates the edit script, renders the AST in the given output format, and
+returns the rendered content as a buffer.
 .Pp
 On success, the caller is responsible for freeing
 .Fa ret .
-.Sh RETURN VALUES
-Returns zero on failure, non-zero on success.
-Failure occurs when the file read failed.
 .Sh SEE ALSO
 .Xr lowdown 3
 .Sh CAVEATS
 The
-.Fn lowdown_file_diff
+.Nm
 function will invoke
 .Xr exit 3
 if internal memory allocation fails.

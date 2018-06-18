@@ -30,6 +30,7 @@ MANS		 = man/lowdown.1.html \
 		   man/lowdown.3.html \
 		   man/lowdown.5.html \
 		   man/lowdown_buf.3.html \
+		   man/lowdown_buf_diff.3.html \
 		   man/lowdown_doc_free.3.html \
 		   man/lowdown_doc_new.3.html \
 		   man/lowdown_doc_parse.3.html \
