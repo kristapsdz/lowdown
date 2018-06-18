@@ -445,6 +445,7 @@
 				adjacent children.
 				This helps with text changes in text-only paragraphs.
 				Third, add a SES (shortest edit script) computation for matched adjacent text nodes.
+				Lastly, add the new diff function manpages.
 			</p>
 		</aside>
 	</article>
