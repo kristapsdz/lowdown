@@ -187,7 +187,7 @@ begins with a short sanitisation pass.
 
 4. Run an optimisation phase over the new document's root node.
    ([diff.c](https://github.com/kristapsdz/lowdown/blob/master/diff.c),
-   `node_optimise()`)
+   `node_optimise_bottomup()` and `node_optimise_topdown()`)
 
 5. Step through both trees and create a new tree with nodes cloned from
    both and marked as inserted or deleted.
@@ -260,7 +260,8 @@ top-down and bottom-up propogation.
 #### Top-down
 
 The top-down optimisation, which is performed first, takes matched nodes
-and matches un-matched, non-terminal children by label.
+and matches un-matched, non-terminal children by label.  The children
+examined must be siblings of adjacent matching nodes.
 
 This is useful when, say, a document consists of several paragraphs
 where the text has changed within paragraphs.  It won't be able to match
