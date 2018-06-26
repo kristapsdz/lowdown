@@ -3622,14 +3622,19 @@ lowdown_doc_parse(hdoc *doc, const char *data,
 	 */
 
 	if (LOWDOWN_METADATA & doc->ext_flags &&
-	    beg < size - 1 && isalnum((int)data[beg])) {
+	    beg < size - 1 && (isalnum((int)data[beg]) || '-' == data[beg])) {
 		sv = &data[beg];
+		if (0 == strncmp(sv, "---\n", 4)) {
+			beg += 4;
+			sv = &data[beg];
+		}
 		for (end = beg + 1; end < size; end++) {
 			if ('\n' == data[end] &&
 			    '\n' == data[end - 1])
 				break;
 		}
-		if (parse_metadata(doc, sv, end - beg))
+		int skip = (0 == strncmp(&data[end - 5], "\n---\n", 5)) ? 4 : 0;
+		if (parse_metadata(doc, sv, end - beg - skip))
 			beg = end + 1;
 	}
 
