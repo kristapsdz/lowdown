@@ -5,8 +5,7 @@ author: Kristaps Dzonsons
 
 *lowdown* is a Markdown translator producing HTML5 and *roff* documents
 in the **ms** and **man** formats.  It's just clean, secure, [open
-source](http://opensource.org/licenses/ISC) C code with only a single
-dependency ([libdiff](https://github.com/kristapsdz/libdiff)).
+source](http://opensource.org/licenses/ISC) C code with no dependencies.
 Its canonical documentation is
 [lowdown(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) for the
 formatter, [lowdown(5)](https://kristaps.bsd.lv/lowdown/lowdown.5.html)
@@ -27,7 +26,8 @@ It can also be used to show the difference between two Markdown
 documents with *lowdown-diff*, documented as the [lowdown diffing
 engine](https://kristaps.bsd.lv/lowdown/diff.html).  This uses a
 tree-based difference algorithm to show semantically-valid Markdown
-differences.
+differences.  The implementation is inlined from
+[libdiffi](https://github.com/kristapsdz/libdiff).
 
 Want an example?  For starters: this page,
 [index.md](https://kristaps.bsd.lv/lowdown/index.md).  The Markdown
