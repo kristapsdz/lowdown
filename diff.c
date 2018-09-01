@@ -30,9 +30,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <diff.h>
-
 #include "lowdown.h"
+#include "libdiff.h"
 #include "extern.h"
 
 #define	DEBUG 0

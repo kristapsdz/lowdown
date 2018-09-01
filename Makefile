@@ -11,6 +11,7 @@ OBJS		 = autolink.o \
 		   html_escape.o \
 		   html_smartypants.o \
 		   library.o \
+		   libdiff.o \
 		   log.o \
 		   nroff.o \
 		   nroff_escape.o \
@@ -64,7 +65,7 @@ installwww: www
 	install -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots
 
 lowdown: liblowdown.a main.o
-	$(CC) -o $@ main.o liblowdown.a $(LDFLAGS) -lm -ldiff
+	$(CC) -o $@ main.o liblowdown.a $(LDFLAGS) -lm
 
 lowdown-diff: lowdown
 	ln -f lowdown lowdown-diff
