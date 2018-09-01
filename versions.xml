@@ -449,4 +449,21 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.4.1</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2018-09-01">2018-09-01</time>
+		</header>
+		<aside>
+			<p>
+				Push diff implementation (from <a
+					href="https://github.com/kristapsdz/libdiff">libdiff</a>)
+				directly into the code instead of using the external library.
+				From a patch by Anton Lindqvist as suggested on the OpenBSD ports
+				mailing lits.
+				Thank you!
+			</p>
+		</aside>
+	</article>
 </articles>
