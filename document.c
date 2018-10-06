@@ -776,11 +776,8 @@ parse_math(hdoc *doc, char *data,
 	size_t offset, size_t size, const char *end, 
 	size_t delimsz, int displaymode)
 {
-	hbuf	 text;
 	size_t	 i = delimsz;
 	struct lowdown_node *n;
-
-	memset(&text, 0, sizeof(hbuf));
 
 	/* Find ending delimiter. */
 
@@ -799,11 +796,6 @@ parse_math(hdoc *doc, char *data,
 		i++;
 	}
 
-	/* Prepare buffers. */
-
-	text.data = data + delimsz;
-	text.size = i - delimsz;
-
 	/* 
 	 * If this is a $$ and MATH_EXPLICIT is not active, guess whether
 	 * displaymode should be enabled from the context.
@@ -818,6 +810,7 @@ parse_math(hdoc *doc, char *data,
 
 	n = pushnode(doc, LOWDOWN_MATH_BLOCK);
 	n->rndr_math.displaymode = displaymode;
+	pushbuffer(&n->rndr_math.text, data + delimsz, i - 2*delimsz);
 	popnode(doc, n);
 
 	return i;

@@ -938,7 +938,7 @@ lowdown_html_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
 			root->rndr_footnote_ref.num);
 		break;
 	case (LOWDOWN_MATH_BLOCK):
-		rndr_math(ob, tmp, root->rndr_math.displaymode);
+		rndr_math(ob, &root->rndr_math.text, root->rndr_math.displaymode);
 		break;
 	case (LOWDOWN_RAW_HTML):
 		rndr_raw_html(ob, &root->rndr_raw_html.text, ref);
