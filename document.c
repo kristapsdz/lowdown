@@ -3780,6 +3780,9 @@ lowdown_node_free(struct lowdown_node *root)
 		hbuf_free(&root->rndr_image.dims);
 		hbuf_free(&root->rndr_image.alt);
 		break;
+	case (LOWDOWN_MATH_BLOCK):
+		hbuf_free(&root->rndr_math.text);
+		break;
 	default:
 		break;
 	}
