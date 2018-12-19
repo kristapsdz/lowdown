@@ -1,7 +1,7 @@
 .\"	$Id$
 .\"
 .\" Copyright (c) 2017 Christina Sophonpanich <huck@divelog.blue>
-.\" Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
+.\" Copyright (c) 2017, 2018 Kristaps Dzonsons <kristaps@bsd.lv>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -345,6 +345,38 @@ Values have leading white-space stripped, i.e., space following the
 colon.
 .
 .
+.Ss Tables
+Tables are a GFM (GitHub-flavoured Markdown) extension of the basic
+syntax.
+They consist of a table header and body, and columns may be left, right,
+or centre justified.
+.Bd -literal -offset indent
+| Officer         | Rank                 |
+| --------------: | -------------------- |
+| Jean-Luc Picard | Captain              |
+| Worf            | Lieutenant Commander |
+| Data            | Lieutenant Commander |
+| William Riker   | Commander            |
+.Ed
+.Pp
+The table header must be followed by a line of hyphens with at least
+three hyphen/colons per column.
+Columns are separated by vertical bars.
+The colon indicates alignment: a colon at the beginning means left
+justified; at the right for right justified, and both for centred.
+.Pp
+The leading and trailing column separator is superfluous.
+Table data is not necessary, but the table header is.
+The minimum table structure for the above is:
+.Bd -literal -offset indent
+Officer | Rank
+--:|---
+Jean-Luc Picard | Captain
+.Ed
+.Pp
+Table columns may contain arbitrary span elements.
+.
+.
 .Sh SPAN ELEMENTS
 Span elements are inline elements (including normal text) within block
 elements, for example, a span of emphasised text or a hyperlink.
@@ -593,10 +625,11 @@ They include:
 .Bl -tag -width Ds
 .It Lk http://commonmark.org CommonMark
 .It Lk http://fletcherpenney.net/multimarkdown Multimarkdown
+.It Lk https://github.github.com/gfm GFM
 .El
 .Sh AUTHORS
 The
 .Nm
-reference was written by
-.An Christina Sophonpanich ,
+reference was originally written by
+.An Christina "Huck" Sophonpanich ,
 .Mt huck@divelog.blue .
