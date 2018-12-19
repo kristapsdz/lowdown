@@ -645,7 +645,7 @@ rndr_table(hbuf *ob, const hbuf *content)
 {
 
 	HBUF_PUTSL(ob, ".TS\n");
-	HBUF_PUTSL(ob, "tab(|) allbox;\n");
+	HBUF_PUTSL(ob, "tab(|) expand allbox;\n");
 	hbuf_put(ob, content->data, content->size);
 	HBUF_NEWLINE(content, ob);
 	HBUF_PUTSL(ob, ".TE\n");
@@ -656,6 +656,30 @@ rndr_table_header(hbuf *ob, const hbuf *content,
 	const enum htbl_flags *fl, size_t columns)
 {
 	size_t	 i;
+
+	/* 
+	 * This specifies the header layout.
+	 * We make the header bold, but this is arbitrary.
+	 */
+
+	for (i = 0; i < columns; i++) {
+		if (i > 0)
+			HBUF_PUTSL(ob, " ");
+		switch (fl[i] & HTBL_FL_ALIGNMASK) {
+		case (HTBL_FL_ALIGN_CENTER):
+			HBUF_PUTSL(ob, "cb");
+			break;
+		case (HTBL_FL_ALIGN_RIGHT):
+			HBUF_PUTSL(ob, "rb");
+			break;
+		default:
+			HBUF_PUTSL(ob, "lb");
+			break;
+		}
+	}
+	HBUF_PUTSL(ob, "\n");
+
+	/* Now the body layout. */
 
 	for (i = 0; i < columns; i++) {
 		if (i > 0)
@@ -673,6 +697,9 @@ rndr_table_header(hbuf *ob, const hbuf *content,
 		}
 	}
 	HBUF_PUTSL(ob, ".\n");
+
+	/* Now the table data. */
+
 	hbuf_put(ob, content->data, content->size);
 }
 
@@ -692,8 +719,7 @@ rndr_tablerow(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_tablecell(hbuf *ob, const hbuf *content,
-	enum htbl_flags flags, size_t col, size_t columns)
+rndr_tablecell(hbuf *ob, const hbuf *content, size_t col)
 {
 
 	if (col > 0)
@@ -1101,9 +1127,7 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 		break;
 	case (LOWDOWN_TABLE_CELL):
 		rndr_tablecell(ob, tmp, 
-			root->rndr_table_cell.flags, 
-			root->rndr_table_cell.col,
-			root->rndr_table_cell.columns);
+			root->rndr_table_cell.col);
 		break;
 	case (LOWDOWN_FOOTNOTES_BLOCK):
 		rndr_footnotes(ob, tmp, ref);
