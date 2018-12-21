@@ -451,6 +451,8 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 	const struct lowdown_node *prev,
 	enum hlist_fl flags, size_t num)
 {
+	char	*cdata;
+	size_t	 csize;
 
 	if (NULL == content || 0 == content->size)
 		return;
@@ -479,15 +481,31 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 	else
 		HBUF_PUTSL(ob, ".ti -\\w'\\(bu  \'u\n\\(bu  ");
 
-	/* Strip out any leading paragraph marker. */
+	/*
+	 * Now we get shitty.
+	 * If we have macros on the content, we need to handle them in a
+	 * special way.
+	 * Paragraphs (.LP) can be stripped out.
+	 * Links need a newline.
+	 */
 
-	if (content->size > 3 &&
-	    0 == memcmp(content->data, ".LP\n", 4))
-		hbuf_put(ob, content->data + 4, content->size - 4);
-	else
-		hbuf_put(ob, content->data, content->size);
+	cdata = content->data;
+	csize = content->size;
 
-	HBUF_NEWLINE(content, ob);
+	/* Start by stripping out all paragraphs. */
+
+	while (csize > 3 && 0 == memcmp(cdata, ".LP\n", 4)) {
+		cdata += 4;
+		csize -= 4;
+	}
+
+	/* Now make sure we have a newline before links. */
+
+	if (csize > 8 && 0 == memcmp(cdata, ".pdfhref ", 9))
+		HBUF_PUTSL(ob, "\n");
+
+	hbuf_put(ob, cdata, csize);
+	BUFFER_NEWLINE(cdata, csize, ob);
 	HBUF_PUTSL(ob, ".RE\n");
 }
 
