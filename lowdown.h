@@ -215,6 +215,7 @@ struct	lowdown_node {
 			hbuf alt; /* alt-text of image */
 		} rndr_image;
 		struct rndr_math {
+			hbuf text; /* equation (opaque) */
 			int displaymode;
 		} rndr_math;
 		struct rndr_blockhtml {
