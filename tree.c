@@ -150,6 +150,19 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 				root->rndr_doc_header.m[i].key);
 		}
 		break;
+	case (LOWDOWN_MATH_BLOCK):
+		for (i = 0; i < indent + 1; i++)
+			HBUF_PUTSL(ob, "  ");
+		hbuf_printf(ob, "displaymode: %s\n",
+			root->rndr_math.displaymode ?
+			"block" : "inline");
+		for (i = 0; i < indent + 1; i++)
+			HBUF_PUTSL(ob, "  ");
+		hbuf_printf(ob, "data: %zu Bytes: ",
+			root->rndr_math.text.size);
+		rndr_short(ob, &root->rndr_math.text);
+		HBUF_PUTSL(ob, "\n");
+		break;
 	case (LOWDOWN_NORMAL_TEXT):
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");

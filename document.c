@@ -268,20 +268,6 @@ xisspace(int c)
 }
 
 /*
- * Verify that all the data is spacing.
- */
-static int
-is_empty_all(const char *data, size_t size)
-{
-	size_t i = 0;
-
-	while (i < size && xisspace(data[i]))
-		i++;
-
-	return i == size;
-}
-
-/*
  * Returns the number of leading spaces from data starting from offset to size.
  * If maxlen is greater than zero, only at most maxlen number of leading spaces
  * will be counted.
@@ -772,54 +758,50 @@ parse_emph3(hdoc *doc, char *data, size_t size, char c)
  * Parses a math span until the given ending delimiter.
  */
 static size_t
-parse_math(hdoc *doc, char *data, 
-	size_t offset, size_t size, const char *end, 
-	size_t delimsz, int displaymode)
+parse_math(hdoc *doc, char *data, size_t offset, size_t size, 
+	const char *end, size_t delimsz, int displaymode)
 {
-	hbuf	 text;
 	size_t	 i = delimsz;
 	struct lowdown_node *n;
 
-	memset(&text, 0, sizeof(hbuf));
-
-	/* Find ending delimiter. */
+	/* 
+	 * Find ending delimiter.
+	 * All text within the equation is opaque, so we don't need to
+	 * care about embedded macros.
+	 */
 
 	while (1) {
 		while (i < size && data[i] != end[0])
 			i++;
-
 		if (i >= size)
 			return 0;
-
-		if (!is_escaped(data, i) && 
-		    !(i + delimsz > size) && 
-		    memcmp(data + i, end, delimsz) == 0)
+		if ( ! is_escaped(data, i) && 
+		     ! (i + delimsz > size) && 
+		    0 == memcmp(data + i, end, delimsz))
 			break;
-
 		i++;
 	}
 
-	/* Prepare buffers. */
-
-	text.data = data + delimsz;
-	text.size = i - delimsz;
-
-	/* 
-	 * If this is a $$ and MATH_EXPLICIT is not active, guess whether
-	 * displaymode should be enabled from the context.
-	 */
-
 	i += delimsz;
-	if (delimsz == 2 && !(doc->ext_flags & LOWDOWN_MATHEXP))
-		displaymode = is_empty_all(data - offset, offset) && 
-			is_empty_all(data + i, size - i);
 
-	/* Call callback. */
+	if ( ! (LOWDOWN_MATH & doc->ext_flags)) {
+		n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
+		pushbuffer(&n->rndr_normal_text.text, data, i);
+		popnode(doc, n);
+		return i;
+	}
+
+	if (displaymode && ! (LOWDOWN_MATHEXP & doc->ext_flags)) {
+		n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
+		pushbuffer(&n->rndr_normal_text.text, data, i);
+		popnode(doc, n);
+		return i;
+	}
 
 	n = pushnode(doc, LOWDOWN_MATH_BLOCK);
+  	pushbuffer(&n->rndr_math.text, data + delimsz, i - 2 * delimsz); 
 	n->rndr_math.displaymode = displaymode;
 	popnode(doc, n);
-
 	return i;
 }
 
@@ -1676,17 +1658,9 @@ static size_t
 char_math(hdoc *doc, char *data, size_t offset, size_t size)
 {
 
-	/* Double dollar. */
-
-	if (size > 1 && data[1] == '$')
-		return parse_math(doc, data, offset, size, "$$", 2, 1);
-
-	/* Single dollar allowed only with MATH_EXPLICIT flag. */
-
-	if (doc->ext_flags & LOWDOWN_MATHEXP)
-		return parse_math(doc, data, offset, size, "$", 1, 0);
-
-	return 0;
+	return size > 1 && data[1] == '$' ?
+		parse_math(doc, data, offset, size, "$$", 2, 1) :
+		parse_math(doc, data, offset, size, "$", 1, 0);
 }
 
 /* 
@@ -3786,6 +3760,9 @@ lowdown_node_free(struct lowdown_node *root)
 		hbuf_free(&root->rndr_image.title);
 		hbuf_free(&root->rndr_image.dims);
 		hbuf_free(&root->rndr_image.alt);
+		break;
+	case (LOWDOWN_MATH_BLOCK):
+		hbuf_free(&root->rndr_math.text);
 		break;
 	default:
 		break;

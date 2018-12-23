@@ -654,15 +654,17 @@ rndr_footnote_ref(hbuf *ob, unsigned int num)
 }
 
 static int
-rndr_math(hbuf *ob, const hbuf *text, int displaymode)
+rndr_math(hbuf *ob, const struct rndr_math *n)
 {
 
-	if (displaymode)
+	if (n->displaymode)
 		HBUF_PUTSL(ob, "\\[");
 	else
 		HBUF_PUTSL(ob, "\\(");
-	escape_html(ob, text->data, text->size);
-	if (displaymode)
+
+	escape_html(ob, n->text.data, n->text.size);
+
+	if (n->displaymode)
 		HBUF_PUTSL(ob, "\\]");
 	else
 		HBUF_PUTSL(ob, "\\)");
@@ -938,7 +940,7 @@ lowdown_html_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
 			root->rndr_footnote_ref.num);
 		break;
 	case (LOWDOWN_MATH_BLOCK):
-		rndr_math(ob, tmp, root->rndr_math.displaymode);
+		rndr_math(ob, &root->rndr_math);
 		break;
 	case (LOWDOWN_RAW_HTML):
 		rndr_raw_html(ob, &root->rndr_raw_html.text, ref);
