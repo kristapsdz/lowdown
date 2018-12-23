@@ -345,6 +345,22 @@ Values have leading white-space stripped, i.e., space following the
 colon.
 .
 .
+.Ss Mathematics
+Mathematics support is an extension of Markdown.
+The extension only describes how the math blocks begin and end: the
+contained equations are usually in LaTeX and implemented in the
+front-end (e.g., HTML).
+There are two types: inline and block.
+Both may occur anywhere in a text stream.
+Inline equations are rendered as part of the text; block equations are
+rendered on their own.
+.Bd -literal -offset indent
+This is an inline $f(x)$ function.
+This is a block $$f(x)$$ function.
+This is also an inline \e\e(f(x)\e\e) function.
+This is also a block \e\e[f(x)\e\e] function.
+.Ed
+.
 .Ss Tables
 Tables are a GFM (GitHub-flavoured Markdown) extension of the basic
 syntax.
