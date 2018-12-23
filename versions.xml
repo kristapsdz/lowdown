@@ -466,4 +466,18 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.4.2</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2018-12-23">2018-12-23</time>
+		</header>
+		<aside>
+			<p>
+				Clarify and document mathematics handling.
+				Don't require the <code>mathexp</code> feature: just use <code>math</code> for everything.
+				Document this in <a href="lowdown.5.html">lowdown(5)</a>.
+			</p>
+		</aside>
+	</article>
 </articles>
