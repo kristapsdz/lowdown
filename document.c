@@ -791,13 +791,6 @@ parse_math(hdoc *doc, char *data, size_t offset, size_t size,
 		return i;
 	}
 
-	if (displaymode && ! (LOWDOWN_MATHEXP & doc->ext_flags)) {
-		n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
-		pushbuffer(&n->rndr_normal_text.text, data, i);
-		popnode(doc, n);
-		return i;
-	}
-
 	n = pushnode(doc, LOWDOWN_MATH_BLOCK);
   	pushbuffer(&n->rndr_math.text, data + delimsz, i - 2 * delimsz); 
 	n->rndr_math.displaymode = displaymode;

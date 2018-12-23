@@ -209,8 +209,6 @@ feature_in(const char *v)
 		return(LOWDOWN_MATH);
 	if (0 == strcasecmp(v, "nointem"))
 		return(LOWDOWN_NOINTEM);
-	if (0 == strcasecmp(v, "mathexp"))
-		return(LOWDOWN_MATHEXP);
 	if (0 == strcasecmp(v, "nocodeind"))
 		return(LOWDOWN_NOCODEIND);
 	if (0 == strcasecmp(v, "metadata"))
