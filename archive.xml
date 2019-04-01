@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta charset="utf-8" /> 
 		<title>lowdown: version history</title>
+		<link rel="alternate" href="atom.xml" type="application/atom+xml" title="lowdown version feed" />
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Alegreya+Sans:400,400italic,500,700" />
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" />
 		<link rel="stylesheet" href="template.css" />
@@ -26,14 +27,15 @@
 					<a href="snapshots/lowdown.tar.gz">Download</a>,
 					<a href="snapshots">Archive</a>,
 					<a href="archive.html">Version history</a>
+					<a href="atom.xml"><i class="fa fa-fw fa-rss"></i></a>
 				</nav>
 			</div>
 		</header>
 		<article>
 			<h1><a href="index.html">lowdown</a> &#8212; simple markdown translator</h1>
 			<nav id="versions" data-sblg-nav="1" data-sblg-navcontent="1" data-sblg-navtag="version">
-				<div>${sblg-aside}</div>
 				<div class="version">Version ${sblg-titletext}, <time datetime="${sblg-date}">${sblg-date}</time></div>
+				<div>${sblg-aside}</div>
 			</nav>
 		</article>
 		<footer>

@@ -2,7 +2,7 @@
 
 include Makefile.configure
 
-VERSION		 = 0.4.2
+VERSION		 = 0.4.3
 OBJS		 = autolink.o \
 		   buffer.o \
 		   diff.o \
@@ -22,6 +22,7 @@ OBJS		 = autolink.o \
 COMPAT_OBJS	 = compats.o
 WWWDIR		 = /var/www/vhosts/kristaps.bsd.lv/htdocs/lowdown
 HTMLS		 = archive.html \
+		   atom.xml \
 		   diff.html \
 		   diff.diff.html \
 		   index.html \
@@ -103,6 +104,9 @@ index.html README.html: template.xml
 
 archive.html: archive.xml versions.xml
 	sblg -t archive.xml -s date -o $@ versions.xml
+
+atom.xml: atom-template.xml versions.xml
+	sblg -a -t atom-template.xml -s date -o $@ versions.xml
 
 diff.html: diff.md lowdown
 	./lowdown -s diff.md >$@

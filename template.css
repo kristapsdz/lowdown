@@ -17,6 +17,7 @@ body > header			{ padding: 48pt 20% 12pt 20%;
 			  	  color: #aaa; }
 body > header a			{ color: #fff; }
 body > header nav		{ display: inline-block; }
+body > header nav i.fa		{ font-size: smaller; }
 #breadcrumbs			{ padding: 2em 0 2em 0; 
 				  font-size: 14pt; }
 #version			{ font-size: 16pt; }
@@ -26,7 +27,7 @@ nav#versions > ul 		{ list-style-type: none;
 nav#versions > ul > li + li	{ margin-top: 1.5em; 
 				  border-top: thin solid #ddd; }
 nav#versions > ul > li > div.version
-				{ margin-top: 1em; }
+				{ margin-bottom: 1em; }
 nav#versions > ul > li		{ color: rgba(0, 0, 0, 0.5); }
 nav#versions > ul > li a	{ color: rgba(0, 0, 255, 0.5); }
 nav#versions > ul > li:first-child
