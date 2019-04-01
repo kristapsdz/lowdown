@@ -16,7 +16,9 @@
  */
 #include "config.h"
 
-#include <sys/queue.h>
+#if HAVE_SYS_QUEUE
+# include <sys/queue.h>
+#endif
 
 #if HAVE_ERR
 # include <err.h>

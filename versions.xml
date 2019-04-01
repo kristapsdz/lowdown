@@ -480,4 +480,16 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.4.3</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2019-04-01">2019-04-01</time>
+		</header>
+		<aside>
+			<p>
+				Fix a segmentation fault.
+			</p>
+		</aside>
+	</article>
 </articles>
