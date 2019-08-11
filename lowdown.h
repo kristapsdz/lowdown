@@ -159,6 +159,12 @@ struct	lowdown_node {
 		} rndr_doc_header;
 		struct rndr_list {
 			enum hlist_fl flags; /* only HLIST_FL_ORDERED */
+			/*
+			 * This is string of size >0 iff
+			 * HLIST_FL_ORDERED and we're parsing
+			 * CommonMark, else it's an empty string.
+			 */
+			char start[10];
 		} rndr_list; 
 		struct rndr_listitem {
 			enum hlist_fl flags; /* all possible flags */

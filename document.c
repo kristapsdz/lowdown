@@ -1873,46 +1873,65 @@ prefix_code(const char *data, size_t size)
 
 /* 
  * Returns ordered list item prefix.
+ * On success (return value >0) and if "value" is not NULL *and* we're
+ * also commonmark processing, copy and NUL-terminate the value into it.
+ * If all of those except for commonmark, simply NUL-terminate the
+ * string.
  */
 static size_t
-prefix_oli(hdoc *doc, char *data, size_t size, char **num, size_t *numsz)
+prefix_oli(hdoc *doc, char *data, size_t size, char *value)
 {
-	size_t i, st;
+	size_t 		 i, st, vsize;
+	const char	*vdata;
 
 	i = countspaces(data, 0, size, 3);
 
-	if (i >= size || ! isdigit((int)data[i]))
+	if (i >= size || !isdigit((unsigned char)data[i]))
 		return 0;
 
 	st = i;
-	if (NULL != num)
-		*num = &data[i];
+	vdata = &data[i];
 
-	while (i < size && isdigit((int)data[i]))
+	while (i < size && isdigit((unsigned char)data[i]))
 		i++;
 
-	if (NULL != numsz)
-		*numsz = i - st;
+	/* Commonmark limits us to nine characters. */
 
-	if (LOWDOWN_COMMONMARK & doc->ext_flags) {
+	vsize = i - st;
+	if ((doc->ext_flags & LOWDOWN_COMMONMARK) && vsize > 9)
+		return 0;
+
+	/*
+	 * Commonmark accepts ')' and '.' following the numeric prefix,
+	 * while regular markdown only has '.'.
+	 */
+
+	if (doc->ext_flags & LOWDOWN_COMMONMARK) {
 		if (i + 1 >= size || 
 		    (data[i] != '.' && data[i] != ')') || 
 		    data[i + 1] != ' ')
 			return 0;
-	} else {
-		if (i + 1 >= size || data[i] != '.' || data[i + 1] != ' ')
-			return 0;
-	}
-
+	} else if (i + 1 >= size || data[i] != '.' || data[i + 1] != ' ')
+		return 0;
 
 	if (is_next_headerline(data + i, size - i))
 		return 0;
+
+	if (value != NULL) {
+		if (doc->ext_flags & LOWDOWN_COMMONMARK) {
+			assert(vsize > 0);
+			assert(vsize < 10);
+			memcpy(value, vdata, vsize);
+			value[vsize] = '\0';
+		} else
+			value[0] = '\0';
+	}
 
 	return i + 2;
 }
 
 /* 
- * Returns ordered list item prefix.
+ * Returns unordered list item prefix.
  */
 static size_t
 prefix_uli(char *data, size_t size)
@@ -2200,9 +2219,9 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 
 	beg = prefix_uli(data, size);
 
-	if ( ! beg)
-		beg = prefix_oli(doc, data, size, NULL, NULL);
-	if ( ! beg)
+	if (!beg)
+		beg = prefix_oli(doc, data, size, NULL);
+	if (!beg)
 		return 0;
 
 	/* Skipping to the beginning of the following line. */
@@ -2255,8 +2274,7 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 			has_next_uli = prefix_uli
 				(data + beg + i, end - beg - i);
 			has_next_oli = prefix_oli
-				(doc, data + beg + i, end - beg - i,
-				 NULL, NULL);
+				(doc, data + beg + i, end - beg - i, NULL);
 		}
 
 		/* Checking for a new item. */
@@ -2335,17 +2353,24 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 
 /* 
  * Parsing ordered or unordered list block.
+ * If "oli_data" is not NULL, it's the numeric string prefix of the
+ * ordered entry.
  */
 static size_t
-parse_list(hdoc *doc, char *data, size_t size, enum hlist_fl flags)
+parse_list(hdoc *doc, char *data, size_t size, const char *oli_data)
 {
-	hbuf	*work = NULL;
-	size_t	 i = 0, j, k = 1;
+	hbuf		    *work = NULL;
+	size_t	 	     i = 0, j, k = 1;
+	enum hlist_fl	     flags;
 	struct lowdown_node *n;
 
+	flags = oli_data != NULL ? HLIST_FL_ORDERED : 0;
 	work = hbuf_new(256);
 	n = pushnode(doc, LOWDOWN_LIST);
 	n->rndr_list.flags = flags;
+	if (oli_data != NULL)
+		memcpy(n->rndr_list.start, 
+			oli_data, sizeof(n->rndr_list.start));
 
 	while (i < size) {
 		j = parse_listitem(work, doc, 
@@ -2908,6 +2933,7 @@ parse_block(hdoc *doc, char *data, size_t size)
 {
 	size_t	 beg = 0, end, i;
 	char	*txt_data;
+	char	 oli_data[10];
 	struct lowdown_node *n;
 
 	/* 
@@ -2989,15 +3015,14 @@ parse_block(hdoc *doc, char *data, size_t size)
 		/* Some sort of unordered list. */
 
 		if (prefix_uli(txt_data, end)) {
-			beg += parse_list(doc, txt_data, end, 0);
+			beg += parse_list(doc, txt_data, end, NULL);
 			continue;
 		}
 
 		/* An ordered list. */
 
-		if (prefix_oli(doc, txt_data, end, NULL, NULL)) {
-			beg += parse_list(doc, 
-				txt_data, end, HLIST_FL_ORDERED);
+		if (prefix_oli(doc, txt_data, end, oli_data)) {
+			beg += parse_list(doc, txt_data, end, oli_data);
 			continue;
 		}
 
