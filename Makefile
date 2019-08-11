@@ -81,14 +81,14 @@ install: all
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
 	mkdir -p $(DESTDIR)$(MANDIR)/man3
 	mkdir -p $(DESTDIR)$(MANDIR)/man5
-	install -m 0755 lowdown $(DESTDIR)$(BINDIR)
-	install -m 0755 lowdown-diff $(DESTDIR)$(BINDIR)
-	install -m 0644 liblowdown.a $(DESTDIR)$(LIBDIR)
-	install -m 0644 lowdown.h $(DESTDIR)$(INCLUDEDIR)
+	$(INSTALL_PROGRAM) lowdown $(DESTDIR)$(BINDIR)
+	$(INSTALL_PROGRAM) lowdown-diff $(DESTDIR)$(BINDIR)
+	$(INSTALL_LIB) liblowdown.a $(DESTDIR)$(LIBDIR)
+	$(INSTALL_DATA) lowdown.h $(DESTDIR)$(INCLUDEDIR)
 	for f in $(MANS) ; do \
 		name=`basename $$f .html` ; \
 		section=$${name##*.} ; \
-		install -m 0644 man/$$name $(DESTDIR)$(MANDIR)/man$$section ; \
+		$(INSTALL_MAN) man/$$name $(DESTDIR)$(MANDIR)/man$$section ; \
 	done
 
 index.xml README.xml index.pdf diff.pdf README.pdf: lowdown
