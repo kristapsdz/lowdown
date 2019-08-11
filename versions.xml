@@ -492,4 +492,21 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.4.4</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2019-08-11">2019-08-11</time>
+		</header>
+		<aside>
+			<p>
+				In CommonMark mode, have the first ordered list item be output as
+				the initial list value.
+				This differs from regular MarkDown, which always starts lists at
+				one.
+				Also bring in the newest 
+				<a href="https://github.com/kristapsdz/oconfigure">oconfigure</a>.
+			</p>
+		</aside>
+	</article>
 </articles>
