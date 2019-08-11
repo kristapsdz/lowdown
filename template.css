@@ -1,26 +1,33 @@
 html, body			{ margin: 0; }
 body				{ font-family: "Alegreya sans", sans-serif; 
 				  font-weight: 400;
-				  font-size: 13pt; }
+				  line-height: 1.3em;
+				  font-size: 14pt; }
 h1, h2, h3			{ font-weight: 500; }
-h1				{ font-size: 24pt; }
-h2				{ font-size: 18pt; }
+h1				{ font-size: 175%;
+				  line-height: 1.2em; }
+h2				{ font-size: 140%; }
 a				{ text-decoration: none; }
 strong, b			{ font-weight: 400; }
-article				{ width: 60%;
+article				{ width: 66rem;
+				  max-width: 98%;
 				  margin-left: auto;
 				  margin-right: auto; }
-aside				{ font-size: 16pt; }
-pre, code			{ font-size: 11pt; }
-body > header			{ padding: 48pt 20% 12pt 20%; 
+aside				{ font-size: 125%; }
+pre, code			{ font-size: 60%;
+				  line-height: 1.4em; }
+body > header			{ padding: 48pt 0 12pt 0; 
 				  background-color: #333; 
 			  	  color: #aaa; }
+body > header > *		{ width: 66rem;
+				  max-width: 98%;
+				  margin-left: auto;
+				  margin-right: auto; }
 body > header a			{ color: #fff; }
-body > header nav		{ display: inline-block; }
+body > header nav		{ display: inline-block;
+				  font-size: smaller; }
 body > header nav i.fa		{ font-size: smaller; }
-#breadcrumbs			{ padding: 2em 0 2em 0; 
-				  font-size: 14pt; }
-#version			{ font-size: 16pt; }
+#breadcrumbs			{ padding: 2em 0 2em 0; }
 nav#versions > ul 		{ list-style-type: none;
 				  padding: 0;
 				  margin: 0; }
@@ -37,7 +44,7 @@ nav#versions > ul > li:first-child a
 nav a				{ color: blue; }
 nav span			{ color: #444; }
 footer				{ margin: 24pt 0;
-				  font-size: 11pt;
+				  font-size: smaller;
 				  text-align: center; }
 nav[data-sblg-nav].cur 		{ display: inline-block; 
 				  padding: 0; }
@@ -50,8 +57,7 @@ nav[data-sblg-nav].cur li	{ display: inline-block;
 				  padding: 0; }
 
 @media only screen and (max-width: 768px), only screen and (max-device-width: 768px) {
- body > header			{ padding: 24pt 2% 6pt 2%; }
- article			{ width: 96%; }
+ body > header			{ padding: 24pt 0 6pt 0; }
  #breadcrumbs			{ padding: 1em 0 1em 0; }
- h1				{ font-size: 18pt; }
+ h1				{ font-size: 160%; }
 }
