@@ -67,10 +67,11 @@ struct lowdown_node {
 		} rndr_doc_header;
 		struct rndr_list {
 			enum hlist_fl flags;
+			char start[10];
 		} rndr_list;
 		struct rndr_listitem {
 			enum hlist_fl flags;
-			size_t num;
+			uint32_t num;
 		} rndr_listitem;
 		struct rndr_header {
 			size_t level;
@@ -379,19 +380,24 @@ consists of a bitfield
 .Va flags
 that may be set to
 .Dv HLIST_FL_ORDERED
+for an ordered list.
+If
+.Va start
+is a non-empty string, it is the first list item value.
+.It Va rndr_listitem
+For
+.Dv LOWDOWN_DOC_LISTITEM ,
+consists of a bitfield
+.Va flags
+that may be set to
+.Dv HLIST_FL_ORDERED
 .Pq an ordered list
 and/or
 .Dv HLIST_FL_BLOCK
 .Pq list elements contain block elements .
-.It Va rndr_listitem
-For
-.Dv LOWDOWN_DOC_LISTITEM ,
-having the same
-.Va flags
-of the
-.Dv LOWDOWN_DOC_LIST as well as
-.Va num ,
-the index in an ordered list.
+The
+.Va num
+is the index in an ordered list.
 .It Va rndr_header
 For
 .Dv LOWDOWN_HEADER ,
