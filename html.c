@@ -286,18 +286,21 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title)
 }
 
 static void
-rndr_list(hbuf *ob, const hbuf *content, enum hlist_fl flags)
+rndr_list(hbuf *ob, const hbuf *content, const struct rndr_list *p)
 {
 
 	if (ob->size)
 		hbuf_putc(ob, '\n');
-	if (flags & HLIST_FL_ORDERED)
-		HBUF_PUTSL(ob, "<ol>\n");
-	else
+	if (p->flags & HLIST_FL_ORDERED) {
+		if (p->start[0] != '\0') 
+			hbuf_printf(ob, "<ol start=\"%s\">\n", p->start);
+		else
+			HBUF_PUTSL(ob, "<ol>\n");
+	} else
 		HBUF_PUTSL(ob, "<ul>\n");
 	if (content)
 		hbuf_put(ob, content->data, content->size);
-	if (flags & HLIST_FL_ORDERED)
+	if (p->flags & HLIST_FL_ORDERED)
 		HBUF_PUTSL(ob, "</ol>\n");
 	else
 		HBUF_PUTSL(ob, "</ul>\n");
@@ -855,7 +858,7 @@ lowdown_html_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
 		rndr_hrule(ob);
 		break;
 	case (LOWDOWN_LIST):
-		rndr_list(ob, tmp, root->rndr_list.flags);
+		rndr_list(ob, tmp, &root->rndr_list);
 		break;
 	case (LOWDOWN_LISTITEM):
 		rndr_listitem(ob, tmp, 

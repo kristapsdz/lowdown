@@ -168,7 +168,7 @@ struct	lowdown_node {
 		} rndr_list; 
 		struct rndr_listitem {
 			enum hlist_fl flags; /* all possible flags */
-			size_t num; /* index in ordered */
+			uint32_t num; /* index in ordered */
 		} rndr_listitem; 
 		struct rndr_header {
 			size_t level; /* hN level */

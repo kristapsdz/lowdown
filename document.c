@@ -2204,7 +2204,7 @@ parse_blockcode(hdoc *doc, char *data, size_t size)
  */
 static size_t
 parse_listitem(hbuf *ob, hdoc *doc, char *data,
-	size_t size, enum hlist_fl *flags, size_t num)
+	size_t size, enum hlist_fl *flags, uint32_t num)
 {
 	hbuf		*work = NULL;
 	size_t		 beg = 0, end, pre, sublist = 0, orgpre, i;
@@ -2354,13 +2354,15 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 /* 
  * Parsing ordered or unordered list block.
  * If "oli_data" is not NULL, it's the numeric string prefix of the
- * ordered entry.
+ * ordered entry.  It's either zero-length or well-formed.
  */
 static size_t
 parse_list(hdoc *doc, char *data, size_t size, const char *oli_data)
 {
 	hbuf		    *work = NULL;
-	size_t	 	     i = 0, j, k = 1;
+	const char	    *er = NULL;
+	size_t	 	     i = 0, j;
+	uint32_t	     k = 1;
 	enum hlist_fl	     flags;
 	struct lowdown_node *n;
 
@@ -2368,9 +2370,15 @@ parse_list(hdoc *doc, char *data, size_t size, const char *oli_data)
 	work = hbuf_new(256);
 	n = pushnode(doc, LOWDOWN_LIST);
 	n->rndr_list.flags = flags;
-	if (oli_data != NULL)
-		memcpy(n->rndr_list.start, 
-			oli_data, sizeof(n->rndr_list.start));
+
+	/* Set start point appropriately. */
+
+	if (oli_data != NULL && oli_data[0] != '\0') {
+		memcpy(n->rndr_list.start, oli_data,
+			sizeof(n->rndr_list.start));
+		k = strtonum(oli_data, 0, UINT32_MAX, &er);
+		assert(er == NULL);
+	}
 
 	while (i < size) {
 		j = parse_listitem(work, doc, 
