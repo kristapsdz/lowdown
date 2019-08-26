@@ -50,7 +50,7 @@ MANS		 = man/lowdown.1.html \
 		   man/lowdown_tree_rndr.3.html
 PDFS		 = diff.pdf index.pdf README.pdf
 MDS		 = index.md README.md
-CSSS		 = diff.css template.css mandoc.css
+CSSS		 = diff.css template.css
 JSS		 = diff.js
 
 all: lowdown lowdown-diff
@@ -123,7 +123,7 @@ $(HTMLS): versions.xml
 	  echo "</article>" ; ) >$@
 
 .1.1.html .3.3.html .5.5.html:
-	mandoc -Thtml -Ostyle=mandoc.css $< >$@
+	mandoc -Thtml -Ostyle=https://bsd.lv/css/mandoc.css $< >$@
 
 lowdown.tar.gz.sha512: lowdown.tar.gz
 	sha512 lowdown.tar.gz >$@
