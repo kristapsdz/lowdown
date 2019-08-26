@@ -28,6 +28,7 @@
 #if HAVE_MD5
 # include <md5.h>
 #endif
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
