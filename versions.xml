@@ -509,4 +509,16 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.4.5</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2019-08-26">2019-08-26</time>
+		</header>
+		<aside>
+			<p>
+				Bug fix for Mac OSX compilation.
+			</p>
+		</aside>
+	</article>
 </articles>

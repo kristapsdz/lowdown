@@ -1,11 +1,12 @@
-body			{ font-family: "Alegreya sans", sans-serif;
-			  font-size: 13pt;
+body			{ font-family: 'Alegreya sans', sans-serif;
+			  font-size: 14pt;
+			  line-height: 1.4em;
 			  font-weight: 400; }
-body > *		{ width: 60%; 
+body > *		{ width: calc(100% - 2rem); 
 			  margin-left: auto;
-			  display: block;
 			  margin-right: auto;
-			  max-width: 1000px; }
+			  display: block;
+			  max-width: 60rem; }
 .hljs			{ background-color: transparent; }
 code			{ font-size: 11pt; 
 			  line-height: 14pt; }
