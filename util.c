@@ -20,6 +20,7 @@
 # include <sys/queue.h>
 #endif
 
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
