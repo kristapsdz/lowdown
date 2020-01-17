@@ -1,6 +1,6 @@
 /*	$Id$ */
 /*
- * Copyright (c) 2017, 2018 Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) 2017, 2018, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -31,8 +31,15 @@
 #include "lowdown.h"
 #include "extern.h"
 
-#define DEF_IUNIT 1024
-#define DEF_OUNIT 64
+/*
+ * Starting size for input and output buffers.
+ */
+#define HBUF_START_BIG 4096
+
+/*
+ * Starting size for metadata buffers.
+ */
+#define HBUF_START_SMALL 128
 
 static	const char *const errs[LOWDOWN_ERR__MAX] = {
 	"space before link (CommonMark violation)",
@@ -44,7 +51,7 @@ const char *
 lowdown_errstr(enum lowdown_err err)
 {
 
-	return(errs[err]);
+	return errs[err];
 }
 
 /*
@@ -65,19 +72,22 @@ lowdown_buf(const struct lowdown_opts *opts,
 
 	/* Create our buffers, renderer, and document. */
 
-	ob = hbuf_new(DEF_OUNIT);
+	ob = hbuf_new(HBUF_START_BIG);
 	document = lowdown_doc_new(opts);
-	t = NULL == opts ? LOWDOWN_HTML : opts->type;
+	t = opts == NULL ? LOWDOWN_HTML : opts->type;
 
 	switch (t) {
-	case (LOWDOWN_HTML):
+	case LOWDOWN_HTML:
 		renderer = lowdown_html_new(opts);
 		break;
-	case (LOWDOWN_MAN):
-	case (LOWDOWN_NROFF):
+	case LOWDOWN_MAN:
+	case LOWDOWN_NROFF:
 		renderer = lowdown_nroff_new(opts);
 		break;
-	case (LOWDOWN_TREE):
+	case LOWDOWN_TERM:
+		renderer = lowdown_term_new(opts);
+		break;
+	case LOWDOWN_TREE:
 		renderer = lowdown_tree_new();
 		break;
 	}
@@ -88,16 +98,20 @@ lowdown_buf(const struct lowdown_opts *opts,
 	lowdown_doc_free(document);
 
 	switch (t) {
-	case (LOWDOWN_HTML):
+	case LOWDOWN_HTML:
 		lowdown_html_rndr(ob, renderer, n);
 		lowdown_html_free(renderer);
 		break;
-	case (LOWDOWN_MAN):
-	case (LOWDOWN_NROFF):
+	case LOWDOWN_MAN:
+	case LOWDOWN_NROFF:
 		lowdown_nroff_rndr(ob, renderer, n);
 		lowdown_nroff_free(renderer);
 		break;
-	case (LOWDOWN_TREE):
+	case LOWDOWN_TERM:
+		lowdown_term_rndr(ob, renderer, n);
+		lowdown_term_free(renderer);
+		break;
+	case LOWDOWN_TREE:
 		lowdown_tree_rndr(ob, renderer, n);
 		lowdown_tree_free(renderer);
 		break;
@@ -113,10 +127,10 @@ lowdown_buf(const struct lowdown_opts *opts,
 	 * Which we should never do!
 	 */
 
-	if (LOWDOWN_TREE != t) 
+	if (t != LOWDOWN_TREE && t != LOWDOWN_TERM) 
 		for (i = 0; i < *msz; i++) {
-			spb = hbuf_new(DEF_OUNIT);
-			if (LOWDOWN_HTML == t)
+			spb = hbuf_new(HBUF_START_SMALL);
+			if (t == LOWDOWN_HTML)
 				hesc_html(spb, (*m)[i].value, 
 					strlen((*m)[i].value), 0);
 			else
@@ -129,10 +143,11 @@ lowdown_buf(const struct lowdown_opts *opts,
 
 	/* Reprocess the output as smartypants. */
 
-	if (LOWDOWN_TREE != t &&
-	    NULL != opts && LOWDOWN_SMARTY & opts->oflags) {
-		spb = hbuf_new(DEF_OUNIT);
-		if (LOWDOWN_HTML == t)
+	if (t != LOWDOWN_TREE &&
+	    t != LOWDOWN_TERM &&
+	    opts != NULL && (opts->oflags & LOWDOWN_SMARTY)) {
+		spb = hbuf_new(HBUF_START_BIG);
+		if (t == LOWDOWN_HTML)
 			lowdown_html_smrt(spb, ob->data, ob->size);
 		else
 			lowdown_nroff_smrt(spb, ob->data, ob->size);
@@ -141,8 +156,8 @@ lowdown_buf(const struct lowdown_opts *opts,
 		spb->data = NULL;
 		hbuf_free(spb);
 		for (i = 0; i < *msz; i++) {
-			spb = hbuf_new(DEF_OUNIT);
-			if (LOWDOWN_HTML == t)
+			spb = hbuf_new(HBUF_START_SMALL);
+			if (t == LOWDOWN_HTML)
 				lowdown_html_smrt(spb, (*m)[i].value, 
 					strlen((*m)[i].value));
 			else
@@ -173,15 +188,15 @@ lowdown_merge_adjacent_text(struct lowdown_node *n)
 	hbuf	*nb, *nextbuf;
 
 	TAILQ_FOREACH(nn, &n->children, entries) {
-		if (LOWDOWN_NORMAL_TEXT != nn->type) {
+		if (nn->type != LOWDOWN_NORMAL_TEXT) {
 			lowdown_merge_adjacent_text(nn);
 			continue;
 		}
 		nb = &nn->rndr_normal_text.text;
 		for (;;) {
 			next = TAILQ_NEXT(nn, entries);
-			if (NULL == next ||
-			    LOWDOWN_NORMAL_TEXT != next->type)
+			if (next  == NULL ||
+			    next->type != LOWDOWN_NORMAL_TEXT)
 				break;
 			nextbuf = &next->rndr_normal_text.text;
 			TAILQ_REMOVE(&n->children, next, entries);
@@ -209,7 +224,7 @@ lowdown_buf_diff(const struct lowdown_opts *optnew,
 	enum lowdown_type t;
 	struct lowdown_node *nnew, *nold, *ndiff;
 
-	t = NULL == optnew ? LOWDOWN_HTML : optnew->type;
+	t = optnew == NULL ? LOWDOWN_HTML : optnew->type;
 
 	/*
 	 * XXX: for the renderer, the lodwown_opts used is not
@@ -218,14 +233,17 @@ lowdown_buf_diff(const struct lowdown_opts *optnew,
 	 */
 
 	switch (t) {
-	case (LOWDOWN_HTML):
+	case LOWDOWN_HTML:
 		renderer = lowdown_html_new(optnew);
 		break;
-	case (LOWDOWN_MAN):
-	case (LOWDOWN_NROFF):
+	case LOWDOWN_MAN:
+	case LOWDOWN_NROFF:
 		renderer = lowdown_nroff_new(optnew);
 		break;
-	case (LOWDOWN_TREE):
+	case LOWDOWN_TERM:
+		renderer = lowdown_term_new(optnew);
+		break;
+	case LOWDOWN_TREE:
 		renderer = lowdown_tree_new();
 		break;
 	}
@@ -252,19 +270,23 @@ lowdown_buf_diff(const struct lowdown_opts *optnew,
 	lowdown_node_free(nnew);
 	lowdown_node_free(nold);
 
-	ob = hbuf_new(DEF_OUNIT);
+	ob = hbuf_new(HBUF_START_BIG);
 
 	switch (t) {
-	case (LOWDOWN_HTML):
+	case LOWDOWN_HTML:
 		lowdown_html_rndr(ob, renderer, ndiff);
 		lowdown_html_free(renderer);
 		break;
-	case (LOWDOWN_MAN):
-	case (LOWDOWN_NROFF):
+	case LOWDOWN_MAN:
+	case LOWDOWN_NROFF:
 		lowdown_nroff_rndr(ob, renderer, ndiff);
 		lowdown_nroff_free(renderer);
 		break;
-	case (LOWDOWN_TREE):
+	case LOWDOWN_TERM:
+		lowdown_term_rndr(ob, renderer, ndiff);
+		lowdown_term_free(renderer);
+		break;
+	case LOWDOWN_TREE:
 		lowdown_tree_rndr(ob, renderer, ndiff);
 		lowdown_tree_free(renderer);
 		break;
@@ -274,10 +296,11 @@ lowdown_buf_diff(const struct lowdown_opts *optnew,
 
 	/* Reprocess the output as smartypants. */
 
-	if (LOWDOWN_TREE != t &&
-	    NULL != optnew && LOWDOWN_SMARTY & optnew->oflags) {
-		spb = hbuf_new(DEF_OUNIT);
-		if (LOWDOWN_HTML == t)
+	if (t != LOWDOWN_TREE &&
+	    t != LOWDOWN_TERM &&
+	    optnew != NULL && (optnew->oflags & LOWDOWN_SMARTY)) {
+		spb = hbuf_new(HBUF_START_BIG);
+		if (t == LOWDOWN_HTML)
 			lowdown_html_smrt(spb, ob->data, ob->size);
 		else
 			lowdown_nroff_smrt(spb, ob->data, ob->size);
@@ -302,19 +325,18 @@ lowdown_file(const struct lowdown_opts *opts,
 	FILE *fin, char **res, size_t *rsz,
 	struct lowdown_meta **m, size_t *msz)
 {
-	hbuf *ib;
+	hbuf	*ib;
 
-	ib = hbuf_new(DEF_IUNIT);
-	assert(NULL != ib);
+	ib = hbuf_new(HBUF_START_BIG);
 
 	if (hbuf_putf(ib, fin)) {
 		hbuf_free(ib);
-		return(0);
+		return 0;
 	}
 
 	lowdown_buf(opts, ib->data, ib->size, res, rsz, m, msz);
 	hbuf_free(ib);
-	return(1);
+	return 1;
 }
 
 int
@@ -322,23 +344,21 @@ lowdown_file_diff(const struct lowdown_opts *optnew, FILE *fnew,
 	const struct lowdown_opts *optold, FILE *fold, 
 	char **res, size_t *rsz)
 {
-	hbuf *src, *dst;
+	hbuf	*src, *dst;
 
-	src = hbuf_new(DEF_IUNIT);
-	assert(NULL != src);
-	dst = hbuf_new(DEF_IUNIT);
-	assert(NULL != dst);
+	src = hbuf_new(HBUF_START_BIG);
+	dst = hbuf_new(HBUF_START_BIG);
 
 	if (hbuf_putf(dst, fold) || hbuf_putf(src, fnew)) {
 		hbuf_free(src);
 		hbuf_free(dst);
-		return(0);
+		return 0;
 	}
 
 	lowdown_buf_diff(optnew, src->data, src->size, 
 		optold, dst->data, dst->size, res, rsz);
 	hbuf_free(src);
 	hbuf_free(dst);
-	return(1);
+	return 1;
 }
 
