@@ -1,6 +1,6 @@
 /*	$Id$ */
 /*
- * Copyright (c) 2016, 2017 Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) 2016, 2017, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -22,7 +22,7 @@
 #include <sys/param.h>
 #if HAVE_CAPSICUM
 # include <sys/resource.h>
-# include <sys/capability.h>
+# include <sys/capsicum.h>
 #endif
 
 #if HAVE_ERR
@@ -52,7 +52,7 @@ static void
 sandbox_post(int fdin, int fddin, int fdout)
 {
 
-	if (-1 == pledge("stdio", NULL))
+	if (pledge("stdio", NULL) == -1)
 		err(EXIT_FAILURE, "pledge");
 }
 
@@ -60,7 +60,7 @@ static void
 sandbox_pre(void)
 {
 
-	if (-1 == pledge("stdio rpath wpath cpath", NULL))
+	if (pledge("stdio rpath wpath cpath", NULL) == -1)
 		err(EXIT_FAILURE, "pledge");
 }
 
@@ -75,7 +75,7 @@ sandbox_post(int fdin, int fddin, int fdout)
 	rc = sandbox_init
 		(kSBXProfilePureComputation,
 		 SANDBOX_NAMED, &ep);
-	if (0 != rc)
+	if (rc != 0)
 		errx(EXIT_FAILURE, "sandbox_init: %s", ep);
 }
 
@@ -99,7 +99,7 @@ sandbox_post(int fdin, int fddin, int fdout)
 	if (cap_rights_limit(fdin, &rights) < 0)
  		err(EXIT_FAILURE, "cap_rights_limit");
 
-	if (-1 != fddin) {
+	if (fddin != -1) {
 		cap_rights_init(&rights, 
 			CAP_EVENT, CAP_READ, CAP_FSTAT);
 		if (cap_rights_limit(fddin, &rights) < 0)
@@ -149,7 +149,7 @@ static void
 message(enum lowdown_err er, void *arg, const char *buf)
 {
 
-	if (NULL != buf)
+	if (buf != NULL)
 		fprintf(stderr, "%s: %s: %s\n", (const char *)arg,
 			lowdown_errstr(er), buf);
 	else
@@ -162,64 +162,64 @@ static unsigned int
 feature_out(const char *v)
 {
 
-	if (NULL == v)
-		return(0);
-	if (0 == strcasecmp(v, "html-skiphtml"))
-		return(LOWDOWN_HTML_SKIP_HTML);
-	if (0 == strcasecmp(v, "html-escape"))
-		return(LOWDOWN_HTML_ESCAPE);
-	if (0 == strcasecmp(v, "html-hardwrap"))
-		return(LOWDOWN_HTML_HARD_WRAP);
-	if (0 == strcasecmp(v, "html-head-ids"))
-		return(LOWDOWN_HTML_HEAD_IDS);
-	if (0 == strcasecmp(v, "nroff-skiphtml"))
-		return(LOWDOWN_NROFF_SKIP_HTML);
-	if (0 == strcasecmp(v, "nroff-hardwrap"))
-		return(LOWDOWN_NROFF_HARD_WRAP);
-	if (0 == strcasecmp(v, "nroff-groff"))
-		return(LOWDOWN_NROFF_GROFF);
-	if (0 == strcasecmp(v, "nroff-numbered"))
-		return(LOWDOWN_NROFF_NUMBERED);
-	if (0 == strcasecmp(v, "smarty"))
-		return(LOWDOWN_SMARTY);
+	if (v == NULL)
+		return 0;
+	if (strcasecmp(v, "html-skiphtml") == 0)
+		return LOWDOWN_HTML_SKIP_HTML;
+	if (strcasecmp(v, "html-escape") == 0)
+		return LOWDOWN_HTML_ESCAPE;
+	if (strcasecmp(v, "html-hardwrap") == 0)
+		return LOWDOWN_HTML_HARD_WRAP;
+	if (strcasecmp(v, "html-head-ids") == 0)
+		return LOWDOWN_HTML_HEAD_IDS;
+	if (strcasecmp(v, "nroff-skiphtml") == 0)
+		return LOWDOWN_NROFF_SKIP_HTML;
+	if (strcasecmp(v, "nroff-hardwrap") == 0)
+		return LOWDOWN_NROFF_HARD_WRAP;
+	if (strcasecmp(v, "nroff-groff") == 0)
+		return LOWDOWN_NROFF_GROFF;
+	if (strcasecmp(v, "nroff-numbered") == 0)
+		return LOWDOWN_NROFF_NUMBERED;
+	if (strcasecmp(v, "smarty") == 0)
+		return LOWDOWN_SMARTY;
 
 	warnx("%s: unknown feature", v);
-	return(0);
+	return 0;
 }
 
 static unsigned int
 feature_in(const char *v)
 {
 
-	if (NULL == v)
-		return(0);
-	if (0 == strcasecmp(v, "tables"))
-		return(LOWDOWN_TABLES);
-	if (0 == strcasecmp(v, "fenced"))
-		return(LOWDOWN_TABLES);
-	if (0 == strcasecmp(v, "footnotes"))
-		return(LOWDOWN_FOOTNOTES);
-	if (0 == strcasecmp(v, "autolink"))
-		return(LOWDOWN_AUTOLINK);
-	if (0 == strcasecmp(v, "strike"))
-		return(LOWDOWN_STRIKE);
-	if (0 == strcasecmp(v, "hilite"))
-		return(LOWDOWN_HILITE);
-	if (0 == strcasecmp(v, "super"))
-		return(LOWDOWN_SUPER);
-	if (0 == strcasecmp(v, "math"))
-		return(LOWDOWN_MATH);
-	if (0 == strcasecmp(v, "nointem"))
-		return(LOWDOWN_NOINTEM);
-	if (0 == strcasecmp(v, "nocodeind"))
-		return(LOWDOWN_NOCODEIND);
-	if (0 == strcasecmp(v, "metadata"))
-		return(LOWDOWN_METADATA);
-	if (0 == strcasecmp(v, "commonmark"))
-		return(LOWDOWN_COMMONMARK);
+	if (v == NULL)
+		return 0;
+	if (strcasecmp(v, "tables") == 0)
+		return LOWDOWN_TABLES;
+	if (strcasecmp(v, "fenced") == 0)
+		return LOWDOWN_TABLES;
+	if (strcasecmp(v, "footnotes") == 0)
+		return LOWDOWN_FOOTNOTES;
+	if (strcasecmp(v, "autolink") == 0)
+		return LOWDOWN_AUTOLINK;
+	if (strcasecmp(v, "strike") == 0)
+		return LOWDOWN_STRIKE;
+	if (strcasecmp(v, "hilite") == 0)
+		return LOWDOWN_HILITE;
+	if (strcasecmp(v, "super") == 0)
+		return LOWDOWN_SUPER;
+	if (strcasecmp(v, "math") == 0)
+		return LOWDOWN_MATH;
+	if (strcasecmp(v, "nointem") == 0)
+		return LOWDOWN_NOINTEM;
+	if (strcasecmp(v, "nocodeind") == 0)
+		return LOWDOWN_NOCODEIND;
+	if (strcasecmp(v, "metadata") == 0)
+		return LOWDOWN_METADATA;
+	if (strcasecmp(v, "commonmark") == 0)
+		return LOWDOWN_COMMONMARK;
 
 	warnx("%s: unknown feature", v);
-	return(0);
+	return 0;
 }
 
 int
@@ -256,53 +256,55 @@ main(int argc, char *argv[])
 
 	sandbox_pre();
 
-	if (0 == strcasecmp(getprogname(), "lowdown-diff")) 
+	if (strcasecmp(getprogname(), "lowdown-diff") == 0) 
 		diff = 1;
 
-	while (-1 != (c = getopt(argc, argv, "D:d:E:e:sT:o:vX:")))
+	while ((c = getopt(argc, argv, "D:d:E:e:sT:o:vX:")) != -1)
 		switch (c) {
-		case ('D'):
-			if (0 == (feat = feature_out(optarg)))
+		case 'D':
+			if ((feat = feature_out(optarg)) == 0)
 				goto usage;
 			opts.oflags &= ~feat;
 			break;
-		case ('d'):
-			if (0 == (feat = feature_in(optarg)))
+		case 'd':
+			if ((feat = feature_in(optarg)) == 0)
 				goto usage;
 			opts.feat &= ~feat;
 			break;
-		case ('E'):
-			if (0 == (feat = feature_out(optarg)))
+		case 'E':
+			if ((feat = feature_out(optarg)) == 0)
 				goto usage;
 			opts.oflags |= feat;
 			break;
-		case ('e'):
-			if (0 == (feat = feature_in(optarg)))
+		case 'e':
+			if ((feat = feature_in(optarg)) == 0)
 				goto usage;
 			opts.feat |= feat;
 			break;
-		case ('o'):
+		case 'o':
 			fnout = optarg;
 			break;
-		case ('s'):
+		case 's':
 			standalone = 1;
 			break;
-		case ('T'):
-			if (0 == strcasecmp(optarg, "ms"))
+		case 'T':
+			if (strcasecmp(optarg, "ms") == 0)
 				opts.type = LOWDOWN_NROFF;
-			else if (0 == strcasecmp(optarg, "html"))
+			else if (strcasecmp(optarg, "html") == 0)
 				opts.type = LOWDOWN_HTML;
-			else if (0 == strcasecmp(optarg, "man"))
+			else if (strcasecmp(optarg, "man") == 0)
 				opts.type = LOWDOWN_MAN;
-			else if (0 == strcasecmp(optarg, "tree"))
+			else if (strcasecmp(optarg, "term") == 0)
+				opts.type = LOWDOWN_TERM;
+			else if (strcasecmp(optarg, "tree") == 0)
 				opts.type = LOWDOWN_TREE;
 			else
 				goto usage;
 			break;
-		case ('v'):
+		case 'v':
 			opts.msg = message;
 			break;
-		case ('X'):
+		case 'X':
 			extract = optarg;
 			break;
 		default:
@@ -318,37 +320,36 @@ main(int argc, char *argv[])
 	 * Non-diff mode takes an optional single argument.
 	 */
 
-	if (diff && NULL != extract)
+	if (diff && extract != NULL)
 		errx(EXIT_FAILURE, "-X not applicable to diff mode");
 
-	if ((diff && (0 == argc || argc > 2)) ||
-	    ( ! diff && argc > 1))
+	if ((diff && (argc == 0 || argc > 2)) || (!diff && argc > 1))
 		goto usage;
 
 	if (diff) {
 		if (argc > 1 && strcmp(argv[1], "-")) {
 			fnin = argv[1];
-			if (NULL == (fin = fopen(fnin, "r")))
+			if ((fin = fopen(fnin, "r")) == NULL)
 				err(EXIT_FAILURE, "%s", fnin);
 		}
 		fndin = argv[0];
-		if (NULL == (din = fopen(fndin, "r")))
+		if ((din = fopen(fndin, "r")) == NULL)
 			err(EXIT_FAILURE, "%s", fndin);
 	} else {
 		if (argc && strcmp(argv[0], "-")) {
 			fnin = argv[0];
-			if (NULL == (fin = fopen(fnin, "r")))
+			if ((fin = fopen(fnin, "r")) == NULL)
 				err(EXIT_FAILURE, "%s", fnin);
 		}
 	}
 
 	/* Configure the output file. */
 
-	if (NULL != fnout && strcmp(fnout, "-") &&
-	    NULL == (fout = fopen(fnout, "w")))
+	if (fnout != NULL && strcmp(fnout, "-") &&
+	    (fout = fopen(fnout, "w")) == NULL)
 		err(EXIT_FAILURE, "%s", fnout);
 
-	sandbox_post(fileno(fin), NULL == din ? 
+	sandbox_post(fileno(fin), din == NULL ? 
 		-1 : fileno(din), fileno(fout));
 
 	/* We're now completely sandboxed. */
@@ -364,17 +365,17 @@ main(int argc, char *argv[])
 		dopts = opts;
 		opts.arg = (void *)fnin;
 		dopts.arg = (void *)fndin;
-		if ( ! lowdown_file_diff(&opts, fin, &dopts, din, &ret, &retsz))
+		if (!lowdown_file_diff(&opts, fin, &dopts, din, &ret, &retsz))
 			err(EXIT_FAILURE, "%s", fnin);
 	} else {
 		opts.arg = (void *)fnin;
-		if ( ! lowdown_file(&opts, fin, &ret, &retsz, &m, &msz))
+		if (!lowdown_file(&opts, fin, &ret, &retsz, &m, &msz))
 			err(EXIT_FAILURE, "%s", fnin);
 	}
 
-	if (NULL != extract) {
+	if (extract != NULL) {
 		for (i = 0; i < msz; i++) 
-			if (0 == strcasecmp(m[i].key, extract))
+			if (strcasecmp(m[i].key, extract) == 0)
 				break;
 		if (i < msz) {
 			fprintf(fout, "%s\n", m[i].value);
@@ -397,7 +398,7 @@ main(int argc, char *argv[])
 		free(m[i].value);
 	}
 	free(m);
-	return(status);
+	return status;
 usage:
 	fprintf(stderr, "usage: lowdown "
 		"[-sv] "
@@ -426,5 +427,6 @@ usage:
 		"[-T mode] "
 		"oldfile "
 		"[file]\n");
-	return(EXIT_FAILURE);
+
+	return EXIT_FAILURE;
 }
