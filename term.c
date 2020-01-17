@@ -22,7 +22,6 @@
 
 #include <assert.h>
 #include <ctype.h>
-#include <err.h> /* FIXME: debugging */
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,7 +60,7 @@ LOWDOWN_TRIPLE_EMPHASIS		-> done
 LOWDOWN_STRIKETHROUGH		-> done
 LOWDOWN_SUPERSCRIPT		-> done
 LOWDOWN_FOOTNOTE_REF		-> 
-LOWDOWN_MATH_BLOCK		-> 
+LOWDOWN_MATH_BLOCK		-> done
 LOWDOWN_RAW_HTML		-> done
 LOWDOWN_ENTITY			-> 
 LOWDOWN_NORMAL_TEXT		-> done
@@ -537,6 +536,9 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 	case LOWDOWN_TABLE_BLOCK:
 		rndr_buf_vspace(p, ob, n, 2);
 		break;
+	case LOWDOWN_MATH_BLOCK:
+		if (!n->rndr_math.blockmode)
+			break;
 	case LOWDOWN_HRULE:
 	case LOWDOWN_LINEBREAK:
 	case LOWDOWN_LISTITEM:
@@ -580,6 +582,9 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 		break;
 	case LOWDOWN_RAW_HTML:
 		rndr_buf(p, ob, n, &n->rndr_raw_html.text, 0);
+		break;
+	case LOWDOWN_MATH_BLOCK:
+		rndr_buf(p, ob, n, &n->rndr_math.text, 0);
 		break;
 	case LOWDOWN_BLOCKCODE:
 		rndr_buf(p, ob, n, &n->rndr_blockcode.text, 0);
@@ -626,6 +631,9 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 	case LOWDOWN_TABLE_BLOCK:
 		rndr_buf_vspace(p, ob, n, 2);
 		break;
+	case LOWDOWN_MATH_BLOCK:
+		if (!n->rndr_math.blockmode)
+			break;
 	case LOWDOWN_HRULE:
 	case LOWDOWN_LISTITEM:
 	case LOWDOWN_ROOT:
