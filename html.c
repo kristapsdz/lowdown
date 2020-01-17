@@ -662,14 +662,14 @@ static int
 rndr_math(hbuf *ob, const struct rndr_math *n)
 {
 
-	if (n->displaymode)
+	if (n->blockmode)
 		HBUF_PUTSL(ob, "\\[");
 	else
 		HBUF_PUTSL(ob, "\\(");
 
 	escape_html(ob, n->text.data, n->text.size);
 
-	if (n->displaymode)
+	if (n->blockmode)
 		HBUF_PUTSL(ob, "\\]");
 	else
 		HBUF_PUTSL(ob, "\\)");

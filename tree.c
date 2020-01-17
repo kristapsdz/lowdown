@@ -189,8 +189,8 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 	case (LOWDOWN_MATH_BLOCK):
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "displaymode: %s\n",
-			root->rndr_math.displaymode ?
+		hbuf_printf(ob, "blockmode: %s\n",
+			root->rndr_math.blockmode ?
 			"block" : "inline");
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");

@@ -223,7 +223,7 @@ struct	lowdown_node {
 		} rndr_image;
 		struct rndr_math {
 			hbuf text; /* equation (opaque) */
-			int displaymode;
+			int blockmode;
 		} rndr_math;
 		struct rndr_blockhtml {
 			hbuf text;

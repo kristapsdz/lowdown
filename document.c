@@ -761,7 +761,7 @@ parse_emph3(hdoc *doc, char *data, size_t size, char c)
  */
 static size_t
 parse_math(hdoc *doc, char *data, size_t offset, size_t size, 
-	const char *end, size_t delimsz, int displaymode)
+	const char *end, size_t delimsz, int blockmode)
 {
 	size_t	 i = delimsz;
 	struct lowdown_node *n;
@@ -795,7 +795,7 @@ parse_math(hdoc *doc, char *data, size_t offset, size_t size,
 
 	n = pushnode(doc, LOWDOWN_MATH_BLOCK);
   	pushbuffer(&n->rndr_math.text, data + delimsz, i - 2 * delimsz); 
-	n->rndr_math.displaymode = displaymode;
+	n->rndr_math.blockmode = blockmode;
 	popnode(doc, n);
 	return i;
 }

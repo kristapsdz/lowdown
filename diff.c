@@ -298,7 +298,7 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 		MD5Updatebuf(&ctx, &n->rndr_image.alt);
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		MD5Updatev(&ctx, &n->rndr_math.displaymode, 
+		MD5Updatev(&ctx, &n->rndr_math.blockmode, 
 			sizeof(int));
 		break;
 	case LOWDOWN_BLOCKHTML:
@@ -684,8 +684,8 @@ node_clone(const struct lowdown_node *v, size_t id)
 			&n->rndr_image.alt);
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		n->rndr_math.displaymode = 
-			v->rndr_math.displaymode;
+		n->rndr_math.blockmode = 
+			v->rndr_math.blockmode;
 		break;
 	case LOWDOWN_BLOCKHTML:
 		hbuf_clone(&v->rndr_blockhtml.text,
