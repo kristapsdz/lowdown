@@ -53,7 +53,7 @@ LOWDOWN_LINK_AUTO		-> done
 LOWDOWN_CODESPAN		-> done
 LOWDOWN_DOUBLE_EMPHASIS		-> done
 LOWDOWN_EMPHASIS		-> done
-LOWDOWN_HIGHLIGHT		-> 
+LOWDOWN_HIGHLIGHT		-> done
 LOWDOWN_IMAGE			-> 
 LOWDOWN_LINEBREAK		-> done
 LOWDOWN_LINK			-> done
@@ -171,6 +171,7 @@ rndr_node_style(struct style *s, const struct lowdown_node *n)
 	case LOWDOWN_EMPHASIS:
 		s->italic = 1;
 		break;
+	case LOWDOWN_HIGHLIGHT:
 	case LOWDOWN_DOUBLE_EMPHASIS:
 		s->bold = 1;
 		break;
