@@ -48,7 +48,7 @@ LOWDOWN_TABLE_ROW		-> done
 LOWDOWN_TABLE_CELL		-> 
 LOWDOWN_FOOTNOTES_BLOCK		-> 
 LOWDOWN_FOOTNOTE_DEF		-> 
-LOWDOWN_BLOCKHTML		-> 
+LOWDOWN_BLOCKHTML		-> done
 LOWDOWN_LINK_AUTO		-> done
 LOWDOWN_CODESPAN		-> done
 LOWDOWN_DOUBLE_EMPHASIS		-> done
@@ -59,10 +59,10 @@ LOWDOWN_LINEBREAK		-> done
 LOWDOWN_LINK			-> done
 LOWDOWN_TRIPLE_EMPHASIS		-> done
 LOWDOWN_STRIKETHROUGH		-> done
-LOWDOWN_SUPERSCRIPT		-> 
+LOWDOWN_SUPERSCRIPT		-> done
 LOWDOWN_FOOTNOTE_REF		-> 
 LOWDOWN_MATH_BLOCK		-> 
-LOWDOWN_RAW_HTML		-> 
+LOWDOWN_RAW_HTML		-> done
 LOWDOWN_ENTITY			-> 
 LOWDOWN_NORMAL_TEXT		-> done
 LOWDOWN_DOC_HEADER		-> 
@@ -154,6 +154,10 @@ rndr_node_style(struct style *s, const struct lowdown_node *n)
 	}
 
 	switch (n->type) {
+	case LOWDOWN_RAW_HTML:
+	case LOWDOWN_BLOCKHTML:
+		s->colour = 37;
+		break;
 	case LOWDOWN_HRULE:
 		s->colour = 37;
 		break;
@@ -421,7 +425,8 @@ rndr_buf(struct term *term, hbuf *out,
 	const struct lowdown_node *nn;
 
 	for (nn = n; nn != NULL; nn = nn->parent)
-		if (nn->type == LOWDOWN_BLOCKCODE) {
+		if (nn->type == LOWDOWN_BLOCKCODE ||
+	  	    nn->type == LOWDOWN_BLOCKHTML) {
 			rndr_buf_literal(term, out, n, in);
 			return;
 		}
@@ -452,11 +457,18 @@ rndr_buf(struct term *term, hbuf *out,
 		len = &in->data[i] - start;
 
 		/* 
-		 * If we cross our maximum width, then break.
+		 * If we cross our maximum width and are preceded by a
+		 * space, then break.
+		 * (Leaving out the check for a space will cause
+		 * adjacent text or punctuation to have a preceding
+		 * newline.)
 		 * This will also unset the current style.
 		 */
 
-		if (term->col && term->col + len > 72) {
+		if ((needspace || 
+	 	     (out->size && isspace
+		      ((unsigned char)out->data[out->size - 1]))) &&
+		    term->col && term->col + len > 72) {
 			rndr_buf_endline(term, out, n);
 			end = 0;
 		}
@@ -516,6 +528,7 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 		p->last_blank = -1;
 		break;
 	case LOWDOWN_BLOCKCODE:
+	case LOWDOWN_BLOCKHTML:
 	case LOWDOWN_BLOCKQUOTE:
 	case LOWDOWN_HEADER:
 	case LOWDOWN_LIST:
@@ -533,6 +546,19 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 		break;
 	}
 
+	/* Output leading content. */
+
+	switch (n->type) {
+	case LOWDOWN_SUPERSCRIPT:
+		tmp = hbuf_new(2);
+		HBUF_PUTSL(tmp, "^");
+		rndr_buf(p, ob, n, tmp, 0);
+		hbuf_free(tmp);
+		break;
+	default:
+		break;
+	}
+
 	/* Descend into children. */
 
 	TAILQ_FOREACH(child, &n->children, entries) {
@@ -542,7 +568,7 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 		p->stackpos--;
 	}
 
-	/* Process content. */
+	/* Output trailing content. */
 
 	switch (n->type) {
 	case LOWDOWN_HRULE:
@@ -551,8 +577,14 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 		rndr_buf(p, ob, n, tmp, 0);
 		hbuf_free(tmp);
 		break;
+	case LOWDOWN_RAW_HTML:
+		rndr_buf(p, ob, n, &n->rndr_raw_html.text, 0);
+		break;
 	case LOWDOWN_BLOCKCODE:
 		rndr_buf(p, ob, n, &n->rndr_blockcode.text, 0);
+		break;
+	case LOWDOWN_BLOCKHTML:
+		rndr_buf(p, ob, n, &n->rndr_blockhtml.text, 0);
 		break;
 	case LOWDOWN_CODESPAN:
 		rndr_buf(p, ob, n, &n->rndr_codespan.text, 0);
@@ -574,6 +606,7 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 
 	switch (n->type) {
 	case LOWDOWN_BLOCKCODE:
+	case LOWDOWN_BLOCKHTML:
 	case LOWDOWN_BLOCKQUOTE:
 	case LOWDOWN_HEADER:
 	case LOWDOWN_LIST:
