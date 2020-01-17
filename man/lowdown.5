@@ -440,6 +440,21 @@ simply surround the character by white space.
 .Bd -literal -offset indent
 The ship * USS Enterprise * will not be emphasized
 .Ed
+.Pp
+Two additional types of double-emphasis are the strike-through and
+highlight.
+These are produced by pairs of tilde and equal characters, respectively:
+.Bd -literal -offset indent
+~~Kirk~~Picard is the best ==captain==.
+.Ed
+.Pp
+The highlight variant may be enabled in
+.Xr lowdown 1
+with the
+.Ar hilite
+input options.
+It's disabled by default because if used at the beginning of a line it
+may be erroneously interpreted as a section.
 .
 .Ss Links
 There are two types of links: inline and reference.
@@ -493,7 +508,7 @@ angle brackets
 for example:
 .Bd -literal -offset indent
 <https://bsd.lv/>
-<huck@divelog.blue>
+<kristaps@localhost>
 .Ed
 .Pp
 In
@@ -647,5 +662,4 @@ They include:
 The
 .Nm
 reference was originally written by
-.An Christina "Huck" Sophonpanich ,
-.Mt huck@divelog.blue .
+.An Christina Sophonpanich .
