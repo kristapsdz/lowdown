@@ -44,6 +44,7 @@ enum	lowdown_type {
 	LOWDOWN_HTML,
 	LOWDOWN_MAN,
 	LOWDOWN_NROFF,
+	LOWDOWN_TERM,
 	LOWDOWN_TREE
 };
 
@@ -317,18 +318,19 @@ void 	 lowdown_node_free(struct lowdown_node *);
 
 void	 lowdown_html_free(void *);
 void	*lowdown_html_new(const struct lowdown_opts *);
-void 	 lowdown_html_rndr(hbuf *, void *, 
-		struct lowdown_node *);
+void 	 lowdown_html_rndr(hbuf *, void *, struct lowdown_node *);
+
+void	 lowdown_term_free(void *);
+void	*lowdown_term_new(const struct lowdown_opts *);
+void 	 lowdown_term_rndr(hbuf *, void *, struct lowdown_node *);
 
 void	 lowdown_nroff_free(void *);
 void	*lowdown_nroff_new(const struct lowdown_opts *);
-void 	 lowdown_nroff_rndr(hbuf *, void *, 
-		struct lowdown_node *);
+void 	 lowdown_nroff_rndr(hbuf *, void *, struct lowdown_node *);
 
 void	 lowdown_tree_free(void *);
 void	*lowdown_tree_new(void);
-void 	 lowdown_tree_rndr(hbuf *, void *, 
-		struct lowdown_node *);
+void 	 lowdown_tree_rndr(hbuf *, void *, struct lowdown_node *);
 
 /* XXX: will be deprecated. */
 

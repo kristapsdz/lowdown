@@ -16,6 +16,7 @@ OBJS		 = autolink.o \
 		   nroff.o \
 		   nroff_escape.o \
 		   nroff_smartypants.o \
+		   term.o \
 		   tree.o \
 		   util.o \
 		   xmalloc.o
