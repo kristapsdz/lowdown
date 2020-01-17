@@ -103,6 +103,24 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 	HBUF_PUTSL(ob, "\n");
 
 	switch (root->type) {
+	case (LOWDOWN_IMAGE):
+		for (i = 0; i < indent + 1; i++)
+			HBUF_PUTSL(ob, "  ");
+		hbuf_printf(ob, "source: ");
+		rndr_short(ob, &root->rndr_image.link);
+		if (root->rndr_image.dims.size)
+			hbuf_printf(ob, " (%.*s)",
+				(int)root->rndr_image.dims.size,
+				root->rndr_image.dims.data);
+		HBUF_PUTSL(ob, "\n");
+		if (root->rndr_image.title.size) {
+			for (i = 0; i < indent + 1; i++)
+				HBUF_PUTSL(ob, "  ");
+			hbuf_printf(ob, "title: ");
+			rndr_short(ob, &root->rndr_image.title);
+			HBUF_PUTSL(ob, "\n");
+		}
+		break;
 	case (LOWDOWN_HEADER):
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
