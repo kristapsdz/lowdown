@@ -530,15 +530,20 @@ before the text to link surrounded by square brackets
 .Ed
 .Pp
 Just like with links, there are both inline and reference image links.
-The former consist of an exclamation mark
+.Pp
+The inline style consists of an exclamation mark
 .Pq Dq \&!
-followed by the text for the image (which may be empty) surrounded by
-square brackets
+followed by the alternate text (which may be empty) surrounded by square
+brackets
 .Dq Pq \&[]
-followed by the URL or the path to image in parentheses
+followed by the URL or the path in parentheses
 .Dq Pq \&() .
+The parentheses may also contain optional dimenions 
+.Pq Ar width Ns x Ns Op Ar height
+starting with an equal sign or a quoted (single or double quotes) title
+in any order after the URL or path.
 .Bd -literal -offset indent
-![Picture of Picard](https://bsd.lv/picard.jpg)
+![Picard](https://bsd.lv/picard.jpg =250x250 'Engage!')
 .Ed
 .Pp
 The reference style definition consists of an image identifier
