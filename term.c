@@ -54,7 +54,7 @@ LOWDOWN_CODESPAN		-> done
 LOWDOWN_DOUBLE_EMPHASIS		-> done
 LOWDOWN_EMPHASIS		-> done
 LOWDOWN_HIGHLIGHT		-> done
-LOWDOWN_IMAGE			-> 
+LOWDOWN_IMAGE			-> done (ugly)
 LOWDOWN_LINEBREAK		-> done
 LOWDOWN_LINK			-> done
 LOWDOWN_TRIPLE_EMPHASIS		-> done
@@ -595,6 +595,17 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 		break;
 	case LOWDOWN_LINK:
 		rndr_buf(p, ob, n, &n->rndr_link.link, 1);
+		break;
+	case LOWDOWN_IMAGE:
+		tmp = hbuf_new(32);
+		hbuf_printf(tmp, "%.*s%s[Image: %.*s]",
+			(int)n->rndr_image.alt.size,
+			n->rndr_image.alt.data,
+			n->rndr_image.alt.size ? " " : "",
+			(int)n->rndr_image.link.size,
+			n->rndr_image.link.data);
+		rndr_buf(p, ob, n, tmp, 1);
+		hbuf_free(tmp);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
 		rndr_buf(p, ob, n, &n->rndr_normal_text.text, 0);
