@@ -121,6 +121,22 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 		hbuf_printf(ob, "number: %zu\n",
 			root->rndr_footnote_def.num);
 		break;
+	case (LOWDOWN_RAW_HTML):
+		for (i = 0; i < indent + 1; i++)
+			HBUF_PUTSL(ob, "  ");
+		hbuf_printf(ob, "data: %zu Bytes: ",
+			root->rndr_raw_html.text.size);
+		rndr_short(ob, &root->rndr_raw_html.text);
+		HBUF_PUTSL(ob, "\n");
+		break;
+	case (LOWDOWN_BLOCKHTML):
+		for (i = 0; i < indent + 1; i++)
+			HBUF_PUTSL(ob, "  ");
+		hbuf_printf(ob, "data: %zu Bytes: ",
+			root->rndr_blockhtml.text.size);
+		rndr_short(ob, &root->rndr_blockhtml.text);
+		HBUF_PUTSL(ob, "\n");
+		break;
 	case (LOWDOWN_BLOCKCODE):
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
