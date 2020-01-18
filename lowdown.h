@@ -321,7 +321,7 @@ void	*lowdown_html_new(const struct lowdown_opts *);
 void 	 lowdown_html_rndr(hbuf *, void *, struct lowdown_node *);
 
 void	 lowdown_term_free(void *);
-void	*lowdown_term_new(const struct lowdown_opts *);
+void	*lowdown_term_new(void);
 void 	 lowdown_term_rndr(hbuf *, void *, struct lowdown_node *);
 
 void	 lowdown_nroff_free(void *);

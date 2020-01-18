@@ -781,7 +781,7 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 }
 
 void *
-lowdown_term_new(const struct lowdown_opts *opts)
+lowdown_term_new(void)
 {
 
 	return xcalloc(1, sizeof(struct term));
