@@ -52,6 +52,8 @@ The following modifications to the HTML5 output have been made:
 The following major feature additions have been added:
 
 - output mode for troff (via either the *-ms* or *-man* package)
+- stylised terminal output (like
+  [glow](https://github.com/charmbracelet/glow))
 - extension output mode for GNU troff (*-mpdfmark*, PSPIC, etc.)
 - "smartypants" mode for the troff outputs
 - metadata support
