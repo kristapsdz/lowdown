@@ -57,6 +57,22 @@ struct term {
 	hbuf		*tmp; /* for temporary allocations */
 };
 
+struct	ent {
+	const char	*ent; /* entity (&xxx;) or NULL for last */
+	const char	*out; /* what we should output or empty */
+};
+
+static const struct ent ents[] = {
+	{ "&nbsp;",	" " },
+	{ "&#160;",	" " },
+	{ "&zwnj;",	"" },
+	{ "&gt;",	">" },
+	{ "&lt;",	"<" },
+	{ "&#8220;",	"\"" },
+	{ "&#8221;",	"\"" },
+	{ NULL,		NULL }
+};
+
 /*
  * How to style the output on the screen.
  */
@@ -701,7 +717,22 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 		rndr_buf(p, ob, n, &n->rndr_math.text, 0, NULL);
 		break;
 	case LOWDOWN_ENTITY:
-		rndr_buf(p, ob, n, &n->rndr_entity.text, 0, NULL);
+		for (i = 0; ; i++) {
+			if (ents[i].ent == NULL)
+				break;
+			hbuf_truncate(p->tmp);
+			hbuf_puts(p->tmp, ents[i].ent);
+			if (!hbuf_eq(p->tmp, &n->rndr_entity.text))
+				continue;
+			if (ents[i].out[0] == '\0')
+				break;
+			hbuf_truncate(p->tmp);
+			hbuf_puts(p->tmp, ents[i].out);
+			rndr_buf(p, ob, n, p->tmp, 0, NULL);
+			break;
+		}
+		if (ents[i].ent == NULL) 
+			rndr_buf(p, ob, n, &n->rndr_entity.text, 0, NULL);
 		break;
 	case LOWDOWN_BLOCKCODE:
 		rndr_buf(p, ob, n, &n->rndr_blockcode.text, 0, NULL);
