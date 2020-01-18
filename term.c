@@ -39,6 +39,11 @@ LOWDOWN_TABLE_ROW		-> done
 LOWDOWN_TABLE_CELL		-> 
 #endif
 
+/*
+ * Hard-coded terminal width.
+ */
+#define	TERM_WIDTH	80
+
 struct tstack {
 	size_t	id; /* node identifier */
 	size_t	lines; /* times emitted block prefix */
@@ -379,8 +384,8 @@ rndr_buf_startline_prefixes(struct term *term,
 	case LOWDOWN_ROOT:
 		rndr_buf_style(out, s);
 		pstyle = 1;
-		HBUF_PUTSL(out, " ");
-		rndr_buf_advance(term, 1);
+		HBUF_PUTSL(out, "    ");
+		rndr_buf_advance(term, 4);
 		break;
 	case LOWDOWN_BLOCKQUOTE:
 		rndr_buf_style(out, s);
@@ -565,7 +570,7 @@ rndr_buf(struct term *term, hbuf *out,
 		if ((needspace || 
 	 	     (out->size && isspace
 		      ((unsigned char)out->data[out->size - 1]))) &&
-		    term->col && term->col + len > 72) {
+		    term->col && term->col + len > TERM_WIDTH) {
 			rndr_buf_endline(term, out, n, osty);
 			end = 0;
 		}
