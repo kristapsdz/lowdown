@@ -45,8 +45,8 @@ LOWDOWN_TABLE_HEADER		->
 LOWDOWN_TABLE_BODY		-> 
 LOWDOWN_TABLE_ROW		-> done
 LOWDOWN_TABLE_CELL		-> 
-LOWDOWN_FOOTNOTES_BLOCK		-> 
-LOWDOWN_FOOTNOTE_DEF		-> 
+LOWDOWN_FOOTNOTES_BLOCK		-> done
+LOWDOWN_FOOTNOTE_DEF		-> done
 LOWDOWN_BLOCKHTML		-> done
 LOWDOWN_LINK_AUTO		-> done
 LOWDOWN_CODESPAN		-> done
@@ -59,7 +59,7 @@ LOWDOWN_LINK			-> done
 LOWDOWN_TRIPLE_EMPHASIS		-> done
 LOWDOWN_STRIKETHROUGH		-> done
 LOWDOWN_SUPERSCRIPT		-> done
-LOWDOWN_FOOTNOTE_REF		-> 
+LOWDOWN_FOOTNOTE_REF		-> done
 LOWDOWN_MATH_BLOCK		-> done
 LOWDOWN_RAW_HTML		-> done
 LOWDOWN_ENTITY			-> 
@@ -98,6 +98,7 @@ struct sty {
 /* Per-node styles. */
 
 static const struct sty sty_image =	{ 0, 0, 1, 0,   0, 92, 1 };
+static const struct sty sty_foot_ref =	{ 0, 0, 1, 0,   0, 92, 1 };
 static const struct sty sty_codespan = 	{ 0, 0, 0, 0,  47, 31, 0 };
 static const struct sty sty_hrule = 	{ 0, 0, 0, 0,   0, 37, 0 };
 static const struct sty sty_blockhtml =	{ 0, 0, 0, 0,   0, 37, 0 };
@@ -118,6 +119,7 @@ static const struct sty sty_hn = 	{ 0, 0, 0, 0,   0, 36, 0 };
 static const struct sty sty_linkalt =	{ 0, 0, 1, 0,   0, 92, 1|2 };
 static const struct sty sty_imgurl = 	{ 0, 0, 0, 1,   0, 32, 2 };
 static const struct sty sty_imgurlbox =	{ 0, 0, 0, 0,   0, 37, 2 };
+static const struct sty sty_foots_div =	{ 0, 0, 0, 0,   0, 37, 0 };
 
 static const struct sty *stys[LOWDOWN__MAX] = {
 	NULL, /* LOWDOWN_ROOT */
@@ -147,7 +149,7 @@ static const struct sty *stys[LOWDOWN__MAX] = {
 	&sty_t_emph, /* LOWDOWN_TRIPLE_EMPHASIS */
 	&sty_strike, /* LOWDOWN_STRIKETHROUGH */
 	NULL, /* LOWDOWN_SUPERSCRIPT */
-	NULL, /* LOWDOWN_FOOTNOTE_REF */
+	&sty_foot_ref, /* LOWDOWN_FOOTNOTE_REF */
 	NULL, /* LOWDOWN_MATH_BLOCK */
 	&sty_rawhtml, /* LOWDOWN_RAW_HTML */
 	NULL, /* LOWDOWN_ENTITY */
@@ -397,6 +399,16 @@ rndr_buf_startline_prefixes(struct term *term,
 		HBUF_PUTSL(out, "| ");
 		rndr_buf_advance(term, 2);
 		break;
+	case LOWDOWN_FOOTNOTE_DEF:
+		rndr_buf_style(out, s);
+		pstyle = 1;
+		if (emit == 0)
+			hbuf_printf(out, "%4zu. ", 
+				n->rndr_footnote_def.num);
+		else
+			HBUF_PUTSL(out, "      ");
+		rndr_buf_advance(term, 6);
+		break;
 	case LOWDOWN_HEADER:
 		if (n->rndr_header.level == 1)
 			break;
@@ -617,7 +629,7 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 	memset(&p->stack[p->stackpos], 0, sizeof(struct tstack));
 	p->stack[p->stackpos].id = n->id;
 	
-	/* Start with stuff to do *before* descent. */
+	/* Vertical space before content. */
 
 	switch (n->type) {
 	case LOWDOWN_ROOT:
@@ -626,6 +638,8 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 	case LOWDOWN_BLOCKCODE:
 	case LOWDOWN_BLOCKHTML:
 	case LOWDOWN_BLOCKQUOTE:
+	case LOWDOWN_FOOTNOTES_BLOCK:
+	case LOWDOWN_FOOTNOTE_DEF:
 	case LOWDOWN_HEADER:
 	case LOWDOWN_LIST:
 	case LOWDOWN_PARAGRAPH:
@@ -648,6 +662,12 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 	/* Output leading content. */
 
 	switch (n->type) {
+	case LOWDOWN_FOOTNOTES_BLOCK:
+		tmp = hbuf_new(32);
+		HBUF_PUTSL(tmp, "~~~~~~~~");
+		rndr_buf(p, ob, n, tmp, 0, &sty_foots_div);
+		hbuf_free(tmp);
+		break;
 	case LOWDOWN_SUPERSCRIPT:
 		tmp = hbuf_new(2);
 		HBUF_PUTSL(tmp, "^");
@@ -667,12 +687,18 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 		p->stackpos--;
 	}
 
-	/* Output trailing content. */
+	/* Output content. */
 
 	switch (n->type) {
 	case LOWDOWN_HRULE:
 		tmp = hbuf_new(32);
 		HBUF_PUTSL(tmp, "~~~~~~~~");
+		rndr_buf(p, ob, n, tmp, 0, NULL);
+		hbuf_free(tmp);
+		break;
+	case LOWDOWN_FOOTNOTE_REF:
+		tmp = hbuf_new(32);
+		hbuf_printf(tmp, "[%zu]", n->rndr_footnote_ref.num);
 		rndr_buf(p, ob, n, tmp, 0, NULL);
 		hbuf_free(tmp);
 		break;
@@ -718,12 +744,14 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 		break;
 	}
 
-	/* Process trailing block spaces and so on. */
+	/* Trailing block spaces. */
 
 	switch (n->type) {
 	case LOWDOWN_BLOCKCODE:
 	case LOWDOWN_BLOCKHTML:
 	case LOWDOWN_BLOCKQUOTE:
+	case LOWDOWN_FOOTNOTES_BLOCK:
+	case LOWDOWN_FOOTNOTE_DEF:
 	case LOWDOWN_HEADER:
 	case LOWDOWN_LIST:
 	case LOWDOWN_PARAGRAPH:
