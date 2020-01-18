@@ -53,28 +53,33 @@ Markdown](https://undeadly.org/cgi?action=article&sid=20170304230520).
 
 ## Output
 
-Of course, *lowdown* supports the usual HTML output. Specifically, it
-produces HTML5 in XML mode.  You can use *lowdown* to create either a
-snippet or standalone HTML5 document.
+Of course, *lowdown* supports the usual HTML output with **-Thtml**.
+Specifically, it produces HTML5 in XML mode.  You can use *lowdown* to
+create either a snippet or standalone HTML5 document.
 
-It also supports outputting to the **ms** macros, originally
+It also supports outputting to the **ms** macros (**-Tms**), originally
 implemented for the *roff* typesetting package of Version 7 AT&T UNIX.
 This way, you can have elegant PDF and PS output by using any modern
 *troff* system such as [groff(1)](https://www.gnu.org/s/groff).
+Furthermore, it supports the **man** macros (**-Tman**), also from
+Version 7 AT&T UNIX[^nomanpages].  Beyond the usual *troff* systems,
+this is also supported by [mandoc](https://mdocml.bsd.lv).
 
-Furthermore, it supports the **man** macros, also from Version 7
-AT&T UNIX.  Beyond the usual *troff* systems, this is also supported by
-[mandoc](https://mdocml.bsd.lv).
+[^nomanpages]:
+    You may be tempted to write [manpages](https://man.openbsd.org)
+    in Markdown, but please don't: use
+    [mdoc(7)](https://man.openbsd.org/mdoc), instead --- it's built
+    for that purpose!  The **man** output is for technical
+    documentation only (section 7).
 
-You may be tempted to write [manpages](https://man.openbsd.org) in
-Markdown, but please don't: use [mdoc(7)](https://man.openbsd.org/mdoc),
-instead --- it's built for that purpose!  The **man** output is for
-technical documentation only (section 7).
+Both **-Tms** and **-Tman** disallow images and equations.  The former
+by definition (although **-Tms** might have a future with some elbow
+grease), the latter due to (not insurmountable) complexity of converting
+LaTeX to [eqn(7)](https://man.openbsd.org/eqn).
 
-Both the **ms** and **man** output modes disallow images and
-equations.  The former by definition (although **ms** might have a
-future with some elbow grease), the latter due to (not insurmountable)
-complexity of converting LaTeX to [eqn(7)](https://man.openbsd.org/eqn).
+Lastly, it has support for ANSI-compatible terminals with **-Tterm**.
+This renders stylised Markdown-looking output for easy reading.  It's
+inspired by [glow](https://github.com/charmbracelet/glow).
 
 You can control output features by using the **-D** (disable feature)
 and **-E** (enable feature) flags documented in
