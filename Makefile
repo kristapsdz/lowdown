@@ -46,6 +46,9 @@ MANS		 = man/lowdown.1.html \
 		   man/lowdown_nroff_free.3.html \
 		   man/lowdown_nroff_new.3.html \
 		   man/lowdown_nroff_rndr.3.html \
+		   man/lowdown_term_free.3.html \
+		   man/lowdown_term_new.3.html \
+		   man/lowdown_term_rndr.3.html \
 		   man/lowdown_tree_free.3.html \
 		   man/lowdown_tree_new.3.html \
 		   man/lowdown_tree_rndr.3.html
