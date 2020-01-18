@@ -80,119 +80,180 @@ struct term {
 	size_t		 stackpos; /* position in stack */
 };
 
-struct style {
+/*
+ * How to style the output on the screen.
+ */
+struct sty {
 	int	 italic;
 	int	 strike;
 	int	 bold;
 	int	 under;
 	size_t	 bcolour;
 	size_t	 colour;
+	int	 override;
+#define	OSTY_ITALIC	0x01
+};
+
+/* Per-node styles. */
+
+static const struct sty sty_codespan = 	{ 0, 0, 0, 0,  47, 31, 0 };
+static const struct sty sty_hrule = 	{ 0, 0, 0, 0,   0, 37, 0 };
+static const struct sty sty_blockhtml =	{ 0, 0, 0, 0,   0, 37, 0 };
+static const struct sty sty_rawhtml = 	{ 0, 0, 0, 0,   0, 37, 0 };
+static const struct sty sty_strike = 	{ 0, 1, 0, 0,   0,  0, 0 };
+static const struct sty sty_emph = 	{ 1, 0, 0, 0,   0,  0, 0 };
+static const struct sty sty_highlight =	{ 0, 0, 1, 0,   0,  0, 0 };
+static const struct sty sty_d_emph = 	{ 0, 0, 1, 0,   0,  0, 0 };
+static const struct sty sty_t_emph = 	{ 1, 0, 1, 0,   0,  0, 0 };
+static const struct sty sty_link = 	{ 0, 0, 0, 1,   0, 32, 0 };
+static const struct sty sty_autolink =	{ 0, 0, 0, 1,   0, 32, 0 };
+static const struct sty sty_header =	{ 0, 0, 1, 0,   0,  0, 0 };
+
+/* Special styles. */
+
+static const struct sty sty_h1 = 	{ 0, 0, 0, 0, 104, 37, 0 };
+static const struct sty sty_hn = 	{ 0, 0, 0, 0,   0, 36, 0 };
+static const struct sty sty_linkurl =	{ 0, 0, 1, 0,   0, 92, 1 };
+
+static const struct sty *stys[LOWDOWN__MAX] = {
+	NULL, /* LOWDOWN_ROOT */
+	NULL, /* LOWDOWN_BLOCKCODE */
+	NULL, /* LOWDOWN_BLOCKQUOTE */
+	&sty_header, /* LOWDOWN_HEADER */
+	&sty_hrule, /* LOWDOWN_HRULE */
+	NULL, /* LOWDOWN_LIST */
+	NULL, /* LOWDOWN_LISTITEM */
+	NULL, /* LOWDOWN_PARAGRAPH */
+	NULL, /* LOWDOWN_TABLE_BLOCK */
+	NULL, /* LOWDOWN_TABLE_HEADER */
+	NULL, /* LOWDOWN_TABLE_BODY */
+	NULL, /* LOWDOWN_TABLE_ROW */
+	NULL, /* LOWDOWN_TABLE_CELL */
+	NULL, /* LOWDOWN_FOOTNOTES_BLOCK */
+	NULL, /* LOWDOWN_FOOTNOTE_DEF */
+	&sty_blockhtml, /* LOWDOWN_BLOCKHTML */
+	&sty_autolink, /* LOWDOWN_LINK_AUTO */
+	&sty_codespan, /* LOWDOWN_CODESPAN */
+	&sty_d_emph, /* LOWDOWN_DOUBLE_EMPHASIS */
+	&sty_emph, /* LOWDOWN_EMPHASIS */
+	&sty_highlight, /* LOWDOWN_HIGHLIGHT */
+	NULL, /* LOWDOWN_IMAGE */
+	NULL, /* LOWDOWN_LINEBREAK */
+	&sty_link, /* LOWDOWN_LINK */
+	&sty_t_emph, /* LOWDOWN_TRIPLE_EMPHASIS */
+	&sty_strike, /* LOWDOWN_STRIKETHROUGH */
+	NULL, /* LOWDOWN_SUPERSCRIPT */
+	NULL, /* LOWDOWN_FOOTNOTE_REF */
+	NULL, /* LOWDOWN_MATH_BLOCK */
+	&sty_rawhtml, /* LOWDOWN_RAW_HTML */
+	NULL, /* LOWDOWN_ENTITY */
+	NULL, /* LOWDOWN_NORMAL_TEXT */
+	NULL, /* LOWDOWN_DOC_HEADER */
+	NULL /* LOWDOWN_DOC_FOOTER */
 };
 
 /*
  * Whether the style is not empty (i.e., has style attributes).
  */
-#define	STYLE_NONEMPTY(_s) \
+#define	STY_NONEMPTY(_s) \
 	((_s)->colour || (_s)->bold || (_s)->italic || \
-	 (_s)->under || (_s)->strike || (_s)->bcolour)
+	 (_s)->under || (_s)->strike || (_s)->bcolour || \
+	 (_s)->override)
 
 static void
-rndr_buf_style(struct hbuf *out, const struct style *s)
+rndr_buf_style(struct hbuf *out, const struct sty *s)
 {
+	int	has = 0;
 
-	if (!STYLE_NONEMPTY(s))
+	if (!STY_NONEMPTY(s))
 		return;
+
 	HBUF_PUTSL(out, "\033[");
 	if (s->bold) {
 		HBUF_PUTSL(out, "1");
-		if (s->under || s->colour || s->italic || s->strike ||
-		    s->bcolour)
-			HBUF_PUTSL(out, ";");
+		has++;
 	}
 	if (s->under) {
-		HBUF_PUTSL(out, "4");
-		if (s->colour || s->italic || s->strike || s->bcolour)
+		if (has++)
 			HBUF_PUTSL(out, ";");
+		HBUF_PUTSL(out, "4");
 	}
 	if (s->italic) {
-		HBUF_PUTSL(out, "3");
-		if (s->colour || s->strike || s->bcolour)
+		if (has++)
 			HBUF_PUTSL(out, ";");
+		HBUF_PUTSL(out, "3");
 	}
 	if (s->strike) {
-		HBUF_PUTSL(out, "9");
-		if (s->colour || s->bcolour)
+		if (has++)
 			HBUF_PUTSL(out, ";");
+		HBUF_PUTSL(out, "9");
 	}
 	if (s->bcolour) {
-		hbuf_printf(out, "%zu", s->bcolour);
-		if (s->colour)
+		if (has++)
 			HBUF_PUTSL(out, ";");
+		hbuf_printf(out, "%zu", s->bcolour);
 	}
-	if (s->colour)
+	if (s->colour) {
+		if (has++)
+			HBUF_PUTSL(out, ";");
 		hbuf_printf(out, "%zu", s->colour);
+	}
 	HBUF_PUTSL(out, "m");
 }
 
 /*
- * Set the style for the given node.
+ * Take the given style "from" and apply it to "to".
+ * This accumulates styles: unless an override has been set, it adds to
+ * the existing style in "to" instead of overriding it.
+ * The one exception is TODO colours, which override each other.
  */
 static void
-rndr_node_style(struct style *s, const struct lowdown_node *n)
+rndr_node_style_apply(struct sty *to, const struct sty *from)
 {
 
-	/* 
-	 * Workaround: children of links don't inherit some of the
-	 * values of their parent, specifically underlining.
-	 */
+	if (from->italic)
+		to->italic = 1;
+	if (from->strike)
+		to->strike = 1;
+	if (from->bold)
+		to->bold = 1;
+	if (from->under)
+		to->under = 1;
+	else if ((from->override & OSTY_ITALIC))
+		to->under = 0;
+	if (from->bcolour)
+		to->bcolour = from->bcolour;
+	if (from->colour)
+		to->colour = from->colour;
+}
 
-	if (n->parent != NULL && n->parent->type == LOWDOWN_LINK) {
-		s->colour = 92;
-		s->bold = 1;
-		s->under = 0;
-	}
+/*
+ * Apply the style for only the given node to the current style.
+ * This *augments* the current style: see rndr_node_style_apply().
+ * (This does not ascend to the parent node.)
+ */
+static void
+rndr_node_style(struct sty *s, const struct lowdown_node *n)
+{
+
+	/* The basic node itself. */
+
+	if (stys[n->type] != NULL)
+		rndr_node_style_apply(s, stys[n->type]);
+
+	/* Any special node situation that overrides. */
 
 	switch (n->type) {
-	case LOWDOWN_RAW_HTML:
-	case LOWDOWN_BLOCKHTML:
-		s->colour = 37;
-		break;
-	case LOWDOWN_HRULE:
-		s->colour = 37;
-		break;
-	case LOWDOWN_CODESPAN:
-		s->bcolour = 47;
-		s->colour = 31;
-		break;
-	case LOWDOWN_STRIKETHROUGH:
-		s->strike = 1;
-		break;
-	case LOWDOWN_EMPHASIS:
-		s->italic = 1;
-		break;
-	case LOWDOWN_HIGHLIGHT:
-	case LOWDOWN_DOUBLE_EMPHASIS:
-		s->bold = 1;
-		break;
-	case LOWDOWN_TRIPLE_EMPHASIS:
-		s->bold = s->italic = 1;
-		break;
-	case LOWDOWN_LINK:
-	case LOWDOWN_AUTOLINK:
-		s->colour = 32;
-		s->under = 1;
-		break;
 	case LOWDOWN_HEADER:
-		if (n->rndr_header.level > 1) {
-			s->bold = 1;
-			s->colour = 36;
-		} else {
-			s->bold = 1;
-			s->colour = 37;
-			s->bcolour = 104;
-		}
+		if (n->rndr_header.level > 1)
+			rndr_node_style_apply(s, &sty_hn);
+		else
+			rndr_node_style_apply(s, &sty_h1);
 		break;
 	default:
+		if (n->parent != NULL && 
+		    n->parent->type == LOWDOWN_LINK)
+			rndr_node_style_apply(s, &sty_linkurl);
 		break;
 	}
 }
@@ -217,39 +278,40 @@ rndr_buf_advance(struct term *term, size_t len)
 static int
 rndr_buf_endstyle(const struct lowdown_node *n)
 {
-	struct style	s;
+	struct sty	s;
 
 	if (n->parent != NULL)
 		if (rndr_buf_endstyle(n->parent))
 			return 1;
 
-	memset(&s, 0, sizeof(struct style));
+	memset(&s, 0, sizeof(struct sty));
 	rndr_node_style(&s, n);
-	return STYLE_NONEMPTY(&s);
+	return STY_NONEMPTY(&s);
 }
 
 /*
- * Unsets the current style context, if applies.
+ * Unsets the current style context given "n" and an optional terminal
+ * style "osty", if applies.
  */
 static void
 rndr_buf_endwords(struct term *term, hbuf *out,
-	const struct lowdown_node *n)
+	const struct lowdown_node *n, const struct sty *osty)
 {
 
-	if (rndr_buf_endstyle(n))
+	if (rndr_buf_endstyle(n) ||
+	    (osty != NULL && STY_NONEMPTY(osty)))
 		HBUF_PUTSL(out, "\033[0m");
 }
-
 
 /*
  * Like rndr_buf_endwords(), but also terminating the line itself.
  */
 static void
 rndr_buf_endline(struct term *term, hbuf *out,
-	const struct lowdown_node *n)
+	const struct lowdown_node *n, const struct sty *osty)
 {
 
-	rndr_buf_endwords(term, out, n);
+	rndr_buf_endwords(term, out, n, osty);
 	assert(term->col > 0);
 	assert(term->last_blank == 0);
 	HBUF_PUTSL(out, "\n");
@@ -279,32 +341,53 @@ rndr_buf_vspace(struct term *term, hbuf *out,
  * from the parent nodes.
  */
 static void
-rndr_buf_startline_prefixes(struct term *term, struct style *s,
-	const struct lowdown_node *n, hbuf *out)
+rndr_buf_startline_prefixes(struct term *term,
+	struct sty *s, const struct lowdown_node *n, hbuf *out)
 {
 	size_t	 i, emit;
-
-	for (i = 0; i <= term->stackpos; i++)
-		if (term->stack[i].id == n->id)
-			break;
-	assert(i <= term->stackpos);
-	emit = term->stack[i].lines++;
+	int	 pstyle = 0;
 
 	if (n->parent != NULL)
 		rndr_buf_startline_prefixes(term, s, n->parent, out);
 
 	rndr_node_style(s, n);
 
+	/*
+	 * Look up the current node in the list of node's we're
+	 * servicing so we can get how many times we've output the
+	 * prefix.
+	 * This is used for (e.g.) lists, where we only output the list
+	 * prefix once.
+	 */
+
+	for (i = 0; i <= term->stackpos; i++)
+		if (term->stack[i].id == n->id)
+			break;
+	assert(i <= term->stackpos);
+	emit = term->stack[i].lines++;
+	
+	/*
+	 * Output any prefixes.
+	 * Any output must have rndr_buf_style() and set pstyle so that
+	 * we close out the style afterward.
+	 */
+
 	switch (n->type) {
 	case LOWDOWN_BLOCKCODE:
+		rndr_buf_style(out, s);
+		pstyle = 1;
 		HBUF_PUTSL(out, "    ");
 		rndr_buf_advance(term, 4);
 		break;
 	case LOWDOWN_ROOT:
+		rndr_buf_style(out, s);
+		pstyle = 1;
 		HBUF_PUTSL(out, " ");
 		rndr_buf_advance(term, 1);
 		break;
 	case LOWDOWN_BLOCKQUOTE:
+		rndr_buf_style(out, s);
+		pstyle = 1;
 		HBUF_PUTSL(out, "| ");
 		rndr_buf_advance(term, 2);
 		break;
@@ -312,25 +395,24 @@ rndr_buf_startline_prefixes(struct term *term, struct style *s,
 		if (n->rndr_header.level == 1)
 			break;
 		rndr_buf_style(out, s);
+		pstyle = 1;
 		for (i = 0; i < n->rndr_header.level; i++)
 			HBUF_PUTSL(out, "#");
 		HBUF_PUTSL(out, " ");
 		rndr_buf_advance(term, i + 1);
-		if (STYLE_NONEMPTY(s))
-			HBUF_PUTSL(out, "\033[0m");
 		break;
 	case LOWDOWN_LISTITEM:
+		rndr_buf_style(out, s);
+		pstyle = 1;
 		if (n->parent == NULL || 
 		    n->parent->rndr_list.flags == 0) {
-			if (emit == 0)
-				HBUF_PUTSL(out, "- ");
-			else
-				HBUF_PUTSL(out, "  ");
-			rndr_buf_advance(term, 3);
+			hbuf_puts(out, emit == 0 ? "- " : "  ");
+			rndr_buf_advance(term, 2);
 			break;
 		}
 		if (emit == 0)
-			hbuf_printf(out, "%4u. ", n->rndr_listitem.num);
+			hbuf_printf(out, "%4u. ", 
+				n->rndr_listitem.num);
 		else
 			HBUF_PUTSL(out, "      ");
 		rndr_buf_advance(term, 6);
@@ -338,6 +420,9 @@ rndr_buf_startline_prefixes(struct term *term, struct style *s,
 	default:
 		break;
 	}
+
+	if (pstyle && STY_NONEMPTY(s))
+		HBUF_PUTSL(out, "\033[0m");
 }
 
 /*
@@ -345,16 +430,18 @@ rndr_buf_startline_prefixes(struct term *term, struct style *s,
  * This also outputs all line prefixes of the block context.
  */
 static void
-rndr_buf_startline(struct term *term,
-	hbuf *out, const struct lowdown_node *n)
+rndr_buf_startline(struct term *term, hbuf *out, 
+	const struct lowdown_node *n, const struct sty *osty)
 {
-	struct style	 s;
+	struct sty	 s;
 
 	assert(term->last_blank);
 	assert(term->col == 0);
 
-	memset(&s, 0, sizeof(struct style));
+	memset(&s, 0, sizeof(struct sty));
 	rndr_buf_startline_prefixes(term, &s, n, out);
+	if (osty != NULL)
+		rndr_node_style_apply(&s, osty);
 	rndr_buf_style(out, &s);
 }
 
@@ -363,7 +450,7 @@ rndr_buf_startline(struct term *term,
  * accumulating styles as we do so.
  */
 static void
-rndr_buf_startwords_style(const struct lowdown_node *n, struct style *s)
+rndr_buf_startwords_style(const struct lowdown_node *n, struct sty *s)
 {
 
 	if (n->parent != NULL)
@@ -378,21 +465,24 @@ rndr_buf_startwords_style(const struct lowdown_node *n, struct style *s)
  */
 static void
 rndr_buf_startwords(struct term *term, hbuf *out,
-	const struct lowdown_node *n)
+	const struct lowdown_node *n, const struct sty *osty)
 {
-	struct style	 s;
+	struct sty	 s;
 
 	assert(!term->last_blank);
 	assert(term->col > 0);
 
-	memset(&s, 0, sizeof(struct style));
+	memset(&s, 0, sizeof(struct sty));
 	rndr_buf_startwords_style(n, &s);
+	if (osty != NULL)
+		rndr_node_style_apply(&s, osty);
 	rndr_buf_style(out, &s);
 }
 
 static void
 rndr_buf_literal(struct term *term, hbuf *out, 
-	const struct lowdown_node *n, const hbuf *in)
+	const struct lowdown_node *n, const hbuf *in,
+	const struct sty *osty)
 {
 	size_t		 i = 0, len;
 	const char	*start;
@@ -403,10 +493,10 @@ rndr_buf_literal(struct term *term, hbuf *out,
 			i++;
 		len = &in->data[i] - start;
 		i++;
-		rndr_buf_startline(term, out, n);
+		rndr_buf_startline(term, out, n, osty);
 		hbuf_put(out, start, len);
 		rndr_buf_advance(term, len);
-		rndr_buf_endline(term, out, n);
+		rndr_buf_endline(term, out, n, osty);
 	}
 }
 
@@ -417,7 +507,7 @@ rndr_buf_literal(struct term *term, hbuf *out,
 static void
 rndr_buf(struct term *term, hbuf *out, 
 	const struct lowdown_node *n, const hbuf *in,
-	int leading_space)
+	int leading_space, const struct sty *osty)
 {
 	size_t	 	 i = 0, len;
 	int 		 needspace, begin = 1, end = 0;
@@ -427,7 +517,7 @@ rndr_buf(struct term *term, hbuf *out,
 	for (nn = n; nn != NULL; nn = nn->parent)
 		if (nn->type == LOWDOWN_BLOCKCODE ||
 	  	    nn->type == LOWDOWN_BLOCKHTML) {
-			rndr_buf_literal(term, out, n, in);
+			rndr_buf_literal(term, out, n, in, osty);
 			return;
 		}
 
@@ -469,7 +559,7 @@ rndr_buf(struct term *term, hbuf *out,
 	 	     (out->size && isspace
 		      ((unsigned char)out->data[out->size - 1]))) &&
 		    term->col && term->col + len > 72) {
-			rndr_buf_endline(term, out, n);
+			rndr_buf_endline(term, out, n, osty);
 			end = 0;
 		}
 
@@ -482,7 +572,7 @@ rndr_buf(struct term *term, hbuf *out,
 		 */
 
 		if (term->last_blank && len) {
-			rndr_buf_startline(term, out, n);
+			rndr_buf_startline(term, out, n, osty);
 			begin = 0;
 			end = 1;
 		} else if (!term->last_blank) {
@@ -491,7 +581,7 @@ rndr_buf(struct term *term, hbuf *out,
 				rndr_buf_advance(term, 1);
 			}
 			if (begin && len) {
-				rndr_buf_startwords(term, out, n);
+				rndr_buf_startwords(term, out, n, osty);
 				begin = 0;
 				end = 1;
 			}
@@ -505,7 +595,7 @@ rndr_buf(struct term *term, hbuf *out,
 
 	if (end) {
 		assert(begin == 0);
-		rndr_buf_endwords(term, out, n);
+		rndr_buf_endwords(term, out, n, osty);
 	}
 }
 
@@ -515,12 +605,13 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 	struct lowdown_node	*child;
 	struct term		*p = arg;
 	struct hbuf		*tmp;
+	const struct sty	*osty = NULL;
 	
 	/* Current nodes we're servicing. */
 
 	memset(&p->stack[p->stackpos], 0, sizeof(struct tstack));
 	p->stack[p->stackpos].id = n->id;
-
+	
 	/* Start with stuff to do *before* descent. */
 
 	switch (n->type) {
@@ -555,7 +646,7 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 	case LOWDOWN_SUPERSCRIPT:
 		tmp = hbuf_new(2);
 		HBUF_PUTSL(tmp, "^");
-		rndr_buf(p, ob, n, tmp, 0);
+		rndr_buf(p, ob, n, tmp, 0, osty);
 		hbuf_free(tmp);
 		break;
 	default:
@@ -577,29 +668,29 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 	case LOWDOWN_HRULE:
 		tmp = hbuf_new(32);
 		HBUF_PUTSL(tmp, "~~~~~~~~");
-		rndr_buf(p, ob, n, tmp, 0);
+		rndr_buf(p, ob, n, tmp, 0, osty);
 		hbuf_free(tmp);
 		break;
 	case LOWDOWN_RAW_HTML:
-		rndr_buf(p, ob, n, &n->rndr_raw_html.text, 0);
+		rndr_buf(p, ob, n, &n->rndr_raw_html.text, 0, osty);
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		rndr_buf(p, ob, n, &n->rndr_math.text, 0);
+		rndr_buf(p, ob, n, &n->rndr_math.text, 0, osty);
 		break;
 	case LOWDOWN_BLOCKCODE:
-		rndr_buf(p, ob, n, &n->rndr_blockcode.text, 0);
+		rndr_buf(p, ob, n, &n->rndr_blockcode.text, 0, osty);
 		break;
 	case LOWDOWN_BLOCKHTML:
-		rndr_buf(p, ob, n, &n->rndr_blockhtml.text, 0);
+		rndr_buf(p, ob, n, &n->rndr_blockhtml.text, 0, osty);
 		break;
 	case LOWDOWN_CODESPAN:
-		rndr_buf(p, ob, n, &n->rndr_codespan.text, 0);
+		rndr_buf(p, ob, n, &n->rndr_codespan.text, 0, osty);
 		break;
 	case LOWDOWN_LINK_AUTO:
-		rndr_buf(p, ob, n, &n->rndr_autolink.link, 0);
+		rndr_buf(p, ob, n, &n->rndr_autolink.link, 0, osty);
 		break;
 	case LOWDOWN_LINK:
-		rndr_buf(p, ob, n, &n->rndr_link.link, 1);
+		rndr_buf(p, ob, n, &n->rndr_link.link, 1, osty);
 		break;
 	case LOWDOWN_IMAGE:
 		tmp = hbuf_new(32);
@@ -609,11 +700,11 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 			n->rndr_image.alt.size ? " " : "",
 			(int)n->rndr_image.link.size,
 			n->rndr_image.link.data);
-		rndr_buf(p, ob, n, tmp, 1);
+		rndr_buf(p, ob, n, tmp, 1, osty);
 		hbuf_free(tmp);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
-		rndr_buf(p, ob, n, &n->rndr_normal_text.text, 0);
+		rndr_buf(p, ob, n, &n->rndr_normal_text.text, 0, osty);
 		break;
 	default:
 		break;
