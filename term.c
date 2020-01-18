@@ -53,7 +53,7 @@ LOWDOWN_CODESPAN		-> done
 LOWDOWN_DOUBLE_EMPHASIS		-> done
 LOWDOWN_EMPHASIS		-> done
 LOWDOWN_HIGHLIGHT		-> done
-LOWDOWN_IMAGE			-> done (ugly)
+LOWDOWN_IMAGE			-> done
 LOWDOWN_LINEBREAK		-> done
 LOWDOWN_LINK			-> done
 LOWDOWN_TRIPLE_EMPHASIS		-> done
@@ -92,10 +92,12 @@ struct sty {
 	size_t	 colour;
 	int	 override;
 #define	OSTY_ITALIC	0x01
+#define	OSTY_BOLD	0x02
 };
 
 /* Per-node styles. */
 
+static const struct sty sty_image =	{ 0, 0, 1, 0,   0, 92, 1 };
 static const struct sty sty_codespan = 	{ 0, 0, 0, 0,  47, 31, 0 };
 static const struct sty sty_hrule = 	{ 0, 0, 0, 0,   0, 37, 0 };
 static const struct sty sty_blockhtml =	{ 0, 0, 0, 0,   0, 37, 0 };
@@ -113,7 +115,9 @@ static const struct sty sty_header =	{ 0, 0, 1, 0,   0,  0, 0 };
 
 static const struct sty sty_h1 = 	{ 0, 0, 0, 0, 104, 37, 0 };
 static const struct sty sty_hn = 	{ 0, 0, 0, 0,   0, 36, 0 };
-static const struct sty sty_linkurl =	{ 0, 0, 1, 0,   0, 92, 1 };
+static const struct sty sty_linkalt =	{ 0, 0, 1, 0,   0, 92, 1|2 };
+static const struct sty sty_imgurl = 	{ 0, 0, 0, 1,   0, 32, 2 };
+static const struct sty sty_imgurlbox =	{ 0, 0, 0, 0,   0, 37, 2 };
 
 static const struct sty *stys[LOWDOWN__MAX] = {
 	NULL, /* LOWDOWN_ROOT */
@@ -137,7 +141,7 @@ static const struct sty *stys[LOWDOWN__MAX] = {
 	&sty_d_emph, /* LOWDOWN_DOUBLE_EMPHASIS */
 	&sty_emph, /* LOWDOWN_EMPHASIS */
 	&sty_highlight, /* LOWDOWN_HIGHLIGHT */
-	NULL, /* LOWDOWN_IMAGE */
+	&sty_image, /* LOWDOWN_IMAGE */
 	NULL, /* LOWDOWN_LINEBREAK */
 	&sty_link, /* LOWDOWN_LINK */
 	&sty_t_emph, /* LOWDOWN_TRIPLE_EMPHASIS */
@@ -217,6 +221,8 @@ rndr_node_style_apply(struct sty *to, const struct sty *from)
 		to->strike = 1;
 	if (from->bold)
 		to->bold = 1;
+	else if ((from->override & OSTY_BOLD))
+		to->bold = 0;
 	if (from->under)
 		to->under = 1;
 	else if ((from->override & OSTY_ITALIC))
@@ -253,7 +259,7 @@ rndr_node_style(struct sty *s, const struct lowdown_node *n)
 	default:
 		if (n->parent != NULL && 
 		    n->parent->type == LOWDOWN_LINK)
-			rndr_node_style_apply(s, &sty_linkurl);
+			rndr_node_style_apply(s, &sty_linkalt);
 		break;
 	}
 }
@@ -605,7 +611,6 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 	struct lowdown_node	*child;
 	struct term		*p = arg;
 	struct hbuf		*tmp;
-	const struct sty	*osty = NULL;
 	
 	/* Current nodes we're servicing. */
 
@@ -646,7 +651,7 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 	case LOWDOWN_SUPERSCRIPT:
 		tmp = hbuf_new(2);
 		HBUF_PUTSL(tmp, "^");
-		rndr_buf(p, ob, n, tmp, 0, osty);
+		rndr_buf(p, ob, n, tmp, 0, NULL);
 		hbuf_free(tmp);
 		break;
 	default:
@@ -668,43 +673,46 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 	case LOWDOWN_HRULE:
 		tmp = hbuf_new(32);
 		HBUF_PUTSL(tmp, "~~~~~~~~");
-		rndr_buf(p, ob, n, tmp, 0, osty);
+		rndr_buf(p, ob, n, tmp, 0, NULL);
 		hbuf_free(tmp);
 		break;
 	case LOWDOWN_RAW_HTML:
-		rndr_buf(p, ob, n, &n->rndr_raw_html.text, 0, osty);
+		rndr_buf(p, ob, n, &n->rndr_raw_html.text, 0, NULL);
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		rndr_buf(p, ob, n, &n->rndr_math.text, 0, osty);
+		rndr_buf(p, ob, n, &n->rndr_math.text, 0, NULL);
 		break;
 	case LOWDOWN_BLOCKCODE:
-		rndr_buf(p, ob, n, &n->rndr_blockcode.text, 0, osty);
+		rndr_buf(p, ob, n, &n->rndr_blockcode.text, 0, NULL);
 		break;
 	case LOWDOWN_BLOCKHTML:
-		rndr_buf(p, ob, n, &n->rndr_blockhtml.text, 0, osty);
+		rndr_buf(p, ob, n, &n->rndr_blockhtml.text, 0, NULL);
 		break;
 	case LOWDOWN_CODESPAN:
-		rndr_buf(p, ob, n, &n->rndr_codespan.text, 0, osty);
+		rndr_buf(p, ob, n, &n->rndr_codespan.text, 0, NULL);
 		break;
 	case LOWDOWN_LINK_AUTO:
-		rndr_buf(p, ob, n, &n->rndr_autolink.link, 0, osty);
+		rndr_buf(p, ob, n, &n->rndr_autolink.link, 0, NULL);
 		break;
 	case LOWDOWN_LINK:
-		rndr_buf(p, ob, n, &n->rndr_link.link, 1, osty);
+		rndr_buf(p, ob, n, &n->rndr_link.link, 1, NULL);
 		break;
 	case LOWDOWN_IMAGE:
+		rndr_buf(p, ob, n, &n->rndr_image.alt, 0, NULL);
 		tmp = hbuf_new(32);
-		hbuf_printf(tmp, "%.*s%s[Image: %.*s]",
-			(int)n->rndr_image.alt.size,
-			n->rndr_image.alt.data,
-			n->rndr_image.alt.size ? " " : "",
-			(int)n->rndr_image.link.size,
-			n->rndr_image.link.data);
-		rndr_buf(p, ob, n, tmp, 1, osty);
+		HBUF_PUTSL(tmp, "[Image:");
+		rndr_buf(p, ob, n, tmp, 
+			n->rndr_image.alt.size > 0 ? 1 : 0, 
+			&sty_imgurlbox);
+		hbuf_free(tmp);
+		rndr_buf(p, ob, n, &n->rndr_image.link, 1, &sty_imgurl);
+		tmp = hbuf_new(32);
+		HBUF_PUTSL(tmp, "]");
+		rndr_buf(p, ob, n, tmp, 0, &sty_imgurlbox);
 		hbuf_free(tmp);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
-		rndr_buf(p, ob, n, &n->rndr_normal_text.text, 0, osty);
+		rndr_buf(p, ob, n, &n->rndr_normal_text.text, 0, NULL);
 		break;
 	default:
 		break;
