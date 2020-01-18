@@ -392,6 +392,23 @@ Jean-Luc Picard | Captain
 .Pp
 Table columns may contain arbitrary span elements.
 .
+.Ss Footnote Definition
+Footnotes are a MMD (Multimarkdown) extension of the basic syntax.
+Footnote definitions may occur anywhere in the text and are "pointed to" by a
+.Sx Footnote Reference .
+They consist of the footnote name (in square brackets, preceded by the
+caret), a colon, then everything remaining in the block is the footnote
+content.
+.Bd -literal -offset indent
+[^pt]: 
+    Klingon insult, meaning something like "weirdo," deriving from
+    the verb "to be weird" (**taQ**), with and [sic] you (plural)
+    imperative prefix (**pe-**).
+.Ed
+.Pp
+Footnote contents may be on the same line as the colon.
+The footnote name is rendered as a number.
+If a footnote definition is not referred to, it is not printed.
 .
 .Sh SPAN ELEMENTS
 Span elements are inline elements (including normal text) within block
@@ -589,6 +606,20 @@ leave a space between the literal backtick and the delimiting backticks.
 .Bd -literal -offset indent
 `` `So many backticks.` ``
 .Ed
+.
+.Ss Footnote Reference
+Footnotes are a MMD (Multimarkdown) extension of the basic syntax.
+Footnote references point into a block-level
+.Sx Footnote Definition .
+They consist of the footnote name in square brackets, preceded by the
+caret.
+.Bd -literal -offset indent
+P'tahk[^pt], tell me who you are, or I will kill you right here!
+.Ed
+.Pp
+The footnote name is rendered as a number.
+There may only be one footnote reference per definition.
+If a footnote refers to an unknown definition, it is printed as-is.
 .
 .
 .Sh ESCAPES
