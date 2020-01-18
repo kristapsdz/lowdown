@@ -533,4 +533,30 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.5.0</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2020-01-18">2020-01-18</time>
+		</header>
+		<aside>
+			<p>
+				Add <b>-Tterm</b> output, which renders Markdown-like output on the
+				terminal.  This is inspired by 
+				<a href="https://github.com/charmbracelet/glow">glow</a>.
+				This output is still experimental and the style may currently not be
+				overriden.
+			</p>
+			<p>
+				Add missing documentation to <a
+					href="lowdown.5.html">lowdown(5)</a>: footnotes, image
+				attributes, strike-through, highlighting.
+			</p>
+			<p>
+				Also bring the code style up to date, add debugging to
+				<b>-Ttree</b>, and update
+				<a href="https://github.com/kristapsdz/oconfigure">oconfigure</a>.
+			</p>
+		</aside>
+	</article>
 </articles>

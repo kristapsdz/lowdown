@@ -2,7 +2,7 @@
 
 include Makefile.configure
 
-VERSION		 = 0.4.6
+VERSION		 = 0.5.0
 OBJS		 = autolink.o \
 		   buffer.o \
 		   diff.o \
@@ -94,6 +94,21 @@ install: all
 		section=$${name##*.} ; \
 		$(INSTALL_MAN) man/$$name $(DESTDIR)$(MANDIR)/man$$section ; \
 	done
+
+distcheck: lowdown.tar.gz.sha512
+	mandoc -Tlint -Wwarning man/*.[135]
+	newest=`grep "<h1>" versions.xml | tail -n1 | sed 's![ 	]*!!g'` ; \
+	       [ "$$newest" == "<h1>$(VERSION)</h1>" ] || \
+		{ echo "Version $(VERSION) not newest in versions.xml" 1>&2 ; exit 1 ; }
+	rm -rf .distcheck
+	sha512 -C lowdown.tar.gz.sha512 lowdown.tar.gz
+	mkdir -p .distcheck
+	tar -zvxpf lowdown.tar.gz -C .distcheck
+	( cd .distcheck/lowdown-$(VERSION) && ./configure PREFIX=prefix \
+		CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" LDADD="$(LDADD)" )
+	( cd .distcheck/lowdown-$(VERSION) && make )
+	( cd .distcheck/lowdown-$(VERSION) && make install )
+	rm -rf .distcheck
 
 index.xml README.xml index.pdf diff.pdf README.pdf: lowdown
 
