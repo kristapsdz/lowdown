@@ -7,8 +7,8 @@ h2				{ font-size: 140%; }
 a				{ text-decoration: none; }
 strong, b			{ font-weight: 400; }
 aside				{ font-size: 125%; }
-pre, code			{ font-size: 60%;
-				  line-height: 1.4em; }
+pre, code			{ font-size: 65%;
+				  line-height: 1.3em; }
 body > header			{ padding: 48pt 0 12pt 0; 
 				  background-color: #333; 
 			  	  color: #aaa; }

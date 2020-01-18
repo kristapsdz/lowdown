@@ -26,8 +26,7 @@ It can also be used to show the difference between two Markdown
 documents with *lowdown-diff*, documented as the [lowdown diffing
 engine](https://kristaps.bsd.lv/lowdown/diff.html).  This uses a
 tree-based difference algorithm to show semantically-valid Markdown
-differences.  The implementation is inlined from
-[libdiffi](https://github.com/kristapsdz/libdiff).
+differences.
 
 Want an example?  For starters: this page,
 [index.md](https://kristaps.bsd.lv/lowdown/index.md).  The Markdown
@@ -77,7 +76,7 @@ by definition (although **-Tms** might have a future with some elbow
 grease), the latter due to (not insurmountable) complexity of converting
 LaTeX to [eqn(7)](https://man.openbsd.org/eqn).
 
-Lastly, it has support for ANSI-compatible terminals with **-Tterm**.
+Lastly, it supports ANSI-compatible UTF-8 terminals with **-Tterm**.
 This renders stylised Markdown-looking output for easy reading.  It's
 inspired by [glow](https://github.com/charmbracelet/glow).
 
