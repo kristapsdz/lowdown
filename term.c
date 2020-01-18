@@ -32,40 +32,11 @@
 #include "extern.h"
 
 #if 0
-LOWDOWN_ROOT			-> done
-LOWDOWN_BLOCKCODE		-> done
-LOWDOWN_BLOCKQUOTE		-> done
-LOWDOWN_HEADER			-> done
-LOWDOWN_HRULE			-> done
-LOWDOWN_LIST			-> done
-LOWDOWN_LISTITEM		-> done
-LOWDOWN_PARAGRAPH		-> done
-LOWDOWN_TABLE_BLOCK		-> done
+Not done yet:
 LOWDOWN_TABLE_HEADER		-> 
 LOWDOWN_TABLE_BODY		-> 
 LOWDOWN_TABLE_ROW		-> done
 LOWDOWN_TABLE_CELL		-> 
-LOWDOWN_FOOTNOTES_BLOCK		-> done
-LOWDOWN_FOOTNOTE_DEF		-> done
-LOWDOWN_BLOCKHTML		-> done
-LOWDOWN_LINK_AUTO		-> done
-LOWDOWN_CODESPAN		-> done
-LOWDOWN_DOUBLE_EMPHASIS		-> done
-LOWDOWN_EMPHASIS		-> done
-LOWDOWN_HIGHLIGHT		-> done
-LOWDOWN_IMAGE			-> done
-LOWDOWN_LINEBREAK		-> done
-LOWDOWN_LINK			-> done
-LOWDOWN_TRIPLE_EMPHASIS		-> done
-LOWDOWN_STRIKETHROUGH		-> done
-LOWDOWN_SUPERSCRIPT		-> done
-LOWDOWN_FOOTNOTE_REF		-> done
-LOWDOWN_MATH_BLOCK		-> done
-LOWDOWN_RAW_HTML		-> done
-LOWDOWN_ENTITY			-> 
-LOWDOWN_NORMAL_TEXT		-> done
-LOWDOWN_DOC_HEADER		-> 
-LOWDOWN_DOC_FOOTER		-> 
 #endif
 
 struct tstack {
@@ -78,6 +49,7 @@ struct term {
 	ssize_t		 last_blank; /* line breaks or -1 (start) */
 	struct tstack	 stack[128]; /* nodes being outputted */
 	size_t		 stackpos; /* position in stack */
+	hbuf		*tmp; /* for temporary allocations */
 };
 
 /*
@@ -88,9 +60,9 @@ struct sty {
 	int	 strike;
 	int	 bold;
 	int	 under;
-	size_t	 bcolour;
-	size_t	 colour;
-	int	 override;
+	size_t	 bcolour; /* not inherited */
+	size_t	 colour; /* not inherited */
+	int	 override; /* don't inherit */
 #define	OSTY_ITALIC	0x01
 #define	OSTY_BOLD	0x02
 };
@@ -103,6 +75,7 @@ static const struct sty sty_codespan = 	{ 0, 0, 0, 0,  47, 31, 0 };
 static const struct sty sty_hrule = 	{ 0, 0, 0, 0,   0, 37, 0 };
 static const struct sty sty_blockhtml =	{ 0, 0, 0, 0,   0, 37, 0 };
 static const struct sty sty_rawhtml = 	{ 0, 0, 0, 0,   0, 37, 0 };
+static const struct sty sty_entity = 	{ 0, 0, 0, 0,   0, 37, 0 };
 static const struct sty sty_strike = 	{ 0, 1, 0, 0,   0,  0, 0 };
 static const struct sty sty_emph = 	{ 1, 0, 0, 0,   0,  0, 0 };
 static const struct sty sty_highlight =	{ 0, 0, 1, 0,   0,  0, 0 };
@@ -111,15 +84,6 @@ static const struct sty sty_t_emph = 	{ 1, 0, 1, 0,   0,  0, 0 };
 static const struct sty sty_link = 	{ 0, 0, 0, 1,   0, 32, 0 };
 static const struct sty sty_autolink =	{ 0, 0, 0, 1,   0, 32, 0 };
 static const struct sty sty_header =	{ 0, 0, 1, 0,   0,  0, 0 };
-
-/* Special styles. */
-
-static const struct sty sty_h1 = 	{ 0, 0, 0, 0, 104, 37, 0 };
-static const struct sty sty_hn = 	{ 0, 0, 0, 0,   0, 36, 0 };
-static const struct sty sty_linkalt =	{ 0, 0, 1, 0,   0, 92, 1|2 };
-static const struct sty sty_imgurl = 	{ 0, 0, 0, 1,   0, 32, 2 };
-static const struct sty sty_imgurlbox =	{ 0, 0, 0, 0,   0, 37, 2 };
-static const struct sty sty_foots_div =	{ 0, 0, 0, 0,   0, 37, 0 };
 
 static const struct sty *stys[LOWDOWN__MAX] = {
 	NULL, /* LOWDOWN_ROOT */
@@ -152,11 +116,27 @@ static const struct sty *stys[LOWDOWN__MAX] = {
 	&sty_foot_ref, /* LOWDOWN_FOOTNOTE_REF */
 	NULL, /* LOWDOWN_MATH_BLOCK */
 	&sty_rawhtml, /* LOWDOWN_RAW_HTML */
-	NULL, /* LOWDOWN_ENTITY */
+	&sty_entity, /* LOWDOWN_ENTITY */
 	NULL, /* LOWDOWN_NORMAL_TEXT */
 	NULL, /* LOWDOWN_DOC_HEADER */
 	NULL /* LOWDOWN_DOC_FOOTER */
 };
+
+/* 
+ * Special styles.
+ * These are invoked in key places, below.
+ */
+
+static const struct sty sty_h1 = 	{ 0, 0, 0, 0, 104, 37, 0 };
+static const struct sty sty_hn = 	{ 0, 0, 0, 0,   0, 36, 0 };
+static const struct sty sty_linkalt =	{ 0, 0, 1, 0,   0, 92, 1|2 };
+static const struct sty sty_imgurl = 	{ 0, 0, 0, 1,   0, 32, 2 };
+static const struct sty sty_imgurlbox =	{ 0, 0, 0, 0,   0, 37, 2 };
+static const struct sty sty_foots_div =	{ 0, 0, 0, 0,   0, 37, 0 };
+static const struct sty sty_meta_key =	{ 0, 0, 0, 0,   0, 37, 0 };
+
+static const struct sty sty_chng_ins =	{ 0, 0, 0, 0,  47, 30, 0 };
+static const struct sty sty_chng_del =	{ 0, 0, 0, 0, 100,  0, 0 };
 
 /*
  * Whether the style is not empty (i.e., has style attributes).
@@ -166,6 +146,10 @@ static const struct sty *stys[LOWDOWN__MAX] = {
 	 (_s)->under || (_s)->strike || (_s)->bcolour || \
 	 (_s)->override)
 
+/*
+ * Output style "s" into "out" as an ANSI escape.
+ * If "s" does not have any style information, output nothing.
+ */
 static void
 rndr_buf_style(struct hbuf *out, const struct sty *s)
 {
@@ -264,6 +248,11 @@ rndr_node_style(struct sty *s, const struct lowdown_node *n)
 			rndr_node_style_apply(s, &sty_linkalt);
 		break;
 	}
+
+	if (n->chng == LOWDOWN_CHNG_INSERT) 
+		rndr_node_style_apply(s, &sty_chng_ins);
+	if (n->chng == LOWDOWN_CHNG_DELETE) 
+		rndr_node_style_apply(s, &sty_chng_del);
 }
 
 /*
@@ -622,7 +611,7 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 {
 	struct lowdown_node	*child;
 	struct term		*p = arg;
-	struct hbuf		*tmp;
+	size_t			 i;
 	
 	/* Current nodes we're servicing. */
 
@@ -647,8 +636,9 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 		rndr_buf_vspace(p, ob, n, 2);
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		if (!n->rndr_math.blockmode)
-			break;
+		if (n->rndr_math.blockmode)
+			rndr_buf_vspace(p, ob, n, 1);
+		break;
 	case LOWDOWN_HRULE:
 	case LOWDOWN_LINEBREAK:
 	case LOWDOWN_LISTITEM:
@@ -663,16 +653,14 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 
 	switch (n->type) {
 	case LOWDOWN_FOOTNOTES_BLOCK:
-		tmp = hbuf_new(32);
-		HBUF_PUTSL(tmp, "~~~~~~~~");
-		rndr_buf(p, ob, n, tmp, 0, &sty_foots_div);
-		hbuf_free(tmp);
+		hbuf_truncate(p->tmp);
+		HBUF_PUTSL(p->tmp, "~~~~~~~~");
+		rndr_buf(p, ob, n, p->tmp, 0, &sty_foots_div);
 		break;
 	case LOWDOWN_SUPERSCRIPT:
-		tmp = hbuf_new(2);
-		HBUF_PUTSL(tmp, "^");
-		rndr_buf(p, ob, n, tmp, 0, NULL);
-		hbuf_free(tmp);
+		hbuf_truncate(p->tmp);
+		HBUF_PUTSL(p->tmp, "^");
+		rndr_buf(p, ob, n, p->tmp, 0, NULL);
 		break;
 	default:
 		break;
@@ -691,22 +679,24 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 
 	switch (n->type) {
 	case LOWDOWN_HRULE:
-		tmp = hbuf_new(32);
-		HBUF_PUTSL(tmp, "~~~~~~~~");
-		rndr_buf(p, ob, n, tmp, 0, NULL);
-		hbuf_free(tmp);
+		hbuf_truncate(p->tmp);
+		HBUF_PUTSL(p->tmp, "~~~~~~~~");
+		rndr_buf(p, ob, n, p->tmp, 0, NULL);
 		break;
 	case LOWDOWN_FOOTNOTE_REF:
-		tmp = hbuf_new(32);
-		hbuf_printf(tmp, "[%zu]", n->rndr_footnote_ref.num);
-		rndr_buf(p, ob, n, tmp, 0, NULL);
-		hbuf_free(tmp);
+		hbuf_truncate(p->tmp);
+		hbuf_printf(p->tmp, "[%zu]", 
+			n->rndr_footnote_ref.num);
+		rndr_buf(p, ob, n, p->tmp, 0, NULL);
 		break;
 	case LOWDOWN_RAW_HTML:
 		rndr_buf(p, ob, n, &n->rndr_raw_html.text, 0, NULL);
 		break;
 	case LOWDOWN_MATH_BLOCK:
 		rndr_buf(p, ob, n, &n->rndr_math.text, 0, NULL);
+		break;
+	case LOWDOWN_ENTITY:
+		rndr_buf(p, ob, n, &n->rndr_entity.text, 0, NULL);
 		break;
 	case LOWDOWN_BLOCKCODE:
 		rndr_buf(p, ob, n, &n->rndr_blockcode.text, 0, NULL);
@@ -725,20 +715,31 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 		break;
 	case LOWDOWN_IMAGE:
 		rndr_buf(p, ob, n, &n->rndr_image.alt, 0, NULL);
-		tmp = hbuf_new(32);
-		HBUF_PUTSL(tmp, "[Image:");
-		rndr_buf(p, ob, n, tmp, 
+		hbuf_truncate(p->tmp);
+		HBUF_PUTSL(p->tmp, "[Image:");
+		rndr_buf(p, ob, n, p->tmp, 
 			n->rndr_image.alt.size > 0 ? 1 : 0, 
 			&sty_imgurlbox);
-		hbuf_free(tmp);
+		hbuf_truncate(p->tmp);
 		rndr_buf(p, ob, n, &n->rndr_image.link, 1, &sty_imgurl);
-		tmp = hbuf_new(32);
-		HBUF_PUTSL(tmp, "]");
-		rndr_buf(p, ob, n, tmp, 0, &sty_imgurlbox);
-		hbuf_free(tmp);
+		HBUF_PUTSL(p->tmp, "]");
+		rndr_buf(p, ob, n, p->tmp, 0, &sty_imgurlbox);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
 		rndr_buf(p, ob, n, &n->rndr_normal_text.text, 0, NULL);
+		break;
+	case LOWDOWN_DOC_HEADER:
+		for (i = 0; i < n->rndr_doc_header.msz; i++) {
+			hbuf_truncate(p->tmp);
+			hbuf_printf(p->tmp, "%s:",
+				n->rndr_doc_header.m[i].key);
+			rndr_buf(p, ob, n, p->tmp, 0, &sty_meta_key);
+			hbuf_truncate(p->tmp);
+			hbuf_puts(p->tmp, 
+				n->rndr_doc_header.m[i].value);
+			rndr_buf(p, ob, n, p->tmp, 1, NULL);
+			rndr_buf_vspace(p, ob, n, 1);
+		}
 		break;
 	default:
 		break;
@@ -759,8 +760,13 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 		rndr_buf_vspace(p, ob, n, 2);
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		if (!n->rndr_math.blockmode)
-			break;
+		if (n->rndr_math.blockmode)
+			rndr_buf_vspace(p, ob, n, 1);
+		break;
+	case LOWDOWN_DOC_HEADER:
+		if (n->rndr_doc_header.msz)
+			rndr_buf_vspace(p, ob, n, 2);
+		break;
 	case LOWDOWN_HRULE:
 	case LOWDOWN_LISTITEM:
 	case LOWDOWN_ROOT:
@@ -783,13 +789,21 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 void *
 lowdown_term_new(void)
 {
+	struct term	*p;
 
-	return xcalloc(1, sizeof(struct term));
+	p = xcalloc(1, sizeof(struct term));
+	p->tmp = hbuf_new(32);
+	return p;
 }
 
 void
 lowdown_term_free(void *arg)
 {
+	struct term	*p = arg;
+	
+	if (p == NULL)
+		return;
 
-	free(arg);
+	hbuf_free(p->tmp);
+	free(p);
 }

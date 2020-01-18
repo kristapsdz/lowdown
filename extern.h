@@ -61,6 +61,7 @@ void	 hbuf_put(hbuf *, const char *, size_t);
 void	 hbuf_putc(hbuf *, char);
 int	 hbuf_putf(hbuf *, FILE *);
 void	 hbuf_puts(hbuf *, const char *);
+void	 hbuf_truncate(hbuf *);
 
 /* Optimized hbuf_puts of a string literal. */
 #define HBUF_PUTSL(output, literal) \

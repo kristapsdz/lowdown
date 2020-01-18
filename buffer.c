@@ -66,6 +66,13 @@ hbuf_clone(const hbuf *buf, hbuf *v)
 	return(v);
 }
 
+void
+hbuf_truncate(hbuf *buf)
+{
+
+	buf->size = 0;
+}
+
 int
 hbuf_eq(const hbuf *buf1, const hbuf *buf2)
 {
