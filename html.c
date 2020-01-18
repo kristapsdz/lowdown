@@ -636,7 +636,7 @@ rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num)
 
 	if (pfound) {
 		hbuf_put(ob, content->data, i);
-		hbuf_printf(ob, "&nbsp;"
+		hbuf_printf(ob, "&#160;"
 			"<a href=\"#fnref%d\" rev=\"footnote\">"
 			"&#8617;</a>", num);
 		hbuf_put(ob, content->data + i, content->size - i);
