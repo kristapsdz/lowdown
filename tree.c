@@ -1,6 +1,6 @@
 /*	$Id$ */
 /*
- * Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) 2017, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -74,7 +74,7 @@ rndr_short(hbuf *ob, const hbuf *b)
 {
 	size_t	 i;
 
-	for (i = 0; i < 10 && i < b->size; i++)
+	for (i = 0; i < 20 && i < b->size; i++)
 		if ('\n' == b->data[i])
 			HBUF_PUTSL(ob, "\\n");
 		else if ('\t' == b->data[i])
@@ -82,7 +82,7 @@ rndr_short(hbuf *ob, const hbuf *b)
 		else
 			hbuf_putc(ob, b->data[i]);
 
-	if (b->size >= 10)
+	if (i < b->size)
 		HBUF_PUTSL(ob, "...");
 }
 
@@ -95,15 +95,15 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 
 	for (i = 0; i < indent; i++)
 		HBUF_PUTSL(ob, "  ");
-	if (LOWDOWN_CHNG_INSERT == root->chng)
+	if (root->chng == LOWDOWN_CHNG_INSERT)
 		HBUF_PUTSL(ob, "INSERT: ");
-	else if (LOWDOWN_CHNG_DELETE == root->chng)
+	else if (root->chng == LOWDOWN_CHNG_DELETE)
 		HBUF_PUTSL(ob, "DELETE: ");
 	hbuf_puts(ob, names[root->type]);
 	HBUF_PUTSL(ob, "\n");
 
 	switch (root->type) {
-	case (LOWDOWN_IMAGE):
+	case LOWDOWN_IMAGE:
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
 		hbuf_printf(ob, "source: ");
@@ -121,25 +121,25 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 			HBUF_PUTSL(ob, "\n");
 		}
 		break;
-	case (LOWDOWN_HEADER):
+	case LOWDOWN_HEADER:
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
 		hbuf_printf(ob, "level: %zu\n",
 			root->rndr_header.level);
 		break;
-	case (LOWDOWN_FOOTNOTE_REF):
+	case LOWDOWN_FOOTNOTE_REF:
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
 		hbuf_printf(ob, "number: %zu\n",
 			root->rndr_footnote_ref.num);
 		break;
-	case (LOWDOWN_FOOTNOTE_DEF):
+	case LOWDOWN_FOOTNOTE_DEF:
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
 		hbuf_printf(ob, "number: %zu\n",
 			root->rndr_footnote_def.num);
 		break;
-	case (LOWDOWN_RAW_HTML):
+	case LOWDOWN_RAW_HTML:
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
 		hbuf_printf(ob, "data: %zu Bytes: ",
@@ -147,7 +147,7 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 		rndr_short(ob, &root->rndr_raw_html.text);
 		HBUF_PUTSL(ob, "\n");
 		break;
-	case (LOWDOWN_BLOCKHTML):
+	case LOWDOWN_BLOCKHTML:
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
 		hbuf_printf(ob, "data: %zu Bytes: ",
@@ -155,7 +155,7 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 		rndr_short(ob, &root->rndr_blockhtml.text);
 		HBUF_PUTSL(ob, "\n");
 		break;
-	case (LOWDOWN_BLOCKCODE):
+	case LOWDOWN_BLOCKCODE:
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
 		hbuf_printf(ob, "data: %zu Bytes: ",
@@ -163,21 +163,21 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 		rndr_short(ob, &root->rndr_blockcode.text);
 		HBUF_PUTSL(ob, "\n");
 		break;
-	case (LOWDOWN_LISTITEM):
+	case LOWDOWN_LISTITEM:
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
 		hbuf_printf(ob, "item scope: %s\n",
 			HLIST_FL_BLOCK & root->rndr_listitem.flags ? 
 			"block" : "span");
 		break;
-	case (LOWDOWN_LIST):
+	case LOWDOWN_LIST:
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
 		hbuf_printf(ob, "list type: %s\n",
 			HLIST_FL_ORDERED & root->rndr_list.flags ? 
 			"ordered" : "unordered");
 		break;
-	case (LOWDOWN_DOC_HEADER):
+	case LOWDOWN_DOC_HEADER:
 		for (i = 0; i < root->rndr_doc_header.msz; i++) {
 			for (j = 0; j < indent + 1; j++)
 				HBUF_PUTSL(ob, "  ");
@@ -186,7 +186,7 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 				root->rndr_doc_header.m[i].key);
 		}
 		break;
-	case (LOWDOWN_MATH_BLOCK):
+	case LOWDOWN_MATH_BLOCK:
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
 		hbuf_printf(ob, "blockmode: %s\n",
@@ -199,7 +199,14 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 		rndr_short(ob, &root->rndr_math.text);
 		HBUF_PUTSL(ob, "\n");
 		break;
-	case (LOWDOWN_NORMAL_TEXT):
+	case LOWDOWN_ENTITY:
+		for (i = 0; i < indent + 1; i++)
+			HBUF_PUTSL(ob, "  ");
+		hbuf_printf(ob, "value: %.*s\n",
+			(int)root->rndr_entity.text.size,
+			root->rndr_entity.text.data);
+		break;
+	case LOWDOWN_NORMAL_TEXT:
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
 		hbuf_printf(ob, "data: %zu Bytes: ",
@@ -222,7 +229,7 @@ void
 lowdown_tree_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
 {
 
-	assert(NULL == ref);
+	assert(ref == NULL);
 	rndr(ob, root, 0);
 }
 
@@ -230,11 +237,10 @@ void *
 lowdown_tree_new(void)
 {
 
-	return(NULL);
+	return NULL;
 }
 
 void
-lowdown_tree_free(void *renderer)
+lowdown_tree_free(void *arg)
 {
-	/* Do nothing. */
 }
