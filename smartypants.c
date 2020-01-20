@@ -1,6 +1,6 @@
 /*	$Id$ */
 /*
- * Copyright (c) 2020, Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) 2020 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -163,13 +163,21 @@ smarty_entity(struct lowdown_node *n, size_t *maxn,
 	n->rndr_normal_text.text.size = start;
 }
 
+static int
+smarty_iswb(char c)
+{
+
+	return isspace((unsigned char)c) ||
+		ispunct((unsigned char)c);
+}
+
 /*
  * Recursive scan for next white-space.
  * If "skip" is set, we're on the starting node and shouldn't do a check
  * for white-space in ourselves.
  */
 static int
-smarty_lookahead_r(const struct lowdown_node *n, int skip_first)
+smarty_right_wb_r(const struct lowdown_node *n, int skip)
 {
 	const hbuf			*b;
 	const struct lowdown_node	*nn;
@@ -180,32 +188,32 @@ smarty_lookahead_r(const struct lowdown_node *n, int skip_first)
 		return 1;
 	if (types[n->type] == TYPE_OPAQUE)
 		return 0;
-	if (!skip_first &&
+
+	if (!skip &&
 	    types[n->type] == TYPE_TEXT &&
 	    n->rndr_normal_text.text.size) {
 		assert(n->type == LOWDOWN_NORMAL_TEXT);
 		b = &n->rndr_normal_text.text;
-		return isspace((unsigned char)b->data[0]) ||
-	 	       ispunct((unsigned char)b->data[0]);
+		return smarty_iswb(b->data[0]);
 	}
 
 	/* First scan down. */
 
 	if ((nn = TAILQ_FIRST(&n->children)) != NULL)
-		return smarty_lookahead_r(nn, 0);
+		return smarty_right_wb_r(nn, 0);
 
 	/* Now scan back up. */
 
 	do {
 		if ((nn = TAILQ_NEXT(n, entries)) != NULL)
-			return smarty_lookahead_r(nn, 0);
+			return smarty_right_wb_r(nn, 0);
 	} while ((n = n->parent) != NULL);
 
 	return 1;
 }
 
 static int
-smarty_lookahead(const struct lowdown_node *n, size_t pos)
+smarty_right_wb(const struct lowdown_node *n, size_t pos)
 {
 	const hbuf	*b;
 
@@ -213,12 +221,15 @@ smarty_lookahead(const struct lowdown_node *n, size_t pos)
 	b = &n->rndr_normal_text.text;
 
 	if (pos + 1 < b->size)
-		return isspace((unsigned char)b->data[pos]) ||
-	 	       ispunct((unsigned char)b->data[pos]);
+		return smarty_iswb(b->data[pos]);
 
-	return smarty_lookahead_r(n, 1);
+	return smarty_right_wb_r(n, 1);
 }
 
+/*
+ * FIXME: this can be faster with a table-based lookup instead of the
+ * switch statement.
+ */
 static void
 smarty_hbuf(struct lowdown_node *n, size_t *maxn, hbuf *b, struct smarty *s)
 {
@@ -227,21 +238,12 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn, hbuf *b, struct smarty *s)
 	assert(n->type == LOWDOWN_NORMAL_TEXT);
 
 	for (i = 0; i < b->size; i++) {
-		/*
-		 * Begin by seeing if the given character is going to
-		 * start a sequence that we need to interpret.
-		 * Do this *before* we check to see if we're a word
-		 * boundary, as some word boundaries (e.g., 
-		 */
-		
 		switch (b->data[i]) {
 		case '.':
 		case '(':
 		case '-':
-			/*
-			 * Look up all instances of "standalone" symbols
-			 * that don't need a before or after context.
-			 */
+			/* Symbols that don't need wordbreak. */
+
 			for (j = 0; syms[j].key != NULL; j++) {
 				sz = strlen(syms[j].key);
 				if (i + sz - 1 >= b->size)
@@ -254,30 +256,34 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn, hbuf *b, struct smarty *s)
 			}
 			break;
 		case '"':
+			/* Left-wb and right-wb differ. */
+
 			if (!s->left_wb) {
-				if (smarty_lookahead(n, i + 1)) {
-					smarty_entity(n, maxn, i, i + 1, "&rdquo;");
-					return;
-				}
-				break;
+				if (!smarty_right_wb(n, i + 1)) 
+					break;
+				smarty_entity(n, maxn, i, i + 1, "&rdquo;");
+				return;
 			}
 			smarty_entity(n, maxn, i, i + 1, "&ldquo;");
 			return;
 		case '\'':
+			/* Left-wb and right-wb differ. */
+
 			if (!s->left_wb) {
-				if (smarty_lookahead(n, i + 1)) {
-					smarty_entity(n, maxn, i, i + 1, "&rsquo;");
-					return;
-				}
-				break;
+				if (!smarty_right_wb(n, i + 1))
+					break;
+				smarty_entity(n, maxn, i, i + 1, "&rsquo;");
+				return;
 			}
 			smarty_entity(n, maxn, i, i + 1, "&lsquo;");
 			return;
 		case '1':
 		case '3':
+			/* Symbols that require wb. */
+
 			if (!s->left_wb)
 				break;
-			if (smarty_lookahead(n, i + sz)) 
+			if (!smarty_right_wb(n, i + sz)) 
 				break;
 			for (j = 0; syms2[j].key != NULL; j++) {
 				sz = strlen(syms2[j].key);
@@ -294,11 +300,7 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn, hbuf *b, struct smarty *s)
 			break;
 		}
 
-		/* Does the current char count as a word break? */
-
-		s->left_wb = 
-			isspace((unsigned char)b->data[i]) || 
-			ispunct((unsigned char)b->data[i]);
+		s->left_wb = smarty_iswb(b->data[i]);
 	}
 }
 
