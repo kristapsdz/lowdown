@@ -1025,6 +1025,7 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 	struct lowdown_node *n, *next, *prev;
 	hbuf		*tmp;
 	int		 pnln, keepnext = 1;
+	int32_t		 ent;
 	enum nfont	 fonts[NFONT__MAX];
 
 	assert(root != NULL);
@@ -1201,10 +1202,14 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 			prev, next, ref, pnln);
 		break;
 	case LOWDOWN_ENTITY:
-		/* Convert well-known ones. */
-		hbuf_put(ob,
-			root->rndr_entity.text.data,
-			root->rndr_entity.text.size);
+		ent = entity_find(&root->rndr_entity.text);
+		if (ent > 0)
+			hbuf_printf(ob, "\\[u%.4llX]", 
+				(unsigned long long)ent);
+		else
+			hbuf_put(ob,
+				root->rndr_entity.text.data,
+				root->rndr_entity.text.size);
 		break;
 	default:
 		hbuf_put(ob, tmp->data, tmp->size);
