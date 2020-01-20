@@ -45,8 +45,8 @@ LOWDOWN_TABLE_CELL		->
 #define	TERM_WIDTH	80
 
 struct tstack {
-	size_t	id; /* node identifier */
-	size_t	lines; /* times emitted block prefix */
+	struct lowdown_node 	*n; /* node in question */
+	size_t			 lines; /* times emitted prefix */
 };
 
 struct term {
@@ -55,22 +55,6 @@ struct term {
 	struct tstack	 stack[128]; /* nodes being outputted */
 	size_t		 stackpos; /* position in stack */
 	hbuf		*tmp; /* for temporary allocations */
-};
-
-struct	ent {
-	const char	*ent; /* entity (&xxx;) or NULL for last */
-	const char	*out; /* what we should output or empty */
-};
-
-static const struct ent ents[] = {
-	{ "&nbsp;",	" " },
-	{ "&#160;",	" " },
-	{ "&zwnj;",	"" },
-	{ "&gt;",	">" },
-	{ "&lt;",	"<" },
-	{ "&#8220;",	"\"" },
-	{ "&#8221;",	"\"" },
-	{ NULL,		NULL }
 };
 
 /*
@@ -96,7 +80,6 @@ static const struct sty sty_codespan = 	{ 0, 0, 0, 0,  47, 31, 0 };
 static const struct sty sty_hrule = 	{ 0, 0, 0, 0,   0, 37, 0 };
 static const struct sty sty_blockhtml =	{ 0, 0, 0, 0,   0, 37, 0 };
 static const struct sty sty_rawhtml = 	{ 0, 0, 0, 0,   0, 37, 0 };
-static const struct sty sty_entity = 	{ 0, 0, 0, 0,   0, 37, 0 };
 static const struct sty sty_strike = 	{ 0, 1, 0, 0,   0,  0, 0 };
 static const struct sty sty_emph = 	{ 1, 0, 0, 0,   0,  0, 0 };
 static const struct sty sty_highlight =	{ 0, 0, 1, 0,   0,  0, 0 };
@@ -137,7 +120,7 @@ static const struct sty *stys[LOWDOWN__MAX] = {
 	&sty_foot_ref, /* LOWDOWN_FOOTNOTE_REF */
 	NULL, /* LOWDOWN_MATH_BLOCK */
 	&sty_rawhtml, /* LOWDOWN_RAW_HTML */
-	&sty_entity, /* LOWDOWN_ENTITY */
+	NULL, /* LOWDOWN_ENTITY */
 	NULL, /* LOWDOWN_NORMAL_TEXT */
 	NULL, /* LOWDOWN_DOC_HEADER */
 	NULL /* LOWDOWN_DOC_FOOTER */
@@ -155,6 +138,7 @@ static const struct sty sty_imgurl = 	{ 0, 0, 0, 1,   0, 32, 2 };
 static const struct sty sty_imgurlbox =	{ 0, 0, 0, 0,   0, 37, 2 };
 static const struct sty sty_foots_div =	{ 0, 0, 0, 0,   0, 37, 0 };
 static const struct sty sty_meta_key =	{ 0, 0, 0, 0,   0, 37, 0 };
+static const struct sty sty_bad_ent = 	{ 0, 0, 0, 0,   0, 37, 0 };
 
 static const struct sty sty_chng_ins =	{ 0, 0, 0, 0,  47, 30, 0 };
 static const struct sty sty_chng_del =	{ 0, 0, 0, 0, 100,  0, 0 };
@@ -379,7 +363,7 @@ rndr_buf_startline_prefixes(struct term *term,
 	 */
 
 	for (i = 0; i <= term->stackpos; i++)
-		if (term->stack[i].id == n->id)
+		if (term->stack[i].n == n)
 			break;
 	assert(i <= term->stackpos);
 	emit = term->stack[i].lines++;
@@ -627,17 +611,54 @@ rndr_buf(struct term *term, hbuf *out,
 	}
 }
 
+/*
+ * Output the unicode entry "val", which must be strictly greater than
+ * zero, as a UTF-8 sequence.
+ * This does no error checking.
+ */
+static void
+rndr_entity(hbuf *buf, int32_t val)
+{
+
+	assert(val > 0);
+	if (val < 0x80) {
+		hbuf_putc(buf, val);
+		return;
+	}
+       	if (val < 0x800) {
+		hbuf_putc(buf, 192 + val / 64);
+		hbuf_putc(buf, 128 + val % 64);
+		return;
+	}
+       	if (val - 0xd800u < 0x800) 
+		return;
+       	if (val < 0x10000) {
+		hbuf_putc(buf, 224 + val / 4096);
+		hbuf_putc(buf, 128 + val / 64 % 64);
+		hbuf_putc(buf, 128 + val % 64);
+		return;
+	}
+       	if (val < 0x110000) {
+		hbuf_putc(buf, 240 + val / 262144);
+		hbuf_putc(buf, 128 + val / 4096 % 64);
+		hbuf_putc(buf, 128 + val / 64 % 64);
+		hbuf_putc(buf, 128 + val % 64);
+		return;
+	}
+}
+
 void
 lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 {
 	struct lowdown_node	*child;
 	struct term		*p = arg;
 	size_t			 i;
+	int32_t			 entity;
 	
 	/* Current nodes we're servicing. */
 
 	memset(&p->stack[p->stackpos], 0, sizeof(struct tstack));
-	p->stack[p->stackpos].id = n->id;
+	p->stack[p->stackpos].n = n;
 	
 	/* Vertical space before content. */
 
@@ -717,22 +738,14 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 		rndr_buf(p, ob, n, &n->rndr_math.text, 0, NULL);
 		break;
 	case LOWDOWN_ENTITY:
-		for (i = 0; ; i++) {
-			if (ents[i].ent == NULL)
-				break;
+		entity = entity_find(&n->rndr_entity.text);
+		if (entity > 0) {
 			hbuf_truncate(p->tmp);
-			hbuf_puts(p->tmp, ents[i].ent);
-			if (!hbuf_eq(p->tmp, &n->rndr_entity.text))
-				continue;
-			if (ents[i].out[0] == '\0')
-				break;
-			hbuf_truncate(p->tmp);
-			hbuf_puts(p->tmp, ents[i].out);
+			rndr_entity(p->tmp, entity);
 			rndr_buf(p, ob, n, p->tmp, 0, NULL);
-			break;
-		}
-		if (ents[i].ent == NULL) 
-			rndr_buf(p, ob, n, &n->rndr_entity.text, 0, NULL);
+		} else
+			rndr_buf(p, ob, n, &n->rndr_entity.text, 
+				0, &sty_bad_ent);
 		break;
 	case LOWDOWN_BLOCKCODE:
 		rndr_buf(p, ob, n, &n->rndr_blockcode.text, 0, NULL);
