@@ -31,8 +31,8 @@
 #include "extern.h"
 
 struct sym {
-	const char	*key;
-	const char	*val;
+	const char	*key; /* input in markdown */
+	const char	*val; /* output entity */
 };
 
 /*
@@ -40,21 +40,25 @@ struct sym {
  * (So basically "---" comes before "--".)
  */
 static const struct sym syms[] = {
-	{ "(c)",	"&#169;" },
-	{ "(C)",	"&#169;" },
-	{ "(r)",	"&#174;" },
-	{ "(R)",	"&#174;" },
-	{ "(tm)",	"&#8482;" },
-	{ "(TM)",	"&#8482;" },
+	{ "(c)",	"&copy;" },
+	{ "(C)",	"&copy;" },
+	{ "(r)",	"&reg;" },
+	{ "(R)",	"&reg;" },
+	{ "(tm)",	"&trade;" },
+	{ "(TM)",	"&trade;" },
 	{ "(sm)",	"&#8480;" },
 	{ "(SM)",	"&#8480;" },
-	{ "...",	"&#8230;" },
-	{ ". . .",	"&#8230;" },
-	{ "---",	"&#8212;" },
-	{ "--",		"&#8211;" },
+	{ "...",	"&hellip;" },
+	{ ". . .",	"&hellip;" },
+	{ "---",	"&mdash;" },
+	{ "--",		"&ndash;" },
 	{ NULL,		NULL }
 };
 
+/*
+ * Symbols that require word-break on both sides.
+ * Again, order is important: longest-first.
+ */
 static const struct sym syms2[] = {
 	{ "1/4th",	"&frac14;" },
 	{ "1/4",	"&frac14;" },
@@ -62,16 +66,11 @@ static const struct sym syms2[] = {
 	{ "3/4th",	"&frac34;" },
 	{ "3/4",	"&frac34;" },
 	{ "1/2",	"&frac12;" },
-	{ "\"",		"&rdquo;" },
-	{ "'",		"&rsquo;" },
 	{ NULL,		NULL }
 };
 
 struct smarty {
-	int			 last_nspace;
-	const struct sym	*last_syms2;
-	struct lowdown_node	*last_node;
-	size_t			 last_pos;
+	int	 left_wb; /* left wordbreak */
 };
 
 enum type {
@@ -164,22 +163,60 @@ smarty_entity(struct lowdown_node *n, size_t *maxn,
 	n->rndr_normal_text.text.size = start;
 }
 
+/*
+ * Recursive scan for next white-space.
+ * If "skip" is set, we're on the starting node and shouldn't do a check
+ * for white-space in ourselves.
+ */
 static int
-smarty_purge(struct smarty *s, size_t *maxn,
-	const struct lowdown_node *n)
+smarty_lookahead_r(const struct lowdown_node *n, int skip_first)
 {
-	struct lowdown_node	*sv = s->last_node;
+	const hbuf			*b;
+	const struct lowdown_node	*nn;
 
-	if (s->last_node == NULL)
+	/* Check type of node. */
+
+	if (types[n->type] == TYPE_BLOCK)
+		return 1;
+	if (types[n->type] == TYPE_OPAQUE)
 		return 0;
+	if (!skip_first &&
+	    types[n->type] == TYPE_TEXT &&
+	    n->rndr_normal_text.text.size) {
+		assert(n->type == LOWDOWN_NORMAL_TEXT);
+		b = &n->rndr_normal_text.text;
+		return isspace((unsigned char)b->data[0]) ||
+	 	       ispunct((unsigned char)b->data[0]);
+	}
 
-	smarty_entity(s->last_node, maxn, 
-		s->last_pos, 
-		s->last_pos + strlen(s->last_syms2->key), 
-		s->last_syms2->val);
-	memset(s, 0, sizeof(struct smarty));
-	s->last_nspace = 1;
-	return sv == n;
+	/* First scan down. */
+
+	if ((nn = TAILQ_FIRST(&n->children)) != NULL)
+		return smarty_lookahead_r(nn, 0);
+
+	/* Now scan back up. */
+
+	do {
+		if ((nn = TAILQ_NEXT(n, entries)) != NULL)
+			return smarty_lookahead_r(nn, 0);
+	} while ((n = n->parent) != NULL);
+
+	return 1;
+}
+
+static int
+smarty_lookahead(const struct lowdown_node *n, size_t pos)
+{
+	const hbuf	*b;
+
+	assert(n->type == LOWDOWN_NORMAL_TEXT);
+	b = &n->rndr_normal_text.text;
+
+	if (pos + 1 < b->size)
+		return isspace((unsigned char)b->data[pos]) ||
+	 	       ispunct((unsigned char)b->data[pos]);
+
+	return smarty_lookahead_r(n, 1);
 }
 
 static void
@@ -190,23 +227,6 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn, hbuf *b, struct smarty *s)
 	assert(n->type == LOWDOWN_NORMAL_TEXT);
 
 	for (i = 0; i < b->size; i++) {
-		/*
-		 * Begin by seeing if the last character is waiting to
-		 * see if we're on a word boundary.
-		 * If we split on the current node, then return to get
-		 * the new node later.
-		 */
-
-		if (s->last_node != NULL &&
-		    (ispunct((unsigned char)b->data[i]) ||
-		     isspace((unsigned char)b->data[i]))) {
-			if (smarty_purge(s, maxn, n))
-				return;
-		} else if (s->last_node != NULL) {
-			memset(s, 0, sizeof(struct smarty));
-			s->last_nspace = 1;
-		}
-
 		/*
 		 * Begin by seeing if the given character is going to
 		 * start a sequence that we need to interpret.
@@ -234,28 +254,30 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn, hbuf *b, struct smarty *s)
 			}
 			break;
 		case '"':
-			if (s->last_nspace) {
-				s->last_syms2 = &syms2[1];
-				s->last_node = n;
-				s->last_pos = i;
-				i += strlen(s->last_syms2->key) - 1;
-				continue;
+			if (!s->left_wb) {
+				if (smarty_lookahead(n, i + 1)) {
+					smarty_entity(n, maxn, i, i + 1, "&rdquo;");
+					return;
+				}
+				break;
 			}
 			smarty_entity(n, maxn, i, i + 1, "&ldquo;");
 			return;
 		case '\'':
-			if (s->last_nspace) {
-				s->last_syms2 = &syms2[2];
-				s->last_node = n;
-				s->last_pos = i;
-				i += strlen(s->last_syms2->key) - 1;
-				continue;
+			if (!s->left_wb) {
+				if (smarty_lookahead(n, i + 1)) {
+					smarty_entity(n, maxn, i, i + 1, "&rsquo;");
+					return;
+				}
+				break;
 			}
 			smarty_entity(n, maxn, i, i + 1, "&lsquo;");
 			return;
 		case '1':
 		case '3':
-			if (s->last_nspace)
+			if (!s->left_wb)
+				break;
+			if (smarty_lookahead(n, i + sz)) 
 				break;
 			for (j = 0; syms2[j].key != NULL; j++) {
 				sz = strlen(syms2[j].key);
@@ -263,11 +285,9 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn, hbuf *b, struct smarty *s)
 					continue;
 				if (memcmp(syms2[j].key, &b->data[i], sz))
 					continue;
-				s->last_syms2 = &syms2[j];
-				s->last_node = n;
-				s->last_pos = i;
-				i += strlen(s->last_syms2->key) - 1;
-				continue;
+				smarty_entity(n, maxn, i, 
+					i + sz, syms[j].val);
+				return;
 			}
 			break;
 		default:
@@ -276,9 +296,9 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn, hbuf *b, struct smarty *s)
 
 		/* Does the current char count as a word break? */
 
-		s->last_nspace = 
-			!(isspace((unsigned char)b->data[i]) || 
-			  ispunct((unsigned char)b->data[i]));
+		s->left_wb = 
+			isspace((unsigned char)b->data[i]) || 
+			ispunct((unsigned char)b->data[i]);
 	}
 }
 
@@ -298,10 +318,11 @@ smarty_span(struct lowdown_node *root, size_t *maxn, struct smarty *s)
 			smarty_span(n, maxn, s);
 			break;
 		case TYPE_OPAQUE:
-			s->last_nspace = 1;
+			s->left_wb = 0;
 			break;
-		default:
-			smarty_purge(s, maxn, NULL);
+		case TYPE_ROOT:
+		case TYPE_BLOCK:
+			abort();
 			break;
 		}
 	}
@@ -313,13 +334,13 @@ smarty_block(struct lowdown_node *root, size_t *maxn)
 	struct smarty		 s;
 	struct lowdown_node	*n;
 
-	memset(&s, 0, sizeof(struct smarty));
+	s.left_wb = 1;
+
 	TAILQ_FOREACH(n, &root->children, entries) {
 		switch (types[n->type]) {
 		case TYPE_ROOT:
 		case TYPE_BLOCK:
-			smarty_purge(&s, maxn, NULL);
-			s.last_nspace = 0;
+			s.left_wb = 1;
 			smarty_block(n, maxn);
 			break;
 		case TYPE_TEXT:
@@ -331,14 +352,14 @@ smarty_block(struct lowdown_node *root, size_t *maxn)
 			smarty_span(n, maxn, &s);
 			break;
 		case TYPE_OPAQUE:
-			s.last_nspace = 1;
+			s.left_wb = 0;
 			break;
 		default:
 			break;
 		}
 	}
 
-	smarty_purge(&s, maxn, NULL);
+	s.left_wb = 1;
 }
 
 void
