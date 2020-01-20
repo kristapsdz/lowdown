@@ -29,6 +29,7 @@
 .Ft "struct lowdown_node *"
 .Fo lowdown_doc_parse
 .Fa "hdoc *doc"
+.Fa "size_t *maxn"
 .Fa "const char *input"
 .Fa "size_t inputsz"
 .Fa "struct lowdown_meta **meta"
@@ -51,6 +52,11 @@ with an array of length
 This function may be invoked multiple times with a single
 .Fa doc ,
 which is reset upon each invocation.
+The returned node is always of type
+.Dv LOWDOWN_ROOT ,
+with
+.Fa maxn
+set to one greater than the highest node identifier of the returned tree.
 .Pp
 The AST is a tree of
 .Va "struct lowdown_node"
@@ -123,7 +129,7 @@ struct lowdown_node {
 			hbuf alt;
 		} rndr_image;
 		struct rndr_math {
-			int displaymode;
+			int blockmode;
 		} rndr_math;
 		struct rndr_blockhtml {
 			hbuf text;
@@ -196,7 +202,7 @@ Described by the
 element.
 .It Dv LOWDOWN_DOC_FOOTER
 Closes out the document opened in
-.Dv LOWDOWN_DOC_HEADER.
+.Dv LOWDOWN_DOC_HEADER .
 (Only if configured during parse.)
 .It Dv LOWDOWN_DOC_HEADER
 A header with data gathered from document metadata (if configured).
