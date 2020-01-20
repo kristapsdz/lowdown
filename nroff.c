@@ -150,18 +150,19 @@ nstate_fonts(const struct nstate *st)
 	if (st->fonts[NFONT_ITALIC])
 		(*cp++) = 'I';
 	if (st->fonts[NFONT_FIXED] &&
-	    (0 == st->fonts[NFONT_BOLD] &&
-	     0 == st->fonts[NFONT_ITALIC]))
+	    (st->fonts[NFONT_BOLD] == 0 &&
+	     st->fonts[NFONT_ITALIC] == 0))
 		(*cp++) = 'R';
 
 	/* Reset. */
-	if (0 == st->fonts[NFONT_BOLD] &&
-	    0 == st->fonts[NFONT_FIXED] &&
-	    0 == st->fonts[NFONT_ITALIC])
+
+	if (st->fonts[NFONT_BOLD] == 0 &&
+	    st->fonts[NFONT_FIXED] == 0 &&
+	    st->fonts[NFONT_ITALIC] == 0)
 		(*cp++) = 'R';
 	(*cp++) = ']';
 	(*cp++) = '\0';
-	return(fonts);
+	return fonts;
 }
 
 /*
@@ -181,7 +182,7 @@ putlink(hbuf *ob, struct nstate *st, const hbuf *link,
 	size_t		 i, pos;
 	int		 ret = 1, usepdf;
 
-	usepdf = ! st->mdoc && LOWDOWN_NROFF_GROFF & st->flags;
+	usepdf = !st->mdoc && (st->flags & LOWDOWN_NROFF_GROFF);
 
 	if (usepdf)
 		HBUF_PUTSL(ob, ".pdfhref W ");
@@ -192,20 +193,20 @@ putlink(hbuf *ob, struct nstate *st, const hbuf *link,
 	 * If we're not in groff mode, emit the data, but without -P.
 	 */
 
-	if (NULL != prev &&
-	    LOWDOWN_NORMAL_TEXT == prev->type) {
+	if (prev != NULL &&
+	    prev->type == LOWDOWN_NORMAL_TEXT) {
 		buf = &prev->rndr_normal_text.text;
 		i = buf->size;
-		while (i && ! isspace((unsigned char)buf->data[i - 1]))
+		while (i && !isspace((unsigned char)buf->data[i - 1]))
 			i--;
 		if (i != buf->size && usepdf)
 			HBUF_PUTSL(ob, "-P \"");
 		for (pos = i; pos < buf->size; pos++) {
 			/* Be sure to escape... */
-			if ('"' == buf->data[pos]) {
+			if (buf->data[pos] == '"') {
 				HBUF_PUTSL(ob, "\\(dq");
 				continue;
-			} else if ('\\' == buf->data[pos]) {
+			} else if (buf->data[pos] == '\\') {
 				HBUF_PUTSL(ob, "\\e");
 				continue;
 			}
@@ -215,10 +216,10 @@ putlink(hbuf *ob, struct nstate *st, const hbuf *link,
 			HBUF_PUTSL(ob, "\" ");
 	}
 
-	if ( ! usepdf) {
+	if (!usepdf) {
 		st->fonts[NFONT_ITALIC]++;
 		hbuf_puts(ob, nstate_fonts(st));
-		if (NULL == text) {
+		if (text == NULL) {
 			if (0 == hbuf_prefix(link, "mailto:"))
 				hbuf_put(ob, link->data + 7, link->size - 7);
 			else
@@ -236,14 +237,14 @@ putlink(hbuf *ob, struct nstate *st, const hbuf *link,
 	 * But first, initialise the offset.
 	 */
 
-	if (NULL != next && 
-	    LOWDOWN_NORMAL_TEXT == next->type)
+	if (next != NULL && 
+	    next->type == LOWDOWN_NORMAL_TEXT)
 		next->rndr_normal_text.offs = 0;
 
-	if (NULL != next && 
-	    LOWDOWN_NORMAL_TEXT == next->type &&
+	if (next != NULL && 
+	    next->type == LOWDOWN_NORMAL_TEXT &&
 	    next->rndr_normal_text.text.size > 0 &&
-	    ' ' != next->rndr_normal_text.text.data[0]) {
+	    next->rndr_normal_text.text.data[0] != ' ') {
 		buf = &next->rndr_normal_text.text;
 		if (usepdf)
 			HBUF_PUTSL(ob, "-A \"");
@@ -251,10 +252,10 @@ putlink(hbuf *ob, struct nstate *st, const hbuf *link,
 			if (isspace((unsigned char)buf->data[pos]))
 				break;
 			/* Be sure to escape... */
-			if ('"' == buf->data[pos]) {
+			if (buf->data[pos] == '"') {
 				HBUF_PUTSL(ob, "\\(dq");
 				continue;
-			} else if ('\\' == buf->data[pos]) {
+			} else if (buf->data[pos] == '\\') {
 				HBUF_PUTSL(ob, "\\e");
 				continue;
 			}
@@ -273,15 +274,15 @@ putlink(hbuf *ob, struct nstate *st, const hbuf *link,
 		if (HALINK_EMAIL == type)
 			HBUF_PUTSL(ob, "mailto:");
 		for (i = 0; i < link->size; i++) {
-			if ( ! isprint((unsigned char)link->data[i]) ||
-			    NULL != strchr("<>\\^`{|}\"", link->data[i]))
+			if (!isprint((unsigned char)link->data[i]) ||
+			    strchr("<>\\^`{|}\"", link->data[i]) != NULL)
 				hbuf_printf(ob, "%%%.2X", link->data[i]);
 			else
 				hbuf_putc(ob, link->data[i]);
 		}
 		HBUF_PUTSL(ob, " ");
-		if (NULL == text) {
-			if (0 == hbuf_prefix(link, "mailto:"))
+		if (text == NULL) {
+			if (hbuf_prefix(link, "mailto:") == 0)
 				hbuf_put(ob, link->data + 7, link->size - 7);
 			else
 				hbuf_put(ob, link->data, link->size);
@@ -299,12 +300,12 @@ rndr_autolink(hbuf *ob, const hbuf *link, enum halink_type type,
 	struct nstate *st, int nln)
 {
 
-	if (NULL == link || 0 == link->size)
+	if (link == NULL || link->size == 0)
 		return 1;
 
-	if ( ! nln)
-		if (NULL == prev ||
-		    (ob->size && '\n' != ob->data[ob->size - 1]))
+	if (!nln)
+		if (prev == NULL  ||
+		    (ob->size && ob->data[ob->size - 1] != '\n'))
 			HBUF_PUTSL(ob, "\n");
 
 	return putlink(ob, st, link, NULL, next, prev, type);
@@ -315,7 +316,7 @@ rndr_blockcode(hbuf *ob, const hbuf *content,
 	const hbuf *lang, const struct nstate *st)
 {
 
-	if (NULL == content || 0 == content->size)
+	if (content == NULL || content->size == 0)
 		return;
 
 	if (st->mdoc) {
@@ -339,7 +340,7 @@ static void
 rndr_blockquote(hbuf *ob, const hbuf *content)
 {
 
-	if (NULL == content || 0 == content->size)
+	if (content == NULL || content->size == 0)
 		return;
 
 	HBUF_PUTSL(ob, ".RS\n");
@@ -352,9 +353,8 @@ static void
 rndr_codespan(hbuf *ob, const hbuf *content)
 {
 
-	if (NULL == content || 0 == content->size)
+	if (content == NULL || content->size == 0)
 		return;
-
 	escape_span(ob, content->data, content->size);
 }
 
@@ -365,9 +365,8 @@ static int
 rndr_strikethrough(hbuf *ob, const hbuf *content)
 {
 
-	if (NULL == content || 0 == content->size)
-		return(0);
-
+	if (content == NULL || content->size == 0)
+		return 0;
 	hbuf_put(ob, content->data, content->size);
 	return 1;
 }
@@ -398,11 +397,11 @@ rndr_header(hbuf *ob, const hbuf *content, int level,
 	const struct nstate *st)
 {
 
-	if (NULL == content || 0 == content->size)
+	if (content == NULL || content->size == 0)
 		return;
 
 	if (st->mdoc) {
-		if (1 == level)
+		if (level == 1)
 			HBUF_PUTSL(ob, ".SH ");
 		else 
 			HBUF_PUTSL(ob, ".SS ");
@@ -411,9 +410,9 @@ rndr_header(hbuf *ob, const hbuf *content, int level,
 		return;
 	} 
 
-	if (st->flags & LOWDOWN_NROFF_NUMBERED)
+	if ((st->flags & LOWDOWN_NROFF_NUMBERED))
 		hbuf_printf(ob, ".NH %d\n", level);
-	else if (st->flags & LOWDOWN_NROFF_GROFF) 
+	else if ((st->flags & LOWDOWN_NROFF_GROFF))
 		hbuf_printf(ob, ".SH %d\n", level);
 	else
 		hbuf_printf(ob, ".SH\n");
@@ -435,13 +434,13 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link,
 	struct lowdown_node *next, int nln)
 {
 
-	if ((NULL == content || 0 == content->size) &&
-	    (NULL == link || 0 == link->size))
+	if ((content == NULL || content->size == 0) &&
+	    (link == NULL || link->size == 0))
 		return 1;
 
-	if ( ! nln)
-		if (NULL == prev ||
-		    (ob->size && '\n' != ob->data[ob->size - 1]))
+	if (!nln)
+		if (prev == NULL ||
+		    (ob->size && ob->data[ob->size - 1] != '\n'))
 			HBUF_PUTSL(ob, "\n");
 
 	return putlink(ob, st, link, 
@@ -456,7 +455,7 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 	char	*cdata;
 	size_t	 csize;
 
-	if (NULL == content || 0 == content->size)
+	if (content == NULL || content->size == 0)
 		return;
 
 	/* 
@@ -465,9 +464,9 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 	 * Then put us into an indented paragraph.
 	 */
 
-	if (NULL == prev || 
+	if (prev == NULL || 
 	    (content->size > 3 &&
-	     0 == memcmp(content->data, ".LP\n", 4)))
+	     memcmp(content->data, ".LP\n", 4) == 0))
 		HBUF_PUTSL(ob, ".sp 1.0v\n");
 
 	HBUF_PUTSL(ob, ".RS\n");
@@ -477,7 +476,7 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 	 * glyph(s) (padding with two spaces).
 	 */
 
-	if (HLIST_FL_ORDERED & flags)
+	if ((flags & HLIST_FL_ORDERED))
 		hbuf_printf(ob, ".ti -\\w'%zu.  \'u\n%zu.  ", 
 			num, num);
 	else
@@ -496,14 +495,14 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 
 	/* Start by stripping out all paragraphs. */
 
-	while (csize > 3 && 0 == memcmp(cdata, ".LP\n", 4)) {
+	while (csize > 3 && memcmp(cdata, ".LP\n", 4) == 0) {
 		cdata += 4;
 		csize -= 4;
 	}
 
 	/* Now make sure we have a newline before links. */
 
-	if (csize > 8 && 0 == memcmp(cdata, ".pdfhref ", 9))
+	if (csize > 8 && memcmp(cdata, ".pdfhref ", 9) == 0)
 		HBUF_PUTSL(ob, "\n");
 
 	hbuf_put(ob, cdata, csize);
@@ -515,9 +514,9 @@ static void
 rndr_paragraph(hbuf *ob, const hbuf *content, 
 	const struct nstate *st, const struct lowdown_node *np)
 {
-	size_t	 	 i = 0, org;
+	size_t	 i = 0, org;
 
-	if (NULL == content || 0 == content->size)
+	if (content == NULL || content->size == 0)
 		return;
 
 	/* Strip away initial white-space. */
@@ -530,7 +529,7 @@ rndr_paragraph(hbuf *ob, const hbuf *content,
 
 	HBUF_PUTSL(ob, ".LP\n");
 
-	if (st->flags & LOWDOWN_NROFF_HARD_WRAP) {
+	if ((st->flags & LOWDOWN_NROFF_HARD_WRAP)) {
 		while (i < content->size) {
 			org = i;
 			while (i < content->size && content->data[i] != '\n')
@@ -561,12 +560,12 @@ rndr_paragraph(hbuf *ob, const hbuf *content,
 static void
 rndr_raw_block(hbuf *ob, const hbuf *content, const struct nstate *st)
 {
-	size_t org, sz;
+	size_t	 org, sz;
 
-	if (NULL == content)
+	if (content == NULL)
 		return;
 
-	if (st->flags & LOWDOWN_NROFF_SKIP_HTML) {
+	if ((st->flags & LOWDOWN_NROFF_SKIP_HTML)) {
 		escape_block(ob, content->data, content->size);
 		return;
 	}
@@ -604,7 +603,7 @@ rndr_hrule(hbuf *ob, const struct nstate *st)
 	 */
 
 	HBUF_PUTSL(ob, ".LP\n");
-	if ( ! st->mdoc)
+	if (!st->mdoc)
 		HBUF_PUTSL(ob, "\\l\'\\n(.lu-\\n(\\n[.in]u\'\n");
 }
 
@@ -629,20 +628,20 @@ rndr_image(hbuf *ob, const hbuf *link, const struct nstate *st,
 	cp++;
 	sz = link->size - (cp - link->data);
 
-	if (0 == sz) {
+	if (sz == 0) {
 		warnx("warning: empty image suffix (ignoring)");
 		return;
 	}
 
-	if ( ! (2 == sz && 0 == memcmp(cp, "ps", 2)) &&
-	     ! (3 == sz && 0 == memcmp(cp, "eps", 3))) {
+	if (!(sz == 2 && memcmp(cp, "ps", 2) == 0) &&
+	    !(sz == 3 && memcmp(cp, "eps", 3) == 0)) {
 		warnx("warning: unknown image suffix (ignoring)");
 		return;
 	}
 
-	if ( ! nln)
-		if (NULL == prev ||
-		    (ob->size && '\n' != ob->data[ob->size - 1]))
+	if (!nln)
+		if (prev == NULL ||
+		    (ob->size && ob->data[ob->size - 1] != '\n'))
 			HBUF_PUTSL(ob, "\n");
 
 	hbuf_printf(ob, ".PSPIC %.*s\n", 
@@ -655,7 +654,6 @@ rndr_raw_html(hbuf *ob, const hbuf *text, const struct nstate *st)
 
 	if ((st->flags & LOWDOWN_NROFF_SKIP_HTML) != 0)
 		return 1;
-
 	escape_block(ob, text->data, text->size);
 	return 1;
 }
@@ -686,10 +684,10 @@ rndr_table_header(hbuf *ob, const hbuf *content,
 		if (i > 0)
 			HBUF_PUTSL(ob, " ");
 		switch (fl[i] & HTBL_FL_ALIGNMASK) {
-		case (HTBL_FL_ALIGN_CENTER):
+		case HTBL_FL_ALIGN_CENTER:
 			HBUF_PUTSL(ob, "cb");
 			break;
-		case (HTBL_FL_ALIGN_RIGHT):
+		case HTBL_FL_ALIGN_RIGHT:
 			HBUF_PUTSL(ob, "rb");
 			break;
 		default:
@@ -705,10 +703,10 @@ rndr_table_header(hbuf *ob, const hbuf *content,
 		if (i > 0)
 			HBUF_PUTSL(ob, " ");
 		switch (fl[i] & HTBL_FL_ALIGNMASK) {
-		case (HTBL_FL_ALIGN_CENTER):
+		case HTBL_FL_ALIGN_CENTER:
 			HBUF_PUTSL(ob, "c");
 			break;
-		case (HTBL_FL_ALIGN_RIGHT):
+		case HTBL_FL_ALIGN_RIGHT:
 			HBUF_PUTSL(ob, "r");
 			break;
 		default:
@@ -744,7 +742,7 @@ rndr_tablecell(hbuf *ob, const hbuf *content, size_t col)
 
 	if (col > 0)
 		HBUF_PUTSL(ob, "|");
-	if (NULL != content && content->size) {
+	if (content != NULL && content->size) {
 		HBUF_PUTSL(ob, "T{\n");
 		hbuf_put(ob, content->data, content->size);
 		HBUF_PUTSL(ob, "\nT}");
@@ -755,7 +753,7 @@ static int
 rndr_superscript(hbuf *ob, const hbuf *content)
 {
 
-	if (NULL == content || 0 == content->size)
+	if (content == NULL || content->size == 0)
 		return 0;
 
 	/*
@@ -763,16 +761,16 @@ rndr_superscript(hbuf *ob, const hbuf *content)
 	 * (solo in its buffer) or starting with a newline.
 	 */
 
-	if ('.' == content->data[0] ||
+	if (content->data[0] == '.' ||
 	    (content->size &&
-	     '\n' == content->data[0] &&
-	     '.' == content->data[1])) {
+	     content->data[0] == '\n' &&
+	     content->data[1] == '.')) {
 		HBUF_PUTSL(ob, "\\u\\s-3");
-		if ('\n' != content->data[0])
+		if (content->data[0] != '\n')
 			HBUF_PUTSL(ob, "\n");
 		hbuf_put(ob, content->data, content->size);
 		if (content->size && 
-		    '\n' != content->data[content->size - 1])
+		    content->data[content->size - 1] != '\n')
 			HBUF_PUTSL(ob, "\n");
 		HBUF_PUTSL(ob, "\\s+3\\d\n");
 	} else {
@@ -792,7 +790,7 @@ rndr_normal_text(hbuf *ob, const hbuf *content, size_t offs,
 	size_t	 	 i, size;
 	const char 	*data;
 
-	if (NULL == content || 0 == content->size)
+	if (content == NULL || content->size == 0)
 		return;
 
 	data = content->data + offs;
@@ -803,16 +801,16 @@ rndr_normal_text(hbuf *ob, const hbuf *content, size_t offs,
 	 * we'll put that in the link's pdfhref.
 	 */
 
-	if (NULL != next &&
-	    (LOWDOWN_LINK_AUTO == next->type ||
-	     LOWDOWN_LINK == next->type))
+	if (next != NULL &&
+	    (next->type == LOWDOWN_LINK_AUTO ||
+	     next->type == LOWDOWN_LINK))
 		while (size && 
-		       ! isspace((unsigned char)data[size - 1]))
+		       !isspace((unsigned char)data[size - 1]))
 			size--;
 
 	if (nl) {
 		for (i = 0; i < size; i++)
-			if ( ! isspace((unsigned char)data[i]))
+			if (!isspace((unsigned char)data[i]))
 				break;
 		escape_block(ob, data + i, size - i);
 	} else
@@ -823,7 +821,7 @@ static void
 rndr_footnotes(hbuf *ob, const hbuf *content, const struct nstate *st)
 {
 
-	if (NULL == content || 0 == content->size)
+	if (content == NULL || content->size == 0)
 		return;
 
 	/* Put a horizontal line in the case of man(7). */
@@ -848,11 +846,11 @@ rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num,
 	 * ordering facilities.
 	 */
 
-	if ( ! st->mdoc) {
+	if (!st->mdoc) {
 		HBUF_PUTSL(ob, ".FS\n");
 		/* Ignore leading paragraph marker. */
 		if (content->size > 3 &&
-		    0 == memcmp(content->data, ".LP\n", 4))
+		    memcmp(content->data, ".LP\n", 4) == 0)
 			hbuf_put(ob, content->data + 4, content->size - 4);
 		else
 			hbuf_put(ob, content->data, content->size);
@@ -869,7 +867,7 @@ rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num,
 	HBUF_PUTSL(ob, ".LP\n");
 	hbuf_printf(ob, "\\0\\fI\\u\\s-3%u\\s+3\\d\\fP\\0", num);
 	if (content->size > 3 &&
-	    0 == memcmp(content->data, ".LP\n", 4))
+	    memcmp(content->data, ".LP\n", 4) == 0)
 		hbuf_put(ob, content->data + 4, content->size - 4);
 	else
 		hbuf_put(ob, content->data, content->size);
@@ -885,7 +883,7 @@ rndr_footnote_ref(hbuf *ob, unsigned int num, const struct nstate *st)
 	 * reference number in small superscripts.
 	 */
 
-	if ( ! st->mdoc)
+	if (!st->mdoc)
 		HBUF_PUTSL(ob, "\\**");
 	else
 		hbuf_printf(ob, "\\u\\s-3%u\\s+3\\d", num);
@@ -910,16 +908,16 @@ rndr_doc_header_multi(hbuf *ob, const char *val, const char *env)
 	const char	*cp, *start;
 	size_t		 sz;
 
-	for (cp = val; '\0' != *cp; ) {
+	for (cp = val; *cp != '\0'; ) {
 		while (isspace((unsigned char)*cp))
 			cp++;
-		if ('\0' == *cp)
+		if (*cp == '\0')
 			continue;
 		start = cp;
 		sz = 0;
-		while ('\0' != *cp) {
-			if ( ! isspace((unsigned char)cp[0]) ||
-			     ! isspace((unsigned char)cp[1])) {
+		while (*cp != '\0') {
+			if (!isspace((unsigned char)cp[0]) ||
+			    !isspace((unsigned char)cp[1])) {
 				sz++;
 				cp++;
 				continue;
@@ -927,7 +925,7 @@ rndr_doc_header_multi(hbuf *ob, const char *val, const char *env)
 			cp += 2;
 			break;
 		}
-		if (0 == sz)
+		if (sz == 0)
 			continue;
 		hbuf_printf(ob, ".%s\n", env);
 		hesc_nroff(ob, start, sz, 0, 1);
@@ -954,24 +952,24 @@ rndr_doc_header(hbuf *ob,
 	/* Acquire metadata that we'll fill in. */
 
 	for (i = 0; i < msz; i++) 
-		if (0 == strcmp(m[i].key, "title"))
+		if (strcmp(m[i].key, "title") == 0)
 			title = m[i].value;
-		else if (0 == strcmp(m[i].key, "affiliation"))
+		else if (strcmp(m[i].key, "affiliation") == 0)
 			affil = m[i].value;
-		else if (0 == strcmp(m[i].key, "author"))
+		else if (strcmp(m[i].key, "author") == 0)
 			author = m[i].value;
-		else if (0 == strcmp(m[i].key, "rcsauthor"))
+		else if (strcmp(m[i].key, "rcsauthor") == 0)
 			author = rcsauthor2str(m[i].value);
-		else if (0 == strcmp(m[i].key, "rcsdate"))
+		else if (strcmp(m[i].key, "rcsdate") == 0)
 			date = rcsdate2str(m[i].value);
-		else if (0 == strcmp(m[i].key, "date"))
+		else if (strcmp(m[i].key, "date") == 0)
 			date = date2str(m[i].value);
-		else if (0 == strcmp(m[i].key, "copyright"))
+		else if (strcmp(m[i].key, "copyright") == 0)
 			copy = m[i].value;
 
 	/* FIXME: convert to buf without strftime. */
 
-	if (NULL == date) {
+	if (date == NULL) {
 		t = time(NULL);
 		tm = localtime(&t);
 		strftime(buf, sizeof(buf), "%Y-%m-%d", tm);
@@ -983,20 +981,20 @@ rndr_doc_header(hbuf *ob,
 	while (isspace((unsigned char)*title))
 		title++;
 
-	if (NULL != copy)
+	if (copy != NULL)
 		while (isspace((unsigned char)*copy))
 			copy++;
-	if (NULL != affil)
+	if (affil != NULL)
 		while (isspace((unsigned char)*affil))
 			affil++;
 
 	/* Emit our authors and title. */
 
-	if ( ! st->mdoc) {
+	if (!st->mdoc) {
 		HBUF_PUTSL(ob, ".nr PS 10\n");
 		HBUF_PUTSL(ob, ".nr GROWPS 3\n");
 		HBUF_PUTSL(ob, ".nr PD 1.0v\n");
-		if (NULL != copy) {
+		if (copy != NULL) {
 			hbuf_printf(ob, ".ds LF \\s-2"
 				"Copyright \\(co %s\\s+2\n", copy);
 			hbuf_printf(ob, ".ds RF \\s-2%s\\s+2\n", date);
@@ -1005,9 +1003,9 @@ rndr_doc_header(hbuf *ob,
 		HBUF_PUTSL(ob, ".TL\n");
 		escape_block(ob, title, strlen(title));
 		HBUF_PUTSL(ob, "\n");
-		if (NULL != author)
+		if (author != NULL)
 			rndr_doc_header_multi(ob, author, "AU");
-		if (NULL != affil)
+		if (affil != NULL)
 			rndr_doc_header_multi(ob, affil, "AI");
 	} else {
 		HBUF_PUTSL(ob, ".TH \"");
@@ -1029,7 +1027,7 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 	int		 pnln, keepnext = 1;
 	enum nfont	 fonts[NFONT__MAX];
 
-	assert(NULL != root);
+	assert(root != NULL);
 
 	tmp = hbuf_new(64);
 
@@ -1042,20 +1040,20 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 	 */
 
 	switch (root->type) {
-	case (LOWDOWN_CODESPAN):
+	case LOWDOWN_CODESPAN:
 		ref->fonts[NFONT_FIXED]++;
 		hbuf_puts(ob, nstate_fonts(ref));
 		break;
-	case (LOWDOWN_EMPHASIS):
+	case LOWDOWN_EMPHASIS:
 		ref->fonts[NFONT_ITALIC]++;
 		hbuf_puts(ob, nstate_fonts(ref));
 		break;
-	case (LOWDOWN_HIGHLIGHT):
-	case (LOWDOWN_DOUBLE_EMPHASIS):
+	case LOWDOWN_HIGHLIGHT:
+	case LOWDOWN_DOUBLE_EMPHASIS:
 		ref->fonts[NFONT_BOLD]++;
 		hbuf_puts(ob, nstate_fonts(ref));
 		break;
-	case (LOWDOWN_TRIPLE_EMPHASIS):
+	case LOWDOWN_TRIPLE_EMPHASIS:
 		ref->fonts[NFONT_ITALIC]++;
 		ref->fonts[NFONT_BOLD]++;
 		hbuf_puts(ob, nstate_fonts(ref));
@@ -1075,134 +1073,135 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 	 * otherwise, we don't know.
 	 */
 
-	if (NULL == root->parent ||
-	    NULL == (n = TAILQ_PREV(root, lowdown_nodeq, entries)))
+	if (root->parent == NULL ||
+	    (n = TAILQ_PREV(root, lowdown_nodeq, entries)) == NULL)
 		n = root->parent;
-	pnln = NULL == n || NSCOPE_BLOCK == nscopes[n->type];
+	pnln = n == NULL || nscopes[n->type] == NSCOPE_BLOCK;
 
 	/* Get the last and next emitted node. */
 
-	prev = NULL == root->parent ? NULL : 
+	prev = root->parent == NULL ? NULL : 
 		TAILQ_PREV(root, lowdown_nodeq, entries);
 	next = TAILQ_NEXT(root, entries);
 
-	if (NSCOPE_BLOCK == nscopes[root->type]) {
-		if (LOWDOWN_CHNG_INSERT == root->chng)
+	if (nscopes[root->type] == NSCOPE_BLOCK) {
+		if (root->chng == LOWDOWN_CHNG_INSERT)
 			HBUF_PUTSL(ob, ".gcolor blue\n");
-		else if (LOWDOWN_CHNG_DELETE == root->chng)
+		else if (root->chng == LOWDOWN_CHNG_DELETE)
 			HBUF_PUTSL(ob, ".gcolor red\n");
 	} else {
 		/*
 		 * FIXME: this is going to disrupt our newline
 		 * computation.
 		 */
-		if (LOWDOWN_CHNG_INSERT == root->chng)
+		if (root->chng == LOWDOWN_CHNG_INSERT)
 			HBUF_PUTSL(ob, "\\m[blue]");
-		else if (LOWDOWN_CHNG_DELETE == root->chng)
+		else if (root->chng == LOWDOWN_CHNG_DELETE)
 			HBUF_PUTSL(ob, "\\m[red]");
 	}
 
 	switch (root->type) {
-	case (LOWDOWN_BLOCKCODE):
+	case LOWDOWN_BLOCKCODE:
 		rndr_blockcode(ob, 
 			&root->rndr_blockcode.text, 
 			&root->rndr_blockcode.lang, ref);
 		break;
-	case (LOWDOWN_BLOCKQUOTE):
+	case LOWDOWN_BLOCKQUOTE:
 		rndr_blockquote(ob, tmp);
 		break;
-	case (LOWDOWN_DOC_HEADER):
+	case LOWDOWN_DOC_HEADER:
 		rndr_doc_header(ob, 
 			root->rndr_doc_header.m, 
 			root->rndr_doc_header.msz, ref);
 		break;
-	case (LOWDOWN_HEADER):
+	case LOWDOWN_HEADER:
 		rndr_header(ob, tmp, 
 			root->rndr_header.level, ref);
 		break;
-	case (LOWDOWN_HRULE):
+	case LOWDOWN_HRULE:
 		rndr_hrule(ob, ref);
 		break;
-	case (LOWDOWN_LISTITEM):
+	case LOWDOWN_LISTITEM:
 		rndr_listitem(ob, tmp, prev,
 			root->rndr_listitem.flags,
 			root->rndr_listitem.num);
 		break;
-	case (LOWDOWN_PARAGRAPH):
+	case LOWDOWN_PARAGRAPH:
 		rndr_paragraph(ob, tmp, ref, root->parent);
 		break;
-	case (LOWDOWN_TABLE_BLOCK):
+	case LOWDOWN_TABLE_BLOCK:
 		rndr_table(ob, tmp);
 		break;
-	case (LOWDOWN_TABLE_HEADER):
+	case LOWDOWN_TABLE_HEADER:
 		rndr_table_header(ob, tmp, 
 			root->rndr_table_header.flags,
 			root->rndr_table_header.columns);
 		break;
-	case (LOWDOWN_TABLE_BODY):
+	case LOWDOWN_TABLE_BODY:
 		rndr_table_body(ob, tmp);
 		break;
-	case (LOWDOWN_TABLE_ROW):
+	case LOWDOWN_TABLE_ROW:
 		rndr_tablerow(ob, tmp);
 		break;
-	case (LOWDOWN_TABLE_CELL):
+	case LOWDOWN_TABLE_CELL:
 		rndr_tablecell(ob, tmp, 
 			root->rndr_table_cell.col);
 		break;
-	case (LOWDOWN_FOOTNOTES_BLOCK):
+	case LOWDOWN_FOOTNOTES_BLOCK:
 		rndr_footnotes(ob, tmp, ref);
 		break;
-	case (LOWDOWN_FOOTNOTE_DEF):
+	case LOWDOWN_FOOTNOTE_DEF:
 		rndr_footnote_def(ob, tmp, 
 			root->rndr_footnote_def.num, ref);
 		break;
-	case (LOWDOWN_BLOCKHTML):
+	case LOWDOWN_BLOCKHTML:
 		rndr_raw_block(ob, tmp, ref);
 		break;
-	case (LOWDOWN_LINK_AUTO):
+	case LOWDOWN_LINK_AUTO:
 		keepnext = rndr_autolink(ob, 
 			&root->rndr_autolink.link,
 			root->rndr_autolink.type,
 			prev, next, ref, pnln);
 		break;
-	case (LOWDOWN_CODESPAN):
+	case LOWDOWN_CODESPAN:
 		rndr_codespan(ob, &root->rndr_codespan.text);
 		break;
-	case (LOWDOWN_IMAGE):
+	case LOWDOWN_IMAGE:
 		rndr_image(ob, &root->rndr_image.link,
 			ref, pnln, prev);
 		break;
-	case (LOWDOWN_LINEBREAK):
+	case LOWDOWN_LINEBREAK:
 		rndr_linebreak(ob);
 		break;
-	case (LOWDOWN_LINK):
+	case LOWDOWN_LINK:
 		keepnext = rndr_link(ob, tmp,
 			&root->rndr_link.link,
 			ref, prev, next, pnln);
 		break;
-	case (LOWDOWN_STRIKETHROUGH):
+	case LOWDOWN_STRIKETHROUGH:
 		rndr_strikethrough(ob, tmp);
 		break;
-	case (LOWDOWN_SUPERSCRIPT):
+	case LOWDOWN_SUPERSCRIPT:
 		rndr_superscript(ob, tmp);
 		break;
-	case (LOWDOWN_FOOTNOTE_REF):
+	case LOWDOWN_FOOTNOTE_REF:
 		rndr_footnote_ref(ob, 
 			root->rndr_footnote_ref.num, ref);
 		break;
-	case (LOWDOWN_MATH_BLOCK):
+	case LOWDOWN_MATH_BLOCK:
 		rndr_math();
 		break;
-	case (LOWDOWN_RAW_HTML):
+	case LOWDOWN_RAW_HTML:
 		rndr_raw_html(ob, &root->rndr_raw_html.text, ref);
 		break;
-	case (LOWDOWN_NORMAL_TEXT):
+	case LOWDOWN_NORMAL_TEXT:
 		rndr_normal_text(ob, 
 			&root->rndr_normal_text.text, 
 			root->rndr_normal_text.offs,
 			prev, next, ref, pnln);
 		break;
-	case (LOWDOWN_ENTITY):
+	case LOWDOWN_ENTITY:
+		/* Convert well-known ones. */
 		hbuf_put(ob,
 			root->rndr_entity.text.data,
 			root->rndr_entity.text.size);
@@ -1224,11 +1223,11 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 	/* Restore the font stack. */
 
 	switch (root->type) {
-	case (LOWDOWN_CODESPAN):
-	case (LOWDOWN_EMPHASIS):
-	case (LOWDOWN_HIGHLIGHT):
-	case (LOWDOWN_DOUBLE_EMPHASIS):
-	case (LOWDOWN_TRIPLE_EMPHASIS):
+	case LOWDOWN_CODESPAN:
+	case LOWDOWN_EMPHASIS:
+	case LOWDOWN_HIGHLIGHT:
+	case LOWDOWN_DOUBLE_EMPHASIS:
+	case LOWDOWN_TRIPLE_EMPHASIS:
 		memcpy(ref->fonts, fonts, sizeof(fonts));
 		hbuf_puts(ob, nstate_fonts(ref));
 		break;
@@ -1243,8 +1242,8 @@ rndr(hbuf *ob, struct nstate *ref, struct lowdown_node *root)
 	 * so return that knowledge to the parent step.
 	 */
 
-	if ( ! keepnext) {
-		assert(NULL != next->parent);
+	if (!keepnext) {
+		assert(next->parent != NULL);
 		TAILQ_REMOVE(&next->parent->children, next, entries);
 		lowdown_node_free(next);
 	}
@@ -1264,13 +1263,9 @@ lowdown_nroff_new(const struct lowdown_opts *opts)
 {
 	struct nstate 	*state;
 
-	/* Prepare the state pointer. */
-
 	state = xcalloc(1, sizeof(struct nstate));
-
-	state->flags = NULL != opts ? opts->oflags : 0;
-	state->mdoc = NULL != opts && LOWDOWN_MAN == opts->type;
-
+	state->flags = opts != NULL ? opts->oflags : 0;
+	state->mdoc = opts != NULL && opts->type == LOWDOWN_MAN;
 	return state;
 }
 
