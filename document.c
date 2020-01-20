@@ -3575,7 +3575,7 @@ parse_metadata(hdoc *doc, const char *data, size_t sz)
  * (Obviously only applicable if LOWDOWN_METADATA has been set.)
  */
 struct lowdown_node *
-lowdown_doc_parse(hdoc *doc, const char *data,
+lowdown_doc_parse(hdoc *doc, size_t *nsz, const char *data,
 	size_t size, struct lowdown_meta **mp, size_t *mszp)
 {
 	static const char UTF8_BOM[] = {0xEF, 0xBB, 0xBF};
@@ -3732,6 +3732,7 @@ lowdown_doc_parse(hdoc *doc, const char *data,
 	doc->m = NULL;
 	doc->msz = 0;
 
+	*nsz = doc->nodes;
 	popnode(doc, root);
 	return(root);
 }

@@ -63,12 +63,12 @@ lowdown_buf(const struct lowdown_opts *opts,
 	char **res, size_t *rsz,
 	struct lowdown_meta **m, size_t *msz)
 {
-	hbuf	 	 *ob, *spb;
-	void 		 *renderer = NULL;
-	hdoc 		 *document;
-	size_t		  i;
-	enum lowdown_type t;
-	struct lowdown_node *n;
+	hbuf			*ob, *spb;
+	void			*renderer = NULL;
+	hdoc			*document;
+	size_t			 i, maxn;
+	enum lowdown_type	 t;
+	struct lowdown_node	*n;
 
 	/* Create our buffers, renderer, and document. */
 
@@ -94,8 +94,13 @@ lowdown_buf(const struct lowdown_opts *opts,
 
 	/* Parse the output and free resources. */
 
-	n = lowdown_doc_parse(document, data, datasz, m, msz);
+	n = lowdown_doc_parse(document, &maxn, data, datasz, m, msz);
+	assert(n == NULL || n->type == LOWDOWN_ROOT);
 	lowdown_doc_free(document);
+
+#if 0
+	smarty(n, maxn);
+#endif
 
 	switch (t) {
 	case LOWDOWN_HTML:
@@ -127,9 +132,10 @@ lowdown_buf(const struct lowdown_opts *opts,
 	 * Which we should never do!
 	 */
 
-	if (t != LOWDOWN_TREE && t != LOWDOWN_TERM) 
+	if (t != LOWDOWN_TREE && t != LOWDOWN_TERM)  {
+		spb = hbuf_new(HBUF_START_SMALL);
 		for (i = 0; i < *msz; i++) {
-			spb = hbuf_new(HBUF_START_SMALL);
+			hbuf_truncate(spb);
 			if (t == LOWDOWN_HTML)
 				hesc_html(spb, (*m)[i].value, 
 					strlen((*m)[i].value), 0);
@@ -138,8 +144,9 @@ lowdown_buf(const struct lowdown_opts *opts,
 					strlen((*m)[i].value), 0, 1);
 			free((*m)[i].value);
 			(*m)[i].value = xstrndup(spb->data, spb->size);
-			hbuf_free(spb);
 		}
+		hbuf_free(spb);
+	}
 
 	/* Reprocess the output as smartypants. */
 
@@ -153,10 +160,12 @@ lowdown_buf(const struct lowdown_opts *opts,
 			lowdown_nroff_smrt(spb, ob->data, ob->size);
 		*res = spb->data;
 		*rsz = spb->size;
-		spb->data = NULL;
-		hbuf_free(spb);
+
+		/* Don't free spb: we keep its memory. */
+
+		spb = hbuf_new(HBUF_START_SMALL);
 		for (i = 0; i < *msz; i++) {
-			spb = hbuf_new(HBUF_START_SMALL);
+			hbuf_truncate(spb);
 			if (t == LOWDOWN_HTML)
 				lowdown_html_smrt(spb, (*m)[i].value, 
 					strlen((*m)[i].value));
@@ -165,8 +174,8 @@ lowdown_buf(const struct lowdown_opts *opts,
 					strlen((*m)[i].value));
 			free((*m)[i].value);
 			(*m)[i].value = xstrndup(spb->data, spb->size);
-			hbuf_free(spb);
 		}
+		hbuf_free(spb);
 	} else {
 		*res = ob->data;
 		*rsz = ob->size;
@@ -218,11 +227,12 @@ lowdown_buf_diff(const struct lowdown_opts *optnew,
 	const char *old, size_t oldsz,
 	char **res, size_t *rsz)
 {
-	hbuf	 	 *ob, *spb;
-	void 		 *renderer = NULL;
-	hdoc 		 *doc;
-	enum lowdown_type t;
-	struct lowdown_node *nnew, *nold, *ndiff;
+	hbuf	 	 	*ob, *spb;
+	void 		 	*renderer = NULL;
+	hdoc 		 	*doc;
+	enum lowdown_type 	 t;
+	struct lowdown_node 	*nnew, *nold, *ndiff;
+	size_t			 maxnew, maxold;
 
 	t = optnew == NULL ? LOWDOWN_HTML : optnew->type;
 
@@ -251,11 +261,11 @@ lowdown_buf_diff(const struct lowdown_opts *optnew,
 	/* Parse the output and free resources. */
 
 	doc = lowdown_doc_new(optnew);
-	nnew = lowdown_doc_parse(doc, new, newsz, NULL, NULL);
+	nnew = lowdown_doc_parse(doc, &maxnew, new, newsz, NULL, NULL);
 	lowdown_doc_free(doc);
 
 	doc = lowdown_doc_new(optold);
-	nold = lowdown_doc_parse(doc, old, oldsz, NULL, NULL);
+	nold = lowdown_doc_parse(doc, &maxold, old, oldsz, NULL, NULL);
 	lowdown_doc_free(doc);
 
 	/* Merge adjacent text nodes. */

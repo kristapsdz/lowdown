@@ -307,8 +307,8 @@ int	 lowdown_file_diff(const struct lowdown_opts *, FILE *,
 
 hdoc 	*lowdown_doc_new(const struct lowdown_opts *);
 struct lowdown_node
-	*lowdown_doc_parse(hdoc *, const char *, size_t, 
-		struct lowdown_meta **, size_t *);
+	*lowdown_doc_parse(hdoc *, size_t *, const char *, 
+		size_t, struct lowdown_meta **, size_t *);
 struct lowdown_node
 	*lowdown_diff(const struct lowdown_node *,
 		const struct lowdown_node *);
