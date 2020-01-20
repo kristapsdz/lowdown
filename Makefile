@@ -7,6 +7,7 @@ OBJS		 = autolink.o \
 		   buffer.o \
 		   diff.o \
 		   document.o \
+		   entity.o \
 		   html.o \
 		   html_escape.o \
 		   html_smartypants.o \
@@ -16,6 +17,7 @@ OBJS		 = autolink.o \
 		   nroff.o \
 		   nroff_escape.o \
 		   nroff_smartypants.o \
+		   smartypants.o \
 		   term.o \
 		   tree.o \
 		   util.o \
