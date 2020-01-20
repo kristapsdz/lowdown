@@ -49,6 +49,9 @@ void	*xrecallocarray(void *, size_t, size_t, size_t);
 char	*xstrndup(const char *, size_t);
 char	*xstrdup(const char *);
 
+/* void	 smarty(struct lowdown_node *); */
+int32_t	 entity_find(const hbuf *);
+
 int	 hbuf_eq(const hbuf *, const hbuf *);
 void	 hbuf_free(hbuf *);
 void	 hbuf_grow(hbuf *, size_t);
