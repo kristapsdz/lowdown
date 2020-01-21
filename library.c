@@ -26,7 +26,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <time.h>
 
 #include "lowdown.h"
 #include "extern.h"
@@ -98,9 +97,31 @@ lowdown_buf(const struct lowdown_opts *opts,
 	assert(n == NULL || n->type == LOWDOWN_ROOT);
 	lowdown_doc_free(document);
 
-#if 0
-	smarty(n, maxn);
-#endif
+	/* Escape all of our metadata values. */
+
+	if (t != LOWDOWN_TREE && t != LOWDOWN_TERM)  {
+		spb = hbuf_new(HBUF_START_SMALL);
+		for (i = 0; i < *msz; i++) {
+			hbuf_truncate(spb);
+			if (t == LOWDOWN_HTML)
+				hesc_html(spb, (*m)[i].value, 
+					strlen((*m)[i].value), 0);
+			else
+				hesc_nroff(spb, (*m)[i].value, 
+					strlen((*m)[i].value), 0, 1);
+			free((*m)[i].value);
+			(*m)[i].value = xstrndup(spb->data, spb->size);
+		}
+		hbuf_free(spb);
+	}
+
+	/* Conditionally apply smartypants. */
+
+    	if (opts != NULL && 
+	    (opts->oflags & LOWDOWN_SMARTY)) 
+		smarty(n, maxn, t);
+
+	/* Render to output. */
 
 	switch (t) {
 	case LOWDOWN_HTML:
@@ -124,63 +145,9 @@ lowdown_buf(const struct lowdown_opts *opts,
 
 	lowdown_node_free(n);
 
-	/*
-	 * Now we escape all of our metadata values.
-	 * This may not be standard (?), but it's required: we generally
-	 * include metadata into our documents, and if not here, we'd
-	 * leave escaping to our caller.
-	 * Which we should never do!
-	 */
-
-	if (t != LOWDOWN_TREE && t != LOWDOWN_TERM)  {
-		spb = hbuf_new(HBUF_START_SMALL);
-		for (i = 0; i < *msz; i++) {
-			hbuf_truncate(spb);
-			if (t == LOWDOWN_HTML)
-				hesc_html(spb, (*m)[i].value, 
-					strlen((*m)[i].value), 0);
-			else
-				hesc_nroff(spb, (*m)[i].value, 
-					strlen((*m)[i].value), 0, 1);
-			free((*m)[i].value);
-			(*m)[i].value = xstrndup(spb->data, spb->size);
-		}
-		hbuf_free(spb);
-	}
-
-	/* Reprocess the output as smartypants. */
-
-	if (t != LOWDOWN_TREE &&
-	    t != LOWDOWN_TERM &&
-	    opts != NULL && (opts->oflags & LOWDOWN_SMARTY)) {
-		spb = hbuf_new(HBUF_START_BIG);
-		if (t == LOWDOWN_HTML)
-			lowdown_html_smrt(spb, ob->data, ob->size);
-		else
-			lowdown_nroff_smrt(spb, ob->data, ob->size);
-		*res = spb->data;
-		*rsz = spb->size;
-
-		/* Don't free spb: we keep its memory. */
-
-		spb = hbuf_new(HBUF_START_SMALL);
-		for (i = 0; i < *msz; i++) {
-			hbuf_truncate(spb);
-			if (t == LOWDOWN_HTML)
-				lowdown_html_smrt(spb, (*m)[i].value, 
-					strlen((*m)[i].value));
-			else
-				lowdown_nroff_smrt(spb, (*m)[i].value, 
-					strlen((*m)[i].value));
-			free((*m)[i].value);
-			(*m)[i].value = xstrndup(spb->data, spb->size);
-		}
-		hbuf_free(spb);
-	} else {
-		*res = ob->data;
-		*rsz = ob->size;
-		ob->data = NULL;
-	}
+	*res = ob->data;
+	*rsz = ob->size;
+	ob->data = NULL;
 	hbuf_free(ob);
 }
 
@@ -227,12 +194,12 @@ lowdown_buf_diff(const struct lowdown_opts *optnew,
 	const char *old, size_t oldsz,
 	char **res, size_t *rsz)
 {
-	hbuf	 	 	*ob, *spb;
+	hbuf	 	 	*ob;
 	void 		 	*renderer = NULL;
 	hdoc 		 	*doc;
 	enum lowdown_type 	 t;
 	struct lowdown_node 	*nnew, *nold, *ndiff;
-	size_t			 maxnew, maxold;
+	size_t			 maxnew, maxold, maxn;
 
 	t = optnew == NULL ? LOWDOWN_HTML : optnew->type;
 
@@ -275,10 +242,14 @@ lowdown_buf_diff(const struct lowdown_opts *optnew,
 
 	/* Get the difference tree. */
 
-	ndiff = lowdown_diff(nold, nnew);
+	ndiff = lowdown_diff(nold, nnew, &maxn);
 
 	lowdown_node_free(nnew);
 	lowdown_node_free(nold);
+
+    	if (optnew != NULL && 
+	    (optnew->oflags & LOWDOWN_SMARTY)) 
+		smarty(ndiff, maxn, t);
 
 	ob = hbuf_new(HBUF_START_BIG);
 
@@ -303,27 +274,6 @@ lowdown_buf_diff(const struct lowdown_opts *optnew,
 	}
 
 	lowdown_node_free(ndiff);
-
-	/* Reprocess the output as smartypants. */
-
-	if (t != LOWDOWN_TREE &&
-	    t != LOWDOWN_TERM &&
-	    optnew != NULL && (optnew->oflags & LOWDOWN_SMARTY)) {
-		spb = hbuf_new(HBUF_START_BIG);
-		if (t == LOWDOWN_HTML)
-			lowdown_html_smrt(spb, ob->data, ob->size);
-		else
-			lowdown_nroff_smrt(spb, ob->data, ob->size);
-		*res = spb->data;
-		*rsz = spb->size;
-		spb->data = NULL;
-		hbuf_free(spb);
-	} else {
-		*res = ob->data;
-		*rsz = ob->size;
-		ob->data = NULL;
-	}
-
 	hbuf_free(ob);
 }
 

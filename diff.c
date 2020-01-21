@@ -1294,7 +1294,7 @@ node_optimise_bottomup(const struct lowdown_node *n,
  */
 struct lowdown_node *
 lowdown_diff(const struct lowdown_node *nold,
-	const struct lowdown_node *nnew)
+	const struct lowdown_node *nnew, size_t *maxn)
 {
 	struct xmap	 xoldmap, xnewmap;
 	struct xnode	*xnew, *xold;
@@ -1404,6 +1404,10 @@ lowdown_diff(const struct lowdown_node *nold,
 
 	i = 0;
 	comp = node_merge(nold, &xoldmap, nnew, &xnewmap, &i);
+
+	*maxn = xnewmap.maxid > xoldmap.maxid ?
+		xnewmap.maxid + 1 :
+		xoldmap.maxid + 1;
 
 	/* Clean up and exit. */
 
