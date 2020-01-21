@@ -30,9 +30,44 @@
 #include "lowdown.h"
 #include "extern.h"
 
+enum entity {
+	ENT_COPY,
+	ENT_REG,
+	ENT_TMARK,
+	ENT_SMARK,
+	ENT_ELLIP,
+	ENT_MDASH,
+	ENT_NDASH,
+	ENT_LDQUO,
+	ENT_RDQUO,
+	ENT_LSQUO,
+	ENT_RSQUO,
+	ENT_FRAC14,
+	ENT_FRAC12,
+	ENT_FRAC34,
+	ENT__MAX
+};
+
 struct sym {
 	const char	*key; /* input in markdown */
-	const char	*val; /* output entity */
+	enum entity	 ent; /* output entity */
+};
+
+static const char *ent_htmls[ENT__MAX] = {
+	"&copy;", /* ENT_COPY */
+	"&reg;", /* ENT_REG */
+	"&trade;", /* ENT_TMARK */
+	"&#8480;", /* ENT_SMARK */
+	"&hellip;", /* ENT_ELLIP */
+	"&mdash;", /* ENT_MDASH */
+	"&ndash;", /* ENT_NDASH */
+	"&ldquo;", /* ENT_LDQUO */
+	"&rdquo;", /* ENT_RDQUO */
+	"&lsquo;", /* ENT_LSQUO */
+	"&rsquo;", /* ENT_RSQUO */
+	"&frac14;", /* ENT_FRAC14 */
+	"&frac12;", /* ENT_FRAC12 */
+	"&frac34;", /* ENT_FRAC34 */
 };
 
 /*
@@ -40,19 +75,19 @@ struct sym {
  * (So basically "---" comes before "--".)
  */
 static const struct sym syms[] = {
-	{ "(c)",	"&copy;" },
-	{ "(C)",	"&copy;" },
-	{ "(r)",	"&reg;" },
-	{ "(R)",	"&reg;" },
-	{ "(tm)",	"&trade;" },
-	{ "(TM)",	"&trade;" },
-	{ "(sm)",	"&#8480;" },
-	{ "(SM)",	"&#8480;" },
-	{ "...",	"&hellip;" },
-	{ ". . .",	"&hellip;" },
-	{ "---",	"&mdash;" },
-	{ "--",		"&ndash;" },
-	{ NULL,		NULL }
+	{ "(c)",	ENT_COPY },
+	{ "(C)",	ENT_COPY },
+	{ "(r)",	ENT_REG },
+	{ "(R)",	ENT_REG },
+	{ "(tm)",	ENT_TMARK },
+	{ "(TM)",	ENT_TMARK },
+	{ "(sm)",	ENT_SMARK },
+	{ "(SM)",	ENT_SMARK },
+	{ "...",	ENT_ELLIP },
+	{ ". . .",	ENT_ELLIP },
+	{ "---",	ENT_MDASH },
+	{ "--",		ENT_NDASH },
+	{ NULL,		ENT__MAX }
 };
 
 /*
@@ -60,13 +95,13 @@ static const struct sym syms[] = {
  * Again, order is important: longest-first.
  */
 static const struct sym syms2[] = {
-	{ "1/4th",	"&frac14;" },
-	{ "1/4",	"&frac14;" },
-	{ "3/4ths",	"&frac34;" },
-	{ "3/4th",	"&frac34;" },
-	{ "3/4",	"&frac34;" },
-	{ "1/2",	"&frac12;" },
-	{ NULL,		NULL }
+	{ "1/4th",	ENT_FRAC14 },
+	{ "1/4",	ENT_FRAC14 },
+	{ "3/4ths",	ENT_FRAC34 },
+	{ "3/4th",	ENT_FRAC34 },
+	{ "3/4",	ENT_FRAC34 },
+	{ "1/2",	ENT_FRAC12 },
+	{ NULL,		ENT__MAX }
 };
 
 struct smarty {
@@ -127,7 +162,7 @@ static const enum type types[LOWDOWN__MAX] = {
  */
 static void
 smarty_entity(struct lowdown_node *n, size_t *maxn,
-	size_t start, size_t end, const char *entity)
+	size_t start, size_t end, enum entity entity)
 {
 	struct lowdown_node	*nn, *nent;
 
@@ -140,8 +175,10 @@ smarty_entity(struct lowdown_node *n, size_t *maxn,
 	nent->type = LOWDOWN_ENTITY;
 	nent->parent = n->parent;
 	TAILQ_INIT(&nent->children);
-	nent->rndr_entity.text.data = xstrdup(entity);
-	nent->rndr_entity.text.size = strlen(entity);
+	nent->rndr_entity.text.data = 
+		xstrdup(ent_htmls[entity]);
+	nent->rndr_entity.text.size = 
+		strlen(ent_htmls[entity]);
 	TAILQ_INSERT_AFTER(&n->parent->children, n, nent, entries);
 
 	/* Allocate the remaining bits, if applicable. */
@@ -169,6 +206,119 @@ smarty_iswb(char c)
 
 	return isspace((unsigned char)c) ||
 		ispunct((unsigned char)c);
+}
+
+static void
+buf_append(char **buf, size_t *sz, size_t *max, const char *val)
+{
+	size_t	 valsz;
+
+	valsz = strlen(val);
+	if (*sz + valsz + 1 > *max) {
+		*max += valsz + 128;
+		*buf = xrealloc(*buf, *max);
+	}
+
+	strlcat(*buf, val, *max);
+}
+
+static void
+buf_appendc(char **buf, size_t *sz, size_t *max, char val)
+{
+
+	if (*sz + 2 > *max) {
+		*max += 128;
+		*buf = xrealloc(*buf, *max);
+	}
+	(*buf)[(*sz)++] = val;
+	(*buf)[(*sz)++] = '\0';
+}
+
+static char *
+smarty_buf(const char *buf, enum lowdown_type type)
+{
+	char	*out = NULL;
+	size_t	 outsz = 0, outmax = 0, i, j, bufsz, sz;
+	int	 left_wb = 1;
+
+	bufsz = strlen(buf);
+
+	for (i = 0; i < bufsz; i++) {
+		switch (buf[i]) {
+		case '.':
+		case '(':
+		case '-':
+			for (j = 0; syms[j].key != NULL; j++) {
+				sz = strlen(syms[j].key);
+				if (i + sz - 1 >= bufsz)
+					continue;
+				if (memcmp(syms[j].key, &buf[i], sz))
+					continue;
+				buf_append(&out, &outsz, &outmax,
+					ent_htmls[syms[j].ent]);
+				left_wb = 0;
+				i += sz - 1;
+				break;
+			}
+			if (syms[j].key != NULL)
+				continue;
+			break;
+		case '"':
+			if (!left_wb) {
+				if (i + 1 < bufsz - 1 &&
+				    !smarty_iswb(buf[i + 1]))
+					break;
+				buf_append(&out, &outsz, &outmax,
+					ent_htmls[ENT_RDQUO]);
+				left_wb = 0;
+				continue;
+			}
+			buf_append(&out, &outsz, &outmax,
+				ent_htmls[ENT_LDQUO]);
+			left_wb = 0;
+			continue;
+		case '\'':
+			if (!left_wb) {
+				if (i + 1 < bufsz - 1 &&
+				    !smarty_iswb(buf[i + 1]))
+				buf_append(&out, &outsz, &outmax,
+					ent_htmls[ENT_RSQUO]);
+				left_wb = 0;
+				continue;
+			}
+			buf_append(&out, &outsz, &outmax,
+				ent_htmls[ENT_LDQUO]);
+			left_wb = 0;
+			continue;
+		case '1':
+		case '3':
+			if (!left_wb)
+				break;
+			for (j = 0; syms2[j].key != NULL; j++) {
+				sz = strlen(syms2[j].key);
+				if (i + sz - 1 >= bufsz)
+					continue;
+				if (memcmp(syms2[j].key, &buf[i], sz))
+					continue;
+				if (i + sz < bufsz - 1 &&
+				    !smarty_iswb(buf[i + sz]))
+				buf_append(&out, &outsz, &outmax,
+					ent_htmls[syms2[j].ent]);
+				left_wb = 0;
+				break;
+			}
+			if (syms2[j].key != NULL)
+				continue;
+			break;
+		default:
+			break;
+		}
+
+		buf_appendc(&out, &outsz, &outmax, buf[i]);
+		left_wb = smarty_iswb(buf[i]);
+	}
+
+	return out;
 }
 
 /*
@@ -248,10 +398,11 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn, hbuf *b, struct smarty *s)
 				sz = strlen(syms[j].key);
 				if (i + sz - 1 >= b->size)
 					continue;
-				if (memcmp(syms[j].key, &b->data[i], sz))
+				if (memcmp(syms[j].key, 
+				    &b->data[i], sz))
 					continue;
 				smarty_entity(n, maxn, i, 
-					i + sz, syms[j].val);
+					i + sz, syms[j].ent);
 				return;
 			}
 			break;
@@ -261,10 +412,11 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn, hbuf *b, struct smarty *s)
 			if (!s->left_wb) {
 				if (!smarty_right_wb(n, i + 1)) 
 					break;
-				smarty_entity(n, maxn, i, i + 1, "&rdquo;");
+				smarty_entity(n, maxn, 
+					i, i + 1, ENT_RDQUO);
 				return;
 			}
-			smarty_entity(n, maxn, i, i + 1, "&ldquo;");
+			smarty_entity(n, maxn, i, i + 1, ENT_LDQUO);
 			return;
 		case '\'':
 			/* Left-wb and right-wb differ. */
@@ -272,10 +424,11 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn, hbuf *b, struct smarty *s)
 			if (!s->left_wb) {
 				if (!smarty_right_wb(n, i + 1))
 					break;
-				smarty_entity(n, maxn, i, i + 1, "&rsquo;");
+				smarty_entity(n, maxn, 
+					i, i + 1, ENT_RSQUO);
 				return;
 			}
-			smarty_entity(n, maxn, i, i + 1, "&lsquo;");
+			smarty_entity(n, maxn, i, i + 1, ENT_LSQUO);
 			return;
 		case '1':
 		case '3':
@@ -283,16 +436,17 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn, hbuf *b, struct smarty *s)
 
 			if (!s->left_wb)
 				break;
-			if (!smarty_right_wb(n, i + sz)) 
-				break;
 			for (j = 0; syms2[j].key != NULL; j++) {
 				sz = strlen(syms2[j].key);
 				if (i + sz - 1 >= b->size)
 					continue;
-				if (memcmp(syms2[j].key, &b->data[i], sz))
+				if (memcmp(syms2[j].key, 
+				    &b->data[i], sz))
+					continue;
+				if (!smarty_right_wb(n, i + sz)) 
 					continue;
 				smarty_entity(n, maxn, i, 
-					i + sz, syms[j].val);
+					i + sz, syms[j].ent);
 				return;
 			}
 			break;
@@ -331,10 +485,22 @@ smarty_span(struct lowdown_node *root, size_t *maxn, struct smarty *s)
 }
 
 static void
-smarty_block(struct lowdown_node *root, size_t *maxn)
+smarty_block(struct lowdown_node *root,
+	size_t *maxn, enum lowdown_type type)
 {
 	struct smarty		 s;
 	struct lowdown_node	*n;
+	size_t			 i;
+	char			*v;
+
+	if (root->type == LOWDOWN_DOC_HEADER)
+		for (i = 0; i < root->rndr_doc_header.msz; i++) {
+			v = smarty_buf
+				(root->rndr_doc_header.m[i].value,
+				 type);
+			free(root->rndr_doc_header.m[i].value);
+			root->rndr_doc_header.m[i].value = v;
+		}
 
 	s.left_wb = 1;
 
@@ -343,7 +509,7 @@ smarty_block(struct lowdown_node *root, size_t *maxn)
 		case TYPE_ROOT:
 		case TYPE_BLOCK:
 			s.left_wb = 1;
-			smarty_block(n, maxn);
+			smarty_block(n, maxn, type);
 			break;
 		case TYPE_TEXT:
 			assert(n->type == LOWDOWN_NORMAL_TEXT);
@@ -365,12 +531,12 @@ smarty_block(struct lowdown_node *root, size_t *maxn)
 }
 
 void
-smarty(struct lowdown_node *n, size_t maxn)
+smarty(struct lowdown_node *n,
+	size_t maxn, enum lowdown_type type)
 {
 
 	if (n == NULL)
 		return;
-	if (types[n->type] == TYPE_ROOT ||
-	    types[n->type] == TYPE_BLOCK)
-		smarty_block(n, &maxn);
+	assert(types[n->type] == TYPE_ROOT);
+	smarty_block(n, &maxn, type);
 }
