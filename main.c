@@ -225,17 +225,17 @@ feature_in(const char *v)
 int
 main(int argc, char *argv[])
 {
-	FILE		*fin = stdin, *fout = stdout, *din = NULL;
-	const char	*fnin = "<stdin>", *fnout = NULL,
-	      	 	*fndin = NULL, *extract = NULL;
-	struct lowdown_opts opts, dopts;
-	int		 c, standalone = 0, status = EXIT_SUCCESS,
-			 diff = 0;
-	char		*ret = NULL;
-	int	 	 feat;
-	size_t		 retsz = 0;
-	const struct lowdown_meta *m = NULL;
-	struct lowdown_metaq mq;
+	FILE			*fin = stdin, *fout = stdout, 
+				*din = NULL;
+	const char		*fnin = "<stdin>", *fnout = NULL,
+	      	 		*fndin = NULL, *extract = NULL;
+	struct lowdown_opts 	 opts, dopts;
+	int			 c, standalone = 0, diff = 0,
+				 status = EXIT_SUCCESS, feat;
+	char			*ret = NULL;
+	size_t		 	 retsz = 0;
+	struct lowdown_meta 	*m;
+	struct lowdown_metaq	 mq;
 
 	memset(&opts, 0, sizeof(struct lowdown_opts));
 
@@ -428,6 +428,5 @@ usage:
 		"[-T mode] "
 		"oldfile "
 		"[file]\n");
-
 	return EXIT_FAILURE;
 }
