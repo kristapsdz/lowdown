@@ -167,9 +167,8 @@ lowdown_merge_adjacent_text(struct lowdown_node *n)
 }
 
 void
-lowdown_buf_diff(const struct lowdown_opts *optnew,
+lowdown_buf_diff(const struct lowdown_opts *opts,
 	const char *new, size_t newsz,
-	const struct lowdown_opts *optold,
 	const char *old, size_t oldsz,
 	char **res, size_t *rsz,
 	struct lowdown_metaq *metaq)
@@ -181,21 +180,15 @@ lowdown_buf_diff(const struct lowdown_opts *optnew,
 	struct lowdown_node 	*nnew, *nold, *ndiff;
 	size_t			 maxnew, maxold, maxn;
 
-	t = optnew == NULL ? LOWDOWN_HTML : optnew->type;
-
-	/*
-	 * XXX: for the renderer, the lodwown_opts used is not
-	 * significant.
-	 * This is an ugly part of the interface.
-	 */
+	t = opts == NULL ? LOWDOWN_HTML : opts->type;
 
 	switch (t) {
 	case LOWDOWN_HTML:
-		renderer = lowdown_html_new(optnew);
+		renderer = lowdown_html_new(opts);
 		break;
 	case LOWDOWN_MAN:
 	case LOWDOWN_NROFF:
-		renderer = lowdown_nroff_new(optnew);
+		renderer = lowdown_nroff_new(opts);
 		break;
 	case LOWDOWN_TERM:
 		renderer = lowdown_term_new();
@@ -207,11 +200,11 @@ lowdown_buf_diff(const struct lowdown_opts *optnew,
 
 	/* Parse the output and free resources. */
 
-	doc = lowdown_doc_new(optnew);
+	doc = lowdown_doc_new(opts);
 	nnew = lowdown_doc_parse(doc, &maxnew, new, newsz);
 	lowdown_doc_free(doc);
 
-	doc = lowdown_doc_new(optold);
+	doc = lowdown_doc_new(opts);
 	nold = lowdown_doc_parse(doc, &maxold, old, oldsz);
 	lowdown_doc_free(doc);
 
@@ -220,15 +213,14 @@ lowdown_buf_diff(const struct lowdown_opts *optnew,
 	lowdown_merge_adjacent_text(nnew);
 	lowdown_merge_adjacent_text(nold);
 
-	/* Get the difference tree. */
+	/* Get the difference tree and clear the old. */
 
 	ndiff = lowdown_diff(nold, nnew, &maxn);
-
 	lowdown_node_free(nnew);
 	lowdown_node_free(nold);
 
-    	if (optnew != NULL && 
-	    (optnew->oflags & LOWDOWN_SMARTY)) 
+    	if (opts != NULL && 
+	    (opts->oflags & LOWDOWN_SMARTY)) 
 		smarty(ndiff, maxn, t);
 
 	ob = hbuf_new(HBUF_START_BIG);
@@ -262,39 +254,38 @@ lowdown_file(const struct lowdown_opts *opts, FILE *fin,
 	char **res, size_t *rsz, struct lowdown_metaq *metaq)
 {
 	hbuf	*ib;
+	int	 rc = 0;
 
 	ib = hbuf_new(HBUF_START_BIG);
 
-	if (hbuf_putf(ib, fin)) {
-		hbuf_free(ib);
-		return 0;
-	}
-
+	if (hbuf_putf(ib, fin))
+		goto out;
 	lowdown_buf(opts, ib->data, ib->size, res, rsz, metaq);
+	rc = 1;
+out:
 	hbuf_free(ib);
-	return 1;
+	return rc;
 }
 
 int
-lowdown_file_diff(const struct lowdown_opts *optnew, FILE *fnew, 
-	const struct lowdown_opts *optold, FILE *fold, 
-	char **res, size_t *rsz, struct lowdown_metaq *metaq)
+lowdown_file_diff(const struct lowdown_opts *opts,
+	FILE *fnew, FILE *fold, char **res, size_t *rsz, 
+	struct lowdown_metaq *metaq)
 {
 	hbuf	*src, *dst;
+	int	 rc = 0;
 
 	src = hbuf_new(HBUF_START_BIG);
 	dst = hbuf_new(HBUF_START_BIG);
 
-	if (hbuf_putf(dst, fold) || hbuf_putf(src, fnew)) {
-		hbuf_free(src);
-		hbuf_free(dst);
-		return 0;
-	}
-
-	lowdown_buf_diff(optnew, src->data, src->size, 
-		optold, dst->data, dst->size, res, rsz, metaq);
+	if (hbuf_putf(dst, fold) || hbuf_putf(src, fnew))
+		goto out;
+	lowdown_buf_diff(opts, src->data, src->size, 
+		dst->data, dst->size, res, rsz, metaq);
+	rc = 1;
+out:
 	hbuf_free(src);
 	hbuf_free(dst);
-	return 1;
+	return rc;
 }
 

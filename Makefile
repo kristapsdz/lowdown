@@ -12,7 +12,6 @@ OBJS		 = autolink.o \
 		   html_escape.o \
 		   library.o \
 		   libdiff.o \
-		   log.o \
 		   nroff.o \
 		   nroff_escape.o \
 		   smartypants.o \

@@ -145,19 +145,6 @@ sandbox_pre(void)
 
 #endif
 
-static void
-message(enum lowdown_err er, void *arg, const char *buf)
-{
-
-	if (buf != NULL)
-		fprintf(stderr, "%s: %s: %s\n", (const char *)arg,
-			lowdown_errstr(er), buf);
-	else
-		fprintf(stderr, "%s: %s\n", (const char *)arg,
-			lowdown_errstr(er));
-
-}
-
 static unsigned int
 feature_out(const char *v)
 {
@@ -229,7 +216,7 @@ main(int argc, char *argv[])
 				*din = NULL;
 	const char		*fnin = "<stdin>", *fnout = NULL,
 	      	 		*fndin = NULL, *extract = NULL;
-	struct lowdown_opts 	 opts, dopts;
+	struct lowdown_opts 	 opts;
 	int			 c, standalone = 0, diff = 0,
 				 status = EXIT_SUCCESS, feat;
 	char			*ret = NULL;
@@ -237,6 +224,9 @@ main(int argc, char *argv[])
 	struct lowdown_meta 	*m;
 	struct lowdown_metaq	 mq;
 
+	sandbox_pre();
+
+	TAILQ_INIT(&mq);
 	memset(&opts, 0, sizeof(struct lowdown_opts));
 
 	opts.type = LOWDOWN_HTML;
@@ -255,12 +245,10 @@ main(int argc, char *argv[])
 		LOWDOWN_SMARTY |
 		LOWDOWN_HTML_HEAD_IDS;
 
-	sandbox_pre();
-
 	if (strcasecmp(getprogname(), "lowdown-diff") == 0) 
 		diff = 1;
 
-	while ((c = getopt(argc, argv, "D:d:E:e:sT:o:vX:")) != -1)
+	while ((c = getopt(argc, argv, "D:d:E:e:sT:o:X:")) != -1)
 		switch (c) {
 		case 'D':
 			if ((feat = feature_out(optarg)) == 0)
@@ -301,9 +289,6 @@ main(int argc, char *argv[])
 				opts.type = LOWDOWN_TREE;
 			else
 				goto usage;
-			break;
-		case 'v':
-			opts.msg = message;
 			break;
 		case 'X':
 			extract = optarg;
@@ -362,17 +347,11 @@ main(int argc, char *argv[])
 	if (standalone)
 		opts.oflags |= LOWDOWN_STANDALONE;
 
-	TAILQ_INIT(&mq);
-
 	if (diff) {
-		dopts = opts;
-		opts.arg = (void *)fnin;
-		dopts.arg = (void *)fndin;
 		if (!lowdown_file_diff
-		    (&opts, fin, &dopts, din, &ret, &retsz, &mq))
+		    (&opts, fin, din, &ret, &retsz, &mq))
 			err(EXIT_FAILURE, "%s", fnin);
 	} else {
-		opts.arg = (void *)fnin;
 		if (!lowdown_file(&opts, fin, &ret, &retsz, &mq))
 			err(EXIT_FAILURE, "%s", fnin);
 	}
@@ -402,7 +381,7 @@ main(int argc, char *argv[])
 	return status;
 usage:
 	fprintf(stderr, "usage: lowdown "
-		"[-sv] "
+		"[-s] "
 		"[-D feature] "
 		"[-d feature] "
 		"[-E feature] "
@@ -412,13 +391,12 @@ usage:
 		"[-T mode] "
 		"[file]\n");
 	fprintf(stderr, "       lowdown "
-		"[-v] "
 		"[-o output] "
 		"[-T mode] "
 		"[-X keyword] "
 		"[file]\n");
 	fprintf(stderr, "       lowdown-diff "
-		"[-sv] "
+		"[-s] "
 		"[-D feature] "
 		"[-d feature] "
 		"[-E feature]\n"

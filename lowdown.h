@@ -56,8 +56,6 @@ enum	lowdown_err {
 	LOWDOWN_ERR__MAX
 };
 
-typedef	void (*lowdown_msg)(enum lowdown_err, void *, const char *);
-
 /*
  * All types of Markdown nodes that lowdown understands.
  */
@@ -239,9 +237,7 @@ struct	lowdown_node {
  * These options contain everything needed to parse and render content.
  */
 struct	lowdown_opts {
-	lowdown_msg		 msg;
 	enum lowdown_type	 type;
-	void			*arg;
 	unsigned int		 feat;
 #define LOWDOWN_TABLES		 0x01
 #define LOWDOWN_FENCED		 0x02
@@ -288,15 +284,12 @@ void	 lowdown_buf(const struct lowdown_opts *,
 		const char *, size_t,
 		char **, size_t *, struct lowdown_metaq *);
 void	 lowdown_buf_diff(const struct lowdown_opts *, 
-		const char *, size_t,
-		const struct lowdown_opts *,
-		const char *, size_t,
+		const char *, size_t, const char *, size_t,
 		char **, size_t *, struct lowdown_metaq *);
 int	 lowdown_file(const struct lowdown_opts *, 
 		FILE *, char **, size_t *, struct lowdown_metaq *);
 int	 lowdown_file_diff(const struct lowdown_opts *, FILE *, 
-		const struct lowdown_opts *, FILE *,
-		char **, size_t *, struct lowdown_metaq *);
+		FILE *, char **, size_t *, struct lowdown_metaq *);
 
 /* 
  * Low-level functions.

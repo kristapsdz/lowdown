@@ -80,9 +80,6 @@ void	 hesc_href(hbuf *, const char *, size_t);
 void	 hesc_html(hbuf *, const char *, size_t, int);
 void	 hesc_nroff(hbuf *, const char *, size_t, int, int);
 
-void	 lmsg(const struct lowdown_opts *, enum lowdown_err, const char *, ...)
-		__attribute__ ((format(printf, 3, 4)));
-
 char 	*rcsdate2str(const char *);
 char 	*date2str(const char *);
 char 	*rcsauthor2str(const char *);

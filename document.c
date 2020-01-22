@@ -1275,14 +1275,10 @@ char_link(hdoc *doc, char *data, size_t offset, size_t size)
 			fr->is_used = 1;
 			n->rndr_footnote_ref.num = fr->num;
 		} else if (NULL != fr && fr->is_used) {
-			lmsg(doc->opts, LOWDOWN_ERR_DUPE_FOOTNOTE,
-				"%.*s", (int)id.size, id.data);
 			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 			pushbuffer(&n->rndr_normal_text.text, 
 				data, txt_e + 1);
 		} else {
-			lmsg(doc->opts, LOWDOWN_ERR_UNKNOWN_FOOTNOTE,
-				"%.*s", (int)id.size, id.data);
 			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 			pushbuffer(&n->rndr_normal_text.text, 
 				data, txt_e + 1);
@@ -1324,11 +1320,7 @@ char_link(hdoc *doc, char *data, size_t offset, size_t size)
 	/*
 	 * Skip any amount of spacing.
 	 * (This is much more laxist than original markdown syntax.)
-	 * Note that we're doing so.
 	 */
-
-	if (i < size && xisspace(data[i]))
-		lmsg(doc->opts, LOWDOWN_ERR_SPACE_BEFORE_LINK, NULL);
 
 	while (i < size && xisspace(data[i]))
 		i++;
@@ -3535,8 +3527,6 @@ parse_metadata(hdoc *doc, const char *data, size_t sz)
 				continue;
 			} else if (isspace((unsigned char)key[j]))
 				continue;
-			lmsg(doc->opts, 
-				LOWDOWN_ERR_METADATA_BAD_CHAR, NULL);
 			*cp++ = '?';
 		}
 		n->rndr_meta.key.size = cp - n->rndr_meta.key.data;
