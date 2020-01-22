@@ -48,12 +48,24 @@ enum entity {
 	ENT__MAX
 };
 
+enum type {
+	TYPE_ROOT, /* root (LOWDOWN_ROOT) */
+	TYPE_BLOCK, /* block-level */
+	TYPE_SPAN, /* span-level */
+	TYPE_OPAQUE, /* skip */
+	TYPE_TEXT /* text (LOWDOWN_NORMAL_TEXT) */
+};
+
 struct sym {
 	const char	*key; /* input in markdown */
 	enum entity	 ent; /* output entity */
 };
 
-static const char *ent_htmls[ENT__MAX] = {
+struct smarty {
+	int	 left_wb; /* left wordbreak */
+};
+
+static const char *ents[ENT__MAX] = {
 	"&copy;", /* ENT_COPY */
 	"&reg;", /* ENT_REG */
 	"&trade;", /* ENT_TMARK */
@@ -102,18 +114,6 @@ static const struct sym syms2[] = {
 	{ "3/4",	ENT_FRAC34 },
 	{ "1/2",	ENT_FRAC12 },
 	{ NULL,		ENT__MAX }
-};
-
-struct smarty {
-	int	 left_wb; /* left wordbreak */
-};
-
-enum type {
-	TYPE_ROOT, /* root (LOWDOWN_ROOT) */
-	TYPE_BLOCK, /* block-level */
-	TYPE_SPAN, /* span-level */
-	TYPE_OPAQUE, /* skip */
-	TYPE_TEXT /* text (LOWDOWN_NORMAL_TEXT) */
 };
 
 static const enum type types[LOWDOWN__MAX] = {
@@ -176,10 +176,8 @@ smarty_entity(struct lowdown_node *n, size_t *maxn,
 	nent->type = LOWDOWN_ENTITY;
 	nent->parent = n->parent;
 	TAILQ_INIT(&nent->children);
-	nent->rndr_entity.text.data = 
-		xstrdup(ent_htmls[entity]);
-	nent->rndr_entity.text.size = 
-		strlen(ent_htmls[entity]);
+	nent->rndr_entity.text.data = xstrdup(ents[entity]);
+	nent->rndr_entity.text.size = strlen(ents[entity]);
 	TAILQ_INSERT_AFTER(&n->parent->children, n, nent, entries);
 
 	/* Allocate the remaining bits, if applicable. */
@@ -201,6 +199,11 @@ smarty_entity(struct lowdown_node *n, size_t *maxn,
 	n->rndr_normal_text.text.size = start;
 }
 
+/*
+ * Whether the character (ostensibly to the left or right of a word)
+ * constitutes a word break.
+ * TODO: split into right_iswb and left_iswb.
+ */
 static int
 smarty_iswb(char c)
 {
