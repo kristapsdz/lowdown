@@ -309,7 +309,7 @@ void 	 lowdown_node_free(struct lowdown_node *);
 void	 lowdown_html_free(void *);
 void	*lowdown_html_new(const struct lowdown_opts *);
 void 	 lowdown_html_rndr(hbuf *, struct lowdown_metaq *,
-		void *, struct lowdown_node *);
+		void *, const struct lowdown_node *);
 
 void	 lowdown_term_free(void *);
 void	*lowdown_term_new(void);

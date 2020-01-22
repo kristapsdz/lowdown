@@ -774,7 +774,7 @@ rndr_meta(hbuf *ob, const hbuf *tmp, struct lowdown_metaq *mq,
 
 static void
 rndr_doc_header(hbuf *ob, const hbuf *content,
-	const struct hstate *st, struct lowdown_node *n)
+	const struct hstate *st, const struct lowdown_node *n)
 {
 	struct lowdown_node	*nn;
 
@@ -805,9 +805,9 @@ rndr_doc_header(hbuf *ob, const hbuf *content,
 
 void
 lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *metaq,
-	void *ref, struct lowdown_node *root)
+	void *ref, const struct lowdown_node *root)
 {
-	struct lowdown_node	*n;
+	const struct lowdown_node	*n;
 	hbuf			*tmp;
 	int32_t			 ent;
 	struct hstate		*st = ref;
