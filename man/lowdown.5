@@ -339,10 +339,13 @@ Metadata keys must consist of alphanumeric ASCII characters, the hyphen
 .Pq Qq \&- ,
 or the underscore
 .Pq Qq \&_ .
-They must have at least one character.
-Keys are stripped of white-space and converted to lower case.
-Values have leading white-space stripped, i.e., space following the
-colon.
+They must have at least one character and are stripped of white-space
+and converted to lower case.
+.Pp
+Metadata values are opaque text: Markdown statements (e.g., italics,
+entities, etc.) are copied as-is.
+The values will have leading white-space stripped, i.e., space following
+the colon.
 .
 .
 .Ss Mathematics
@@ -653,7 +656,7 @@ escape those asterisks using backslashes
 .Pp
 The following characters may be escaped to produce literal text:
 .Pp
-.Bl -tag -width Ds -compact
+.Bl -tag -width Ds -compact -offset indent
 .It Li *
 asterisk
 .It Li \e
@@ -680,6 +683,49 @@ square bracket
 underscore
 .El
 .
+.
+.Sh TYPOGRAPHY
+.Xr lowdown 1
+and other Markdown formatters often filter certain character sequences
+for easier reading.
+This is sometimes called
+.Qq smartypants
+or just
+.Qq smart formatting .
+.Pp
+In
+.Xr lowdown 1,
+the following character sequences are converted to output-specific
+glyphs.
+The table shows whether the sequences must be on word boundaries.
+.Bd -filled -offset indent
+.TS
+l l l.
+(c)	copyright
+(r)	registered
+(tm)	trademark
+(sm)	service mark
+\&...	ellipsis
+\&. . .	ellipsis
+---	em-dash
+--	en-dash
+1/4	one-quarter	full word boundary
+1/4th	one-quarter	full word boundary
+3/4	three-quarters	full word boundary
+3/4th	three-quarters	full word boundary
+3/4ths	three-quarters	full word boundary
+1/2	one-half	full word boundary
+"	left-double	left word boundary
+"	right-double	right word boundary
+\&'	left-single	left word boundary
+\&'	right-single	right word boundary
+.TE
+.Ed
+.Pp
+Word boundaries are defined by white-space (including the end of blocks,
+such as paragraphs, or end of file) or punctuation.
+Left and right word boundary refer to white-space or punctuation to the
+left or right of the sequence.
 .
 .Sh SEE ALSO
 .Xr lowdown 1
