@@ -273,8 +273,6 @@ typedef struct hdoc hdoc;
 
 __BEGIN_DECLS
 
-const char *lowdown_errstr(enum lowdown_err);
-
 /*
  * High-level functions.
  * These use the "lowdown_opts" to determine how to parse and render

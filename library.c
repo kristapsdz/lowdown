@@ -40,19 +40,6 @@
  */
 #define HBUF_START_SMALL 128
 
-static	const char *const errs[LOWDOWN_ERR__MAX] = {
-	"space before link (CommonMark violation)",
-	"bad character in metadata key (MultiMarkdown violation)",
-	"unknown footnote reference",
-};
-
-const char *
-lowdown_errstr(enum lowdown_err err)
-{
-
-	return errs[err];
-}
-
 void
 lowdown_buf(const struct lowdown_opts *opts,
 	const char *data, size_t datasz,
