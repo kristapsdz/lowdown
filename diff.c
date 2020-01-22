@@ -593,8 +593,7 @@ match_down(struct xnode *xnew, struct xmap *xnewmap,
 static struct lowdown_node *
 node_clone(const struct lowdown_node *v, size_t id)
 {
-	struct lowdown_node *n;
-	size_t		 i;
+	struct lowdown_node	*n;
 
 	n = xcalloc(1, sizeof(struct lowdown_node));
 	TAILQ_INIT(&n->children);
