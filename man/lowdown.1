@@ -1,6 +1,6 @@
 .\"	$Id$
 .\"
-.\" Copyright (c) 2016--2017 Kristaps Dzonsons <kristaps@bsd.lv>
+.\" Copyright (c) 2016--2017, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -23,7 +23,7 @@
 .Nd simple markdown translator
 .Sh SYNOPSIS
 .Nm lowdown
-.Op Fl sv
+.Op Fl s
 .Op Fl D Ar feature
 .Op Fl d Ar feature
 .Op Fl E Ar feature
@@ -32,13 +32,12 @@
 .Op Fl T Ar mode
 .Op Ar file
 .Nm lowdown
-.Op Fl v
 .Op Fl o Ar file
 .Op Fl T Ar mode
 .Fl X Ar keyword
 .Op Ar file
 .Nm lowdown-diff
-.Op Fl sv
+.Op Fl s
 .Op Fl D Ar feature
 .Op Fl d Ar feature
 .Op Fl E Ar feature
@@ -48,25 +47,14 @@
 .Ar oldfile
 .Op Ar file
 .Sh DESCRIPTION
-The
+These utilities translate from the Markdown format into a variety of
+output formats.
 .Nm lowdown
-and
-.Nm lowdown-diff
-utilities translate from markdown into HTML5 in XML mode (the default)
-or roff using the
-.Fl ms
-or
-.Fl man
-macro packages.
-.Nm lowdown
-formats a document,
+formats documents,
 .Nm lowdown Fl X Ar keyword
-extracts metadata keyword, and
+extracts metadata keywords, and
 .Nm lowdown-diff
-shows differences between documents.
-See
-.Xr lowdown 5
-for a reference of the accepted syntax.
+shows differences between documents as formatted output.
 The results are written to standard output.
 .Pp
 The arguments are as follows:
@@ -121,7 +109,7 @@ for HTML5 output,
 .Ar ms
 for roff output using the classic (i.e., no-extension)
 .Fl ms
-package and needing table support, 
+package and needing table support,
 .Ar term
 for ANSI-compatible UTF-8 terminal output, or
 .Ar man
@@ -131,10 +119,6 @@ package.
 A debugging output mode,
 .Ar tree ,
 shows the parse tree of the input document.
-.It Fl v
-Verbose mode.
-Prints out warnings regarding Markdown syntax conformity and other
-warnings.
 .It Fl X Ar keyword
 Instead of converting the file, extract the given metadata keyword and
 exit.
@@ -166,14 +150,10 @@ is
 read from standard input.
 .El
 .Pp
-For best results, use the
-.Fl T Ar html
-output, as it includes graphics and equations.
-The
-.Ar ms
-and
-.Ar man
-modes will elide graphics and equations.
+Only
+.Fl T Ns Ar html
+includes graphics and equations in output.
+All other outputs omit these statements.
 .Ss Input features
 There are a number of Markdown (and Markdown extension) features supported by
 .Nm lowdown
@@ -429,7 +409,19 @@ The algorithm used for diffing derives from
 The algorithm for computing the shortest edit script between text nodes is
 .Dq An O(NP) sequence comparison algorithm
 .Pq 1990 .
-.Sh EXAMPLE
+.Sh EXIT STATUS
+.Ex -std lowdown lowdown-diff
+.Pp
+If the
+.Fl X
+flag is used,
+.Nm lowdown
+exits with an error if the given keyword is not found.
+.Sh EXAMPLES
+To view a Markdown file on an ANSI-compatible, UTF-8 terminal:
+.Pp
+.Dl lowdown -Tterm foo.md | less -r
+.Pp
 To emit a standalone HTML5 document from a file
 .Pa foo.md :
 .Pp
@@ -495,14 +487,6 @@ use the following:
 lowdown -Dnroff-groff -sTms foo.md | \e
   tbl | troff -Tps -ms -mpdfmark > foo.ps
 .Ed
-.Sh EXIT STATUS
-.Ex -std lowdown lowdown-diff
-.Pp
-If the
-.Fl X
-flag is used,
-.Nm lowdown
-exits with an error if the given keyword is not found.
 .Sh SEE ALSO
 .Xr lowdown 3 ,
 .Xr lowdown 5
