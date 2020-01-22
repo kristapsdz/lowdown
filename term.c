@@ -123,6 +123,7 @@ static const struct sty *stys[LOWDOWN__MAX] = {
 	NULL, /* LOWDOWN_ENTITY */
 	NULL, /* LOWDOWN_NORMAL_TEXT */
 	NULL, /* LOWDOWN_DOC_HEADER */
+	NULL, /* LOWDOWN_META */
 	NULL /* LOWDOWN_DOC_FOOTER */
 };
 
@@ -648,11 +649,11 @@ rndr_entity(hbuf *buf, int32_t val)
 }
 
 void
-lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
+lowdown_term_rndr(hbuf *ob, struct lowdown_metaq *metaq,
+	void *arg, struct lowdown_node *n)
 {
 	struct lowdown_node	*child;
 	struct term		*p = arg;
-	size_t			 i;
 	int32_t			 entity;
 	
 	/* Current nodes we're servicing. */
@@ -684,6 +685,7 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 	case LOWDOWN_HRULE:
 	case LOWDOWN_LINEBREAK:
 	case LOWDOWN_LISTITEM:
+	case LOWDOWN_META:
 	case LOWDOWN_TABLE_ROW:
 		rndr_buf_vspace(p, ob, n, 1);
 		break;
@@ -704,6 +706,12 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 		HBUF_PUTSL(p->tmp, "^");
 		rndr_buf(p, ob, n, p->tmp, 0, NULL);
 		break;
+	case LOWDOWN_META:
+		rndr_buf(p, ob, n, &n->rndr_meta.key, 0, &sty_meta_key);
+		hbuf_truncate(p->tmp);
+		HBUF_PUTSL(p->tmp, ": ");
+		rndr_buf(p, ob, n, p->tmp, 0, &sty_meta_key);
+		break;
 	default:
 		break;
 	}
@@ -713,7 +721,7 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 	TAILQ_FOREACH(child, &n->children, entries) {
 		p->stackpos++;
 		assert(p->stackpos < 128);
-		lowdown_term_rndr(ob, p, child);
+		lowdown_term_rndr(ob, metaq, p, child);
 		p->stackpos--;
 	}
 
@@ -777,19 +785,6 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 	case LOWDOWN_NORMAL_TEXT:
 		rndr_buf(p, ob, n, &n->rndr_normal_text.text, 0, NULL);
 		break;
-	case LOWDOWN_DOC_HEADER:
-		for (i = 0; i < n->rndr_doc_header.msz; i++) {
-			hbuf_truncate(p->tmp);
-			hbuf_printf(p->tmp, "%s:",
-				n->rndr_doc_header.m[i].key);
-			rndr_buf(p, ob, n, p->tmp, 0, &sty_meta_key);
-			hbuf_truncate(p->tmp);
-			hbuf_puts(p->tmp, 
-				n->rndr_doc_header.m[i].value);
-			rndr_buf(p, ob, n, p->tmp, 1, NULL);
-			rndr_buf_vspace(p, ob, n, 1);
-		}
-		break;
 	default:
 		break;
 	}
@@ -813,11 +808,12 @@ lowdown_term_rndr(hbuf *ob, void *arg, struct lowdown_node *n)
 			rndr_buf_vspace(p, ob, n, 1);
 		break;
 	case LOWDOWN_DOC_HEADER:
-		if (n->rndr_doc_header.msz)
+		if (!TAILQ_EMPTY(&n->children))
 			rndr_buf_vspace(p, ob, n, 2);
 		break;
 	case LOWDOWN_HRULE:
 	case LOWDOWN_LISTITEM:
+	case LOWDOWN_META:
 	case LOWDOWN_ROOT:
 	case LOWDOWN_TABLE_ROW:
 		rndr_buf_vspace(p, ob, n, 1);

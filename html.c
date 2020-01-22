@@ -3,7 +3,7 @@
  * Copyright (c) 2008, Natacha Porté
  * Copyright (c) 2011, Vicent Martí
  * Copyright (c) 2014, Xavier Mendez, Devin Torres and the Hoedown authors
- * Copyright (c) 2016--2017 Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) 2016--2017, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -52,6 +52,29 @@ struct 	hstate {
 	unsigned int flags; /* output flags */
 };
 
+enum rndr_meta_key {
+	RNDR_META_AFFIL,
+	RNDR_META_AUTHOR,
+	RNDR_META_CSS,
+	RNDR_META_DATE,
+	RNDR_META_RCSAUTHOR,
+	RNDR_META_RCSDATE,
+	RNDR_META_SCRIPT,
+	RNDR_META_TITLE,
+	RNDR_META__MAX
+};
+
+static const char *rndr_meta_keys[RNDR_META__MAX] = {
+	"affiliation", /* RNDR_META_AFFIL */
+	"author", /* RNDR_META_AUTHOR */
+	"css", /* RNDR_META_CSS */
+	"date", /* RNDR_META_DATE */
+	"rcsauthor", /* RNDR_META_RCSAUTHOR */
+	"rcsdate", /* RNDR_META_RCSDATE */
+	"javascript", /* RNDR_META_SCRIPT */
+	"title", /* RNDR_META_TITLE */
+};
+
 static void
 escape_html(hbuf *ob, const char *source, size_t length)
 {
@@ -66,12 +89,12 @@ escape_href(hbuf *ob, const char *source, size_t length)
 	hesc_href(ob, source, length);
 }
 
-static int
+static void
 rndr_autolink(hbuf *ob, const hbuf *link, enum halink_type type)
 {
 
-	if (!link || !link->size)
-		return 0;
+	if (link->size == 0)
+		return;
 
 	HBUF_PUTSL(ob, "<a href=\"");
 	if (type == HALINK_EMAIL)
@@ -84,14 +107,13 @@ rndr_autolink(hbuf *ob, const hbuf *link, enum halink_type type)
 	 * an actual URI, e.g. `mailto:foo@bar.com`, we don't
 	 * want to print the `mailto:` prefix
 	 */
-	if (hbuf_prefix(link, "mailto:") == 0) {
+
+	if (hbuf_prefix(link, "mailto:") == 0)
 		escape_html(ob, link->data + 7, link->size - 7);
-	} else {
+	else
 		escape_html(ob, link->data, link->size);
-	}
 
 	HBUF_PUTSL(ob, "</a>");
-	return 1;
 }
 
 static void
@@ -100,17 +122,14 @@ rndr_blockcode(hbuf *ob, const hbuf *text, const hbuf *lang)
 	if (ob->size) 
 		hbuf_putc(ob, '\n');
 
-	if (lang && lang->size) {
+	if (lang->size) {
 		HBUF_PUTSL(ob, "<pre><code class=\"language-");
 		escape_html(ob, lang->data, lang->size);
 		HBUF_PUTSL(ob, "\">");
-	} else {
+	} else
 		HBUF_PUTSL(ob, "<pre><code>");
-	}
 
-	if (text)
-		escape_html(ob, text->data, text->size);
-
+	escape_html(ob, text->data, text->size);
 	HBUF_PUTSL(ob, "</code></pre>\n");
 }
 
@@ -120,77 +139,60 @@ rndr_blockquote(hbuf *ob, const hbuf *content)
 	if (ob->size)
 		hbuf_putc(ob, '\n');
 	HBUF_PUTSL(ob, "<blockquote>\n");
-	if (content)
-		hbuf_put(ob, content->data, content->size);
+	hbuf_put(ob, content->data, content->size);
 	HBUF_PUTSL(ob, "</blockquote>\n");
 }
 
-static int
+static void
 rndr_codespan(hbuf *ob, const hbuf *text)
 {
 
 	HBUF_PUTSL(ob, "<code>");
-	if (text)
-		escape_html(ob, text->data, text->size);
+	escape_html(ob, text->data, text->size);
 	HBUF_PUTSL(ob, "</code>");
-	return 1;
 }
 
-static int
+static void
 rndr_strikethrough(hbuf *ob, const hbuf *content)
 {
-	if (!content || !content->size)
-		return 0;
 
 	HBUF_PUTSL(ob, "<del>");
-	hbuf_put(ob, content->data, content->size);
+	hbuf_putb(ob, content);
 	HBUF_PUTSL(ob, "</del>");
-	return 1;
 }
 
-static int
+static void
 rndr_double_emphasis(hbuf *ob, const hbuf *content)
 {
-	if (!content || !content->size)
-		return 0;
 
 	HBUF_PUTSL(ob, "<strong>");
-	hbuf_put(ob, content->data, content->size);
+	hbuf_putb(ob, content);
 	HBUF_PUTSL(ob, "</strong>");
-
-	return 1;
 }
 
-static int
+static void
 rndr_emphasis(hbuf *ob, const hbuf *content)
 {
-	if (!content || !content->size)
-		return 0;
+
 	HBUF_PUTSL(ob, "<em>");
-	if (content)
-		hbuf_put(ob, content->data, content->size);
+	hbuf_putb(ob, content);
 	HBUF_PUTSL(ob, "</em>");
-	return 1;
 }
 
-static int
+static void
 rndr_highlight(hbuf *ob, const hbuf *content)
 {
-	if (!content || !content->size)
-		return 0;
 
 	HBUF_PUTSL(ob, "<mark>");
-	hbuf_put(ob, content->data, content->size);
+	hbuf_putb(ob, content);
 	HBUF_PUTSL(ob, "</mark>");
-	return 1;
 }
 
-static int
+static void
 rndr_linebreak(hbuf *ob)
 {
 
-	hbuf_puts(ob, "<br/>\n");
-	return 1;
+	HBUF_PUTSL(ob, "<br/>\n");
 }
 
 /*
@@ -212,7 +214,7 @@ rndr_header_id(hbuf *ob, const hbuf *header, struct hstate *state)
 		if (strlen(hentry->str) != header->size)
 			continue;
 		if (strncmp(hentry->str, 
-		    (const char *)header->data, header->size) == 0)
+		    header->data, header->size) == 0)
 			break;
 	}
 
@@ -237,8 +239,7 @@ rndr_header_id(hbuf *ob, const hbuf *header, struct hstate *state)
 
 	hentry = xcalloc(1, sizeof(struct hentry));
 	hentry->count = 1;
-	hentry->str = xstrndup
-		((const char *)header->data, header->size);
+	hentry->str = xstrndup(header->data, header->size);
 	TAILQ_INSERT_TAIL(&state->headers_used, hentry, entries);
 }
 
@@ -250,40 +251,30 @@ rndr_header(hbuf *ob, const hbuf *content,
 	if (ob->size)
 		hbuf_putc(ob, '\n');
 
-	if (content != NULL && content->size &&
-	   	   LOWDOWN_HTML_HEAD_IDS & state->flags) {
+	if (content->size && (state->flags & LOWDOWN_HTML_HEAD_IDS)) {
 		hbuf_printf(ob, "<h%d id=\"", level);
 		rndr_header_id(ob, content, state);
 		HBUF_PUTSL(ob, "\">");
 	} else
 		hbuf_printf(ob, "<h%d>", level);
 
-	if (content != NULL) 
-		hbuf_put(ob, content->data, content->size);
-
+	hbuf_putb(ob, content);
 	hbuf_printf(ob, "</h%d>\n", level);
 }
 
-static int
+static void
 rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title)
 {
 
 	HBUF_PUTSL(ob, "<a href=\"");
-
-	if (link && link->size)
-		escape_href(ob, link->data, link->size);
-
-	if (title && title->size) {
+	escape_href(ob, link->data, link->size);
+	if (title->size) {
 		HBUF_PUTSL(ob, "\" title=\"");
 		escape_html(ob, title->data, title->size);
 	}
-
 	HBUF_PUTSL(ob, "\">");
-
-	if (content && content->size)
-		hbuf_put(ob, content->data, content->size);
+	hbuf_putb(ob, content);
 	HBUF_PUTSL(ob, "</a>");
-	return 1;
 }
 
 static void
@@ -292,16 +283,17 @@ rndr_list(hbuf *ob, const hbuf *content, const struct rndr_list *p)
 
 	if (ob->size)
 		hbuf_putc(ob, '\n');
-	if (p->flags & HLIST_FL_ORDERED) {
+	if ((p->flags & HLIST_FL_ORDERED)) {
 		if (p->start[0] != '\0') 
 			hbuf_printf(ob, "<ol start=\"%s\">\n", p->start);
 		else
 			HBUF_PUTSL(ob, "<ol>\n");
 	} else
 		HBUF_PUTSL(ob, "<ul>\n");
-	if (content)
-		hbuf_put(ob, content->data, content->size);
-	if (p->flags & HLIST_FL_ORDERED)
+
+	hbuf_putb(ob, content);
+
+	if ((p->flags & HLIST_FL_ORDERED))
 		HBUF_PUTSL(ob, "</ol>\n");
 	else
 		HBUF_PUTSL(ob, "</ul>\n");
@@ -314,6 +306,12 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 	size_t	 size;
 
 	HBUF_PUTSL(ob, "<li>");
+
+	/* 
+	 * Cut off any trailing space.
+	 * XXX: this should be removed.
+	 */
+
 	if (content) {
 		size = content->size;
 		while (size && content->data[size - 1] == '\n')
@@ -331,10 +329,11 @@ rndr_paragraph(hbuf *ob, const hbuf *content, struct hstate *state)
 	if (ob->size) 
 		hbuf_putc(ob, '\n');
 
-	if (!content || !content->size)
+	if (content->size == 0)
 		return;
 
-	while (i < content->size && isspace(content->data[i])) 
+	while (i < content->size &&
+	       isspace((unsigned char)content->data[i])) 
 		i++;
 
 	if (i == content->size)
@@ -374,11 +373,8 @@ rndr_raw_block(hbuf *ob, const hbuf *text, const struct hstate *state)
 {
 	size_t	org, sz;
 
-	if (text == NULL)
-		return;
-
-	if (state->flags & LOWDOWN_HTML_SKIP_HTML || 
-	    state->flags & LOWDOWN_HTML_ESCAPE) {
+	if ((state->flags & LOWDOWN_HTML_SKIP_HTML) || 
+	    (state->flags & LOWDOWN_HTML_ESCAPE)) {
 		escape_html(ob, text->data, text->size);
 		return;
 	}
@@ -391,7 +387,6 @@ rndr_raw_block(hbuf *ob, const hbuf *text, const struct hstate *state)
 	sz = text->size;
 	while (sz > 0 && text->data[sz - 1] == '\n')
 		sz--;
-
 	org = 0;
 	while (org < sz && text->data[org] == '\n')
 		org++;
@@ -406,17 +401,13 @@ rndr_raw_block(hbuf *ob, const hbuf *text, const struct hstate *state)
 	hbuf_putc(ob, '\n');
 }
 
-static int
+static void
 rndr_triple_emphasis(hbuf *ob, const hbuf *content)
 {
 
-	if (!content || !content->size)
-		return 0;
-
 	HBUF_PUTSL(ob, "<strong><em>");
-	hbuf_put(ob, content->data, content->size);
+	hbuf_putb(ob, content);
 	HBUF_PUTSL(ob, "</em></strong>");
-	return 1;
 }
 
 static void
@@ -428,7 +419,7 @@ rndr_hrule(hbuf *ob)
 	hbuf_puts(ob, "<hr/>\n");
 }
 
-static int
+static void
 rndr_image(hbuf *ob, const hbuf *link, const hbuf *title, 
 	const hbuf *dims, const hbuf *alt)
 {
@@ -441,38 +432,36 @@ rndr_image(hbuf *ob, const hbuf *link, const hbuf *title,
 	 * that as a cap to the size.
 	 */
 
-	if (dims != NULL && dims->size &&
-	    dims->size < sizeof(dimbuf) - 1) {
+	if (dims->size && dims->size < sizeof(dimbuf) - 1) {
 		memset(dimbuf, 0, sizeof(dimbuf));
 		memcpy(dimbuf, dims->data, dims->size);
 		rc = sscanf(dimbuf, "%ux%u", &x, &y);
 	}
 
+	/* Require an "alt", even if blank. */
+
 	HBUF_PUTSL(ob, "<img src=\"");
-	if (link != NULL)
-		escape_href(ob, link->data, link->size);
+	escape_href(ob, link->data, link->size);
 	HBUF_PUTSL(ob, "\" alt=\"");
-	if (alt != NULL && alt->size)
-		escape_html(ob, alt->data, alt->size);
+	escape_html(ob, alt->data, alt->size);
 	HBUF_PUTSL(ob, "\"");
 
-	if (dims != NULL && rc > 0) {
+	if (dims->size && rc > 0) {
 		hbuf_printf(ob, " width=\"%u\"", x);
 		if (rc > 1)
 			hbuf_printf(ob, " height=\"%u\"", y);
 	}
 
-	if (title && title->size) {
+	if (title->size) {
 		HBUF_PUTSL(ob, " title=\"");
 		escape_html(ob, title->data, title->size); 
 		HBUF_PUTSL(ob, "\"");
 	}
 
 	hbuf_puts(ob, " />");
-	return 1;
 }
 
-static int
+static void
 rndr_raw_html(hbuf *ob, const hbuf *text, const struct hstate *state)
 {
 
@@ -482,16 +471,15 @@ rndr_raw_html(hbuf *ob, const hbuf *text, const struct hstate *state)
 	 * escapes all of them. 
 	 */
 
-	if ((state->flags & LOWDOWN_HTML_ESCAPE) != 0) {
+	if ((state->flags & LOWDOWN_HTML_ESCAPE)) {
 		escape_html(ob, text->data, text->size);
-		return 1;
+		return;
 	}
 
-	if ((state->flags & LOWDOWN_HTML_SKIP_HTML) != 0)
-		return 1;
+	if ((state->flags & LOWDOWN_HTML_SKIP_HTML))
+		return;
 
-	hbuf_put(ob, text->data, text->size);
-	return 1;
+	hbuf_putb(ob, text);
 }
 
 static void
@@ -501,7 +489,7 @@ rndr_table(hbuf *ob, const hbuf *content)
 	if (ob->size)
 		hbuf_putc(ob, '\n');
 	HBUF_PUTSL(ob, "<table>\n");
-	hbuf_put(ob, content->data, content->size);
+	hbuf_putb(ob, content);
 	HBUF_PUTSL(ob, "</table>\n");
 }
 
@@ -513,7 +501,7 @@ rndr_table_header(hbuf *ob, const hbuf *content,
 	if (ob->size)
 		hbuf_putc(ob, '\n');
 	HBUF_PUTSL(ob, "<thead>\n");
-	hbuf_put(ob, content->data, content->size);
+	hbuf_putb(ob, content);
 	HBUF_PUTSL(ob, "</thead>\n");
 }
 
@@ -524,7 +512,7 @@ rndr_table_body(hbuf *ob, const hbuf *content)
 	if (ob->size)
 		hbuf_putc(ob, '\n');
 	HBUF_PUTSL(ob, "<tbody>\n");
-	hbuf_put(ob, content->data, content->size);
+	hbuf_putb(ob, content);
 	HBUF_PUTSL(ob, "</tbody>\n");
 }
 
@@ -533,8 +521,7 @@ rndr_tablerow(hbuf *ob, const hbuf *content)
 {
 
 	HBUF_PUTSL(ob, "<tr>\n");
-	if (content)
-		hbuf_put(ob, content->data, content->size);
+	hbuf_putb(ob, content);
 	HBUF_PUTSL(ob, "</tr>\n");
 }
 
@@ -543,7 +530,7 @@ rndr_tablecell(hbuf *ob, const hbuf *content,
 	enum htbl_flags flags, size_t col, size_t columns)
 {
 
-	if (flags & HTBL_FL_HEADER)
+	if ((flags & HTBL_FL_HEADER))
 		HBUF_PUTSL(ob, "<th");
 	else
 		HBUF_PUTSL(ob, "<td");
@@ -562,26 +549,21 @@ rndr_tablecell(hbuf *ob, const hbuf *content,
 		HBUF_PUTSL(ob, ">");
 	}
 
-	if (content)
-		hbuf_put(ob, content->data, content->size);
+	hbuf_putb(ob, content);
 
-	if (flags & HTBL_FL_HEADER)
+	if ((flags & HTBL_FL_HEADER))
 		HBUF_PUTSL(ob, "</th>\n");
 	else
 		HBUF_PUTSL(ob, "</td>\n");
 }
 
-static int
+static void
 rndr_superscript(hbuf *ob, const hbuf *content)
 {
 
-	if (!content || !content->size)
-		return 0;
-
 	HBUF_PUTSL(ob, "<sup>");
-	hbuf_put(ob, content->data, content->size);
+	hbuf_putb(ob, content);
 	HBUF_PUTSL(ob, "</sup>");
-	return 1;
 }
 
 static void
@@ -601,10 +583,7 @@ rndr_footnotes(hbuf *ob, const hbuf *content)
 	HBUF_PUTSL(ob, "<div class=\"footnotes\">\n");
 	hbuf_puts(ob, "<hr/>\n");
 	HBUF_PUTSL(ob, "<ol>\n");
-
-	if (content)
-		hbuf_put(ob, content->data, content->size);
-
+	hbuf_putb(ob, content);
 	HBUF_PUTSL(ob, "\n</ol>\n</div>\n");
 }
 
@@ -616,21 +595,19 @@ rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num)
 
 	/* Insert anchor at the end of first paragraph block. */
 
-	if (content) {
-		while ((i+3) < content->size) {
-			if (content->data[i++] != '<') 
-				continue;
-			if (content->data[i++] != '/') 
-				continue;
-			if (content->data[i++] != 'p' && 
-			    content->data[i] != 'P') 
-				continue;
-			if (content->data[i] != '>') 
-				continue;
-			i -= 3;
-			pfound = 1;
-			break;
-		}
+	while ((i+3) < content->size) {
+		if (content->data[i++] != '<') 
+			continue;
+		if (content->data[i++] != '/') 
+			continue;
+		if (content->data[i++] != 'p' && 
+		    content->data[i] != 'P') 
+			continue;
+		if (content->data[i] != '>') 
+			continue;
+		i -= 3;
+		pfound = 1;
+		break;
 	}
 
 	hbuf_printf(ob, "\n<li id=\"fn%d\">\n", num);
@@ -641,14 +618,13 @@ rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num)
 			"<a href=\"#fnref%d\" rev=\"footnote\">"
 			"&#8617;</a>", num);
 		hbuf_put(ob, content->data + i, content->size - i);
-	} else if (content) {
-		hbuf_put(ob, content->data, content->size);
-	}
+	} else 
+		hbuf_putb(ob, content);
 
 	HBUF_PUTSL(ob, "</li>\n");
 }
 
-static int
+static void
 rndr_footnote_ref(hbuf *ob, unsigned int num)
 {
 
@@ -656,10 +632,9 @@ rndr_footnote_ref(hbuf *ob, unsigned int num)
 		"<sup id=\"fnref%d\">"
 		"<a href=\"#fn%d\" rel=\"footnote\">"
 		"%d</a></sup>", num, num, num);
-	return 1;
 }
 
-static int
+static void
 rndr_math(hbuf *ob, const struct rndr_math *n)
 {
 
@@ -674,288 +649,309 @@ rndr_math(hbuf *ob, const struct rndr_math *n)
 		HBUF_PUTSL(ob, "\\]");
 	else
 		HBUF_PUTSL(ob, "\\)");
-	return 1;
-}
-
-/*
- * Itereate through multiple multi-white-space separated values in
- * "val", filling them in between "start" and "end".
- * If "href", escape the value as an HTML attribute.
- * Otherwise, just do the minimal HTML escaping.
- */
-static void
-rndr_doc_header_multi(hbuf *ob, int href,
-	const char *val, const char *starttag, const char *endtag)
-{
-	const char	*cp, *start;
-	size_t		 sz;
-
-	for (cp = val; '\0' != *cp; ) {
-		while (isspace((unsigned char)*cp))
-			cp++;
-		if ('\0' == *cp)
-			continue;
-		start = cp;
-		sz = 0;
-		while ('\0' != *cp) {
-			if (!isspace((unsigned char)cp[0]) ||
-			    !isspace((unsigned char)cp[1])) {
-				sz++;
-				cp++;
-				continue;
-			}
-			cp += 2;
-			break;
-		}
-		if (sz == 0)
-			continue;
-		hbuf_puts(ob, starttag);
-		hbuf_putc(ob, '"');
-		if (href)
-			hesc_href(ob, start, sz);
-		else
-			hesc_html(ob, start, sz, 0);
-		hbuf_putc(ob, '"');
-		hbuf_puts(ob, endtag);
-		hbuf_putc(ob, '\n');
-	}
 }
 
 static void
 rndr_doc_footer(hbuf *ob, const struct hstate *st)
 {
 
-	if (LOWDOWN_STANDALONE & st->flags)
-		HBUF_PUTSL(ob, "</body>\n</html>\n");
+	if ((st->flags & LOWDOWN_STANDALONE))
+		HBUF_PUTSL(ob, "</body>\n");
 }
 
 static void
-rndr_doc_header(hbuf *ob, 
-	const struct lowdown_meta *m, size_t msz, 
-	const struct hstate *st)
+rndr_root(hbuf *ob, const hbuf *content, const struct hstate *st)
 {
-	const char	*author = NULL, *title = "Untitled article", 
-	     	 	*css = NULL, *affil = NULL, *script = NULL,
-			*date = NULL;
-	size_t		 i;
-	struct tm	*tm;
-	time_t		 t;
-	char		 buf[32];
+
+	if ((st->flags & LOWDOWN_STANDALONE))
+		HBUF_PUTSL(ob, 
+			"<!DOCTYPE html>\n"
+			"<html>\n");
+	hbuf_putb(ob, content);
+	if ((st->flags & LOWDOWN_STANDALONE))
+		HBUF_PUTSL(ob, "</html>\n");
+}
+
+/*
+ * Split "val" into multiple strings delimited by two or more whitespace
+ * characters, padding the output with "starttag" and "endtag".
+ */
+static void
+rndr_doc_header_multi(hbuf *ob, const hbuf *b,
+	const char *starttag, const char *endtag)
+{
+	const char	*start;
+	size_t		 sz, i;
+
+	for (i = 0; i < b->size; i++) {
+		while (i < b->size &&
+		       isspace((unsigned char)b->data[i]))
+			i++;
+		if (i == b->size)
+			continue;
+		start = &b->data[i];
+		sz = 0;
+
+		for (; i < b->size; i++)
+			if (i < b->size - 1 &&
+			    isspace((unsigned char)b->data[i]) &&
+			    isspace((unsigned char)b->data[i + 1]))
+				break;
+
+		if ((sz = &b->data[i] - start) == 0)
+			continue;
+
+		hbuf_puts(ob, starttag);
+		HBUF_PUTSL(ob, "\"");
+		hbuf_put(ob, start, sz);
+		HBUF_PUTSL(ob, "\"");
+		hbuf_puts(ob, endtag);
+		HBUF_PUTSL(ob, "\n");
+	}
+}
+
+static void
+rndr_meta(hbuf *ob, const hbuf *tmp, struct lowdown_metaq *mq,
+	const struct lowdown_node *n, const struct hstate *st)
+{
+	enum rndr_meta_key	 key;
+	struct lowdown_meta	*m;
+
+	if (mq != NULL) {
+		m = xcalloc(1, sizeof(struct lowdown_meta));
+		TAILQ_INSERT_TAIL(mq, m, entries);
+		m->key = xstrndup
+			(n->rndr_meta.key.data, 
+			 n->rndr_meta.key.size);
+		m->value = xstrndup(tmp->data, tmp->size);
+	}
+
+	if (!(st->flags & LOWDOWN_STANDALONE))
+		return;
+
+	for (key = 0; key < RNDR_META__MAX; key++)
+		if (hbuf_streq(&n->rndr_meta.key, rndr_meta_keys[key]))
+			break;
+
+	/* TODO: rcsauthor, rcsdate. */
+
+	switch (key) {
+	case RNDR_META_AFFIL:
+		rndr_doc_header_multi(ob, tmp, 
+			"<meta name=\"creator\" content=", 
+			" />");
+		break;
+	case RNDR_META_AUTHOR:
+		rndr_doc_header_multi(ob, tmp, 
+			"<meta name=\"author\" content=", 
+			" />");
+		break;
+	case RNDR_META_CSS:
+		rndr_doc_header_multi(ob, tmp, 
+			"<link rel=\"stylesheet\" href=", 
+			" />");
+		break;
+	case RNDR_META_DATE:
+		hbuf_printf(ob, "<meta name=\"date\" "
+			"scheme=\"YYYY-MM-DD\" content=\"");
+		hbuf_putb(ob, tmp);
+		HBUF_PUTSL(ob, "\" />\n");
+		break;
+	case RNDR_META_SCRIPT:
+		rndr_doc_header_multi(ob, tmp, 
+			"<script src=", 
+			"></script>");
+		break;
+	case RNDR_META_TITLE:
+		HBUF_PUTSL(ob, "<title>");
+		hbuf_putb(ob, tmp);
+		HBUF_PUTSL(ob, "</title>\n");
+		break;
+	default:
+		break;
+	};
+}
+
+static void
+rndr_doc_header(hbuf *ob, const hbuf *content,
+	const struct hstate *st, struct lowdown_node *n)
+{
+	struct lowdown_node	*nn;
 
 	if (!(LOWDOWN_STANDALONE & st->flags))
 		return;
 
-	/* 
-	 * Acquire metadata that we'll fill in.
-	 * We format this as well.
-	 */
-
-	for (i = 0; i < msz; i++) 
-		if (0 == strcmp(m[i].key, "title"))
-			title = m[i].value;
-		else if (0 == strcmp(m[i].key, "affiliation"))
-			affil = m[i].value;
-		else if (0 == strcmp(m[i].key, "author"))
-			author = m[i].value;
-		else if (0 == strcmp(m[i].key, "rcsauthor"))
-			author = rcsauthor2str(m[i].value);
-		else if (0 == strcmp(m[i].key, "css"))
-			css = m[i].value;
-		else if (0 == strcmp(m[i].key, "javascript"))
-			script = m[i].value;
-		else if (0 == strcmp(m[i].key, "rcsdate"))
-			date = rcsdate2str(m[i].value);
-		else if (0 == strcmp(m[i].key, "date"))
-			date = date2str(m[i].value);
-
-	/* FIXME: convert to buf without strftime. */
-
-	if (NULL == date) {
-		t = time(NULL);
-		tm = localtime(&t);
-		strftime(buf, sizeof(buf), "%Y-%m-%d", tm);
-		date = buf;
-	}
-
 	HBUF_PUTSL(ob, 
-	      "<!DOCTYPE html>\n"
-	      "<html>\n"
 	      "<head>\n"
 	      "<meta charset=\"utf-8\" />\n"
-	      "<meta name=\"viewport\" content=\""
-	       "width=device-width,initial-scale=1\" />\n");
+	      "<meta name=\"viewport\""
+	      " content=\"width=device-width,initial-scale=1\" />\n");
 
-	hbuf_printf(ob, "<meta name=\"date\" content=\"%s\" "
-		"scheme=\"YYYY-MM-DD\" />\n", date);
-	if (NULL != author)
-		rndr_doc_header_multi(ob, 0, author, 
-			"<meta name=\"author\" content=", " />");
-	if (NULL != affil)
-		rndr_doc_header_multi(ob, 0, affil, 
-			"<meta name=\"creator\" content=", " />");
-	if (NULL != script)
-		rndr_doc_header_multi(ob, 1, script, 
-			"<script src=", "></script>");
-	if (NULL != css)
-		rndr_doc_header_multi(ob, 1, css, 
-			"<link rel=\"stylesheet\" href=", " />");
+	hbuf_putb(ob, content);
 
-	/* HTML-escape and trim the title (0-length ok but weird). */
+	/* If we don't have a title, print out a default one. */
 
-	while (isspace((int)*title))
-		title++;
+	TAILQ_FOREACH(nn, &n->children, entries) {
+		if (nn->type != LOWDOWN_META)
+			continue;
+		if (hbuf_streq(&nn->rndr_meta.key, "title"))
+			break;
+	}
+	if (nn == NULL)
+		hbuf_puts(ob, "<title>Untitled Article</title>");
 
-	HBUF_PUTSL(ob, "<title>");
-	hesc_html(ob, title, strlen(title), 0);
-	HBUF_PUTSL(ob, 
-	      "</title>\n"
-	      "</head>\n"
-	      "<body>\n");
+	HBUF_PUTSL(ob, "</head>\n<body>\n");
 }
 
 void
-lowdown_html_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
+lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *metaq,
+	void *ref, struct lowdown_node *root)
 {
 	struct lowdown_node	*n;
 	hbuf			*tmp;
 	int32_t			 ent;
+	struct hstate		*st = ref;
 
 	tmp = hbuf_new(64);
 
 	TAILQ_FOREACH(n, &root->children, entries)
-		lowdown_html_rndr(tmp, ref, n);
+		lowdown_html_rndr(tmp, metaq, st, n);
 
 	/*
 	 * These elements can be put in either a block or an inline
 	 * context, so we're safe to just use them and forget.
 	 */
 
-	if (LOWDOWN_CHNG_INSERT == root->chng)
+	if (root->chng == LOWDOWN_CHNG_INSERT)
 		HBUF_PUTSL(ob, "<ins>");
-	else if (LOWDOWN_CHNG_DELETE == root->chng)
+	if (root->chng == LOWDOWN_CHNG_DELETE)
 		HBUF_PUTSL(ob, "<del>");
 
 	switch (root->type) {
-	case (LOWDOWN_BLOCKCODE):
+	case LOWDOWN_ROOT:
+		rndr_root(ob, tmp, st);
+		break;
+	case LOWDOWN_BLOCKCODE:
 		rndr_blockcode(ob, 
 			&root->rndr_blockcode.text, 
 			&root->rndr_blockcode.lang);
 		break;
-	case (LOWDOWN_BLOCKQUOTE):
+	case LOWDOWN_BLOCKQUOTE:
 		rndr_blockquote(ob, tmp);
 		break;
-	case (LOWDOWN_DOC_HEADER):
-		rndr_doc_header(ob, 
-			root->rndr_doc_header.m, 
-			root->rndr_doc_header.msz, ref);
+	case LOWDOWN_DOC_HEADER:
+		rndr_doc_header(ob, tmp, st, root);
 		break;
-	case (LOWDOWN_DOC_FOOTER):
-		rndr_doc_footer(ob, ref);
+	case LOWDOWN_META:
+		rndr_meta(ob, tmp, metaq, root, st);
 		break;
-	case (LOWDOWN_HEADER):
+	case LOWDOWN_DOC_FOOTER:
+		rndr_doc_footer(ob, st);
+		break;
+	case LOWDOWN_HEADER:
 		rndr_header(ob, tmp, 
-			root->rndr_header.level, ref);
+			root->rndr_header.level, st);
 		break;
-	case (LOWDOWN_HRULE):
+	case LOWDOWN_HRULE:
 		rndr_hrule(ob);
 		break;
-	case (LOWDOWN_LIST):
+	case LOWDOWN_LIST:
 		rndr_list(ob, tmp, &root->rndr_list);
 		break;
-	case (LOWDOWN_LISTITEM):
+	case LOWDOWN_LISTITEM:
 		rndr_listitem(ob, tmp, 
 			root->rndr_listitem.flags,
 			root->rndr_listitem.num);
 		break;
-	case (LOWDOWN_PARAGRAPH):
-		rndr_paragraph(ob, tmp, ref);
+	case LOWDOWN_PARAGRAPH:
+		rndr_paragraph(ob, tmp, st);
 		break;
-	case (LOWDOWN_TABLE_BLOCK):
+	case LOWDOWN_TABLE_BLOCK:
 		rndr_table(ob, tmp);
 		break;
-	case (LOWDOWN_TABLE_HEADER):
+	case LOWDOWN_TABLE_HEADER:
 		rndr_table_header(ob, tmp, 
 			root->rndr_table_header.flags,
 			root->rndr_table_header.columns);
 		break;
-	case (LOWDOWN_TABLE_BODY):
+	case LOWDOWN_TABLE_BODY:
 		rndr_table_body(ob, tmp);
 		break;
-	case (LOWDOWN_TABLE_ROW):
+	case LOWDOWN_TABLE_ROW:
 		rndr_tablerow(ob, tmp);
 		break;
-	case (LOWDOWN_TABLE_CELL):
+	case LOWDOWN_TABLE_CELL:
 		rndr_tablecell(ob, tmp, 
 			root->rndr_table_cell.flags, 
 			root->rndr_table_cell.col,
 			root->rndr_table_cell.columns);
 		break;
-	case (LOWDOWN_FOOTNOTES_BLOCK):
+	case LOWDOWN_FOOTNOTES_BLOCK:
 		rndr_footnotes(ob, tmp);
 		break;
-	case (LOWDOWN_FOOTNOTE_DEF):
+	case LOWDOWN_FOOTNOTE_DEF:
 		rndr_footnote_def(ob, tmp, 
 			root->rndr_footnote_def.num);
 		break;
-	case (LOWDOWN_BLOCKHTML):
+	case LOWDOWN_BLOCKHTML:
 		rndr_raw_block(ob, 
-			&root->rndr_blockhtml.text, ref);
+			&root->rndr_blockhtml.text, st);
 		break;
-	case (LOWDOWN_LINK_AUTO):
+	case LOWDOWN_LINK_AUTO:
 		rndr_autolink(ob, 
 			&root->rndr_autolink.link,
 			root->rndr_autolink.type);
 		break;
-	case (LOWDOWN_CODESPAN):
+	case LOWDOWN_CODESPAN:
 		rndr_codespan(ob, &root->rndr_codespan.text);
 		break;
-	case (LOWDOWN_DOUBLE_EMPHASIS):
+	case LOWDOWN_DOUBLE_EMPHASIS:
 		rndr_double_emphasis(ob, tmp);
 		break;
-	case (LOWDOWN_EMPHASIS):
+	case LOWDOWN_EMPHASIS:
 		rndr_emphasis(ob, tmp);
 		break;
-	case (LOWDOWN_HIGHLIGHT):
+	case LOWDOWN_HIGHLIGHT:
 		rndr_highlight(ob, tmp);
 		break;
-	case (LOWDOWN_IMAGE):
+	case LOWDOWN_IMAGE:
 		rndr_image(ob, 
 			&root->rndr_image.link,
 			&root->rndr_image.title,
 			&root->rndr_image.dims,
 			&root->rndr_image.alt);
 		break;
-	case (LOWDOWN_LINEBREAK):
+	case LOWDOWN_LINEBREAK:
 		rndr_linebreak(ob);
 		break;
-	case (LOWDOWN_LINK):
+	case LOWDOWN_LINK:
 		rndr_link(ob, tmp,
 			&root->rndr_link.link,
 			&root->rndr_link.title);
 		break;
-	case (LOWDOWN_TRIPLE_EMPHASIS):
+	case LOWDOWN_TRIPLE_EMPHASIS:
 		rndr_triple_emphasis(ob, tmp);
 		break;
-	case (LOWDOWN_STRIKETHROUGH):
+	case LOWDOWN_STRIKETHROUGH:
 		rndr_strikethrough(ob, tmp);
 		break;
-	case (LOWDOWN_SUPERSCRIPT):
+	case LOWDOWN_SUPERSCRIPT:
 		rndr_superscript(ob, tmp);
 		break;
-	case (LOWDOWN_FOOTNOTE_REF):
+	case LOWDOWN_FOOTNOTE_REF:
 		rndr_footnote_ref(ob, 
 			root->rndr_footnote_ref.num);
 		break;
-	case (LOWDOWN_MATH_BLOCK):
+	case LOWDOWN_MATH_BLOCK:
 		rndr_math(ob, &root->rndr_math);
 		break;
-	case (LOWDOWN_RAW_HTML):
-		rndr_raw_html(ob, &root->rndr_raw_html.text, ref);
+	case LOWDOWN_RAW_HTML:
+		rndr_raw_html(ob, &root->rndr_raw_html.text, st);
 		break;
-	case (LOWDOWN_NORMAL_TEXT):
+	case LOWDOWN_NORMAL_TEXT:
 		rndr_normal_text(ob, &root->rndr_normal_text.text);
 		break;
-	case (LOWDOWN_ENTITY):
+	case LOWDOWN_ENTITY:
 		/*
 		 * Prefer numeric entities.
 		 * This is because we're emitting XML (XHTML5) and it's
@@ -975,15 +971,14 @@ lowdown_html_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
 		break;
 	}
 
-	if (LOWDOWN_CHNG_INSERT == root->chng)
+	if (root->chng == LOWDOWN_CHNG_INSERT)
 		HBUF_PUTSL(ob, "</ins>");
-	else if (LOWDOWN_CHNG_DELETE == root->chng)
+	if (root->chng == LOWDOWN_CHNG_DELETE)
 		HBUF_PUTSL(ob, "</del>");
 
 	hbuf_free(tmp);
 }
 
-/* allocates a regular HTML renderer */
 void *
 lowdown_html_new(const struct lowdown_opts *opts)
 {
@@ -997,9 +992,6 @@ lowdown_html_new(const struct lowdown_opts *opts)
 	return state;
 }
 
-/* 
- * Deallocate an HTML renderer. 
- */
 void
 lowdown_html_free(void *renderer)
 {

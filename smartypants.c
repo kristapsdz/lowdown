@@ -150,6 +150,7 @@ static const enum type types[LOWDOWN__MAX] = {
 	TYPE_OPAQUE, /* LOWDOWN_ENTITY */
 	TYPE_TEXT, /* LOWDOWN_NORMAL_TEXT */
 	TYPE_BLOCK, /* LOWDOWN_DOC_HEADER */
+	TYPE_BLOCK, /* LOWDOWN_META */
 	TYPE_BLOCK, /* LOWDOWN_DOC_FOOTER */
 };
 
@@ -208,119 +209,6 @@ smarty_iswb(char c)
 		ispunct((unsigned char)c);
 }
 
-static void
-buf_append(char **buf, size_t *sz, size_t *max, const char *val)
-{
-	size_t	 valsz;
-
-	valsz = strlen(val);
-	if (*sz + valsz + 1 > *max) {
-		*max += valsz + 128;
-		*buf = xrealloc(*buf, *max);
-	}
-
-	strlcat(*buf, val, *max);
-}
-
-static void
-buf_appendc(char **buf, size_t *sz, size_t *max, char val)
-{
-
-	if (*sz + 2 > *max) {
-		*max += 128;
-		*buf = xrealloc(*buf, *max);
-	}
-	(*buf)[(*sz)++] = val;
-	(*buf)[(*sz)++] = '\0';
-}
-
-static char *
-smarty_buf(const char *buf, enum lowdown_type type)
-{
-	char	*out = NULL;
-	size_t	 outsz = 0, outmax = 0, i, j, bufsz, sz;
-	int	 left_wb = 1;
-
-	bufsz = strlen(buf);
-
-	for (i = 0; i < bufsz; i++) {
-		switch (buf[i]) {
-		case '.':
-		case '(':
-		case '-':
-			for (j = 0; syms[j].key != NULL; j++) {
-				sz = strlen(syms[j].key);
-				if (i + sz - 1 >= bufsz)
-					continue;
-				if (memcmp(syms[j].key, &buf[i], sz))
-					continue;
-				buf_append(&out, &outsz, &outmax,
-					ent_htmls[syms[j].ent]);
-				left_wb = 0;
-				i += sz - 1;
-				break;
-			}
-			if (syms[j].key != NULL)
-				continue;
-			break;
-		case '"':
-			if (!left_wb) {
-				if (i + 1 < bufsz - 1 &&
-				    !smarty_iswb(buf[i + 1]))
-					break;
-				buf_append(&out, &outsz, &outmax,
-					ent_htmls[ENT_RDQUO]);
-				left_wb = 0;
-				continue;
-			}
-			buf_append(&out, &outsz, &outmax,
-				ent_htmls[ENT_LDQUO]);
-			left_wb = 0;
-			continue;
-		case '\'':
-			if (!left_wb) {
-				if (i + 1 < bufsz - 1 &&
-				    !smarty_iswb(buf[i + 1]))
-				buf_append(&out, &outsz, &outmax,
-					ent_htmls[ENT_RSQUO]);
-				left_wb = 0;
-				continue;
-			}
-			buf_append(&out, &outsz, &outmax,
-				ent_htmls[ENT_LDQUO]);
-			left_wb = 0;
-			continue;
-		case '1':
-		case '3':
-			if (!left_wb)
-				break;
-			for (j = 0; syms2[j].key != NULL; j++) {
-				sz = strlen(syms2[j].key);
-				if (i + sz - 1 >= bufsz)
-					continue;
-				if (memcmp(syms2[j].key, &buf[i], sz))
-					continue;
-				if (i + sz < bufsz - 1 &&
-				    !smarty_iswb(buf[i + sz]))
-				buf_append(&out, &outsz, &outmax,
-					ent_htmls[syms2[j].ent]);
-				left_wb = 0;
-				break;
-			}
-			if (syms2[j].key != NULL)
-				continue;
-			break;
-		default:
-			break;
-		}
-
-		buf_appendc(&out, &outsz, &outmax, buf[i]);
-		left_wb = smarty_iswb(buf[i]);
-	}
-
-	return out;
-}
-
 /*
  * Recursive scan for next white-space.
  * If "skip" is set, we're on the starting node and shouldn't do a check
@@ -355,6 +243,7 @@ smarty_right_wb_r(const struct lowdown_node *n, int skip)
 	/* Now scan back up. */
 
 	do {
+		/* FIXME: don't go up to block. */
 		if ((nn = TAILQ_NEXT(n, entries)) != NULL)
 			return smarty_right_wb_r(nn, 0);
 	} while ((n = n->parent) != NULL);
@@ -490,17 +379,6 @@ smarty_block(struct lowdown_node *root,
 {
 	struct smarty		 s;
 	struct lowdown_node	*n;
-	size_t			 i;
-	char			*v;
-
-	if (root->type == LOWDOWN_DOC_HEADER)
-		for (i = 0; i < root->rndr_doc_header.msz; i++) {
-			v = smarty_buf
-				(root->rndr_doc_header.m[i].value,
-				 type);
-			free(root->rndr_doc_header.m[i].value);
-			root->rndr_doc_header.m[i].value = v;
-		}
 
 	s.left_wb = 1;
 

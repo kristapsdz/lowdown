@@ -10,13 +10,11 @@ OBJS		 = autolink.o \
 		   entity.o \
 		   html.o \
 		   html_escape.o \
-		   html_smartypants.o \
 		   library.o \
 		   libdiff.o \
 		   log.o \
 		   nroff.o \
 		   nroff_escape.o \
-		   nroff_smartypants.o \
 		   smartypants.o \
 		   term.o \
 		   tree.o \

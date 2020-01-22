@@ -3,7 +3,7 @@
  * Copyright (c) 2008, Natacha Porté
  * Copyright (c) 2011, Vicent Martí
  * Copyright (c) 2014, Xavier Mendez, Devin Torres and the Hoedown authors
- * Copyright (c) 2016--2017 Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) 2016--2017, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -36,7 +36,9 @@
 
 #define HOEDOWN_LI_END	8 /* internal list flag */
 
-/* Reference to a link. */
+/* 
+ * Reference to a link.
+ */
 struct link_ref {
 	hbuf		*name; /* identifier of link (or NULL) */
 	hbuf		*link; /* link address */
@@ -44,10 +46,11 @@ struct link_ref {
 	TAILQ_ENTRY(link_ref) entries;
 };
 
-/* Queue of links. */
 TAILQ_HEAD(link_refq, link_ref);
 
-/* Feference to a footnote. */
+/* 
+ * Feference to a footnote. 
+ */
 struct footnote_ref {
 	int		 is_used; /* whether has been referenced */
 	size_t		 num; /* if referenced, the order */
@@ -56,7 +59,6 @@ struct footnote_ref {
 	TAILQ_ENTRY(footnote_ref) entries;
 };
 
-/* Queue of footnotes. */
 TAILQ_HEAD(footnote_refq, footnote_ref);
 
 /*
@@ -127,10 +129,9 @@ struct 	hdoc {
 	unsigned int	 ext_flags;
 	size_t	 	 cur_par; /* XXX: not used */
 	int		 in_link_body;
-	struct lowdown_meta *m; /* document meta-data */
-	size_t		 msz; /* entries in "m" */
 	size_t		 nodes; /* number of nodes */
 	struct lowdown_node *current;
+	struct lowdown_metaq metaq; /* used for links */
 };
 
 /* Some forward declarations. */
@@ -1217,13 +1218,14 @@ char_link(hdoc *doc, char *data, size_t offset, size_t size)
 		*linkp = NULL, *titlep = NULL;
 	size_t 	 i = 1, txt_e, link_b = 0, link_e = 0, title_b = 0, 
 		 title_e = 0, nb_p, dims_b = 0, 
-		 dims_e = 0, j, sz;
+		 dims_e = 0, sz;
 	int 	 ret = 0, in_title = 0, qtype = 0, is_img, is_footnote,
 		 is_metadata;
-	hbuf 	 id, work;
+	hbuf 	 id;
 	struct link_ref *lr;
 	struct footnote_ref *fr;
 	struct lowdown_node *n;
+	struct lowdown_meta	*m;
 
 	is_img = offset && data[-1] == '!' && 
 		!is_escaped(data - offset, offset - 1);
@@ -1304,18 +1306,15 @@ char_link(hdoc *doc, char *data, size_t offset, size_t size)
 		id.data = data + 2;
 		id.size = txt_e - 2;
 
-		for (j = 0; j < doc->msz; j++) {
-			sz = strlen(doc->m[j].key);
-			if (sz == id.size && 
-			    0 == strncmp(doc->m[j].key, id.data, sz)) {
-				n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
-				memset(&work, 0, sizeof(hbuf));
-				work.data = doc->m[j].value;
-				work.size = strlen(doc->m[j].value);
-				pushbuffer(&n->rndr_normal_text.text,
-					work.data, work.size);
-				popnode(doc, n);
-			}
+		TAILQ_FOREACH(m, &doc->metaq, entries) {
+			sz = strlen(m->key);
+			if (sz != id.size || 
+			    strncmp(m->key, id.data, sz))
+				continue;
+			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
+			pushbuffer(&n->rndr_normal_text.text,
+				m->value, strlen(m->value));
+			popnode(doc, n);
 		}
 
 		ret = 1;
@@ -2728,9 +2727,9 @@ parse_table_row(hbuf *ob, hdoc *doc, char *data,
 	size_t size, size_t columns, enum htbl_flags *col_data, 
 	enum htbl_flags header_flag)
 {
-	size_t	 i = 0, col, len, cell_start, cell_end;
-	hbuf 	 empty_cell;
-	struct lowdown_node *n, *nn;
+	size_t	 		 i = 0, col, len, cell_start, cell_end;
+	hbuf 	 		 empty_cell;
+	struct lowdown_node	*n, *nn;
 
 	if (i < size && data[i] == '|')
 		i++;
@@ -2793,9 +2792,10 @@ parse_table_header(struct lowdown_node **np,
 	size_t size, size_t *columns, 
 	enum htbl_flags **column_data)
 {
-	size_t	 i = 0, col, header_end, under_end, dashes;
-	ssize_t	 pipes = 0;
-	struct lowdown_node *n;
+	size_t	 		 i = 0, col, header_end, under_end, 
+				 dashes;
+	ssize_t	 		 pipes = 0;
+	struct lowdown_node	*n;
 
 	while (i < size && data[i] != '\n')
 		if (data[i++] == '|')
@@ -2886,11 +2886,10 @@ parse_table_header(struct lowdown_node **np,
 static size_t
 parse_table(hdoc *doc, char *data, size_t size)
 {
-	size_t		 i, columns, row_start, pipes;
-	hbuf		 *header_work = NULL, 
-			 *body_work = NULL;
-	enum htbl_flags	*col_data = NULL;
-	struct lowdown_node *n = NULL, *nn;
+	size_t		 	 i, columns, row_start, pipes;
+	hbuf		 	*header_work = NULL, *body_work = NULL;
+	enum htbl_flags		*col_data = NULL;
+	struct lowdown_node	*n = NULL, *nn;
 
 	header_work = hbuf_new(64);
 	body_work = hbuf_new(256);
@@ -2939,10 +2938,10 @@ parse_table(hdoc *doc, char *data, size_t size)
 static void
 parse_block(hdoc *doc, char *data, size_t size)
 {
-	size_t	 beg = 0, end, i;
-	char	*txt_data;
-	char	 oli_data[10];
-	struct lowdown_node *n;
+	size_t	 		 beg = 0, end, i;
+	char			*txt_data;
+	char			 oli_data[10];
+	struct lowdown_node	*n;
 
 	/* 
 	 * What kind of block are we?
@@ -3049,10 +3048,11 @@ static int
 is_footnote(hdoc *doc, const char *data, 
 	size_t beg, size_t end, size_t *last)
 {
-	size_t	 i = 0, ind = 0, start = 0, id_offset, id_end;
-	hbuf	*contents = NULL;
-	int 	 in_empty = 0;
-	struct footnote_ref *ref;
+	size_t	 		 i = 0, ind = 0, start = 0, 
+				 id_offset, id_end;
+	hbuf			*contents = NULL;
+	int			 in_empty = 0;
+	struct footnote_ref	*ref;
 
 	/* up to 3 optional leading spaces */
 
@@ -3168,9 +3168,9 @@ static int
 is_ref(struct hdoc *doc, const char *data, 
 	size_t beg, size_t end, size_t *last)
 {
-	size_t	 i, id_offset, id_end, link_offset,
-		 link_end, title_offset, title_end, line_end;
-	struct link_ref *ref;
+	size_t	 	 i, id_offset, id_end, link_offset,
+			 link_end, title_offset, title_end, line_end;
+	struct link_ref	*ref;
 
 	/* Up to 3 optional leading spaces. */
 
@@ -3345,27 +3345,20 @@ expand_tabs(hbuf *ob, const char *line, size_t size)
 	}
 }
 
-/*
- * Allocate a new document processor instance.
- */
 hdoc *
 lowdown_doc_new(const struct lowdown_opts *opts)
 {
-	hdoc 		*doc = NULL;
-	unsigned int	 extensions;
-
-	extensions = opts ? opts->feat : 0;
+	hdoc 		*doc;
+	unsigned int	 extensions = opts ? opts->feat : 0;
 
 	doc = xcalloc(1, sizeof(hdoc));
 
-	doc->opts = opts;
 	doc->active_char['*'] = MD_CHAR_EMPHASIS;
 	doc->active_char['_'] = MD_CHAR_EMPHASIS;
 	if (extensions & LOWDOWN_STRIKE)
 		doc->active_char['~'] = MD_CHAR_EMPHASIS;
 	if (extensions & LOWDOWN_HILITE)
 		doc->active_char['='] = MD_CHAR_EMPHASIS;
-
 	doc->active_char['`'] = MD_CHAR_CODESPAN;
 	doc->active_char['\n'] = MD_CHAR_LINEBREAK;
 	doc->active_char['['] = MD_CHAR_LINK;
@@ -3373,19 +3366,17 @@ lowdown_doc_new(const struct lowdown_opts *opts)
 	doc->active_char['<'] = MD_CHAR_LANGLE;
 	doc->active_char['\\'] = MD_CHAR_ESCAPE;
 	doc->active_char['&'] = MD_CHAR_ENTITY;
-
 	if (extensions & LOWDOWN_AUTOLINK) {
 		doc->active_char[':'] = MD_CHAR_AUTOLINK_URL;
 		doc->active_char['@'] = MD_CHAR_AUTOLINK_EMAIL;
 		doc->active_char['w'] = MD_CHAR_AUTOLINK_WWW;
 	}
-
 	if (extensions & LOWDOWN_SUPER)
 		doc->active_char['^'] = MD_CHAR_SUPERSCRIPT;
-
 	if (extensions & LOWDOWN_MATH)
 		doc->active_char['$'] = MD_CHAR_MATH;
 
+	doc->opts = opts;
 	doc->ext_flags = extensions;
 
 	return doc;
@@ -3490,13 +3481,14 @@ parse_metadata_val(const char *data, size_t sz, size_t *len)
 static int
 parse_metadata(hdoc *doc, const char *data, size_t sz)
 {
-	size_t	 	 i, len, pos = 0, valsz;
-	const char	*key, *val;
-	struct lowdown_meta *m;
-	char		*cp;
-	
-	if (0 == sz || '\n' != data[sz - 1])
-		return(0);
+	size_t	 	 	 i, j, pos = 0, valsz, keysz;
+	const char		*key, *val;
+	struct lowdown_meta	*m;
+	struct lowdown_node	*n, *nn;
+	char			*cp;
+
+	if (sz == 0 || data[sz - 1] != '\n')
+		return 0;
 
 	/* 
 	 * Check the first line for a colon to see if we should do
@@ -3506,66 +3498,80 @@ parse_metadata(hdoc *doc, const char *data, size_t sz)
 	 */
 
 	for (pos = 0; pos < sz; pos++)
-		if ('\n' == data[pos] || ':' == data[pos])
+		if (data[pos] == '\n' || data[pos] == ':')
 			break;
 
-	if (pos == sz || '\n' == data[pos])
-		return(0);
+	if (pos == sz || data[pos] == '\n')
+		return 0;
+
+	/*
+	 * Also put the metadata into the document's metaq because we
+	 * might set variables.
+	 */
 
 	for (pos = 0; pos < sz; ) {
+		m = xcalloc(1, sizeof(struct lowdown_meta));
+		TAILQ_INSERT_TAIL(&doc->metaq, m, entries);
+
+		n = pushnode(doc, LOWDOWN_META);
 		key = &data[pos];
 		for (i = pos; i < sz; i++)
-			if (':' == data[i])
+			if (data[i] == ':')
 				break;
+		keysz = i - pos;
 
-		doc->m = xreallocarray
-			(doc->m, doc->msz + 1,
-			 sizeof(struct lowdown_meta));
-		m = &doc->m[doc->msz++];
-		memset(m, 0, sizeof(struct lowdown_meta));
+		/*
+		 * Start by normalising the key to have only lowercase
+		 * alphanumerics, -, and _.
+		 * The whitespace we discard; other characters we
+		 * replace with a question mark.
+		 */
 
-		m->key = xstrndup(key, i - pos);
+		n->rndr_meta.key.data = cp = malloc(keysz);
+		for (j = 0; j < keysz; j++) {
+			if (isalnum((unsigned char)key[j]) ||
+			    '-' == key[j] || '_' == key[j]) {
+				*cp++ = tolower((unsigned char)key[j]);
+				continue;
+			} else if (isspace((unsigned char)key[j]))
+				continue;
+			lmsg(doc->opts, 
+				LOWDOWN_ERR_METADATA_BAD_CHAR, NULL);
+			*cp++ = '?';
+		}
+		n->rndr_meta.key.size = cp - n->rndr_meta.key.data;
+		m->key = xstrndup
+			(n->rndr_meta.key.data,
+			 n->rndr_meta.key.size);
+
 		if (i == sz) {
-			m->value = xstrndup(key, 0);
+			popnode(doc, n);
+			m->value = xstrdup("");
 			break;
 		}
 
-		/* Pass colon, space, value, then to next token. */
+		/* Parse the value, creating a node if nonempty. */
 
+		assert(data[i] == ':');
 		i++;
 		while (i < sz && isspace((unsigned char)data[i]))
 			i++;
+		if (i == sz) {
+			popnode(doc, n);
+			m->value = xstrdup("");
+			break;
+		}
+
 		val = parse_metadata_val(&data[i], sz - i, &valsz);
+		nn = pushnode(doc, LOWDOWN_NORMAL_TEXT);
+		pushbuffer(&nn->rndr_normal_text.text, val, valsz);
 		m->value = xstrndup(val, valsz);
+		popnode(doc, nn);
+		popnode(doc, n);
 		pos = i + valsz + 1;
 	}
 
-	/*
-	 * Convert metadata keys into normalised form: lowercase
-	 * alphanumerics, hyphen, underscore, with spaces stripped.
-	 */
-
-	for (i = 0; i < doc->msz; i++) {
-		cp = doc->m[i].key;
-		while ('\0' != *cp) {
-			if (isalnum((int)*cp) ||
-			    '-' == *cp || '_' == *cp) {
-				*cp = tolower((int)*cp);
-				cp++;
-				continue;
-			} else if (isspace((int)*cp)) {
-				len = strlen(cp + 1) + 1;
-				memmove(cp, cp + 1, len);
-				continue;
-			} 
-			lmsg(doc->opts, 
-				LOWDOWN_ERR_METADATA_BAD_CHAR, 
-				NULL);
-			*cp++ = '?';
-		}
-	}
-
-	return(1);
+	return 1;
 }
 
 /*
@@ -3575,19 +3581,16 @@ parse_metadata(hdoc *doc, const char *data, size_t sz)
  * (Obviously only applicable if LOWDOWN_METADATA has been set.)
  */
 struct lowdown_node *
-lowdown_doc_parse(hdoc *doc, size_t *nsz, const char *data,
-	size_t size, struct lowdown_meta **mp, size_t *mszp)
+lowdown_doc_parse(hdoc *doc, size_t *nsz, const char *data, size_t size)
 {
-	static const char UTF8_BOM[] = {0xEF, 0xBB, 0xBF};
-	hbuf		*text;
-	size_t		 beg, end, i;
-	int		 footnotes_enabled;
-	const char	*sv;
-	struct lowdown_node *n, *root;
+	static const char 	 UTF8_BOM[] = {0xEF, 0xBB, 0xBF};
+	hbuf			*text;
+	size_t		 	 beg, end;
+	int		 	 footnotes_enabled;
+	const char		*sv;
+	struct lowdown_node 	*n, *root;
 
 	doc->current = NULL;
-	doc->m = NULL;
-	doc->msz = 0;
 	doc->in_link_body = 0;
 
 	text = hbuf_new(64);
@@ -3602,6 +3605,7 @@ lowdown_doc_parse(hdoc *doc, size_t *nsz, const char *data,
 
 	/* Reset the references table. */
 
+	TAILQ_INIT(&doc->metaq);
 	TAILQ_INIT(&doc->refq);
 	TAILQ_INIT(&doc->footnotes);
 
@@ -3623,8 +3627,10 @@ lowdown_doc_parse(hdoc *doc, size_t *nsz, const char *data,
 	 * (Only parse if we must.)
 	 */
 
+	n = pushnode(doc, LOWDOWN_DOC_HEADER);
+
 	if (LOWDOWN_METADATA & doc->ext_flags &&
-	    beg < size - 1 && isalnum((int)data[beg])) {
+	    beg < size - 1 && isalnum((unsigned char)data[beg])) {
 		sv = &data[beg];
 		for (end = beg + 1; end < size; end++) {
 			if ('\n' == data[end] &&
@@ -3666,25 +3672,8 @@ lowdown_doc_parse(hdoc *doc, size_t *nsz, const char *data,
 			beg = end;
 		}
 
-	/* Pre-grow the output buffer to minimize allocations. */
-
-	/*hbuf_grow(ob, text->size + (text->size >> 1));*/
-
 	/* Second pass: actual rendering. */
 
-	n = pushnode(doc, LOWDOWN_DOC_HEADER);
-	n->rndr_doc_header.msz = doc->msz;
-	if (n->rndr_doc_header.msz) {
-		n->rndr_doc_header.m = 
-			xcalloc(doc->msz, 
-				sizeof(struct lowdown_meta));
-		for (i = 0; i < doc->msz; i++) {
-			n->rndr_doc_header.m[i].key = 
-				xstrdup(doc->m[i].key);
-			n->rndr_doc_header.m[i].value = 
-				xstrdup(doc->m[i].value);
-		}
-	}
 	popnode(doc, n);
 
 	if (text->size) {
@@ -3699,7 +3688,6 @@ lowdown_doc_parse(hdoc *doc, size_t *nsz, const char *data,
 
 	if (footnotes_enabled)
 		parse_footnote_list(doc);
-
 	n = pushnode(doc, LOWDOWN_DOC_FOOTER);
 	popnode(doc, n);
 
@@ -3707,102 +3695,88 @@ lowdown_doc_parse(hdoc *doc, size_t *nsz, const char *data,
 
 	hbuf_free(text);
 	free_link_refs(&doc->refq);
-	if (footnotes_enabled)
-		free_footnote_refs(&doc->footnotes);
-
-	/* 
-	 * Copy our metadata to the given pointers.
-	 * If we do this, they'll be freed by the caller.
-	 * Do this only if both pointers are provided.
-	 * Otherwise, free the pointers---we won't be needing them any
-	 * more.
-	 */
-
-	if (NULL != mp && NULL != mszp) {
-		*mp = doc->m;
-		*mszp = doc->msz;
-	} else {
-		for (i = 0; i < doc->msz; i++) {
-			free(doc->m[i].key);
-			free(doc->m[i].value);
-		}
-		free(doc->m);
-	}
-
-	doc->m = NULL;
-	doc->msz = 0;
+	free_footnote_refs(&doc->footnotes);
+	lowdown_metaq_free(&doc->metaq);
 
 	*nsz = doc->nodes;
 	popnode(doc, root);
-	return(root);
+	return root;
 }
 
 void
 lowdown_node_free(struct lowdown_node *root)
 {
 	struct lowdown_node *n;
-	size_t	 i;
 
-	if (NULL == root)
+	if (root == NULL)
 		return;
 
 	switch (root->type) {
-	case (LOWDOWN_DOC_HEADER):
-		for (i = 0; i < root->rndr_doc_header.msz; i++) {
-			free(root->rndr_doc_header.m[i].key);
-			free(root->rndr_doc_header.m[i].value);
-		}
-		free(root->rndr_doc_header.m);
+	case LOWDOWN_META:
+		hbuf_free(&root->rndr_meta.key);
 		break;
-	case (LOWDOWN_NORMAL_TEXT):
+	case LOWDOWN_NORMAL_TEXT:
 		hbuf_free(&root->rndr_normal_text.text);
 		break;
-	case (LOWDOWN_CODESPAN):
+	case LOWDOWN_CODESPAN:
 		hbuf_free(&root->rndr_codespan.text);
 		break;
-	case (LOWDOWN_ENTITY):
+	case LOWDOWN_ENTITY:
 		hbuf_free(&root->rndr_entity.text);
 		break;
-	case (LOWDOWN_LINK_AUTO):
+	case LOWDOWN_LINK_AUTO:
 		hbuf_free(&root->rndr_autolink.text);
 		hbuf_free(&root->rndr_autolink.link);
 		break;
-	case (LOWDOWN_RAW_HTML):
+	case LOWDOWN_RAW_HTML:
 		hbuf_free(&root->rndr_raw_html.text);
 		break;
-	case (LOWDOWN_LINK):
+	case LOWDOWN_LINK:
 		hbuf_free(&root->rndr_link.link);
 		hbuf_free(&root->rndr_link.title);
 		break;
-	case (LOWDOWN_BLOCKCODE):
+	case LOWDOWN_BLOCKCODE:
 		hbuf_free(&root->rndr_blockcode.text);
 		hbuf_free(&root->rndr_blockcode.lang);
 		break;
-	case (LOWDOWN_BLOCKHTML):
+	case LOWDOWN_BLOCKHTML:
 		hbuf_free(&root->rndr_blockhtml.text);
 		break;
-	case (LOWDOWN_TABLE_HEADER):
+	case LOWDOWN_TABLE_HEADER:
 		free(root->rndr_table_header.flags);
 		break;
-	case (LOWDOWN_IMAGE):
+	case LOWDOWN_IMAGE:
 		hbuf_free(&root->rndr_image.link);
 		hbuf_free(&root->rndr_image.title);
 		hbuf_free(&root->rndr_image.dims);
 		hbuf_free(&root->rndr_image.alt);
 		break;
-	case (LOWDOWN_MATH_BLOCK):
+	case LOWDOWN_MATH_BLOCK:
 		hbuf_free(&root->rndr_math.text);
 		break;
 	default:
 		break;
 	}
 
-	while (NULL != (n = TAILQ_FIRST(&root->children))) {
+	while ((n = TAILQ_FIRST(&root->children)) != NULL) {
 		TAILQ_REMOVE(&root->children, n, entries);
 		lowdown_node_free(n);
 	}
 
 	free(root);
+}
+
+void
+lowdown_metaq_free(struct lowdown_metaq *q)
+{
+	struct lowdown_meta	*m;
+
+	while ((m = TAILQ_FIRST(q)) != NULL) {
+		TAILQ_REMOVE(q, m, entries);
+		free(m->key);
+		free(m->value);
+		free(m);
+	}
 }
 
 void

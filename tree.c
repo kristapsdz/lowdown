@@ -66,6 +66,7 @@ static	const char *const names[LOWDOWN__MAX] = {
 	"LOWDOWN_ENTITY",               /* LOWDOWN_ENTITY */
 	"LOWDOWN_NORMAL_TEXT",          /* LOWDOWN_NORMAL_TEXT */
 	"LOWDOWN_DOC_HEADER",           /* LOWDOWN_DOC_HEADER */
+	"LOWDOWN_META",			/* LOWDOWN_META */
 	"LOWDOWN_DOC_FOOTER",           /* LOWDOWN_DOC_FOOTER */
 };
 
@@ -87,11 +88,12 @@ rndr_short(hbuf *ob, const hbuf *b)
 }
 
 static void
-rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
+rndr(hbuf *ob, struct lowdown_metaq *metaq,
+	const struct lowdown_node *root, size_t indent)
 {
-	const struct lowdown_node *n;
-	hbuf	*tmp;
-	size_t	 i, j;
+	const struct lowdown_node	*n;
+	hbuf				*tmp;
+	size_t	 			 i, j;
 
 	for (i = 0; i < indent; i++)
 		HBUF_PUTSL(ob, "  ");
@@ -177,14 +179,12 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 			HLIST_FL_ORDERED & root->rndr_list.flags ? 
 			"ordered" : "unordered");
 		break;
-	case LOWDOWN_DOC_HEADER:
-		for (i = 0; i < root->rndr_doc_header.msz; i++) {
-			for (j = 0; j < indent + 1; j++)
-				HBUF_PUTSL(ob, "  ");
-			hbuf_printf(ob, "metadata: %zu Bytes: %s\n",
-				strlen(root->rndr_doc_header.m[i].value),
-				root->rndr_doc_header.m[i].key);
-		}
+	case LOWDOWN_META:
+		for (j = 0; j < indent + 1; j++)
+			HBUF_PUTSL(ob, "  ");
+		hbuf_printf(ob, "key: ");
+		rndr_short(ob, &root->rndr_meta.key);
+		HBUF_PUTSL(ob, "\n");
 		break;
 	case LOWDOWN_MATH_BLOCK:
 		for (i = 0; i < indent + 1; i++)
@@ -220,17 +220,18 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 
 	tmp = hbuf_new(64);
 	TAILQ_FOREACH(n, &root->children, entries)
-		rndr(tmp, n, indent + 1);
+		rndr(tmp, metaq, n, indent + 1);
 	hbuf_put(ob, tmp->data, tmp->size);
 	hbuf_free(tmp);
 }
 
 void
-lowdown_tree_rndr(hbuf *ob, void *ref, struct lowdown_node *root)
+lowdown_tree_rndr(hbuf *ob, struct lowdown_metaq *metaq,
+	void *ref, struct lowdown_node *root)
 {
 
 	assert(ref == NULL);
-	rndr(ob, root, 0);
+	rndr(ob, metaq, root, 0);
 }
 
 void *

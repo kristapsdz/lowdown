@@ -233,8 +233,9 @@ main(int argc, char *argv[])
 			 diff = 0;
 	char		*ret = NULL;
 	int	 	 feat;
-	size_t		 i, retsz = 0, msz = 0;
-	struct lowdown_meta *m = NULL;
+	size_t		 retsz = 0;
+	const struct lowdown_meta *m = NULL;
+	struct lowdown_metaq mq;
 
 	memset(&opts, 0, sizeof(struct lowdown_opts));
 
@@ -361,24 +362,27 @@ main(int argc, char *argv[])
 	if (standalone)
 		opts.oflags |= LOWDOWN_STANDALONE;
 
+	TAILQ_INIT(&mq);
+
 	if (diff) {
 		dopts = opts;
 		opts.arg = (void *)fnin;
 		dopts.arg = (void *)fndin;
-		if (!lowdown_file_diff(&opts, fin, &dopts, din, &ret, &retsz))
+		if (!lowdown_file_diff
+		    (&opts, fin, &dopts, din, &ret, &retsz, &mq))
 			err(EXIT_FAILURE, "%s", fnin);
 	} else {
 		opts.arg = (void *)fnin;
-		if (!lowdown_file(&opts, fin, &ret, &retsz, &m, &msz))
+		if (!lowdown_file(&opts, fin, &ret, &retsz, &mq))
 			err(EXIT_FAILURE, "%s", fnin);
 	}
 
 	if (extract != NULL) {
-		for (i = 0; i < msz; i++) 
-			if (strcasecmp(m[i].key, extract) == 0)
+		TAILQ_FOREACH(m, &mq, entries) 
+			if (strcasecmp(m->key, extract) == 0)
 				break;
-		if (i < msz) {
-			fprintf(fout, "%s\n", m[i].value);
+		if (m != NULL) {
+			fprintf(fout, "%s\n", m->value);
 		} else {
 			status = EXIT_FAILURE;
 			warnx("%s: unknown keyword", extract);
@@ -389,15 +393,12 @@ main(int argc, char *argv[])
 	free(ret);
 	if (fout != stdout)
 		fclose(fout);
-	if (NULL != din)
+	if (din != NULL)
 		fclose(din);
 	if (fin != stdin)
 		fclose(fin);
-	for (i = 0; i < msz; i++) {
-		free(m[i].key);
-		free(m[i].value);
-	}
-	free(m);
+
+	lowdown_metaq_free(&mq);
 	return status;
 usage:
 	fprintf(stderr, "usage: lowdown "

@@ -53,6 +53,7 @@ void	 smarty(struct lowdown_node *, size_t, enum lowdown_type);
 int32_t	 entity_find(const hbuf *);
 
 int	 hbuf_eq(const hbuf *, const hbuf *);
+int	 hbuf_streq(const hbuf *, const char *);
 void	 hbuf_free(hbuf *);
 void	 hbuf_grow(hbuf *, size_t);
 hbuf	*hbuf_clone(const hbuf *, hbuf *);
@@ -61,6 +62,7 @@ int	 hbuf_prefix(const hbuf *, const char *);
 void	 hbuf_printf(hbuf *, const char *, ...) 
 		__attribute__((format (printf, 2, 3)));
 void	 hbuf_put(hbuf *, const char *, size_t);
+void	 hbuf_putb(hbuf *, const hbuf *);
 void	 hbuf_putc(hbuf *, char);
 int	 hbuf_putf(hbuf *, FILE *);
 void	 hbuf_puts(hbuf *, const char *);

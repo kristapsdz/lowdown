@@ -95,6 +95,7 @@ enum	lowdown_rndrt {
 	LOWDOWN_ENTITY,
 	LOWDOWN_NORMAL_TEXT,
 	LOWDOWN_DOC_HEADER,
+	LOWDOWN_META,
 	LOWDOWN_DOC_FOOTER,
 	LOWDOWN__MAX
 };
@@ -107,8 +108,6 @@ typedef struct hbuf {
 	int 		 buffer_free; /* obj should be freed */
 } hbuf;
 
-/*
- */
 TAILQ_HEAD(lowdown_nodeq, lowdown_node);
 
 enum 	htbl_flags {
@@ -137,7 +136,10 @@ enum	hlist_fl {
 struct	lowdown_meta {
 	char		*key;
 	char		*value;
+	TAILQ_ENTRY(lowdown_meta) entries;
 };
+
+TAILQ_HEAD(lowdown_metaq, lowdown_meta);
 
 enum	lowdown_chng {
 	LOWDOWN_CHNG_NONE = 0,
@@ -154,10 +156,9 @@ struct	lowdown_node {
 	enum lowdown_chng	 chng; /* change type */
 	size_t			 id; /* unique identifier */
 	union {
-		struct rndr_doc_header {
-			struct lowdown_meta *m; /* unescaped */
-			size_t msz;
-		} rndr_doc_header;
+		struct rndr_meta {
+			hbuf key;
+		} rndr_meta;
 		struct rndr_list {
 			enum hlist_fl flags; /* only HLIST_FL_ORDERED */
 			/*
@@ -285,19 +286,17 @@ const char *lowdown_errstr(enum lowdown_err);
  */
 void	 lowdown_buf(const struct lowdown_opts *, 
 		const char *, size_t,
-		char **, size_t *,
-		struct lowdown_meta **, size_t *);
+		char **, size_t *, struct lowdown_metaq *);
 void	 lowdown_buf_diff(const struct lowdown_opts *, 
 		const char *, size_t,
 		const struct lowdown_opts *,
 		const char *, size_t,
-		char **, size_t *);
+		char **, size_t *, struct lowdown_metaq *);
 int	 lowdown_file(const struct lowdown_opts *, 
-		FILE *, char **, size_t *,
-		struct lowdown_meta **, size_t *);
+		FILE *, char **, size_t *, struct lowdown_metaq *);
 int	 lowdown_file_diff(const struct lowdown_opts *, FILE *, 
 		const struct lowdown_opts *, FILE *,
-		char **, size_t *);
+		char **, size_t *, struct lowdown_metaq *);
 
 /* 
  * Low-level functions.
@@ -307,35 +306,34 @@ int	 lowdown_file_diff(const struct lowdown_opts *, FILE *,
 
 hdoc 	*lowdown_doc_new(const struct lowdown_opts *);
 struct lowdown_node
-	*lowdown_doc_parse(hdoc *, size_t *, const char *, 
-		size_t, struct lowdown_meta **, size_t *);
+	*lowdown_doc_parse(hdoc *, size_t *, const char *, size_t);
 struct lowdown_node
 	*lowdown_diff(const struct lowdown_node *,
 		const struct lowdown_node *, size_t *);
 void	 lowdown_doc_free(hdoc *);
+void	 lowdown_metaq_free(struct lowdown_metaq *);
 
 void 	 lowdown_node_free(struct lowdown_node *);
 
 void	 lowdown_html_free(void *);
 void	*lowdown_html_new(const struct lowdown_opts *);
-void 	 lowdown_html_rndr(hbuf *, void *, struct lowdown_node *);
+void 	 lowdown_html_rndr(hbuf *, struct lowdown_metaq *,
+		void *, struct lowdown_node *);
 
 void	 lowdown_term_free(void *);
 void	*lowdown_term_new(void);
-void 	 lowdown_term_rndr(hbuf *, void *, struct lowdown_node *);
+void 	 lowdown_term_rndr(hbuf *, struct lowdown_metaq *,
+		void *, struct lowdown_node *);
 
 void	 lowdown_nroff_free(void *);
 void	*lowdown_nroff_new(const struct lowdown_opts *);
-void 	 lowdown_nroff_rndr(hbuf *, void *, struct lowdown_node *);
+void 	 lowdown_nroff_rndr(hbuf *, struct lowdown_metaq *,
+		void *, struct lowdown_node *);
 
 void	 lowdown_tree_free(void *);
 void	*lowdown_tree_new(void);
-void 	 lowdown_tree_rndr(hbuf *, void *, struct lowdown_node *);
-
-/* XXX: will be deprecated. */
-
-void	 lowdown_html_smrt(hbuf *, const char *, size_t);
-void	 lowdown_nroff_smrt(hbuf *, const char *, size_t);
+void 	 lowdown_tree_rndr(hbuf *, struct lowdown_metaq *,
+		void *, struct lowdown_node *);
 
 __END_DECLS
 

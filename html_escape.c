@@ -122,6 +122,9 @@ hesc_href(hbuf *ob, const char *data, size_t size)
 	size_t  i = 0, mark;
 	char hex_str[3];
 
+	if (size == 0)
+		return;
+
 	hex_str[0] = '%';
 
 	while (i < size) {
@@ -196,6 +199,9 @@ void
 hesc_html(hbuf *ob, const char *data, size_t size, int secure)
 {
 	size_t i = 0, mark;
+
+	if (size == 0)
+		return;
 
 	while (1) {
 		mark = i;

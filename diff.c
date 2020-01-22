@@ -107,6 +107,7 @@ static	const char *const names[LOWDOWN__MAX] = {
 	"LOWDOWN_ENTITY",               /* LOWDOWN_ENTITY */
 	"LOWDOWN_NORMAL_TEXT",          /* LOWDOWN_NORMAL_TEXT */
 	"LOWDOWN_DOC_HEADER",           /* LOWDOWN_DOC_HEADER */
+	"LOWDOWN_META",           	/* LOWDOWN_META */
 	"LOWDOWN_DOC_FOOTER",           /* LOWDOWN_DOC_FOOTER */
 };
 #endif
@@ -601,20 +602,9 @@ node_clone(const struct lowdown_node *v, size_t id)
 	n->id = id;
 
 	switch (n->type) {
-	case LOWDOWN_DOC_HEADER:
-		n->rndr_doc_header.msz =
-			v->rndr_doc_header.msz;
-		if (0 == n->rndr_doc_header.msz)
-			break;
-		n->rndr_doc_header.m = xcalloc
-			(v->rndr_doc_header.msz,
-			 sizeof(struct lowdown_meta));
-		for (i = 0; i < n->rndr_doc_header.msz; i++) {
-			n->rndr_doc_header.m[i].key = xstrdup
-				(v->rndr_doc_header.m[i].key);
-			n->rndr_doc_header.m[i].value = xstrdup
-				(v->rndr_doc_header.m[i].value);
-		}
+	case LOWDOWN_META:
+		hbuf_clone(&v->rndr_meta.key,
+			&n->rndr_meta.key);
 		break;
 	case LOWDOWN_LIST:
 		n->rndr_list.flags = v->rndr_list.flags;

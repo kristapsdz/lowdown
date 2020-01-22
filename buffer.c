@@ -74,11 +74,21 @@ hbuf_truncate(hbuf *buf)
 }
 
 int
+hbuf_streq(const hbuf *buf1, const char *buf2)
+{
+	size_t	 sz;
+
+	sz = strlen(buf2);
+	return buf1->size == sz &&
+	       memcmp(buf1->data, buf2, sz) == 0;
+}
+
+int
 hbuf_eq(const hbuf *buf1, const hbuf *buf2)
 {
 
-	return(buf1->size == buf2->size &&
-	       0 == memcmp(buf1->data, buf2->data, buf1->size));
+	return buf1->size == buf2->size &&
+	       memcmp(buf1->data, buf2->data, buf1->size) == 0;
 }
 
 /* 
@@ -140,6 +150,14 @@ hbuf_grow(hbuf *buf, size_t neosz)
 	buf->asize = neoasz;
 }
 
+void
+hbuf_putb(hbuf *buf, const hbuf *b)
+{
+
+	if (b != NULL)
+		hbuf_put(buf, b->data, b->size);
+}
+
 /* 
  * Append raw data to a buffer.
  * May not be NULL.
@@ -149,6 +167,9 @@ void
 hbuf_put(hbuf *buf, const char *data, size_t size)
 {
 	assert(buf && buf->unit);
+
+	if (data == NULL || size == 0)
+		return;
 
 	if (buf->size + size > buf->asize)
 		hbuf_grow(buf, buf->size + size);
