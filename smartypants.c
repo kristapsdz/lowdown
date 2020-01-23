@@ -341,7 +341,7 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn, hbuf *b, struct smarty *s)
 				if (!smarty_right_wb(n, i + sz)) 
 					continue;
 				smarty_entity(n, maxn, i, 
-					i + sz, syms[j].ent);
+					i + sz, syms2[j].ent);
 				return;
 			}
 			break;
