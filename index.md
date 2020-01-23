@@ -71,14 +71,12 @@ this is also supported by [mandoc](https://mdocml.bsd.lv).
     for that purpose!  The **man** output is for technical
     documentation only (section 7).
 
-Both **-Tms** and **-Tman** disallow images and equations.  The former
-by definition (although **-Tms** might have a future with some elbow
-grease), the latter due to (not insurmountable) complexity of converting
-LaTeX to [eqn(7)](https://man.openbsd.org/eqn).
-
 Lastly, it supports ANSI-compatible UTF-8 terminals with **-Tterm**.
 This renders stylised Markdown-looking output for easy reading.  It's
 inspired by [glow](https://github.com/charmbracelet/glow).
+
+Only **-Thtml** allows images and equations, though **-Tms** has limited
+image support with encapsulated postscript.
 
 You can control output features by using the **-D** (disable feature)
 and **-E** (enable feature) flags documented in
@@ -270,3 +268,7 @@ the font markers on different lines.
 
 - Footnotes in **-Tms** with groff extensions should use pdfmark to link
 to and from the definition.
+
+Lastly, you can always just fuzz the system through your fuzzer of
+choice.
+For just the parser, use the **-Tnull** output channel.
