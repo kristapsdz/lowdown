@@ -559,4 +559,41 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.5.1</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2020-01-20">2020-01-20</time>
+		</header>
+		<aside>
+			<p>
+				Attempt to convert embedded entities (numeric and named) to the
+				appropriate output sequence in <b>-Tterm</b>, <b>-Tms</b>, and
+				<b>-Tman</b>.
+				For the former, this is just a UTF-8 sequence.
+				For the latter two, these are <code>\u[xxxx]</code> sequences.
+			</p>
+			<p>
+				Completely overhaul the <q>smartypants</q> process.
+				This is now fully documented in 
+				<a href="lowdown.5.html">lowdown(5)</a>.
+			</p>
+			<p>
+				Overhaul the library interface for extracting metadata.
+				This, along with some significant internal changes, allows for
+				applying <q>smartypants</q> formatting to the metadata.
+				Metadata is now filled in during rendering, so that a caller
+				requesting HTML metadata is passed the correct, formatted sequence.
+			</p>
+			<p>
+				Eliminate verbose <q>warning</q> output, as it was only used in a
+				handful of cases and required enough infrastructure to avoid it.
+			</p>
+			<p>
+				Lastl, add a <b>-Tnull</b> output for fuzzing.
+				This makes for a tighter coverage map to focus on parsing and smart
+				typography.
+			</p>
+		</aside>
+	</article>
 </articles>
