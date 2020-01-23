@@ -73,6 +73,8 @@ lowdown_buf(const struct lowdown_opts *opts,
 	case LOWDOWN_TREE:
 		renderer = lowdown_tree_new();
 		break;
+	default:
+		break;
 	}
 
 	/* Parse the output and free resources. */
@@ -106,6 +108,8 @@ lowdown_buf(const struct lowdown_opts *opts,
 	case LOWDOWN_TREE:
 		lowdown_tree_rndr(ob, metaq, renderer, n);
 		lowdown_tree_free(renderer);
+		break;
+	default:
 		break;
 	}
 
@@ -183,6 +187,8 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	case LOWDOWN_TREE:
 		renderer = lowdown_tree_new();
 		break;
+	default:
+		break;
 	}
 
 	/* Parse the output and free resources. */
@@ -229,6 +235,8 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	case LOWDOWN_TREE:
 		lowdown_tree_rndr(ob, metaq, renderer, ndiff);
 		lowdown_tree_free(renderer);
+		break;
+	default:
 		break;
 	}
 

@@ -287,6 +287,8 @@ main(int argc, char *argv[])
 				opts.type = LOWDOWN_TERM;
 			else if (strcasecmp(optarg, "tree") == 0)
 				opts.type = LOWDOWN_TREE;
+			else if (strcasecmp(optarg, "null") == 0)
+				opts.type = LOWDOWN_NULL;
 			else
 				goto usage;
 			break;

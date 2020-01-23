@@ -45,7 +45,8 @@ enum	lowdown_type {
 	LOWDOWN_MAN,
 	LOWDOWN_NROFF,
 	LOWDOWN_TERM,
-	LOWDOWN_TREE
+	LOWDOWN_TREE,
+	LOWDOWN_NULL
 };
 
 enum	lowdown_err {
