@@ -187,9 +187,9 @@ the [hoedown](https://github.com/hoedown/hoedown) authors (and those
 from who they forked their own sources).  I'll also regularly run the system
 through [valgrind](http://valgrind.org/), also without issue.
 
-## Hacking
+## Code layout
 
-Want to hack on *lowdown*?  Of course you do.
+The code is neatly layed out and heavily documented internally.
 
 First, start in
 [library.c](https://github.com/kristapsdz/lowdown/blob/master/library.c).
@@ -208,26 +208,16 @@ the document as a tree of nodes, each node corresponding an input token.
 Once the entire tree has been generated, the AST is passed into the
 front-end renderers, which construct output depth-first.
 
-There are three renderers supported:
+There are four renderers supported:
 [html.c](https://github.com/kristapsdz/lowdown/blob/master/html.c) for
 HTML5 output,
 [nroff.c](https://github.com/kristapsdz/lowdown/blob/master/nroff.c) for
 **-ms** and **-man** output,
-and a debugging renderer
+[term.c](https://github.com/kristapsdz/lowdown/blob/master/term.c)
+for terminal output, and a debugging renderer
 [tree.c](https://github.com/kristapsdz/lowdown/blob/master/tree.c).
 
-A note on "real text".
-
-The only time that input is passed directly into the output renderer is
-when then `normal_text` callback is invoked, blockcode or codespan, raw
-HTML, or hyperlink components.  In both renderers, you can see how the
-input is properly escaped by passing into
-[escape.c](https://github.com/kristapsdz/lowdown/blob/master/escape.c).
-
-After being fully parsed into an output buffer, the output buffer is
-passed into a "smartypants" rendering, one for each renderer type.
-
-### Example
+## Example
 
 For example, consider the following:
 
@@ -264,7 +254,12 @@ outputs).
 Finally, the subsection block would be fitted into whatever context it
 was invoked within.
 
-## Known Issues (or, How You Can Help)
+## How Can You Help?
+
+Want to hack on *lowdown*?  Of course you do.
+There are lots of bits and bobs remaining to be fixed or implemented.
+You can always just search for `TODO`, `XXX`, or `FIXME` in the source
+code.
 
 There are some known issues, mostly in PDF (**-Tms** and **-Tman**)
 output.
@@ -275,7 +270,3 @@ the font markers on different lines.
 
 - Footnotes in **-Tms** with groff extensions should use pdfmark to link
 to and from the definition.
-
-- In all modes, the "smartypants" formatting should be embedded in
-document output --- not in a separate step as implemented in the
-original sources.
