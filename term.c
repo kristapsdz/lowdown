@@ -140,7 +140,6 @@ static const struct sty sty_imgurlbox =	{ 0, 0, 0, 0,   0, 37, 2 };
 static const struct sty sty_foots_div =	{ 0, 0, 0, 0,   0, 37, 0 };
 static const struct sty sty_meta_key =	{ 0, 0, 0, 0,   0, 37, 0 };
 static const struct sty sty_bad_ent = 	{ 0, 0, 0, 0,   0, 37, 0 };
-
 static const struct sty sty_chng_ins =	{ 0, 0, 0, 0,  47, 30, 0 };
 static const struct sty sty_chng_del =	{ 0, 0, 0, 0, 100,  0, 0 };
 
@@ -151,6 +150,21 @@ static const struct sty sty_chng_del =	{ 0, 0, 0, 0, 100,  0, 0 };
 	((_s)->colour || (_s)->bold || (_s)->italic || \
 	 (_s)->under || (_s)->strike || (_s)->bcolour || \
 	 (_s)->override)
+
+static void
+rndr_escape(struct hbuf *out, const char *buf, size_t sz)
+{
+	size_t	 i, start = 0;
+
+	for (i = 0; i < sz; i++) {
+		if (iscntrl((unsigned char)buf[i])) {
+			hbuf_put(out, buf + start, i - start);
+			start = i + 1;
+		}
+	}
+	if (start < sz) 
+		hbuf_put(out, buf + start, sz - start);
+}
 
 /*
  * Output style "s" into "out" as an ANSI escape.
@@ -507,7 +521,7 @@ rndr_buf_literal(struct term *term, hbuf *out,
 		len = &in->data[i] - start;
 		i++;
 		rndr_buf_startline(term, out, n, osty);
-		hbuf_put(out, start, len);
+		rndr_escape(out, start, len);
 		rndr_buf_advance(term, len);
 		rndr_buf_endline(term, out, n, osty);
 	}
@@ -602,7 +616,7 @@ rndr_buf(struct term *term, hbuf *out,
 
 		/* Emit the word itself. */
 
-		hbuf_put(out, start, len);
+		rndr_escape(out, start, len);
 		rndr_buf_advance(term, len);
 	}
 
