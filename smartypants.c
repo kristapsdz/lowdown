@@ -188,9 +188,10 @@ smarty_entity(struct lowdown_node *n, size_t *maxn,
 		nn->type = LOWDOWN_NORMAL_TEXT;
 		nn->parent = n->parent;
 		TAILQ_INIT(&nn->children);
-		nn->rndr_entity.text.data = xstrdup
-			(n->rndr_normal_text.text.data + end);
-		nn->rndr_entity.text.size = 
+		nn->rndr_normal_text.text.data = xstrndup
+			(n->rndr_normal_text.text.data + end,
+			 n->rndr_normal_text.text.size - end);
+		nn->rndr_normal_text.text.size = 
 			n->rndr_normal_text.text.size - end;
 		TAILQ_INSERT_AFTER(&n->parent->children, 
 			nent, nn, entries);
