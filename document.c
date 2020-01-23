@@ -3530,9 +3530,9 @@ parse_metadata(hdoc *doc, const char *data, size_t sz)
 			*cp++ = '?';
 		}
 		n->rndr_meta.key.size = cp - n->rndr_meta.key.data;
-		m->key = xstrndup
-			(n->rndr_meta.key.data,
-			 n->rndr_meta.key.size);
+		m->key = xmalloc(n->rndr_meta.key.size);
+		memcpy(m->key, n->rndr_meta.key.data, 
+			n->rndr_meta.key.size);
 
 		/* Canonical order: title comes first. */
 
@@ -3562,7 +3562,8 @@ parse_metadata(hdoc *doc, const char *data, size_t sz)
 		val = parse_metadata_val(&data[i], sz - i, &valsz);
 		nn = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 		pushbuffer(&nn->rndr_normal_text.text, val, valsz);
-		m->value = xstrndup(val, valsz);
+		m->value = xmalloc(valsz);
+		memcpy(m->value, val, valsz);
 		popnode(doc, nn);
 		popnode(doc, n);
 		pos = i + valsz + 1;
