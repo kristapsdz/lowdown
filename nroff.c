@@ -527,10 +527,10 @@ rndr_header(hbuf *ob, const hbuf *content, int level,
 		return;
 	} 
 
-	if ((st->flags & LOWDOWN_NROFF_NUMBERED))
-		hbuf_printf(ob, ".NH %d\n", level);
-	else if ((st->flags & LOWDOWN_NROFF_GROFF))
+	if ((st->flags & LOWDOWN_NROFF_GROFF))
 		hbuf_printf(ob, ".SH %d\n", level);
+	else if ((st->flags & LOWDOWN_NROFF_NUMBERED))
+		hbuf_printf(ob, ".NH %d\n", level);
 	else
 		hbuf_printf(ob, ".SH\n");
 
@@ -670,9 +670,6 @@ rndr_paragraph(hbuf *ob, const hbuf *content,
 	BUFFER_NEWLINE(content->data + i, content->size - i, ob);
 }
 
-/*
- * FIXME: verify behaviour.
- */
 static void
 rndr_raw_block(hbuf *ob, const hbuf *content, const struct nstate *st)
 {

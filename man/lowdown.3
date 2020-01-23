@@ -144,7 +144,9 @@ Text within HTML elements remains.
 .It Dv LOWDOWN_NROFF_HARD_WRAP
 Retain line-breaks within paragraphs.
 .It Dv LOWDOWN_NROFF_NUMBERED
-Use numbered sections.
+Use numbered sections if
+.Dv LOWDOWON_NROFF_GROFF
+is not specified.
 Only applies to the
 .Dv LOWDOWN_NROFF
 output type.
@@ -157,6 +159,9 @@ You'll need to include
 when invoking
 .Xr groff 1
 for formatting links.
+Only applies to the
+.Dv LOWDOWN_NROFF
+output type.
 .El
 .Pp
 For any mode, you may specify:
