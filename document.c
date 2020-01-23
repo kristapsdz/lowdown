@@ -141,14 +141,14 @@ static void parse_block(hdoc *, char *, size_t);
 static struct lowdown_node *
 pushnode(hdoc *doc, enum lowdown_rndrt t)
 {
-	struct lowdown_node *n;
+	struct lowdown_node	*n;
 
 	n = xcalloc(1, sizeof(struct lowdown_node));
 	n->id = doc->nodes++;
 	n->type = t;
 	n->parent = doc->current;
 	TAILQ_INIT(&n->children);
-	if (NULL != n->parent)
+	if (n->parent != NULL)
 		TAILQ_INSERT_TAIL(&n->parent->children, n, entries);
 	doc->current = n;
 	return n;
@@ -3533,6 +3533,13 @@ parse_metadata(hdoc *doc, const char *data, size_t sz)
 		m->key = xstrndup
 			(n->rndr_meta.key.data,
 			 n->rndr_meta.key.size);
+
+		/* Canonical order: title comes first. */
+
+		if (strcmp(m->key, "title") == 0) {
+			TAILQ_REMOVE(&n->children, n, entries);
+			TAILQ_INSERT_HEAD(&n->children, n, entries);
+		}
 
 		if (i == sz) {
 			popnode(doc, n);
