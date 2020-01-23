@@ -589,14 +589,14 @@ rndr_buf(struct term *term, hbuf *out,
 			begin = 0;
 			end = 1;
 		} else if (!term->last_blank) {
-			if (needspace) {
-				HBUF_PUTSL(out, " ");
-				rndr_buf_advance(term, 1);
-			}
 			if (begin && len) {
 				rndr_buf_startwords(term, out, n, osty);
 				begin = 0;
 				end = 1;
+			}
+			if (needspace) {
+				HBUF_PUTSL(out, " ");
+				rndr_buf_advance(term, 1);
 			}
 		}
 
