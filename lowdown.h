@@ -324,7 +324,7 @@ void 	 lowdown_nroff_rndr(hbuf *, struct lowdown_metaq *,
 void	 lowdown_tree_free(void *);
 void	*lowdown_tree_new(void);
 void 	 lowdown_tree_rndr(hbuf *, struct lowdown_metaq *,
-		void *, struct lowdown_node *);
+		void *, const struct lowdown_node *);
 
 __END_DECLS
 

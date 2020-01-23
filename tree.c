@@ -227,7 +227,7 @@ rndr(hbuf *ob, struct lowdown_metaq *metaq,
 
 void
 lowdown_tree_rndr(hbuf *ob, struct lowdown_metaq *metaq,
-	void *ref, struct lowdown_node *root)
+	void *ref, const struct lowdown_node *root)
 {
 
 	assert(ref == NULL);
