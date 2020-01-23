@@ -120,14 +120,11 @@ For
 .Bl -tag -width Ds -compact
 .It Dv LOWDOWN_HTML_SKIP_HTML
 Do not render in-document HTML at all.
-Note that
-.Dv LOWDOWN_HTML_ESCAPE
-takes priority if both are specified.
-Text within HTML elements remains.
 .It Dv LOWDOWN_HTML_ESCAPE
-Leaves in-line HTML in its source form as if it were opaque text.
-Takes precedence over
-.Dv LOWDOWN_HTML_ESCAPE .
+If
+.Dv LOWDOWN_HTML_SKIP_HTML
+has not been set, escapes in-document HTML so that it is rendered as
+opaque text.
 .It Dv LOWDOWN_HTML_HARD_WRAP
 Retain line-breaks within paragraphs.
 .It Dv LOWDOWN_HTML_HEAD_IDS

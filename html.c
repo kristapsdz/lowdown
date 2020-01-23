@@ -365,16 +365,14 @@ rndr_paragraph(hbuf *ob, const hbuf *content, struct hstate *state)
 	HBUF_PUTSL(ob, "</p>\n");
 }
 
-/*
- * FIXME: verify behaviour.
- */
 static void
 rndr_raw_block(hbuf *ob, const hbuf *text, const struct hstate *state)
 {
 	size_t	org, sz;
 
-	if ((state->flags & LOWDOWN_HTML_SKIP_HTML) || 
-	    (state->flags & LOWDOWN_HTML_ESCAPE)) {
+	if ((state->flags & LOWDOWN_HTML_SKIP_HTML))
+		return;
+	if ((state->flags & LOWDOWN_HTML_ESCAPE)) {
 		escape_html(ob, text->data, text->size);
 		return;
 	}
@@ -465,21 +463,12 @@ static void
 rndr_raw_html(hbuf *ob, const hbuf *text, const struct hstate *state)
 {
 
-	/* 
-	 * ESCAPE overrides SKIP_HTML. 
-	 * It doesn't look to see if there are any valid tags, just
-	 * escapes all of them. 
-	 */
-
-	if ((state->flags & LOWDOWN_HTML_ESCAPE)) {
-		escape_html(ob, text->data, text->size);
-		return;
-	}
-
 	if ((state->flags & LOWDOWN_HTML_SKIP_HTML))
 		return;
-
-	hbuf_putb(ob, text);
+	if ((state->flags & LOWDOWN_HTML_ESCAPE))
+		escape_html(ob, text->data, text->size);
+	else
+		hbuf_putb(ob, text);
 }
 
 static void
