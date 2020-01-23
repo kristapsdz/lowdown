@@ -13,7 +13,6 @@ OBJS		 = autolink.o \
 		   library.o \
 		   libdiff.o \
 		   nroff.o \
-		   nroff_escape.o \
 		   smartypants.o \
 		   term.o \
 		   tree.o \

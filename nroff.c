@@ -134,6 +134,57 @@ static const enum nscope nscopes[LOWDOWN__MAX] = {
 };
 
 /*
+ * If "span" is non-zero, don't test for leading periods.
+ * Otherwise, a leading period will be escaped.
+ * If "oneline" is non-zero, newlines are replaced with spaces.
+ */
+static void
+hesc_nroff(hbuf *ob, const char *data, 
+	size_t size, int span, int oneline)
+{
+	size_t	 i;
+
+	if (0 == size)
+		return;
+
+	if (!span && data[0] == '.')
+		HBUF_PUTSL(ob, "\\&");
+
+	/*
+	 * According to mandoc_char(7), we need to escape the backtick,
+	 * single apostrophe, and tilde or else they'll be considered as
+	 * special Unicode output.
+	 * Slashes need to be escaped too, and newlines if appropriate
+	 */
+
+	for (i = 0; i < size; i++)
+		switch (data[i]) {
+		case '^':
+			HBUF_PUTSL(ob, "\\(ha");
+			break;
+		case '~':
+			HBUF_PUTSL(ob, "\\(ti");
+			break;
+		case '`':
+			HBUF_PUTSL(ob, "\\(ga");
+			break;
+		case '\n':
+			hbuf_putc(ob, oneline ? ' ' : '\n');
+			break;
+		case '\\':
+			HBUF_PUTSL(ob, "\\e");
+			break;
+		case '.':
+			if (!oneline && i && data[i - 1] == '\n')
+				HBUF_PUTSL(ob, "\\&");
+			/* FALLTHROUGH */
+		default:
+			hbuf_putc(ob, data[i]);
+			break;
+		}
+}
+
+/*
  * Output "source" of size "length" on as many lines as required,
  * starting on a line with existing content.
  * Escapes text so as not to be roff.
