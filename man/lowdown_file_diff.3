@@ -1,6 +1,6 @@
 .\"	$Id$
 .\"
-.\" Copyright (c) 2018 Kristaps Dzonsons <kristaps@bsd.lv>
+.\" Copyright (c) 2018, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -28,17 +28,17 @@
 .In lowdown.h
 .Ft int
 .Fo lowdown_file
-.Fa "const struct lowdown_opts *otarget"
+.Fa "const struct lowdown_opts *opts"
 .Fa "FILE *ftarget"
-.Fa "const struct lowdown_opts *oorigin"
 .Fa "FILE *forigin"
 .Fa "char **ret"
 .Fa "size_t *retsz"
+.Fa "struct lowdown_metaq *metaq"
 .Fc
 .Sh DESCRIPTION
-The
-.Fn lowdown_file
-function parses Markdown file streams
+Parses
+.Xr lowdown 5
+file streams
 .Fa ftarget
 and
 .Fa forigin
@@ -47,29 +47,30 @@ and produces an edit script in
 of size
 .Fa retsz
 according to configurations
-.Fa oorigin
-and
-.Fa otarget
-for the origin and target, respectively.
+.Fa opts .
 The output format is specified by
-.Fa otarget->type .
-.Pp
-Internally,
-.Fn lowdown_file_diff
-invokes
-.Xr lowdown_buf_diff 3
-with the read contents of
-.Fa ftarget
+.Fa opts->type .
+If
+.Dv LOWDOWN_SMARTY
+is set in
+.Fa opts->feat
 and
-.Fa forigin .
+.Fa metaq
+is not
+.Dv NULL ,
+.Fa metaq
+is filled with metadata rendered in the given output format.
 .Pp
 On success, the caller is responsible for freeing
-.Fa ret .
+.Fa ret
+and
+.Fa metaq .
 .Sh RETURN VALUES
 Returns zero on failure, non-zero on success.
 Failure occurs when the file read failed.
 .Sh SEE ALSO
-.Xr lowdown 3
+.Xr lowdown 3 ,
+.Xr lowdown_metaq_free 3
 .Sh CAVEATS
 The
 .Fn lowdown_file_diff

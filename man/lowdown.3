@@ -1,6 +1,6 @@
 .\"	$Id$
 .\"
-.\" Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
+.\" Copyright (c) 2017, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -28,20 +28,10 @@
 .In lowdown.h
 .Vt "struct lowdown_opts"
 .Vt "struct lowdown_metadata"
-.Vt "enum lowdown_err"
-.Ft "typedef void"
-.Fo "(*lowdown_msg)"
-.Fa "enum lowdown_err err"
-.Fa "void *arg"
-.Fa "const char *msg"
-.Fc
 .Sh DESCRIPTION
-The
-.Nm lowdown
-library parses Markdown as defined in
+This library parses Markdown as defined in
 .Xr lowdown 5
-into HTML or roff
-.Pq Fl ms No or Fl man No macro sets .
+into various output formats.
 It consists of both a high-level interface consisting of
 .Xr lowdown_buf 3 ,
 .Xr lowdown_buf_diff 3 ,
@@ -56,9 +46,7 @@ Most functions use the
 structure to manage features.
 .Bd -literal
 struct lowdown_opts {
-  lowdown_msg msg;
   enum lowdown_type type;
-  void *arg;
   unsigned int feat;
   unsigned int oflags;
 };
@@ -66,11 +54,6 @@ struct lowdown_opts {
 .Pp
 It has the following fields:
 .Bl -tag -width Ds
-.It Va arg
-Pointer passed to
-.Va msg ,
-if not
-.Dv NULL .
 .It Va feat
 Features used during the parse.
 This bit-field may have the following bits OR'd:
@@ -125,13 +108,6 @@ flag is set, also smartypantsed.
 .El
 .Pp
 The default value is zero (none).
-.It Va msg
-Message function
-.Pq Vt lowdown_msg
-for logging messages.
-If
-.Dv NULL ,
-messages are not logged.
 .It Va ofeat
 Features used by the output generators.
 This bit-field may have the following enabled.
@@ -250,39 +226,6 @@ The metadata key in its lowercase, canonical form.
 The metadata value as rendered in the current output format.
 .El
 .Pp
-An error message function of type
-.Vt lowdown_msg
-is given in
-.Vt "struct lowdown_opts" .
-.Bd -literal
-typedef	void (*lowdown_msg)
-  (enum lowdown_err, void *, const char *);
-.Ed
-.Pp
-It accepts the following arguments:
-.Bl -tag -width Ds
-.It Fa err
-An error code programmatically describing the error.
-.It Fa arg
-An opaque pointer provided in
-.Vt "struct lowdown_opts" .
-.It Fa msg
-Additional information about the error.
-.El
-.Pp
-The error code may be one of:
-.Bl -tag -width Ds
-.It Dv LOWDOWN_ERR_SPACE_BEFORE_LINK
-Spaces before the URL portion of a link.
-This is not portable.
-.It Dv LOWDOWN_ERR_METADATA_BAD_CHAR
-A bad character in a metadata key (it is converted into
-.Dq ? ) .
-.It Dv LOWDOWN_ERR_UNKNOWN_FOOTNOTE
-A footnote reference to an unknown footnote, and is thus being ignored.
-.It Dv LOWDOWN_ERR_DUPE_FOOTNOTE
-A duplicate footnote reference was encountered, and is thus being ignored.
-.El
 .Ss Pledge Promises
 The
 .Nm lowdown

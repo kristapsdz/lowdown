@@ -1,6 +1,6 @@
 .\"	$Id$
 .\"
-.\" Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
+.\" Copyright (c) 2017, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -19,7 +19,7 @@
 .Os
 .Sh NAME
 .Nm lowdown_tree_free
-.Nd free a Markdown debugging renderer instance
+.Nd free a Markdown debugging renderer
 .Sh LIBRARY
 .Lb liblowdown
 .Sh SYNOPSIS
@@ -31,9 +31,7 @@
 .Fa "void *arg"
 .Fc
 .Sh DESCRIPTION
-The
-.Nm
-function frees a Markdown debugging renderer created with
+Frees a debugging renderer created with
 .Xr lowdown_tree_new 3 .
 If
 .Va arg
@@ -41,4 +39,5 @@ is
 .Dv NULL ,
 the function does nothing.
 .Sh SEE ALSO
-.Xr lowdown 3
+.Xr lowdown 3 ,
+.Xr lowdown_tree_new 3

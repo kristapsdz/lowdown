@@ -1,6 +1,6 @@
 .\"	$Id$
 .\"
-.\" Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
+.\" Copyright (c) 2017, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -33,13 +33,12 @@
 .Fa "size_t bufsz"
 .Fa "char **ret"
 .Fa "size_t *retsz"
-.Fa "struct lowdown_meta **meta"
-.Fa "size_t *metasz"
+.Fa "struct lowdown_metaq *metaq"
 .Fc
 .Sh DESCRIPTION
-The
-.Fn lowdown_buf
-function parses a Markdown buffer
+Parses a
+.Xr lowdown 5
+buffer
 .Fa buf
 of size
 .Fa bufsz
@@ -51,36 +50,26 @@ according to a configuration
 .Fa opts .
 The output format is specified by
 .Fa opts->type .
-If metadata parsing is enabled in
-.Fa opts->feat ,
-.Fa meta
-is returned as an array of metadata of size
-.Fa metasz
-rendered in the given output format.
+If
+.Dv LOWDOWN_SMARTY
+is set in
+.Fa opts->feat
+and
+.Fa metaq
+is not
+.Dv NULL ,
+.Fa metaq
+is filled with metadata rendered in the given output format.
 .Pp
-Internally,
-.Fn lowdown_buf
-invokes
-.Xr lowdown_doc_new 3
-with the given
-.Fa opts ,
-creates a renderer for the output format,
-parses the input with
-.Xr lowdown_doc_parse 3 ,
-renders the AST in the given output format,
-and returns the rendered content as a buffer along with any parsed
-metadata (if applicable).
-.Pp
-On success, the caller is responsible for freeing
+The caller is responsible for freeing
 .Fa ret
 and
-.Fa meta .
+.Fa metaq .
 .Sh SEE ALSO
-.Xr lowdown 3
+.Xr lowdown 3 ,
+.Xr lowdown_metaq_free 3
 .Sh CAVEATS
-The
-.Nm
-function will invoke
+This function will call
 .Xr exit 3
 if internal memory allocation fails.
 There is no way to catch this condition.

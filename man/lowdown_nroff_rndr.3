@@ -1,6 +1,6 @@
 .\"	$Id$
 .\"
-.\" Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
+.\" Copyright (c) 2017, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -33,18 +33,22 @@
 .Fa "struct lowdown_node *root"
 .Fc
 .Sh DESCRIPTION
-The
-.Nm
-function renders a node tree
+Renders a node tree
 .Fa root
-using the roff renderer
-.Fa out
+using by
+.Xr lowdown_doc_parse 3
+or
+.Xr lowdown_doc_diff 3
+using the nroff renderer
+.Fa arg
 created by
 .Xr lowdown_nroff_new 3
 into the output buffer
 .Fa out .
 .Sh SEE ALSO
-.Xr lowdown 3
+.Xr lowdown 3 ,
+.Xr lowdown_nroff_free 3 ,
+.Xr lowdown_nroff_new 3
 .Sh CAVEATS
 The contents of
 .Fa root

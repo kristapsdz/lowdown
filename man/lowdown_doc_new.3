@@ -31,15 +31,15 @@
 .Fa "const struct lowdown_opts *opts"
 .Fc
 .Sh DESCRIPTION
-The
-.Nm
-function allocates a Markdown parser instance with configuration
+Allocates a Markdown parser instance with configuration
 .Fa opts .
 It must be freed with a call to
 .Xr lowdown_doc_free 3 .
-The returned pointer may be used with multiple invocations of
+The returned instance may be used with multiple invocations of
 .Xr lowdown_doc_parse 3 .
 .Sh RETURN VALUES
 Always returns a valid pointer.
 .Sh SEE ALSO
-.Xr lowdown 3
+.Xr lowdown 3 ,
+.Xr lowdown_doc_free 3 ,
+.Xr lowdown_doc_parse 3

@@ -1,6 +1,6 @@
 .\"	$Id$
 .\"
-.\" Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
+.\" Copyright (c) 2017, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -30,23 +30,22 @@
 .Fo lowdown_html_rndr
 .Fa "hbuf *out"
 .Fa "void *arg"
-.Fa "struct lowdown_node *root"
+.Fa "const struct lowdown_node *root"
 .Fc
 .Sh DESCRIPTION
-The
-.Nm
-function renders a node tree
+Renders a node tree
 .Fa root
+created by
+.Xr lowdown_doc_parse 3
+or
+.Xr lowdown_doc_diff 3
 using the HTML renderer
-.Fa out
+.Fa arg
 created by
 .Xr lowdown_html_new 3
 into the output buffer
 .Fa out .
 .Sh SEE ALSO
-.Xr lowdown 3
-.Sh CAVEATS
-The contents of
-.Fa root
-may be changed, but not in a way that will change the output with
-multiple passes at rendering.
+.Xr lowdown 3 ,
+.Xr lowdown_html_free 3 ,
+.Xr lowdown_html_new 3

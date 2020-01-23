@@ -19,7 +19,7 @@
 .Os
 .Sh NAME
 .Nm lowdown_term_new
-.Nd allocate an ANSI-compatible terminal renderer
+.Nd allocate a Markdown terminal renderer
 .Sh LIBRARY
 .Lb liblowdown
 .Sh SYNOPSIS
@@ -30,9 +30,7 @@
 .Fo lowdown_term_new
 .Fc
 .Sh DESCRIPTION
-The
-.Nm
-function allocates an ANSI-compatible, UTF-8 terminal renderer.
+Allocates a terminal renderer.
 It must be freed with a call to
 .Xr lowdown_term_free 3 .
 The returned pointer may be used with multiple invocations of
@@ -40,4 +38,5 @@ The returned pointer may be used with multiple invocations of
 .Sh RETURN VALUES
 Always returns a valid pointer.
 .Sh SEE ALSO
-.Xr lowdown 3
+.Xr lowdown 3 ,
+.Xr lowdown_term_free 3

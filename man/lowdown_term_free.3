@@ -19,7 +19,7 @@
 .Os
 .Sh NAME
 .Nm lowdown_term_free
-.Nd free an ANSI-compatible terminal renderer
+.Nd free an Markdown terminal renderer
 .Sh LIBRARY
 .Lb liblowdown
 .Sh SYNOPSIS
@@ -31,9 +31,7 @@
 .Fa "void *arg"
 .Fc
 .Sh DESCRIPTION
-The
-.Nm
-function frees the renderer created with
+Frees the terminal renderer created with
 .Xr lowdown_term_new 3 .
 If
 .Va arg
@@ -41,4 +39,5 @@ is
 .Dv NULL ,
 the function does nothing.
 .Sh SEE ALSO
-.Xr lowdown 3
+.Xr lowdown 3 ,
+.Xr lowdown_term_new 3

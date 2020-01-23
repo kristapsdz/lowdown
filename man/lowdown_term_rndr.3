@@ -19,7 +19,7 @@
 .Os
 .Sh NAME
 .Nm lowdown_term_rndr
-.Nd render for ANSI-compatible terminals
+.Nd render Markdown into terminal output
 .Sh LIBRARY
 .Lb liblowdown
 .Sh SYNOPSIS
@@ -30,23 +30,22 @@
 .Fo lowdown_term_rndr
 .Fa "hbuf *out"
 .Fa "void *arg"
-.Fa "struct lowdown_node *root"
+.Fa "const struct lowdown_node *root"
 .Fc
 .Sh DESCRIPTION
-The
-.Nm
-function renders a node tree
+Renders a node tree
 .Fa root
-using the renderer
-.Fa out
+created by
+.Xr lowdown_doc_parse 3
+or
+.Xr lowdown_doc_diff 3
+using the terminal renderer
+.Fa arg
 created by
 .Xr lowdown_term_new 3
 into the output buffer
 .Fa out .
 .Sh SEE ALSO
-.Xr lowdown 3
-.Sh CAVEATS
-The contents of
-.Fa root
-may be changed, but not in a way that will change the output with
-multiple passes at rendering.
+.Xr lowdown 3 ,
+.Xr lowdown_term_free 3 ,
+.Xr lowdown_term_new 3

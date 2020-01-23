@@ -19,7 +19,7 @@
 .Os
 .Sh NAME
 .Nm lowdown_tree_new
-.Nd allocate a debugging renderer for lowdown documents
+.Nd allocate a Markdown debugging renderer
 .Sh LIBRARY
 .Lb liblowdown
 .Sh SYNOPSIS
@@ -30,10 +30,7 @@
 .Fo lowdown_tree_new
 .Fc
 .Sh DESCRIPTION
-The
-.Nm
-function allocates a debugging renderer that simply prints out the
-parse tree.
+Allocates a debugging renderer.
 It must be freed with a call to
 .Xr lowdown_tree_free 3 .
 The returned pointer may be used with multiple invocations of
@@ -41,4 +38,6 @@ The returned pointer may be used with multiple invocations of
 .Sh RETURN VALUES
 Always returns a valid pointer.
 .Sh SEE ALSO
-.Xr lowdown 3
+.Xr lowdown 3 ,
+.Xr lowdown_tree_free 3 ,
+.Xr lowdown_tree_rndr 3

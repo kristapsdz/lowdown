@@ -1,6 +1,6 @@
 .\"	$Id$
 .\"
-.\" Copyright (c) 2018 Kristaps Dzonsons <kristaps@bsd.lv>
+.\" Copyright (c) 2018, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -28,19 +28,19 @@
 .In lowdown.h
 .Ft void
 .Fo lowdown_buf
-.Fa "const struct lowdown_opts *otarget"
+.Fa "const struct lowdown_opts *opts"
 .Fa "const char *btarget"
 .Fa "size_t btargetsz"
-.Fa "const struct lowdown_opts *oorigin"
 .Fa "const char *otarget"
 .Fa "size_t otargetsz"
 .Fa "char **ret"
 .Fa "size_t *retsz"
+.Fa "struct lowdown_metaq *metaq"
 .Fc
 .Sh DESCRIPTION
-The
-.Fn lowdown_buf
-function parses Markdown buffers
+Parses
+.Xr lowdown 5
+buffers
 .Fa btarget
 of size
 .Fa btargetsz
@@ -53,35 +53,29 @@ and produces an edit script in
 of size
 .Fa retsz
 according to configurations
-.Fa otarget
-and
-.Fa oorigin
-for the target and origin, respectively.
+.Fa opts .
 The output format is specified by
 .Fa opts->type .
-.Pp
-Internally,
-.Fn lowdown_buf_diff
-invokes
-.Xr lowdown_doc_new 3
-with the given
-.Fa otarget
+If
+.Dv LOWDOWN_SMARTY
+is set in
+.Fa opts->feat
 and
-.Fa oorigin ,
-creates a renderer for the output format,
-parses the inputs with
-.Xr lowdown_doc_parse 3 ,
-creates the edit script, renders the AST in the given output format, and
-returns the rendered content as a buffer.
+.Fa metaq
+is not
+.Dv NULL ,
+.Fa metaq
+is filled with metadata rendered in the given output format.
 .Pp
-On success, the caller is responsible for freeing
-.Fa ret .
+The caller is responsible for freeing
+.Fa ret
+and
+.Fa metaq .
 .Sh SEE ALSO
-.Xr lowdown 3
+.Xr lowdown 3 ,
+.Xr lowdown_metaq_free 3
 .Sh CAVEATS
-The
-.Nm
-function will invoke
+This function will call
 .Xr exit 3
 if internal memory allocation fails.
 There is no way to catch this condition.

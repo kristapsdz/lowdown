@@ -1,6 +1,6 @@
 .\"	$Id$
 .\"
-.\" Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
+.\" Copyright (c) 2017, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -32,26 +32,17 @@
 .Fa "size_t *maxn"
 .Fa "const char *input"
 .Fa "size_t inputsz"
-.Fa "struct lowdown_meta **meta"
-.Fa "size_t *metasz"
 .Fc
 .Sh DESCRIPTION
-The
-.Nm
-function parses a Markdown document in the buffer
+Parses a
+.Xr lowdown 5
+document from
 .Fa input
 of length
 .Fa inputsz
 into an AST.
-It also fills in the metadata
-.Fa meta ,
-if not
-.Dv NULL ,
-with an array of length
-.Fa metasz .
 This function may be invoked multiple times with a single
-.Fa doc ,
-which is reset upon each invocation.
+.Fa doc .
 The returned node is always of type
 .Dv LOWDOWN_ROOT ,
 with
@@ -67,9 +58,8 @@ struct lowdown_node {
 	size_t id;
 	enum lowdown_chng chng;
 	union {
-		struct rndr_doc_header {
-			struct lowdown_meta *m;
-			size_t msz;
+		struct rndr_meta {
+			hbuf key;
 		} rndr_doc_header;
 		struct rndr_list {
 			enum hlist_fl flags;
@@ -203,11 +193,11 @@ element.
 .It Dv LOWDOWN_DOC_FOOTER
 Closes out the document opened in
 .Dv LOWDOWN_DOC_HEADER .
-(Only if configured during parse.)
 .It Dv LOWDOWN_DOC_HEADER
 A header with data gathered from document metadata (if configured).
-Described by elements up to the
-.Li <body> .
+Described by the
+.Li <head>
+element.
 (Only if configured during parse.)
 .It Dv LOWDOWN_DOUBLE_EMPHASIS
 Bold (or otherwise notable) content.
@@ -301,6 +291,12 @@ or
 .Li \e(xx\e) .
 This is usually (in HTML) externally handled by a JavaScript renderer.
 (Only if configured during parse.)
+.It Dv LOWDOWN_META
+Meta-data keys and values.
+(Only if configured during parse.)
+These are described by elements in the
+.Li <head>
+element.
 .It Dv LOWDOWN_NORMAL_TEXT
 Normal text content.
 .It Dv LOWDOWN_PARAGRAPH
@@ -371,14 +367,15 @@ and
 The following anonymous union structures correspond to certain nodes.
 Note that all buffers may be zero-length.
 .Bl -tag -width Ds
-.It Va rndr_doc_header
-Valid for
-.Dv LOWDOWN_DOC_HEADER
-nodes.
-Consists of
-.Vt m ,
-an array of raw metadata values of size
-.Vt msz .
+.It Va rndr_meta
+Each
+.Dv LOWDOWN_META
+key-value pair is represented.
+The keys are lower-case without spaces or non-ASCII characters.
+Enclosed nodes may consist only of
+.Dv LOWDOWN_NORMAL_TEXT
+and
+.Dv LOWDOWN_ENTITY .
 .It Va rndr_list
 For
 .Dv LOWDOWN_DOC_LIST ,
