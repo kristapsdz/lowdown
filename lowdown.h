@@ -314,7 +314,7 @@ void 	 lowdown_html_rndr(hbuf *, struct lowdown_metaq *,
 void	 lowdown_term_free(void *);
 void	*lowdown_term_new(void);
 void 	 lowdown_term_rndr(hbuf *, struct lowdown_metaq *,
-		void *, struct lowdown_node *);
+		void *, const struct lowdown_node *);
 
 void	 lowdown_nroff_free(void *);
 void	*lowdown_nroff_new(const struct lowdown_opts *);

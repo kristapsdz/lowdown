@@ -45,8 +45,8 @@ LOWDOWN_TABLE_CELL		->
 #define	TERM_WIDTH	80
 
 struct tstack {
-	struct lowdown_node 	*n; /* node in question */
-	size_t			 lines; /* times emitted prefix */
+	const struct lowdown_node 	*n; /* node in question */
+	size_t				 lines; /* times emitted */
 };
 
 struct term {
@@ -650,11 +650,11 @@ rndr_entity(hbuf *buf, int32_t val)
 
 void
 lowdown_term_rndr(hbuf *ob, struct lowdown_metaq *metaq,
-	void *arg, struct lowdown_node *n)
+	void *arg, const struct lowdown_node *n)
 {
-	struct lowdown_node	*child;
-	struct term		*p = arg;
-	int32_t			 entity;
+	const struct lowdown_node	*child;
+	struct term			*p = arg;
+	int32_t				 entity;
 	
 	/* Current nodes we're servicing. */
 
