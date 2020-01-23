@@ -29,6 +29,7 @@
 # include <err.h>
 #endif
 #include <errno.h>
+#include <getopt.h>
 #if HAVE_SANDBOX_INIT
 # include <sandbox.h>
 #endif
@@ -217,12 +218,35 @@ main(int argc, char *argv[])
 	const char		*fnin = "<stdin>", *fnout = NULL,
 	      	 		*fndin = NULL, *extract = NULL;
 	struct lowdown_opts 	 opts;
-	int			 c, standalone = 0, diff = 0,
-				 status = EXIT_SUCCESS, feat;
+	int			 c, diff = 0,
+				 status = EXIT_SUCCESS, feat, aflag, rflag;
 	char			*ret = NULL;
 	size_t		 	 retsz = 0;
 	struct lowdown_meta 	*m;
 	struct lowdown_metaq	 mq;
+	struct option 		 lo[] = {
+		{ "html-skiphtml",	no_argument,	&aflag,	LOWDOWN_HTML_SKIP_HTML },
+		{ "html-no-skiphtml",	no_argument,	&rflag,	LOWDOWN_HTML_SKIP_HTML },
+		{ "html-escapehtml",	no_argument,	&aflag,	LOWDOWN_HTML_ESCAPE },
+		{ "html-no-escapehtml",	no_argument,	&rflag,	LOWDOWN_HTML_ESCAPE },
+		{ "html-hardwrap",	no_argument,	&aflag,	LOWDOWN_HTML_HARD_WRAP },
+		{ "html-no-hardwrap",	no_argument,	&rflag,	LOWDOWN_HTML_HARD_WRAP },
+		{ "html-head-ids",	no_argument,	&aflag,	LOWDOWN_HTML_HEAD_IDS },
+		{ "html-no-head-ids",	no_argument,	&rflag,	LOWDOWN_HTML_HEAD_IDS },
+		{ "nroff-skiphtml",	no_argument,	&aflag,	LOWDOWN_NROFF_SKIP_HTML },
+		{ "nroff-no-skiphtml",	no_argument,	&rflag,	LOWDOWN_NROFF_SKIP_HTML },
+		{ "nroff-hard-wrap",	no_argument,	&aflag,	LOWDOWN_NROFF_HARD_WRAP },
+		{ "nroff-no-hard-wrap",	no_argument,	&rflag,	LOWDOWN_NROFF_HARD_WRAP },
+		{ "nroff-groff",	no_argument,	&aflag,	LOWDOWN_NROFF_GROFF },
+		{ "nroff-no-groff",	no_argument,	&rflag,	LOWDOWN_NROFF_GROFF },
+		{ "nroff-numbered",	no_argument,	&aflag,	LOWDOWN_NROFF_NUMBERED },
+		{ "nroff-no-numbered",	no_argument,	&rflag,	LOWDOWN_NROFF_NUMBERED },
+		{ "out-smarty",		no_argument,	&aflag,	LOWDOWN_SMARTY },
+		{ "out-no-smarty",	no_argument,	&rflag,	LOWDOWN_SMARTY },
+		{ "out-standalone",	no_argument,	&aflag,	LOWDOWN_STANDALONE },
+		{ "out-no-standalone",	no_argument,	&rflag,	LOWDOWN_STANDALONE },
+		{ NULL,		0,	NULL,	0 }
+	};
 
 	sandbox_pre();
 
@@ -241,14 +265,17 @@ main(int argc, char *argv[])
 	opts.oflags = 
 		LOWDOWN_NROFF_SKIP_HTML |
 		LOWDOWN_HTML_SKIP_HTML |
+		LOWDOWN_HTML_ESCAPE |
 		LOWDOWN_NROFF_GROFF |
+		LOWDOWN_NROFF_NUMBERED |
 		LOWDOWN_SMARTY |
 		LOWDOWN_HTML_HEAD_IDS;
 
 	if (strcasecmp(getprogname(), "lowdown-diff") == 0) 
 		diff = 1;
 
-	while ((c = getopt(argc, argv, "D:d:E:e:sT:o:X:")) != -1)
+	while ((c = getopt_long
+		(argc, argv, "D:d:E:e:sT:o:X:", lo, NULL)) != -1)
 		switch (c) {
 		case 'D':
 			if ((feat = feature_out(optarg)) == 0)
@@ -274,7 +301,7 @@ main(int argc, char *argv[])
 			fnout = optarg;
 			break;
 		case 's':
-			standalone = 1;
+			opts.oflags |= LOWDOWN_STANDALONE;
 			break;
 		case 'T':
 			if (strcasecmp(optarg, "ms") == 0)
@@ -294,6 +321,12 @@ main(int argc, char *argv[])
 			break;
 		case 'X':
 			extract = optarg;
+			break;
+		case 0:
+			if (rflag)
+				opts.oflags &= ~rflag;
+			if (aflag)
+				opts.oflags |= aflag;
 			break;
 		default:
 			goto usage;
@@ -346,8 +379,6 @@ main(int argc, char *argv[])
 
 	if (extract)
 		opts.feat |= LOWDOWN_METADATA;
-	if (standalone)
-		opts.oflags |= LOWDOWN_STANDALONE;
 
 	if (diff) {
 		if (!lowdown_file_diff
@@ -384,9 +415,8 @@ main(int argc, char *argv[])
 usage:
 	fprintf(stderr, "usage: lowdown "
 		"[-s] "
-		"[-D feature] "
+		"[output_features] "
 		"[-d feature] "
-		"[-E feature] "
 		"[-e feature]\n"
 		"               "
 		"[-o output] "
@@ -394,15 +424,14 @@ usage:
 		"[file]\n");
 	fprintf(stderr, "       lowdown "
 		"[-o output] "
+		"[output_features] "
 		"[-T mode] "
 		"[-X keyword] "
 		"[file]\n");
 	fprintf(stderr, "       lowdown-diff "
 		"[-s] "
-		"[-D feature] "
+		"[output_features] "
 		"[-d feature] "
-		"[-E feature]\n"
-		"                    "
 		"[-e feature] "
 		"[-o output] "
 		"[-T mode] "

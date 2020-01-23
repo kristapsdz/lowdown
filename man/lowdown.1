@@ -24,9 +24,7 @@
 .Sh SYNOPSIS
 .Nm lowdown
 .Op Fl s
-.Op Fl D Ar feature
 .Op Fl d Ar feature
-.Op Fl E Ar feature
 .Op Fl e Ar feature
 .Op Fl o Ar file
 .Op Fl T Ar mode
@@ -60,26 +58,12 @@ The results are written to standard output.
 .Pp
 The arguments are as follows:
 .Bl -tag -width Ds
-.It Fl D Ar feature
-Disable the given
-.Ar feature
-.Pq see Sx Output features .
-See
-.Fl E .
-You can specify this multiple times for different features.
 .It Fl d Ar feature
 Disable the given
 .Ar feature
 .Pq see Sx Input features .
 See
 .Fl e .
-You can specify this multiple times for different features.
-.It Fl E Ar feature
-Enable the given
-.Ar feature
-.Pq see Sx Output features .
-See
-.Fl D .
 You can specify this multiple times for different features.
 .It Fl e Ar feature
 Enable the given
@@ -96,12 +80,18 @@ unless it's
 in which case fall back to the default of standard output.
 .It Fl s
 Standalone mode.
-This emits an HTML5 or roff document envelope surrounding the output.
+This emits a document envelope surrounding the output by drawing from
+document metadata.
 See the
 .Ar metadata
 key of
 .Sx Input features
 on providing information to the document envelope.
+This only applies to
+.Fl T Ns Ar html ,
+.Fl T Ns Ar ms ,
+and
+.Fl T Ns Ar man .
 .It Fl T Ar mode
 The output mode.
 This may be
@@ -152,6 +142,73 @@ If not given or if
 is
 .Dq - ,
 read from standard input.
+.El
+.Pp
+There are many output options.
+The following are shared by all output modes:
+.Bl -tag -width Ds
+.It Fl -out-standalone
+Alias for
+.Fl s .
+.It Fl -out-no-smarty
+Do not use the smart typography filter.
+By default, certain character sequences are translated into
+output-specific glyphs.
+.El
+.Pp
+What follows are per-output options.
+For HTML with
+.Fl T Ns Ar html ,
+these are as follows:
+.Bl -tag -width Ds
+.It Fl -html-no-skiphtml
+Output embedded HTML.
+By default, embedded HTML is not output at all.
+See
+.Fl -html-no-escapehtml .
+.It Fl -html-no-head-ids
+Do not output
+.Li id
+attributes for headers.
+.It Fl -html-no-escapehtml
+If
+.Fl -html-no-skiphtml
+has been specified, this causes embedded HTML not to be escaped, and is
+instead output verbatim.
+This has no effect if
+.Fl -html-no-skiphtml
+has not been specified.
+.It Fl -html-hardwrap
+Hard-wrap paragraph content by outputting line breaks where applicable.
+.El
+.Pp
+For both
+.Fl T Ns Ar man
+and
+.Fl T Ns Ar ms ,
+the following apply:
+.Bl -tag -width Ds
+.It Fl -nroff-hard-wrap
+Hard-wrap paragraph content by outputting line breaks where applicable.
+.It Fl -nroff-no-skiphtml
+Output embedded HTML.
+This usually doesn't make sense because the HTML won't be interpreted by
+the output reader.
+By default, HTML is omitted.
+.It Fl -nroff-no-numbered
+If
+.Fl -nroff-no-groff
+is set, don't output numbered headings.
+Only applies to
+.Fl T Ns Ar ms .
+.It Fl -nroff-no-groff
+Don't use
+.Xr groff 1
+style section headings and don't output PDF hyper-links.
+See
+.Fl -nroff-no-numbered .
+Only applies to
+.Fl T Ns Ar ms .
 .El
 .Pp
 Only
@@ -303,87 +360,6 @@ Multiple script files (in order) may be separated by more than one space
 Only used in
 .Fl T Ar html
 mode.
-.El
-.Ss Output features
-.Nm lowdown
-and
-.Nm lowdown-diff
-allow for limited control over output features.
-These can be enabled with
-.Fl E
-and disabled with
-.Fl D .
-The
-.Ar html-skiphtml ,
-.Ar html-head-ids ,
-.Ar nroff-groff ,
-.Ar nroff-skiphtml ,
-and
-.Ar smarty
-output features are enabled by default.
-A full list is as follows, prefixed by
-.Dq html
-or
-.Dq nroff
-depending upon the output mode:
-.Bl -tag -width Ds
-.It Ar html-escape
-Leaves in-line HTML in its source form as if it were opaque text.
-.It Ar html-hardwrap
-Retain line-breaks within paragraphs.
-This option is retained for compatibility\(emdon't use it.
-Instead, use proper escaping of newlines.
-.It Ar html-skiphtml
-Do not render in-document HTML at all.
-Note that
-.Ar html-escape
-takes priority if both are specified.
-Text within HTML elements remains.
-.It Ar html-head-ids
-Give each header an identifier created by encoding its content.
-.It Ar nroff-numbered
-Use numbered sections.
-Only applies to the
-.Fl T Ns Ar ms
-output mode.
-If this and
-.Ar nroff-groff
-are provided, the document outline will be exported.
-.It Ar nroff-groff
-Use GNU extensions (i.e., for
-.Xr groff 1 )
-when rendering output.
-Only applies to the
-.Fl T Ns Ar ms
-output mode.
-You'll need to include
-.Fl m Ns Ar pdfmark
-when invoking
-.Xr groff 1
-for formatting links,
-.Fl t
-for the table extension, and
-.Fl m Ns Ar pspic
-.Pq not necessary to specify
-for images.
-Note that
-.Ar pspic
-will only work with
-.Fl T Ns Ar ps
-output or via
-.Xr pdfroff 1
-as noted in the
-.Sx EXAMPLES .
-.It Ar nroff-hardwrap
-Retain line-breaks within paragraphs.
-.It Ar nroff-skiphtml
-Do not render in-document HTML at all.
-Text within HTML elements remains.
-.It Ar smarty
-Don't use
-.Dq smartypants
-formatting.
-.Pq Applies to all output modes.
 .El
 .Ss Diffing
 If invoked as
