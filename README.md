@@ -52,16 +52,17 @@ The following modifications to the HTML5 output have been made:
 The following major feature additions have been added:
 
 - output mode for troff (via either the *-ms* or *-man* package)
+- extension output mode for GNU troff (*-mpdfmark*, PSPIC, etc.)
+- "smartypants" mode for all outputs
 - stylised terminal output (like
   [glow](https://github.com/charmbracelet/glow))
-- extension output mode for GNU troff (*-mpdfmark*, PSPIC, etc.)
-- "smartypants" mode for the troff outputs
 - metadata support
 - tree output for AST debugging
 - "diff" engine for semantic differences between documents
 
-It builds and runs on OpenBSD, Linux ([musl](https://www.musl-libc.org/)
-and glibc), and Mac OS X.
+Tested to build and run on OpenBSD, Linux
+([musl](https://www.musl-libc.org/) and glibc), FreeBSD, and Mac OS X.
+It should, however, run on any modern UNIX system.
 
 If you have any comments or patches, please feel free to post them here
 or notify me by e-mail.
