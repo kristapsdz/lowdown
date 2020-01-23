@@ -974,7 +974,6 @@ rndr_meta_multi(hbuf *ob, const hbuf *b, const char *env)
 		if (i == b->size)
 			continue;
 		start = &b->data[i];
-		sz = 0;
 
 		for (; i < b->size; i++)
 			if (i < b->size - 1 &&

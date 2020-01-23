@@ -690,7 +690,6 @@ rndr_doc_header_multi(hbuf *ob, const hbuf *b,
 		if (i == b->size)
 			continue;
 		start = &b->data[i];
-		sz = 0;
 
 		for (; i < b->size; i++)
 			if (i < b->size - 1 &&
