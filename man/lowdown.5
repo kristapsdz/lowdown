@@ -624,6 +624,16 @@ The footnote name is rendered as a number.
 There may only be one footnote reference per definition.
 If a footnote refers to an unknown definition, it is printed as-is.
 .
+.Ss Superscripts
+Uses the caret
+.Pq Dq \(ha
+to start a superscript.
+The superscripted material continues to white-space or, if starting with
+an open parenthesis, the close parenthesis.
+.Bd -literal -offset indent
+Though a great book, Q\(ha2 (Q\(ha(squared)) isn't Star Trek canon.
+.Ed
+.
 .
 .Sh ESCAPES
 .
