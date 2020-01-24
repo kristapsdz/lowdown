@@ -78,10 +78,8 @@ Paragraphs are separated by blank lines.
 .Pp
 To insert a hard line break (i.e., a line-break in the input that is
 reproduced in the output), insert two spaces at the end of the line.
-If the
-.Ar commonmark
-input option is specified, this may also be effected by escaping the
-newline:
+If commonmark input parsing is enabled, this may also be effected by
+escaping the newline:
 .Bd -literal -offset indent
 Darmok and Jalad...\e
 at Tanagra.
@@ -109,10 +107,8 @@ the line separated by one space followed by the header.
 ## This is a hash-marked header 2
 .Ed
 .Pp
-If the
-.Ar commonmark
-input option is specified, the space is required after the hash-marks in
-any hash-marked header.
+If commonmark input parsing is enabled, the space is required after the
+hash-marks in any hash-marked header.
 .
 .Ss Block Quotes
 Block quoted sections are invoked with a single right-angle bracket
@@ -172,10 +168,8 @@ lists, as all ordered lists start at one.
 1. So. (Not 1. again!)
 .Ed
 .Pp
-If the
-.Ar commonmark
-input option is specified, list items may alternatively terminate with
-the right parenthesis:
+If commonmark input parsing is enabled, list items may alternatively
+terminate with the right parenthesis:
 .Bd -literal -offset indent
 1) Live long
 2) Prosper
@@ -302,9 +296,6 @@ ___________________________
 .
 .Ss Metadata
 Documents can include metadata that is not part of the main text.
-This requires the
-.Ar metadata
-input option, which is the default.
 The syntax loosely follows the
 .Qq Multimarkdown
 specification.
@@ -470,9 +461,7 @@ These are produced by pairs of tilde and equal characters, respectively:
 .Pp
 The highlight variant may be enabled in
 .Xr lowdown 1
-with the
-.Ar hilite
-input options.
+with highlight parsing enabled.
 It's disabled by default because if used at the beginning of a line it
 may be erroneously interpreted as a section.
 .
@@ -531,12 +520,6 @@ for example:
 <kristaps@localhost>
 .Ed
 .Pp
-In
-.Xr lowdown 1 ,
-these are only enabled if the
-.Ar autolink
-input option is specified.
-By default, it is.
 .
 .Ss Images
 The image syntax resembles the links syntax.
