@@ -50,6 +50,8 @@ struct term {
 	struct tstack	 stack[128]; /* nodes being outputted */
 	size_t		 stackpos; /* position in stack */
 	size_t		 maxcol; /* soft limit */
+	size_t		 hmargin; /* left of content */
+	size_t		 vmargin; /* before/after content */
 	hbuf		*tmp; /* for temporary allocations */
 };
 
@@ -395,8 +397,9 @@ rndr_buf_startline_prefixes(struct term *term,
 	case LOWDOWN_ROOT:
 		rndr_buf_style(out, s);
 		pstyle = 1;
-		HBUF_PUTSL(out, "    ");
-		rndr_buf_advance(term, 4);
+		for (i = 0; i < term->hmargin; i++)
+			HBUF_PUTSL(out, " ");
+		rndr_buf_advance(term, term->hmargin);
 		break;
 	case LOWDOWN_BLOCKQUOTE:
 		rndr_buf_style(out, s);
@@ -665,6 +668,7 @@ lowdown_term_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 	const struct lowdown_node	*child;
 	struct term			*p = arg;
 	int32_t				 entity;
+	size_t				 i;
 	
 	/* Current nodes we're servicing. */
 
@@ -675,6 +679,11 @@ lowdown_term_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 
 	switch (n->type) {
 	case LOWDOWN_ROOT:
+
+		/* Emit vmargin. */
+
+		for (i = 0; i < p->vmargin; i++)
+			HBUF_PUTSL(ob, "\n");
 		p->last_blank = -1;
 		break;
 	case LOWDOWN_BLOCKCODE:
@@ -824,20 +833,22 @@ lowdown_term_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 	case LOWDOWN_HRULE:
 	case LOWDOWN_LISTITEM:
 	case LOWDOWN_META:
-	case LOWDOWN_ROOT:
 	case LOWDOWN_TABLE_ROW:
 		rndr_buf_vspace(p, ob, n, 1);
 		break;
-	default:
-		break;
-	}
-
-	/* Snip trailing newlines except for one. */
-
-	if (n->type == LOWDOWN_ROOT) {
+	case LOWDOWN_ROOT:
+		rndr_buf_vspace(p, ob, n, 1);
 		while (ob->size && ob->data[ob->size - 1] == '\n')
 			ob->size--;
 		HBUF_PUTSL(ob, "\n");
+
+		/* Strip breaks but for the vmargin. */
+
+		for (i = 0; i < p->vmargin; i++)
+			HBUF_PUTSL(ob, "\n");
+		break;
+	default:
+		break;
 	}
 }
 
@@ -847,7 +858,20 @@ lowdown_term_new(const struct lowdown_opts *opts)
 	struct term	*p;
 
 	p = xcalloc(1, sizeof(struct term));
+
+	/* Give us 80 columns by default. */
+
 	p->maxcol = opts == NULL || opts->cols == 0 ? 80 : opts->cols;
+
+	/* Don't let the horizontal margin exceed columns. */
+
+	if (opts != NULL && opts->hmargin >= p->maxcol - 1)
+		p->hmargin = p->maxcol - 1;
+	else if (opts != NULL)
+		p->hmargin = opts->hmargin;
+
+	p->vmargin = opts == NULL ? 0 : opts->vmargin;
+
 	p->tmp = hbuf_new(32);
 	return p;
 }

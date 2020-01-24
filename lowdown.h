@@ -240,6 +240,8 @@ struct	lowdown_node {
 struct	lowdown_opts {
 	enum lowdown_type	 type;
 	size_t			 cols; /* -Tterm width */
+	size_t			 hmargin; /* -Tterm left/right margin */
+	size_t			 vmargin; /* -Tterm top/bot margin */
 	unsigned int		 feat;
 #define LOWDOWN_TABLES		 0x01
 #define LOWDOWN_FENCED		 0x02

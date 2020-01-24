@@ -243,6 +243,8 @@ main(int argc, char *argv[])
 		{ "nroff-numbered",	no_argument,	&aoflag, LOWDOWN_NROFF_NUMBERED },
 		{ "nroff-no-numbered",	no_argument,	&roflag, LOWDOWN_NROFF_NUMBERED },
 		{ "term-width",		required_argument, NULL, 1 },
+		{ "term-hmargin",	required_argument, NULL, 2 },
+		{ "term-vmargin",	required_argument, NULL, 3 },
 		{ "out-smarty",		no_argument,	&aoflag, LOWDOWN_SMARTY },
 		{ "out-no-smarty",	no_argument,	&roflag, LOWDOWN_SMARTY },
 		{ "out-standalone",	no_argument,	&aoflag, LOWDOWN_STANDALONE },
@@ -359,9 +361,19 @@ main(int argc, char *argv[])
 				opts.feat |= aiflag;
 			break;
 		case 1:
-			opts.cols = strtonum(optarg, 1, INT_MAX, &er);
+			opts.cols = strtonum(optarg, 0, INT_MAX, &er);
 			if (er != NULL)
 				errx(EXIT_FAILURE, "--term-width: %s", er);
+			break;
+		case 2:
+			opts.hmargin = strtonum(optarg, 0, INT_MAX, &er);
+			if (er != NULL)
+				errx(EXIT_FAILURE, "--term-hmargin: %s", er);
+			break;
+		case 3:
+			opts.vmargin = strtonum(optarg, 0, INT_MAX, &er);
+			if (er != NULL)
+				errx(EXIT_FAILURE, "--term-vmargin: %s", er);
 			break;
 		default:
 			goto usage;
@@ -372,8 +384,7 @@ main(int argc, char *argv[])
 
 	/* Show at most 80 columns. */
 
-	if (opts.cols == 0 && opts.type == LOWDOWN_TERM &&
-	    getenv("COLUMNS") != NULL) {
+	if (opts.cols == 0 && getenv("COLUMNS") != NULL) {
 		opts.cols = strtonum(getenv("COLUMNS"), 1, INT_MAX, &er);
 		if (er != NULL || opts.cols > 80)
 			opts.cols = 80;

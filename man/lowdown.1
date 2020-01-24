@@ -245,9 +245,18 @@ output has the following:
 .It Fl -term-width=width
 Set the soft limit on the number of characters per line.
 This may be exceeded by literal text.
-The default is the number of terminal columns from
+The default (or if zero) is the number of terminal columns from
 .Ev COLUMNS
 or 80 at most.
+The width includes horizontal margins from
+.Fl -term-hmargin .
+.It Fl -term-hmargin=margin
+The number of left margin spaces.
+Truncated to the number of columns.
+Defaults to zero.
+.It Fl -term-vmargin=margin
+The number of top and bottom margin newlines.
+Defaults to zero.
 .El
 .Ss Metadata
 If not disabled with
