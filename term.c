@@ -45,6 +45,7 @@ struct tstack {
 };
 
 struct term {
+	unsigned int	 opts; /* oflags from lowdown_cfg */
 	size_t		 col; /* output column from zero */
 	ssize_t		 last_blank; /* line breaks or -1 (start) */
 	struct tstack	 stack[128]; /* nodes being outputted */
@@ -162,6 +163,79 @@ rndr_escape(struct hbuf *out, const char *buf, size_t sz)
 	}
 	if (start < sz) 
 		hbuf_put(out, buf + start, sz - start);
+}
+
+/*
+ * Link shortener.
+ * This only shows the domain name and last path/filename.
+ * It uses the following algorithm:
+ *
+ *   (1) strip schema (if none, print in full)
+ *   (2) print domain following
+ *   (3) if no path, return
+ *   (4) if path, look for final path component
+ *   (5) print final path component with /.../ if shortened
+ */
+static void
+rndr_short_link(struct hbuf *out, const struct hbuf *link)
+{
+	size_t		 start = 0, sz;
+	const char	*cp, *rcp;
+
+	/* 
+	 * Skip the leading protocol.
+	 * If we don't find a protocol, leave it be.
+	 */
+
+	if (link->size > 7 && strncmp(link->data, "http://", 7) == 0)
+		start = 7;
+	else if (link->size > 8 && strncmp(link->data, "https://", 8) == 0)
+		start = 8;
+	else if (link->size > 7 && strncmp(link->data, "file://", 7) == 0)
+		start = 7;
+	else if (link->size > 7 && strncmp(link->data, "mailto:", 7) == 0)
+		start = 7;
+	else if (link->size > 6 && strncmp(link->data, "ftp://", 6) == 0)
+		start = 6;
+
+	if (start == 0) {
+		hbuf_putb(out, link);
+		return;
+	}
+
+	sz = link->size;
+	if (link->data[link->size - 1] == '/')
+		sz--;
+
+	/* 
+	 * Look for the end of the domain name. 
+	 * If we don't have an end, then print the whole thing.
+	 */
+
+	cp = memchr(link->data + start, '/', sz - start);
+	if (cp == NULL) {
+		hbuf_put(out, link->data + start, sz - start);
+		return;
+	}
+
+	hbuf_put(out, link->data + start, cp - (link->data + start));
+
+	/* 
+	 * Look for the filename.
+	 * If it's the same as the end of the domain, then print the
+	 * whole thing.
+	 * Otherwise, use a "..." between.
+	 */
+
+	rcp = memrchr(link->data + start, '/', sz - start);
+
+	if (rcp == cp) {
+		hbuf_put(out, cp, sz - (cp - link->data));
+		return;
+	}
+
+	HBUF_PUTSL(out, "/...");
+	hbuf_put(out, rcp, sz - (rcp - link->data));
 }
 
 /*
@@ -799,7 +873,12 @@ lowdown_term_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		hbuf_truncate(p->tmp);
 		HBUF_PUTSL(p->tmp, " "); 
 		rndr_buf(p, ob, n, p->tmp, NULL);
-		rndr_buf(p, ob, n, &n->rndr_link.link, NULL);
+		if ((p->opts & LOWDOWN_TERM_SHORTLINK)) {
+			hbuf_truncate(p->tmp);
+			rndr_short_link(p->tmp, &n->rndr_link.link);
+			rndr_buf(p, ob, n, p->tmp, NULL);
+		} else 
+			rndr_buf(p, ob, n, &n->rndr_link.link, NULL);
 		break;
 	case LOWDOWN_IMAGE:
 		rndr_buf(p, ob, n, &n->rndr_image.alt, NULL);
@@ -879,7 +958,7 @@ lowdown_term_new(const struct lowdown_opts *opts)
 	p->maxcol = opts == NULL || opts->cols == 0 ? 80 : opts->cols;
 	p->hmargin = opts == NULL ? 0 : opts->hmargin;
 	p->vmargin = opts == NULL ? 0 : opts->vmargin;
-
+	p->opts = opts == NULL ? 0 : opts->oflags;
 	p->tmp = hbuf_new(32);
 	return p;
 }
