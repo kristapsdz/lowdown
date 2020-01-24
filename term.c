@@ -335,6 +335,7 @@ rndr_node_style(struct sty *s, const struct lowdown_node *n)
 			rndr_node_style_apply(s, &sty_h1);
 		break;
 	default:
+		/* FIXME: crawl up nested? */
 		if (n->parent != NULL && 
 		    n->parent->type == LOWDOWN_LINK)
 			rndr_node_style_apply(s, &sty_linkalt);
@@ -867,7 +868,12 @@ lowdown_term_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		rndr_buf(p, ob, n, &n->rndr_codespan.text, NULL);
 		break;
 	case LOWDOWN_LINK_AUTO:
-		rndr_buf(p, ob, n, &n->rndr_autolink.link, NULL);
+		if ((p->opts & LOWDOWN_TERM_SHORTLINK)) {
+			hbuf_truncate(p->tmp);
+			rndr_short_link(p->tmp, &n->rndr_autolink.link);
+			rndr_buf(p, ob, n, p->tmp, NULL);
+		} else 
+			rndr_buf(p, ob, n, &n->rndr_autolink.link, NULL);
 		break;
 	case LOWDOWN_LINK:
 		hbuf_truncate(p->tmp);
@@ -890,7 +896,12 @@ lowdown_term_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		hbuf_truncate(p->tmp);
 		HBUF_PUTSL(p->tmp, "[Image: ");
 		rndr_buf(p, ob, n, p->tmp, &sty_imgurlbox);
-		rndr_buf(p, ob, n, &n->rndr_image.link, &sty_imgurl);
+		if ((p->opts & LOWDOWN_TERM_SHORTLINK)) {
+			hbuf_truncate(p->tmp);
+			rndr_short_link(p->tmp, &n->rndr_image.link);
+			rndr_buf(p, ob, n, p->tmp, &sty_imgurl);
+		} else
+			rndr_buf(p, ob, n, &n->rndr_image.link, &sty_imgurl);
 		hbuf_truncate(p->tmp);
 		HBUF_PUTSL(p->tmp, "]");
 		rndr_buf(p, ob, n, p->tmp, &sty_imgurlbox);
