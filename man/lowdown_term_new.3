@@ -28,10 +28,19 @@
 .In lowdown.h
 .Ft void *
 .Fo lowdown_term_new
+.Fa "const struct lowdown_opts *opts"
 .Fc
 .Sh DESCRIPTION
-Allocates a terminal renderer.
-It must be freed with a call to
+Allocates a terminal renderer using the flags in
+.Fa opts ,
+which can be
+.Dv NULL
+in which case all fields are zero.
+The renderer type in
+.Fa opts
+is ignored.
+.Pp
+The returned renderer must be freed with a call to
 .Xr lowdown_term_free 3 .
 The returned pointer may be used with multiple invocations of
 .Xr lowdown_term_rndr 3 .
@@ -39,4 +48,5 @@ The returned pointer may be used with multiple invocations of
 Always returns a valid pointer.
 .Sh SEE ALSO
 .Xr lowdown 3 ,
-.Xr lowdown_term_free 3
+.Xr lowdown_term_free 3 ,
+.Xr lowdown_term_rndr 3

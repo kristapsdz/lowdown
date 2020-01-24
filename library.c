@@ -68,7 +68,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 		renderer = lowdown_nroff_new(opts);
 		break;
 	case LOWDOWN_TERM:
-		renderer = lowdown_term_new();
+		renderer = lowdown_term_new(opts);
 		break;
 	case LOWDOWN_TREE:
 		renderer = lowdown_tree_new();
@@ -182,7 +182,7 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 		renderer = lowdown_nroff_new(opts);
 		break;
 	case LOWDOWN_TERM:
-		renderer = lowdown_term_new();
+		renderer = lowdown_term_new(opts);
 		break;
 	case LOWDOWN_TREE:
 		renderer = lowdown_tree_new();

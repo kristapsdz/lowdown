@@ -238,10 +238,17 @@ Only applies to
 .Fl T Ns Ar ms .
 .El
 .Pp
-Only
-.Fl T Ns Ar html
-includes graphics and equations in output.
-All other outputs omit these statements.
+Lastly, the
+.Fl T Ns Ar term
+output has the following:
+.Bl -tag -width Ds
+.It Fl -term-width=width
+Set the soft limit on the number of characters per line.
+This may be exceeded by literal text.
+The default is the number of terminal columns from
+.Ev COLUMNS
+or 80 at most.
+.El
 .Ss Metadata
 If not disabled with
 .Fl -parse-no-metadata ,

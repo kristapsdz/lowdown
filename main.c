@@ -216,7 +216,7 @@ main(int argc, char *argv[])
 	FILE			*fin = stdin, *fout = stdout, 
 				*din = NULL;
 	const char		*fnin = "<stdin>", *fnout = NULL,
-	      	 		*fndin = NULL, *extract = NULL;
+	      	 		*fndin = NULL, *extract = NULL, *er;
 	struct lowdown_opts 	 opts;
 	int			 c, diff = 0,
 				 status = EXIT_SUCCESS, feat, aoflag = 0, roflag = 0,
@@ -242,6 +242,7 @@ main(int argc, char *argv[])
 		{ "nroff-no-groff",	no_argument,	&roflag, LOWDOWN_NROFF_GROFF },
 		{ "nroff-numbered",	no_argument,	&aoflag, LOWDOWN_NROFF_NUMBERED },
 		{ "nroff-no-numbered",	no_argument,	&roflag, LOWDOWN_NROFF_NUMBERED },
+		{ "term-width",		required_argument, NULL, 1 },
 		{ "out-smarty",		no_argument,	&aoflag, LOWDOWN_SMARTY },
 		{ "out-no-smarty",	no_argument,	&roflag, LOWDOWN_SMARTY },
 		{ "out-standalone",	no_argument,	&aoflag, LOWDOWN_STANDALONE },
@@ -357,12 +358,26 @@ main(int argc, char *argv[])
 			if (aiflag)
 				opts.feat |= aiflag;
 			break;
+		case 1:
+			opts.cols = strtonum(optarg, 1, INT_MAX, &er);
+			if (er != NULL)
+				errx(EXIT_FAILURE, "--term-width: %s", er);
+			break;
 		default:
 			goto usage;
 		}
 
 	argc -= optind;
 	argv += optind;
+
+	/* Show at most 80 columns. */
+
+	if (opts.cols == 0 && opts.type == LOWDOWN_TERM &&
+	    getenv("COLUMNS") != NULL) {
+		opts.cols = strtonum(getenv("COLUMNS"), 1, INT_MAX, &er);
+		if (er != NULL || opts.cols > 80)
+			opts.cols = 80;
+	}
 
 	/* 
 	 * Diff mode takes two arguments: the first is mandatory (the

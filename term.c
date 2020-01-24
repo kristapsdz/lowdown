@@ -39,11 +39,6 @@ LOWDOWN_TABLE_ROW		-> done
 LOWDOWN_TABLE_CELL		-> 
 #endif
 
-/*
- * Hard-coded terminal width.
- */
-#define	TERM_WIDTH	80
-
 struct tstack {
 	const struct lowdown_node 	*n; /* node in question */
 	size_t				 lines; /* times emitted */
@@ -54,6 +49,7 @@ struct term {
 	ssize_t		 last_blank; /* line breaks or -1 (start) */
 	struct tstack	 stack[128]; /* nodes being outputted */
 	size_t		 stackpos; /* position in stack */
+	size_t		 maxcol; /* soft limit */
 	hbuf		*tmp; /* for temporary allocations */
 };
 
@@ -585,7 +581,7 @@ rndr_buf(struct term *term, hbuf *out,
 		if ((needspace || 
 	 	     (out->size && isspace
 		      ((unsigned char)out->data[out->size - 1]))) &&
-		    term->col && term->col + len > TERM_WIDTH) {
+		    term->col && term->col + len > term->maxcol) {
 			rndr_buf_endline(term, out, n, osty);
 			end = 0;
 		}
@@ -846,11 +842,12 @@ lowdown_term_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 }
 
 void *
-lowdown_term_new(void)
+lowdown_term_new(const struct lowdown_opts *opts)
 {
 	struct term	*p;
 
 	p = xcalloc(1, sizeof(struct term));
+	p->maxcol = opts == NULL || opts->cols == 0 ? 80 : opts->cols;
 	p->tmp = hbuf_new(32);
 	return p;
 }

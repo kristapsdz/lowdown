@@ -239,6 +239,7 @@ struct	lowdown_node {
  */
 struct	lowdown_opts {
 	enum lowdown_type	 type;
+	size_t			 cols; /* -Tterm width */
 	unsigned int		 feat;
 #define LOWDOWN_TABLES		 0x01
 #define LOWDOWN_FENCED		 0x02
@@ -313,7 +314,7 @@ void 	 lowdown_html_rndr(hbuf *, struct lowdown_metaq *,
 		void *, const struct lowdown_node *);
 
 void	 lowdown_term_free(void *);
-void	*lowdown_term_new(void);
+void	*lowdown_term_new(const struct lowdown_opts *);
 void 	 lowdown_term_rndr(hbuf *, struct lowdown_metaq *,
 		void *, const struct lowdown_node *);
 
