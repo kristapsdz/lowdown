@@ -219,8 +219,8 @@ main(int argc, char *argv[])
 	      	 		*fndin = NULL, *extract = NULL;
 	struct lowdown_opts 	 opts;
 	int			 c, diff = 0,
-				 status = EXIT_SUCCESS, feat, aoflag, roflag,
-				 aiflag, riflag;
+				 status = EXIT_SUCCESS, feat, aoflag = 0, roflag = 0,
+				 aiflag = 0, riflag = 0;
 	char			*ret = NULL;
 	size_t		 	 retsz = 0;
 	struct lowdown_meta 	*m;
