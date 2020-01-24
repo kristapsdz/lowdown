@@ -219,33 +219,58 @@ main(int argc, char *argv[])
 	      	 		*fndin = NULL, *extract = NULL;
 	struct lowdown_opts 	 opts;
 	int			 c, diff = 0,
-				 status = EXIT_SUCCESS, feat, aflag, rflag;
+				 status = EXIT_SUCCESS, feat, aoflag, roflag,
+				 aiflag, riflag;
 	char			*ret = NULL;
 	size_t		 	 retsz = 0;
 	struct lowdown_meta 	*m;
 	struct lowdown_metaq	 mq;
 	struct option 		 lo[] = {
-		{ "html-skiphtml",	no_argument,	&aflag,	LOWDOWN_HTML_SKIP_HTML },
-		{ "html-no-skiphtml",	no_argument,	&rflag,	LOWDOWN_HTML_SKIP_HTML },
-		{ "html-escapehtml",	no_argument,	&aflag,	LOWDOWN_HTML_ESCAPE },
-		{ "html-no-escapehtml",	no_argument,	&rflag,	LOWDOWN_HTML_ESCAPE },
-		{ "html-hardwrap",	no_argument,	&aflag,	LOWDOWN_HTML_HARD_WRAP },
-		{ "html-no-hardwrap",	no_argument,	&rflag,	LOWDOWN_HTML_HARD_WRAP },
-		{ "html-head-ids",	no_argument,	&aflag,	LOWDOWN_HTML_HEAD_IDS },
-		{ "html-no-head-ids",	no_argument,	&rflag,	LOWDOWN_HTML_HEAD_IDS },
-		{ "nroff-skiphtml",	no_argument,	&aflag,	LOWDOWN_NROFF_SKIP_HTML },
-		{ "nroff-no-skiphtml",	no_argument,	&rflag,	LOWDOWN_NROFF_SKIP_HTML },
-		{ "nroff-hard-wrap",	no_argument,	&aflag,	LOWDOWN_NROFF_HARD_WRAP },
-		{ "nroff-no-hard-wrap",	no_argument,	&rflag,	LOWDOWN_NROFF_HARD_WRAP },
-		{ "nroff-groff",	no_argument,	&aflag,	LOWDOWN_NROFF_GROFF },
-		{ "nroff-no-groff",	no_argument,	&rflag,	LOWDOWN_NROFF_GROFF },
-		{ "nroff-numbered",	no_argument,	&aflag,	LOWDOWN_NROFF_NUMBERED },
-		{ "nroff-no-numbered",	no_argument,	&rflag,	LOWDOWN_NROFF_NUMBERED },
-		{ "out-smarty",		no_argument,	&aflag,	LOWDOWN_SMARTY },
-		{ "out-no-smarty",	no_argument,	&rflag,	LOWDOWN_SMARTY },
-		{ "out-standalone",	no_argument,	&aflag,	LOWDOWN_STANDALONE },
-		{ "out-no-standalone",	no_argument,	&rflag,	LOWDOWN_STANDALONE },
-		{ NULL,		0,	NULL,	0 }
+		{ "html-skiphtml",	no_argument,	&aoflag, LOWDOWN_HTML_SKIP_HTML },
+		{ "html-no-skiphtml",	no_argument,	&roflag, LOWDOWN_HTML_SKIP_HTML },
+		{ "html-escapehtml",	no_argument,	&aoflag, LOWDOWN_HTML_ESCAPE },
+		{ "html-no-escapehtml",	no_argument,	&roflag, LOWDOWN_HTML_ESCAPE },
+		{ "html-hardwrap",	no_argument,	&aoflag, LOWDOWN_HTML_HARD_WRAP },
+		{ "html-no-hardwrap",	no_argument,	&roflag, LOWDOWN_HTML_HARD_WRAP },
+		{ "html-head-ids",	no_argument,	&aoflag, LOWDOWN_HTML_HEAD_IDS },
+		{ "html-no-head-ids",	no_argument,	&roflag, LOWDOWN_HTML_HEAD_IDS },
+		{ "nroff-skiphtml",	no_argument,	&aoflag, LOWDOWN_NROFF_SKIP_HTML },
+		{ "nroff-no-skiphtml",	no_argument,	&roflag, LOWDOWN_NROFF_SKIP_HTML },
+		{ "nroff-hard-wrap",	no_argument,	&aoflag, LOWDOWN_NROFF_HARD_WRAP },
+		{ "nroff-no-hard-wrap",	no_argument,	&roflag, LOWDOWN_NROFF_HARD_WRAP },
+		{ "nroff-groff",	no_argument,	&aoflag, LOWDOWN_NROFF_GROFF },
+		{ "nroff-no-groff",	no_argument,	&roflag, LOWDOWN_NROFF_GROFF },
+		{ "nroff-numbered",	no_argument,	&aoflag, LOWDOWN_NROFF_NUMBERED },
+		{ "nroff-no-numbered",	no_argument,	&roflag, LOWDOWN_NROFF_NUMBERED },
+		{ "out-smarty",		no_argument,	&aoflag, LOWDOWN_SMARTY },
+		{ "out-no-smarty",	no_argument,	&roflag, LOWDOWN_SMARTY },
+		{ "out-standalone",	no_argument,	&aoflag, LOWDOWN_STANDALONE },
+		{ "out-no-standalone",	no_argument,	&roflag, LOWDOWN_STANDALONE },
+		{ "parse-hilite",	no_argument,	&aiflag, LOWDOWN_HILITE },
+		{ "parse-no-hilite",	no_argument,	&riflag, LOWDOWN_HILITE },
+		{ "parse-tables",	no_argument,	&aiflag, LOWDOWN_TABLES },
+		{ "parse-no-tables",	no_argument,	&riflag, LOWDOWN_TABLES },
+		{ "parse-fenced",	no_argument,	&aiflag, LOWDOWN_FENCED },
+		{ "parse-no-fenced",	no_argument,	&riflag, LOWDOWN_FENCED },
+		{ "parse-footnotes",	no_argument,	&aiflag, LOWDOWN_FOOTNOTES },
+		{ "parse-no-footnotes",	no_argument,	&riflag, LOWDOWN_FOOTNOTES },
+		{ "parse-autolink",	no_argument,	&aiflag, LOWDOWN_AUTOLINK },
+		{ "parse-no-autolink",	no_argument,	&riflag, LOWDOWN_AUTOLINK },
+		{ "parse-strike",	no_argument,	&aiflag, LOWDOWN_STRIKE },
+		{ "parse-no-strike",	no_argument,	&riflag, LOWDOWN_STRIKE },
+		{ "parse-super",	no_argument,	&aiflag, LOWDOWN_SUPER },
+		{ "parse-no-super",	no_argument,	&riflag, LOWDOWN_SUPER },
+		{ "parse-math",		no_argument,	&aiflag, LOWDOWN_MATH },
+		{ "parse-no-math",	no_argument,	&riflag, LOWDOWN_MATH },
+		{ "parse-codeindent",	no_argument,	&aiflag, LOWDOWN_NOCODEIND },
+		{ "parse-no-codeindent",no_argument,	&riflag, LOWDOWN_NOCODEIND },
+		{ "parse-intraemph",	no_argument,	&aiflag, LOWDOWN_NOINTEM },
+		{ "parse-no-intraemph",	no_argument,	&riflag, LOWDOWN_NOINTEM },
+		{ "parse-metadata",	no_argument,	&aiflag, LOWDOWN_METADATA },
+		{ "parse-no-metadata",	no_argument,	&riflag, LOWDOWN_METADATA },
+		{ "parse-cmark",	no_argument,	&aiflag, LOWDOWN_COMMONMARK },
+		{ "parse-no-cmark",	no_argument,	&riflag, LOWDOWN_COMMONMARK },
+		{ NULL,			0,	NULL,	0 }
 	};
 
 	sandbox_pre();
@@ -323,10 +348,14 @@ main(int argc, char *argv[])
 			extract = optarg;
 			break;
 		case 0:
-			if (rflag)
-				opts.oflags &= ~rflag;
-			if (aflag)
-				opts.oflags |= aflag;
+			if (roflag)
+				opts.oflags &= ~roflag;
+			if (aoflag)
+				opts.oflags |= aoflag;
+			if (riflag)
+				opts.feat &= ~riflag;
+			if (aiflag)
+				opts.feat |= aiflag;
 			break;
 		default:
 			goto usage;

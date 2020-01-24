@@ -23,23 +23,23 @@
 .Nd simple markdown translator
 .Sh SYNOPSIS
 .Nm lowdown
+.Op in_opts
+.Op out_opts
 .Op Fl s
-.Op Fl d Ar feature
-.Op Fl e Ar feature
 .Op Fl o Ar file
 .Op Fl T Ar mode
 .Op Ar file
 .Nm lowdown
+.Op in_opts
+.Op out_opts
 .Op Fl o Ar file
 .Op Fl T Ar mode
 .Fl X Ar keyword
 .Op Ar file
 .Nm lowdown-diff
+.Op in_opts
+.Op out_opts
 .Op Fl s
-.Op Fl D Ar feature
-.Op Fl d Ar feature
-.Op Fl E Ar feature
-.Op Fl e Ar feature
 .Op Fl o Ar file
 .Op Fl T Ar mode
 .Ar oldfile
@@ -58,20 +58,6 @@ The results are written to standard output.
 .Pp
 The arguments are as follows:
 .Bl -tag -width Ds
-.It Fl d Ar feature
-Disable the given
-.Ar feature
-.Pq see Sx Input features .
-See
-.Fl e .
-You can specify this multiple times for different features.
-.It Fl e Ar feature
-Enable the given
-.Ar feature
-.Pq see Sx Input features .
-See
-.Fl d .
-You can specify this multiple times for different features.
 .It Fl o Ar file
 Send output to
 .Ar file
@@ -142,6 +128,49 @@ If not given or if
 is
 .Dq - ,
 read from standard input.
+.El
+.Pp
+The following are options for input parsing.
+These affect the parse tree passed to all outputs.
+.Bl -tag -width Ds
+.It Fl -parse-no-autolink
+Do not autolink
+.Li http ,
+.Li https ,
+.Li ftp ,
+.Li mailto ,
+and relative links or link fragments.
+.It Fl -parse-no-cmark
+Do not tighten input parsing to the CommonMark specification.
+This also uses the first ordered list value instead of starting all
+lists at one.
+In most cases, this is simply less laxist than the original Markdown.
+.It Fl -parse-no-fenced
+Do not allow for GFM fenced (language-specific) code blocks.
+.It Fl -parse-no-footnotes
+Do not allow MMD style footnotes.
+.It Fl -parse-hilite
+Enable highlight span support.
+This are disabled by default because it may be erroneously interpreted
+as section headers.
+.It Fl -parse-math
+Recognise mathematics equations.
+.It Fl -parse-no-metadata
+Do not allow MMD metadata.
+For the first paragraph to count as meta-data, the first line must have
+a colon in it.
+Otherwise it's considered a regular paragraph.
+Meta-data is escaped according to the output mode.
+.It Fl -parse-no-codeind
+Do not parse indented content as code blocks.
+.It Fl -parse-no-intraemph
+Do not allow emphasis within words and links.
+.It Fl -parse-no-strike
+Do not allow strikethroughs.
+.It Fl -parse-no-super
+Do not allow super-scripts.
+.It Fl -pasre-notables
+Do not allow GFM tables.
 .El
 .Pp
 There are many output options.
@@ -215,93 +244,10 @@ Only
 .Fl T Ns Ar html
 includes graphics and equations in output.
 All other outputs omit these statements.
-.Ss Input features
-There are a number of Markdown (and Markdown extension) features supported by
-.Nm lowdown
-and
-.Nm lowdown-diff .
-These can be enabled with
-.Fl e
-and disabled with
-.Fl d .
-By default,
-.Nm lowdown
-and
-.Nm lowdown-diff
-enable the
-.Ar autolink ,
-.Ar fenced ,
-.Ar footnotes ,
-.Ar metadata ,
-.Ar strike ,
-.Ar super ,
-.Ar commonmark ,
-and
-.Ar tables
-features.
-A full list is as follows:
-.Bl -tag -width Ds
-.It Ar autolink
-Autolink
-.Li http ,
-.Li https ,
-.Li ftp ,
-.Li mailto ,
-and relative links or link fragments.
-.It Ar commonmark
-Tighten input parsing to the CommonMark specification.
-This also uses the first ordered list value instead of starting all
-lists at one.
-In most cases, this is simply less laxist than the original Markdown.
-This feature is
-.Em experimental .
-.It Ar fenced
-Allow for GFM fenced (language-specific) code blocks.
-.It Ar footnotes
-MMD style footnotes.
-This only supports the referenced footnote style, not the
-.Qq inline
-style.
-.It Ar hilite
-Highlight span support.
-This are disabled by default because it may be erroneously interpreted
-as section headers.
-.It Ar math
-Recognise mathematics equations.
-.It Ar metadata
-Accept MMD metadata.
-For the first paragraph to count as meta-data, the first line must have
-a colon in it.
-Otherwise it's considered a regular paragraph.
-Meta-data is escaped according to the output mode; and if the
-.Ar smarty
-flag is set, also smartypantsed.
-.It Ar nocodeind
-Do not indent code blocks.
-.It Ar nointem
-Disable emphasis with links.
-.It Ar strike
-Strikethrough support.
-.It Ar super
-Allow for super-scripts.
-This accepts foo^bar, which puts the parts following the caret until
-whitespace in superscripts; or foo^(bar), which puts only the parts in
-parenthesis.
-.It Ar tables
-Allow for GFM tables.
-.El
-.Pp
-The parser also accepts link titles (quoted alongside the link address)
-and image dimensions (=WxH or =Wx).
-Both may also be specified, in any order.
-For example,
-.Li ![alt](url "title" =23x24) .
-These are fairly standard Markdown extensions.
-.Pp
-If the
-.Ar metadata
-input feature is requested, the following metadata keys are used when in
-standalone
+.Ss Metadata
+If not disabled with
+.Fl -parse-no-metadata ,
+the following metadata keys are used when in standalone
 .Pq Fl s
 mode:
 .Bl -tag -width Ds
