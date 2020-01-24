@@ -399,7 +399,6 @@ rndr_buf_startline_prefixes(struct term *term,
 		pstyle = 1;
 		for (i = 0; i < term->hmargin; i++)
 			HBUF_PUTSL(out, " ");
-		rndr_buf_advance(term, term->hmargin);
 		break;
 	case LOWDOWN_BLOCKQUOTE:
 		rndr_buf_style(out, s);
@@ -862,14 +861,7 @@ lowdown_term_new(const struct lowdown_opts *opts)
 	/* Give us 80 columns by default. */
 
 	p->maxcol = opts == NULL || opts->cols == 0 ? 80 : opts->cols;
-
-	/* Don't let the horizontal margin exceed columns. */
-
-	if (opts != NULL && opts->hmargin >= p->maxcol - 1)
-		p->hmargin = p->maxcol - 1;
-	else if (opts != NULL)
-		p->hmargin = opts->hmargin;
-
+	p->hmargin = opts == NULL ? 0 : opts->hmargin;
 	p->vmargin = opts == NULL ? 0 : opts->vmargin;
 
 	p->tmp = hbuf_new(32);

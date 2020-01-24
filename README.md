@@ -3,8 +3,10 @@
 **lowdown** is a fork of [hoedown](https://github.com/hoedown/hoedown),
 although the parser and front-ends have changed significantly.
 
-This is a read-only repository for tracking development of the system.
-Stable releases are available at the [website](https://kristaps.bsd.lv/lowdown).
+This is a read-only repository for tracking development of the system
+and managing bug reports and patches.  (Feature requests will be just be
+closed, sorry!) Stable releases are available at the
+[website](https://kristaps.bsd.lv/lowdown).
 
 The fork features the following modifications to its predecessor:
 

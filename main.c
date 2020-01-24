@@ -24,6 +24,7 @@
 # include <sys/resource.h>
 # include <sys/capsicum.h>
 #endif
+#include <sys/ioctl.h>
 
 #if HAVE_ERR
 # include <err.h>
@@ -210,6 +211,17 @@ feature_in(const char *v)
 	return 0;
 }
 
+static size_t
+get_columns(void)
+{
+	struct winsize	 size;
+
+	memset(&size, 0, sizeof(struct winsize));
+	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &size) == -1)
+		return 72;
+	return size.ws_col;
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -220,9 +232,9 @@ main(int argc, char *argv[])
 	struct lowdown_opts 	 opts;
 	int			 c, diff = 0,
 				 status = EXIT_SUCCESS, feat, aoflag = 0, roflag = 0,
-				 aiflag = 0, riflag = 0;
+				 aiflag = 0, riflag = 0, centre = 0;
 	char			*ret = NULL;
-	size_t		 	 retsz = 0;
+	size_t		 	 retsz = 0, rcols;
 	struct lowdown_meta 	*m;
 	struct lowdown_metaq	 mq;
 	struct option 		 lo[] = {
@@ -245,6 +257,7 @@ main(int argc, char *argv[])
 		{ "term-width",		required_argument, NULL, 1 },
 		{ "term-hmargin",	required_argument, NULL, 2 },
 		{ "term-vmargin",	required_argument, NULL, 3 },
+		{ "term-columns",	required_argument, NULL, 4 },
 		{ "out-smarty",		no_argument,	&aoflag, LOWDOWN_SMARTY },
 		{ "out-no-smarty",	no_argument,	&roflag, LOWDOWN_SMARTY },
 		{ "out-standalone",	no_argument,	&aoflag, LOWDOWN_STANDALONE },
@@ -275,6 +288,10 @@ main(int argc, char *argv[])
 		{ "parse-no-cmark",	no_argument,	&riflag, LOWDOWN_COMMONMARK },
 		{ NULL,			0,	NULL,	0 }
 	};
+
+	/* Get the real number of columns or 72. */
+
+	rcols = get_columns();
 
 	sandbox_pre();
 
@@ -362,19 +379,33 @@ main(int argc, char *argv[])
 			break;
 		case 1:
 			opts.cols = strtonum(optarg, 0, INT_MAX, &er);
-			if (er != NULL)
-				errx(EXIT_FAILURE, "--term-width: %s", er);
-			break;
+			if (er == NULL)
+				break;
+			errx(EXIT_FAILURE, "--term-width: %s", er);
 		case 2:
-			opts.hmargin = strtonum(optarg, 0, INT_MAX, &er);
-			if (er != NULL)
-				errx(EXIT_FAILURE, "--term-hmargin: %s", er);
-			break;
+			if (strcmp(optarg, "centre") == 0 ||
+			    strcmp(optarg, "centre") == 0) {
+				centre = 1;
+				break;
+			}
+			opts.hmargin = strtonum
+				(optarg, 0, INT_MAX, &er);
+			if (er == NULL)
+				break;
+			errx(EXIT_FAILURE, 
+				"--term-hmargin: %s", er);
 		case 3:
 			opts.vmargin = strtonum(optarg, 0, INT_MAX, &er);
-			if (er != NULL)
-				errx(EXIT_FAILURE, "--term-vmargin: %s", er);
-			break;
+			if (er == NULL)
+				break;
+			errx(EXIT_FAILURE, 
+				"--term-vmargin: %s", er);
+		case 4:
+			rcols = strtonum(optarg, 1, INT_MAX, &er);
+			if (er == NULL)
+				break;
+			errx(EXIT_FAILURE, 
+				"--term-columns: %s", er);
 		default:
 			goto usage;
 		}
@@ -382,13 +413,21 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	/* Show at most 80 columns. */
+	/* 
+	 * By default, try to show 80 columns.
+	 * Don't show more than the number of available columns.
+	 */
 
-	if (opts.cols == 0 && getenv("COLUMNS") != NULL) {
-		opts.cols = strtonum(getenv("COLUMNS"), 1, INT_MAX, &er);
-		if (er != NULL || opts.cols > 80)
+	if (opts.cols == 0) {
+		if ((opts.cols = rcols) > 80)
 			opts.cols = 80;
-	}
+	} else if (opts.cols > rcols)
+		opts.cols = rcols;
+
+	/* If we're centred, set our margins. */
+
+	if (centre && opts.cols < rcols)
+		opts.hmargin = (rcols - opts.cols) / 2;
 
 	/* 
 	 * Diff mode takes two arguments: the first is mandatory (the
