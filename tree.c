@@ -21,9 +21,6 @@
 #endif
 
 #include <assert.h>
-#if HAVE_ERR
-# include <err.h>
-#endif
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -25,9 +25,6 @@
 
 #include <assert.h>
 #include <ctype.h>
-#if HAVE_ERR
-# include <err.h>
-#endif
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -727,29 +724,21 @@ rndr_image(hbuf *ob, const hbuf *link, const struct nstate *st,
 	const char	*cp;
 	size_t		 sz;
 
-	if (st->mdoc) {
-		warnx("warning: images not supported");
+	if (st->mdoc)
 		return;
-	}
 
-	if ((cp = memrchr(link->data, '.', link->size)) == NULL) {
-		warnx("warning: no image suffix (ignoring)");
+	if ((cp = memrchr(link->data, '.', link->size)) == NULL)
 		return;
-	}
 
 	cp++;
 	sz = link->size - (cp - link->data);
 
-	if (sz == 0) {
-		warnx("warning: empty image suffix (ignoring)");
+	if (sz == 0)
 		return;
-	}
 
 	if (!(sz == 2 && memcmp(cp, "ps", 2) == 0) &&
-	    !(sz == 3 && memcmp(cp, "eps", 3) == 0)) {
-		warnx("warning: unknown image suffix (ignoring)");
+	    !(sz == 3 && memcmp(cp, "eps", 3) == 0))
 		return;
-	}
 
 	if (!nln)
 		if (prev == NULL ||
@@ -993,14 +982,6 @@ rndr_footnote_ref(hbuf *ob, unsigned int num, const struct nstate *st)
 		HBUF_PUTSL(ob, "\\**");
 	else
 		hbuf_printf(ob, "\\u\\s-3%u\\s+3\\d", num);
-}
-
-static void
-rndr_math(void)
-{
-
-	/* FIXME: use lowdown_opts warnings. */
-	warnx("warning: math not supported");
 }
 
 /*
@@ -1321,9 +1302,6 @@ rndr(hbuf *ob, struct lowdown_metaq *metaq,
 	case LOWDOWN_FOOTNOTE_REF:
 		rndr_footnote_ref(ob, 
 			root->rndr_footnote_ref.num, ref);
-		break;
-	case LOWDOWN_MATH_BLOCK:
-		rndr_math();
 		break;
 	case LOWDOWN_RAW_HTML:
 		rndr_raw_html(ob, &root->rndr_raw_html.text, ref);
