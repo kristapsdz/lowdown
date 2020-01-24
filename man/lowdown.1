@@ -58,26 +58,24 @@ The results are written to standard output.
 .Pp
 The arguments are as follows:
 .Bl -tag -width Ds
-.It Fl o Ar file
-Send output to
-.Ar file
-unless it's
-.Dq - ,
-in which case fall back to the default of standard output.
 .It Fl s
 Standalone mode.
 This emits a document envelope surrounding the output by drawing from
 document metadata.
-See the
-.Ar metadata
-key of
-.Sx Input features
+See
+.Sx Metadata
 on providing information to the document envelope.
 This only applies to
 .Fl T Ns Ar html ,
 .Fl T Ns Ar ms ,
 and
 .Fl T Ns Ar man .
+.It Fl o Ar file
+Send output to
+.Ar file
+unless it's
+.Dq - ,
+in which case fall back to the default of standard output.
 .It Fl T Ar mode
 The output mode.
 This may be
