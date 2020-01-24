@@ -408,7 +408,7 @@ Lastly, using a traditional
 .Xr troff 1 ,
 use the following:
 .Bd -literal -offset indent
-lowdown -Dnroff-groff -sTms foo.md | \e
+lowdown --nroff-no-groff -sTms foo.md | \e
   tbl | troff -Tps -ms -mpdfmark > foo.ps
 .Ed
 .Sh SEE ALSO
@@ -432,24 +432,13 @@ lowdown -Dnroff-groff -sTms foo.md | \e
 .%I Issue 6
 .%D 1990
 .Re
-.Sh STANDARDS
-.Nm lowdown
-and
-.Nm lowdown-diff
-implement the classic Markdown specification along with some
-extensions.
-See
-.Sx Input features
-and
-.Sx Output features
-for a list.
 .Sh AUTHORS
-The
 .Nm lowdown
-and
-.Nm lowdown-diff
-utilities were forked by
+was forked from
+.Lk https://github.com/hoedown/hoedown hoedown
+by
 .An Kristaps Dzonsons ,
-.Mt kristaps@bsd.lv ,
-from
-.Lk https://github.com/hoedown/hoedown hoedown .
+.Mt kristaps@bsd.lv .
+.Nm lowdown-diff
+was written by
+.An Kristaps Dzonsons .
