@@ -86,17 +86,17 @@ for roff output using the classic (i.e., no-extension)
 .Fl ms
 package and needing table support,
 .Ar term
-for ANSI-compatible UTF-8 terminal output, or
+for ANSI-compatible UTF-8 terminal output,
 .Ar man
 for roff output using the classic
 .Fl man
-package.
-A debugging output mode,
+package,
 .Ar tree ,
-shows the parse tree of the input document.
-Lastly.
+to show the parse tree of the input document, and
 .Ar null
-parses the document but does no rendering at all.
+to parse the document but do no rendering.
+See
+.Sx Output modes .
 .It Fl X Ar keyword
 Instead of converting the file, extract the given metadata keyword and
 exit.
@@ -104,14 +104,14 @@ These will be escaped according to the output mode
 .Fl T ;
 for example, a title of
 .Dq <foo>
-in
-.Ar html
-mode will be extracted as
+with
+.Fl T Ns Ar html
+will be extracted as
 .Dq &lt;foo&gt; .
 In either
-.Ar ms
+.Fl T Ns Ar ms
 or
-.Ar man ,
+.Fl T Ns Ar man ,
 a title of
 .Dq .foo\ebar
 will be
@@ -304,6 +304,48 @@ Multiple script files (in order) may be separated by more than one space
 Only used in
 .Fl T Ar html
 mode.
+.El
+.Ss Output modes
+A detailed description of the output modes follows.
+.Bl -tag -width Ds
+.It Fl T Ns Ar html
+HTML5 output with UTF-8 encoding.
+All features of
+.Xr lowdown 5
+are supported.
+.It Fl T Ns Ar man
+The
+.Ar man
+macro package suitable for reading by
+.Xr groff 1 ,
+.Xr mandoc 1 ,
+or traditional
+.Xr troff 1 .
+Does not support equations and images.
+Table support is provided by
+.Xr tbl 1 .
+Since UTF-8 may be passed as input values,
+.Xr preconv 1
+may need to be used.
+.It Fl T Ns Ar ms
+The
+.Ar ms
+macro package suitable for reading by
+.Xr groff 1
+or traditional
+.Xr troff 1 .
+Does not support equations and limited image support for encapsulated
+postscript (eps, eps suffix) images.
+Table support is provided by
+.Xr tbl 1 .
+Since UTF-8 may be passed as input values,
+.Xr preconv 1
+may need to be used.
+.It Fl T Ns Ar term
+ANSI-escaped UTF-8 output suitable for reading on the terminal.
+Images and equations not supported.
+.It Fl T Ns Ar tree
+Debugging ouptut: not for general use.
 .El
 .Ss Diffing
 If invoked as
