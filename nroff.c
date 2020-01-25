@@ -1028,11 +1028,9 @@ rndr_meta(hbuf *ob, const hbuf *tmp, struct lowdown_metaq *mq,
 	if (mq != NULL) {
 		m = xcalloc(1, sizeof(struct lowdown_meta));
 		TAILQ_INSERT_TAIL(mq, m, entries);
-		m->key = malloc(n->rndr_meta.key.size);
-		memcpy(m->key, n->rndr_meta.key.data, 
+		m->key = xstrndup(n->rndr_meta.key.data,
 			n->rndr_meta.key.size);
-		m->value = xmalloc(tmp->size);
-		memcpy(m->value, tmp->data, tmp->size);
+		m->value = xstrndup(tmp->data, tmp->size);
 	}
 
 	if (!(st->flags & LOWDOWN_STANDALONE))
