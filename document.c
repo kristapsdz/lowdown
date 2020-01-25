@@ -3537,8 +3537,8 @@ parse_metadata(hdoc *doc, const char *data, size_t sz)
 		/* Canonical order: title comes first. */
 
 		if (strcmp(m->key, "title") == 0) {
-			TAILQ_REMOVE(&n->children, n, entries);
-			TAILQ_INSERT_HEAD(&n->children, n, entries);
+			TAILQ_REMOVE(&n->parent->children, n, entries);
+			TAILQ_INSERT_HEAD(&n->parent->children, n, entries);
 		}
 
 		if (i == sz) {
