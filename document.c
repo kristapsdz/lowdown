@@ -39,6 +39,18 @@
 
 #define HOEDOWN_LI_END	8 /* internal list flag */
 
+/*
+ * Used to hold metadata keys and values.
+ * This is for filling in the metadata value with references.
+ */
+struct hbufn {
+	const hbuf	*key; /* key of the value */
+	const hbuf	*val; /* value (or NULL for no value) */
+	TAILQ_ENTRY(hbufn) entries;
+};
+
+TAILQ_HEAD(hbufq, hbufn);
+
 /* 
  * Reference to a link.
  */
@@ -69,15 +81,15 @@ struct 	hdoc {
 	struct link_refq refq; /* all internal references */
 	struct footnote_refq footnotes; /* all footnotes */
 	size_t		 footnotesz; /* # of used footnotes */
-	int		 active_char[256];
-	unsigned int	 ext_flags;
+	int		 active_char[256]; /* jump table */
+	unsigned int	 ext_flags; /* options */
 	size_t	 	 cur_par; /* XXX: not used */
-	int		 in_link_body;
+	int		 in_link_body; /* parsing link body */
 	size_t		 nodes; /* number of nodes */
-	struct lowdown_node *current;
-	struct lowdown_metaq metaq; /* used for links */
-	size_t		 depth;
-	size_t		 maxdepth;
+	struct lowdown_node *current; /* current node */
+	struct hbufq	 metaq; /* raw metadata key/values */
+	size_t		 depth; /* current parse tree depth */
+	size_t		 maxdepth; /* max parse tree depth */
 };
 
 /*
@@ -463,10 +475,10 @@ tag_length(const char *data, size_t size, enum halink_type *ltype)
 static void
 parse_inline(hdoc *doc, char *data, size_t size)
 {
-	size_t	 i = 0, end = 0, consumed = 0;
-	hbuf	 work;
-	int	*active_char = doc->active_char;
-	struct lowdown_node *n;
+	size_t	 	 	 i = 0, end = 0, consumed = 0;
+	hbuf	 	 	 work;
+	const int		*active_char = doc->active_char;
+	struct lowdown_node 	*n;
 
 	memset(&work, 0, sizeof(hbuf));
 	
@@ -1223,19 +1235,20 @@ char_image(hdoc *doc, char *data, size_t offset, size_t size)
 static size_t
 char_link(hdoc *doc, char *data, size_t offset, size_t size)
 {
-	hbuf 	*content = NULL, *link = NULL , *title = NULL, 
-		*u_link = NULL, *dims = NULL, *idp = NULL,
-		*linkp = NULL, *titlep = NULL;
-	size_t 	 i = 1, txt_e, link_b = 0, link_e = 0, title_b = 0, 
-		 title_e = 0, nb_p, dims_b = 0, 
-		 dims_e = 0, sz;
-	int 	 ret = 0, in_title = 0, qtype = 0, is_img, is_footnote,
-		 is_metadata;
-	hbuf 	 id;
-	struct link_ref *lr;
-	struct footnote_ref *fr;
-	struct lowdown_node *n;
-	struct lowdown_meta	*m;
+	hbuf			*content = NULL, *link = NULL, 
+				*title = NULL, *u_link = NULL, 
+				*dims = NULL, *idp = NULL, 
+				*linkp = NULL, *titlep = NULL;
+	size_t			 i = 1, txt_e, link_b = 0, link_e = 0,
+				 title_b = 0, title_e = 0, nb_p, 
+				 dims_b = 0, dims_e = 0;
+	int 	 		 ret = 0, in_title = 0, qtype = 0, 
+				 is_img, is_footnote, is_metadata;
+	hbuf 	 		 id;
+	struct link_ref 	*lr;
+	struct footnote_ref 	*fr;
+	struct lowdown_node 	*n;
+	struct hbufn		*m;
 
 	is_img = offset && data[-1] == '!' && 
 		!is_escaped(data - offset, offset - 1);
@@ -1313,14 +1326,15 @@ char_link(hdoc *doc, char *data, size_t offset, size_t size)
 		id.size = txt_e - 2;
 
 		TAILQ_FOREACH(m, &doc->metaq, entries) {
-			sz = strlen(m->key);
-			if (sz != id.size || 
-			    strncmp(m->key, id.data, sz))
+			if (!hbuf_eq(m->key, &id))
 				continue;
-			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
-			pushbuffer(&n->rndr_normal_text.text,
-				m->value, strlen(m->value));
-			popnode(doc, n);
+			if (m->val != NULL) {
+				n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
+				pushbuffer(&n->rndr_normal_text.text,
+					m->val->data, m->val->size);
+				popnode(doc, n);
+			}
+			break;
 		}
 
 		ret = 1;
@@ -3486,7 +3500,7 @@ parse_metadata(hdoc *doc, const char *data, size_t sz)
 {
 	size_t	 	 	 i, j, pos = 0, valsz, keysz;
 	const char		*key, *val;
-	struct lowdown_meta	*m;
+	struct hbufn		*m;
 	struct lowdown_node	*n, *nn;
 	char			*cp;
 
@@ -3513,10 +3527,12 @@ parse_metadata(hdoc *doc, const char *data, size_t sz)
 	 */
 
 	for (pos = 0; pos < sz; ) {
-		m = xcalloc(1, sizeof(struct lowdown_meta));
+		m = xcalloc(1, sizeof(struct hbufn));
 		TAILQ_INSERT_TAIL(&doc->metaq, m, entries);
 
 		n = pushnode(doc, LOWDOWN_META);
+		m->key = &n->rndr_meta.key;
+
 		key = &data[pos];
 		for (i = pos; i < sz; i++)
 			if (data[i] == ':')
@@ -3541,20 +3557,16 @@ parse_metadata(hdoc *doc, const char *data, size_t sz)
 			*cp++ = '?';
 		}
 		n->rndr_meta.key.size = cp - n->rndr_meta.key.data;
-		m->key = xmalloc(n->rndr_meta.key.size);
-		memcpy(m->key, n->rndr_meta.key.data, 
-			n->rndr_meta.key.size);
 
 		/* Canonical order: title comes first. */
 
-		if (strcmp(m->key, "title") == 0) {
+		if (hbuf_streq(&n->rndr_meta.key, "title") == 0) {
 			TAILQ_REMOVE(&n->parent->children, n, entries);
 			TAILQ_INSERT_HEAD(&n->parent->children, n, entries);
 		}
 
 		if (i == sz) {
 			popnode(doc, n);
-			m->value = xstrdup("");
 			break;
 		}
 
@@ -3566,15 +3578,13 @@ parse_metadata(hdoc *doc, const char *data, size_t sz)
 			i++;
 		if (i == sz) {
 			popnode(doc, n);
-			m->value = xstrdup("");
 			break;
 		}
 
 		val = parse_metadata_val(&data[i], sz - i, &valsz);
 		nn = pushnode(doc, LOWDOWN_NORMAL_TEXT);
+		m->val = &nn->rndr_normal_text.text;
 		pushbuffer(&nn->rndr_normal_text.text, val, valsz);
-		m->value = xmalloc(valsz);
-		memcpy(m->value, val, valsz);
 		popnode(doc, nn);
 		popnode(doc, n);
 		pos = i + valsz + 1;
@@ -3598,6 +3608,7 @@ lowdown_doc_parse(hdoc *doc, size_t *nsz, const char *data, size_t size)
 	int		 	 footnotes_enabled;
 	const char		*sv;
 	struct lowdown_node 	*n, *root;
+	struct hbufn		*m;
 
 	doc->depth = 0;
 	doc->current = NULL;
@@ -3706,7 +3717,11 @@ lowdown_doc_parse(hdoc *doc, size_t *nsz, const char *data, size_t size)
 	hbuf_free(text);
 	free_link_refs(&doc->refq);
 	free_footnote_refs(&doc->footnotes);
-	lowdown_metaq_free(&doc->metaq);
+
+	while ((m = TAILQ_FIRST(&doc->metaq)) != NULL) {
+		TAILQ_REMOVE(&doc->metaq, m, entries);
+		free(m);
+	}
 
 	*nsz = doc->nodes;
 	popnode(doc, root);
