@@ -288,6 +288,7 @@ main(int argc, char *argv[])
 		{ "parse-no-metadata",	no_argument,	&riflag, LOWDOWN_METADATA },
 		{ "parse-cmark",	no_argument,	&aiflag, LOWDOWN_COMMONMARK },
 		{ "parse-no-cmark",	no_argument,	&riflag, LOWDOWN_COMMONMARK },
+		{ "parse-maxdepth",	required_argument, NULL, 5 },
 		{ NULL,			0,	NULL,	0 }
 	};
 
@@ -300,6 +301,7 @@ main(int argc, char *argv[])
 	TAILQ_INIT(&mq);
 	memset(&opts, 0, sizeof(struct lowdown_opts));
 
+	opts.maxdepth = 128;
 	opts.type = LOWDOWN_HTML;
 	opts.feat = LOWDOWN_FOOTNOTES |
 		LOWDOWN_AUTOLINK |
@@ -394,20 +396,22 @@ main(int argc, char *argv[])
 				(optarg, 0, INT_MAX, &er);
 			if (er == NULL)
 				break;
-			errx(EXIT_FAILURE, 
-				"--term-hmargin: %s", er);
+			errx(EXIT_FAILURE, "--term-hmargin: %s", er);
 		case 3:
 			opts.vmargin = strtonum(optarg, 0, INT_MAX, &er);
 			if (er == NULL)
 				break;
-			errx(EXIT_FAILURE, 
-				"--term-vmargin: %s", er);
+			errx(EXIT_FAILURE, "--term-vmargin: %s", er);
 		case 4:
 			rcols = strtonum(optarg, 1, INT_MAX, &er);
 			if (er == NULL)
 				break;
-			errx(EXIT_FAILURE, 
-				"--term-columns: %s", er);
+			errx(EXIT_FAILURE, "--term-columns: %s", er);
+		case 5:
+			opts.maxdepth = strtonum(optarg, 0, INT_MAX, &er);
+			if (er == NULL)
+				break;
+			errx(EXIT_FAILURE, "--parse-maxdepth: %s", er);
 		default:
 			goto usage;
 		}

@@ -25,6 +25,9 @@
 
 #include <assert.h>
 #include <ctype.h>
+#if HAVE_ERR
+# include <err.h>
+#endif
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -60,6 +63,22 @@ struct footnote_ref {
 };
 
 TAILQ_HEAD(footnote_refq, footnote_ref);
+
+struct 	hdoc {
+	const struct lowdown_opts *opts;
+	struct link_refq refq; /* all internal references */
+	struct footnote_refq footnotes; /* all footnotes */
+	size_t		 footnotesz; /* # of used footnotes */
+	int		 active_char[256];
+	unsigned int	 ext_flags;
+	size_t	 	 cur_par; /* XXX: not used */
+	int		 in_link_body;
+	size_t		 nodes; /* number of nodes */
+	struct lowdown_node *current;
+	struct lowdown_metaq metaq; /* used for links */
+	size_t		 depth;
+	size_t		 maxdepth;
+};
 
 /*
  * Function pointer to render active chars.
@@ -120,20 +139,6 @@ static char_trigger markdown_char_ptrs[] = {
 	&char_math
 };
 
-struct 	hdoc {
-	const struct lowdown_opts *opts;
-	struct link_refq refq; /* all internal references */
-	struct footnote_refq footnotes; /* all footnotes */
-	size_t		 footnotesz; /* # of used footnotes */
-	int		 active_char[256];
-	unsigned int	 ext_flags;
-	size_t	 	 cur_par; /* XXX: not used */
-	int		 in_link_body;
-	size_t		 nodes; /* number of nodes */
-	struct lowdown_node *current;
-	struct lowdown_metaq metaq; /* used for links */
-};
-
 /* Some forward declarations. */
 
 static void parse_block(hdoc *, char *, size_t);
@@ -142,6 +147,9 @@ static struct lowdown_node *
 pushnode(hdoc *doc, enum lowdown_rndrt t)
 {
 	struct lowdown_node	*n;
+
+	if ((doc->depth++ > doc->maxdepth) && doc->maxdepth)
+		errx(EXIT_FAILURE, "maximum parse depth exceeded");
 
 	n = xcalloc(1, sizeof(struct lowdown_node));
 	n->id = doc->nodes++;
@@ -172,6 +180,8 @@ static void
 popnode(hdoc *doc, const struct lowdown_node *n)
 {
 
+	assert(doc->depth > 0);
+	doc->depth--;
 	assert(doc->current == n);
 	doc->current = doc->current->parent;
 }
@@ -3345,6 +3355,7 @@ lowdown_doc_new(const struct lowdown_opts *opts)
 
 	doc = xcalloc(1, sizeof(hdoc));
 
+	doc->maxdepth = opts == NULL ? 128 : opts->maxdepth;
 	doc->active_char['*'] = MD_CHAR_EMPHASIS;
 	doc->active_char['_'] = MD_CHAR_EMPHASIS;
 	if (extensions & LOWDOWN_STRIKE)
@@ -3588,6 +3599,7 @@ lowdown_doc_parse(hdoc *doc, size_t *nsz, const char *data, size_t size)
 	const char		*sv;
 	struct lowdown_node 	*n, *root;
 
+	doc->depth = 0;
 	doc->current = NULL;
 	doc->in_link_body = 0;
 
@@ -3698,6 +3710,7 @@ lowdown_doc_parse(hdoc *doc, size_t *nsz, const char *data, size_t size)
 
 	*nsz = doc->nodes;
 	popnode(doc, root);
+	assert(doc->depth == 0);
 	return root;
 }
 

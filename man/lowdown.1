@@ -127,6 +127,12 @@ read from standard input.
 The following are options for input parsing.
 These affect the parse tree passed to all outputs.
 .Bl -tag -width Ds
+.It Fl -parse-maxdepth=depth
+The maximum depth of nested elements.
+This defaults to 128, which is probably more than enough for any
+real-world document.
+If the maximum is hit, the system exits as if memory were exhausted.
+Set to zero for no maximum.
 .It Fl -parse-no-autolink
 Do not autolink
 .Li http ,

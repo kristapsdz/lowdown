@@ -239,6 +239,7 @@ struct	lowdown_node {
  */
 struct	lowdown_opts {
 	enum lowdown_type	 type;
+	size_t			 maxdepth; /* max parse tree depth */
 	size_t			 cols; /* -Tterm width */
 	size_t			 hmargin; /* -Tterm left margin */
 	size_t			 vmargin; /* -Tterm top/bot margin */
