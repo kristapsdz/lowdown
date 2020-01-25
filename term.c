@@ -48,7 +48,8 @@ struct term {
 	unsigned int	 opts; /* oflags from lowdown_cfg */
 	size_t		 col; /* output column from zero */
 	ssize_t		 last_blank; /* line breaks or -1 (start) */
-	struct tstack	 stack[128]; /* nodes being outputted */
+	struct tstack	*stack; /* stack of nodes */
+	size_t		 stackmax; /* size of stack */
 	size_t		 stackpos; /* position in stack */
 	size_t		 maxcol; /* soft limit */
 	size_t		 hmargin; /* left of content */
@@ -751,23 +752,27 @@ rndr_entity(hbuf *buf, int32_t val)
 	}
 }
 
-void
-lowdown_term_rndr(hbuf *ob, struct lowdown_metaq *mq,
-	void *arg, const struct lowdown_node *n)
+static void
+rndr(hbuf *ob, struct lowdown_metaq *mq,
+	struct term *p, const struct lowdown_node *n)
 {
 	const struct lowdown_node	*child;
 	struct lowdown_meta		*m;
-	struct term			*p = arg;
 	hbuf				*metatmp;
 	int32_t				 entity;
-	size_t				 i;
-	struct term			 newterm;
+	size_t				 i, col;
+	ssize_t			 	 last_blank;
 	
 	/* Current nodes we're servicing. */
 
+	if (p->stackpos >= p->stackmax) {
+		p->stackmax += 256;
+		p->stack = xreallocarray(p->stack,
+			p->stackmax, sizeof(struct tstack));
+	}
 	memset(&p->stack[p->stackpos], 0, sizeof(struct tstack));
 	p->stack[p->stackpos].n = n;
-	
+
 	/* Vertical space before content. */
 
 	switch (n->type) {
@@ -833,23 +838,24 @@ lowdown_term_rndr(hbuf *ob, struct lowdown_metaq *mq,
 		 * (p->tmp would be clobbered by children).
 		 */
 
-		memset(&newterm, 0, sizeof(struct term));
-		newterm = *p;
-		newterm.last_blank = -1;
-		newterm.col = 0;
+		last_blank = p->last_blank;
+		p->last_blank = -1;
+		col = p->col;
+		p->col = 0;
 		metatmp = hbuf_new(128);
 		m = xcalloc(1, sizeof(struct lowdown_meta));
 		TAILQ_INSERT_TAIL(mq, m, entries);
 		m->key = xstrndup(n->rndr_meta.key.data,
 			n->rndr_meta.key.size);
 		TAILQ_FOREACH(child, &n->children, entries) {
-			newterm.stackpos++;
-			assert(newterm.stackpos < 128);
-			lowdown_term_rndr(metatmp, mq, &newterm, child);
-			newterm.stackpos--;
+			p->stackpos++;
+			rndr(metatmp, mq, p, child);
+			p->stackpos--;
 		}
 		m->value = xstrndup(metatmp->data, metatmp->size);
 		hbuf_free(metatmp);
+		p->last_blank = last_blank;
+		p->col = col;
 		break;
 	default:
 		break;
@@ -859,8 +865,7 @@ lowdown_term_rndr(hbuf *ob, struct lowdown_metaq *mq,
 
 	TAILQ_FOREACH(child, &n->children, entries) {
 		p->stackpos++;
-		assert(p->stackpos < 128);
-		lowdown_term_rndr(ob, mq, p, child);
+		rndr(ob, mq, p, child);
 		p->stackpos--;
 	}
 
@@ -993,6 +998,16 @@ lowdown_term_rndr(hbuf *ob, struct lowdown_metaq *mq,
 	}
 }
 
+void
+lowdown_term_rndr(hbuf *ob, struct lowdown_metaq *mq,
+	void *arg, const struct lowdown_node *n)
+{
+	struct term	*p = arg;
+
+	p->stackpos = 0;
+	rndr(ob, mq, p, n);
+}
+
 void *
 lowdown_term_new(const struct lowdown_opts *opts)
 {
@@ -1019,5 +1034,6 @@ lowdown_term_free(void *arg)
 		return;
 
 	hbuf_free(p->tmp);
+	free(p->stack);
 	free(p);
 }
