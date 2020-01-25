@@ -746,13 +746,16 @@ rndr_entity(hbuf *buf, int32_t val)
 }
 
 void
-lowdown_term_rndr(hbuf *ob, struct lowdown_metaq *metaq,
+lowdown_term_rndr(hbuf *ob, struct lowdown_metaq *mq,
 	void *arg, const struct lowdown_node *n)
 {
 	const struct lowdown_node	*child;
+	struct lowdown_meta		*m;
 	struct term			*p = arg;
+	hbuf				*metatmp;
 	int32_t				 entity;
 	size_t				 i;
+	struct term			 newterm;
 	
 	/* Current nodes we're servicing. */
 
@@ -814,6 +817,33 @@ lowdown_term_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		hbuf_truncate(p->tmp);
 		HBUF_PUTSL(p->tmp, ": ");
 		rndr_buf(p, ob, n, p->tmp, &sty_meta_key);
+		if (mq == NULL)
+			break;
+
+		/*
+		 * Manually render the children of the meta into a
+		 * buffer and use that as our value.  Start by zeroing
+		 * our terminal position and using another output buffer
+		 * (p->tmp would be clobbered by children).
+		 */
+
+		memset(&newterm, 0, sizeof(struct term));
+		newterm = *p;
+		newterm.last_blank = -1;
+		newterm.col = 0;
+		metatmp = hbuf_new(128);
+		m = xcalloc(1, sizeof(struct lowdown_meta));
+		TAILQ_INSERT_TAIL(mq, m, entries);
+		m->key = xstrndup(n->rndr_meta.key.data,
+			n->rndr_meta.key.size);
+		TAILQ_FOREACH(child, &n->children, entries) {
+			newterm.stackpos++;
+			assert(newterm.stackpos < 128);
+			lowdown_term_rndr(metatmp, mq, &newterm, child);
+			newterm.stackpos--;
+		}
+		m->value = xstrndup(metatmp->data, metatmp->size);
+		hbuf_free(metatmp);
 		break;
 	default:
 		break;
@@ -824,7 +854,7 @@ lowdown_term_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 	TAILQ_FOREACH(child, &n->children, entries) {
 		p->stackpos++;
 		assert(p->stackpos < 128);
-		lowdown_term_rndr(ob, metaq, p, child);
+		lowdown_term_rndr(ob, mq, p, child);
 		p->stackpos--;
 	}
 
