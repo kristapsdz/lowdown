@@ -561,7 +561,7 @@
 	</article>
 	<article data-sblg-article="1" data-sblg-tags="version">
 		<header>
-			<h1>0.5.1</h1>
+			<h1>0.5.2</h1>
 			<address>Kristaps Dzonsons</address>
 			<time datetime="2020-01-25">2020-01-25</time>
 		</header>
@@ -598,7 +598,7 @@
 			</p>
 			<p>
 				Re-write options to use <q>longopts</q> notation.
-				So instead of applying <b>-Dnroff-groff</code> or whatnot, use long
+				So instead of applying <b>-Dnroff-groff</b> or whatnot, use long
 				options such as <b>--nroff-groff</b>.
 				This is much easier to document and expands to allowing option values.
 				The existing method is no longer documented, but still works.
