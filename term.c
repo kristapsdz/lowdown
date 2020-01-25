@@ -402,8 +402,14 @@ rndr_buf_endline(struct term *term, hbuf *out,
 {
 
 	rndr_buf_endwords(term, out, n, osty);
-	assert(term->col > 0);
-	assert(term->last_blank == 0);
+
+	/* 
+	 * We can legit be at col == 0 if, for example, we're in a
+	 * literal context with a blank line.
+	 * assert(term->col > 0);
+	 * assert(term->last_blank == 0);
+	 */
+
 	HBUF_PUTSL(out, "\n");
 	term->col = 0;
 	term->last_blank = 1;
