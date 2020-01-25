@@ -21,6 +21,7 @@
 #endif
 
 #include <assert.h>
+#include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -73,10 +74,12 @@ rndr_short(hbuf *ob, const hbuf *b)
 	size_t	 i;
 
 	for (i = 0; i < 20 && i < b->size; i++)
-		if ('\n' == b->data[i])
+		if (b->data[i] == '\n')
 			HBUF_PUTSL(ob, "\\n");
-		else if ('\t' == b->data[i])
+		else if (b->data[i] == '\t')
 			HBUF_PUTSL(ob, "\\t");
+		else if (iscntrl((unsigned char)b->data[i]))
+			hbuf_putc(ob, '?');
 		else
 			hbuf_putc(ob, b->data[i]);
 
@@ -107,10 +110,11 @@ rndr(hbuf *ob, struct lowdown_metaq *metaq,
 			HBUF_PUTSL(ob, "  ");
 		hbuf_printf(ob, "source: ");
 		rndr_short(ob, &root->rndr_image.link);
-		if (root->rndr_image.dims.size)
-			hbuf_printf(ob, " (%.*s)",
-				(int)root->rndr_image.dims.size,
-				root->rndr_image.dims.data);
+		if (root->rndr_image.dims.size) {
+			HBUF_PUTSL(ob, "(");
+			rndr_short(ob, &root->rndr_image.dims);
+			HBUF_PUTSL(ob, ")");
+		}
 		HBUF_PUTSL(ob, "\n");
 		if (root->rndr_image.title.size) {
 			for (i = 0; i < indent + 1; i++)
@@ -199,9 +203,9 @@ rndr(hbuf *ob, struct lowdown_metaq *metaq,
 	case LOWDOWN_ENTITY:
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "value: %.*s\n",
-			(int)root->rndr_entity.text.size,
-			root->rndr_entity.text.data);
+		hbuf_printf(ob, "value: ");
+		rndr_short(ob, &root->rndr_entity.text);
+		HBUF_PUTSL(ob, "\n");
 		break;
 	case LOWDOWN_NORMAL_TEXT:
 		for (i = 0; i < indent + 1; i++)
@@ -218,7 +222,7 @@ rndr(hbuf *ob, struct lowdown_metaq *metaq,
 	tmp = hbuf_new(64);
 	TAILQ_FOREACH(n, &root->children, entries)
 		rndr(tmp, metaq, n, indent + 1);
-	hbuf_put(ob, tmp->data, tmp->size);
+	hbuf_putb(ob, tmp);
 	hbuf_free(tmp);
 }
 
