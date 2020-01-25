@@ -1325,6 +1325,8 @@ char_link(hdoc *doc, char *data, size_t offset, size_t size)
 		id.data = data + 2;
 		id.size = txt_e - 2;
 
+		/* FIXME: slow O(n). */
+
 		TAILQ_FOREACH(m, &doc->metaq, entries) {
 			if (!hbuf_eq(m->key, &id))
 				continue;
