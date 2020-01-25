@@ -108,14 +108,10 @@ with
 .Fl T Ns Ar html
 will be extracted as
 .Dq &lt;foo&gt; .
-In either
-.Fl T Ns Ar ms
+Metadata is not rendered for
+.Fl T Ns Ar tree
 or
-.Fl T Ns Ar man ,
-a title of
-.Dq .foo\ebar
-will be
-.Dq \e&.foo\eebar .
+.Fl T Ns Ar null .
 .It Ar oldfile
 Input Markdown document used as the basis for comparison with
 .Nm lowdown-diff .
