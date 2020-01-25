@@ -409,7 +409,13 @@ exits with an error if the given keyword is not found.
 .Sh EXAMPLES
 To view a Markdown file on an ANSI-compatible, UTF-8 terminal:
 .Pp
-.Dl lowdown -Tterm foo.md | less -r
+.Dl lowdown -Tterm foo.md | less -R
+.Pp
+The same, but screen-centre and with short links:
+.Bd -literal -offset indent
+lowdown -Tterm --term-hmargin=centre --term-columns=$COLUMNS \e
+  --term-vmargin=1 --term-shortlinks foo.md | less -R
+.Ed
 .Pp
 To emit a standalone HTML5 document from a file
 .Pa foo.md :
