@@ -3562,7 +3562,7 @@ parse_metadata(hdoc *doc, const char *data, size_t sz)
 
 		/* Canonical order: title comes first. */
 
-		if (hbuf_streq(&n->rndr_meta.key, "title") == 0) {
+		if (hbuf_streq(&n->rndr_meta.key, "title")) {
 			TAILQ_REMOVE(&n->parent->children, n, entries);
 			TAILQ_INSERT_HEAD(&n->parent->children, n, entries);
 		}
