@@ -41,13 +41,13 @@ For the moment, **lowdown** output is the same as
 - superscripts
 - footnotes
 - disabled inline HTML (truly an evil feature of Markdown)
-- "smartypants" enabled
+- smart typography enabled
 
 Individual features can be enabled and disabled at will.
 
 The following modifications to the HTML5 output have been made:
 
-- "smartypants" emits Unicode codepoints instead of HTML entities to
+- smart typography emits Unicode codepoints instead of HTML entities to
   make the output XML-friendly
 - emit image dimensions if specified in the link text
 
@@ -55,7 +55,7 @@ The following major feature additions have been added:
 
 - output mode for troff (via either the *-ms* or *-man* package)
 - extension output mode for GNU troff (*-mpdfmark*, PSPIC, etc.)
-- "smartypants" mode for all outputs
+- smart typography interpreter for all outputs
 - stylised terminal output (like
   [glow](https://github.com/charmbracelet/glow))
 - metadata support
