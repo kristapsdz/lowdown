@@ -206,18 +206,6 @@ rndr_block(hbuf *ob, const char *source, size_t length)
 }
 
 /*
- * Output "source" of size "length" on one line, starting on a line with
- * existing content.
- * Escapes text so as not to be roff.
- */
-static void
-rndr_one_line_span(hbuf *ob, const char *source, size_t length)
-{
-
-	hesc_nroff(ob, source, length, 1, 1);
-}
-
-/*
  * Output "source" of size "length" on a single line.
  * Does not escape the given text, which should already have been
  * escaped, unless "ownline" is given, in which case make sure we don't
@@ -519,7 +507,7 @@ rndr_header(hbuf *ob, const hbuf *content, int level,
 			HBUF_PUTSL(ob, ".SH ");
 		else 
 			HBUF_PUTSL(ob, ".SS ");
-		rndr_one_line_span(ob, content->data, content->size);
+		rndr_one_lineb_noescape(ob, content, 0);
 		HBUF_PUTSL(ob, "\n");
 		return;
 	} 
@@ -534,10 +522,10 @@ rndr_header(hbuf *ob, const hbuf *content, int level,
 	if ((st->flags & LOWDOWN_NROFF_NUMBERED) &&
 	    (st->flags & LOWDOWN_NROFF_GROFF)) {
 		HBUF_PUTSL(ob, ".XN ");
-		rndr_one_line_span(ob, content->data, content->size);
+		rndr_one_lineb_noescape(ob, content, 0);
 		HBUF_PUTSL(ob, "\n");
 	} else {
-		hbuf_put(ob, content->data, content->size);
+		rndr_one_lineb_noescape(ob, content, 1);
 		HBUF_NEWLINE(content, ob);
 	}
 }
