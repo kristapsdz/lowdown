@@ -93,13 +93,9 @@ following Markdown features and extensions:
 - superscripts
 - footnotes
 - disabled inline HTML
-- "smartypants"
+- "smart typography"
 - metadata
 - commonmark (**in progress**)
-
-You can control which parser features are used by using the **-d**
-(disable feature) and **-e** (enable feature) flags documented in
-[lowdown.1.html](https://kristaps.bsd.lv/lowdown/lowdown.1.html).
 
 ## Examples
 
@@ -176,8 +172,8 @@ basically the same but... a library.
 
 The canonical Markdown test, such as found in the original
 [hoedown](https://github.com/hoedown/hoedown) sources, will not
-currently work with *lowdown* because of the mandatory "smartypants" and
-other extensions.
+currently work with *lowdown* as-is because of the default options such
+as smart typography.
 
 I've extensively run [AFL](http://lcamtuf.coredump.cx/afl/) against the
 compiled sources with no failures --- definitely a credit to
