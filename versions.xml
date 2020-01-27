@@ -611,9 +611,21 @@
 				other block levels to line them up.
 			</p>
 			<p>
-				Lastl, add a <b>-Tnull</b> output for fuzzing.
+				Lastly, add a <b>-Tnull</b> output for fuzzing.
 				This makes for a tighter coverage map to focus on parsing and smart
 				typography.
+			</p>
+		</aside>
+	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.5.3</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2020-01-25">2020-01-25</time>
+		</header>
+		<aside>
+			<p>
+				Fix escaping of section headers in <b>-Tms</b> and <b>-Tman</b>.
 			</p>
 		</aside>
 	</article>

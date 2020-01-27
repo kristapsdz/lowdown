@@ -1,4 +1,4 @@
-.SUFFIXES: .xml .md .html .pdf .1 .1.html .3 .3.html .5 .5.html
+.SUFFIXES: .xml .md .html .pdf .1 .1.html .3 .3.html .5 .5.html .thumb.jpg .png
 
 include Makefile.configure
 
@@ -53,14 +53,20 @@ PDFS		 = diff.pdf index.pdf README.pdf
 MDS		 = index.md README.md
 CSSS		 = diff.css template.css
 JSS		 = diff.js
+IMAGES		 = screen-mandoc.png \
+		   screen-groff.png \
+		   screen-term.png
+THUMBS		 = screen-mandoc.thumb.jpg \
+		   screen-groff.thumb.jpg \
+		   screen-term.thumb.jpg
 
 all: lowdown lowdown-diff
 
-www: $(HTMLS) $(PDFS) lowdown.tar.gz lowdown.tar.gz.sha512
+www: $(HTMLS) $(PDFS) $(THUMBS) lowdown.tar.gz lowdown.tar.gz.sha512
 
 installwww: www
 	mkdir -p $(WWWDIR)/snapshots
-	install -m 0444 $(MDS) $(HTMLS) $(CSSS) $(JSS) $(PDFS) $(WWWDIR)
+	install -m 0444 $(THUMBS) $(IMAGES) $(MDS) $(HTMLS) $(CSSS) $(JSS) $(PDFS) $(WWWDIR)
 	install -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots/lowdown-$(VERSION).tar.gz
 	install -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots/lowdown-$(VERSION).tar.gz.sha512
 	install -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots
@@ -160,9 +166,13 @@ $(OBJS): extern.h lowdown.h
 main.o: lowdown.h
 
 clean:
-	rm -f $(OBJS) $(COMPAT_OBJS) $(PDFS) $(HTMLS) main.o
-	rm -f index.xml diff.xml diff.diff.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
+	rm -f $(OBJS) $(COMPAT_OBJS) main.o
 	rm -f lowdown lowdown-diff liblowdown.a 
+	rm -f index.xml diff.xml diff.diff.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
+	rm -f $(PDFS) $(HTMLS) $(THUMBS)
 
 distclean: clean
 	rm -f Makefile.configure config.h config.log
+
+.png.thumb.jpg:
+	convert $< -thumbnail 350 -quality 50 $@

@@ -74,13 +74,18 @@ this is also supported by [mandoc](https://mdocml.bsd.lv).
 Lastly, it supports ANSI-compatible UTF-8 terminals with **-Tterm**.
 This renders stylised Markdown-looking output for easy reading.  It's
 inspired by [glow](https://github.com/charmbracelet/glow).
+You can also use **-Tms** and **-Tman** with the formatter cooperation.
+
+> [![mandoc](screen-mandoc.thumb.jpg)](screen-mandoc.png)
+> [![term](screen-term.thumb.jpg)](screen-term.png)
+> [![groff](screen-groff.thumb.jpg)](screen-groff.png)
+
+> **-Tman**
+> **-Tterm**
+> **-Tms**
 
 Only **-Thtml** allows images and equations, though **-Tms** has limited
 image support with encapsulated postscript.
-
-You can control output features by using the **-D** (disable feature)
-and **-E** (enable feature) flags documented in
-[lowdown.1.html](https://kristaps.bsd.lv/lowdown/lowdown.1.html).
 
 ## Input
 

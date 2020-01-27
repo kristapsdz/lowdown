@@ -44,6 +44,15 @@ nav[data-sblg-nav].cur ul	{ display: inline-block;
 nav[data-sblg-nav].cur li	{ display: inline-block;
 				  margin: 0;
 				  padding: 0; }
+blockquote			{ margin: 1.1em 0; }
+blockquote > p			{ display: flex;
+				  margin: 0; }
+blockquote > p > *		{ flex: 1;
+				  display: inline-block;
+				  text-align: center;
+				  padding: 0.2rem; }
+blockquote > p img		{ width: 100%; }
+blockquote + blockquote		{ margin-top: 0; }
 
 @media only screen and (max-width: 768px), only screen and (max-device-width: 768px) {
  body > header			{ padding: 24pt 0 6pt 0; }
