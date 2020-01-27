@@ -28,17 +28,6 @@ engine](https://kristaps.bsd.lv/lowdown/diff.html).  This uses a
 tree-based difference algorithm to show semantically-valid Markdown
 differences.
 
-Want an example?  For starters: this page,
-[index.md](https://kristaps.bsd.lv/lowdown/index.md).  The Markdown
-input is rendered an HTML5 fragment using *lowdown*, then further using
-[sblg](https://kristaps.bsd.lv/sblg).  You can also see it as
-[index.pdf](https://kristaps.bsd.lv/lowdown/index.pdf), generated from
-[groff(1)](https://www.gnu.org/s/groff/) from **ms** output.  Another
-example is the GitHub
-[README.md](https://kristaps.bsd.lv/lowdown/README.md) rendered as
-[README.html](https://kristaps.bsd.lv/lowdown/README.html) or
-[README.pdf](https://kristaps.bsd.lv/lowdown/README.pdf).
-
 To get *lowdown*, just
 [download](https://kristaps.bsd.lv/lowdown/snapshots/lowdown.tar.gz),
 [verify](https://kristaps.bsd.lv/lowdown/snapshots/lowdown.tar.gz.sha512),
@@ -64,6 +53,15 @@ Furthermore, it supports the **man** macros (**-Tman**), also from
 Version 7 AT&T UNIX[^nomanpages].  Beyond the usual *troff* systems,
 this is also supported by [mandoc](https://mdocml.bsd.lv).
 
+By way of example: this page,
+[index.md](https://kristaps.bsd.lv/lowdown/index.md), renders as
+[index.pdf](https://kristaps.bsd.lv/lowdown/index.pdf) from
+[groff(1)](https://www.gnu.org/s/groff/) and using **-Tms** output.
+Another example is the GitHub
+[README.md](https://kristaps.bsd.lv/lowdown/README.md) rendered as
+[README.html](https://kristaps.bsd.lv/lowdown/README.html) or
+[README.pdf](https://kristaps.bsd.lv/lowdown/README.pdf).
+
 [^nomanpages]:
     You may be tempted to write [manpages](https://man.openbsd.org)
     in Markdown, but please don't: use
@@ -71,7 +69,7 @@ this is also supported by [mandoc](https://mdocml.bsd.lv).
     for that purpose!  The **man** output is for technical
     documentation only (section 7).
 
-Lastly, it supports ANSI-compatible UTF-8 terminals with **-Tterm**.
+*lowdown* also supports ANSI-compatible UTF-8 terminals with **-Tterm**.
 This renders stylised Markdown-looking output for easy reading.  It's
 inspired by [glow](https://github.com/charmbracelet/glow).
 You can also use **-Tms** and **-Tman** with the formatter cooperation.
@@ -107,8 +105,8 @@ following Markdown features and extensions:
 I usually use *lowdown* when writing
 [sblg](https://kristaps.bsd.lv/sblg) articles when I'm too lazy to
 write in proper HTML5.
-(For those not in the know, [sblg](https://kristaps.bsd.lv/sblg) is a
-simple tool for knitting together blog articles into a blog feed.)
+([sblg](https://kristaps.bsd.lv/sblg) is a simple tool for knitting
+together blog articles into a blog feed.)
 This basically means wrapping the output of *lowdown* in the elements
 indicating a blog article.
 I do this in my Makefiles:
@@ -149,17 +147,24 @@ This allows image generation to work properly.  If not, a blank square
 will be output in places of your images.
 
 ```sh
-lowdown -s -Tms README.md | \
-  groff -k -Kutf8 -t -mspdf > README.ps
-lowdown -s -Tms README.md | \
-  pdfroff -i -k -Kutf8 -t -mspdf > README.pdf
+lowdown -sTms README.md | groff -kti -Kutf8 -mspdf > README.ps
+lowdown -sTms README.md | pdfroff -tik -Kutf8 -mspdf > README.pdf
 ```
 
-On OpenBSD or other BSD systems, you can run *lowdown* within the base
-system to produce PDF or PS files via [mandoc](https://mdocml.bsd.lv):
+The same can be effected with systems using
+[mandoc](https://mdocml.bsd.lv):
 
 ```sh
+lowdown -s -Tman README.md | mandoc -Tps > README.ps
 lowdown -s -Tman README.md | mandoc -Tpdf > README.pdf
+```
+
+For terminal output, troff or mandoc may be used in their respective
+**-Tutf8** or **-Tascii** modes.  Alternatively, *lowdown* can render
+directly to ANSI terminals with UTF-8 support:
+
+```sh
+lowdown -Tterm README.md | less -R
 ```
 
 Read [lowdown(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) for

@@ -621,11 +621,13 @@
 		<header>
 			<h1>0.5.3</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2020-01-25">2020-01-25</time>
+			<time datetime="2020-01-27">2020-01-27</time>
 		</header>
 		<aside>
 			<p>
 				Fix escaping of section headers in <b>-Tms</b> and <b>-Tman</b>.
+				Update the www materials to be more concise and reflect current
+				features.
 			</p>
 		</aside>
 	</article>
