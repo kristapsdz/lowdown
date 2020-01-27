@@ -44,7 +44,7 @@ renderers.
 Most functions use the
 .Vt struct lowdown_opts
 structure to manage features.
-.Bd -literal
+.Bd -literal -offset indent
 struct lowdown_opts {
   enum lowdown_type type;
   unsigned int feat;
@@ -108,7 +108,7 @@ flag is set, also smartypantsed.
 .El
 .Pp
 The default value is zero (none).
-.It Va ofeat
+.It Va oflags
 Features used by the output generators.
 This bit-field may have the following enabled.
 Note that bits are by definition specific to an output
@@ -164,6 +164,14 @@ Only applies to the
 output type.
 .El
 .Pp
+For
+.Dv LOWDOWN_TERM :
+.Pp
+.B -tag -width Ds -compact
+.It Dv LOWDOWN_TERM_SHORTLINK
+Render link URLs in short form.
+.El
+.Pp
 For any mode, you may specify:
 .Pp
 .Bl -tag -width Ds -compact
@@ -180,6 +188,24 @@ See
 .Xr lowdown 1
 for details.
 .El
+.It Va maxdepth
+The maximum parse depth before the parser exits.
+Most documents will have a parse depth in the single digits.
+.It Va cols
+For
+.Dv LOWDOWN_TERM ,
+the
+.Qq soft limit
+for width of terminal output not including margins.
+This might be zero, in which case a reasonable default should be used.
+.It Va hmargin
+For
+.Dv LOWDOWN_TERM ,
+the left margin (space characters).
+.It Va vmargin
+For
+.Dv LOWDOWN_TERM ,
+the top/bottom margin (newlines).
 .It Va type
 May be set to
 .Dv LOWDOWN_HTML
@@ -213,7 +239,7 @@ which is used to hold parsed (and output-formatted) metadata keys and
 values if
 .Dv LOWDOWN_METADATA
 was provided as an input bit.
-.Bd -literal
+.Bd -literal -offset indent
 struct lowdown_meta {
   char *key;
   char *value;
