@@ -190,15 +190,8 @@ For HTML with
 .Fl T Ns Ar html ,
 these are as follows:
 .Bl -tag -width Ds
-.It Fl -html-no-skiphtml
-Output embedded HTML.
-By default, embedded HTML is not output at all.
-See
-.Fl -html-no-escapehtml .
-.It Fl -html-no-head-ids
-Do not output
-.Li id
-attributes for headers.
+.It Fl -html-hardwrap
+Hard-wrap paragraph content by outputting line breaks where applicable.
 .It Fl -html-no-escapehtml
 If
 .Fl -html-no-skiphtml
@@ -207,8 +200,19 @@ instead output verbatim.
 This has no effect if
 .Fl -html-no-skiphtml
 has not been specified.
-.It Fl -html-hardwrap
-Hard-wrap paragraph content by outputting line breaks where applicable.
+.It Fl -html-no-head-ids
+Do not output
+.Li id
+attributes for headers.
+.It Fl -html-no-owasp
+Don't follow the OWASP recommendations for escaping text, and do only
+the minimal escaping to make sure that regular content isn't interpreted
+as HTML.
+.It Fl -html-no-skiphtml
+Output embedded HTML.
+By default, embedded HTML is not output at all.
+See
+.Fl -html-no-escapehtml .
 .El
 .Pp
 For both
@@ -444,16 +448,30 @@ lowdown --nroff-no-groff -sTms foo.md | \e
   tbl | troff -Tps -ms -mpdfmark > foo.ps
 .Ed
 .Pp
-To have PDF output, one option is to use
-.Xr pdfroff 1
-utility instead of the
+Both
+.Xr groff 1
+and
+.Xr mandoc 1
+support the
 .Fl T Ns Ar pdf
-output to
-.Xr groff 1 ,
-as it manages image conversion.
+arguments for PDF output.
+The former also has
+.Xr pdfroff 1 .
+.Pp
+UTF-8 support for PDF or PS is limited to
+.Xr groff 1
+installations with the appropriate fonts, such as the Unicode Times
+font.
+This and other Unicode fonts are not always installed by default.
+They may be found, for PDF output, in the
+.Pa devpdf
+set of the
+.Xr groff 1
+font directory and are prefixed with
+.Sq U .
 .Bd -literal -offset indent
-lowdown -sTms foo.md | pdfroff -itk -mspdf -Kutf8 > foo.pdf
-lowdown -sTman foo.md | mandoc -Tpdf > foo.pdf
+lowdown -sTms foo.md | \e
+  groff -Tpdf -tki -mspdf -Kutf8 -FU-T > foo.pdf
 .Ed
 .Pp
 To extract the HTML-escaped title from a file's metadata:

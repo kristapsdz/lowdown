@@ -76,10 +76,12 @@ static const char *rndr_meta_keys[RNDR_META__MAX] = {
 };
 
 static void
-escape_html(hbuf *ob, const char *source, size_t length)
+escape_html(hbuf *ob, const char *source,
+	size_t length, const struct hstate *st)
 {
 
-	hesc_html(ob, source, length, 0);
+	hesc_html(ob, source, length, 
+		(st->flags & LOWDOWN_HTML_OWASP));
 }
 
 static void
@@ -90,7 +92,8 @@ escape_href(hbuf *ob, const char *source, size_t length)
 }
 
 static void
-rndr_autolink(hbuf *ob, const hbuf *link, enum halink_type type)
+rndr_autolink(hbuf *ob, const hbuf *link,
+	enum halink_type type, const struct hstate *st)
 {
 
 	if (link->size == 0)
@@ -109,27 +112,28 @@ rndr_autolink(hbuf *ob, const hbuf *link, enum halink_type type)
 	 */
 
 	if (hbuf_prefix(link, "mailto:") == 0)
-		escape_html(ob, link->data + 7, link->size - 7);
+		escape_html(ob, link->data + 7, link->size - 7, st);
 	else
-		escape_html(ob, link->data, link->size);
+		escape_html(ob, link->data, link->size, st);
 
 	HBUF_PUTSL(ob, "</a>");
 }
 
 static void
-rndr_blockcode(hbuf *ob, const hbuf *text, const hbuf *lang)
+rndr_blockcode(hbuf *ob, const hbuf *text,
+	const hbuf *lang, const struct hstate *st)
 {
 	if (ob->size) 
 		hbuf_putc(ob, '\n');
 
 	if (lang->size) {
 		HBUF_PUTSL(ob, "<pre><code class=\"language-");
-		escape_html(ob, lang->data, lang->size);
+		escape_html(ob, lang->data, lang->size, st);
 		HBUF_PUTSL(ob, "\">");
 	} else
 		HBUF_PUTSL(ob, "<pre><code>");
 
-	escape_html(ob, text->data, text->size);
+	escape_html(ob, text->data, text->size, st);
 	HBUF_PUTSL(ob, "</code></pre>\n");
 }
 
@@ -144,11 +148,11 @@ rndr_blockquote(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_codespan(hbuf *ob, const hbuf *text)
+rndr_codespan(hbuf *ob, const hbuf *text, const struct hstate *st)
 {
 
 	HBUF_PUTSL(ob, "<code>");
-	escape_html(ob, text->data, text->size);
+	escape_html(ob, text->data, text->size, st);
 	HBUF_PUTSL(ob, "</code>");
 }
 
@@ -263,14 +267,15 @@ rndr_header(hbuf *ob, const hbuf *content,
 }
 
 static void
-rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, const hbuf *title)
+rndr_link(hbuf *ob, const hbuf *content, const hbuf *link,
+	const hbuf *title, const struct hstate *st)
 {
 
 	HBUF_PUTSL(ob, "<a href=\"");
 	escape_href(ob, link->data, link->size);
 	if (title->size) {
 		HBUF_PUTSL(ob, "\" title=\"");
-		escape_html(ob, title->data, title->size);
+		escape_html(ob, title->data, title->size, st);
 	}
 	HBUF_PUTSL(ob, "\">");
 	hbuf_putb(ob, content);
@@ -366,14 +371,14 @@ rndr_paragraph(hbuf *ob, const hbuf *content, struct hstate *state)
 }
 
 static void
-rndr_raw_block(hbuf *ob, const hbuf *text, const struct hstate *state)
+rndr_raw_block(hbuf *ob, const hbuf *text, const struct hstate *st)
 {
 	size_t	org, sz;
 
-	if ((state->flags & LOWDOWN_HTML_SKIP_HTML))
+	if ((st->flags & LOWDOWN_HTML_SKIP_HTML))
 		return;
-	if ((state->flags & LOWDOWN_HTML_ESCAPE)) {
-		escape_html(ob, text->data, text->size);
+	if ((st->flags & LOWDOWN_HTML_ESCAPE)) {
+		escape_html(ob, text->data, text->size, st);
 		return;
 	}
 
@@ -419,7 +424,7 @@ rndr_hrule(hbuf *ob)
 
 static void
 rndr_image(hbuf *ob, const hbuf *link, const hbuf *title, 
-	const hbuf *dims, const hbuf *alt)
+	const hbuf *dims, const hbuf *alt, const struct hstate *st)
 {
 	char	dimbuf[32];
 	int	x, y, rc = 0;
@@ -441,7 +446,7 @@ rndr_image(hbuf *ob, const hbuf *link, const hbuf *title,
 	HBUF_PUTSL(ob, "<img src=\"");
 	escape_href(ob, link->data, link->size);
 	HBUF_PUTSL(ob, "\" alt=\"");
-	escape_html(ob, alt->data, alt->size);
+	escape_html(ob, alt->data, alt->size, st);
 	HBUF_PUTSL(ob, "\"");
 
 	if (dims->size && rc > 0) {
@@ -452,7 +457,7 @@ rndr_image(hbuf *ob, const hbuf *link, const hbuf *title,
 
 	if (title->size) {
 		HBUF_PUTSL(ob, " title=\"");
-		escape_html(ob, title->data, title->size); 
+		escape_html(ob, title->data, title->size, st); 
 		HBUF_PUTSL(ob, "\"");
 	}
 
@@ -460,13 +465,13 @@ rndr_image(hbuf *ob, const hbuf *link, const hbuf *title,
 }
 
 static void
-rndr_raw_html(hbuf *ob, const hbuf *text, const struct hstate *state)
+rndr_raw_html(hbuf *ob, const hbuf *text, const struct hstate *st)
 {
 
-	if ((state->flags & LOWDOWN_HTML_SKIP_HTML))
+	if ((st->flags & LOWDOWN_HTML_SKIP_HTML))
 		return;
-	if ((state->flags & LOWDOWN_HTML_ESCAPE))
-		escape_html(ob, text->data, text->size);
+	if ((st->flags & LOWDOWN_HTML_ESCAPE))
+		escape_html(ob, text->data, text->size, st);
 	else
 		hbuf_putb(ob, text);
 }
@@ -556,11 +561,11 @@ rndr_superscript(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_normal_text(hbuf *ob, const hbuf *content)
+rndr_normal_text(hbuf *ob, const hbuf *content,
+	const struct hstate *st)
 {
 
-	if (content)
-		escape_html(ob, content->data, content->size);
+	escape_html(ob, content->data, content->size, st);
 }
 
 static void
@@ -624,7 +629,8 @@ rndr_footnote_ref(hbuf *ob, unsigned int num)
 }
 
 static void
-rndr_math(hbuf *ob, const struct rndr_math *n)
+rndr_math(hbuf *ob, const struct rndr_math *n,
+	const struct hstate *st)
 {
 
 	if (n->blockmode)
@@ -632,7 +638,7 @@ rndr_math(hbuf *ob, const struct rndr_math *n)
 	else
 		HBUF_PUTSL(ob, "\\(");
 
-	escape_html(ob, n->text.data, n->text.size);
+	escape_html(ob, n->text.data, n->text.size, st);
 
 	if (n->blockmode)
 		HBUF_PUTSL(ob, "\\]");
@@ -821,7 +827,7 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 	case LOWDOWN_BLOCKCODE:
 		rndr_blockcode(ob, 
 			&root->rndr_blockcode.text, 
-			&root->rndr_blockcode.lang);
+			&root->rndr_blockcode.lang, st);
 		break;
 	case LOWDOWN_BLOCKQUOTE:
 		rndr_blockquote(ob, tmp);
@@ -887,10 +893,11 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 	case LOWDOWN_LINK_AUTO:
 		rndr_autolink(ob, 
 			&root->rndr_autolink.link,
-			root->rndr_autolink.type);
+			root->rndr_autolink.type, st);
 		break;
 	case LOWDOWN_CODESPAN:
-		rndr_codespan(ob, &root->rndr_codespan.text);
+		rndr_codespan(ob, 
+			&root->rndr_codespan.text, st);
 		break;
 	case LOWDOWN_DOUBLE_EMPHASIS:
 		rndr_double_emphasis(ob, tmp);
@@ -906,7 +913,7 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 			&root->rndr_image.link,
 			&root->rndr_image.title,
 			&root->rndr_image.dims,
-			&root->rndr_image.alt);
+			&root->rndr_image.alt, st);
 		break;
 	case LOWDOWN_LINEBREAK:
 		rndr_linebreak(ob);
@@ -914,7 +921,7 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 	case LOWDOWN_LINK:
 		rndr_link(ob, tmp,
 			&root->rndr_link.link,
-			&root->rndr_link.title);
+			&root->rndr_link.title, st);
 		break;
 	case LOWDOWN_TRIPLE_EMPHASIS:
 		rndr_triple_emphasis(ob, tmp);
@@ -930,13 +937,14 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 			root->rndr_footnote_ref.num);
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		rndr_math(ob, &root->rndr_math);
+		rndr_math(ob, &root->rndr_math, st);
 		break;
 	case LOWDOWN_RAW_HTML:
 		rndr_raw_html(ob, &root->rndr_raw_html.text, st);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
-		rndr_normal_text(ob, &root->rndr_normal_text.text);
+		rndr_normal_text(ob,
+			&root->rndr_normal_text.text, st);
 		break;
 	case LOWDOWN_ENTITY:
 		/*

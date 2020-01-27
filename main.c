@@ -246,6 +246,8 @@ main(int argc, char *argv[])
 		{ "html-no-hardwrap",	no_argument,	&roflag, LOWDOWN_HTML_HARD_WRAP },
 		{ "html-head-ids",	no_argument,	&aoflag, LOWDOWN_HTML_HEAD_IDS },
 		{ "html-no-head-ids",	no_argument,	&roflag, LOWDOWN_HTML_HEAD_IDS },
+		{ "html-owasp",		no_argument,	&aoflag, LOWDOWN_HTML_OWASP },
+		{ "html-no-owasp",	no_argument,	&roflag, LOWDOWN_HTML_OWASP },
 		{ "nroff-skiphtml",	no_argument,	&aoflag, LOWDOWN_NROFF_SKIP_HTML },
 		{ "nroff-no-skiphtml",	no_argument,	&roflag, LOWDOWN_NROFF_SKIP_HTML },
 		{ "nroff-hard-wrap",	no_argument,	&aoflag, LOWDOWN_NROFF_HARD_WRAP },
@@ -315,10 +317,11 @@ main(int argc, char *argv[])
 		LOWDOWN_NROFF_SKIP_HTML |
 		LOWDOWN_HTML_SKIP_HTML |
 		LOWDOWN_HTML_ESCAPE |
+		LOWDOWN_HTML_OWASP |
+		LOWDOWN_HTML_HEAD_IDS |
 		LOWDOWN_NROFF_GROFF |
 		LOWDOWN_NROFF_NUMBERED |
-		LOWDOWN_SMARTY |
-		LOWDOWN_HTML_HEAD_IDS;
+		LOWDOWN_SMARTY;
 
 	if (strcasecmp(getprogname(), "lowdown-diff") == 0) 
 		diff = 1;

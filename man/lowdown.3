@@ -118,8 +118,6 @@ For
 .Dv LOWDOWN_HTML :
 .Pp
 .Bl -tag -width Ds -compact
-.It Dv LOWDOWN_HTML_SKIP_HTML
-Do not render in-document HTML at all.
 .It Dv LOWDOWN_HTML_ESCAPE
 If
 .Dv LOWDOWN_HTML_SKIP_HTML
@@ -130,6 +128,11 @@ Retain line-breaks within paragraphs.
 .It Dv LOWDOWN_HTML_HEAD_IDS
 Have an identifier written with each header element consisting of an
 HTML-escaped version of the header contents.
+.It Dv LOWDOWN_HTML_OWASP
+When escaping text, be extra paranoid in following the OWASP suggestions
+for which characters to escape.
+.It Dv LOWDOWN_HTML_SKIP_HTML
+Do not render in-document HTML at all.
 .El
 .Pp
 And for

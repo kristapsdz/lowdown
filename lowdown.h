@@ -271,6 +271,7 @@ struct	lowdown_opts {
 #define LOWDOWN_HTML_HEAD_IDS	 0x100
 #define LOWDOWN_STANDALONE	 0x200
 #define LOWDOWN_TERM_SHORTLINK	 0x400
+#define	LOWDOWN_HTML_OWASP	 0x800
 };
 
 struct hdoc;

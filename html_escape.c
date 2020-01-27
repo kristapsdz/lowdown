@@ -86,8 +86,8 @@ static const int HREF_SAFE[UINT8_MAX + 1] = {
 static const int HTML_ESCAPE_TABLE[UINT8_MAX + 1] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 1, 0, 0, 0, 2, 3, 0, 0, 0, 0, 0, 0, 0, 4,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 6, 0,
+	0, 0, 1, 0, 0, 0, 6, 2, 0, 0, 0, 0, 0, 0, 0, 3,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 4, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -105,11 +105,12 @@ static const int HTML_ESCAPE_TABLE[UINT8_MAX + 1] = {
 static const char *HTML_ESCAPES[] = {
         "",
         "&quot;",
-        "&amp;",
         "&#39;",
         "&#47;",
+        "&gt;",
+#define	HTML_ESCAPE_OWASP_MAX 4
         "&lt;",
-        "&gt;"
+        "&amp;",
 };
 
 /* 
@@ -194,11 +195,15 @@ hesc_href(hbuf *ob, const char *data, size_t size)
 
 /* 
  * Escape HTML.
+ * If "secure" is set, also escape characters as suggested by OWASP
+ * rules.
+ * Does nothing if "size" is zero.
  */
 void
 hesc_html(hbuf *ob, const char *data, size_t size, int secure)
 {
-	size_t i = 0, mark;
+	size_t 		i = 0, mark;
+	unsigned char	ch;
 
 	if (size == 0)
 		return;
@@ -209,7 +214,8 @@ hesc_html(hbuf *ob, const char *data, size_t size, int secure)
 		       HTML_ESCAPE_TABLE[(unsigned char)data[i]] == 0) 
 			i++;
 
-		/* Optimization for cases where there's nothing to escape */
+		/* Case where there's nothing to escape. */
+
 		if (mark == 0 && i >= size) {
 			hbuf_put(ob, data, size);
 			return;
@@ -221,13 +227,16 @@ hesc_html(hbuf *ob, const char *data, size_t size, int secure)
 		if (i >= size) 
 			break;
 
-		/* The forward slash is only escaped in secure mode */
+		/* Escape everything only if we're in secure mode. */
 
-		if ( ! secure && data[i] == '/')
-			hbuf_putc(ob, '/');
+		ch = (unsigned char)data[i];
+
+		if (!secure && 
+		    HTML_ESCAPE_TABLE[ch] <= HTML_ESCAPE_OWASP_MAX)
+			hbuf_putc(ob, data[i]);
 		else
 			hbuf_puts(ob, HTML_ESCAPES
-				[HTML_ESCAPE_TABLE[(unsigned char)data[i]]]);
+				[HTML_ESCAPE_TABLE[ch]]);
 		i++;
 	}
 }
