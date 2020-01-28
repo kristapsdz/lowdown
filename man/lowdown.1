@@ -127,6 +127,12 @@ read from standard input.
 The following are options for input parsing.
 These affect the parse tree passed to all outputs.
 .Bl -tag -width Ds
+.It Fl -parse-hilite
+Enable highlight span support.
+This are disabled by default because it may be erroneously interpreted
+as section headers.
+.It Fl -parse-math
+Recognise mathematics equations.
 .It Fl -parse-maxdepth=depth
 The maximum depth of nested elements.
 This defaults to 128, which is probably more than enough for any
@@ -145,31 +151,25 @@ Do not tighten input parsing to the CommonMark specification.
 This also uses the first ordered list value instead of starting all
 lists at one.
 In most cases, this is simply less laxist than the original Markdown.
+.It Fl -parse-no-codeind
+Do not parse indented content as code blocks.
 .It Fl -parse-no-fenced
 Do not allow for GFM fenced (language-specific) code blocks.
 .It Fl -parse-no-footnotes
 Do not allow MMD style footnotes.
-.It Fl -parse-hilite
-Enable highlight span support.
-This are disabled by default because it may be erroneously interpreted
-as section headers.
-.It Fl -parse-math
-Recognise mathematics equations.
+.It Fl -parse-no-intraemph
+Do not allow emphasis within words and links.
 .It Fl -parse-no-metadata
 Do not allow MMD metadata.
 For the first paragraph to count as meta-data, the first line must have
 a colon in it.
 Otherwise it's considered a regular paragraph.
 Meta-data is escaped according to the output mode.
-.It Fl -parse-no-codeind
-Do not parse indented content as code blocks.
-.It Fl -parse-no-intraemph
-Do not allow emphasis within words and links.
 .It Fl -parse-no-strike
 Do not allow strikethroughs.
 .It Fl -parse-no-super
 Do not allow super-scripts.
-.It Fl -pasre-notables
+.It Fl -parse-no-tables
 Do not allow GFM tables.
 .El
 .Pp
@@ -224,19 +224,8 @@ and
 .Fl T Ns Ar ms ,
 the following apply:
 .Bl -tag -width Ds
-.It Fl -nroff-hard-wrap
+.It Fl -nroff-hardwrap
 Hard-wrap paragraph content by outputting line breaks where applicable.
-.It Fl -nroff-no-skiphtml
-Output embedded HTML.
-This usually doesn't make sense because the HTML won't be interpreted by
-the output reader.
-By default, HTML is omitted.
-.It Fl -nroff-no-numbered
-If
-.Fl -nroff-no-groff
-is set, don't output numbered headings.
-Only applies to
-.Fl T Ns Ar ms .
 .It Fl -nroff-no-groff
 Don't use
 .Xr groff 1
@@ -245,6 +234,17 @@ See
 .Fl -nroff-no-numbered .
 Only applies to
 .Fl T Ns Ar ms .
+.It Fl -nroff-no-numbered
+If
+.Fl -nroff-no-groff
+is set, don't output numbered headings.
+Only applies to
+.Fl T Ns Ar ms .
+.It Fl -nroff-no-skiphtml
+Output embedded HTML.
+This usually doesn't make sense because the HTML won't be interpreted by
+the output reader.
+By default, HTML is omitted.
 .El
 .Pp
 Lastly, the
