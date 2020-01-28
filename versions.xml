@@ -631,4 +631,18 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.5.4</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2020-01-28">2020-01-28</time>
+		</header>
+		<aside>
+			<p>
+				Make sure that the system conforms with the original Markdown test
+				suite.
+				This involves significant unsetting of options, but it does work.
+			</p>
+		</aside>
+	</article>
 </articles>

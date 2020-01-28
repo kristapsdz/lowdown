@@ -258,15 +258,37 @@ outputs).
 Finally, the subsection block would be fitted into whatever context it
 was invoked within.
 
+## Compatibility
+
+*lowdown* is fully compatible with the original Markdown syntax as checked by
+the Markdown test suite, last version 1.0.3.
+
+To run the Markdown suite, use the following command-line invocation:
+
+```
+lowdown --parse-no-metadata \
+	--parse-no-autolink \
+	--parse-no-cmark \
+	--out-no-smarty \
+	--html-no-head-ids \
+	--html-no-skiphtml \
+	--html-no-escapehtml \
+	--html-no-owasp \
+	--html-no-num-ent 
+```
+
+This is effectively "compatibility" mode with the earlier Markdown.
+
 ## How Can You Help?
 
 Want to hack on *lowdown*?  Of course you do.
+
 There are lots of bits and bobs remaining to be fixed or implemented.
 You can always just search for `TODO`, `XXX`, or `FIXME` in the source
-code.
+code.  This is your best bet.
 
-There are some known issues, mostly in PDF (**-Tms** and **-Tman**)
-output.
+There are some larger known issues, mostly in PDF (**-Tms** and
+**-Tman**) output.
 
 - There needs to be logic to handle when a link is the first or last
 component of a font change.  For example, \*\[foo\](...)\* will put
@@ -275,6 +297,12 @@ the font markers on different lines.
 - Footnotes in **-Tms** with groff extensions should use pdfmark to link
 to and from the definition.
 
+- Tables in **-Tterm**.
+
 Lastly, you can always just fuzz the system through your fuzzer of
-choice.
-For just the parser, use the **-Tnull** output channel.
+choice.  For just the parser, use the **-Tnull** output channel.
+
+If you want a larger project, a **-Tpdf** seems most interesting (and
+quite difficult given that UTF-8 need be present).  Another project that
+has been implemented elsewhere is a parser for mathematics such that
+`eqn` or similar may be output.
