@@ -22,8 +22,9 @@ and *roff* output to securely generate PDFs on
 [OpenBSD](https://www.openbsd.org) with just
 [mandoc(1)](https://man.openbsd.org/mandoc).
 
-It can also be used to show the difference between two Markdown
-documents with *lowdown-diff*, documented as the [lowdown diffing
+It has grown to admit many more extensions and outputs, and can even be
+used to show the difference between two Markdown documents with
+*lowdown-diff*, documented as the [lowdown diffing
 engine](https://kristaps.bsd.lv/lowdown/diff.html).  This uses a
 tree-based difference algorithm to show semantically-valid Markdown
 differences.
