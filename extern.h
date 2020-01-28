@@ -77,7 +77,7 @@ size_t	 halink_url(size_t *, hbuf *, char *, size_t, size_t);
 size_t	 halink_www(size_t *, hbuf *, char *, size_t, size_t);
 
 void	 hesc_href(hbuf *, const char *, size_t);
-void	 hesc_html(hbuf *, const char *, size_t, int);
+void	 hesc_html(hbuf *, const char *, size_t, int, int, int);
 
 char 	*rcsdate2str(const char *);
 char 	*date2str(const char *);

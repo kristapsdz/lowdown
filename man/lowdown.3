@@ -131,6 +131,9 @@ HTML-escaped version of the header contents.
 .It Dv LOWDOWN_HTML_OWASP
 When escaping text, be extra paranoid in following the OWASP suggestions
 for which characters to escape.
+.It Dv LOWDOWN_HTML_NUM_ENT
+Convert, when possible, HTML entities to their numeric form.
+If not set, the entities are used as given in the input.
 .It Dv LOWDOWN_HTML_SKIP_HTML
 Do not render in-document HTML at all.
 .El

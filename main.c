@@ -248,6 +248,8 @@ main(int argc, char *argv[])
 		{ "html-no-head-ids",	no_argument,	&roflag, LOWDOWN_HTML_HEAD_IDS },
 		{ "html-owasp",		no_argument,	&aoflag, LOWDOWN_HTML_OWASP },
 		{ "html-no-owasp",	no_argument,	&roflag, LOWDOWN_HTML_OWASP },
+		{ "html-num-ent",	no_argument,	&aoflag, LOWDOWN_HTML_NUM_ENT },
+		{ "html-no-num-ent",	no_argument,	&roflag, LOWDOWN_HTML_NUM_ENT },
 		{ "nroff-skiphtml",	no_argument,	&aoflag, LOWDOWN_NROFF_SKIP_HTML },
 		{ "nroff-no-skiphtml",	no_argument,	&roflag, LOWDOWN_NROFF_SKIP_HTML },
 		{ "nroff-hard-wrap",	no_argument,	&aoflag, LOWDOWN_NROFF_HARD_WRAP },
@@ -314,13 +316,14 @@ main(int argc, char *argv[])
 		LOWDOWN_COMMONMARK |
 		LOWDOWN_METADATA;
 	opts.oflags = 
-		LOWDOWN_NROFF_SKIP_HTML |
-		LOWDOWN_HTML_SKIP_HTML |
 		LOWDOWN_HTML_ESCAPE |
-		LOWDOWN_HTML_OWASP |
 		LOWDOWN_HTML_HEAD_IDS |
+		LOWDOWN_HTML_NUM_ENT |
+		LOWDOWN_HTML_OWASP |
+		LOWDOWN_HTML_SKIP_HTML |
 		LOWDOWN_NROFF_GROFF |
 		LOWDOWN_NROFF_NUMBERED |
+		LOWDOWN_NROFF_SKIP_HTML |
 		LOWDOWN_SMARTY;
 
 	if (strcasecmp(getprogname(), "lowdown-diff") == 0) 

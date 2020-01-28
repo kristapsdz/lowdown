@@ -75,15 +75,40 @@ static const char *rndr_meta_keys[RNDR_META__MAX] = {
 	"title", /* RNDR_META_TITLE */
 };
 
+/*
+ * Escape regular text that shouldn't be HTML.
+ */
 static void
 escape_html(hbuf *ob, const char *source,
 	size_t length, const struct hstate *st)
 {
 
 	hesc_html(ob, source, length, 
-		(st->flags & LOWDOWN_HTML_OWASP));
+		(st->flags & LOWDOWN_HTML_OWASP),
+		0,
+		(st->flags & LOWDOWN_HTML_NUM_ENT));
 }
 
+/*
+ * Escape literal text.
+ * This is the same as escaping regular text except a bit more
+ * restrictive in what we encode.
+ */
+static void
+escape_literal(hbuf *ob, const char *source,
+	size_t length, const struct hstate *st)
+{
+
+	hesc_html(ob, source, length, 
+		(st->flags & LOWDOWN_HTML_OWASP),
+		1,
+		(st->flags & LOWDOWN_HTML_NUM_ENT));
+}
+
+/*
+ * Except URLs.
+ * Don't use this for HTML attributes!
+ */
 static void
 escape_href(hbuf *ob, const char *source, size_t length)
 {
@@ -128,12 +153,12 @@ rndr_blockcode(hbuf *ob, const hbuf *text,
 
 	if (lang->size) {
 		HBUF_PUTSL(ob, "<pre><code class=\"language-");
-		escape_html(ob, lang->data, lang->size, st);
+		escape_href(ob, lang->data, lang->size);
 		HBUF_PUTSL(ob, "\">");
 	} else
 		HBUF_PUTSL(ob, "<pre><code>");
 
-	escape_html(ob, text->data, text->size, st);
+	escape_literal(ob, text->data, text->size, st);
 	HBUF_PUTSL(ob, "</code></pre>\n");
 }
 
@@ -947,12 +972,20 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 			&root->rndr_normal_text.text, st);
 		break;
 	case LOWDOWN_ENTITY:
+		if (!(st->flags & LOWDOWN_HTML_NUM_ENT)) {
+			hbuf_put(ob,
+				root->rndr_entity.text.data,
+				root->rndr_entity.text.size);
+			break;
+		}
+
 		/*
 		 * Prefer numeric entities.
 		 * This is because we're emitting XML (XHTML5) and it's
 		 * not clear whether the processor can handle HTML
 		 * entities.
 		 */
+
 		ent = entity_find(&root->rndr_entity.text);
 		if (ent > 0)
 			hbuf_printf(ob, "&#%lld;", (long long)ent);
@@ -977,27 +1010,27 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 void *
 lowdown_html_new(const struct lowdown_opts *opts)
 {
-	struct hstate *state;
+	struct hstate *st;
 
-	state = xcalloc(1, sizeof(struct hstate));
+	st = xcalloc(1, sizeof(struct hstate));
 
-	TAILQ_INIT(&state->headers_used);
-	state->flags = NULL == opts ? 0 : opts->oflags;
+	TAILQ_INIT(&st->headers_used);
+	st->flags = NULL == opts ? 0 : opts->oflags;
 
-	return state;
+	return st;
 }
 
 void
-lowdown_html_free(void *renderer)
+lowdown_html_free(void *arg)
 {
-	struct hstate	*state = renderer;
+	struct hstate	*st = arg;
 	struct hentry	*hentry;
 
-	while (NULL != (hentry = TAILQ_FIRST(&state->headers_used))) {
-		TAILQ_REMOVE(&state->headers_used, hentry, entries);
+	while (NULL != (hentry = TAILQ_FIRST(&st->headers_used))) {
+		TAILQ_REMOVE(&st->headers_used, hentry, entries);
 		free(hentry->str);
 		free(hentry);
 	}
 
-	free(state);
+	free(st);
 }

@@ -260,18 +260,19 @@ struct	lowdown_opts {
 #define	LOWDOWN_METADATA	 0x4000
 #define	LOWDOWN_COMMONMARK	 0x8000
 	unsigned int		 oflags;
-#define LOWDOWN_HTML_SKIP_HTML	 0x01
-#define LOWDOWN_HTML_ESCAPE	 0x02
-#define LOWDOWN_HTML_HARD_WRAP	 0x04
-#define LOWDOWN_NROFF_SKIP_HTML	 0x08
-#define LOWDOWN_NROFF_HARD_WRAP	 0x10
-#define LOWDOWN_NROFF_GROFF	 0x20
-#define	LOWDOWN_SMARTY	  	 0x40
-#define LOWDOWN_NROFF_NUMBERED	 0x80
-#define LOWDOWN_HTML_HEAD_IDS	 0x100
-#define LOWDOWN_STANDALONE	 0x200
-#define LOWDOWN_TERM_SHORTLINK	 0x400
-#define	LOWDOWN_HTML_OWASP	 0x800
+#define LOWDOWN_HTML_SKIP_HTML	 0x01 /* skip all HTML */
+#define LOWDOWN_HTML_ESCAPE	 0x02 /* escape HTML (if not skip) */
+#define LOWDOWN_HTML_HARD_WRAP	 0x04 /* paragraph line breaks */
+#define LOWDOWN_NROFF_SKIP_HTML	 0x08 /* skip all HTML */
+#define LOWDOWN_NROFF_HARD_WRAP	 0x10 /* paragraph line breaks */
+#define LOWDOWN_NROFF_GROFF	 0x20 /* use groff extensions */
+#define	LOWDOWN_SMARTY	  	 0x40 /* smart typography */
+#define LOWDOWN_NROFF_NUMBERED	 0x80 /* numbered section headers */
+#define LOWDOWN_HTML_HEAD_IDS	 0x100 /* <hN id="the_name"> */
+#define LOWDOWN_STANDALONE	 0x200 /* emit complete document */
+#define LOWDOWN_TERM_SHORTLINK	 0x400 /* shorten URLs */
+#define	LOWDOWN_HTML_OWASP	 0x800 /* use OWASP escaping */
+#define	LOWDOWN_HTML_NUM_ENT	 0x1000 /* use &#nn; if possible */
 };
 
 struct hdoc;

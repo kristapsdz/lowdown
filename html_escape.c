@@ -3,7 +3,7 @@
  * Copyright (c) 2008, Natacha Porté
  * Copyright (c) 2011, Vicent Martí
  * Copyright (c) 2014, Xavier Mendez, Devin Torres and the Hoedown authors
- * Copyright (c) 2016--2017 Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) 2016--2017, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -34,7 +34,7 @@
 /*
  * The following characters will not be escaped:
  *
- *		-_.+!*'(),%#@?=;:/,+&$ alphanum
+ *    -_.+!*'(),%#@?=;:/,+&$ alphanum
  *
  * Note that this character set is the addition of:
  *
@@ -53,7 +53,7 @@
  *
  * All other characters will be escaped to %XX.
  */
-static const int HREF_SAFE[UINT8_MAX + 1] = {
+static const int href_tbl[UINT8_MAX + 1] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -73,20 +73,19 @@ static const int HREF_SAFE[UINT8_MAX + 1] = {
 };
 
 /*
- * According to the OWASP rules:
- *
- * & --> &amp;
- * < --> &lt;
- * > --> &gt;
- * " --> &quot;
- * ' --> &#x27;     &apos; is not recommended
- * / --> &#x2F;     forward slash helps end an HTML entity
- *
+ * For each 8-bit character, if non-zero, the HTML entity we need to
+ * substitute for safe output.  According to the OWASP rules:
+ *   & --> &amp;
+ *   < --> &lt;
+ *   > --> &gt;      optional
+ *   " --> &quot;    optional
+ *   ' --> &#x27;    optional: &apos; is not recommended
+ *   / --> &#x2F;    optional: end an HTML entity
  */
-static const int HTML_ESCAPE_TABLE[UINT8_MAX + 1] = {
+static const int esc_tbl[UINT8_MAX + 1] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 1, 0, 0, 0, 6, 2, 0, 0, 0, 0, 0, 0, 0, 3,
+	0, 0, 7, 0, 0, 0, 6, 2, 0, 0, 0, 0, 0, 0, 0, 3,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 4, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -102,15 +101,44 @@ static const int HTML_ESCAPE_TABLE[UINT8_MAX + 1] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 };
 
-static const char *HTML_ESCAPES[] = {
+/*
+ * Maximum value of optional entity subsititute.
+ * Above this (>ESC_TBL_OWASP_MAX) is mandatory.
+ */
+#define	ESC_TBL_OWASP_MAX 4
+
+/*
+ * For literal contexts, maximum value of optional entity subsititute.
+ * Above this is mandatory.
+ */
+#define	ESC_TBL_LITERAL_MAX 3
+
+/*
+ * Named entities (mostly).
+ */
+static const char *esc_name[] = {
         "",
-        "&quot;",
+        "", /* oops */
         "&#39;",
         "&#47;",
         "&gt;",
-#define	HTML_ESCAPE_OWASP_MAX 4
         "&lt;",
         "&amp;",
+        "&quot;",
+};
+
+/*
+ * Numeric entities.
+ */
+static const char *esc_num[] = {
+        "",
+        "", /* oops */
+        "&#39;",
+        "&#47;",
+        "&#62;",
+        "&#60;",
+        "&#38;",
+        "&#34;",
 };
 
 /* 
@@ -119,9 +147,9 @@ static const char *HTML_ESCAPES[] = {
 void
 hesc_href(hbuf *ob, const char *data, size_t size)
 {
-	static const char hex_chars[] = "0123456789ABCDEF";
-	size_t  i = 0, mark;
-	char hex_str[3];
+	static const char 	hex_chars[] = "0123456789ABCDEF";
+	size_t  		i = 0, mark;
+	char 		 	hex_str[3];
 
 	if (size == 0)
 		return;
@@ -131,7 +159,7 @@ hesc_href(hbuf *ob, const char *data, size_t size)
 	while (i < size) {
 		mark = i;
 		while (i < size && 
-		       HREF_SAFE[(unsigned char)data[i]]) 
+		       href_tbl[(unsigned char)data[i]]) 
 			i++;
 
 		/* 
@@ -195,23 +223,31 @@ hesc_href(hbuf *ob, const char *data, size_t size)
 
 /* 
  * Escape HTML.
- * If "secure" is set, also escape characters as suggested by OWASP
- * rules.
+ * If "literal", we also want to escape some extra characters.
+ * If "secure", also escape characters as suggested by OWASP rules.
+ * If "num", use only numeric escapes.
  * Does nothing if "size" is zero.
  */
 void
-hesc_html(hbuf *ob, const char *data, size_t size, int secure)
+hesc_html(hbuf *ob, const char *data,
+	size_t size, int secure, int literal, int num)
 {
 	size_t 		i = 0, mark;
+	int		max = 0;
 	unsigned char	ch;
 
 	if (size == 0)
 		return;
 
+	if (!literal && !secure)
+		max = ESC_TBL_OWASP_MAX;
+	else if (literal && !secure)
+		max = ESC_TBL_LITERAL_MAX;
+
 	while (1) {
 		mark = i;
 		while (i < size && 
-		       HTML_ESCAPE_TABLE[(unsigned char)data[i]] == 0) 
+		       esc_tbl[(unsigned char)data[i]] == 0) 
 			i++;
 
 		/* Case where there's nothing to escape. */
@@ -227,16 +263,14 @@ hesc_html(hbuf *ob, const char *data, size_t size, int secure)
 		if (i >= size) 
 			break;
 
-		/* Escape everything only if we're in secure mode. */
-
 		ch = (unsigned char)data[i];
 
-		if (!secure && 
-		    HTML_ESCAPE_TABLE[ch] <= HTML_ESCAPE_OWASP_MAX)
+		if (esc_tbl[ch] <= max)
 			hbuf_putc(ob, data[i]);
 		else
-			hbuf_puts(ob, HTML_ESCAPES
-				[HTML_ESCAPE_TABLE[ch]]);
+			hbuf_puts(ob, num ?
+				esc_num[esc_tbl[ch]] :
+				esc_name[esc_tbl[ch]]);
 		i++;
 	}
 }
