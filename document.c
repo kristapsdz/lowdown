@@ -36,8 +36,18 @@
 
 #include "lowdown.h"
 #include "extern.h"
+ 
+/*
+ * Make sure these are larger than enum hlist_fl.
+ */
+#define HLIST_LI_END	(1 << 4) /* End of list item. */
 
-#define HOEDOWN_LI_END	8 /* internal list flag */
+/*
+ * Mask of all list item types.
+ */
+#define	HLIST_FL_MASK	(HLIST_FL_DEF | \
+			 HLIST_FL_ORDERED | \
+			 HLIST_FL_UNORDERED)
 
 /*
  * Used to hold metadata keys and values.
@@ -154,6 +164,8 @@ static char_trigger markdown_char_ptrs[] = {
 /* Some forward declarations. */
 
 static void parse_block(hdoc *, char *, size_t);
+static size_t parse_listitem(hbuf *, hdoc *,
+	char *, size_t, enum hlist_fl *, uint32_t);
 
 static struct lowdown_node *
 pushnode(hdoc *doc, enum lowdown_rndrt t)
@@ -293,9 +305,10 @@ xisspace(int c)
 }
 
 /*
- * Returns the number of leading spaces from data starting from offset to size.
- * If maxlen is greater than zero, only at most maxlen number of leading spaces
- * will be counted.
+ * Returns the number of leading spaces from data starting from offset
+ * to size.
+ * If maxlen is greater than zero, only at most maxlen number of leading
+ * spaces will be counted.
  * Otherwise, all leading spaces will be counted.
  */
 static size_t
@@ -1862,6 +1875,28 @@ is_next_headerline(const char *data, size_t size)
 }
 
 /* 
+ * Returns unordered list item prefix.
+ * This does nothing if LOWDOWN_DEFLIST is not set.
+ */
+static size_t
+prefix_dli(const hdoc *doc, const char *data, size_t size)
+{
+	size_t i;
+
+	if (!(doc->ext_flags & LOWDOWN_DEFLIST))
+		return 0;
+
+	i = countspaces(data, 0, size, 3);
+
+	if (i + 1 >= size || data[i] != ':' || data[i + 1] != ' ')
+		return 0;
+	if (is_next_headerline(data + i, size - i))
+		return 0;
+
+	return i + 2;
+}
+
+/* 
  * Returns blockquote prefix length.
  */
 static size_t
@@ -2025,10 +2060,12 @@ parse_blockquote(hdoc *doc, char *data, size_t size)
 static size_t
 parse_paragraph(hdoc *doc, char *data, size_t size)
 {
-	hbuf		 work;
-	struct lowdown_node *n;
-	size_t		 i = 0, end = 0, beg;
-	int		 level = 0;
+	hbuf			 work;
+	hbuf			*workp;
+	struct lowdown_node 	*n, *dd, *dt, *dl, *cur;
+	size_t		 	 i = 0, end = 0, beg, lines = 0;
+	int		 	 level = 0, is_dli = 0;
+	enum hlist_fl		 fl;
 
 	memset(&work, 0, sizeof(hbuf));
 
@@ -2051,15 +2088,24 @@ parse_paragraph(hdoc *doc, char *data, size_t size)
 		if ((level = is_headerline(data + i, size - i)) != 0)
 			break;
 
-		/* Other ways of ending a paragraph. */
+		/* Next is definition list. */
 
-		if (is_atxheader(doc, data + i, size - i) ||
-			is_hrule(data + i, size - i) ||
-			prefix_quote(data + i, size - i)) {
+		if (prefix_dli(doc, data + i, size - i)) {
+			is_dli = 1;
 			end = i;
 			break;
 		}
 
+		/* Other ways of ending a paragraph. */
+
+		if (is_atxheader(doc, data + i, size - i) ||
+		    is_hrule(data + i, size - i) ||
+		    prefix_quote(data + i, size - i)) {
+			end = i;
+			break;
+		}
+
+		lines++;
 		i = end;
 	}
 
@@ -2068,40 +2114,88 @@ parse_paragraph(hdoc *doc, char *data, size_t size)
 	while (work.size && data[work.size - 1] == '\n')
 		work.size--;
 
-	if ( ! level) {
+	/*
+	 * The paragraph is ending on the border of a blockquote,
+	 * horizontal rule, double line, or end of file.
+	 * So it's a regular paragraph.
+	 */
+
+	if (!level && !is_dli) {
 		n = pushnode(doc, LOWDOWN_PARAGRAPH);
 		parse_inline(doc, work.data, work.size);
 		popnode(doc, n);
 		doc->cur_par++;
-	} else {
-		if (work.size) {
-			i = work.size;
+		return end;
+	} 
+
+	/*
+	 * The paragraph is ending with a section header or list.
+	 * This pushes out all data before the final line, which is
+	 * transformed into the section header name.
+	 */
+	
+	if (work.size) {
+		i = work.size;
+		work.size -= 1;
+
+		while (work.size && data[work.size] != '\n')
 			work.size -= 1;
 
-			while (work.size && data[work.size] != '\n')
-				work.size -= 1;
+		beg = work.size + 1;
+		while (work.size && data[work.size - 1] == '\n')
+			work.size -= 1;
 
-			beg = work.size + 1;
-			while (work.size && data[work.size - 1] == '\n')
-				work.size -= 1;
-
-			if (work.size > 0) {
-				n = pushnode(doc, LOWDOWN_PARAGRAPH);
-				parse_inline(doc, work.data, work.size);
-				popnode(doc, n);
-				doc->cur_par++;
-				work.data += beg;
-				work.size = i - beg;
-			} else 
-				work.size = i;
-		}
-
-		n = pushnode(doc, LOWDOWN_HEADER);
-		n->rndr_header.level = level;
-		parse_inline(doc, work.data, work.size);
-		popnode(doc, n);
+		if (work.size > 0) {
+			n = pushnode(doc, LOWDOWN_PARAGRAPH);
+			parse_inline(doc, work.data, work.size);
+			popnode(doc, n);
+			doc->cur_par++;
+			work.data += beg;
+			work.size = i - beg;
+		} else 
+			work.size = i;
 	}
 
+	if (is_dli) {
+		assert(doc->ext_flags & LOWDOWN_DEFLIST);
+		workp = hbuf_new(256);
+
+		/*
+		 * If we last parsed a definition list, then continue
+		 * modifying the previous list.
+		 * Otherwise, open a new list.
+		 */
+
+		cur = TAILQ_LAST(&doc->current->children, lowdown_nodeq);
+		if (cur != NULL && cur->type == LOWDOWN_DEFINITION) {
+			dl = doc->current = cur;
+			doc->depth++;
+		} else
+			dl = pushnode(doc, LOWDOWN_DEFINITION);
+
+		dt = pushnode(doc, LOWDOWN_DEFINITION_TITLE);
+		parse_inline(doc, work.data, work.size);
+		popnode(doc, dt);
+		fl = HLIST_FL_DEF;
+
+		/* We might have multiple definition parts. */
+
+		do {
+			dd = pushnode(doc, LOWDOWN_DEFINITION_DATA);
+			i = parse_listitem(workp, doc, 
+				data + end, size - end, &fl, 1);
+			end += i;
+			popnode(doc, dd);
+		} while (i && !(fl & HLIST_LI_END));
+		popnode(doc, dl);
+		hbuf_free(workp);
+		return end;
+	} 
+
+	n = pushnode(doc, LOWDOWN_HEADER);
+	n->rndr_header.level = level;
+	parse_inline(doc, work.data, work.size);
+	popnode(doc, n);
 	return end;
 }
 
@@ -2223,12 +2317,13 @@ static size_t
 parse_listitem(hbuf *ob, hdoc *doc, char *data,
 	size_t size, enum hlist_fl *flags, uint32_t num)
 {
-	hbuf		*work = NULL;
-	size_t		 beg = 0, end, pre, sublist = 0, orgpre, i;
-	int		 in_empty = 0, has_inside_empty = 0,
-			 in_fence = 0;
-	size_t 		 has_next_uli = 0, has_next_oli = 0;
-	struct lowdown_node *n;
+	hbuf			*work = NULL;
+	size_t			 beg = 0, end, pre, sublist = 0, 
+				 orgpre, i, has_next_uli = 0, 
+				 has_next_oli = 0, has_next_dli = 0;
+	int			 in_empty = 0, has_inside_empty = 0,
+				 in_fence = 0, ff;
+	struct lowdown_node	*n;
 
 	/* Keeping track of the first indentation prefix. */
 
@@ -2238,6 +2333,8 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 
 	if (!beg)
 		beg = prefix_oli(doc, data, size, NULL);
+	if (!beg)
+		beg = prefix_dli(doc, data, size);
 	if (!beg)
 		return 0;
 
@@ -2259,7 +2356,7 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 	/* Process the following lines. */
 
 	while (beg < size) {
-		has_next_uli = has_next_oli = 0;
+		has_next_uli = has_next_oli = has_next_dli = 0;
 		end++;
 
 		while (end < size && data[end - 1] != '\n')
@@ -2290,6 +2387,8 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 		if (!in_fence) {
 			has_next_uli = prefix_uli
 				(data + beg + i, end - beg - i);
+			has_next_dli = prefix_dli
+				(doc, data + beg + i, end - beg - i);
 			has_next_oli = prefix_oli
 				(doc, data + beg + i, end - beg - i, NULL);
 		}
@@ -2297,18 +2396,36 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 		/* Checking for a new item. */
 
 		if ((has_next_uli &&
-		     ! is_hrule(data + beg + i, end - beg - i)) ||
-		    has_next_oli) {
+		     !is_hrule(data + beg + i, end - beg - i)) ||
+		    has_next_oli || has_next_dli) {
 			if (in_empty)
 				has_inside_empty = 1;
 
-			/* the following item must have the same (or less) indentation */
+			/* 
+			 * The following item must have the same (or
+			 * less) indentation.
+			 */
+
 			if (pre <= orgpre) {
-				/* if the following item has different list type, we end this list */
-				if (in_empty && (
-					((*flags & HLIST_FL_ORDERED) && has_next_uli) ||
-					(!(*flags & HLIST_FL_ORDERED) && has_next_oli)))
-					*flags |= HOEDOWN_LI_END;
+				/* 
+				 * If the following item has different
+				 * list type, we end this list.
+				 */
+
+				ff = *flags & HLIST_FL_MASK;
+				assert(ff == HLIST_FL_ORDERED ||
+				       ff == HLIST_FL_UNORDERED ||
+				       ff == HLIST_FL_DEF);
+
+				if (in_empty && 
+				    (((ff == HLIST_FL_ORDERED) && 
+				      (has_next_uli || has_next_dli)) ||
+				     ((ff == HLIST_FL_UNORDERED) &&
+				      (has_next_oli || has_next_dli)) ||
+				     ((ff == HLIST_FL_DEF) &&
+				      (has_next_oli || has_next_uli)))) {
+					*flags |= HLIST_LI_END;
+				}
 
 				break;
 			}
@@ -2319,7 +2436,7 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 			/* joining only indented stuff after empty lines;
 			 * note that now we only require 1 space of indentation
 			 * to continue a list */
-			*flags |= HOEDOWN_LI_END;
+			*flags |= HLIST_LI_END;
 			break;
 		}
 
@@ -2383,7 +2500,8 @@ parse_list(hdoc *doc, char *data, size_t size, const char *oli_data)
 	enum hlist_fl	     flags;
 	struct lowdown_node *n;
 
-	flags = oli_data != NULL ? HLIST_FL_ORDERED : 0;
+	flags = oli_data != NULL ?
+		HLIST_FL_ORDERED : HLIST_FL_UNORDERED;
 	work = hbuf_new(256);
 	n = pushnode(doc, LOWDOWN_LIST);
 	n->rndr_list.flags = flags;
@@ -2401,7 +2519,7 @@ parse_list(hdoc *doc, char *data, size_t size, const char *oli_data)
 		j = parse_listitem(work, doc, 
 			data + i, size - i, &flags, k++);
 		i += j;
-		if (!j || (flags & HOEDOWN_LI_END))
+		if (!j || (flags & HLIST_LI_END))
 			break;
 	}
 

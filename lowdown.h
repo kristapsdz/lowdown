@@ -64,6 +64,9 @@ enum	lowdown_rndrt {
 	LOWDOWN_ROOT,
 	LOWDOWN_BLOCKCODE,
 	LOWDOWN_BLOCKQUOTE,
+	LOWDOWN_DEFINITION,
+	LOWDOWN_DEFINITION_TITLE,
+	LOWDOWN_DEFINITION_DATA,
 	LOWDOWN_HEADER,
 	LOWDOWN_HRULE,
 	LOWDOWN_LIST,
@@ -124,8 +127,10 @@ enum 	halink_type {
 };
 
 enum	hlist_fl {
-	HLIST_FL_ORDERED = (1 << 0),
-	HLIST_FL_BLOCK = (1 << 1) /* <li> containing block data */
+	HLIST_FL_ORDERED = (1 << 0), /* <ol> list item */
+	HLIST_FL_BLOCK = (1 << 1), /* <li> containing block data */
+	HLIST_FL_UNORDERED = (1 << 2), /* <ul> list item */
+	HLIST_FL_DEF = (1 << 3) /* <dl> list item */
 };
 
 /*
@@ -159,7 +164,12 @@ struct	lowdown_node {
 			hbuf key;
 		} rndr_meta;
 		struct rndr_list {
-			enum hlist_fl flags; /* only HLIST_FL_ORDERED */
+			/*
+			 * This should only be checked for bit-wise
+			 * HLIST_FL_ORDERED.
+			 * There are other private bits set.
+			 */
+			enum hlist_fl flags;
 			/*
 			 * This is string of size >0 iff
 			 * HLIST_FL_ORDERED and we're parsing
@@ -259,6 +269,7 @@ struct	lowdown_opts {
 #define LOWDOWN_NOCODEIND	 0x2000
 #define	LOWDOWN_METADATA	 0x4000
 #define	LOWDOWN_COMMONMARK	 0x8000
+#define	LOWDOWN_DEFLIST		 0x10000
 	unsigned int		 oflags;
 #define LOWDOWN_HTML_SKIP_HTML	 0x01 /* skip all HTML */
 #define LOWDOWN_HTML_ESCAPE	 0x02 /* escape HTML (if not skip) */
