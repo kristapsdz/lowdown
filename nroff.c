@@ -87,7 +87,7 @@ static const char *rndr_meta_keys[RNDR_META__MAX] = {
 };
 
 struct 	nstate {
-	int 		 mdoc; /* whether mdoc(7) */
+	int 		 man; /* whether man(7) */
 	unsigned int 	 flags; /* output flags */
 	enum nfont	 fonts[NFONT__MAX]; /* see nstate_fonts() */
 };
@@ -293,7 +293,7 @@ putlink(hbuf *ob, struct nstate *st, const hbuf *link,
 	size_t		 i, pos;
 	int		 ret = 1, usepdf;
 
-	usepdf = !st->mdoc && (st->flags & LOWDOWN_NROFF_GROFF);
+	usepdf = !st->man && (st->flags & LOWDOWN_NROFF_GROFF);
 
 	if (usepdf)
 		HBUF_PUTSL(ob, ".pdfhref W ");
@@ -430,7 +430,7 @@ rndr_blockcode(hbuf *ob, const hbuf *content,
 	if (content->size == 0)
 		return;
 
-	if (st->mdoc) {
+	if (st->man) {
 		HBUF_PUTSL(ob, ".sp 1\n");
 		HBUF_PUTSL(ob, ".nf\n");
 	} else
@@ -441,7 +441,7 @@ rndr_blockcode(hbuf *ob, const hbuf *content,
 	HBUF_NEWLINE(content, ob);
 	HBUF_PUTSL(ob, ".ft\n");
 
-	if (st->mdoc)
+	if (st->man)
 		HBUF_PUTSL(ob, ".fi\n");
 	else
 		HBUF_PUTSL(ob, ".DE\n");
@@ -505,7 +505,7 @@ rndr_header(hbuf *ob, const hbuf *content, int level,
 	if (content->size == 0)
 		return;
 
-	if (st->mdoc) {
+	if (st->man) {
 		if (level == 1)
 			HBUF_PUTSL(ob, ".SH ");
 		else 
@@ -703,7 +703,7 @@ rndr_hrule(hbuf *ob, const struct nstate *st)
 	 */
 
 	HBUF_PUTSL(ob, ".LP\n");
-	if (!st->mdoc)
+	if (!st->man)
 		HBUF_PUTSL(ob, "\\l\'\\n(.lu-\\n(\\n[.in]u\'\n");
 }
 
@@ -714,7 +714,7 @@ rndr_image(hbuf *ob, const hbuf *link, const struct nstate *st,
 	const char	*cp;
 	size_t		 sz;
 
-	if (st->mdoc)
+	if (st->man)
 		return;
 
 	if ((cp = memrchr(link->data, '.', link->size)) == NULL)
@@ -910,7 +910,7 @@ rndr_footnotes(hbuf *ob, const hbuf *content, const struct nstate *st)
 
 	/* Put a horizontal line in the case of man(7). */
 
-	if (content->size && st->mdoc) {
+	if (content->size && st->man) {
 		HBUF_PUTSL(ob, ".LP\n");
 		HBUF_PUTSL(ob, ".sp 3\n");
 		HBUF_PUTSL(ob, "\\l\'2i'\n");
@@ -931,7 +931,7 @@ rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num,
 	 * ordering facilities.
 	 */
 
-	if (!st->mdoc) {
+	if (!st->man) {
 		HBUF_PUTSL(ob, ".FS\n");
 		/* Ignore leading paragraph marker. */
 		if (content->size > 3 &&
@@ -968,7 +968,7 @@ rndr_footnote_ref(hbuf *ob, unsigned int num, const struct nstate *st)
 	 * reference number in small superscripts.
 	 */
 
-	if (!st->mdoc)
+	if (!st->man)
 		HBUF_PUTSL(ob, "\\**");
 	else
 		hbuf_printf(ob, "\\u\\s-3%u\\s+3\\d", num);
@@ -1044,7 +1044,7 @@ rndr_meta(hbuf *ob, const hbuf *tmp, struct lowdown_metaq *mq,
 
 	/* FIXME: AU must happen after TL. */
 
-	if (!st->mdoc) {
+	if (!st->man) {
 		switch (key) {
 		case RNDR_META_COPY:
 			HBUF_PUTSL(ob, ".ds LF \\s-2Copyright \\(co ");
@@ -1106,7 +1106,7 @@ rndr_doc_header(hbuf *ob, const hbuf *tmp,
 			break;
 	}
 
-	if (title == NULL && !st->mdoc)
+	if (title == NULL && !st->man)
 		HBUF_PUTSL(ob, ".TL\nUntitled Article\n");
 	else if (title == NULL)
 		HBUF_PUTSL(ob, ".TH \"Untitled Article\" 7\n");
@@ -1370,7 +1370,7 @@ lowdown_nroff_new(const struct lowdown_opts *opts)
 
 	state = xcalloc(1, sizeof(struct nstate));
 	state->flags = opts != NULL ? opts->oflags : 0;
-	state->mdoc = opts != NULL && opts->type == LOWDOWN_MAN;
+	state->man = opts != NULL && opts->type == LOWDOWN_MAN;
 	return state;
 }
 
