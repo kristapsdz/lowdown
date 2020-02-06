@@ -163,6 +163,39 @@ rndr_blockcode(hbuf *ob, const hbuf *text,
 }
 
 static void
+rndr_definition_data(hbuf *ob, const hbuf *content)
+{
+
+	HBUF_PUTSL(ob, "<dd>\n");
+	hbuf_putb(ob, content);
+	HBUF_PUTSL(ob, "\n</dd>\n");
+}
+
+static void
+rndr_definition_title(hbuf *ob, const hbuf *content)
+{
+	size_t	 sz;
+
+	HBUF_PUTSL(ob, "<dt>");
+	if ((sz = content->size) > 0) {
+		while (sz && content->data[sz - 1] == '\n')
+			sz--;
+		hbuf_put(ob, content->data, sz);
+	}
+	HBUF_PUTSL(ob, "</dt>\n");
+}
+
+static void
+rndr_definition(hbuf *ob, const hbuf *content)
+{
+	if (ob->size)
+		hbuf_putc(ob, '\n');
+	HBUF_PUTSL(ob, "<dl>\n");
+	hbuf_putb(ob, content);
+	HBUF_PUTSL(ob, "</dl>\n");
+}
+
+static void
 rndr_blockquote(hbuf *ob, const hbuf *content)
 {
 	if (ob->size)
@@ -342,8 +375,7 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 
 	/* Cut off any trailing space. */
 
-	if (content) {
-		size = content->size;
+	if ((size = content->size) > 0) {
 		while (size && content->data[size - 1] == '\n')
 			size--;
 		hbuf_put(ob, content->data, size);
@@ -858,6 +890,15 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		break;
 	case LOWDOWN_BLOCKQUOTE:
 		rndr_blockquote(ob, tmp);
+		break;
+	case LOWDOWN_DEFINITION:
+		rndr_definition(ob, tmp);
+		break;
+	case LOWDOWN_DEFINITION_TITLE:
+		rndr_definition_title(ob, tmp);
+		break;
+	case LOWDOWN_DEFINITION_DATA:
+		rndr_definition_data(ob, tmp);
 		break;
 	case LOWDOWN_DOC_HEADER:
 		rndr_doc_header(ob, tmp, st, root);
