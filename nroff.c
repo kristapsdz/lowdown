@@ -581,9 +581,8 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 	 */
 
 	if ((flags & HLIST_FL_ORDERED))
-		hbuf_printf(ob, ".ti -\\w'%zu.  \'u\n%zu.  ", 
-			num, num);
-	else
+		hbuf_printf(ob, ".ti -\\w'%zu.  \'u\n%zu.  ", num, num);
+	else if ((flags & HLIST_FL_UNORDERED))
 		HBUF_PUTSL(ob, ".ti -\\w'\\(bu  \'u\n\\(bu  ");
 
 	/*

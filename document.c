@@ -1813,7 +1813,7 @@ parse_codefence(char *data, size_t size,
  * Returns whether the line is a hash-prefixed header.
  */
 static int
-is_atxheader(hdoc *doc, const char *data, size_t size)
+is_atxheader(const hdoc *doc, const char *data, size_t size)
 {
 	size_t	 level;
 
@@ -1931,7 +1931,7 @@ prefix_code(const char *data, size_t size)
  * string.
  */
 static size_t
-prefix_oli(hdoc *doc, char *data, size_t size, char *value)
+prefix_oli(const hdoc *doc, const char *data, size_t size, char *value)
 {
 	size_t 		 i, st, vsize;
 	const char	*vdata;
@@ -1986,7 +1986,7 @@ prefix_oli(hdoc *doc, char *data, size_t size, char *value)
  * Returns unordered list item prefix.
  */
 static size_t
-prefix_uli(char *data, size_t size)
+prefix_uli(const char *data, size_t size)
 {
 	size_t i;
 
@@ -2433,9 +2433,12 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 			if (!sublist)
 				sublist = work->size;
 		} else if (in_empty && pre == 0) {
-			/* joining only indented stuff after empty lines;
-			 * note that now we only require 1 space of indentation
-			 * to continue a list */
+			/* 
+			 * Joining only indented stuff after empty
+			 * lines; note that now we only require 1 space
+			 * of indentation to continue a list.
+			 */
+
 			*flags |= HLIST_LI_END;
 			break;
 		}
@@ -2446,12 +2449,17 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 			in_empty = 0;
 		}
 
-		/* adding the line without prefix into the working buffer */
+		/* 
+		 * Adding the line without prefix into the working
+		 * buffer.
+		 */
+
 		hbuf_put(work, data + beg + i, end - beg - i);
 		beg = end;
 	}
 
-	/* render of li contents */
+	/* Render of li contents. */
+
 	if (has_inside_empty)
 		*flags |= HLIST_FL_BLOCK;
 
@@ -2460,7 +2468,8 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 	n->rndr_listitem.num = num;
 
 	if (*flags & HLIST_FL_BLOCK) {
-		/* intermediate render of block li */
+		/* Intermediate render of block li. */
+
 		if (sublist && sublist < work->size) {
 			parse_block(doc, work->data, sublist);
 			parse_block(doc, 
@@ -2469,7 +2478,8 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 		} else
 			parse_block(doc, work->data, work->size);
 	} else {
-		/* intermediate render of inline li */
+		/* Intermediate render of inline li. */
+
 		if (sublist && sublist < work->size) {
 			parse_inline(doc, work->data, sublist);
 			parse_block(doc, 
@@ -2649,7 +2659,7 @@ htmlblock_is_end(const char *tag, size_t tag_len,
  * Returns the length on match, 0 otherwise.
  */
 static size_t
-htmlblock_find_end( const char *tag, size_t tag_len,
+htmlblock_find_end(const char *tag, size_t tag_len,
 	hdoc *doc, const char *data, size_t size)
 {
 	size_t i = 0, w;
@@ -2737,8 +2747,8 @@ hhtml_find_block(const char *str, size_t len)
 	};
 	size_t			 i;
 
-	for (i = 0; NULL != tags[i]; i++)
-		if (0 == strncasecmp(tags[i], str, len))
+	for (i = 0; tags[i] != NULL; i++)
+		if (strncasecmp(tags[i], str, len) == 0)
 			return tags[i];
 
 	return NULL;
@@ -3301,7 +3311,7 @@ is_footnote(hdoc *doc, const char *data,
  * Returns whether a line is a reference or not.
  */
 static int
-is_ref(struct hdoc *doc, const char *data, 
+is_ref(hdoc *doc, const char *data, 
 	size_t beg, size_t end, size_t *last)
 {
 	size_t	 	 i, id_offset, id_end, link_offset,

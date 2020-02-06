@@ -330,17 +330,17 @@ rndr_list(hbuf *ob, const hbuf *content, const struct rndr_list *p)
 }
 
 static void
-rndr_listitem(hbuf *ob, const hbuf *content, 
-	enum hlist_fl flags, size_t num)
+rndr_listitem(hbuf *ob, const hbuf *content,
+	const struct rndr_listitem *p)
 {
 	size_t	 size;
 
-	HBUF_PUTSL(ob, "<li>");
+	/* Only emit <li> if we're not a <dl> list. */
 
-	/* 
-	 * Cut off any trailing space.
-	 * XXX: this should be removed.
-	 */
+	if (!(p->flags & HLIST_FL_DEF))
+		HBUF_PUTSL(ob, "<li>");
+
+	/* Cut off any trailing space. */
 
 	if (content) {
 		size = content->size;
@@ -348,7 +348,9 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 			size--;
 		hbuf_put(ob, content->data, size);
 	}
-	HBUF_PUTSL(ob, "</li>\n");
+
+	if (!(p->flags & HLIST_FL_DEF))
+		HBUF_PUTSL(ob, "</li>\n");
 }
 
 static void
@@ -877,9 +879,7 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		rndr_list(ob, tmp, &root->rndr_list);
 		break;
 	case LOWDOWN_LISTITEM:
-		rndr_listitem(ob, tmp, 
-			root->rndr_listitem.flags,
-			root->rndr_listitem.num);
+		rndr_listitem(ob, tmp, &root->rndr_listitem);
 		break;
 	case LOWDOWN_PARAGRAPH:
 		rndr_paragraph(ob, tmp, st);
