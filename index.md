@@ -100,6 +100,7 @@ following Markdown features and extensions:
 - "smart typography"
 - metadata
 - commonmark (**in progress**)
+- definition lists
 
 ## Examples
 

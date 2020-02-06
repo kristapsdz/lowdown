@@ -140,37 +140,38 @@ real-world document.
 If the maximum is hit, the system exits as if memory were exhausted.
 Set to zero for no maximum.
 .It Fl -parse-no-autolink
-Do not autolink
+Do not parse
 .Li http ,
 .Li https ,
 .Li ftp ,
 .Li mailto ,
 and relative links or link fragments.
 .It Fl -parse-no-cmark
-Do not tighten input parsing to the CommonMark specification.
-This also uses the first ordered list value instead of starting all
-lists at one.
-In most cases, this is simply less laxist than the original Markdown.
+Do not parse with CommonMark constraints.
+This also disables using the first ordered list value instead of
+starting all lists at one.
 .It Fl -parse-no-codeind
 Do not parse indented content as code blocks.
+.It Fl -parse-no-deflists
+Do not parse PHP extra definition lists.
 .It Fl -parse-no-fenced
-Do not allow for GFM fenced (language-specific) code blocks.
+Do not parse GFM fenced (language-specific) code blocks.
 .It Fl -parse-no-footnotes
-Do not allow MMD style footnotes.
+Do not parse MMD footnotes.
 .It Fl -parse-no-intraemph
-Do not allow emphasis within words and links.
+Do not parse emphasis within words and links.
 .It Fl -parse-no-metadata
-Do not allow MMD metadata.
+Do not parse MMD metadata.
 For the first paragraph to count as meta-data, the first line must have
 a colon in it.
 Otherwise it's considered a regular paragraph.
 Meta-data is escaped according to the output mode.
 .It Fl -parse-no-strike
-Do not allow strikethroughs.
+Do not parse strikethroughs.
 .It Fl -parse-no-super
-Do not allow super-scripts.
+Do not parse super-scripts.
 .It Fl -parse-no-tables
-Do not allow GFM tables.
+Do not parse GFM tables.
 .El
 .Pp
 There are many output options.

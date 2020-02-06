@@ -292,6 +292,8 @@ main(int argc, char *argv[])
 		{ "parse-no-metadata",	no_argument,	&riflag, LOWDOWN_METADATA },
 		{ "parse-cmark",	no_argument,	&aiflag, LOWDOWN_COMMONMARK },
 		{ "parse-no-cmark",	no_argument,	&riflag, LOWDOWN_COMMONMARK },
+		{ "parse-deflists",	no_argument,	&aiflag, LOWDOWN_DEFLIST },
+		{ "parse-no-deflists",	no_argument,	&riflag, LOWDOWN_DEFLIST },
 		{ "parse-maxdepth",	required_argument, NULL, 5 },
 		{ NULL,			0,	NULL,	0 }
 	};
@@ -314,6 +316,7 @@ main(int argc, char *argv[])
 		LOWDOWN_STRIKE |
 		LOWDOWN_FENCED |
 		LOWDOWN_COMMONMARK |
+		LOWDOWN_DEFLIST |
 		LOWDOWN_METADATA;
 	opts.oflags = 
 		LOWDOWN_HTML_ESCAPE |
