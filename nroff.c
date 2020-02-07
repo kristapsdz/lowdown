@@ -460,8 +460,9 @@ rndr_definition_title(hbuf *ob, const struct lowdown_node *root,
 	pp = root->parent;
 
 	/* 
-	 * Emit a newline if we're the first entry in this list or if
-	 * we're in block mode.
+	 * Emit vertical space if we're the first entry in this list or
+	 * if we're in block mode.
+	 * Otherwise, be sure just to break the line.
 	 */
 
 	if (prev == NULL || prev->type == LOWDOWN_DEFINITION_DATA) {
@@ -475,6 +476,11 @@ rndr_definition_title(hbuf *ob, const struct lowdown_node *root,
 
 	if (prev != NULL && prev->type == LOWDOWN_DEFINITION_TITLE)
 		HBUF_PUTSL(ob, ".LP\n");
+
+	/*
+	 * If "ti" exceeds the margin from RS, it will simply flow into
+	 * the content, which is what we want.
+	 */
 
 	HBUF_PUTSL(ob, ".ti -\\w\'");
 	hbuf_putb(ob, content);
@@ -499,6 +505,11 @@ rndr_definition_data(hbuf *ob, const struct lowdown_node *root,
 		cdata += 4;
 		csize -= 4;
 	}
+
+	/* 
+	 * Have vertical space if we're in a block setting.
+	 * Otherwise, we go on the same line as the key.
+	 */
 
 	if (root->parent != NULL &&
 	    root->parent->type == LOWDOWN_DEFINITION &&

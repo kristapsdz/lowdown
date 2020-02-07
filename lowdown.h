@@ -166,8 +166,8 @@ struct	lowdown_node {
 		struct rndr_list {
 			/*
 			 * This should only be checked for bit-wise
-			 * HLIST_FL_ORDERED.
-			 * There are other private bits set.
+			 * HLIST_FL_ORDERED OR HLIST_FL_BLOCK.
+			 * There may be other private bits set.
 			 */
 			enum hlist_fl flags;
 			/*
@@ -207,6 +207,9 @@ struct	lowdown_node {
 			hbuf text; /* raw code buffer */
 			hbuf lang; /* fence language */
 		} rndr_blockcode; 
+		struct rndr_definition {
+			enum hlist_fl flags;
+		} rndr_definition; 
 		struct rndr_codespan {
 			hbuf text; /* raw code buffer */
 		} rndr_codespan; 

@@ -93,6 +93,9 @@ static const struct sty *stys[LOWDOWN__MAX] = {
 	NULL, /* LOWDOWN_ROOT */
 	NULL, /* LOWDOWN_BLOCKCODE */
 	NULL, /* LOWDOWN_BLOCKQUOTE */
+	NULL, /* LOWDOWN_DEFINITION */
+	NULL, /* LOWDOWN_DEFINITION_TITLE */
+	NULL, /* LOWDOWN_DEFINITION_DATA */
 	&sty_header, /* LOWDOWN_HEADER */
 	&sty_hrule, /* LOWDOWN_HRULE */
 	NULL, /* LOWDOWN_LIST */
@@ -505,6 +508,15 @@ rndr_buf_startline_prefixes(struct term *term,
 		HBUF_PUTSL(out, "  | ");
 		rndr_buf_advance(term, 4);
 		break;
+	case LOWDOWN_DEFINITION_DATA:
+		rndr_buf_style(out, s);
+		pstyle = 1;
+		if (emit == 0)
+			HBUF_PUTSL(out, "  : ");
+		else
+			HBUF_PUTSL(out, "    ");
+		rndr_buf_advance(term, 4);
+		break;
 	case LOWDOWN_FOOTNOTE_DEF:
 		rndr_buf_style(out, s);
 		pstyle = 1;
@@ -526,6 +538,9 @@ rndr_buf_startline_prefixes(struct term *term,
 		rndr_buf_advance(term, i + 1);
 		break;
 	case LOWDOWN_LISTITEM:
+		if (n->parent != NULL &&
+		    n->parent->type == LOWDOWN_DEFINITION_DATA)
+			break;
 		rndr_buf_style(out, s);
 		pstyle = 1;
 		if (n->parent == NULL || 
@@ -787,6 +802,7 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_BLOCKCODE:
 	case LOWDOWN_BLOCKHTML:
 	case LOWDOWN_BLOCKQUOTE:
+	case LOWDOWN_DEFINITION:
 	case LOWDOWN_FOOTNOTES_BLOCK:
 	case LOWDOWN_FOOTNOTE_DEF:
 	case LOWDOWN_HEADER:
@@ -799,6 +815,8 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 		if (n->rndr_math.blockmode)
 			rndr_buf_vspace(p, ob, n, 1);
 		break;
+	case LOWDOWN_DEFINITION_TITLE:
+	case LOWDOWN_DEFINITION_DATA:
 	case LOWDOWN_HRULE:
 	case LOWDOWN_LINEBREAK:
 	case LOWDOWN_LISTITEM:
@@ -960,6 +978,7 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_BLOCKCODE:
 	case LOWDOWN_BLOCKHTML:
 	case LOWDOWN_BLOCKQUOTE:
+	case LOWDOWN_DEFINITION:
 	case LOWDOWN_FOOTNOTES_BLOCK:
 	case LOWDOWN_FOOTNOTE_DEF:
 	case LOWDOWN_HEADER:
@@ -976,6 +995,8 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 		if (!TAILQ_EMPTY(&n->children))
 			rndr_buf_vspace(p, ob, n, 2);
 		break;
+	case LOWDOWN_DEFINITION_DATA:
+	case LOWDOWN_DEFINITION_TITLE:
 	case LOWDOWN_HRULE:
 	case LOWDOWN_LISTITEM:
 	case LOWDOWN_META:

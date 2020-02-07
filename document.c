@@ -2532,6 +2532,9 @@ parse_list(hdoc *doc, char *data, size_t size, const char *oli_data)
 			break;
 	}
 
+	if (flags & HLIST_FL_BLOCK)
+		n->rndr_list.flags |= HLIST_FL_BLOCK;
+
 	popnode(doc, n);
 	hbuf_free(work);
 	return i;
