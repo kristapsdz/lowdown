@@ -536,7 +536,7 @@ rndr_buf_startline_prefixes(struct term *term,
 			break;
 		}
 		if (emit == 0)
-			hbuf_printf(out, "%2u. ", 
+			hbuf_printf(out, "%2zu. ", 
 				n->rndr_listitem.num);
 		else
 			HBUF_PUTSL(out, "    ");

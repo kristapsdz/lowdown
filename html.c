@@ -641,7 +641,7 @@ rndr_footnotes(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num)
+rndr_footnote_def(hbuf *ob, const hbuf *content, size_t num)
 {
 	size_t	i = 0;
 	int	pfound = 0;
@@ -663,12 +663,12 @@ rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num)
 		break;
 	}
 
-	hbuf_printf(ob, "\n<li id=\"fn%d\">\n", num);
+	hbuf_printf(ob, "\n<li id=\"fn%zu\">\n", num);
 
 	if (pfound) {
 		hbuf_put(ob, content->data, i);
 		hbuf_printf(ob, "&#160;"
-			"<a href=\"#fnref%d\" rev=\"footnote\">"
+			"<a href=\"#fnref%zu\" rev=\"footnote\">"
 			"&#8617;</a>", num);
 		hbuf_put(ob, content->data + i, content->size - i);
 	} else 
@@ -678,13 +678,13 @@ rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num)
 }
 
 static void
-rndr_footnote_ref(hbuf *ob, unsigned int num)
+rndr_footnote_ref(hbuf *ob, size_t num)
 {
 
 	hbuf_printf(ob, 
-		"<sup id=\"fnref%d\">"
-		"<a href=\"#fn%d\" rel=\"footnote\">"
-		"%d</a></sup>", num, num, num);
+		"<sup id=\"fnref%zu\">"
+		"<a href=\"#fn%zu\" rel=\"footnote\">"
+		"%zu</a></sup>", num, num, num);
 }
 
 static void

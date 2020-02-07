@@ -165,7 +165,7 @@ static char_trigger markdown_char_ptrs[] = {
 
 static void parse_block(hdoc *, char *, size_t);
 static size_t parse_listitem(hbuf *, hdoc *,
-	char *, size_t, enum hlist_fl *, uint32_t);
+	char *, size_t, enum hlist_fl *, size_t);
 
 static struct lowdown_node *
 pushnode(hdoc *doc, enum lowdown_rndrt t)
@@ -2315,7 +2315,7 @@ parse_blockcode(hdoc *doc, char *data, size_t size)
  */
 static size_t
 parse_listitem(hbuf *ob, hdoc *doc, char *data,
-	size_t size, enum hlist_fl *flags, uint32_t num)
+	size_t size, enum hlist_fl *flags, size_t num)
 {
 	hbuf			*work = NULL;
 	size_t			 beg = 0, end, pre, sublist = 0, 
@@ -2505,8 +2505,7 @@ parse_list(hdoc *doc, char *data, size_t size, const char *oli_data)
 {
 	hbuf		    *work = NULL;
 	const char	    *er = NULL;
-	size_t	 	     i = 0, j;
-	uint32_t	     k = 1;
+	size_t	 	     i = 0, j, k = 1;
 	enum hlist_fl	     flags;
 	struct lowdown_node *n;
 
