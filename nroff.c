@@ -448,14 +448,87 @@ rndr_blockcode(hbuf *ob, const hbuf *content,
 }
 
 static void
+rndr_definition_title(hbuf *ob, const struct lowdown_node *root,
+	const hbuf *content)
+{
+	const struct lowdown_node	*prev, *pp;
+
+	if (content->size == 0)
+		return;
+
+	prev = TAILQ_PREV(root, lowdown_nodeq, entries);
+	pp = root->parent;
+
+	/* 
+	 * Emit a newline if we're the first entry in this list or if
+	 * we're in block mode.
+	 */
+
+	if (prev == NULL || prev->type == LOWDOWN_DEFINITION_DATA) {
+		if (pp != NULL &&
+		    pp->type == LOWDOWN_DEFINITION &&
+		    (pp->rndr_definition.flags & HLIST_FL_BLOCK))
+			HBUF_PUTSL(ob, ".sp 1.0v\n");
+		else
+			HBUF_PUTSL(ob, ".LP\n");
+	}
+
+	if (prev != NULL && prev->type == LOWDOWN_DEFINITION_TITLE)
+		HBUF_PUTSL(ob, ".LP\n");
+
+	HBUF_PUTSL(ob, ".ti -\\w\'");
+	hbuf_putb(ob, content);
+	HBUF_PUTSL(ob, " \'u\n");
+	hbuf_putb(ob, content);
+	HBUF_NEWLINE(content, ob);
+}
+
+static void
+rndr_definition_data(hbuf *ob, const struct lowdown_node *root,
+	const hbuf *content)
+{
+	const char	*cdata;
+	size_t		 csize;
+
+	cdata = content->data;
+	csize = content->size;
+
+	/* Start by stripping out all paragraphs. */
+
+	while (csize > 3 && memcmp(cdata, ".LP\n", 4) == 0) {
+		cdata += 4;
+		csize -= 4;
+	}
+
+	if (root->parent != NULL &&
+	    root->parent->type == LOWDOWN_DEFINITION &&
+	    (root->parent->rndr_definition.flags & HLIST_FL_BLOCK))
+		HBUF_PUTSL(ob, ".sp 1.0v\n");
+
+	hbuf_put(ob, cdata, csize);
+	BUFFER_NEWLINE(cdata, csize, ob);
+}
+
+static void
+rndr_definition(hbuf *ob, const hbuf *content)
+{
+
+	if (content->size == 0)
+		return;
+	HBUF_PUTSL(ob, ".RS\n");
+	hbuf_putb(ob, content);
+	HBUF_NEWLINE(content, ob);
+	HBUF_PUTSL(ob, ".RE\n");
+}
+
+static void
 rndr_blockquote(hbuf *ob, const hbuf *content)
 {
 
 	if (content->size == 0)
 		return;
-
 	HBUF_PUTSL(ob, ".RS\n");
-	hbuf_put(ob, content->data, content->size);
+	hbuf_putb(ob, content);
 	HBUF_NEWLINE(content, ob);
 	HBUF_PUTSL(ob, ".RE\n");
 }
@@ -553,14 +626,21 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link,
 
 static void
 rndr_listitem(hbuf *ob, const hbuf *content, 
-	const struct lowdown_node *prev,
-	enum hlist_fl flags, size_t num)
+	const struct lowdown_node *root,
+	const struct rndr_listitem *p)
 {
-	char	*cdata;
-	size_t	 csize;
+	const char	*cdata;
+	size_t	 	 csize;
 
 	if (content->size == 0)
 		return;
+
+	/* Definition lists are handled "higher up". */
+
+	if (p->flags & HLIST_FL_DEF) {
+		hbuf_putb(ob, content);
+		return;
+	}
 
 	/* 
 	 * If we're in a "block" list item or are starting the list,
@@ -568,9 +648,10 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 	 * Then put us into an indented paragraph.
 	 */
 
-	if (prev == NULL || 
-	    (content->size > 3 &&
-	     memcmp(content->data, ".LP\n", 4) == 0))
+	if (TAILQ_PREV(root, lowdown_nodeq, entries) == NULL || 
+	   (root->parent != NULL &&
+	    root->parent->type == LOWDOWN_LIST &&
+	    (root->parent->rndr_listitem.flags & HLIST_FL_BLOCK)))
 		HBUF_PUTSL(ob, ".sp 1.0v\n");
 
 	HBUF_PUTSL(ob, ".RS\n");
@@ -580,9 +661,10 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 	 * glyph(s) (padding with two spaces).
 	 */
 
-	if ((flags & HLIST_FL_ORDERED))
-		hbuf_printf(ob, ".ti -\\w'%zu.  \'u\n%zu.  ", num, num);
-	else if ((flags & HLIST_FL_UNORDERED))
+	if ((p->flags & HLIST_FL_ORDERED))
+		hbuf_printf(ob, ".ti -\\w'%zu.  "
+			"\'u\n%zu.  ", p->num, p->num);
+	else if ((p->flags & HLIST_FL_UNORDERED))
 		HBUF_PUTSL(ob, ".ti -\\w'\\(bu  \'u\n\\(bu  ");
 
 	/*
@@ -920,8 +1002,8 @@ rndr_footnotes(hbuf *ob, const hbuf *content, const struct nstate *st)
 }
 
 static void
-rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num,
-	const struct nstate *st)
+rndr_footnote_def(hbuf *ob, const hbuf *content,
+	size_t num, const struct nstate *st)
 {
 
 	/* 
@@ -950,7 +1032,7 @@ rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num,
 	 */
 
 	HBUF_PUTSL(ob, ".LP\n");
-	hbuf_printf(ob, "\\0\\fI\\u\\s-3%u\\s+3\\d\\fP\\0", num);
+	hbuf_printf(ob, "\\0\\fI\\u\\s-3%zu\\s+3\\d\\fP\\0", num);
 	if (content->size > 3 &&
 	    memcmp(content->data, ".LP\n", 4) == 0)
 		hbuf_put(ob, content->data + 4, content->size - 4);
@@ -960,7 +1042,7 @@ rndr_footnote_def(hbuf *ob, const hbuf *content, unsigned int num,
 }
 
 static void
-rndr_footnote_ref(hbuf *ob, unsigned int num, const struct nstate *st)
+rndr_footnote_ref(hbuf *ob, size_t num, const struct nstate *st)
 {
 
 	/* 
@@ -971,7 +1053,7 @@ rndr_footnote_ref(hbuf *ob, unsigned int num, const struct nstate *st)
 	if (!st->man)
 		HBUF_PUTSL(ob, "\\**");
 	else
-		hbuf_printf(ob, "\\u\\s-3%u\\s+3\\d", num);
+		hbuf_printf(ob, "\\u\\s-3%zu\\s+3\\d", num);
 }
 
 /*
@@ -1211,6 +1293,15 @@ rndr(hbuf *ob, struct lowdown_metaq *metaq,
 	case LOWDOWN_BLOCKQUOTE:
 		rndr_blockquote(ob, tmp);
 		break;
+	case LOWDOWN_DEFINITION:
+		rndr_definition(ob, tmp);
+		break;
+	case LOWDOWN_DEFINITION_DATA:
+		rndr_definition_data(ob, root, tmp);
+		break;
+	case LOWDOWN_DEFINITION_TITLE:
+		rndr_definition_title(ob, root, tmp);
+		break;
 	case LOWDOWN_DOC_HEADER:
 		rndr_doc_header(ob, tmp, root, ref);
 		break;
@@ -1225,9 +1316,7 @@ rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		rndr_hrule(ob, ref);
 		break;
 	case LOWDOWN_LISTITEM:
-		rndr_listitem(ob, tmp, prev,
-			root->rndr_listitem.flags,
-			root->rndr_listitem.num);
+		rndr_listitem(ob, tmp, root, &root->rndr_listitem);
 		break;
 	case LOWDOWN_PARAGRAPH:
 		rndr_paragraph(ob, tmp, ref, root->parent);
