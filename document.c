@@ -2062,8 +2062,8 @@ parse_paragraph(hdoc *doc, char *data, size_t size)
 {
 	hbuf			 work;
 	hbuf			*workp;
-	struct lowdown_node 	*n, *dd, *dt, *dl, *cur;
-	size_t		 	 i = 0, end = 0, beg, lines = 0;
+	struct lowdown_node 	*n, *dl, *cur;
+	size_t		 	 i, j, end = 0, beg, lines = 0;
 	int		 	 level = 0, is_dli = 0;
 	enum hlist_fl		 fl;
 
@@ -2071,6 +2071,7 @@ parse_paragraph(hdoc *doc, char *data, size_t size)
 
 	work.data = data;
 
+	i = 0;
 	while (i < size) {
 		/* Parse ahead to the next newline. */
 
@@ -2128,19 +2129,27 @@ parse_paragraph(hdoc *doc, char *data, size_t size)
 		return end;
 	} 
 
+	/* Continue or open a new definition list (if applicable). */
+
+	if (is_dli) {
+		cur = TAILQ_LAST(&doc->current->children, lowdown_nodeq);
+		if (cur != NULL && cur->type == LOWDOWN_DEFINITION) {
+			dl = doc->current = cur;
+			doc->depth++;
+		} else
+			dl = pushnode(doc, LOWDOWN_DEFINITION);
+	}
+
 	/*
-	 * The paragraph is ending with a section header or list.
-	 * This pushes out all data before the final line, which is
-	 * transformed into the section header name.
+	 * Either paragraph content prior to another block or (possibly
+	 * multiple) definition list titles.
 	 */
 	
-	if (work.size) {
+	if (work.size && !is_dli) {
 		i = work.size;
 		work.size -= 1;
-
 		while (work.size && data[work.size] != '\n')
 			work.size -= 1;
-
 		beg = work.size + 1;
 		while (work.size && data[work.size - 1] == '\n')
 			work.size -= 1;
@@ -2154,39 +2163,37 @@ parse_paragraph(hdoc *doc, char *data, size_t size)
 			work.size = i - beg;
 		} else 
 			work.size = i;
+	} else if (work.size) {
+		for (i = 0; i < work.size; i++) {
+			if (work.data[i] == '\n')
+				continue;
+			for (j = i; j < work.size; j++)
+				if (work.data[j] == '\n')
+					break;
+			assert(j > i);
+			n = pushnode(doc, LOWDOWN_DEFINITION_TITLE);
+			parse_inline(doc, work.data + i, j - i);
+			popnode(doc, n);
+			i = j;
+		}
 	}
 
+	/* Definition data parts. */
+
 	if (is_dli) {
-		assert(doc->ext_flags & LOWDOWN_DEFLIST);
 		workp = hbuf_new(256);
-
-		/*
-		 * If we last parsed a definition list, then continue
-		 * modifying the previous list.
-		 * Otherwise, open a new list.
-		 */
-
-		cur = TAILQ_LAST(&doc->current->children, lowdown_nodeq);
-		if (cur != NULL && cur->type == LOWDOWN_DEFINITION) {
-			dl = doc->current = cur;
-			doc->depth++;
-		} else
-			dl = pushnode(doc, LOWDOWN_DEFINITION);
-
-		dt = pushnode(doc, LOWDOWN_DEFINITION_TITLE);
-		parse_inline(doc, work.data, work.size);
-		popnode(doc, dt);
 		fl = HLIST_FL_DEF;
-
-		/* We might have multiple definition parts. */
-
-		do {
-			dd = pushnode(doc, LOWDOWN_DEFINITION_DATA);
+		while (end < size) {
+			n = pushnode(doc, LOWDOWN_DEFINITION_DATA);
 			i = parse_listitem(workp, doc, 
 				data + end, size - end, &fl, 1);
 			end += i;
-			popnode(doc, dd);
-		} while (i && !(fl & HLIST_LI_END));
+			popnode(doc, n);
+			if (!i || (fl & HLIST_LI_END))
+				break;
+		} 
+		if (fl & HLIST_FL_BLOCK)
+			dl->rndr_definition.flags |= HLIST_FL_BLOCK;
 		popnode(doc, dl);
 		hbuf_free(workp);
 		return end;

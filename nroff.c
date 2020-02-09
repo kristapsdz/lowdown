@@ -471,11 +471,11 @@ rndr_definition_title(hbuf *ob, const struct lowdown_node *root,
 		    (pp->rndr_definition.flags & HLIST_FL_BLOCK))
 			HBUF_PUTSL(ob, ".sp 1.0v\n");
 		else
-			HBUF_PUTSL(ob, ".LP\n");
+			HBUF_PUTSL(ob, ".br\n");
 	}
 
 	if (prev != NULL && prev->type == LOWDOWN_DEFINITION_TITLE)
-		HBUF_PUTSL(ob, ".LP\n");
+		HBUF_PUTSL(ob, ".br\n");
 
 	/*
 	 * If "ti" exceeds the margin from RS, it will simply flow into
@@ -493,8 +493,12 @@ static void
 rndr_definition_data(hbuf *ob, const struct lowdown_node *root,
 	const hbuf *content)
 {
-	const char	*cdata;
-	size_t		 csize;
+	const char			*cdata;
+	size_t				 csize;
+	const struct lowdown_node	*prev, *pp;
+
+	prev = TAILQ_PREV(root, lowdown_nodeq, entries);
+	pp = root->parent;
 
 	cdata = content->data;
 	csize = content->size;
@@ -509,12 +513,20 @@ rndr_definition_data(hbuf *ob, const struct lowdown_node *root,
 	/* 
 	 * Have vertical space if we're in a block setting.
 	 * Otherwise, we go on the same line as the key.
+	 * Unless we're not preceded by a key.
 	 */
 
-	if (root->parent != NULL &&
-	    root->parent->type == LOWDOWN_DEFINITION &&
-	    (root->parent->rndr_definition.flags & HLIST_FL_BLOCK))
-		HBUF_PUTSL(ob, ".sp 1.0v\n");
+	if (prev == NULL || prev->type == LOWDOWN_DEFINITION_TITLE) {
+		if (pp != NULL &&
+		    pp->type == LOWDOWN_DEFINITION &&
+		    (pp->rndr_definition.flags & HLIST_FL_BLOCK))
+			HBUF_PUTSL(ob, ".sp 1.0v\n");
+		else
+			HBUF_PUTSL(ob, ".br\n");
+	}
+
+	if (prev != NULL && prev->type == LOWDOWN_DEFINITION_DATA)
+		HBUF_PUTSL(ob, ".br\n");
 
 	hbuf_put(ob, cdata, csize);
 	BUFFER_NEWLINE(cdata, csize, ob);
