@@ -2010,11 +2010,10 @@ prefix_uli(const char *data, size_t size)
 static size_t
 parse_blockquote(hdoc *doc, char *data, size_t size)
 {
-	size_t beg, end = 0, pre, work_size = 0;
-	char *work_data = NULL;
-	struct lowdown_node *n;
+	size_t			 beg = 0, end = 0, pre, work_size = 0;
+	char			*work_data = NULL;
+	struct lowdown_node	*n;
 
-	beg = 0;
 	while (beg < size) {
 		for (end = beg + 1; 
 		     end < size && data[end - 1] != '\n'; 
@@ -2023,9 +2022,7 @@ parse_blockquote(hdoc *doc, char *data, size_t size)
 
 		pre = prefix_quote(data + beg, end - beg);
 
-		/* 
-		 * Skip prefix or empty line followed by non-quote line.
-		 */
+		/* Skip prefix or empty line followed by non-quote. */
 
 		if (pre)
 			beg += pre;
@@ -2035,12 +2032,12 @@ parse_blockquote(hdoc *doc, char *data, size_t size)
 			   !is_empty(data + end, size - end))))
 			break;
 
-		if (beg < end) { /* copy into the in-place working buffer */
-			/* hbuf_put(work, data + beg, end - beg); */
+		if (beg < end) {
 			if (!work_data)
 				work_data = data + beg;
 			else if (data + beg != work_data + work_size)
-				memmove(work_data + work_size, data + beg, end - beg);
+				memmove(work_data + work_size, 
+					data + beg, end - beg);
 			work_size += end - beg;
 		}
 		beg = end;
@@ -2079,7 +2076,11 @@ parse_paragraph(hdoc *doc, char *data, size_t size)
 		     end < size && data[end - 1] != '\n'; end++)
 			continue;
 
-		/* Empty line: end of paragraph. */
+		/* 
+		 * Empty line: end of paragraph.
+		 * However, check if we have a dli prefix following
+		 * that, which means that we're a block-mode dli.
+		 */
 
 		if (is_empty(data + i, size - i)) {
 			if (prefix_dli(doc, data + end, size - end)) {
