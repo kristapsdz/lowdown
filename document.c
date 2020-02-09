@@ -2065,7 +2065,7 @@ parse_paragraph(hdoc *doc, char *data, size_t size)
 	struct lowdown_node 	*n, *dl, *cur;
 	size_t		 	 i, j, end = 0, beg, lines = 0;
 	int		 	 level = 0, is_dli = 0;
-	enum hlist_fl		 fl;
+	enum hlist_fl		 fl = 0;
 
 	memset(&work, 0, sizeof(hbuf));
 
@@ -2081,8 +2081,13 @@ parse_paragraph(hdoc *doc, char *data, size_t size)
 
 		/* Empty line: end of paragraph. */
 
-		if (is_empty(data + i, size - i))
+		if (is_empty(data + i, size - i)) {
+			if (prefix_dli(doc, data + end, size - end)) {
+				is_dli = 1;
+				fl |= HLIST_FL_BLOCK;
+			}
 			break;
+		}
 
 		/* Header line: end of paragraph. */
 
@@ -2182,7 +2187,7 @@ parse_paragraph(hdoc *doc, char *data, size_t size)
 
 	if (is_dli) {
 		workp = hbuf_new(256);
-		fl = HLIST_FL_DEF;
+		fl |= HLIST_FL_DEF;
 		while (end < size) {
 			n = pushnode(doc, LOWDOWN_DEFINITION_DATA);
 			i = parse_listitem(workp, doc, 
