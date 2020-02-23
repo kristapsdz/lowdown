@@ -175,6 +175,13 @@ rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		rndr_short(ob, &root->rndr_blockcode.text);
 		HBUF_PUTSL(ob, "\n");
 		break;
+	case LOWDOWN_DEFINITION:
+		for (i = 0; i < indent + 1; i++)
+			HBUF_PUTSL(ob, "  ");
+		hbuf_printf(ob, "iem scope: %s\n",
+			HLIST_FL_BLOCK & root->rndr_definition.flags ? 
+			"block" : "span");
+		break;
 	case LOWDOWN_LISTITEM:
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
