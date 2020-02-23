@@ -2277,7 +2277,7 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 {
 	hbuf			*work = NULL;
 	size_t			 beg = 0, end, pre, sublist = 0, 
-				 orgpre, i, has_next_uli = 0, lines,
+				 orgpre, i, has_next_uli = 0, dli_lines,
 				 has_next_oli = 0, has_next_dli = 0;
 	int			 in_empty = 0, has_inside_empty = 0,
 				 in_fence = 0, ff;
@@ -2310,9 +2310,13 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 
 	hbuf_put(work, data + beg, end - beg);
 	beg = end;
-	lines = 1;
+	dli_lines = 1;
 
-	/* Process the following lines. */
+	/* 
+	 * Process the following lines.
+	 * Use the "dli_lines" variable to see if we should consider an
+	 * opening dli prefix to be a valid dli token.
+	 */
 
 	while (beg < size) {
 		has_next_uli = has_next_oli = has_next_dli = 0;
@@ -2326,10 +2330,11 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 		if (is_empty(data + beg, end - beg)) {
 			in_empty = 1;
 			beg = end;
+			dli_lines = 0;
 			continue;
 		}
 
-		lines++;
+		dli_lines++;
 
 		/* Calculating the indentation. */
 
@@ -2350,10 +2355,12 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 		if (!in_fence) {
 			has_next_uli = prefix_uli
 				(data + beg + i, end - beg - i);
-			has_next_dli =  prefix_dli
+			has_next_dli =  dli_lines <= 2 && prefix_dli
 				(doc, data + beg + i, end - beg - i);
 			has_next_oli = prefix_oli
 				(doc, data + beg + i, end - beg - i, NULL);
+			if (has_next_uli || has_next_dli || has_next_oli)
+				dli_lines = 0;
 		}
 
 		/* Checking for a new item. */
