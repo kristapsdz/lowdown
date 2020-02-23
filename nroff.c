@@ -459,23 +459,17 @@ rndr_definition_title(hbuf *ob, const struct lowdown_node *root,
 	prev = TAILQ_PREV(root, lowdown_nodeq, entries);
 	pp = root->parent;
 
-	/* 
-	 * Emit vertical space if we're the first entry in this list or
-	 * if we're in block mode.
-	 * Otherwise, be sure just to break the line.
-	 */
+	/* Vertical space if preceded by data in block mode. */
 
-	if (prev == NULL || prev->type == LOWDOWN_DEFINITION_DATA) {
-		if (pp != NULL &&
+	if (prev != NULL) {
+		if (prev->type == LOWDOWN_DEFINITION_DATA && 
+		    pp != NULL &&
 		    pp->type == LOWDOWN_DEFINITION &&
 		    (pp->rndr_definition.flags & HLIST_FL_BLOCK))
 			HBUF_PUTSL(ob, ".sp 1.0v\n");
 		else
 			HBUF_PUTSL(ob, ".br\n");
 	}
-
-	if (prev != NULL && prev->type == LOWDOWN_DEFINITION_TITLE)
-		HBUF_PUTSL(ob, ".br\n");
 
 	/*
 	 * If "ti" exceeds the margin from RS, it will simply flow into
@@ -510,21 +504,17 @@ rndr_definition_data(hbuf *ob, const struct lowdown_node *root,
 		csize -= 4;
 	}
 
-	/* 
-	 * Have vertical space if we're in a block setting.
-	 * Otherwise, we go on the same line as the key.
-	 * Unless we're not preceded by a key.
-	 */
+	/* Vertical space if coming after data in block mode. */
 
-	if (prev == NULL || prev->type == LOWDOWN_DEFINITION_TITLE) {
-		if (pp != NULL &&
+	if (prev != NULL) {
+		if (prev->type == LOWDOWN_DEFINITION_DATA &&
+		    pp != NULL &&
 		    pp->type == LOWDOWN_DEFINITION &&
 		    (pp->rndr_definition.flags & HLIST_FL_BLOCK))
 			HBUF_PUTSL(ob, ".sp 1.0v\n");
+		else
+			HBUF_PUTSL(ob, ".br\n");
 	}
-
-	if (prev != NULL && prev->type == LOWDOWN_DEFINITION_DATA)
-		HBUF_PUTSL(ob, ".br\n");
 
 	hbuf_put(ob, cdata, csize);
 	BUFFER_NEWLINE(cdata, csize, ob);
@@ -536,6 +526,10 @@ rndr_definition(hbuf *ob, const hbuf *content)
 
 	if (content->size == 0)
 		return;
+
+	/* Always precede with vertical space. */
+
+	HBUF_PUTSL(ob, ".sp 1.0v\n");
 	HBUF_PUTSL(ob, ".RS\n");
 	hbuf_putb(ob, content);
 	HBUF_NEWLINE(content, ob);
@@ -672,7 +666,7 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 	if (TAILQ_PREV(root, lowdown_nodeq, entries) == NULL || 
 	   (root->parent != NULL &&
 	    root->parent->type == LOWDOWN_LIST &&
-	    (root->parent->rndr_listitem.flags & HLIST_FL_BLOCK)))
+	    (root->parent->rndr_list.flags & HLIST_FL_BLOCK)))
 		HBUF_PUTSL(ob, ".sp 1.0v\n");
 
 	HBUF_PUTSL(ob, ".RS\n");
