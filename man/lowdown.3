@@ -59,52 +59,58 @@ Features used during the parse.
 This bit-field may have the following bits OR'd:
 .Pp
 .Bl -tag -width Ds -compact
-.It Dv LOWDOWN_TABLES
-Allow for GFM tables.
-.It Dv LOWDOWN_FENCED
-Allow for GFM fenced (language-specific) code blocks.
-.It Dv LOWDOWN_FOOTNOTES
-MMD style footnotes.
-This only supports the referenced footnote style, not the
-.Qq inline
-style.
 .It Dv LOWDOWN_AUTOLINK
-Autolink
+Parse
 .Li http ,
 .Li https ,
 .Li ftp ,
 .Li mailto ,
 and relative links or link fragments.
-.It Dv LOWDOWN_STRIKE
-Strikethrough support.
-.It Dv LOWDOWN_HILITE
-Highlight span support.
-This are disabled by default because it may be erroneously interpreted
-as section headers.
-.It Dv LOWDOWN_SUPER
-Allow for super-scripts.
-This accepts foo^bar, which puts the parts following the caret until
-whitespace in superscripts; or foo^(bar), which puts only the parts in
-parenthesis.
-.It Dv LOWDOWN_MATH
-Recognise mathematics equations.
-.It Dv LOWDOWN_NOINTEM
-Disable emphasis within words.
 .It Dv LOWDOWN_COMMONMARK
 Tighten input parsing to the CommonMark specification.
 This also uses the first ordered list value instead of starting all
 lists at one.
-.Em Experimental .
-.It Dv LOWDOWN_NOCODEIND
-Do not parse indented content as code blocks.
+This feature is
+.Em experimental
+and
+.Em incomplete .
+.It Dv LOWDOWN_DEFINITION
+Parse PHP extra definition lists.
+This is currently constrained to single-key lists.
+.It Dv LOWDOWN_FENCED
+Parse GFM fenced (language-specific) code blocks.
+.It Dv LOWDOWN_FOOTNOTES
+Parse MMD style footnotes.
+This only supports the referenced footnote style, not the
+.Qq inline
+style.
+.It Dv LOWDOWN_HILITE
+Parse highlit sequences.
+This are disabled by default because it may be erroneously interpreted
+as section headers.
+.It Dv LOWDOWN_MATH
+Parse mathematics equations.
 .It Dv LOWDOWN_METADATA
-Accept MMD metadata.
+Parse MMD metadata.
 For the first paragraph to count as meta-data, the first line must have
 a colon in it.
 Otherwise it's considered a regular paragraph.
 Meta-data is escaped according to the output mode; and if the
 .Dv LOWDOWN_SMARTY
 flag is set, also smartypantsed.
+.It Dv LOWDOWN_NOCODEIND
+Do not parse indented content as code blocks.
+.It Dv LOWDOWN_NOINTEM
+Do not parse emphasis within words.
+.It Dv LOWDOWN_STRIKE
+Parse strikethrough sequences.
+.It Dv LOWDOWN_SUPER
+Parse super-scripts.
+This accepts foo^bar, which puts the parts following the caret until
+whitespace in superscripts; or foo^(bar), which puts only the parts in
+parenthesis.
+.It Dv LOWDOWN_TABLES
+Parse GFM tables.
 .El
 .Pp
 The default value is zero (none).
@@ -219,7 +225,7 @@ for HTML5 output,
 .Dv LOWDOWN_MAN
 for
 .Fl man
-macros, 
+macros,
 .Dv LOWDOWN_TERM
 for ANSI-compatible UTF-8 terminal output, or
 .Dv LOWDOWN_NROFF
