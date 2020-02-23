@@ -799,6 +799,21 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 			HBUF_PUTSL(ob, "\n");
 		p->last_blank = -1;
 		break;
+	case LOWDOWN_PARAGRAPH:
+		/*
+		 * Paragraphs in a definition list get special treatment
+		 * because we only put one newline between the title and
+		 * the data regardless of its contents.
+		 */
+		if (n->parent != NULL && 
+		    n->parent->parent != NULL &&
+		    n->parent->parent->type == 
+		      LOWDOWN_DEFINITION_DATA &&
+		    TAILQ_PREV(n, lowdown_nodeq, entries) == NULL)
+			rndr_buf_vspace(p, ob, n, 1);
+		else
+			rndr_buf_vspace(p, ob, n, 2);
+		break;
 	case LOWDOWN_BLOCKCODE:
 	case LOWDOWN_BLOCKHTML:
 	case LOWDOWN_BLOCKQUOTE:
@@ -807,7 +822,6 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_FOOTNOTE_DEF:
 	case LOWDOWN_HEADER:
 	case LOWDOWN_LIST:
-	case LOWDOWN_PARAGRAPH:
 	case LOWDOWN_TABLE_BLOCK:
 		rndr_buf_vspace(p, ob, n, 2);
 		break;
