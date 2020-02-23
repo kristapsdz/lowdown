@@ -150,18 +150,6 @@ and
 .Dv LOWDOWN_NROFF :
 .Pp
 .Bl -tag -width Ds -compact
-.It Dv LOWDOWN_NROFF_SKIP_HTML
-Do not render in-document HTML at all.
-Text within HTML elements remains.
-.It Dv LOWDOWN_NROFF_HARD_WRAP
-Retain line-breaks within paragraphs.
-.It Dv LOWDOWN_NROFF_NUMBERED
-Use numbered sections if
-.Dv LOWDOWON_NROFF_GROFF
-is not specified.
-Only applies to the
-.Dv LOWDOWN_NROFF
-output type.
 .It Dv LOWDOWN_NROFF_GROFF
 Use GNU extensions (i.e., for
 .Xr groff 1 )
@@ -174,6 +162,18 @@ for formatting links.
 Only applies to the
 .Dv LOWDOWN_NROFF
 output type.
+.It Dv LOWDOWN_NROFF_HARD_WRAP
+Retain line-breaks within paragraphs.
+.It Dv LOWDOWN_NROFF_NUMBERED
+Use numbered sections if
+.Dv LOWDOWON_NROFF_GROFF
+is not specified.
+Only applies to the
+.Dv LOWDOWN_NROFF
+output type.
+.It Dv LOWDOWN_NROFF_SKIP_HTML
+Do not render in-document HTML at all.
+Text within HTML elements remains.
 .El
 .Pp
 For
