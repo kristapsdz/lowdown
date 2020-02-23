@@ -177,6 +177,9 @@ struct	lowdown_node {
 			 */
 			char start[10];
 		} rndr_list; 
+		struct rndr_paragraph {
+			size_t lines; /* input lines */
+		} rndr_paragraph;
 		struct rndr_listitem {
 			enum hlist_fl flags; /* all possible flags */
 			size_t num; /* index in ordered */

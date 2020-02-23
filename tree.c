@@ -108,6 +108,12 @@ rndr(hbuf *ob, struct lowdown_metaq *metaq,
 	HBUF_PUTSL(ob, "\n");
 
 	switch (root->type) {
+	case LOWDOWN_PARAGRAPH:
+		for (i = 0; i < indent + 1; i++)
+			HBUF_PUTSL(ob, "  ");
+		hbuf_printf(ob, "lines: %zu\n", 
+			root->rndr_paragraph.lines);
+		break;
 	case LOWDOWN_IMAGE:
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");

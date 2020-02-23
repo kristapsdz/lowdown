@@ -2058,11 +2058,9 @@ static size_t
 parse_paragraph(hdoc *doc, char *data, size_t size)
 {
 	hbuf			 work;
-	hbuf			*workp;
-	struct lowdown_node 	*n, *dl, *cur;
-	size_t		 	 i, j, end = 0, beg, lines = 0;
-	int		 	 level = 0, is_dli = 0;
-	enum hlist_fl		 fl = 0;
+	struct lowdown_node 	*n;
+	size_t		 	 i, end = 0, beg, lines = 0;
+	int		 	 level = 0;
 
 	memset(&work, 0, sizeof(hbuf));
 
@@ -2082,31 +2080,20 @@ parse_paragraph(hdoc *doc, char *data, size_t size)
 		 * that, which means that we're a block-mode dli.
 		 */
 
-		if (is_empty(data + i, size - i)) {
-			if (prefix_dli(doc, data + end, size - end)) {
-				is_dli = 1;
-				fl |= HLIST_FL_BLOCK;
-			}
+		if (is_empty(data + i, size - i))
 			break;
-		}
 
 		/* Header line: end of paragraph. */
 
 		if ((level = is_headerline(data + i, size - i)) != 0)
 			break;
 
-		/* Next is definition list. */
-
-		if (prefix_dli(doc, data + i, size - i)) {
-			is_dli = 1;
-			end = i;
-			break;
-		}
-
 		/* Other ways of ending a paragraph. */
 
 		if (is_atxheader(doc, data + i, size - i) ||
 		    is_hrule(data + i, size - i) ||
+		    (lines == 1 &&
+		     prefix_dli(doc, data + i, size - i)) ||
 		    prefix_quote(data + i, size - i)) {
 			end = i;
 			break;
@@ -2122,36 +2109,25 @@ parse_paragraph(hdoc *doc, char *data, size_t size)
 		work.size--;
 
 	/*
-	 * The paragraph is ending on the border of a blockquote,
-	 * horizontal rule, double line, or end of file.
+	 * The paragraph isn't ending on a header line.
 	 * So it's a regular paragraph.
 	 */
 
-	if (!level && !is_dli) {
+	if (!level) {
 		n = pushnode(doc, LOWDOWN_PARAGRAPH);
+		n->rndr_paragraph.lines = lines;
 		parse_inline(doc, work.data, work.size);
 		popnode(doc, n);
 		doc->cur_par++;
 		return end;
 	} 
 
-	/* Continue or open a new definition list (if applicable). */
-
-	if (is_dli) {
-		cur = TAILQ_LAST(&doc->current->children, lowdown_nodeq);
-		if (cur != NULL && cur->type == LOWDOWN_DEFINITION) {
-			dl = doc->current = cur;
-			doc->depth++;
-		} else
-			dl = pushnode(doc, LOWDOWN_DEFINITION);
-	}
-
 	/*
 	 * Either paragraph content prior to another block or (possibly
 	 * multiple) definition list titles.
 	 */
 	
-	if (work.size && !is_dli) {
+	if (work.size) {
 		i = work.size;
 		work.size -= 1;
 		while (work.size && data[work.size] != '\n')
@@ -2162,6 +2138,7 @@ parse_paragraph(hdoc *doc, char *data, size_t size)
 
 		if (work.size > 0) {
 			n = pushnode(doc, LOWDOWN_PARAGRAPH);
+			n->rndr_paragraph.lines = lines - 1;
 			parse_inline(doc, work.data, work.size);
 			popnode(doc, n);
 			doc->cur_par++;
@@ -2169,41 +2146,9 @@ parse_paragraph(hdoc *doc, char *data, size_t size)
 			work.size = i - beg;
 		} else 
 			work.size = i;
-	} else if (work.size) {
-		for (i = 0; i < work.size; i++) {
-			if (work.data[i] == '\n')
-				continue;
-			for (j = i; j < work.size; j++)
-				if (work.data[j] == '\n')
-					break;
-			assert(j > i);
-			n = pushnode(doc, LOWDOWN_DEFINITION_TITLE);
-			parse_inline(doc, work.data + i, j - i);
-			popnode(doc, n);
-			i = j;
-		}
 	}
 
 	/* Definition data parts. */
-
-	if (is_dli) {
-		workp = hbuf_new(256);
-		fl |= HLIST_FL_DEF;
-		while (end < size) {
-			n = pushnode(doc, LOWDOWN_DEFINITION_DATA);
-			i = parse_listitem(workp, doc, 
-				data + end, size - end, &fl, 1);
-			end += i;
-			popnode(doc, n);
-			if (!i || (fl & HLIST_LI_END))
-				break;
-		} 
-		if (fl & HLIST_FL_BLOCK)
-			dl->rndr_definition.flags |= HLIST_FL_BLOCK;
-		popnode(doc, dl);
-		hbuf_free(workp);
-		return end;
-	} 
 
 	n = pushnode(doc, LOWDOWN_HEADER);
 	n->rndr_header.level = level;
@@ -2332,7 +2277,7 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 {
 	hbuf			*work = NULL;
 	size_t			 beg = 0, end, pre, sublist = 0, 
-				 orgpre, i, has_next_uli = 0, 
+				 orgpre, i, has_next_uli = 0, lines,
 				 has_next_oli = 0, has_next_dli = 0;
 	int			 in_empty = 0, has_inside_empty = 0,
 				 in_fence = 0, ff;
@@ -2365,6 +2310,7 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 
 	hbuf_put(work, data + beg, end - beg);
 	beg = end;
+	lines = 1;
 
 	/* Process the following lines. */
 
@@ -2383,6 +2329,8 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 			continue;
 		}
 
+		lines++;
+
 		/* Calculating the indentation. */
 
 		pre = i = countspaces(data, beg, end, 4) - beg;
@@ -2395,12 +2343,14 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 		/*
 		 * Only check for new list items if we are **not**
 		 * inside a fenced code block.
+		 * We only allow dli if we've had a single line of
+		 * content beforehand.
 		 */
 
 		if (!in_fence) {
 			has_next_uli = prefix_uli
 				(data + beg + i, end - beg - i);
-			has_next_dli = prefix_dli
+			has_next_dli = lines == 1 && prefix_dli
 				(doc, data + beg + i, end - beg - i);
 			has_next_oli = prefix_oli
 				(doc, data + beg + i, end - beg - i, NULL);
@@ -2507,6 +2457,51 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 	return beg;
 }
 
+/*
+ * Parse definition list.
+ * This must follow a single-line paragraph, which it integrates as the
+ * title of the list.
+ * (The paragraph can contain arbitrary styling.)
+ */
+static size_t
+parse_definition(hdoc *doc, char *data, size_t size)
+{
+	hbuf		   	*work = NULL;
+	size_t			 i = 0, j, k = 1;
+	enum hlist_fl		 flags;
+	struct lowdown_node	*n, *nn, *cur;
+
+	cur = TAILQ_LAST(&doc->current->children, lowdown_nodeq);
+	assert(cur != NULL);
+	assert(cur->type == LOWDOWN_PARAGRAPH);
+	assert(cur->rndr_paragraph.lines == 1);
+
+	flags = HLIST_FL_DEF;
+	work = hbuf_new(256);
+	n = pushnode(doc, LOWDOWN_DEFINITION);
+	n->rndr_definition.flags = flags;
+
+	TAILQ_REMOVE(&cur->parent->children, cur, entries);
+	TAILQ_INSERT_TAIL(&n->children, cur, entries);
+	cur->type = LOWDOWN_DEFINITION_TITLE;
+
+	while (i < size) {
+		nn = pushnode(doc, LOWDOWN_DEFINITION_DATA);
+		j = parse_listitem(work, doc, 
+			data + i, size - i, &flags, k++);
+		i += j;
+		popnode(doc, nn);
+		if (!j || (flags & HLIST_LI_END))
+			break;
+	}
+
+	if (flags & HLIST_FL_BLOCK)
+		n->rndr_definition.flags |= HLIST_FL_BLOCK;
+
+	popnode(doc, n);
+	hbuf_free(work);
+	return i;
+}
 
 /* 
  * Parsing ordered or unordered list block.
@@ -3185,6 +3180,23 @@ parse_block(hdoc *doc, char *data, size_t size)
 		if (prefix_uli(txt_data, end)) {
 			beg += parse_list(doc, txt_data, end, NULL);
 			continue;
+		}
+
+		/* 
+		 * A definition list.
+		 * Only use this is preceded by a one-line paragraph.
+		 */
+
+		if (doc->current != NULL &&
+		    prefix_dli(doc, txt_data, end)) {
+			n = TAILQ_LAST(&doc->current->children,
+				lowdown_nodeq);
+			if (n != NULL && 
+			    n->type == LOWDOWN_PARAGRAPH &&
+			    n->rndr_paragraph.lines == 1) {
+				beg += parse_definition(doc, txt_data, end);
+				continue;
+			}
 		}
 
 		/* An ordered list. */

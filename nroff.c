@@ -521,8 +521,6 @@ rndr_definition_data(hbuf *ob, const struct lowdown_node *root,
 		    pp->type == LOWDOWN_DEFINITION &&
 		    (pp->rndr_definition.flags & HLIST_FL_BLOCK))
 			HBUF_PUTSL(ob, ".sp 1.0v\n");
-		else
-			HBUF_PUTSL(ob, ".br\n");
 	}
 
 	if (prev != NULL && prev->type == LOWDOWN_DEFINITION_DATA)
