@@ -2350,7 +2350,7 @@ parse_listitem(hbuf *ob, hdoc *doc, char *data,
 		if (!in_fence) {
 			has_next_uli = prefix_uli
 				(data + beg + i, end - beg - i);
-			has_next_dli = lines == 1 && prefix_dli
+			has_next_dli =  prefix_dli
 				(doc, data + beg + i, end - beg - i);
 			has_next_oli = prefix_oli
 				(doc, data + beg + i, end - beg - i, NULL);
@@ -2468,22 +2468,33 @@ parse_definition(hdoc *doc, char *data, size_t size)
 {
 	hbuf		   	*work = NULL;
 	size_t			 i = 0, j, k = 1;
-	enum hlist_fl		 flags;
-	struct lowdown_node	*n, *nn, *cur;
+	enum hlist_fl		 flags = HLIST_FL_DEF;
+	struct lowdown_node	*n, *nn, *cur, *prev;
+
+	work = hbuf_new(256);
 
 	cur = TAILQ_LAST(&doc->current->children, lowdown_nodeq);
 	assert(cur != NULL);
 	assert(cur->type == LOWDOWN_PARAGRAPH);
 	assert(cur->rndr_paragraph.lines == 1);
 
-	flags = HLIST_FL_DEF;
-	work = hbuf_new(256);
-	n = pushnode(doc, LOWDOWN_DEFINITION);
-	n->rndr_definition.flags = flags;
+	/* Do we need to merge into a previous definition list? */
+
+	prev = TAILQ_PREV(cur, lowdown_nodeq, entries);
+
+	if (prev != NULL && prev->type == LOWDOWN_DEFINITION) {
+		n = doc->current = prev;
+		flags = n->rndr_definition.flags;
+		doc->depth++;
+	} else {
+		n = pushnode(doc, LOWDOWN_DEFINITION);
+		n->rndr_definition.flags = flags;
+	}
 
 	TAILQ_REMOVE(&cur->parent->children, cur, entries);
 	TAILQ_INSERT_TAIL(&n->children, cur, entries);
 	cur->type = LOWDOWN_DEFINITION_TITLE;
+	cur->parent = n;
 
 	while (i < size) {
 		nn = pushnode(doc, LOWDOWN_DEFINITION_DATA);
