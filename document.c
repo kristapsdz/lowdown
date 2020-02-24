@@ -2059,14 +2059,12 @@ parse_paragraph(hdoc *doc, char *data, size_t size)
 {
 	hbuf			 work;
 	struct lowdown_node 	*n;
-	size_t		 	 i, end = 0, beg, lines = 0;
-	int		 	 level = 0;
+	size_t		 	 i = 0, end = 0, beg, lines = 0;
+	int		 	 level = 0, beoln = 0;
 
 	memset(&work, 0, sizeof(hbuf));
-
 	work.data = data;
 
-	i = 0;
 	while (i < size) {
 		/* Parse ahead to the next newline. */
 
@@ -2080,8 +2078,10 @@ parse_paragraph(hdoc *doc, char *data, size_t size)
 		 * that, which means that we're a block-mode dli.
 		 */
 
-		if (is_empty(data + i, size - i))
+		if (is_empty(data + i, size - i)) {
+			beoln = 1;
 			break;
+		}
 
 		/* Header line: end of paragraph. */
 
@@ -2116,16 +2116,14 @@ parse_paragraph(hdoc *doc, char *data, size_t size)
 	if (!level) {
 		n = pushnode(doc, LOWDOWN_PARAGRAPH);
 		n->rndr_paragraph.lines = lines;
+		n->rndr_paragraph.beoln = beoln;
 		parse_inline(doc, work.data, work.size);
 		popnode(doc, n);
 		doc->cur_par++;
 		return end;
 	} 
 
-	/*
-	 * Either paragraph content prior to another block or (possibly
-	 * multiple) definition list titles.
-	 */
+	/* Paragraph material prior to header break. */
 	
 	if (work.size) {
 		i = work.size;
@@ -2139,6 +2137,7 @@ parse_paragraph(hdoc *doc, char *data, size_t size)
 		if (work.size > 0) {
 			n = pushnode(doc, LOWDOWN_PARAGRAPH);
 			n->rndr_paragraph.lines = lines - 1;
+			n->rndr_paragraph.beoln = beoln;
 			parse_inline(doc, work.data, work.size);
 			popnode(doc, n);
 			doc->cur_par++;

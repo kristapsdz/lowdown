@@ -179,6 +179,7 @@ struct	lowdown_node {
 		} rndr_list; 
 		struct rndr_paragraph {
 			size_t lines; /* input lines */
+			int beoln; /* ends on blank line */
 		} rndr_paragraph;
 		struct rndr_listitem {
 			enum hlist_fl flags; /* all possible flags */
