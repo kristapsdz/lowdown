@@ -241,6 +241,10 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	}
 
 	lowdown_node_free(ndiff);
+
+	*res = ob->data;
+	*rsz = ob->size;
+	ob->data = NULL;
 	hbuf_free(ob);
 }
 
