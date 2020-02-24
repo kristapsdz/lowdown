@@ -54,11 +54,11 @@ int32_t	 entity_find(const hbuf *);
 
 int	 hbuf_eq(const hbuf *, const hbuf *);
 int	 hbuf_streq(const hbuf *, const char *);
+int	 hbuf_strprefix(const hbuf *, const char *);
 void	 hbuf_free(hbuf *);
 void	 hbuf_grow(hbuf *, size_t);
 hbuf	*hbuf_clone(const hbuf *, hbuf *);
 hbuf	*hbuf_new(size_t) __attribute__((malloc));
-int	 hbuf_prefix(const hbuf *, const char *);
 void	 hbuf_printf(hbuf *, const char *, ...) 
 		__attribute__((format (printf, 2, 3)));
 void	 hbuf_put(hbuf *, const char *, size_t);

@@ -136,7 +136,7 @@ rndr_autolink(hbuf *ob, const hbuf *link,
 	 * want to print the `mailto:` prefix
 	 */
 
-	if (hbuf_prefix(link, "mailto:") == 0)
+	if (hbuf_strprefix(link, "mailto:"))
 		escape_html(ob, link->data + 7, link->size - 7, st);
 	else
 		escape_html(ob, link->data, link->size, st);
@@ -364,14 +364,45 @@ rndr_list(hbuf *ob, const hbuf *content, const struct rndr_list *p)
 
 static void
 rndr_listitem(hbuf *ob, const hbuf *content,
-	const struct rndr_listitem *p)
+	const struct lowdown_node *n)
 {
 	size_t	 size;
+	int	 blk = 0;
+
+	/*
+	 * If we're in block mode (which can be assigned post factum in
+	 * the parser), make sure that we have an extra <p> around
+	 * non-block content.
+	 */
+
+	if (((n->rndr_listitem.flags & HLIST_FL_DEF) &&
+	     n->parent != NULL &&
+	     n->parent->parent != NULL &&
+	     n->parent->parent->type == LOWDOWN_DEFINITION &&
+	     (n->parent->parent->rndr_definition.flags & 
+	      HLIST_FL_BLOCK)) ||
+	    (!(n->rndr_listitem.flags & HLIST_FL_DEF) &&
+	     n->parent != NULL &&
+	     n->parent->type == LOWDOWN_LIST &&
+	     (n->parent->rndr_list.flags & HLIST_FL_BLOCK))) {
+		if (!(hbuf_strprefix(content, "<ul") ||
+		      hbuf_strprefix(content, "<ol") ||
+		      hbuf_strprefix(content, "<dl") ||
+		      hbuf_strprefix(content, "<div") ||
+		      hbuf_strprefix(content, "<table") ||
+		      hbuf_strprefix(content, "<blockquote") ||
+		      hbuf_strprefix(content, "<pre>") ||
+		      hbuf_strprefix(content, "<h") ||
+		      hbuf_strprefix(content, "<p>")))
+			blk = 1;
+	}
 
 	/* Only emit <li> if we're not a <dl> list. */
 
-	if (!(p->flags & HLIST_FL_DEF))
+	if (!(n->rndr_listitem.flags & HLIST_FL_DEF))
 		HBUF_PUTSL(ob, "<li>");
+	if (blk)
+		HBUF_PUTSL(ob, "<p>");
 
 	/* Cut off any trailing space. */
 
@@ -381,7 +412,9 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 		hbuf_put(ob, content->data, size);
 	}
 
-	if (!(p->flags & HLIST_FL_DEF))
+	if (blk)
+		HBUF_PUTSL(ob, "</p>");
+	if (!(n->rndr_listitem.flags & HLIST_FL_DEF))
 		HBUF_PUTSL(ob, "</li>\n");
 }
 
@@ -920,7 +953,7 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		rndr_list(ob, tmp, &root->rndr_list);
 		break;
 	case LOWDOWN_LISTITEM:
-		rndr_listitem(ob, tmp, &root->rndr_listitem);
+		rndr_listitem(ob, tmp, root);
 		break;
 	case LOWDOWN_PARAGRAPH:
 		rndr_paragraph(ob, tmp, st);

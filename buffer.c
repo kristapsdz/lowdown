@@ -84,6 +84,16 @@ hbuf_streq(const hbuf *buf1, const char *buf2)
 }
 
 int
+hbuf_strprefix(const hbuf *buf1, const char *buf2)
+{
+	size_t	 sz;
+
+	sz = strlen(buf2);
+	return buf1->size >= sz &&
+	       memcmp(buf1->data, buf2, sz) == 0;
+}
+
+int
 hbuf_eq(const hbuf *buf1, const hbuf *buf2)
 {
 
@@ -223,26 +233,6 @@ hbuf_putf(hbuf *buf, FILE *file)
 	}
 
 	return ferror(file);
-}
-
-/* 
- * Compare the beginning of a buffer with a string.
- * Returns zero on no match, otherwise non-zero.
- */
-int
-hbuf_prefix(const hbuf *buf, const char *prefix)
-{
-	size_t i;
-
-	for (i = 0; i < buf->size; ++i) {
-		if (prefix[i] == '\0')
-			return 0;
-
-		if (buf->data[i] != prefix[i])
-			return buf->data[i] - prefix[i];
-	}
-
-	return 0;
 }
 
 /* 

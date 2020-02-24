@@ -331,7 +331,7 @@ putlink(hbuf *ob, struct nstate *st, const hbuf *link,
 		st->fonts[NFONT_ITALIC]++;
 		hbuf_puts(ob, nstate_fonts(st));
 		if (text == NULL) {
-			if (0 == hbuf_prefix(link, "mailto:"))
+			if (hbuf_strprefix(link, "mailto:"))
 				hbuf_put(ob, link->data + 7, link->size - 7);
 			else
 				hbuf_put(ob, link->data, link->size);
@@ -393,7 +393,7 @@ putlink(hbuf *ob, struct nstate *st, const hbuf *link,
 		}
 		HBUF_PUTSL(ob, " ");
 		if (text == NULL) {
-			if (hbuf_prefix(link, "mailto:") == 0)
+			if (hbuf_strprefix(link, "mailto:"))
 				hbuf_put(ob, link->data + 7, link->size - 7);
 			else
 				hbuf_put(ob, link->data, link->size);
