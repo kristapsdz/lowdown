@@ -65,6 +65,10 @@ struct lowdown_node {
 			enum hlist_fl flags;
 			char start[10];
 		} rndr_list;
+		struct rndr_paragraph {
+			size_t lines;
+			int beoln;
+		} rndr_paragraph;
 		struct rndr_listitem {
 			enum hlist_fl flags;
 			uint32_t num;
@@ -94,6 +98,9 @@ struct lowdown_node {
 			hbuf text;
 			hbuf lang;
 		} rndr_blockcode;
+		struct rndr_definition {
+			enum hlist_fl flags;
+		} rndr_definition; 
 		struct rndr_codespan {
 			hbuf text;
 		} rndr_codespan;
@@ -376,28 +383,59 @@ Enclosed nodes may consist only of
 .Dv LOWDOWN_NORMAL_TEXT
 and
 .Dv LOWDOWN_ENTITY .
+.It Va rndr_definition
+For
+.Dv LOWDOWN_DEFINITION ,
+containing
+.Va flags
+that may be
+.Dv HLIST_FL_BLOCK
+if the definition list should be interpreted as containing block
+elements.
 .It Va rndr_list
 For
-.Dv LOWDOWN_DOC_LIST ,
+.Dv LOWDOWN_LIST ,
 consists of a bitfield
 .Va flags
 that may be set to
 .Dv HLIST_FL_ORDERED
-for an ordered list.
+for an ordered list and
+.Dv HLIST_FL_UNORDERED
+for an unordered one.
+If
+.Dv HLIST_FL_BLOCK
+is set, the list should be output as if items were separate blocks.
 If
 .Va start
 is a non-empty string, it is the first list item value.
+.It Va rndr_paragraph
+For
+.Dv LOWDOWN_PARAGRAPH ,
+species how many
+.Va lines
+the paragraph has in the input file and
+.Va beoln ,
+set to non-zero if the paragraph ends with an empty line instead of a
+breaking block element.
 .It Va rndr_listitem
 For
-.Dv LOWDOWN_DOC_LISTITEM ,
+.Dv LOWDOWN_LISTITEM ,
 consists of a bitfield
 .Va flags
 that may be set to
 .Dv HLIST_FL_ORDERED
-.Pq an ordered list
+.Pq an ordered list ,
+.Dv HLIST_FL_UNORDERED
+.Pq unordered list ,
+.Dv HLIST_FL_DEF
+.Pq definition list data ,
 and/or
 .Dv HLIST_FL_BLOCK
-.Pq list elements contain block elements .
+.Pq list item output as if containing block elements .
+The
+.Dv HLIST_FL_BLOCK
+should not be used: use the parent list (or definition list) flags for
+this.
 The
 .Va num
 is the index in an ordered list.

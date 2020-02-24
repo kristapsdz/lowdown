@@ -254,7 +254,7 @@ Definition lists are a PHP Markdown Extra extension.
 They're similar to lists except in having key and value pairs, with keys
 being preceded by a blank line:
 .Bd -literal -offset indent
-Best understated characters
+Best understated characters:
 
 *Quark*
 : Armin Shimerman
@@ -267,7 +267,8 @@ Keys consist of a single line and may contain inline elements.
 Like other lists, values may consist of arbitrary nested blocks.
 There may be multiple consecutive values per key.
 If the key and value are separated by a blank line, the list is emitted
-as if it contained block elements.
+as if it contained block elements (usually output as spacing between
+key-value pairs).
 .
 .Ss Code Blocks
 Code blocks consist of pre-formatted text, such as source code.
