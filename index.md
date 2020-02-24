@@ -104,6 +104,12 @@ following Markdown features and extensions:
 
 ## Examples
 
+Want to quickly review your Markdown in a terminal window?
+
+```sh
+lowdown -Tterm README.md | less -R
+```
+
 I usually use *lowdown* when writing
 [sblg](https://kristaps.bsd.lv/sblg) articles when I'm too lazy to
 write in proper HTML5.
