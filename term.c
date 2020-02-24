@@ -147,6 +147,16 @@ static const struct sty sty_chng_ins =	{ 0, 0, 0, 0,  47, 30, 0 };
 static const struct sty sty_chng_del =	{ 0, 0, 0, 0, 100,  0, 0 };
 
 /*
+ * Prefix styles.
+ * These are applied to block-level prefix material.
+ */
+
+static const struct sty sty_ddata_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
+static const struct sty sty_bkqt_pfx =	{ 0, 0, 0, 0,   0, 37, 0 };
+static const struct sty sty_oli_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
+static const struct sty sty_uli_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
+
+/*
  * Whether the style is not empty (i.e., has style attributes).
  */
 #define	STY_NONEMPTY(_s) \
@@ -446,12 +456,21 @@ rndr_buf_startline_prefixes(struct term *term,
 {
 	size_t	 			 i, emit;
 	int	 		 	 pstyle = 0;
+	struct sty			 sinner;
 	const struct lowdown_node	*np;
 
 	if (n->parent != NULL)
 		rndr_buf_startline_prefixes(term, s, n->parent, out);
 
+	/*
+	 * The "sinner" value is temporary for only this function.
+	 * This allows us to set a temporary style mask that only
+	 * applies to the prefix data.
+	 * Otherwise "s" propogates to the subsequent line.
+	 */
+
 	rndr_node_style(s, n);
+	sinner = *s;
 
 	/*
 	 * Look up the current node in the list of node's we're
@@ -466,7 +485,7 @@ rndr_buf_startline_prefixes(struct term *term,
 			break;
 	assert(i <= term->stackpos);
 	emit = term->stack[i].lines++;
-	
+
 	/*
 	 * Output any prefixes.
 	 * Any output must have rndr_buf_style() and set pstyle so that
@@ -491,25 +510,27 @@ rndr_buf_startline_prefixes(struct term *term,
 		}
 		break;
 	case LOWDOWN_BLOCKCODE:
-		rndr_buf_style(out, s);
+		rndr_buf_style(out, &sinner);
 		pstyle = 1;
 		HBUF_PUTSL(out, "      ");
 		rndr_buf_advance(term, 6);
 		break;
 	case LOWDOWN_ROOT:
-		rndr_buf_style(out, s);
+		rndr_buf_style(out, &sinner);
 		pstyle = 1;
 		for (i = 0; i < term->hmargin; i++)
 			HBUF_PUTSL(out, " ");
 		break;
 	case LOWDOWN_BLOCKQUOTE:
-		rndr_buf_style(out, s);
+		rndr_node_style_apply(&sinner, &sty_bkqt_pfx);
+		rndr_buf_style(out, &sinner);
 		pstyle = 1;
 		HBUF_PUTSL(out, "  | ");
 		rndr_buf_advance(term, 4);
 		break;
 	case LOWDOWN_DEFINITION_DATA:
-		rndr_buf_style(out, s);
+		rndr_node_style_apply(&sinner, &sty_ddata_pfx);
+		rndr_buf_style(out, &sinner);
 		pstyle = 1;
 		if (emit == 0)
 			HBUF_PUTSL(out, "  : ");
@@ -518,7 +539,7 @@ rndr_buf_startline_prefixes(struct term *term,
 		rndr_buf_advance(term, 4);
 		break;
 	case LOWDOWN_FOOTNOTE_DEF:
-		rndr_buf_style(out, s);
+		rndr_buf_style(out, &sinner);
 		pstyle = 1;
 		if (emit == 0)
 			hbuf_printf(out, "%2zu. ", 
@@ -528,9 +549,11 @@ rndr_buf_startline_prefixes(struct term *term,
 		rndr_buf_advance(term, 4);
 		break;
 	case LOWDOWN_HEADER:
+		/* Use the same colour as the text following. */
+
 		if (n->rndr_header.level == 1)
 			break;
-		rndr_buf_style(out, s);
+		rndr_buf_style(out, &sinner);
 		pstyle = 1;
 		for (i = 0; i < n->rndr_header.level; i++)
 			HBUF_PUTSL(out, "#");
@@ -538,13 +561,17 @@ rndr_buf_startline_prefixes(struct term *term,
 		rndr_buf_advance(term, i + 1);
 		break;
 	case LOWDOWN_LISTITEM:
-		if (n->parent != NULL &&
+		if (n->parent == NULL ||
 		    n->parent->type == LOWDOWN_DEFINITION_DATA)
 			break;
-		rndr_buf_style(out, s);
+		if (n->parent->type == LOWDOWN_LIST &&
+		    (n->parent->rndr_list.flags & HLIST_FL_ORDERED))
+			rndr_node_style_apply(&sinner, &sty_oli_pfx);
+		else
+			rndr_node_style_apply(&sinner, &sty_uli_pfx);
+		rndr_buf_style(out, &sinner);
 		pstyle = 1;
-		if (n->parent == NULL || 
-		    n->parent->rndr_list.flags == 0) {
+		if (n->parent->rndr_list.flags & HLIST_FL_UNORDERED) {
 			hbuf_puts(out, emit == 0 ? 
 				"  - " : "    ");
 			rndr_buf_advance(term, 4);
@@ -561,7 +588,7 @@ rndr_buf_startline_prefixes(struct term *term,
 		break;
 	}
 
-	if (pstyle && STY_NONEMPTY(s))
+	if (pstyle && STY_NONEMPTY(&sinner))
 		HBUF_PUTSL(out, "\033[0m");
 }
 
