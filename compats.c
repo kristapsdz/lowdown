@@ -937,7 +937,7 @@ readpassphrase(const char *prompt, char *buf, size_t bufsiz, int flags)
 #ifndef TCSASOFT
 	const int tcasoft = 0;
 #else
-	const int tcasoft = TCASOFT;
+	const int tcasoft = TCSASOFT;
 #endif
 
 	/* I suppose we could alloc on demand in this case (XXX). */
