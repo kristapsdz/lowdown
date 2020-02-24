@@ -645,4 +645,22 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.6.0</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2020-02-24">2020-02-24</time>
+		</header>
+		<aside>
+			<p>
+				Full support for definition lists (with a single definition key).
+				These are reflected in all output media.
+			</p>
+			<p>
+				Make sure that all output media reflect the block status of lists.
+				For example, if a list item has block elements, <i>all</i> list
+				items (before and after) should reflect block output status.
+			</p>
+		</aside>
+	</article>
 </articles>
