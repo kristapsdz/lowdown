@@ -272,6 +272,7 @@ lowdown --parse-no-metadata \
 	--parse-no-autolink \
 	--parse-no-cmark \
 	--out-no-smarty \
+	--html-no-deflists \
 	--html-no-head-ids \
 	--html-no-skiphtml \
 	--html-no-escapehtml \
