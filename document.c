@@ -2478,11 +2478,15 @@ parse_definition(hdoc *doc, char *data, size_t size)
 	struct lowdown_node	*n, *nn, *cur, *prev;
 
 	work = hbuf_new(256);
-
 	cur = TAILQ_LAST(&doc->current->children, lowdown_nodeq);
 	assert(cur != NULL);
 	assert(cur->type == LOWDOWN_PARAGRAPH);
 	assert(cur->rndr_paragraph.lines == 1);
+
+	/* Record whether we want to start in block mode. */
+
+	if (cur->rndr_paragraph.beoln)
+		flags |= HLIST_FL_BLOCK;
 
 	/* Do we need to merge into a previous definition list? */
 
@@ -2490,7 +2494,7 @@ parse_definition(hdoc *doc, char *data, size_t size)
 
 	if (prev != NULL && prev->type == LOWDOWN_DEFINITION) {
 		n = doc->current = prev;
-		flags = n->rndr_definition.flags;
+		flags |= n->rndr_definition.flags;
 		doc->depth++;
 	} else {
 		n = pushnode(doc, LOWDOWN_DEFINITION);
