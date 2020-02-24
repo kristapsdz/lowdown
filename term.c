@@ -771,7 +771,7 @@ static void
 rndr(hbuf *ob, struct lowdown_metaq *mq,
 	struct term *p, const struct lowdown_node *n)
 {
-	const struct lowdown_node	*child;
+	const struct lowdown_node	*child, *prev;
 	struct lowdown_meta		*m;
 	hbuf				*metatmp;
 	int32_t				 entity;
@@ -787,6 +787,8 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 	}
 	memset(&p->stack[p->stackpos], 0, sizeof(struct tstack));
 	p->stack[p->stackpos].n = n;
+	prev = n->parent == NULL ? NULL :
+		TAILQ_PREV(n, lowdown_nodeq, entries);
 
 	/* Vertical space before content. */
 
@@ -799,21 +801,6 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 			HBUF_PUTSL(ob, "\n");
 		p->last_blank = -1;
 		break;
-	case LOWDOWN_PARAGRAPH:
-		/*
-		 * Paragraphs in a definition list get special treatment
-		 * because we only put one newline between the title and
-		 * the data regardless of its contents.
-		 */
-		if (n->parent != NULL && 
-		    n->parent->parent != NULL &&
-		    n->parent->parent->type == 
-		      LOWDOWN_DEFINITION_DATA &&
-		    TAILQ_PREV(n, lowdown_nodeq, entries) == NULL)
-			rndr_buf_vspace(p, ob, n, 1);
-		else
-			rndr_buf_vspace(p, ob, n, 2);
-		break;
 	case LOWDOWN_BLOCKCODE:
 	case LOWDOWN_BLOCKHTML:
 	case LOWDOWN_BLOCKQUOTE:
@@ -823,14 +810,41 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_HEADER:
 	case LOWDOWN_LIST:
 	case LOWDOWN_TABLE_BLOCK:
-		rndr_buf_vspace(p, ob, n, 2);
+	case LOWDOWN_PARAGRAPH:
+		/*
+		 * Blocks in a definition list get special treatment
+		 * because we only put one newline between the title and
+		 * the data regardless of its contents.
+		 */
+
+		if (n->parent != NULL && 
+		    n->parent->type == LOWDOWN_LISTITEM &&
+		    n->parent->parent != NULL &&
+		    n->parent->parent->type == 
+		      LOWDOWN_DEFINITION_DATA &&
+		    prev == NULL)
+			rndr_buf_vspace(p, ob, n, 1);
+		else
+			rndr_buf_vspace(p, ob, n, 2);
 		break;
 	case LOWDOWN_MATH_BLOCK:
 		if (n->rndr_math.blockmode)
 			rndr_buf_vspace(p, ob, n, 1);
 		break;
-	case LOWDOWN_DEFINITION_TITLE:
 	case LOWDOWN_DEFINITION_DATA:
+		/* Vertical space if previous block-mode data. */
+
+		if (n->parent != NULL &&
+		    n->parent->type == LOWDOWN_DEFINITION &&
+		    (n->parent->rndr_definition.flags &
+		     HLIST_FL_BLOCK) &&
+		    prev != NULL &&
+		    prev->type == LOWDOWN_DEFINITION_DATA)
+			rndr_buf_vspace(p, ob, n, 2);
+		else
+			rndr_buf_vspace(p, ob, n, 1);
+		break;
+	case LOWDOWN_DEFINITION_TITLE:
 	case LOWDOWN_HRULE:
 	case LOWDOWN_LINEBREAK:
 	case LOWDOWN_LISTITEM:
