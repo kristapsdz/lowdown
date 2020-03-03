@@ -109,8 +109,8 @@ distcheck: lowdown.tar.gz.sha512
 	mkdir -p .distcheck
 	tar -zvxpf lowdown.tar.gz -C .distcheck
 	( cd .distcheck/lowdown-$(VERSION) && ./configure PREFIX=prefix )
-	( cd .distcheck/lowdown-$(VERSION) && make )
-	( cd .distcheck/lowdown-$(VERSION) && make install )
+	( cd .distcheck/lowdown-$(VERSION) && $(MAKE) )
+	( cd .distcheck/lowdown-$(VERSION) && $(MAKE) install )
 	rm -rf .distcheck
 
 index.xml README.xml index.pdf diff.pdf README.pdf: lowdown
