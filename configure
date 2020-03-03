@@ -15,7 +15,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-OCONFIGURE_VERSION="0.1.17"
+OCONFIGURE_VERSION="0.1.18"
 
 #
 # This script outputs two files: config.h and Makefile.configure.
@@ -64,6 +64,9 @@ CFLAGS=`printf "all:\\n\\t@echo \\\$(CFLAGS)\\n" | make -sf -`
 CFLAGS="${CFLAGS} -g -W -Wall -Wextra -Wmissing-prototypes -Wstrict-prototypes"
 CFLAGS="${CFLAGS} -Wwrite-strings -Wno-unused-parameter"
 LDADD=
+LDADD_B64_NTOP=
+LDADD_MD5=
+LDADD_ZLIB=
 CPPFLAGS=
 LDFLAGS=
 DESTDIR=
@@ -240,28 +243,20 @@ __HEREDOC__
 		fi
 	fi
 
+	if [ -n "${extralib}" ] 
+	then
+		eval LDADD_${2}="${5}"
+	elif [ -n "${4}" ]
+	then
+		eval LDADD_${2}="${4}"
+	fi
+
 	echo "${1}: yes ${extralib}" 1>&2
 	echo "${1}: yes ${extralib}" 1>&3
 	echo 1>&3
 	eval HAVE_${2}=1
 	rm "test-${1}"
 	return 0
-
-	# Don't actually run the test: none of our tests check for
-	# run-time behaviour.
-	# if ./test-${1} 1>&3 2>&3; then
-	# 	echo "${1}: yes" 1>&2
-	# 	echo "${1}: yes" 1>&3
-	# 	echo 1>&3
-	# 	eval HAVE_${2}=1
-	# 	rm "test-${1}"
-	# 	return 0
-	# else
-	# 	echo "${1}: execution failed with $?" 1>&3
-	# 	echo 1>&3
-	# 	rm "test-${1}"
-	# 	return 1
-	# fi
 }
 
 # Run a complete autoconfiguration test, including the check for
@@ -1971,6 +1966,9 @@ CC		= ${CC}
 CFLAGS		= ${CFLAGS}
 CPPFLAGS	= ${CPPFLAGS}
 LDADD		= ${LDADD}
+LDADD_B64_NTOP	= ${LDADD_B64_NTOP}
+LDADD_MD5	= ${LDADD_MD5}
+LDADD_ZLIB	= ${LDADD_ZLIB}
 LDFLAGS		= ${LDFLAGS}
 STATIC		= ${STATIC}
 PREFIX		= ${PREFIX}
