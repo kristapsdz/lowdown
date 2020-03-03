@@ -104,7 +104,7 @@ distcheck: lowdown.tar.gz.sha512
 	       [ "$$newest" == "<h1>$(VERSION)</h1>" ] || \
 		{ echo "Version $(VERSION) not newest in versions.xml" 1>&2 ; exit 1 ; }
 	rm -rf .distcheck
-	[ "`sha512 lowdown.tar.gz`" = "`cat lowdown.tar.gz.sha512`" ] || \
+	[ "`openssl dgst -sha512 -hex lowdown.tar.gz`" = "`cat lowdown.tar.gz.sha512`" ] || \
  		{ echo "Checksum does not match." 1>&2 ; exit 1 ; }
 	mkdir -p .distcheck
 	tar -zvxpf lowdown.tar.gz -C .distcheck
@@ -148,7 +148,7 @@ $(HTMLS): versions.xml
 	mandoc -Thtml -Ostyle=https://bsd.lv/css/mandoc.css $< >$@
 
 lowdown.tar.gz.sha512: lowdown.tar.gz
-	sha512 lowdown.tar.gz >$@
+	openssl dgst -sha512 -hex lowdown.tar.gz >$@
 
 lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/
