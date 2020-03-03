@@ -174,5 +174,8 @@ clean:
 distclean: clean
 	rm -f Makefile.configure config.h config.log
 
+regress:
+	# Do nothing.
+
 .png.thumb.jpg:
 	convert $< -thumbnail 350 -quality 50 $@
