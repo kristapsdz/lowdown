@@ -101,7 +101,7 @@ install: all
 distcheck: lowdown.tar.gz.sha512
 	mandoc -Tlint -Werror man/*.[135]
 	newest=`grep "<h1>" versions.xml | tail -n1 | sed 's![ 	]*!!g'` ; \
-	       [ "$$newest" == "<h1>$(VERSION)</h1>" ] || \
+	       [ "$$newest" = "<h1>$(VERSION)</h1>" ] || \
 		{ echo "Version $(VERSION) not newest in versions.xml" 1>&2 ; exit 1 ; }
 	rm -rf .distcheck
 	[ "`openssl dgst -sha512 -hex lowdown.tar.gz`" = "`cat lowdown.tar.gz.sha512`" ] || \
