@@ -99,16 +99,16 @@ install: all
 	done
 
 distcheck: lowdown.tar.gz.sha512
-	mandoc -Tlint -Wwarning man/*.[135]
+	mandoc -Tlint -Werror man/*.[135]
 	newest=`grep "<h1>" versions.xml | tail -n1 | sed 's![ 	]*!!g'` ; \
 	       [ "$$newest" == "<h1>$(VERSION)</h1>" ] || \
 		{ echo "Version $(VERSION) not newest in versions.xml" 1>&2 ; exit 1 ; }
 	rm -rf .distcheck
-	sha512 -C lowdown.tar.gz.sha512 lowdown.tar.gz
+	[ "`sha512 lowdown.tar.gz`" = "`cat lowdown.tar.gz.sha512`" ] || \
+ 		{ echo "Checksum does not match." 1>&2 ; exit 1 ; }
 	mkdir -p .distcheck
 	tar -zvxpf lowdown.tar.gz -C .distcheck
-	( cd .distcheck/lowdown-$(VERSION) && ./configure PREFIX=prefix \
-		CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" LDADD="$(LDADD)" )
+	( cd .distcheck/lowdown-$(VERSION) && ./configure PREFIX=prefix )
 	( cd .distcheck/lowdown-$(VERSION) && make )
 	( cd .distcheck/lowdown-$(VERSION) && make install )
 	rm -rf .distcheck
