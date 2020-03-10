@@ -16,6 +16,10 @@ body > header a			{ color: #fff; }
 body > header nav		{ display: inline-block;
 				  font-size: smaller; }
 body > header nav i.fa		{ font-size: smaller; }
+#nav-atom			{ border-left: thin solid #aaa;
+				  margin-left: 0.5rem;
+				  padding-left: 0.5rem;
+				  display: inline-block; }
 #breadcrumbs			{ padding: 2em 0 2em 0; }
 nav#versions > ul 		{ list-style-type: none;
 				  padding: 0;

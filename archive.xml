@@ -20,15 +20,17 @@
 			</div>
 			<div id="version" class="text">
 				Version
-				<nav class="cur" data-sblg-nav="1" data-sblg-navsz="1" data-sblg-navcontent="1" data-sblg-navtag="version" data-sblg-navsort="date">
+				<nav class="cur" data-sblg-nav="1" data-sblg-navsz="1" 
+				 data-sblg-navcontent="1" data-sblg-navtag="version" data-sblg-navsort="date">
 					${sblg-title}
 				</nav>:
 				<nav>
 					<a href="https://github.com/kristapsdz/lowdown">GitHub</a>,
 					<a href="snapshots/lowdown.tar.gz">Download</a>,
 					<a href="snapshots">Archive</a>,
-					<a href="archive.html">Version history</a>
-					<a href="atom.xml"><i class="fa fa-fw fa-rss"></i></a>
+					<a href="archive.html">Version history</a>,
+					<a href="https://kristaps.bsd.lv/cgi-bin/minci.cgi/index.html?project-name=lowdown">Build status</a>
+					<a id="nav-atom" href="atom.xml"><i class="fa fa-fw fa-rss"></i></a>
 				</nav>
 			</div>
 		</header>

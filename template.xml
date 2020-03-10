@@ -35,8 +35,9 @@
 					<a href="https://github.com/kristapsdz/lowdown">GitHub</a>,
 					<a href="snapshots/lowdown.tar.gz">Download</a>,
 					<a href="snapshots">Archive</a>,
-					<a href="archive.html">Version history</a>
-					<a href="atom.xml"><i class="fa fa-fw fa-rss"></i></a>
+					<a href="archive.html">Version history</a>,
+					<a href="https://kristaps.bsd.lv/cgi-bin/minci.cgi/index.html?project-name=lowdown">Build status</a>
+					<a id="nav-atom" href="atom.xml"><i class="fa fa-fw fa-rss"></i></a>
 				</nav>
 			</div>
 		</header>
