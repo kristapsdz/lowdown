@@ -85,7 +85,7 @@ static const int href_tbl[UINT8_MAX + 1] = {
 static const int esc_tbl[UINT8_MAX + 1] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 7, 0, 0, 0, 6, 2, 0, 0, 0, 0, 0, 0, 0, 3,
+	0, 0, 0, 0, 0, 0, 6, 2, 0, 0, 0, 0, 0, 0, 0, 3,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 4, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -105,7 +105,7 @@ static const int esc_tbl[UINT8_MAX + 1] = {
  * Maximum value of optional entity subsititute.
  * Above this (>ESC_TBL_OWASP_MAX) is mandatory.
  */
-#define	ESC_TBL_OWASP_MAX 4
+#define	ESC_TBL_OWASP_MAX 3
 
 /*
  * For literal contexts, maximum value of optional entity subsititute.
@@ -124,7 +124,6 @@ static const char *esc_name[] = {
         "&gt;",
         "&lt;",
         "&amp;",
-        "&quot;",
 };
 
 /*
@@ -138,8 +137,43 @@ static const char *esc_num[] = {
         "&#62;",
         "&#60;",
         "&#38;",
-        "&#34;",
 };
+
+/* 
+ * Escape general HTML attributes.
+ * This is modelled after the main Markdown parser.
+ */
+void
+hesc_attr(hbuf *ob, const char *data, size_t size)
+{
+	size_t	 i = 0, mark;
+
+	if (size == 0)
+		return;
+
+	while (i < size) {
+		mark = i;
+		while (i < size && data[i] != '"' && data[i] != '&') 
+			i++;
+
+		if (mark == 0 && i >= size) {
+			hbuf_put(ob, data, size);
+			return;
+		}
+
+		if (i > mark)
+			hbuf_put(ob, data + mark, i - mark);
+		if (i >= size)
+			break;
+
+		if (data[i] == '"')
+			HBUF_PUTSL(ob, "&quot;");
+		else if (data[i] == '&')
+			HBUF_PUTSL(ob, "&amp;");
+
+		i++;
+	}
+}
 
 /* 
  * Escape (part of) a URL inside HTML.
@@ -196,17 +230,6 @@ hesc_href(hbuf *ob, const char *data, size_t size)
 			*/
 			HBUF_PUTSL(ob, "&#x27;");
 			break;
-#if 0
-		case ' ':
-			/* 
-			 * The space can be escaped to %20 or a plus
-			 * sign. we're going with the generic escape for
-			 * now. the plus thing is more commonly seen
-			 * when building GET strings.
-			*/
-			hbuf_putc(ob, '+');
-			break;
-#endif
 		default:
 			/* 
 			 * Every other character goes with a %XX

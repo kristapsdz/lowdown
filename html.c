@@ -105,17 +105,6 @@ escape_literal(hbuf *ob, const char *source,
 		(st->flags & LOWDOWN_HTML_NUM_ENT));
 }
 
-/*
- * Except URLs.
- * Don't use this for HTML attributes!
- */
-static void
-escape_href(hbuf *ob, const char *source, size_t length)
-{
-
-	hesc_href(ob, source, length);
-}
-
 static void
 rndr_autolink(hbuf *ob, const hbuf *link,
 	enum halink_type type, const struct hstate *st)
@@ -127,7 +116,7 @@ rndr_autolink(hbuf *ob, const hbuf *link,
 	HBUF_PUTSL(ob, "<a href=\"");
 	if (type == HALINK_EMAIL)
 		HBUF_PUTSL(ob, "mailto:");
-	escape_href(ob, link->data, link->size);
+	hesc_href(ob, link->data, link->size);
 	HBUF_PUTSL(ob, "\">");
 
 	/*
@@ -153,7 +142,7 @@ rndr_blockcode(hbuf *ob, const hbuf *text,
 
 	if (lang->size) {
 		HBUF_PUTSL(ob, "<pre><code class=\"language-");
-		escape_href(ob, lang->data, lang->size);
+		hesc_href(ob, lang->data, lang->size);
 		HBUF_PUTSL(ob, "\">");
 	} else
 		HBUF_PUTSL(ob, "<pre><code>");
@@ -282,7 +271,7 @@ rndr_header_id(hbuf *ob, const hbuf *header, struct hstate *state)
 
 	/* Convert to escaped values. */
 
-	escape_href(ob, header->data, header->size);
+	hesc_href(ob, header->data, header->size);
 
 	/*
 	 * If we're non-unique, then append a "count" value.
@@ -330,10 +319,10 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link,
 {
 
 	HBUF_PUTSL(ob, "<a href=\"");
-	escape_href(ob, link->data, link->size);
+	hesc_href(ob, link->data, link->size);
 	if (title->size) {
 		HBUF_PUTSL(ob, "\" title=\"");
-		escape_html(ob, title->data, title->size, st);
+		hesc_attr(ob, title->data, title->size);
 	}
 	HBUF_PUTSL(ob, "\">");
 	hbuf_putb(ob, content);
@@ -536,9 +525,9 @@ rndr_image(hbuf *ob, const hbuf *link, const hbuf *title,
 	/* Require an "alt", even if blank. */
 
 	HBUF_PUTSL(ob, "<img src=\"");
-	escape_href(ob, link->data, link->size);
+	hesc_href(ob, link->data, link->size);
 	HBUF_PUTSL(ob, "\" alt=\"");
-	escape_html(ob, alt->data, alt->size, st);
+	hesc_attr(ob, alt->data, alt->size);
 	HBUF_PUTSL(ob, "\"");
 
 	if (dims->size && rc > 0) {

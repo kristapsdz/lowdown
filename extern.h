@@ -76,6 +76,7 @@ size_t	 halink_email(size_t *, hbuf *, char *, size_t, size_t);
 size_t	 halink_url(size_t *, hbuf *, char *, size_t, size_t);
 size_t	 halink_www(size_t *, hbuf *, char *, size_t, size_t);
 
+void	 hesc_attr(hbuf *, const char *, size_t);
 void	 hesc_href(hbuf *, const char *, size_t);
 void	 hesc_html(hbuf *, const char *, size_t, int, int, int);
 
