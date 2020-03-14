@@ -224,6 +224,15 @@ rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		rndr_short(ob, &root->rndr_entity.text);
 		HBUF_PUTSL(ob, "\n");
 		break;
+	case LOWDOWN_LINK:
+		if (root->rndr_link.title.size) {
+			for (i = 0; i < indent + 1; i++)
+				HBUF_PUTSL(ob, "  ");
+			HBUF_PUTSL(ob, "title: ");
+			rndr_short(ob, &root->rndr_link.title);
+			HBUF_PUTSL(ob, "\n");
+		}
+		break;
 	case LOWDOWN_NORMAL_TEXT:
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");
