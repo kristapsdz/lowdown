@@ -1,3 +1,4 @@
+.PHONY: regress
 .SUFFIXES: .xml .md .html .pdf .1 .1.html .3 .3.html .5 .5.html .thumb.jpg .png
 
 include Makefile.configure
@@ -59,6 +60,16 @@ IMAGES		 = screen-mandoc.png \
 THUMBS		 = screen-mandoc.thumb.jpg \
 		   screen-groff.thumb.jpg \
 		   screen-term.thumb.jpg
+REGRESS_ARGS	 = "--out-no-smarty"
+REGRESS_ARGS	+= "--parse-no-metadata"
+REGRESS_ARGS	+= "--html-no-head-ids"
+REGRESS_ARGS	+= "--html-no-skiphtml"
+REGRESS_ARGS	+= "--html-no-escapehtml"
+REGRESS_ARGS	+= "--html-no-owasp"
+REGRESS_ARGS	+= "--html-no-num-ent"
+REGRESS_ARGS	+= "--parse-no-autolink"
+REGRESS_ARGS	+= "--parse-no-cmark"
+REGRESS_ARGS	+= "--parse-no-deflists"
 
 all: lowdown lowdown-diff
 
@@ -110,6 +121,7 @@ distcheck: lowdown.tar.gz.sha512
 	tar -zvxpf lowdown.tar.gz -C .distcheck
 	( cd .distcheck/lowdown-$(VERSION) && ./configure PREFIX=prefix )
 	( cd .distcheck/lowdown-$(VERSION) && $(MAKE) )
+	( cd .distcheck/lowdown-$(VERSION) && $(MAKE) regress )
 	( cd .distcheck/lowdown-$(VERSION) && $(MAKE) install )
 	rm -rf .distcheck
 
@@ -153,9 +165,14 @@ lowdown.tar.gz.sha512: lowdown.tar.gz
 lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/
 	mkdir -p .dist/lowdown-$(VERSION)/man
+	mkdir -p .dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
 	install -m 0644 *.c *.h Makefile LICENSE.md .dist/lowdown-$(VERSION)
 	install -m 0644 man/*.1 man/*.3 man/*.5 .dist/lowdown-$(VERSION)/man
 	install -m 0755 configure .dist/lowdown-$(VERSION)
+	install -m 644 regress/MarkdownTest_1.0.3/*.text \
+		.dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
+	install -m 644 regress/MarkdownTest_1.0.3/*.html \
+		.dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
 	( cd .dist/ && tar zcf ../$@ ./ )
 	rm -rf .dist/
 
@@ -174,8 +191,22 @@ clean:
 distclean: clean
 	rm -f Makefile.configure config.h config.log
 
-regress:
-	# Do nothing.
+regress: lowdown
+	tmp1=`mktemp` ; \
+	tmp2=`mktemp` ; \
+	for f in regress/MarkdownTest_1.0.3/*.text ; \
+	do \
+		echo "./lowdown $(REGRESS_ARGS) $$f" ; \
+		want="`dirname \"$$f\"`/`basename \"$$f\" .text`.html" ; \
+		sed -e '/^[ ]*$$/d' "$$want" > $$tmp1 ; \
+		./lowdown $(REGRESS_ARGS) "$$f" | \
+			sed -e 's!	! !g' | sed -e '/^[ ]*$$/d' > $$tmp2 ; \
+		set +e ; \
+		diff -uw $$tmp1 $$tmp2 ; \
+		set -e ; \
+	done  ; \
+	rm -f $$tmp1 ; \
+	rm -f $$tmp2
 
 .png.thumb.jpg:
 	convert $< -thumbnail 350 -quality 50 $@
