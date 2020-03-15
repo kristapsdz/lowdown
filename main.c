@@ -25,12 +25,14 @@
 # include <sys/capsicum.h>
 #endif
 #include <sys/ioctl.h>
+#include <sys/termios.h> /* struct winsize */
 
 #if HAVE_ERR
 # include <err.h>
 #endif
 #include <errno.h>
 #include <getopt.h>
+#include <limits.h> /* INT_MAX */
 #if HAVE_SANDBOX_INIT
 # include <sandbox.h>
 #endif
