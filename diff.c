@@ -119,7 +119,7 @@ static void
 MD5Updatebuf(MD5_CTX *ctx, const hbuf *v)
 {
 
-	MD5Update(ctx, (const u_int8_t *)v->data, v->size);
+	MD5Update(ctx, (const uint8_t *)v->data, v->size);
 }
 
 static void
@@ -315,7 +315,7 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 	MD5End(&ctx, xn->sig);
 
 	if (NULL != parent)
-		MD5Update(parent, (u_int8_t *)xn->sig, 
+		MD5Update(parent, (uint8_t *)xn->sig, 
 			MD5_DIGEST_STRING_LENGTH - 1);
 
 	if (xn->weight > map->maxweight)
