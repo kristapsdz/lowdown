@@ -407,6 +407,12 @@ then
 	echo
 fi
 
+if [ ${HAVE_MD5} -eq 0 ]
+then
+	echo "#include <stdint.h> /* C99 [u]int[nn]_t types */"
+	echo
+fi
+
 if [ ${HAVE_ERR} -eq 0 ]
 then
 	echo "#include <stdarg.h> /* err(3) */"
