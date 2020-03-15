@@ -77,11 +77,11 @@ www: $(HTMLS) $(PDFS) $(THUMBS) lowdown.tar.gz lowdown.tar.gz.sha512
 
 installwww: www
 	mkdir -p $(WWWDIR)/snapshots
-	install -m 0444 $(THUMBS) $(IMAGES) $(MDS) $(HTMLS) $(CSSS) $(JSS) $(PDFS) $(WWWDIR)
-	install -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots/lowdown-$(VERSION).tar.gz
-	install -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots/lowdown-$(VERSION).tar.gz.sha512
-	install -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots
-	install -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots
+	$(INSTALL) -m 0444 $(THUMBS) $(IMAGES) $(MDS) $(HTMLS) $(CSSS) $(JSS) $(PDFS) $(WWWDIR)
+	$(INSTALL) -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots/lowdown-$(VERSION).tar.gz
+	$(INSTALL) -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots/lowdown-$(VERSION).tar.gz.sha512
+	$(INSTALL) -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots
+	$(INSTALL) -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots
 
 lowdown: liblowdown.a main.o
 	$(CC) -o $@ main.o liblowdown.a $(LDFLAGS) $(LDADD_MD5) -lm
@@ -111,14 +111,14 @@ install: all
 
 distcheck: lowdown.tar.gz.sha512
 	mandoc -Tlint -Werror man/*.[135]
-	newest=`grep "<h1>" versions.xml | tail -n1 | sed 's![ 	]*!!g'` ; \
+	newest=`grep "<h1>" versions.xml | tail -1 | sed 's![ 	]*!!g'` ; \
 	       [ "$$newest" = "<h1>$(VERSION)</h1>" ] || \
 		{ echo "Version $(VERSION) not newest in versions.xml" 1>&2 ; exit 1 ; }
-	rm -rf .distcheck
 	[ "`openssl dgst -sha512 -hex lowdown.tar.gz`" = "`cat lowdown.tar.gz.sha512`" ] || \
  		{ echo "Checksum does not match." 1>&2 ; exit 1 ; }
+	rm -rf .distcheck
 	mkdir -p .distcheck
-	tar -zvxpf lowdown.tar.gz -C .distcheck
+	( cd .distcheck && tar -zvxpf ../lowdown.tar.gz )
 	( cd .distcheck/lowdown-$(VERSION) && ./configure PREFIX=prefix )
 	( cd .distcheck/lowdown-$(VERSION) && $(MAKE) )
 	( cd .distcheck/lowdown-$(VERSION) && $(MAKE) regress )
@@ -166,12 +166,12 @@ lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/
 	mkdir -p .dist/lowdown-$(VERSION)/man
 	mkdir -p .dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
-	install -m 0644 *.c *.h Makefile LICENSE.md .dist/lowdown-$(VERSION)
-	install -m 0644 man/*.1 man/*.3 man/*.5 .dist/lowdown-$(VERSION)/man
-	install -m 0755 configure .dist/lowdown-$(VERSION)
-	install -m 644 regress/MarkdownTest_1.0.3/*.text \
+	$(INSTALL) -m 0644 *.c *.h Makefile LICENSE.md .dist/lowdown-$(VERSION)
+	$(INSTALL) -m 0644 man/*.1 man/*.3 man/*.5 .dist/lowdown-$(VERSION)/man
+	$(INSTALL) -m 0755 configure .dist/lowdown-$(VERSION)
+	$(INSTALL) -m 644 regress/MarkdownTest_1.0.3/*.text \
 		.dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
-	install -m 644 regress/MarkdownTest_1.0.3/*.html \
+	$(INSTALL) -m 644 regress/MarkdownTest_1.0.3/*.html \
 		.dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
 	( cd .dist/ && tar zcf ../$@ ./ )
 	rm -rf .dist/
