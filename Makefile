@@ -201,9 +201,7 @@ regress: lowdown
 		sed -e '/^[ ]*$$/d' "$$want" > $$tmp1 ; \
 		./lowdown $(REGRESS_ARGS) "$$f" | \
 			sed -e 's!	! !g' | sed -e '/^[ ]*$$/d' > $$tmp2 ; \
-		set +e ; \
 		diff -uw $$tmp1 $$tmp2 ; \
-		set -e ; \
 	done  ; \
 	rm -f $$tmp1 ; \
 	rm -f $$tmp2
