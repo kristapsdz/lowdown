@@ -3,7 +3,7 @@
 
 include Makefile.configure
 
-VERSION		 = 0.6.2
+VERSION		 = 0.6.3
 OBJS		 = autolink.o \
 		   buffer.o \
 		   diff.o \

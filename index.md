@@ -3,61 +3,62 @@ author: Kristaps Dzonsons
 
 # [%title]
 
-*lowdown* is a Markdown translator producing HTML5 and *roff* documents
-in the **ms** and **man** formats.  It's just clean, secure, [open
-source](http://opensource.org/licenses/ISC) C code with no dependencies.
-Its canonical documentation is
+*lowdown* is a Markdown translator producing HTML5, *roff* documents
+in the **ms** and **man** formats, and terminal output.
+The [open source](http://opensource.org/licenses/ISC) C source code has
+no dependencies and runs on any modern UNIX system.
+
+The canonical documentation is
 [lowdown(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) for the
 formatter, [lowdown(5)](https://kristaps.bsd.lv/lowdown/lowdown.5.html)
-for the syntax, and the library interface at
-[lowdown(3)](https://kristaps.bsd.lv/lowdown/lowdown.3.html).
+for the syntax, and
+[lowdown(3)](https://kristaps.bsd.lv/lowdown/lowdown.3.html)
+for the library interface.
 
 *lowdown* started as a fork of
 [hoedown](https://github.com/hoedown/hoedown) to add sandboxing
-([pledge(2)](https://man.openbsd.org/pledge),
-[capsicum(4)](https://www.freebsd.org/cgi/man.cgi?query=capsicum&sektion=4),
+([pledge](https://man.openbsd.org/pledge),
+[capsicum](https://www.freebsd.org/cgi/man.cgi?query=capsicum&sektion=4),
 or
-[sandbox\_init(3)](https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man3/sandbox_init.3.html))
-and *roff* output to securely generate PDFs on
-[OpenBSD](https://www.openbsd.org) with just
-[mandoc(1)](https://man.openbsd.org/mandoc).
+[sandbox\_init](https://developer.apple.com/legacy/library/documentation/Darwin/Reference/ManPages/man3/sandbox_init.3.html))
+and *roff* output to generate PDFs on [OpenBSD](https://www.openbsd.org)
+with just [mandoc](https://man.openbsd.org/mandoc).
 
-It has grown to admit many more extensions and outputs, and can even be
-used to show the difference between two Markdown documents with
-*lowdown-diff*, documented as the [lowdown diffing
-engine](https://kristaps.bsd.lv/lowdown/diff.html).  This uses a
-tree-based difference algorithm to show semantically-valid Markdown
-differences.
+It's since grown to admit many more extensions and outputs, and can even
+be used to show the difference between two Markdown documents with
+*lowdown-diff*, documented as the 
+[lowdown diffing engine](https://kristaps.bsd.lv/lowdown/diff.html).
 
-To get *lowdown*, just
+To get and use *lowdown*, first check to see if it's available from your
+system's package manager.  If not,
 [download](https://kristaps.bsd.lv/lowdown/snapshots/lowdown.tar.gz),
 [verify](https://kristaps.bsd.lv/lowdown/snapshots/lowdown.tar.gz.sha512),
-unpack, run `./configure`, then run `doas make install` (or use `sudo`).
-*lowdown* is a [BSD.lv](https://bsd.lv) project.
-[Homebrew](https://brew.sh) users can use BSD.lv's
-[tap](https://github.com/kristapsdz/homebrew-repo).
+and unpack the archive.  Then build:
 
-For an argument against using Markdown at all, read [Ingo's comments on
-Markdown](https://undeadly.org/cgi?action=article&sid=20170304230520).
+```c
+% ./configure
+% make
+% make regress
+# make install
+```
+
+*lowdown* is a [BSD.lv](https://bsd.lv) project.
 
 ## Output
 
-Of course, *lowdown* supports the usual HTML output with **-Thtml**.
-Specifically, it produces HTML5 in XML mode.  You can use *lowdown* to
-create either a snippet or standalone HTML5 document.
+*lowdown* produces HTML5 output in XML mode with **-Thtml**, which is the
+default.  It may produce either a snippet or standalone HTML5 document
+with **-s**.
 
-It also supports outputting to the **ms** macros (**-Tms**), originally
-implemented for the *roff* typesetting package of Version 7 AT&T UNIX.
-This way, you can have elegant PDF and PS output by using any modern
-*troff* system such as [groff(1)](https://www.gnu.org/s/groff).
-Furthermore, it supports the **man** macros (**-Tman**), also from
-Version 7 AT&T UNIX[^nomanpages].  Beyond the usual *troff* systems,
-this is also supported by [mandoc](https://mdocml.bsd.lv).
+It also produces *roff* documents via the **-Tms** and
+**-Tman**[^nomanpages] outputs.  These may be used to produce PDF and PS
+output from *troff* system such as [groff](https://www.gnu.org/s/groff)
+or (for **-Tman** only) [mandoc](https://mdocml.bsd.lv).
 
 By way of example: this page,
 [index.md](https://kristaps.bsd.lv/lowdown/index.md), renders as
 [index.pdf](https://kristaps.bsd.lv/lowdown/index.pdf) from
-[groff(1)](https://www.gnu.org/s/groff/) and using **-Tms** output.
+[groff](https://www.gnu.org/s/groff/) and **-Tms**.
 Another example is the GitHub
 [README.md](https://kristaps.bsd.lv/lowdown/README.md) rendered as
 [README.html](https://kristaps.bsd.lv/lowdown/README.html) or
@@ -70,10 +71,12 @@ Another example is the GitHub
     for that purpose!  The **man** output is for technical
     documentation only (section 7).
 
-*lowdown* also supports ANSI-compatible UTF-8 terminals with **-Tterm**.
-This renders stylised Markdown-looking output for easy reading.  It's
-inspired by [glow](https://github.com/charmbracelet/glow).
-You can also use **-Tms** and **-Tman** with the formatter cooperation.
+*lowdown* can output to ANSI-compatible UTF-8 terminals with
+**-Tterm**.  This [glow](https://github.com/charmbracelet/glow)-inspired 
+mode renders stylised Markdown-looking output for easy reading.  
+(The traditional text output facilities of
+[groff](https://www.gnu.org/s/groff) and [mandoc](https://mdocml.bsd.lv)
+may also be used for this.)
 
 > [![mandoc](screen-mandoc.thumb.jpg)](screen-mandoc.png)
 > [![term](screen-term.thumb.jpg)](screen-term.png)
@@ -88,7 +91,7 @@ image support with encapsulated postscript.
 
 ## Input
 
-Beyond the basic Markdown syntax support, *lowdown* supports the
+Beyond traditional Markdown syntax support, *lowdown* supports the
 following Markdown features and extensions:
 
 - autolinking
@@ -188,10 +191,9 @@ basically the same but... a library.
 
 ## Testing
 
-The canonical Markdown test, such as found in the original
-[hoedown](https://github.com/hoedown/hoedown) sources, will not
-currently work with *lowdown* as-is because of the default options such
-as smart typography.
+The canonical Markdown tests are available as part of a regression framework
+within the system.
+Just use `make regress` to run these tests.
 
 I've extensively run [AFL](http://lcamtuf.coredump.cx/afl/) against the
 compiled sources with no failures --- definitely a credit to
@@ -269,24 +271,8 @@ was invoked within.
 ## Compatibility
 
 *lowdown* is fully compatible with the original Markdown syntax as checked by
-the Markdown test suite, last version 1.0.3.
-
-To run the Markdown suite, use the following command-line invocation:
-
-```
-lowdown --parse-no-metadata \
-	--parse-no-autolink \
-	--parse-no-cmark \
-	--out-no-smarty \
-	--html-no-deflists \
-	--html-no-head-ids \
-	--html-no-skiphtml \
-	--html-no-escapehtml \
-	--html-no-owasp \
-	--html-no-num-ent 
-```
-
-This is effectively "compatibility" mode with the earlier Markdown.
+the Markdown test suite, last version 1.0.3.  This suite is available as part
+of the `make regress` functionality.
 
 ## How Can You Help?
 

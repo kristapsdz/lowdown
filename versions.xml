@@ -680,4 +680,17 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.6.3</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2020-03-17">2020-03-17</time>
+		</header>
+		<aside>
+			<p>
+				System now works out-of-the-box on OpenBSD, FreeBSD, NetBSD, Linux, 
+				SunOS, OmniOS (IllumOS), Darwin.
+			</p>
+		</aside>
+	</article>
 </articles>
