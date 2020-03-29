@@ -15,7 +15,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-OCONFIGURE_VERSION="0.2.0"
+OCONFIGURE_VERSION="0.2.4"
 
 #
 # This script outputs two files: config.h and Makefile.configure.
@@ -65,9 +65,10 @@ CFLAGS="${CFLAGS} -g -W -Wall -Wextra -Wmissing-prototypes -Wstrict-prototypes"
 CFLAGS="${CFLAGS} -Wwrite-strings -Wno-unused-parameter"
 LDADD=
 LDADD_B64_NTOP=
+LDADD_CRYPT=
 LDADD_MD5=
 LDADD_LIB_SOCKET=
-LDADD_ZLIB=
+LDADD_STATIC=
 CPPFLAGS=
 LDFLAGS=
 DESTDIR=
@@ -158,6 +159,7 @@ done
 HAVE_ARC4RANDOM=
 HAVE_B64_NTOP=
 HAVE_CAPSICUM=
+HAVE_CRYPT=
 HAVE_ENDIAN_H=
 HAVE_ERR=
 HAVE_EXPLICIT_BZERO=
@@ -179,6 +181,8 @@ HAVE_REALLOCARRAY=
 HAVE_RECALLOCARRAY=
 HAVE_SANDBOX_INIT=
 HAVE_SECCOMP_FILTER=
+HAVE_SETRESGID=
+HAVE_SETRESUID=
 HAVE_SOCK_NONBLOCK=
 HAVE_STRLCAT=
 HAVE_STRLCPY=
@@ -187,11 +191,13 @@ HAVE_STRNLEN=
 HAVE_STRTONUM=
 HAVE_SYS_BYTEORDER_H=
 HAVE_SYS_ENDIAN_H=
+HAVE_SYS_MKDEV_H=
 HAVE_SYS_QUEUE=
+HAVE_SYS_SYSMACROS=
 HAVE_SYS_TREE=
 HAVE_SYSTRACE=0
 HAVE_UNVEIL=
-HAVE_ZLIB=
+HAVE_WAIT_ANY=
 HAVE___PROGNAME=
 
 #----------------------------------------------------------------------
@@ -316,12 +322,14 @@ runtest() {
 runtest arc4random	ARC4RANDOM			  || true
 runtest b64_ntop	B64_NTOP "" "" "-lresolv"	  || true
 runtest capsicum	CAPSICUM			  || true
+runtest crypt		CRYPT "" "" "-lcrypt"	  	  || true
 runtest endian_h	ENDIAN_H			  || true
 runtest err		ERR				  || true
 runtest explicit_bzero	EXPLICIT_BZERO			  || true
 runtest getexecname	GETEXECNAME			  || true
 runtest getprogname	GETPROGNAME			  || true
 runtest INFTIM		INFTIM				  || true
+runtest lib_socket	LIB_SOCKET "" "" "-lsocket -lnsl" || true
 runtest md5		MD5 "" "" "-lmd"		  || true
 runtest memmem		MEMMEM			  	  || true
 runtest memrchr		MEMRCHR			  	  || true
@@ -337,8 +345,10 @@ runtest reallocarray	REALLOCARRAY			  || true
 runtest recallocarray	RECALLOCARRAY			  || true
 runtest sandbox_init	SANDBOX_INIT	"-Wno-deprecated" || true
 runtest seccomp-filter	SECCOMP_FILTER			  || true
+runtest setresgid	SETRESGID			  || true
+runtest setresuid	SETRESUID			  || true
 runtest SOCK_NONBLOCK	SOCK_NONBLOCK			  || true
-runtest lib_socket	LIB_SOCKET "" "" "-lsocket -lnsl" || true
+runtest static		STATIC "" "-static"		  || true
 runtest strlcat		STRLCAT				  || true
 runtest strlcpy		STRLCPY				  || true
 runtest strndup		STRNDUP				  || true
@@ -346,10 +356,12 @@ runtest strnlen		STRNLEN				  || true
 runtest strtonum	STRTONUM			  || true
 runtest sys_byteorder_h	SYS_BYTEORDER_H			  || true
 runtest sys_endian_h	SYS_ENDIAN_H			  || true
+runtest sys_mkdev_h	SYS_MKDEV_H			  || true
+runtest sys_sysmacros_h	SYS_SYSMACROS_H			  || true
 runtest sys_queue	SYS_QUEUE			  || true
 runtest sys_tree	SYS_TREE			  || true
 runtest unveil		UNVEIL				  || true
-runtest zlib		ZLIB		"" "-lz"	  || true
+runtest WAIT_ANY	WAIT_ANY			  || true
 runtest __progname	__PROGNAME			  || true
 
 #----------------------------------------------------------------------
@@ -367,17 +379,28 @@ exec > config.h
 cat << __HEREDOC__
 #ifndef OCONFIGURE_CONFIG_H
 #define OCONFIGURE_CONFIG_H
+
 #ifdef __cplusplus
-#error "Do not use C++: this is a C application."
+# error "Do not use C++: this is a C application."
 #endif
 #if !defined(__GNUC__) || (__GNUC__ < 4)
-#define __attribute__(x)
+# define __attribute__(x)
 #endif
 #if defined(__linux__) || defined(__MINT__)
-#define _GNU_SOURCE	/* See test-*.c what needs this. */
+# define _GNU_SOURCE /* memmem, memrchr, setresuid... */
+# define _DEFAULT_SOURCE /* le32toh, crypt, ... */
 #endif
 #if defined(__NetBSD__)
-#define _OPENBSD_SOURCE /* reallocarray, etc. */
+# define _OPENBSD_SOURCE /* reallocarray, etc. */
+#endif
+#if defined(__sun)
+# ifndef _XOPEN_SOURCE /* SunOS already defines */
+#  define _XOPEN_SOURCE /* XPGx */
+# endif
+# define _XOPEN_SOURCE_EXTENDED 1 /* XPG4v2 */
+# ifndef __EXTENSIONS__ /* SunOS already defines */
+#  define __EXTENSIONS__ /* reallocarray, etc. */
+# endif
 #endif
 #if !defined(__BEGIN_DECLS)
 # define __BEGIN_DECLS
@@ -401,6 +424,8 @@ if [ ${HAVE_MD5} -eq 0 -o \
      ${HAVE_READPASSPHRASE} -eq 0 -o \
      ${HAVE_REALLOCARRAY} -eq 0 -o \
      ${HAVE_RECALLOCARRAY} -eq 0 -o \
+     ${HAVE_SETRESGID} -eq 0 -o \
+     ${HAVE_SETRESUID} -eq 0 -o \
      ${HAVE_STRLCAT} -eq 0 -o \
      ${HAVE_STRLCPY} -eq 0 -o \
      ${HAVE_STRNDUP} -eq 0 -o \
@@ -431,9 +456,17 @@ then
 	echo
 fi
 
+if [ ${HAVE_WAIT_ANY} -eq 0 ]
+then
+	echo "#define WAIT_ANY (-1) /* sys/wait.h */"
+	echo "#define WAIT_MYPGRP 0"
+	echo
+fi
+
+
 if [ ${HAVE_INFTIM} -eq 0 ]
 then
-	echo "#define INFTIM (-1)"
+	echo "#define INFTIM (-1) /* poll.h */"
 	echo
 fi
 
@@ -444,6 +477,7 @@ cat << __HEREDOC__
 #define HAVE_ARC4RANDOM ${HAVE_ARC4RANDOM}
 #define HAVE_B64_NTOP ${HAVE_B64_NTOP}
 #define HAVE_CAPSICUM ${HAVE_CAPSICUM}
+#define HAVE_CRYPT ${HAVE_CRYPT}
 #define HAVE_ENDIAN_H ${HAVE_ENDIAN_H}
 #define HAVE_ERR ${HAVE_ERR}
 #define HAVE_EXPLICIT_BZERO ${HAVE_EXPLICIT_BZERO}
@@ -465,6 +499,8 @@ cat << __HEREDOC__
 #define HAVE_RECALLOCARRAY ${HAVE_RECALLOCARRAY}
 #define HAVE_SANDBOX_INIT ${HAVE_SANDBOX_INIT}
 #define HAVE_SECCOMP_FILTER ${HAVE_SECCOMP_FILTER}
+#define HAVE_SETRESGID ${HAVE_SETRESGID}
+#define HAVE_SETRESUID ${HAVE_SETRESUID}
 #define HAVE_SOCK_NONBLOCK ${HAVE_SOCK_NONBLOCK}
 #define HAVE_STRLCAT ${HAVE_STRLCAT}
 #define HAVE_STRLCPY ${HAVE_STRLCPY}
@@ -473,11 +509,13 @@ cat << __HEREDOC__
 #define HAVE_STRTONUM ${HAVE_STRTONUM}
 #define HAVE_SYS_BYTEORDER_H ${HAVE_SYS_BYTEORDER_H}
 #define HAVE_SYS_ENDIAN_H ${HAVE_SYS_ENDIAN_H}
+#define HAVE_SYS_MKDEV_H ${HAVE_SYS_MKDEV_H}
 #define HAVE_SYS_QUEUE ${HAVE_SYS_QUEUE}
+#define HAVE_SYS_SYSMACROS_H ${HAVE_SYS_SYSMACROS_H}
 #define HAVE_SYS_TREE ${HAVE_SYS_TREE}
 #define HAVE_SYSTRACE ${HAVE_SYSTRACE}
 #define HAVE_UNVEIL ${HAVE_UNVEIL}
-#define HAVE_ZLIB ${HAVE_ZLIB}
+#define HAVE_WAIT_ANY ${HAVE_WAIT_ANY}
 #define HAVE___PROGNAME ${HAVE___PROGNAME}
 
 __HEREDOC__
@@ -527,6 +565,24 @@ __HEREDOC__
 #define htole64(x) LE_64(x)
 #define be64toh(x) BE_64(x)
 #define le64toh(x) LE_64(x)
+
+__HEREDOC__
+
+# Make minor()/major()/makedev() easier to use.
+
+cat << __HEREDOC__
+/*
+ * Handle the various major()/minor() header files.
+ * Use sys/mkdev.h before sys/sysmacros.h because SunOS
+ * has both, where only the former works properly.
+ */
+#if HAVE_SYS_MKDEV_H
+# define COMPAT_MAJOR_MINOR_H <sys/mkdev.h>
+#elif HAVE_SYS_SYSMACROS_H
+# define COMPAT_MAJOR_MINOR_H <sys/sysmacros.h>
+#else
+# define COMPAT_MAJOR_MINOR_H <sys/types.h>
+#endif
 
 __HEREDOC__
 
@@ -750,6 +806,24 @@ __HEREDOC__
  * Compatibility for mknodat(2).
  */
 int mknodat(int, const char *, mode_t, dev_t);
+
+__HEREDOC__
+
+[ ${HAVE_SETRESGID} -eq 0 ] && \
+	cat << __HEREDOC__
+/*
+ * Compatibility for setresgid(2).
+ */
+int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
+
+__HEREDOC__
+
+[ ${HAVE_SETRESUID} -eq 0 ] && \
+	cat << __HEREDOC__
+/*
+ * Compatibility for setresuid(2).
+ */
+int setresuid(uid_t ruid, uid_t euid, uid_t suid);
 
 __HEREDOC__
 
@@ -2200,9 +2274,10 @@ CFLAGS		 = ${CFLAGS}
 CPPFLAGS	 = ${CPPFLAGS}
 LDADD		 = ${LDADD}
 LDADD_B64_NTOP	 = ${LDADD_B64_NTOP}
+LDADD_CRYPT	 = ${LDADD_CRYPT}
 LDADD_LIB_SOCKET = ${LDADD_LIB_SOCKET}
 LDADD_MD5	 = ${LDADD_MD5}
-LDADD_ZLIB	 = ${LDADD_ZLIB}
+LDADD_STATIC	 = ${LDADD_STATIC}
 LDFLAGS		 = ${LDFLAGS}
 STATIC		 = ${STATIC}
 PREFIX		 = ${PREFIX}
