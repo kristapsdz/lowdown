@@ -693,4 +693,18 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.6.4</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2020-03-29">2020-03-29</time>
+		</header>
+		<aside>
+			<p>
+				Enable and enforce portability by also running regression tests over
+				all operating systems and architectures.
+				Updates <a href="https://github.com/kristapsdz/oconfigure">oconfigure</a>.
+			</p>
+		</aside>
+	</article>
 </articles>
