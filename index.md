@@ -29,10 +29,12 @@ and unpack the source.  Then build:
 # make install
 ```
 
-*lowdown* is a [BSD.lv](https://bsd.lv) project.  Its portability to OpenBSD,
-NetBSD, FreeBSD, Mac OS X, Linux, Solaris, and IllumOS is checked by BSD.lv's 
-[build system](https://kristaps.bsd.lv/cgi-bin/minci.cgi/index.html?project-name=lowdown)
-and enabled by [oconfigure](https://github.com/kristapsdz/oconfigure).
+*lowdown* is a [BSD.lv](https://bsd.lv) project.  Its portability to
+OpenBSD, NetBSD, FreeBSD, Mac OS X, Linux (glibc and musl), Solaris, and
+IllumOS is enabled by
+[oconfigure](https://github.com/kristapsdz/oconfigure) and checked by
+BSD.lv's 
+[build system](https://kristaps.bsd.lv/cgi-bin/minci.cgi/index.html?project-name=lowdown).
 
 ## Output
 
