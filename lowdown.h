@@ -354,4 +354,4 @@ void 	 lowdown_tree_rndr(hbuf *, struct lowdown_metaq *,
 
 __END_DECLS
 
-#endif /* !EXTERN_H */
+#endif /* !LOWDOWN_H */
