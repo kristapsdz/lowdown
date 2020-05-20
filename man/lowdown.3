@@ -26,34 +26,85 @@
 .In sys/queue.h
 .In stdio.h
 .In lowdown.h
-.Vt "struct lowdown_opts"
 .Vt "struct lowdown_metadata"
+.Vt "struct lowdown_node"
+.Vt "struct lowdown_opts"
 .Sh DESCRIPTION
-This library parses Markdown as defined in
+This library parses
 .Xr lowdown 5
 into various output formats.
-It consists of both a high-level interface consisting of
+.Pp
+The library consists first of a high-level interface consisting of
 .Xr lowdown_buf 3 ,
 .Xr lowdown_buf_diff 3 ,
 .Xr lowdown_file 3 ,
 and
-.Xr lowdown_file_diff 3 ;
-then a series of low-level interfaces directly to the parsers and
-renderers.
+.Xr lowdown_file_diff 3 .
 .Pp
-Most functions use the
-.Vt struct lowdown_opts
-structure to manage features.
-.Bd -literal -offset indent
-struct lowdown_opts {
-  enum lowdown_type type;
-  unsigned int feat;
-  unsigned int oflags;
-};
+The high-level functions interface with low-level functions that perform
+parsing and formatting.
+These consist of
+.Xr lowdown_doc_new 3 ,
+.Xr lowdown_doc_parse 3 ,
+and
+.Xr lowdown_doc_free 3
+for parsing
+.Xr lowdown 5
+documents into an abstract syntax tree, then
+.Xr lowdown_html_free 3 ,
+.Xr lowdown_html_new 3 ,
+and
+.Xr lowdown_html_rndr 3
+for HTML formatting;
+.Xr lowdown_nroff_free 3 ,
+.Xr lowdown_nroff_new 3 ,
+and
+.Xr lowdown_nroff_rndr 3
+for
+.Xr roff 7
+output;
+.Xr lowdown_term_free 3 ,
+.Xr lowdown_term_new 3 ,
+and
+.Xr lowdown_term_rndr 3
+for ANSI-escaped UTF-8 terminal output; and finally
+.Xr lowdown_tree_free 3 ,
+.Xr lowdown_tree_new 3 ,
+and
+.Xr lowdown_tree_rndr 3
+for formatting debugging output.
+.Pp
+To compile and link, use
+.Xr pkg-config 1 :
+.Bd -literal
+% cc `pkg-config --cflags lowdown` -c -o sample.o sample.c
+% cc -o sample sample.o `pkg-config --libs lowdown`
 .Ed
+.Ss Pledge Promises
+The
+.Nm lowdown
+library is built to operate in security-sensitive environments, such as
+those using
+.Xr pledge 2
+on
+.Ox .
+The only promise required is
+.Va stdio
+for
+.Xr lowdown_file_diff 3
+and
+.Xr lowdown_file 3 :
+both require access to the stream for reading input.
+.Ss Types
+All
+.Nm lowdown
+functions use one or more of the following structures.
 .Pp
+The
+.Vt struct lowdown_opts
+structure manage features.
 It has the following fields:
-.Bl -tag -width Ds
+.Bl -tag -width Ds -offset indent
 .It Va feat
 Features used during the parse.
 This bit-field may have the following bits OR'd:
@@ -251,35 +302,430 @@ which is used to hold parsed (and output-formatted) metadata keys and
 values if
 .Dv LOWDOWN_METADATA
 was provided as an input bit.
-.Bd -literal -offset indent
-struct lowdown_meta {
-  char *key;
-  char *value;
-};
-.Ed
-.Pp
 This structure consists of the following fields:
-.Bl -tag -width Ds
+.Bl -tag -width Ds -offset indent
 .It Va key
 The metadata key in its lowercase, canonical form.
 .It Va value
 The metadata value as rendered in the current output format.
 .El
-.Ss Pledge Promises
-The
-.Nm lowdown
-library is built to operate in security-sensitive environments, such as
-those using
-.Xr pledge 2
-on
-.Ox .
-The only promise required is
-.Va stdio
-for
-.Xr lowdown_file_diff 3
+.Pp
+The abstract syntax tree is encoded in
+.Vt struct lowdown_node ,
+which consists of the following.
+.Bl -tag -width Ds -offset indent
+.It Vt "enum lowdown_rndrt" Va type
+The node type.
+.Pq Described below.
+.It Vt size_t Va id
+An identifier unique within the document.
+This can be used as a table index since the number is assigned from a
+monotonically increasing point during the parse.
+.It Vt "struct lowdown_node *" Ns Va parent
+The parent of the node, or
+.Dv NULL
+at the root.
+.It Vt "enum lowdown_chng" Va chng
+Change tracking: whether this node was inserted
+.Pq Dv LOWDOWN_CHNG_INSERT ,
+deleted
+.Pq Dv LOWDOWN_CHNG_DELETE ,
+or neither
+.Pq Dv LOWDOWN_CHNG_NONE .
+.It Vt "struct lowdown_nodeq" Va children
+A possibly-empty list of child nodes.
+.It Va entries
+The tail queue
+.Xr queue 3
+.Dv FIELDNAME .
+.It Va <anon union>
+An anonymous union of type-specific structures.
+See below for a description of each one.
+.El
+.Pp
+The nodes may be one of the following types, with default rendering in
+HTML5 to illustrate functionality.
+.Bl -tag -width Ds -offset indent
+.It Dv LOWDOWN_ROOT
+The root of the document.
+This is always the topmost node, and the only node where the
+.Va parent
+field is
+.Dv NULL .
+.It Dv LOWDOWN_BLOCKCODE
+A block-level (and possibly language-specific) snippet of code.
+Described by the
+.Li <pre><code>
+elements.
+.It Dv LOWDOWN_BLOCKHTML
+A block-level snippet of HTML.
+This is simply opaque HTML content.
+(Only if configured during parse.)
+.It Dv LOWDOWN_BLOCKQUOTE
+A block-level quotation.
+Described by the
+.Li <blockquote>
+element.
+.It Dv LOWDOWN_CODESPAN
+A snippet of code.
+Described by the
+.Li <code>
+element.
+.It Dv LOWDOWN_DOC_FOOTER
+Closes out the document opened in
+.Dv LOWDOWN_DOC_HEADER .
+.It Dv LOWDOWN_DOC_HEADER
+A header with data gathered from document metadata (if configured).
+Described by the
+.Li <head>
+element.
+(Only if configured during parse.)
+.It Dv LOWDOWN_DOUBLE_EMPHASIS
+Bold (or otherwise notable) content.
+Described by the
+.Li <strong>
+element.
+.It Dv LOWDOWN_EMPHASIS
+Italic (or otherwise notable) content.
+Described by the
+.Li <em>
+element.
+.It Dv LOWDOWN_ENTITY
+An HTML entity, which may either be named or numeric.
+.It Dv LOWDOWN_FOOTNOTE_DEF
+A footnote within a
+.Dv LOWDOWN_FOOTNOTES_BLOCK
+node.
+Described by the
+.Li <li id="fnXX">
+element.
+(Only if configured during parse.)
+.It Dv LOWDOWN_FOOTNOTE_REF
+A reference to a
+.Dv LOWDOWN_FOOTNOTE_DEF .
+Described by the
+.Li <sup><a>
+elements.
+(Only if configured during parse.)
+.It Dv LOWDOWN_FOOTNOTES_BLOCK
+A block of footnotes.
+Described by the
+.Li <div class="footnotes"><hr /><ol>
+elements.
+(Only if configured during parse.)
+.It Dv LOWDOWN_HEADER
+A block-level header.
+Described by one of
+.Li <h1>
+through
+.Li <h6> .
+.Pq The level is bound at 6.
+.It Dv LOWDOWN_HIGHLIGHT
+Marked test.
+Described by the
+.Li <mark>
+element.
+(Only if configured during parse.)
+.It Dv LOWDOWN_HRULE
+A horizontal line.
+Described by
+.Li <hr> .
+.It Dv LOWDOWN_IMAGE
+An image.
+Described by the
+.Li <img>
+element.
+.It Dv LOWDOWN_LINEBREAK
+A hard line-break within a block context.
+Described by the
+.Li <br>
+element.
+.It Dv LOWDOWN_LINK
+A link to external media.
+Described by the
+.Li <a>
+element.
+.It Dv LOWDOWN_LINK_AUTO
+Like
+.Dv LOWDOWN_LINK ,
+except inferred from text content.
+Described by the
+.Li <a>
+element.
+(Only if configured during parse.)
+.It Dv LOWDOWN_LIST
+A block-level list enclosure.
+Described by
+.Li <ul>
+or
+.Li <ol> .
+.It Dv LOWDOWN_LISTITEM
+A block-level list item, always appearing within a
+.Dv LOWDOWN_LIST .
+Described by
+.Li <li> .
+.It Dv LOWDOWN_MATH_BLOCK
+A block (or inline) of mathematical text in LaTeX format.
+Described within
+.Li \e[xx\e]
+or
+.Li \e(xx\e) .
+This is usually (in HTML) externally handled by a JavaScript renderer.
+(Only if configured during parse.)
+.It Dv LOWDOWN_META
+Meta-data keys and values.
+(Only if configured during parse.)
+These are described by elements in the
+.Li <head>
+element.
+.It Dv LOWDOWN_NORMAL_TEXT
+Normal text content.
+.It Dv LOWDOWN_PARAGRAPH
+A block-level paragraph.
+Described by the
+.Li <p>
+element.
+.It Dv LOWDOWN_RAW_HTML
+An inline of raw HTML.
+(Only if configured during parse.)
+.It Dv LOWDOWN_STRIKETHROUGH
+Content struck through.
+Described by the
+.Li <del>
+element.
+(Only if configured during parse.)
+.It Dv LOWDOWN_SUPERSCRIPT
+A superscript.
+Described by the
+.Li <sup>
+element.
+(Only if configured during parse.)
+.It Dv LOWDOWN_TABLE_BLOCK
+A table block.
+Described by
+.Li <table> .
+(Only if configured during parse.)
+.It Dv LOWDOWN_TABLE_BODY
+A table body section.
+Described by
+.Li <tbody> .
+Parent is always
+.Dv LOWDOWN_TABLE_BLOCK .
+(Only if configured during parse.)
+.It Dv LOWDOWN_TABLE_CELL
+A table cell.
+Described by
+.Li <td>
+or
+.Li <th>
+if in the header.
+Parent is always
+.Dv LOWDOWN_TABLE_ROW .
+(Only if configured during parse.)
+.It Dv LOWDOWN_TABLE_HEADER
+A table header section.
+Described by
+.Li <thead> .
+Parent is always
+.Dv LOWDOWN_TABLE_BLOCK .
+(Only if configured during parse.)
+.It Dv LOWDOWN_TABLE_ROW
+A table row.
+Described by
+.Li <tr> .
+Parent is always
+.Dv LOWDOWN_TABLE_HEADER
+or
+.Dv LOWDOWN_TABLE_BODY .
+(Only if configured during parse.)
+.It Dv LOWDOWN_TRIPLE_EMPHASIS
+Combination of
+.Dv LOWDOWN_EMPHASIS
 and
-.Xr lowdown_file 3 :
-both require access to the stream for reading input.
+.Dv LOWDOWN_DOUBLE_EMPHASIS .
+.El
+.Pp
+The following anonymous union structures correspond to certain nodes.
+Note that all buffers may be zero-length.
+.Bl -tag -width Ds -offset indent
+.It Va rndr_meta
+Each
+.Dv LOWDOWN_META
+key-value pair is represented.
+The keys are lower-case without spaces or non-ASCII characters.
+Enclosed nodes may consist only of
+.Dv LOWDOWN_NORMAL_TEXT
+and
+.Dv LOWDOWN_ENTITY .
+.It Va rndr_definition
+For
+.Dv LOWDOWN_DEFINITION ,
+containing
+.Va flags
+that may be
+.Dv HLIST_FL_BLOCK
+if the definition list should be interpreted as containing block
+elements.
+.It Va rndr_list
+For
+.Dv LOWDOWN_LIST ,
+consists of a bitfield
+.Va flags
+that may be set to
+.Dv HLIST_FL_ORDERED
+for an ordered list and
+.Dv HLIST_FL_UNORDERED
+for an unordered one.
+If
+.Dv HLIST_FL_BLOCK
+is set, the list should be output as if items were separate blocks.
+If
+.Va start
+is a non-empty string, it is the first list item value.
+.It Va rndr_paragraph
+For
+.Dv LOWDOWN_PARAGRAPH ,
+species how many
+.Va lines
+the paragraph has in the input file and
+.Va beoln ,
+set to non-zero if the paragraph ends with an empty line instead of a
+breaking block element.
+.It Va rndr_listitem
+For
+.Dv LOWDOWN_LISTITEM ,
+consists of a bitfield
+.Va flags
+that may be set to
+.Dv HLIST_FL_ORDERED
+.Pq an ordered list ,
+.Dv HLIST_FL_UNORDERED
+.Pq unordered list ,
+.Dv HLIST_FL_DEF
+.Pq definition list data ,
+and/or
+.Dv HLIST_FL_BLOCK
+.Pq list item output as if containing block elements .
+The
+.Dv HLIST_FL_BLOCK
+should not be used: use the parent list (or definition list) flags for
+this.
+The
+.Va num
+is the index in an ordered list.
+.It Va rndr_header
+For
+.Dv LOWDOWN_HEADER ,
+the
+.Va level
+of the header (1\(en6).
+.It Va rndr_normal_text
+The basic
+.Va text
+content for
+.Dv LOWDOWN_NORMAL_TEXT .
+.It Va rndr_entity
+For
+.Dv LOWDOWN_ENTITY ,
+the entity
+.Va text .
+.It Va rndr_autolink
+For
+.Dv LOWDOWN_LINK_AUTO ,
+the link address as
+.Va link ;
+the textual component
+.Va text ;
+and the link type
+.Va type ,
+which may be one of
+.Dv HALINK_EMAIL
+for e-mail links and
+.Dv HALINK_NORMAL
+otherwise.
+Any buffer may be empty-sized.
+.It Va rndr_raw_html
+For
+.Dv LOWDOWN_RAW_HTML ,
+the opaque HTML
+.Va text .
+.It Va rndr_link
+Like
+.Va rndr_autolink .
+.It Va rndr_blockcode
+For
+.Dv LOWDOWN_BLOCKCODE ,
+the opaque
+.Va text
+of the block and the optional
+.Va lang
+of the code language.
+.It Va rndr_codespan
+The opaque
+.Va text
+of the contents.
+.It Va rndr_table_header
+For
+.Dv LOWDOWN_TABLE_HEADER ,
+the number of
+.Va columns
+in each row and the per-column
+.Va flags ,
+which may be bits of
+.Dv HTBL_FL_ALIGN_LEFT ,
+.Dv HTBL_FL_ALIGN_RIGHT ,
+or
+.Dv HTBL_FL_ALIGN_CENTER
+when masked with
+.Dv HTBL_FL_ALIGNMASK ;
+or
+.Dv HTBL_FL_HEADER .
+.It Va rndr_table_cell
+For
+.Dv LOWDOWN_TABLE_CELL ,
+the current
+.Va col
+colum number out of
+.Va columns .
+See
+.Va rndr_table_header
+for a description of the bits in
+.Va flags .
+.It Va rndr_footnote_def
+For
+.Dv LOWDOWN_FOOTNOTE_DEF ,
+the footnote number
+.Va  num .
+.It Va rndr_footnote_ref
+For a
+.Dv LOWDOWN_FOOTNOTE_REF
+reference to a
+.Dv LOWDOWN_FOOTNOTE_DEF ,
+the footnote number
+.Va num .
+.It Va rndr_image
+For
+.Dv LOWDOWN_IMAGE ,
+the image address
+.Va link ,
+the image title
+.Va title ,
+dimensions NxN (width by height) in
+.Va dims ,
+and alternate text
+.Va alt .
+.It Va rndr_math
+For
+.Dv LOWDOWN_MATH ,
+the mode of display
+.Va displaymode :
+if 1, in-line math; if 2, multi-line.
+.It Va rndr_blockhtml
+For
+.Dv LOWDOWN_BLOCKHTML ,
+the opaque HTML
+.Va text .
+.El
 .Sh SEE ALSO
 .Xr lowdown 1 ,
 .Xr lowdown_buf 3 ,
@@ -304,10 +750,10 @@ both require access to the stream for reading input.
 .Xr lowdown_tree_rndr 3 ,
 .Xr lowdown 5
 .Sh AUTHORS
-The
-.Nm
-library was forked by
-.An Kristaps Dzonsons Aq Mt kristaps@bsd.lv
-from
-.Lk https://github.com/hoedown/hoedown hoedown .
-It has been considerably changed since then.
+.Nm lowdown
+was forked from
+.Lk https://github.com/hoedown/hoedown hoedown
+by
+.An Kristaps Dzonsons ,
+.Mt kristaps@bsd.lv .
+It has been considerably modified since.
