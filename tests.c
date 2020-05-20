@@ -415,6 +415,22 @@ main(void)
 	return setresuid(-1, -1, -1) == -1;
 }
 #endif /* TEST_SETRESUID */
+#if TEST_SHA2_H
+#include <sys/types.h>
+#include <sha2.h>
+
+int main(void)
+{
+	SHA2_CTX ctx;
+	char result[SHA256_DIGEST_STRING_LENGTH];
+
+	SHA256Init(&ctx);
+	SHA256Update(&ctx, (const unsigned char *)"abcd", 4);
+	SHA256End(&ctx, result);
+
+	return 0;
+}
+#endif /* TEST_SHA2_H */
 #if TEST_SOCK_NONBLOCK
 /*
  * Linux doesn't (always?) have this.
