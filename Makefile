@@ -1,5 +1,5 @@
 .PHONY: regress
-.SUFFIXES: .xml .md .html .pdf .1 .1.html .3 .3.html .5 .5.html .thumb.jpg .png
+.SUFFIXES: .xml .md .html .pdf .1 .1.html .3 .3.html .5 .5.html .thumb.jpg .png .in.pc .pc
 
 include Makefile.configure
 
@@ -71,7 +71,7 @@ REGRESS_ARGS	+= "--parse-no-autolink"
 REGRESS_ARGS	+= "--parse-no-cmark"
 REGRESS_ARGS	+= "--parse-no-deflists"
 
-all: lowdown lowdown-diff
+all: lowdown lowdown-diff lowdown.pc
 
 www: $(HTMLS) $(PDFS) $(THUMBS) lowdown.tar.gz lowdown.tar.gz.sha512
 
@@ -94,11 +94,12 @@ liblowdown.a: $(OBJS) $(COMPAT_OBJS)
 
 install: all
 	mkdir -p $(DESTDIR)$(BINDIR)
-	mkdir -p $(DESTDIR)$(LIBDIR)
+	mkdir -p $(DESTDIR)$(LIBDIR)/pkgconfig
 	mkdir -p $(DESTDIR)$(INCLUDEDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
 	mkdir -p $(DESTDIR)$(MANDIR)/man3
 	mkdir -p $(DESTDIR)$(MANDIR)/man5
+	$(INSTALL_DATA) lowdown.pc $(DESTDIR)$(LIBDIR)/pkgconfig
 	$(INSTALL_PROGRAM) lowdown $(DESTDIR)$(BINDIR)
 	$(INSTALL_PROGRAM) lowdown-diff $(DESTDIR)$(BINDIR)
 	$(INSTALL_LIB) liblowdown.a $(DESTDIR)$(LIBDIR)
@@ -166,7 +167,7 @@ lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/
 	mkdir -p .dist/lowdown-$(VERSION)/man
 	mkdir -p .dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
-	$(INSTALL) -m 0644 *.c *.h Makefile LICENSE.md .dist/lowdown-$(VERSION)
+	$(INSTALL) -m 0644 *.c *.h *.in.pc Makefile LICENSE.md .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 0644 man/*.1 man/*.3 man/*.5 .dist/lowdown-$(VERSION)/man
 	$(INSTALL) -m 0755 configure .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 644 regress/MarkdownTest_1.0.3/*.text \
@@ -184,7 +185,7 @@ main.o: lowdown.h
 
 clean:
 	rm -f $(OBJS) $(COMPAT_OBJS) main.o
-	rm -f lowdown lowdown-diff liblowdown.a 
+	rm -f lowdown lowdown-diff liblowdown.a lowdown.pc
 	rm -f index.xml diff.xml diff.diff.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
 	rm -f $(PDFS) $(HTMLS) $(THUMBS)
 
@@ -208,3 +209,9 @@ regress: lowdown
 
 .png.thumb.jpg:
 	convert $< -thumbnail 350 -quality 50 $@
+
+.in.pc.pc:
+	sed -e "s!@PREFIX@!$(PREFIX)!g" \
+	    -e "s!@LIBDIR@!$(LIBDIR)!g" \
+	    -e "s!@INCLUDEDIR@!$(INCLUDEDIR)!g" \
+	    -e "s!@VERSION@!$(VERSION)!g" $< >$@
