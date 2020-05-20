@@ -260,6 +260,12 @@ smarty_right_wb_r(const struct lowdown_node *n, int skip)
 	return 1;
 }
 
+/*
+ * See if the character to the right of position "pos" in node "n" marks
+ * the end of a word.
+ * This may require us to traverse the node graph if we're on a node
+ * boundary as well.
+ */
 static int
 smarty_right_wb(const struct lowdown_node *n, size_t pos)
 {
@@ -268,7 +274,7 @@ smarty_right_wb(const struct lowdown_node *n, size_t pos)
 	assert(n->type == LOWDOWN_NORMAL_TEXT);
 	b = &n->rndr_normal_text.text;
 
-	if (pos + 1 < b->size)
+	if (pos + 1 <= b->size)
 		return smarty_iswb(b->data[pos]);
 
 	return smarty_right_wb_r(n, 1);
