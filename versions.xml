@@ -707,4 +707,22 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.6.5</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2020-05-20">2020-05-20</time>
+		</header>
+		<aside>
+			<p>
+				Fix an off-by-one where smarty-pants would be applied to some
+				terms not on a word boundary.
+				For example, 1/40 was erroneously construed as 1/4 then a zero.
+			</p>
+			<p>
+				Use <a href="https://man.openbsd.org/pkg-config">pkg-config(1</a>
+				for the installed library and improve the documentation.
+			</p>
+		</aside>
+	</article>
 </articles>
