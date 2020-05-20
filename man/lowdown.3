@@ -105,7 +105,7 @@ The
 structure manage features.
 It has the following fields:
 .Bl -tag -width Ds -offset indent
-.It Va feat
+.It Va unsigned int feat
 Features used during the parse.
 This bit-field may have the following bits OR'd:
 .Pp
@@ -165,7 +165,7 @@ Parse GFM tables.
 .El
 .Pp
 The default value is zero (none).
-.It Va oflags
+.It Va unsigned int oflags
 Features used by the output generators.
 This bit-field may have the following enabled.
 Note that bits are by definition specific to an output
@@ -251,25 +251,25 @@ See
 .Xr lowdown 1
 for details.
 .El
-.It Va maxdepth
+.It Va size_t maxdepth
 The maximum parse depth before the parser exits.
 Most documents will have a parse depth in the single digits.
-.It Va cols
+.It Va size_t cols
 For
 .Dv LOWDOWN_TERM ,
 the
 .Qq soft limit
 for width of terminal output not including margins.
 This might be zero, in which case a reasonable default should be used.
-.It Va hmargin
+.It Va size_t hmargin
 For
 .Dv LOWDOWN_TERM ,
 the left margin (space characters).
-.It Va vmargin
+.It Va size_t vmargin
 For
 .Dv LOWDOWN_TERM ,
 the top/bottom margin (newlines).
-.It Va type
+.It Va enum lowdown_type type
 May be set to
 .Dv LOWDOWN_HTML
 for HTML5 output,
@@ -304,9 +304,9 @@ values if
 was provided as an input bit.
 This structure consists of the following fields:
 .Bl -tag -width Ds -offset indent
-.It Va key
+.It Va char *key
 The metadata key in its lowercase, canonical form.
-.It Va value
+.It Va char *value
 The metadata value as rendered in the current output format.
 .El
 .Pp
@@ -314,30 +314,26 @@ The abstract syntax tree is encoded in
 .Vt struct lowdown_node ,
 which consists of the following.
 .Bl -tag -width Ds -offset indent
-.It Vt "enum lowdown_rndrt" Va type
+.It Va enum lowdown_rndrt type
 The node type.
 .Pq Described below.
-.It Vt size_t Va id
+.It Va size_t id
 An identifier unique within the document.
 This can be used as a table index since the number is assigned from a
 monotonically increasing point during the parse.
-.It Vt "struct lowdown_node *" Ns Va parent
+.It Va struct lowdown_node *parent
 The parent of the node, or
 .Dv NULL
 at the root.
-.It Vt "enum lowdown_chng" Va chng
+.It Va enum lowdown_chng chng
 Change tracking: whether this node was inserted
 .Pq Dv LOWDOWN_CHNG_INSERT ,
 deleted
 .Pq Dv LOWDOWN_CHNG_DELETE ,
 or neither
 .Pq Dv LOWDOWN_CHNG_NONE .
-.It Vt "struct lowdown_nodeq" Va children
+.It Va struct lowdown_nodeq children
 A possibly-empty list of child nodes.
-.It Va entries
-The tail queue
-.Xr queue 3
-.Dv FIELDNAME .
 .It Va <anon union>
 An anonymous union of type-specific structures.
 See below for a description of each one.
