@@ -757,37 +757,23 @@ rndr_paragraph(hbuf *ob, const hbuf *content,
 static void
 rndr_raw_block(hbuf *ob, const hbuf *content, const struct nstate *st)
 {
-	size_t	 org, sz;
+	size_t	 org = 0, sz = content->size;
 
-	if (content->size == 0)
+	if (content->size == 0 ||
+	    st->flags & LOWDOWN_NROFF_SKIP_HTML)
 		return;
 
-	if ((st->flags & LOWDOWN_NROFF_SKIP_HTML)) {
-		rndr_block(ob, content->data, content->size);
-		return;
-	}
-
-	/*
-	 * FIXME: Do we *really* need to trim the HTML? How does that
-	 * make a difference?
-	 */
-
-	sz = content->size;
 	while (sz > 0 && content->data[sz - 1] == '\n')
 		sz--;
-
-	org = 0;
 	while (org < sz && content->data[org] == '\n')
 		org++;
 
 	if (org >= sz)
 		return;
 
-	if (ob->size)
-		hbuf_putc(ob, '\n');
-
+	HBUF_NEWLINE(ob, ob);
 	hbuf_put(ob, content->data + org, sz - org);
-	hbuf_putc(ob, '\n');
+	HBUF_PUTSL(ob, "\n");
 }
 
 static void
@@ -1362,7 +1348,7 @@ rndr(hbuf *ob, struct lowdown_metaq *metaq,
 			root->rndr_footnote_def.num, ref);
 		break;
 	case LOWDOWN_BLOCKHTML:
-		rndr_raw_block(ob, tmp, ref);
+		rndr_raw_block(ob, &root->rndr_blockhtml.text, ref);
 		break;
 	case LOWDOWN_LINK_AUTO:
 		keepnext = rndr_autolink(ob, 
