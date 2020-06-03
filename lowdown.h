@@ -42,6 +42,7 @@
 
 enum	lowdown_type {
 	LOWDOWN_HTML,
+	LOWDOWN_LATEX,
 	LOWDOWN_MAN,
 	LOWDOWN_NROFF,
 	LOWDOWN_TERM,
@@ -291,6 +292,7 @@ struct	lowdown_opts {
 #define LOWDOWN_TERM_SHORTLINK	 0x400 /* shorten URLs */
 #define	LOWDOWN_HTML_OWASP	 0x800 /* use OWASP escaping */
 #define	LOWDOWN_HTML_NUM_ENT	 0x1000 /* use &#nn; if possible */
+#define LOWDOWN_LATEX_SKIP_HTML	 0x2000 /* skip all HTML */
 };
 
 struct hdoc;
@@ -350,6 +352,11 @@ void 	 lowdown_nroff_rndr(hbuf *, struct lowdown_metaq *,
 void	 lowdown_tree_free(void *);
 void	*lowdown_tree_new(void);
 void 	 lowdown_tree_rndr(hbuf *, struct lowdown_metaq *,
+		void *, const struct lowdown_node *);
+
+void	 lowdown_latex_free(void *);
+void	*lowdown_latex_new(const struct lowdown_opts *);
+void 	 lowdown_latex_rndr(hbuf *, struct lowdown_metaq *,
 		void *, const struct lowdown_node *);
 
 __END_DECLS

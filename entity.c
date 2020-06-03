@@ -32,259 +32,261 @@
 #include "extern.h"
 
 struct ent {
-	const char 	*key;
-	uint32_t	 val;
+	const char 	*iso;
+	uint32_t	 unicode;
+	const char	*tex;
+	unsigned char	 texflags;
 };
 
 static const struct ent ents[] = {
-	{ "AElig", 	198 },
-	{ "Aacute", 	193 },
-	{ "Acirc", 	194 },
-	{ "Agrave", 	192 },
-	{ "Alpha",	913 },
-	{ "Aring", 	197 },
-	{ "Atilde", 	195 },
-	{ "Auml", 	196 },
-	{ "Beta",	914 },
-	{ "Ccedil", 	199 },
-	{ "Chi",	935 },
-	{ "Dagger",	8225 },
-	{ "Delta",	916 },
-	{ "ETH", 	208 },
-	{ "Eacute", 	201 },
-	{ "Ecirc", 	202 },
-	{ "Egrave", 	200 },
-	{ "Epsilon",	917 },
-	{ "Eta",	919 },
-	{ "Euml", 	203 },
-	{ "Gamma",	915 },
-	{ "Iacute", 	205 },
-	{ "Icirc", 	206 },
-	{ "Igrave", 	204 },
-	{ "Iota",	921 },
-	{ "Iuml", 	207 },
-	{ "Kappa",	922 },
-	{ "Lambda",	923 },
-	{ "Mu",		924 },
-	{ "Ntilde", 	209 },
-	{ "Nu",		925 },
-	{ "OElig",	338 },
-	{ "Oacute", 	211 },
-	{ "Ocirc", 	212 },
-	{ "Ograve", 	210 },
-	{ "Omega",	937 },
-	{ "Omicron",	927 },
-	{ "Oslash", 	216 },
-	{ "Otilde", 	213 },
-	{ "Ouml", 	214 },
-	{ "Phi",	934 },
-	{ "Pi",		928 },
-	{ "Prime",	8243 },
-	{ "Psi",	936 },
-	{ "Rho",	929 },
-	{ "Scaron",	352 },
-	{ "Sigma",	931 },
-	{ "THORN", 	222 },
-	{ "Tau",	932 },
-	{ "Theta",	920 },
-	{ "Uacute", 	218 },
-	{ "Ucirc", 	219 },
-	{ "Ugrave", 	217 },
-	{ "Upsilon",	933 },
-	{ "Uuml", 	220 },
-	{ "Xi",		926 },
-	{ "Yacute", 	221 },
-	{ "Yuml",	376 },
-	{ "Zeta",	918 },
-	{ "aacute", 	225 },
-	{ "acirc", 	226 },
-	{ "acute", 	180 },
-	{ "aelig", 	230 },
-	{ "agrave", 	224 },
-	{ "alefsym",	8501 },
-	{ "alpha",	945 },
-	{ "amp",	38 },
-	{ "and",	8743 },
-	{ "ang",	8736 },
-	{ "aring", 	229 },
-	{ "asymp",	8776 },
-	{ "atilde", 	227 },
-	{ "auml", 	228 },
-	{ "bdquo",	8222 },
-	{ "beta",	946 },
-	{ "brvbar", 	166 },
-	{ "bull",	8226 },
-	{ "cap",	8745 },
-	{ "ccedil", 	231 },
-	{ "cedil", 	184 },
-	{ "cent", 	162 },
-	{ "chi",	967 },
-	{ "circ",	710 },
-	{ "cong",	8773 },
-	{ "copy", 	169 },
-	{ "crarr",	8629 },
-	{ "cup",	8746 },
-	{ "curren", 	164 },
-	{ "dArr",	8659 },
-	{ "dagger",	8224 },
-	{ "darr",	8595 },
-	{ "deg", 	176 },
-	{ "delta",	948 },
-	{ "divide", 	247 },
-	{ "eacute", 	233 },
-	{ "ecirc", 	234 },
-	{ "egrave", 	232 },
-	{ "empty",	8709 },
-	{ "emsp",	8195 },
-	{ "ensp",	8194 },
-	{ "epsilon",	949 },
-	{ "equiv",	8801 },
-	{ "eta",	951 },
-	{ "eth", 	240 },
-	{ "euml", 	235 },
-	{ "euro",	8364 },
-	{ "exist",	8707 },
-	{ "fnof",	402 },
-	{ "forall",	8704 },
-	{ "frac12", 	189 },
-	{ "frac14", 	188 },
-	{ "frac34", 	190 },
-	{ "frasl",	8260 },
-	{ "gamma",	947 },
-	{ "ge",		8805 },
-	{ "gt",		62 },
-	{ "hArr",	8660 },
-	{ "harr",	8596 },
-	{ "hellip",	8230 },
-	{ "iacute", 	237 },
-	{ "icirc", 	238 },
-	{ "iexcl", 	161 },
-	{ "igrave", 	236 },
-	{ "image",	8465 },
-	{ "infin",	8734 },
-	{ "int",	8747 },
-	{ "iota",	953 },
-	{ "iquest", 	191 },
-	{ "isin",	8712 },
-	{ "iuml", 	239 },
-	{ "kappa",	954 },
-	{ "lArr",	8656 },
-	{ "lambda",	955 },
-	{ "lang",	9001 },
-	{ "laquo", 	171 },
-	{ "larr",	8592 },
-	{ "lceil",	8968 },
-	{ "ldquo",	8220 },
-	{ "le",		8804 },
-	{ "lfloor",	8970 },
-	{ "lowast",	8727 },
-	{ "lrm",	8206 },
-	{ "lsaquo",	8249 },
-	{ "lsquo",	8216 },
-	{ "lt",		60 },
-	{ "macr", 	175 },
-	{ "mdash",	8212 },
-	{ "micro", 	181 },
-	{ "middot", 	183 },
-	{ "minus",	8722 },
-	{ "mu",		956 },
-	{ "nabla",	8711 },
-	{ "nbsp", 	160 },
-	{ "ndash",	8211 },
-	{ "ne",		8800 },
-	{ "ni",		8715 },
-	{ "not", 	172 },
-	{ "notin",	8713 },
-	{ "nsub",	8836 },
-	{ "ntilde", 	241 },
-	{ "nu",		957 },
-	{ "oacute", 	243 },
-	{ "ocirc", 	244 },
-	{ "oelig",	339 },
-	{ "ograve", 	242 },
-	{ "oline",	8254 },
-	{ "omega",	969 },
-	{ "omicron",	959 },
-	{ "oplus",	8853 },
-	{ "or",		8744 },
-	{ "ordf", 	170 },
-	{ "ordm", 	186 },
-	{ "oslash", 	248 },
-	{ "otilde", 	245 },
-	{ "otimes",	8855 },
-	{ "ouml", 	246 },
-	{ "para", 	182 },
-	{ "part",	8706 },
-	{ "permil",	8240 },
-	{ "perp",	8869 },
-	{ "phi",	966 },
-	{ "pi",		960 },
-	{ "piv",	982 },
-	{ "plusmn", 	177 },
-	{ "pound", 	163 },
-	{ "prime",	8242 },
-	{ "prod",	8719 },
-	{ "prop",	8733 },
-	{ "psi",	968 },
-	{ "quot",	34 },
-	{ "rArr",	8658 },
-	{ "radic",	8730 },
-	{ "rang",	9002 },
-	{ "raquo", 	187 },
-	{ "rarr",	8594 },
-	{ "rceil",	8969 },
-	{ "rdquo",	8221 },
-	{ "real",	8476 },
-	{ "reg", 	174 },
-	{ "rfloor",	8971 },
-	{ "rho",	961 },
-	{ "rlm",	8207 },
-	{ "rsaquo",	8250 },
-	{ "rsquo",	8217 },
-	{ "sbquo",	8218 },
-	{ "scaron",	353 },
-	{ "sdot",	8901 },
-	{ "sect", 	167 },
-	{ "shy", 	173 },
-	{ "sigma",	963 },
-	{ "sigmaf",	962 },
-	{ "sim",	8764 },
-	{ "sub",	8834 },
-	{ "sube",	8838 },
-	{ "sum",	8721 },
-	{ "sup",	8835 },
-	{ "sup1", 	185 },
-	{ "sup2", 	178 },
-	{ "sup3", 	179 },
-	{ "supe",	8839 },
-	{ "szlig", 	223 },
-	{ "tau",	964 },
-	{ "there4",	8756 },
-	{ "theta",	952 },
-	{ "thetasym",	977 },
-	{ "thinsp",	8201 },
-	{ "thorn", 	254 },
-	{ "tilde",	732 },
-	{ "times", 	215 },
-	{ "trade",	8482 },
-	{ "uArr",	8657 },
-	{ "uacute", 	250 },
-	{ "uarr",	8593 },
-	{ "ucirc", 	251 },
-	{ "ugrave", 	249 },
-	{ "uml", 	168 },
-	{ "upsih",	978 },
-	{ "upsilon",	965 },
-	{ "uuml", 	252 },
-	{ "weierp",	8472 },
-	{ "xi",		958 },
-	{ "yacute", 	253 },
-	{ "yen", 	165 },
-	{ "yuml", 	255 },
-	{ "zeta",	950 },
-	{ "zwj",	8205 },
-	{ "zwnj",	8204 },
-	{ NULL, 	0 }
+	{ "AElig", 	198,	"AE{}",		0 },
+	{ "Aacute", 	193,	"'{A}",		0 },
+	{ "Acirc", 	194,	"^{A}",		0 },
+	{ "Agrave", 	192,	"`{A}",		0 },
+	{ "Alpha",	913,	"A",		TEX_ENT_ASCII },
+	{ "Aring", 	197,	"AA{}",		0 },
+	{ "Atilde", 	195,	"~{A}",		0 },
+	{ "Auml", 	196,	"\"{A}",	0 },
+	{ "Beta",	914,	"B",		TEX_ENT_ASCII },
+	{ "Ccedil", 	199,	"c{C}",		0 },
+	{ "Chi",	935,	"X",		TEX_ENT_ASCII },
+	{ "Dagger",	8225,	"ddag{}",	0 },
+	{ "Delta",	916,	"Delta",	TEX_ENT_MATH },
+	{ "ETH", 	208,	"DH{}",		0 },
+	{ "Eacute", 	201,	"'{E}",		0 },
+	{ "Ecirc", 	202,	"^{E}",		0 },
+	{ "Egrave", 	200,	"`{E}",		0 },
+	{ "Epsilon",	917,	"E",		TEX_ENT_ASCII },
+	{ "Eta",	919,	"E",		TEX_ENT_ASCII },
+	{ "Euml", 	203,	"\"{E}",	0 },
+	{ "Gamma",	915,	"Gamma",	TEX_ENT_MATH },
+	{ "Iacute", 	205,	"'{I}",		0 },
+	{ "Icirc", 	206,	"^{I}",		0 },
+	{ "Igrave", 	204,	"`{I}",		0 },
+	{ "Iota",	921,	"I",		TEX_ENT_ASCII },
+	{ "Iuml", 	207,	"\"{I}",	0 },
+	{ "Kappa",	922,	"K",		TEX_ENT_ASCII },
+	{ "Lambda",	923,	"Lambda",	TEX_ENT_MATH },
+	{ "Mu",		924,	"M",		TEX_ENT_ASCII },
+	{ "Ntilde", 	209,	"~{N}",		0 },
+	{ "Nu",		925,	"N",		TEX_ENT_ASCII },
+	{ "OElig",	338,	"OE{}",		0 },
+	{ "Oacute", 	211,	"'{O}",		0 },
+	{ "Ocirc", 	212,	"^{O}",		0 },
+	{ "Ograve", 	210,	"`{O}",		0 },
+	{ "Omega",	937,	"Omega",	TEX_ENT_MATH },
+	{ "Omicron",	927,	"O",		TEX_ENT_ASCII },
+	{ "Oslash", 	216,	"O{}",		0 },
+	{ "Otilde", 	213,	"~{O}",		0 },
+	{ "Ouml", 	214,	"\"{O}",	0 },
+	{ "Phi",	934,	"Phi",		TEX_ENT_MATH },
+	{ "Pi",		928,	"Pi",		TEX_ENT_MATH },
+	{ "Prime",	8243,	"{``}",		TEX_ENT_ASCII },
+	{ "Psi",	936,	"Psi",		TEX_ENT_MATH },
+	{ "Rho",	929,	"R",		TEX_ENT_ASCII },
+	{ "Scaron",	352,	"v{S}",		0 },
+	{ "Sigma",	931,	"Sigma",	TEX_ENT_MATH },
+	{ "THORN", 	222,	"TH{}",		0 },
+	{ "Tau",	932,	"T",		TEX_ENT_ASCII },
+	{ "Theta",	920,	"Theta",	TEX_ENT_MATH },
+	{ "Uacute", 	218,	"'{U}",		0 },
+	{ "Ucirc", 	219,	"^{U}",		0 },
+	{ "Ugrave", 	217,	"`{U}",		0 },
+	{ "Upsilon",	933,	"Upsilon",	TEX_ENT_MATH },
+	{ "Uuml", 	220,	"\"{U}",	0 },
+	{ "Xi",		926,	"Xi",		TEX_ENT_MATH },
+	{ "Yacute", 	221,	"'{Y}",		0 },
+	{ "Yuml",	376,	"\"{Y}",	0 },
+	{ "Zeta",	918,	"Z",		TEX_ENT_ASCII },
+	{ "aacute", 	225,	"'{a}",		0 },
+	{ "acirc", 	226,	"^{a}",		0 },
+	{ "acute", 	180,	"'{}",		0 },
+	{ "aelig", 	230,	"ae{}",		0 },
+	{ "agrave", 	224,	"`{a}",		0 },
+	{ "alefsym",	8501,	"aleph",	TEX_ENT_MATH },
+	{ "alpha",	945,	"alpha",	TEX_ENT_MATH },
+	{ "amp",	38,	"&{}",		0 },
+	{ "and",	8743,	"wedge",	TEX_ENT_MATH },
+	{ "ang",	8736,	"angle",	TEX_ENT_MATH },
+	{ "aring", 	229,	"aa{}",		0 },
+	{ "asymp",	8776,	"asymp",	TEX_ENT_MATH },
+	{ "atilde", 	227,	"~{a}",		0 },
+	{ "auml", 	228,	"\"{a}",	0 },
+	{ "bdquo",	8222,	NULL,		0 }, /* XXX */
+	{ "beta",	946,	"beta",		TEX_ENT_MATH },
+	{ "brvbar", 	166,	"textbrokenbar{}",	0 },
+	{ "bull",	8226,	"textbullet{}",	0 },
+	{ "cap",	8745,	"cap",		TEX_ENT_MATH },
+	{ "ccedil", 	231,	"c{c}",		0 },
+	{ "cedil", 	184,	"c{}",		0 },
+	{ "cent", 	162,	"textcent{}",	0 },
+	{ "chi",	967,	"chi",		TEX_ENT_MATH },
+	{ "circ",	710,	"^{}",		0 },
+	{ "cong",	8773,	"cong",		TEX_ENT_MATH },
+	{ "copy", 	169,	"copyright{}",	0 },
+	{ "crarr",	8629,	NULL,		0 }, /* XXX */
+	{ "cup",	8746,	"cup",		TEX_ENT_MATH },
+	{ "curren", 	164,	"textcurrency{}", 0 },
+	{ "dArr",	8659,	"Downarrow",	TEX_ENT_MATH },
+	{ "dagger",	8224,	"dag{}",	0 },
+	{ "darr",	8595,	"downarrow",	TEX_ENT_MATH },
+	{ "deg", 	176,	"textdegree{}",	0 },
+	{ "delta",	948,	"delta",	TEX_ENT_MATH },
+	{ "divide", 	247,	"div",		TEX_ENT_MATH },
+	{ "eacute", 	233,	"'{e}",		0 },
+	{ "ecirc", 	234,	"^{e}",		0 },
+	{ "egrave", 	232,	"`{e}",		0 },
+	{ "empty",	8709,	"emptyset",	TEX_ENT_MATH },
+	{ "emsp",	8195,	"hspace{1em}",	0 },
+	{ "ensp",	8194,	"hspace{0.5em}", 0 },
+	{ "epsilon",	949,	"epsilon",	TEX_ENT_MATH },
+	{ "equiv",	8801,	"equiv",	TEX_ENT_MATH },
+	{ "eta",	951,	"eta",		TEX_ENT_MATH },
+	{ "eth", 	240,	"dh{}",		0 },
+	{ "euml", 	235,	"\"{e}",	0 },
+	{ "euro",	8364,	"texteuro{}",	0 },
+	{ "exist",	8707,	"exists",	TEX_ENT_MATH },
+	{ "fnof",	402,	"f",		TEX_ENT_MATH },
+	{ "forall",	8704,	"forall",	TEX_ENT_MATH },
+	{ "frac12", 	189,	"sfrac{1}{2}",	TEX_ENT_MATH },
+	{ "frac14", 	188,	"sfrac{1}{4}",	TEX_ENT_MATH },
+	{ "frac34", 	190,	"sfrac{3}{4}",	TEX_ENT_MATH },
+	{ "frasl",	8260,	NULL,		0 }, /* XXX */
+	{ "gamma",	947,	"gamma",	TEX_ENT_MATH },
+	{ "ge",		8805,	"geq",		TEX_ENT_MATH },
+	{ "gt",		62,	"textgreater{}", 0 },
+	{ "hArr",	8660,	"Leftrightarrow", TEX_ENT_MATH },
+	{ "harr",	8596,	"leftrightarrow", TEX_ENT_MATH },
+	{ "hellip",	8230,	"ldots{}",	0 },
+	{ "iacute", 	237,	"'{i}",		0 },
+	{ "icirc", 	238,	"^{i}",		0 },
+	{ "iexcl", 	161,	"textexclamdown{}", 0 },
+	{ "igrave", 	236,	"`{i}",		0 },
+	{ "image",	8465,	"Im",		TEX_ENT_MATH },
+	{ "infin",	8734,	"infty",	TEX_ENT_MATH },
+	{ "int",	8747,	"int",		TEX_ENT_MATH },
+	{ "iota",	953,	"iota",		TEX_ENT_MATH },
+	{ "iquest", 	191,	"textquestiondown{}", 0 },
+	{ "isin",	8712,	"in",		TEX_ENT_MATH },
+	{ "iuml", 	239,	"\"{i}",	0 },
+	{ "kappa",	954,	"kappa",	TEX_ENT_MATH },
+	{ "lArr",	8656,	"Leftarrow",	TEX_ENT_MATH },
+	{ "lambda",	955,	"lambda",	TEX_ENT_MATH },
+	{ "lang",	9001,	"langle",	TEX_ENT_MATH },
+	{ "laquo", 	171,	"guillemetleft{}", 0 },
+	{ "larr",	8592,	"leftarrow",	TEX_ENT_MATH },
+	{ "lceil",	8968,	"lceil",	TEX_ENT_MATH },
+	{ "ldquo",	8220,	"``",		TEX_ENT_ASCII },
+	{ "le",		8804,	"leq",		TEX_ENT_MATH },
+	{ "lfloor",	8970,	"lfloor",	TEX_ENT_MATH },
+	{ "lowast",	8727,	"_\\ast",	TEX_ENT_MATH },
+	{ "lrm",	8206,	NULL,		0 }, /* XXX */
+	{ "lsaquo",	8249,	NULL,		0 },
+	{ "lsquo",	8216,	"`{}",		0 },
+	{ "lt",		60,	"textless{}",	0 },
+	{ "macr", 	175,	"={}",		0 },
+	{ "mdash",	8212,	"---{}",	0 },
+	{ "micro", 	181,	"textmu{}",	0 },
+	{ "middot", 	183,	"textperiodcentered{}", 0 },
+	{ "minus",	8722,	"-{}",		0 },
+	{ "mu",		956,	"mu",		TEX_ENT_MATH },
+	{ "nabla",	8711,	"nabla",	TEX_ENT_MATH },
+	{ "nbsp", 	160,	"~",		TEX_ENT_ASCII },
+	{ "ndash",	8211,	"--{}",		0 },
+	{ "ne",		8800,	"not=",		TEX_ENT_MATH },
+	{ "ni",		8715,	"ni",		TEX_ENT_MATH },
+	{ "not", 	172,	"lnot",		TEX_ENT_MATH },
+	{ "notin",	8713,	"not\\in",	TEX_ENT_MATH },
+	{ "nsub",	8836,	"not\\subset",	TEX_ENT_MATH },
+	{ "ntilde", 	241,	"~{n}",		0 },
+	{ "nu",		957,	"nu",		TEX_ENT_MATH },
+	{ "oacute", 	243,	"'{o}",		0 },
+	{ "ocirc", 	244,	"^{o}",		0 },
+	{ "oelig",	339,	"oe{}",		0 },
+	{ "ograve", 	242,	"`{o}",		0 },
+	{ "oline",	8254,	"ominus",	TEX_ENT_MATH },
+	{ "omega",	969,	"omega",	TEX_ENT_MATH },
+	{ "omicron",	959,	"omicron",	TEX_ENT_MATH },
+	{ "oplus",	8853,	"oplus",	TEX_ENT_MATH },
+	{ "or",		8744,	"vee",		TEX_ENT_MATH },
+	{ "ordf", 	170,	"textordfeminine{}", 0 },
+	{ "ordm", 	186,	"textordmasculine{}", 0 },
+	{ "oslash", 	248,	"oslash",	TEX_ENT_MATH },
+	{ "otilde", 	245,	"~{o}",		0 },
+	{ "otimes",	8855,	"otimes",	TEX_ENT_MATH },
+	{ "ouml", 	246,	"\"{o}",	0 },
+	{ "para", 	182,	"P{}",		0 },
+	{ "part",	8706,	"partial",	TEX_ENT_MATH },
+	{ "permil",	8240,	"textperthousand{}", 0 },
+	{ "perp",	8869,	"perp",		TEX_ENT_MATH },
+	{ "phi",	966,	"phi",		TEX_ENT_MATH },
+	{ "pi",		960,	"pi",		TEX_ENT_MATH },
+	{ "piv",	982,	"varpi",	TEX_ENT_MATH },
+	{ "plusmn", 	177,	"pm",		TEX_ENT_MATH },
+	{ "pound", 	163,	"pounds{}",	0 },
+	{ "prime",	8242,	"^\\prime{}",	TEX_ENT_ASCII },
+	{ "prod",	8719,	"prod",		TEX_ENT_MATH },
+	{ "prop",	8733,	"propto",	TEX_ENT_MATH },
+	{ "psi",	968,	"psi",		TEX_ENT_MATH },
+	{ "quot",	34,	"\"",		TEX_ENT_ASCII },
+	{ "rArr",	8658,	"Rightarrow",	TEX_ENT_MATH },
+	{ "radic",	8730,	"surd",		TEX_ENT_MATH },
+	{ "rang",	9002,	"rangle",	TEX_ENT_MATH },
+	{ "raquo", 	187,	"guillemotright{}", 0 },
+	{ "rarr",	8594,	"rightarrow",	TEX_ENT_MATH },
+	{ "rceil",	8969,	"rceil",	TEX_ENT_MATH },
+	{ "rdquo",	8221,	"''",		TEX_ENT_ASCII },
+	{ "real",	8476,	"Re",		TEX_ENT_MATH },
+	{ "reg", 	174,	"textregistered{}", 0 },
+	{ "rfloor",	8971,	"rfloor",	TEX_ENT_MATH },
+	{ "rho",	961,	"rho",		TEX_ENT_MATH },
+	{ "rlm",	8207,	NULL,		0 }, /* XXX */
+	{ "rsaquo",	8250,	NULL,		0 }, /* XXX */
+	{ "rsquo",	8217,	"'{}",		0 },
+	{ "sbquo",	8218,	NULL,		0 }, /* XXX */
+	{ "scaron",	353,	"v{s}",		0 },
+	{ "sdot",	8901,	"cdot",		TEX_ENT_MATH },
+	{ "sect", 	167,	"S{}",		0 },
+	{ "shy", 	173,	"-{}",		0 },
+	{ "sigma",	963,	"sigma",	TEX_ENT_MATH },
+	{ "sigmaf",	962,	"sigmav",	TEX_ENT_MATH }, /* XXX?? */
+	{ "sim",	8764,	"sim",		TEX_ENT_MATH },
+	{ "sub",	8834,	"subset",	TEX_ENT_MATH },
+	{ "sube",	8838,	"subseteq",	TEX_ENT_MATH },
+	{ "sum",	8721,	"sum",		TEX_ENT_MATH },
+	{ "sup",	8835,	"supset",	TEX_ENT_MATH },
+	{ "sup1", 	185,	"$^1$",		TEX_ENT_ASCII },
+	{ "sup2", 	178,	"$^2$",		TEX_ENT_ASCII },
+	{ "sup3", 	179,	"$^3$",		TEX_ENT_ASCII },
+	{ "supe",	8839,	"supseteq",	TEX_ENT_MATH },
+	{ "szlig", 	223,	"ss{}",		0 },
+	{ "tau",	964,	"tau",		TEX_ENT_MATH },
+	{ "there4",	8756,	"therefore",	TEX_ENT_MATH },
+	{ "theta",	952,	"theta",	TEX_ENT_MATH },
+	{ "thetasym",	977,	"vartheta",	TEX_ENT_MATH }, /* XXX?? */
+	{ "thinsp",	8201,	"hspace{0.167em}", 0 },
+	{ "thorn", 	254,	"th{}",		0 },
+	{ "tilde",	732,	"~{}",		0 },
+	{ "times", 	215,	"times",	TEX_ENT_MATH },
+	{ "trade",	8482,	"texttrademark{}", 0 },
+	{ "uArr",	8657,	"Uparrow",	TEX_ENT_MATH },
+	{ "uacute", 	250,	"'{u}",		0 },
+	{ "uarr",	8593,	"uparrow",	TEX_ENT_MATH },
+	{ "ucirc", 	251,	"^{u}",		0 },
+	{ "ugrave", 	249,	"`{u}",		0 },
+	{ "uml", 	168,	"\"{}",		0 },
+	{ "upsih",	978,	NULL,		0 }, /* XXX */
+	{ "upsilon",	965,	"upsilon",	TEX_ENT_MATH },
+	{ "uuml", 	252,	"\"{u}",	0 },
+	{ "weierp",	8472,	"wp",		TEX_ENT_MATH },
+	{ "xi",		958,	"xi",		TEX_ENT_MATH },
+	{ "yacute", 	253,	"'{y}",		0 },
+	{ "yen", 	165,	"textyen{}",	0 },
+	{ "yuml", 	255,	"\"{y}",	0 },
+	{ "zeta",	950,	"zeta",		TEX_ENT_MATH },
+	{ "zwj",	8205,	NULL,		0 }, /* XXX */
+	{ "zwnj",	8204,	NULL,		0 }, /* XXX */
+	{ NULL, 	0,	NULL,		0 }
 };
 
 static int32_t
@@ -337,7 +339,7 @@ entity_find_num(const hbuf *buf)
  * Convert a named entity to a unicode codepoint.
  * Return -1 on failure.
  */
-static int32_t
+static const struct ent *
 entity_find_named(const hbuf *buf)
 {
 	char	 b[32];
@@ -349,17 +351,33 @@ entity_find_named(const hbuf *buf)
 	 */
 
 	if (buf->size - 2 > sizeof(b) - 1)
-		return -1;
+		return NULL;
 	memcpy(b, buf->data + 1, buf->size - 2);
 	b[buf->size - 2] = '\0';
 
 	/* TODO: can be trivially sped up by using a binary search. */
 
-	for (i = 0; ents[i].key != NULL; i++)
-		if (strcmp(b, ents[i].key) == 0)
-			return ents[i].val;
+	for (i = 0; ents[i].iso != NULL; i++)
+		if (strcmp(b, ents[i].iso) == 0)
+			return &ents[i];
 
-	return -1;
+	return NULL;
+}
+
+/*
+ * Basic sanity of HTML entity.
+ * Needs to be &xyz;
+ * Return zero on failure, non-zero on success.
+ */
+static int
+entity_sane(const hbuf *buf)
+{
+
+	if (buf->size < 3 ||
+	    buf->data[0] != '&' ||
+	    buf->data[buf->size - 1] != ';')
+		return 0;
+	return 1;
 }
 
 /*
@@ -368,18 +386,55 @@ entity_find_named(const hbuf *buf)
  * Handles both numeric (decimal and hex) and common named ones.
  */
 int32_t
-entity_find(const hbuf *buf)
+entity_find_iso(const hbuf *buf)
 {
-	/* Basic check for soundness. */
+	const struct ent *e;
 
-	if (buf->size < 3 ||
-	    buf->data[0] != '&' ||
-	    buf->data[buf->size - 1] != ';')
+	if (!entity_sane(buf))
 		return -1;
 
-	/* Switch on whether numeric. */
+	if (buf->data[1] == '#')
+		return entity_find_num(buf);
 
-	return buf->data[1] == '#' ?
-		entity_find_num(buf) : entity_find_named(buf);
+	if ((e = entity_find_named(buf)) == NULL)
+		return -1;
+
+	assert(e->unicode < INT32_MAX);
+	return e->unicode;
 }
 
+/*
+ * Looks for the TeX entity corresponding to "buf".
+ * If "buf" is a numerical code, looks it up by number; if an HTML (ISO)
+ * code, looks it up by that.
+ * Returns the entity or NULL on failure.
+ * On success, sets the TeX flags.
+ */
+const char *
+entity_find_tex(const hbuf *buf, unsigned char *fl)
+{
+	const struct ent	*e;
+	int32_t			 unicode;
+	size_t			 i;
+
+	if (!entity_sane(buf))
+		return NULL;
+
+	if (buf->data[1] == '#') {
+		if ((unicode = entity_find_num(buf)) == -1)
+			return NULL;
+		for (i = 0; ents[i].iso != NULL; i++)
+			if ((int32_t)ents[i].unicode == unicode) {
+				*fl = ents[i].texflags;
+				return ents[i].tex;
+			}
+		return NULL;
+	}
+
+	if ((e = entity_find_named(buf)) == NULL)
+		return NULL;
+
+	assert(e->unicode < INT32_MAX);
+	*fl = e->texflags;
+	return e->tex;
+}

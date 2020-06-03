@@ -63,6 +63,9 @@ lowdown_buf(const struct lowdown_opts *opts,
 	case LOWDOWN_HTML:
 		renderer = lowdown_html_new(opts);
 		break;
+	case LOWDOWN_LATEX:
+		renderer = lowdown_latex_new(opts);
+		break;
 	case LOWDOWN_MAN:
 	case LOWDOWN_NROFF:
 		renderer = lowdown_nroff_new(opts);
@@ -95,6 +98,10 @@ lowdown_buf(const struct lowdown_opts *opts,
 	case LOWDOWN_HTML:
 		lowdown_html_rndr(ob, metaq, renderer, n);
 		lowdown_html_free(renderer);
+		break;
+	case LOWDOWN_LATEX:
+		lowdown_latex_rndr(ob, metaq, renderer, n);
+		lowdown_latex_free(renderer);
 		break;
 	case LOWDOWN_MAN:
 	case LOWDOWN_NROFF:
@@ -177,6 +184,9 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	case LOWDOWN_HTML:
 		renderer = lowdown_html_new(opts);
 		break;
+	case LOWDOWN_LATEX:
+		renderer = lowdown_latex_new(opts);
+		break;
 	case LOWDOWN_MAN:
 	case LOWDOWN_NROFF:
 		renderer = lowdown_nroff_new(opts);
@@ -222,6 +232,10 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	case LOWDOWN_HTML:
 		lowdown_html_rndr(ob, metaq, renderer, ndiff);
 		lowdown_html_free(renderer);
+		break;
+	case LOWDOWN_LATEX:
+		lowdown_latex_rndr(ob, metaq, renderer, ndiff);
+		lowdown_latex_free(renderer);
 		break;
 	case LOWDOWN_MAN:
 	case LOWDOWN_NROFF:

@@ -11,6 +11,7 @@ OBJS		 = autolink.o \
 		   entity.o \
 		   html.o \
 		   html_escape.o \
+		   latex.o \
 		   library.o \
 		   libdiff.o \
 		   nroff.o \

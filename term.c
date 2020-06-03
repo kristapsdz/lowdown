@@ -963,7 +963,7 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 		rndr_buf(p, ob, n, &n->rndr_math.text, NULL);
 		break;
 	case LOWDOWN_ENTITY:
-		entity = entity_find(&n->rndr_entity.text);
+		entity = entity_find_iso(&n->rndr_entity.text);
 		if (entity > 0) {
 			hbuf_truncate(p->tmp);
 			rndr_entity(p->tmp, entity);

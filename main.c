@@ -329,6 +329,7 @@ main(int argc, char *argv[])
 		LOWDOWN_NROFF_GROFF |
 		LOWDOWN_NROFF_NUMBERED |
 		LOWDOWN_NROFF_SKIP_HTML |
+		LOWDOWN_LATEX_SKIP_HTML |
 		LOWDOWN_SMARTY;
 
 	if (strcasecmp(getprogname(), "lowdown-diff") == 0) 
@@ -368,6 +369,8 @@ main(int argc, char *argv[])
 				opts.type = LOWDOWN_NROFF;
 			else if (strcasecmp(optarg, "html") == 0)
 				opts.type = LOWDOWN_HTML;
+			else if (strcasecmp(optarg, "latex") == 0)
+				opts.type = LOWDOWN_LATEX;
 			else if (strcasecmp(optarg, "man") == 0)
 				opts.type = LOWDOWN_MAN;
 			else if (strcasecmp(optarg, "term") == 0)

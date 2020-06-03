@@ -1049,13 +1049,11 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		 * entities.
 		 */
 
-		ent = entity_find(&root->rndr_entity.text);
+		ent = entity_find_iso(&root->rndr_entity.text);
 		if (ent > 0)
 			hbuf_printf(ob, "&#%lld;", (long long)ent);
 		else
-			hbuf_put(ob,
-				root->rndr_entity.text.data,
-				root->rndr_entity.text.size);
+			hbuf_putb(ob, &root->rndr_entity.text);
 		break;
 	default:
 		hbuf_put(ob, tmp->data, tmp->size);
