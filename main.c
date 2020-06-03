@@ -252,6 +252,8 @@ main(int argc, char *argv[])
 		{ "html-no-owasp",	no_argument,	&roflag, LOWDOWN_HTML_OWASP },
 		{ "html-num-ent",	no_argument,	&aoflag, LOWDOWN_HTML_NUM_ENT },
 		{ "html-no-num-ent",	no_argument,	&roflag, LOWDOWN_HTML_NUM_ENT },
+		{ "latex-skiphtml",	no_argument,	&aoflag, LOWDOWN_LATEX_SKIP_HTML },
+		{ "latex-no-skiphtml",	no_argument,	&roflag, LOWDOWN_LATEX_SKIP_HTML },
 		{ "nroff-skiphtml",	no_argument,	&aoflag, LOWDOWN_NROFF_SKIP_HTML },
 		{ "nroff-no-skiphtml",	no_argument,	&roflag, LOWDOWN_NROFF_SKIP_HTML },
 		{ "nroff-hardwrap",	no_argument,	&aoflag, LOWDOWN_NROFF_HARD_WRAP },
