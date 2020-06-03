@@ -3451,7 +3451,7 @@ SHA256FileChunk(const char *filename, char *buf, off_t off, off_t len)
 		return (NULL);
 	}
 
-	while ((nr = read(fd, buffer, MINIMUM(sizeof(buffer), len))) > 0) {
+	while ((nr = read(fd, buffer, MINIMUM(sizeof(buffer), (size_t)len))) > 0) {
 		SHA256Update(&ctx, buffer, nr);
 		if (len > 0 && (len -= nr) == 0)
 			break;
@@ -3498,7 +3498,7 @@ SHA384FileChunk(const char *filename, char *buf, off_t off, off_t len)
 		return (NULL);
 	}
 
-	while ((nr = read(fd, buffer, MINIMUM(sizeof(buffer), len))) > 0) {
+	while ((nr = read(fd, buffer, MINIMUM(sizeof(buffer), (size_t)len))) > 0) {
 		SHA384Update(&ctx, buffer, nr);
 		if (len > 0 && (len -= nr) == 0)
 			break;
@@ -3545,7 +3545,7 @@ SHA512FileChunk(const char *filename, char *buf, off_t off, off_t len)
 		return (NULL);
 	}
 
-	while ((nr = read(fd, buffer, MINIMUM(sizeof(buffer), len))) > 0) {
+	while ((nr = read(fd, buffer, MINIMUM(sizeof(buffer), (size_t)len))) > 0) {
 		SHA512Update(&ctx, buffer, nr);
 		if (len > 0 && (len -= nr) == 0)
 			break;
