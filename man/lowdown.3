@@ -195,6 +195,15 @@ If not set, the entities are used as given in the input.
 Do not render in-document HTML at all.
 .El
 .Pp
+FOr
+.Dv LOWDOWN_LATEX :
+.Pp
+.Bl -tag -width Ds -compact
+.It Dv LOWDOWN_LATEX_SKIP_HTML
+Do not render in-document HTML at all.
+Text within HTML elements remains.
+.El
+.Pp
 And for
 .Dv LOWDOWN_MAN
 and
@@ -273,6 +282,8 @@ the top/bottom margin (newlines).
 May be set to
 .Dv LOWDOWN_HTML
 for HTML5 output,
+.Dv LOWDOWN_LATEX
+for LaTeX,
 .Dv LOWDOWN_MAN
 for
 .Fl man
@@ -735,6 +746,9 @@ the opaque HTML
 .Xr lowdown_html_free 3 ,
 .Xr lowdown_html_new 3 ,
 .Xr lowdown_html_rndr 3 ,
+.Xr lowdown_latex_free 3 ,
+.Xr lowdown_latex_new 3 ,
+.Xr lowdown_latex_rndr 3 ,
 .Xr lowdown_nroff_free 3 ,
 .Xr lowdown_nroff_new 3 ,
 .Xr lowdown_nroff_rndr 3 ,

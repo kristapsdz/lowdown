@@ -67,6 +67,7 @@ See
 on providing information to the document envelope.
 This only applies to
 .Fl T Ns Ar html ,
+.Fl T Ns Ar latex ,
 .Fl T Ns Ar ms ,
 and
 .Fl T Ns Ar man .
@@ -81,6 +82,8 @@ The output mode.
 This may be
 .Ar html
 for HTML5 output,
+.Ar latex
+for LaTeX,
 .Ar ms
 for roff output using the classic (i.e., no-extension)
 .Fl ms
@@ -248,7 +251,7 @@ the output reader.
 By default, HTML is omitted.
 .El
 .Pp
-Lastly, the
+The
 .Fl T Ns Ar term
 output has the following:
 .Bl -tag -width Ds
@@ -272,6 +275,17 @@ Set the soft limit on the number of characters per line.
 This may be exceeded by literal text.
 The default (or if zero) is the number of terminal columns or 80 at
 most.
+.El
+.Pp
+The
+.Fl T Ns Ar latex
+output has only one option:
+.Bl -tag -width Ds
+.It Fl -latex-no-skiphtml
+Output embedded HTML.
+This usually doesn't make sense because the HTML won't be interpreted by
+the output reader.
+By default, HTML is omitted.
 .El
 .Ss Metadata
 If not disabled with
@@ -344,6 +358,24 @@ HTML5 output with UTF-8 encoding.
 All features of
 .Xr lowdown 5
 are supported.
+.It Fl T Ns Ar latex
+Simple LaTeX output.
+The following packages are used by
+.Nm :
+.Li graphicx
+for images,
+.Li inputenc Pq utf8
+for UTF-8 input,
+.Li fontend Pq T1
+and
+.Li textcomp
+for output glyphs,
+.Li lmodern
+for Latin modern font,
+.Li hyperref
+for links, and
+.Li listings
+for code listing.
 .It Fl T Ns Ar man
 The
 .Ar man
