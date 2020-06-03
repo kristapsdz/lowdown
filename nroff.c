@@ -760,7 +760,7 @@ rndr_raw_block(hbuf *ob, const hbuf *content, const struct nstate *st)
 	size_t	 org = 0, sz = content->size;
 
 	if (content->size == 0 ||
-	    st->flags & LOWDOWN_NROFF_SKIP_HTML)
+	    (st->flags & LOWDOWN_NROFF_SKIP_HTML))
 		return;
 
 	while (sz > 0 && content->data[sz - 1] == '\n')
@@ -826,7 +826,7 @@ static void
 rndr_raw_html(hbuf *ob, const hbuf *text, const struct nstate *st)
 {
 
-	if ((st->flags & LOWDOWN_NROFF_SKIP_HTML))
+	if (st->flags & LOWDOWN_NROFF_SKIP_HTML)
 		return;
 	rndr_block(ob, text->data, text->size);
 }
