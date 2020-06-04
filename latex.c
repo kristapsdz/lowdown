@@ -461,7 +461,9 @@ rndr_doc_header(hbuf *ob, const hbuf *content,
 {
 	const struct lowdown_meta	*m;
 	const char			*author = NULL, *title = NULL,
-					*affil = NULL, *date = NULL;
+					*affil = NULL, *date = NULL,
+					*rcsauthor = NULL, 
+					*rcsdate = NULL;
 
 	if (!(st->oflags & LOWDOWN_STANDALONE))
 		return;
@@ -484,6 +486,10 @@ rndr_doc_header(hbuf *ob, const hbuf *content,
 			affil = m->value;
 		else if (strcasecmp(m->key, "date") == 0)
 			date = m->value;
+		else if (strcasecmp(m->key, "rcsauthor") == 0)
+			rcsauthor = rcsauthor2str(m->value);
+		else if (strcasecmp(m->key, "rcsdate") == 0)
+			rcsdate = rcsdate2str(m->value);
 		else if (strcasecmp(m->key, "title") == 0)
 			title = m->value;
 
@@ -492,14 +498,19 @@ rndr_doc_header(hbuf *ob, const hbuf *content,
 
 	hbuf_printf(ob, "\\title{%s}\n", title);
 
-	if (author != NULL) {
-		hbuf_printf(ob, "\\author{%s", author);
+	if (author != NULL || rcsauthor != NULL) {
+		if (rcsauthor != NULL)
+			hbuf_printf(ob, "\\author{%s", rcsauthor);
+		else
+			hbuf_printf(ob, "\\author{%s", author);
 		if (affil != NULL)
 			hbuf_printf(ob, " \\\\ %s", affil);
 		HBUF_PUTSL(ob, "}\n");
 	}
 
-	if (date != NULL)
+	if (rcsdate != NULL)
+		hbuf_printf(ob, "\\date{%s}\n", rcsdate);
+	else if (date != NULL)
 		hbuf_printf(ob, "\\date{%s}\n", date);
 
 	HBUF_PUTSL(ob, "\\maketitle\n");

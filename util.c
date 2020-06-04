@@ -39,19 +39,25 @@ rcsdate2str(const char *v)
 	int		rc;
 	static char	buf[32];
 
-	if (NULL == v ||
-	    strlen(v) < 10 ||
-	    strncmp(v, "$Date: ", 7))
-		return(NULL);
+	if (v == NULL || strlen(v) < 10)
+		return NULL;
+
+	/* Check for LaTeX. */
+
+	if ('\\' == v[0])
+		v++;
+
+	if (strncmp(v, "$Date: ", 7))
+		return NULL;
 
 	rc = sscanf(v + 7, "%u/%u/%u %u:%u:%u", 
 		&y, &m, &d, &h, &min, &s);
 
-	if (6 != rc)
-		return(NULL);
+	if (rc != 6)
+		return NULL;
 
 	snprintf(buf, sizeof(buf), "%u-%.2u-%.2u", y, m, d);
-	return(buf);
+	return buf;
 }
 
 /*
@@ -66,20 +72,30 @@ rcsauthor2str(const char *v)
 	static char	buf[1024];
 	size_t		sz;
 
-	if (NULL == v ||
-	    strlen(v) < 12 ||
-	    strncmp(v, "$Author: ", 9))
-		return(NULL);
+	if (v == NULL || strlen(v) < 12)
+		return NULL;
 
+	/* Check for LaTeX. */
+
+	if ('\\' == v[0])
+		v++;
+
+	if (strncmp(v, "$Author: ", 9))
+		return NULL;
 	if ((sz = strlcpy(buf, v + 9, sizeof(buf))) >= sizeof(buf))
-		return(NULL);
+		return NULL;
 
-	if ('$' == buf[sz - 1])
-		buf[sz - 1] = '\0';
-	if (' ' == buf[sz - 2])
-		buf[sz - 2] = '\0';
+	/* Strip end (with LaTeX). */
 
-	return(buf);
+	if (sz && buf[sz - 1] == '$') {
+		buf[--sz] = '\0';
+		if (sz && buf[sz - 1] == '\\')
+			buf[--sz] = '\0';
+		if (sz && buf[sz - 1] == ' ')
+			buf[--sz] = '\0';
+	}
+
+	return buf;
 }
 
 /*
