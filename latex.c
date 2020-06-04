@@ -474,7 +474,6 @@ rndr_doc_header(hbuf *ob, const hbuf *content,
 	      "\\usepackage{textcomp}\n"
 	      "\\usepackage{lmodern}\n"
 	      "\\usepackage{hyperref}\n"
-	      "\\usepackage{listings}\n"
 	      "\\usepackage[parfill]{parskip}\n"
 	      "\\begin{document}\n");
 
