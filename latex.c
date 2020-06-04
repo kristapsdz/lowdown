@@ -98,12 +98,12 @@ rndr_blockcode(hbuf *ob, const hbuf *text, const hbuf *lang)
 	if (lang->size) {
 		HBUF_PUTSL(ob, "[language=");
 		rndr_escape(ob, lang);
-		HBUF_PUTSL(ob, "]\n");
+		HBUF_PUTSL(ob, "]\n\n");
 	} else
-#else
-	HBUF_PUTSL(ob, "\\begin{verbatim}");
-#endif
 		HBUF_PUTSL(ob, "\n");
+#else
+	HBUF_PUTSL(ob, "\\begin{verbatim}\n");
+#endif
 	hbuf_putb(ob, text);
 #if 0
 	HBUF_PUTSL(ob, "\\end{lstlisting}\n");
@@ -143,13 +143,13 @@ rndr_blockquote(hbuf *ob, const hbuf *content)
 static void
 rndr_codespan(hbuf *ob, const hbuf *text)
 {
-
 #if 0
 	HBUF_PUTSL(ob, "\\lstinline{");
+	hbuf_putb(ob, text);
 #else
 	HBUF_PUTSL(ob, "\\texttt{");
-#endif
 	rndr_escape(ob, text);
+#endif
 	HBUF_PUTSL(ob, "}");
 }
 
@@ -265,48 +265,11 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 	const struct lowdown_node *n)
 {
 	size_t	 size;
-#if 0
-	int	 blk = 0;
-#endif
-
-	/*
-	 * If we're in block mode (which can be assigned post factum in
-	 * the parser), make sure that we have an extra <p> around
-	 * non-block content.
-	 */
-
-#if 0
-	if (((n->rndr_listitem.flags & HLIST_FL_DEF) &&
-	     n->parent != NULL &&
-	     n->parent->parent != NULL &&
-	     n->parent->parent->type == LOWDOWN_DEFINITION &&
-	     (n->parent->parent->rndr_definition.flags & 
-	      HLIST_FL_BLOCK)) ||
-	    (!(n->rndr_listitem.flags & HLIST_FL_DEF) &&
-	     n->parent != NULL &&
-	     n->parent->type == LOWDOWN_LIST &&
-	     (n->parent->rndr_list.flags & HLIST_FL_BLOCK))) {
-		if (!(hbuf_strprefix(content, "<ul") ||
-		      hbuf_strprefix(content, "<ol") ||
-		      hbuf_strprefix(content, "<dl") ||
-		      hbuf_strprefix(content, "<div") ||
-		      hbuf_strprefix(content, "<table") ||
-		      hbuf_strprefix(content, "<blockquote") ||
-		      hbuf_strprefix(content, "<pre>") ||
-		      hbuf_strprefix(content, "<h") ||
-		      hbuf_strprefix(content, "<p>")))
-			blk = 1;
-	}
-#endif
 
 	/* Only emit <li> if we're not a <dl> list. */
 
 	if (!(n->rndr_listitem.flags & HLIST_FL_DEF))
 		HBUF_PUTSL(ob, "\\item ");
-#if 0
-	if (blk)
-		HBUF_PUTSL(ob, "<p>");
-#endif
 
 	/* Cut off any trailing space. */
 
@@ -317,10 +280,6 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 	}
 
 	HBUF_PUTSL(ob, "\n");
-#if 0
-	if (blk)
-		HBUF_PUTSL(ob, "</p>");
-#endif
 }
 
 static void
