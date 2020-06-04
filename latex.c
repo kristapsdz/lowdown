@@ -93,15 +93,23 @@ rndr_blockcode(hbuf *ob, const hbuf *text, const hbuf *lang)
 	if (ob->size) 
 		HBUF_PUTSL(ob, "\n");
 
+#if 0
 	HBUF_PUTSL(ob, "\\begin{lstlisting}");
 	if (lang->size) {
 		HBUF_PUTSL(ob, "[language=");
 		rndr_escape(ob, lang);
 		HBUF_PUTSL(ob, "]\n");
 	} else
+#else
+	HBUF_PUTSL(ob, "\\begin{verbatim}");
+#endif
 		HBUF_PUTSL(ob, "\n");
 	hbuf_putb(ob, text);
+#if 0
 	HBUF_PUTSL(ob, "\\end{lstlisting}\n");
+#else
+	HBUF_PUTSL(ob, "\\end{verbatim}\n");
+#endif
 }
 
 static void
@@ -136,7 +144,11 @@ static void
 rndr_codespan(hbuf *ob, const hbuf *text)
 {
 
+#if 0
 	HBUF_PUTSL(ob, "\\lstinline{");
+#else
+	HBUF_PUTSL(ob, "\\texttt{");
+#endif
 	rndr_escape(ob, text);
 	HBUF_PUTSL(ob, "}");
 }
