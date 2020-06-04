@@ -1,4 +1,5 @@
 title: lowdown --- simple markdown translator
+rcsdate: $Date$
 author: Kristaps Dzonsons
 
 # [%title]
@@ -41,10 +42,14 @@ BSD.lv's
 *lowdown* produces HTML5 output in XML mode with **-Thtml**.  It may produce
 either a fragment or standalone HTML5 document with **-s**.
 
-It also produces *roff* documents via the **-Tms** and
-**-Tman**[^nomanpages] outputs.  These may be used to produce PDF and PS
-output from *troff* system such as [groff](https://www.gnu.org/s/groff)
-or (for **-Tman** only) [mandoc](https://mdocml.bsd.lv).
+It also produces simple LaTeX documents with **-Tlatex**.  This output
+format is the newest and still fairly experimental.  It uses the most
+basic packages possible.
+
+PDFs may also be produced from *roff* documents via the **-Tms** and
+**-Tman**[^nomanpages] outputs.  These may be processed with *troff*
+system such as [groff](https://www.gnu.org/s/groff) or (for **-Tman**
+only) [mandoc](https://mdocml.bsd.lv).
 
 By way of example: this page,
 [index.md](https://kristaps.bsd.lv/lowdown/index.md), renders as
@@ -158,6 +163,13 @@ The same can be effected with systems using
 ```sh
 lowdown -s -Tman README.md | mandoc -Tps > README.ps
 lowdown -s -Tman README.md | mandoc -Tpdf > README.pdf
+```
+
+More support for PDF (and other print formats) is available with the
+**-Tlatex** output.
+
+```sh
+lowdown -s -Tlatex README.md | pdflatex
 ```
 
 For terminal output, troff or mandoc may be used in their respective
