@@ -366,9 +366,16 @@ static void
 rndr_image(hbuf *ob, const hbuf *link, const hbuf *title, 
 	const hbuf *dims, const hbuf *alt)
 {
+	const char	*cp;
 
 	HBUF_PUTSL(ob, "\\includegraphics{");
-	rndr_escape(ob, link);
+	if ((cp = memrchr(link->data, '.', link->size)) != NULL) {
+		HBUF_PUTSL(ob, "{");
+		rndr_escape_text(ob, link->data, cp - link->data);
+		HBUF_PUTSL(ob, "}");
+		rndr_escape_text(ob, cp, link->size - (cp - link->data));
+	} else
+		rndr_escape(ob, link);
 	HBUF_PUTSL(ob, "}");
 }
 
@@ -489,6 +496,7 @@ rndr_doc_header(hbuf *ob, const hbuf *content,
 		return;
 	HBUF_PUTSL(ob, 
 	      "\\documentclass[11pt,a4paper]{article}\n"
+	      "\\usepackage{xcolor}\n"
 	      "\\usepackage{graphicx}\n"
 	      "\\usepackage[utf8]{inputenc}\n"
 	      "\\usepackage[T1]{fontenc}\n"
@@ -512,25 +520,17 @@ rndr_doc_header(hbuf *ob, const hbuf *content,
 	if (title == NULL)
 		title = "Untitled article";
 
-	HBUF_PUTSL(ob, "\\title{");
-	rndr_escape_text(ob, title, strlen(title));
-	HBUF_PUTSL(ob, "}\n");
+	hbuf_printf(ob, "\\title{%s}\n", title);
 
 	if (author != NULL) {
-		HBUF_PUTSL(ob, "\\author{");
-		rndr_escape_text(ob, author, strlen(author));
-		if (affil != NULL) {
-			HBUF_PUTSL(ob, " // ");
-			rndr_escape_text(ob, affil, strlen(affil));
-		}
+		hbuf_printf(ob, "\\author{%s", author);
+		if (affil != NULL)
+			hbuf_printf(ob, " // %s", affil);
 		HBUF_PUTSL(ob, "}\n");
 	}
 
-	if (date != NULL) {
-		HBUF_PUTSL(ob, "\\date{");
-		rndr_escape_text(ob, date, strlen(date));
-		HBUF_PUTSL(ob, "}\n");
-	}
+	if (date != NULL)
+		hbuf_printf(ob, "\\date{%s}\n", date);
 
 	HBUF_PUTSL(ob, "\\maketitle\n");
 
@@ -574,9 +574,9 @@ lowdown_latex_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 	 */
 
 	if (root->chng == LOWDOWN_CHNG_INSERT)
-		HBUF_PUTSL(ob, "<ins>");
+		HBUF_PUTSL(ob, "{\\color{blue} ");
 	if (root->chng == LOWDOWN_CHNG_DELETE)
-		HBUF_PUTSL(ob, "<del>");
+		HBUF_PUTSL(ob, "{\\color{red} ");
 
 	switch (root->type) {
 	case LOWDOWN_BLOCKCODE:
@@ -705,10 +705,9 @@ lowdown_latex_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		break;
 	}
 
-	if (root->chng == LOWDOWN_CHNG_INSERT)
-		HBUF_PUTSL(ob, "</ins>");
-	if (root->chng == LOWDOWN_CHNG_DELETE)
-		HBUF_PUTSL(ob, "</del>");
+	if (root->chng == LOWDOWN_CHNG_INSERT ||
+	    root->chng == LOWDOWN_CHNG_DELETE)
+		HBUF_PUTSL(ob, "}");
 
 	hbuf_free(tmp);
 }
