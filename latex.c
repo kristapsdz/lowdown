@@ -32,16 +32,16 @@
 #include "extern.h"
 
 struct latex {
-	unsigned int	oflags;
+	unsigned int	oflags; /* same as in lowdown_opts */
 };
 
 static void
-rndr_escape(hbuf *ob, const hbuf *dat)
+rndr_escape_text(hbuf *ob, const char *data, size_t sz)
 {
 	size_t	 i;
 
-	for (i = 0; i < dat->size; i++)
-		switch (dat->data[i]) {
+	for (i = 0; i < sz; i++)
+		switch (data[i]) {
 		case '&':
 		case '%':
 		case '$':
@@ -50,7 +50,7 @@ rndr_escape(hbuf *ob, const hbuf *dat)
 		case '{':
 		case '}':
 			hbuf_putc(ob, '\\');
-			hbuf_putc(ob, dat->data[i]);
+			hbuf_putc(ob, data[i]);
 			break;
 		case '~':
 			HBUF_PUTSL(ob, "\\textasciitilde{}");
@@ -62,9 +62,16 @@ rndr_escape(hbuf *ob, const hbuf *dat)
 			HBUF_PUTSL(ob, "\\textbackslash{}");
 			break;
 		default:
-			hbuf_putc(ob, dat->data[i]);
+			hbuf_putc(ob, data[i]);
 			break;
 		}
+}
+
+static void
+rndr_escape(hbuf *ob, const hbuf *dat)
+{
+	
+	rndr_escape_text(ob, dat->data, dat->size);
 }
 
 static void
@@ -309,9 +316,6 @@ rndr_paragraph(hbuf *ob, const hbuf *content)
 {
 	size_t	i = 0;
 
-	if (ob->size) 
-		HBUF_PUTSL(ob, "\n");
-
 	if (content->size == 0)
 		return;
 
@@ -474,8 +478,12 @@ rndr_doc_footer(hbuf *ob, const struct latex *st)
 }
 
 static void
-rndr_doc_header(hbuf *ob, const hbuf *content, const struct latex *st)
+rndr_doc_header(hbuf *ob, const hbuf *content,
+	const struct lowdown_metaq *mq, const struct latex *st)
 {
+	const struct lowdown_meta	*m;
+	const char			*author = NULL, *title = NULL,
+					*affil = NULL, *date = NULL;
 
 	if (!(st->oflags & LOWDOWN_STANDALONE))
 		return;
@@ -488,8 +496,61 @@ rndr_doc_header(hbuf *ob, const hbuf *content, const struct latex *st)
 	      "\\usepackage{lmodern}\n"
 	      "\\usepackage{hyperref}\n"
 	      "\\usepackage{listings}\n"
+	      "\\usepackage[parfill]{parskip}\n"
 	      "\\begin{document}\n");
+
+	TAILQ_FOREACH(m, mq, entries)
+		if (strcasecmp(m->key, "author") == 0)
+			author = m->value;
+		else if (strcasecmp(m->key, "affiliation") == 0)
+			affil = m->value;
+		else if (strcasecmp(m->key, "date") == 0)
+			date = m->value;
+		else if (strcasecmp(m->key, "title") == 0)
+			title = m->value;
+
+	if (title == NULL)
+		title = "Untitled article";
+
+	HBUF_PUTSL(ob, "\\title{");
+	rndr_escape_text(ob, title, strlen(title));
+	HBUF_PUTSL(ob, "}\n");
+
+	if (author != NULL) {
+		HBUF_PUTSL(ob, "\\author{");
+		rndr_escape_text(ob, author, strlen(author));
+		if (affil != NULL) {
+			HBUF_PUTSL(ob, " // ");
+			rndr_escape_text(ob, affil, strlen(affil));
+		}
+		HBUF_PUTSL(ob, "}\n");
+	}
+
+	if (date != NULL) {
+		HBUF_PUTSL(ob, "\\date{");
+		rndr_escape_text(ob, date, strlen(date));
+		HBUF_PUTSL(ob, "}\n");
+	}
+
+	HBUF_PUTSL(ob, "\\maketitle\n");
+
 	hbuf_putb(ob, content);
+}
+
+static void
+rndr_meta(hbuf *ob, const hbuf *content,
+	struct lowdown_metaq *mq, const struct lowdown_node *n)
+{
+	struct lowdown_meta	*m;
+
+	if (mq == NULL)
+		return;
+
+	m = xcalloc(1, sizeof(struct lowdown_meta));
+	TAILQ_INSERT_TAIL(mq, m, entries);
+	m->key = xstrndup(n->rndr_meta.key.data,
+		n->rndr_meta.key.size);
+	m->value = xstrndup(content->data, content->size);
 }
 
 void
@@ -533,13 +594,11 @@ lowdown_latex_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		rndr_definition_title(ob, tmp);
 		break;
 	case LOWDOWN_DOC_HEADER:
-		rndr_doc_header(ob, tmp, st);
+		rndr_doc_header(ob, tmp, metaq, st);
 		break;
-#if 0
 	case LOWDOWN_META:
 		rndr_meta(ob, tmp, metaq, root);
 		break;
-#endif
 	case LOWDOWN_DOC_FOOTER:
 		rndr_doc_footer(ob, st);
 		break;
