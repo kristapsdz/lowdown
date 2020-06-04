@@ -496,7 +496,7 @@ rndr_doc_header(hbuf *ob, const hbuf *content,
 	if (author != NULL) {
 		hbuf_printf(ob, "\\author{%s", author);
 		if (affil != NULL)
-			hbuf_printf(ob, " // %s", affil);
+			hbuf_printf(ob, " \\\\ %s", affil);
 		HBUF_PUTSL(ob, "}\n");
 	}
 
