@@ -467,6 +467,7 @@ rndr_doc_header(hbuf *ob, const hbuf *content,
 
 	if (!(st->oflags & LOWDOWN_STANDALONE))
 		return;
+
 	HBUF_PUTSL(ob, 
 	      "\\documentclass[11pt,a4paper]{article}\n"
 	      "\\usepackage{xcolor}\n"
@@ -524,9 +525,6 @@ rndr_meta(hbuf *ob, const hbuf *content,
 {
 	struct lowdown_meta	*m;
 
-	if (mq == NULL)
-		return;
-
 	m = xcalloc(1, sizeof(struct lowdown_meta));
 	TAILQ_INSERT_TAIL(mq, m, entries);
 	m->key = xstrndup(n->rndr_meta.key.data,
@@ -535,35 +533,47 @@ rndr_meta(hbuf *ob, const hbuf *content,
 }
 
 void
-lowdown_latex_rndr(hbuf *ob, struct lowdown_metaq *metaq, 
-	void *arg, const struct lowdown_node *root)
+lowdown_latex_rndr(hbuf *ob, struct lowdown_metaq *mq, 
+	void *arg, const struct lowdown_node *n)
 {
 	hbuf				*tmp;
 	struct latex			*st = arg;
-	const struct lowdown_node	*n;
+	const struct lowdown_node	*child;
 	const char			*tex;
 	unsigned char			 texflags;
+	struct lowdown_metaq		 metaq;
+
+	/* 
+	 * Assign a dummy meta queue, if necessary.
+	 * This will only be done for the root of the parse tree.
+	 * We check at the epilogue if this must be freed.
+	 */
+
+	if (mq == NULL) {
+		TAILQ_INIT(&metaq);
+		mq = &metaq;
+	}
 
 	tmp = hbuf_new(64);
 
-	TAILQ_FOREACH(n, &root->children, entries)
-		lowdown_latex_rndr(tmp, metaq, st, n);
+	TAILQ_FOREACH(child, &n->children, entries)
+		lowdown_latex_rndr(tmp, mq, st, child);
 
 	/*
 	 * These elements can be put in either a block or an inline
 	 * context, so we're safe to just use them and forget.
 	 */
 
-	if (root->chng == LOWDOWN_CHNG_INSERT)
+	if (n->chng == LOWDOWN_CHNG_INSERT)
 		HBUF_PUTSL(ob, "{\\color{blue} ");
-	if (root->chng == LOWDOWN_CHNG_DELETE)
+	if (n->chng == LOWDOWN_CHNG_DELETE)
 		HBUF_PUTSL(ob, "{\\color{red} ");
 
-	switch (root->type) {
+	switch (n->type) {
 	case LOWDOWN_BLOCKCODE:
 		rndr_blockcode(ob, 
-			&root->rndr_blockcode.text, 
-			&root->rndr_blockcode.lang);
+			&n->rndr_blockcode.text, 
+			&n->rndr_blockcode.lang);
 		break;
 	case LOWDOWN_BLOCKQUOTE:
 		rndr_blockquote(ob, tmp);
@@ -575,25 +585,25 @@ lowdown_latex_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		rndr_definition_title(ob, tmp);
 		break;
 	case LOWDOWN_DOC_HEADER:
-		rndr_doc_header(ob, tmp, metaq, st);
+		rndr_doc_header(ob, tmp, mq, st);
 		break;
 	case LOWDOWN_META:
-		rndr_meta(ob, tmp, metaq, root);
+		rndr_meta(ob, tmp, mq, n);
 		break;
 	case LOWDOWN_DOC_FOOTER:
 		rndr_doc_footer(ob, st);
 		break;
 	case LOWDOWN_HEADER:
-		rndr_header(ob, tmp, root->rndr_header.level);
+		rndr_header(ob, tmp, n->rndr_header.level);
 		break;
 	case LOWDOWN_HRULE:
 		rndr_hrule(ob);
 		break;
 	case LOWDOWN_LIST:
-		rndr_list(ob, tmp, &root->rndr_list);
+		rndr_list(ob, tmp, &n->rndr_list);
 		break;
 	case LOWDOWN_LISTITEM:
-		rndr_listitem(ob, tmp, root);
+		rndr_listitem(ob, tmp, n);
 		break;
 	case LOWDOWN_PARAGRAPH:
 		rndr_paragraph(ob, tmp);
@@ -603,29 +613,29 @@ lowdown_latex_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		break;
 	case LOWDOWN_TABLE_HEADER:
 		rndr_table_header(ob, tmp, 
-			root->rndr_table_header.flags,
-			root->rndr_table_header.columns);
+			n->rndr_table_header.flags,
+			n->rndr_table_header.columns);
 		break;
 	case LOWDOWN_TABLE_CELL:
 		rndr_tablecell(ob, tmp, 
-			root->rndr_table_cell.flags, 
-			root->rndr_table_cell.col,
-			root->rndr_table_cell.columns);
+			n->rndr_table_cell.flags, 
+			n->rndr_table_cell.col,
+			n->rndr_table_cell.columns);
 		break;
 	case LOWDOWN_FOOTNOTE_DEF:
 		rndr_footnote_def(ob, tmp, 
-			root->rndr_footnote_def.num);
+			n->rndr_footnote_def.num);
 		break;
 	case LOWDOWN_BLOCKHTML:
-		rndr_raw_block(ob, &root->rndr_blockhtml.text, st);
+		rndr_raw_block(ob, &n->rndr_blockhtml.text, st);
 		break;
 	case LOWDOWN_LINK_AUTO:
 		rndr_autolink(ob, 
-			&root->rndr_autolink.link,
-			root->rndr_autolink.type);
+			&n->rndr_autolink.link,
+			n->rndr_autolink.type);
 		break;
 	case LOWDOWN_CODESPAN:
-		rndr_codespan(ob, &root->rndr_codespan.text);
+		rndr_codespan(ob, &n->rndr_codespan.text);
 		break;
 	case LOWDOWN_DOUBLE_EMPHASIS:
 		rndr_double_emphasis(ob, tmp);
@@ -638,16 +648,16 @@ lowdown_latex_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		break;
 	case LOWDOWN_IMAGE:
 		rndr_image(ob, 
-			&root->rndr_image.link,
-			&root->rndr_image.title,
-			&root->rndr_image.dims,
-			&root->rndr_image.alt);
+			&n->rndr_image.link,
+			&n->rndr_image.title,
+			&n->rndr_image.dims,
+			&n->rndr_image.alt);
 		break;
 	case LOWDOWN_LINEBREAK:
 		rndr_linebreak(ob);
 		break;
 	case LOWDOWN_LINK:
-		rndr_link(ob, tmp, &root->rndr_link.link);
+		rndr_link(ob, tmp, &n->rndr_link.link);
 		break;
 	case LOWDOWN_TRIPLE_EMPHASIS:
 		rndr_triple_emphasis(ob, tmp);
@@ -657,23 +667,23 @@ lowdown_latex_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		break;
 	case LOWDOWN_FOOTNOTE_REF:
 		rndr_footnote_ref(ob, 
-			root->rndr_footnote_ref.num);
+			n->rndr_footnote_ref.num);
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		rndr_math(ob, &root->rndr_math.text,
-			root->rndr_math.blockmode);
+		rndr_math(ob, &n->rndr_math.text,
+			n->rndr_math.blockmode);
 		break;
 	case LOWDOWN_RAW_HTML:
-		rndr_raw_html(ob, &root->rndr_raw_html.text, st);
+		rndr_raw_html(ob, &n->rndr_raw_html.text, st);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
-		rndr_normal_text(ob, &root->rndr_normal_text.text);
+		rndr_normal_text(ob, &n->rndr_normal_text.text);
 		break;
 	case LOWDOWN_ENTITY:
 		tex = entity_find_tex
-			(&root->rndr_entity.text, &texflags);
+			(&n->rndr_entity.text, &texflags);
 		if (tex == NULL)
-			rndr_escape(ob, &root->rndr_entity.text);
+			rndr_escape(ob, &n->rndr_entity.text);
 		else if (texflags & TEX_ENT_ASCII)
 			hbuf_puts(ob, tex);
 		else if (texflags & TEX_ENT_MATH)
@@ -686,11 +696,14 @@ lowdown_latex_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		break;
 	}
 
-	if (root->chng == LOWDOWN_CHNG_INSERT ||
-	    root->chng == LOWDOWN_CHNG_DELETE)
+	if (n->chng == LOWDOWN_CHNG_INSERT ||
+	    n->chng == LOWDOWN_CHNG_DELETE)
 		HBUF_PUTSL(ob, "}");
 
 	hbuf_free(tmp);
+
+	if (mq == &metaq)
+		lowdown_metaq_free(mq);
 }
 
 void *
