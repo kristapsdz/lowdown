@@ -39,22 +39,40 @@ rcsdate2str(const char *v)
 	int		rc;
 	static char	buf[32];
 
-	if (v == NULL || strlen(v) < 10)
+	if (v == NULL || strlen(v) < 12)
 		return NULL;
 
-	/* Check for LaTeX. */
+	/* Escaped dollar sign. */
 
 	if ('\\' == v[0])
 		v++;
+	
+	/* Date and perforce datetime. */
 
-	if (strncmp(v, "$Date: ", 7))
+	if (strncmp(v, "$Date: ", 7) == 0)
+		v += 7;
+	else if (strncmp(v, "$DateTime: ", 11) == 0)
+		v += 11;
+	else
 		return NULL;
 
-	rc = sscanf(v + 7, "%u/%u/%u %u:%u:%u", 
+	/* 
+	 * Try for long and short format dates.
+	 * Use regular forward slash and HTML escapes.
+	 */
+
+	rc = sscanf(v, "%u/%u/%u %u:%u:%u", 
 		&y, &m, &d, &h, &min, &s);
-
 	if (rc != 6)
-		return NULL;
+		rc = sscanf(v, "%u&#47;%u&#47;%u %u:%u:%u", 
+			&y, &m, &d, &h, &min, &s);
+	if (rc != 6) {
+		rc = sscanf(v, "%u/%u/%u", &y, &m, &d);
+		if (rc != 3)
+			rc = sscanf(v, "%u&#47;%u&#47;%u", &y, &m, &d);
+		if (rc != 3)
+			return NULL;
+	}
 
 	snprintf(buf, sizeof(buf), "%u-%.2u-%.2u", y, m, d);
 	return buf;

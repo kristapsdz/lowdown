@@ -65,27 +65,6 @@ enum	nscope {
 	NSCOPE_SPAN
 };
 
-enum rndr_meta_key {
-	RNDR_META_AFFIL,
-	RNDR_META_AUTHOR,
-	RNDR_META_COPY,
-	RNDR_META_DATE,
-	RNDR_META_RCSAUTHOR,
-	RNDR_META_RCSDATE,
-	RNDR_META_TITLE,
-	RNDR_META__MAX
-};
-
-static const char *rndr_meta_keys[RNDR_META__MAX] = {
-	"affiliation", /* RNDR_META_AFFIL */
-	"author", /* RNDR_META_AUTHOR */
-	"copyright", /* RNDR_META_COPY */
-	"date", /* RNDR_META_DATE */
-	"rcsauthor", /* RNDR_META_RCSAUTHOR */
-	"rcsdate", /* RNDR_META_RCSDATE */
-	"title", /* RNDR_META_TITLE */
-};
-
 struct 	nstate {
 	int 		 man; /* whether man(7) */
 	unsigned int 	 flags; /* output flags */
@@ -1064,25 +1043,27 @@ rndr_footnote_ref(hbuf *ob, size_t num, const struct nstate *st)
  * anything but manage white-space.
  */
 static void
-rndr_meta_multi(hbuf *ob, const hbuf *b, const char *env)
+rndr_meta_multi(hbuf *ob, const char *b, const char *env)
 {
 	const char	*start;
-	size_t		 sz, i;
+	size_t		 sz, i, bsz;
 
-	for (i = 0; i < b->size; i++) {
-		while (i < b->size &&
-		       isspace((unsigned char)b->data[i]))
+	bsz = strlen(b);
+
+	for (i = 0; i < bsz; i++) {
+		while (i < bsz &&
+		       isspace((unsigned char)b[i]))
 			i++;
-		if (i == b->size)
+		if (i == bsz)
 			continue;
-		start = &b->data[i];
+		start = &b[i];
 
-		for (; i < b->size; i++)
-			if (i < b->size - 1 &&
-			    isspace((unsigned char)b->data[i]) &&
-			    isspace((unsigned char)b->data[i + 1]))
+		for (; i < bsz; i++)
+			if (i < bsz - 1 &&
+			    isspace((unsigned char)b[i]) &&
+			    isspace((unsigned char)b[i + 1]))
 				break;
-		if ((sz = &b->data[i] - start) == 0)
+		if ((sz = &b[i] - start) == 0)
 			continue;
 		hbuf_printf(ob, ".%s\n", env);
 		rndr_one_line_noescape(ob, start, sz, 1);
@@ -1091,110 +1072,95 @@ rndr_meta_multi(hbuf *ob, const hbuf *b, const char *env)
 }
 
 static void
-rndr_meta(hbuf *ob, const hbuf *tmp, struct lowdown_metaq *mq,
-	const struct lowdown_node *n, const struct nstate *st)
+rndr_meta(hbuf *ob, const hbuf *content,
+	struct lowdown_metaq *mq, const struct lowdown_node *n)
 {
-	enum rndr_meta_key	 	 key;
-	const struct lowdown_node	*copy;
-	struct lowdown_meta		*m;
+	struct lowdown_meta	*m;
 
-	if (mq != NULL) {
-		m = xcalloc(1, sizeof(struct lowdown_meta));
-		TAILQ_INSERT_TAIL(mq, m, entries);
-		m->key = xstrndup(n->rndr_meta.key.data,
-			n->rndr_meta.key.size);
-		m->value = xstrndup(tmp->data, tmp->size);
-	}
-
-	if (!(st->flags & LOWDOWN_STANDALONE))
-		return;
-
-	for (key = 0; key < RNDR_META__MAX; key++)
-		if (hbuf_streq(&n->rndr_meta.key, rndr_meta_keys[key]))
-			break;
-
-	/* 
-	 * If we're printing the date and have a copyright, we'll also
-	 * set the copyright date.
-	 */
-
-	TAILQ_FOREACH(copy, &n->parent->children, entries) {
-		if (copy->type != LOWDOWN_META)
-			continue;
-		if (hbuf_streq(&copy->rndr_meta.key, "copyright"))
-			break;
-	}
-
-	/* FIXME: AU must happen after TL. */
-
-	if (!st->man) {
-		switch (key) {
-		case RNDR_META_COPY:
-			HBUF_PUTSL(ob, ".ds LF \\s-2Copyright \\(co ");
-			rndr_one_lineb_noescape(ob, tmp, 0);
-			HBUF_PUTSL(ob, "\\s+2\n");
-			break;
-		case RNDR_META_DATE:
-			if (copy != NULL) {
-				HBUF_PUTSL(ob, ".ds RF \\s-2");
-				rndr_one_lineb_noescape(ob, tmp, 0);
-				HBUF_PUTSL(ob, "\\s+2\n");
-			}
-			HBUF_PUTSL(ob, ".DA \\s-2");
-			rndr_one_lineb_noescape(ob, tmp, 0);
-			HBUF_PUTSL(ob, "\\s+2\n");
-			break;
-		case RNDR_META_TITLE:
-			HBUF_PUTSL(ob, ".TL\n");
-			rndr_one_lineb_noescape(ob, tmp, 1);
-			HBUF_PUTSL(ob, "\n");
-			break;
-		case RNDR_META_AUTHOR:
-			rndr_meta_multi(ob, tmp, "AU");
-			break;
-		case RNDR_META_AFFIL:
-			rndr_meta_multi(ob, tmp, "AI");
-			break;
-		default:
-			break;
-		}
-	} else {
-		switch (key) {
-		case RNDR_META_TITLE:
-			HBUF_PUTSL(ob, ".TH \"");
-			rndr_one_lineb_noescape(ob, tmp, 0);
-			HBUF_PUTSL(ob, "\" 7\n");
-			/* FIXME: print date. */
-			/*hbuf_printf(ob, "\" 7 %s\n", date);*/
-			break;
-		default:
-			break;
-		}
-	}
+	m = xcalloc(1, sizeof(struct lowdown_meta));
+	TAILQ_INSERT_TAIL(mq, m, entries);
+	m->key = xstrndup(n->rndr_meta.key.data,
+		n->rndr_meta.key.size);
+	m->value = xstrndup(content->data, content->size);
 }
 
 static void
-rndr_doc_header(hbuf *ob, const hbuf *tmp,
-	const struct lowdown_node *n, const struct nstate *st)
+rndr_doc_header(hbuf *ob, 
+	const struct lowdown_metaq *mq, const struct nstate *st)
 {
-	struct lowdown_node	*title;
+	const struct lowdown_meta	*m;
+	const char			*author = NULL, *title = NULL,
+					*affil = NULL, *date = NULL,
+					*copy = NULL, *rcsauthor = NULL, 
+					*rcsdate = NULL;
 
 	if (!(st->flags & LOWDOWN_STANDALONE))
 		return;
 
-	TAILQ_FOREACH(title, &n->children, entries) {
-		if (title->type != LOWDOWN_META)
-			continue;
-		if (hbuf_streq(&title->rndr_meta.key, "title"))
-			break;
+	TAILQ_FOREACH(m, mq, entries)
+		if (strcasecmp(m->key, "author") == 0)
+			author = m->value;
+		else if (strcasecmp(m->key, "copyright") == 0)
+			copy = m->value;
+		else if (strcasecmp(m->key, "affiliation") == 0)
+			affil = m->value;
+		else if (strcasecmp(m->key, "date") == 0)
+			date = m->value;
+		else if (strcasecmp(m->key, "rcsauthor") == 0)
+			rcsauthor = rcsauthor2str(m->value);
+		else if (strcasecmp(m->key, "rcsdate") == 0)
+			rcsdate = rcsdate2str(m->value);
+		else if (strcasecmp(m->key, "title") == 0)
+			title = m->value;
+
+	/* Overrides. */
+
+	if (title == NULL)
+		title = "Untitled article";
+	if (rcsdate != NULL)
+		date = rcsdate;
+	if (rcsauthor != NULL)
+		author = rcsauthor;
+
+	if (!st->man) {
+		if (copy != NULL) {
+			HBUF_PUTSL(ob, ".ds LF \\s-2Copyright \\(co ");
+			rndr_one_line_noescape
+				(ob, copy, strlen(copy), 0);
+			HBUF_PUTSL(ob, "\\s+2\n");
+		}
+		if (date != NULL) {
+			if (copy != NULL) {
+				HBUF_PUTSL(ob, ".ds RF \\s-2");
+				rndr_one_line_noescape
+					(ob, date, strlen(date), 0);
+				HBUF_PUTSL(ob, "\\s+2\n");
+			} else {
+				HBUF_PUTSL(ob, ".DA \\s-2");
+				rndr_one_line_noescape
+					(ob, date, strlen(date), 0);
+				HBUF_PUTSL(ob, "\\s+2\n");
+			}
+		}
+		HBUF_PUTSL(ob, ".TL\n");
+		rndr_one_line_noescape(ob, title, strlen(title), 0);
+		HBUF_PUTSL(ob, "\n");
+
+		if (author != NULL)
+			rndr_meta_multi(ob, author, "AU");
+		if (affil != NULL)
+			rndr_meta_multi(ob, affil, "AI");
+	} else {
+		HBUF_PUTSL(ob, ".TH \"");
+		rndr_one_line_noescape(ob, title, strlen(title), 0);
+		HBUF_PUTSL(ob, "\" 7");
+		if (date != NULL) {
+			HBUF_PUTSL(ob, " ");
+			rndr_one_line_noescape
+				(ob, date, strlen(date), 0);
+		}
+		HBUF_PUTSL(ob, "\n");
 	}
-
-	if (title == NULL && !st->man)
-		HBUF_PUTSL(ob, ".TL\nUntitled Article\n");
-	else if (title == NULL)
-		HBUF_PUTSL(ob, ".TH \"Untitled Article\" 7\n");
-
-	hbuf_putb(ob, tmp);
 }
 
 /*
@@ -1203,14 +1169,14 @@ rndr_doc_header(hbuf *ob, const hbuf *tmp,
  * Return whether we should remove nodes relative to "root".
  */
 static void
-rndr(hbuf *ob, struct lowdown_metaq *metaq, 
+rndr(hbuf *ob, struct lowdown_metaq *mq, 
 	struct nstate *ref, struct lowdown_node *root)
 {
-	struct lowdown_node *n, *next, *prev;
-	hbuf		*tmp;
-	int		 pnln, keepnext = 1;
-	int32_t		 ent;
-	enum nfont	 fonts[NFONT__MAX];
+	struct lowdown_node	*n, *next, *prev;
+	hbuf			*tmp;
+	int			 pnln, keepnext = 1;
+	int32_t			 ent;
+	enum nfont		 fonts[NFONT__MAX];
 
 	assert(root != NULL);
 
@@ -1248,7 +1214,7 @@ rndr(hbuf *ob, struct lowdown_metaq *metaq,
 	}
 
 	TAILQ_FOREACH(n, &root->children, entries)
-		rndr(tmp, metaq, ref, n);
+		rndr(tmp, mq, ref, n);
 
 	/* 
 	 * Compute whether the previous output does have a newline:
@@ -1304,10 +1270,10 @@ rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		rndr_definition_title(ob, root, tmp);
 		break;
 	case LOWDOWN_DOC_HEADER:
-		rndr_doc_header(ob, tmp, root, ref);
+		rndr_doc_header(ob, mq, ref);
 		break;
 	case LOWDOWN_META:
-		rndr_meta(ob, tmp, metaq, root, ref);
+		rndr_meta(ob, tmp, mq, root);
 		break;
 	case LOWDOWN_HEADER:
 		rndr_header(ob, tmp, 
@@ -1442,13 +1408,26 @@ rndr(hbuf *ob, struct lowdown_metaq *metaq,
 }
 
 void
-lowdown_nroff_rndr(hbuf *ob, struct lowdown_metaq *metaq,
-	void *ref, struct lowdown_node *root)
+lowdown_nroff_rndr(hbuf *ob, struct lowdown_metaq *mq,
+	void *ref, struct lowdown_node *n)
 {
-	struct nstate	*st = ref;
+	struct nstate		*st = ref;
+	struct lowdown_metaq	 metaq;
+
+	/* Temporary metaq if not provided. */
+
+	if (mq == NULL) {
+		TAILQ_INIT(&metaq);
+		mq = &metaq;
+	}
 
 	memset(st->fonts, 0, sizeof(st->fonts));
-	rndr(ob, metaq, ref, root);
+	rndr(ob, mq, ref, n);
+
+	/* Release temporary metaq. */
+
+	if (mq == &metaq)
+		lowdown_metaq_free(mq);
 }
 
 void *

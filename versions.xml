@@ -725,4 +725,18 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.7.0</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2020-06-04">2020-06-04</time>
+		</header>
+		<aside>
+			<p>
+				Simple support for LaTeX documents with <b>-Tlatex</b>.
+				This will be expanded in future versions, but for now gets most
+				documents having maths and graphics, too.
+			</p>
+		</aside>
+	</article>
 </articles>

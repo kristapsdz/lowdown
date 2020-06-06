@@ -456,7 +456,7 @@ rndr_doc_footer(hbuf *ob, const struct latex *st)
 }
 
 static void
-rndr_doc_header(hbuf *ob, const hbuf *content,
+rndr_doc_header(hbuf *ob,
 	const struct lowdown_metaq *mq, const struct latex *st)
 {
 	const struct lowdown_meta	*m;
@@ -494,29 +494,28 @@ rndr_doc_header(hbuf *ob, const hbuf *content,
 		else if (strcasecmp(m->key, "title") == 0)
 			title = m->value;
 
+	/* Overrides. */
+
 	if (title == NULL)
 		title = "Untitled article";
+	if (rcsauthor != NULL)
+		author = rcsauthor;
+	if (rcsdate != NULL)
+		date = rcsdate;
 
 	hbuf_printf(ob, "\\title{%s}\n", title);
 
-	if (author != NULL || rcsauthor != NULL) {
-		if (rcsauthor != NULL)
-			hbuf_printf(ob, "\\author{%s", rcsauthor);
-		else
-			hbuf_printf(ob, "\\author{%s", author);
+	if (author != NULL) {
+		hbuf_printf(ob, "\\author{%s", author);
 		if (affil != NULL)
 			hbuf_printf(ob, " \\\\ %s", affil);
 		HBUF_PUTSL(ob, "}\n");
 	}
 
-	if (rcsdate != NULL)
-		hbuf_printf(ob, "\\date{%s}\n", rcsdate);
-	else if (date != NULL)
+	if (date != NULL)
 		hbuf_printf(ob, "\\date{%s}\n", date);
 
 	HBUF_PUTSL(ob, "\\maketitle\n");
-
-	hbuf_putb(ob, content);
 }
 
 static void
@@ -585,7 +584,7 @@ lowdown_latex_rndr(hbuf *ob, struct lowdown_metaq *mq,
 		rndr_definition_title(ob, tmp);
 		break;
 	case LOWDOWN_DOC_HEADER:
-		rndr_doc_header(ob, tmp, mq, st);
+		rndr_doc_header(ob, mq, st);
 		break;
 	case LOWDOWN_META:
 		rndr_meta(ob, tmp, mq, n);

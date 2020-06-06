@@ -165,10 +165,10 @@ Do not parse MMD footnotes.
 Do not parse emphasis within words and links.
 .It Fl -parse-no-metadata
 Do not parse MMD metadata.
-For the first paragraph to count as meta-data, the first line must have
+For the first paragraph to count as metadata, the first line must have
 a colon in it.
 Otherwise it's considered a regular paragraph.
-Meta-data is escaped according to the output mode.
+Metadata is escaped according to the output mode.
 .It Fl -parse-no-strike
 Do not parse strikethroughs.
 .It Fl -parse-no-super
@@ -298,52 +298,51 @@ mode:
 Author affiliation (organisation or institution).
 Multiple affiliations may be separated by more than one space (including
 newlines).
-Used in all output modes.
+Used in all output modes but
+.Fl T Ns Ar man .
 .It Li author
 Document author.
 Multiple authors may be separated by more than one space (including
 newlines).
-Overrides
+Overridden by
 .Li rcsauthor .
-Used in all output modes.
+Used in all output modes but
+.Fl T Ns Ar man .
 .It Li copyright
 A document copyright (without the word
 .Dq Copyright ) ,
 for example,
 .Dq 2017, Kristaps Dzonsons .
-This is currently only used in the
-.Fl T Ar ms
-output mode.
+Used in
+.Fl T Ns Ar ms
+and
+.Fl T Ns Ar html .
 .It Li css
 A CSS file included in the HTML5 document head.
 Multiple CSS files (in order) may be separated by more than one space
 (including newlines).
 Only used in
-.Fl T Ar html
-mode.
+.Fl T Ns Ar html .
 .It Li date
-Document date in ISO-8601 YYYY-MM-DD or YYYY/MM/DD format.
+Document date in ISO-8601 YYYY-MM-DD format.
 Overriden by
 .Li rcsdate .
-Defaults to current date.
 Used in all output modes.
 .It Li javascript
 A JavaScript file included in the HTML5 document head.
 Multiple script files (in order) may be separated by more than one space
 (including newlines).
 Only used in
-.Fl T Ar html
-mode.
+.Fl T Ns Ar html .
 .It Li rcsauthor
 Document author in RCS author format.
-Overriden by
+Overrides
 .Li author .
 Used in all output modes.
 .It Li rcsdate
 Document date in RCS date format.
 Overrides
 .Li date .
-Defaults to current date.
 Used in all output modes.
 .It Li title
 Document title, defaulting to

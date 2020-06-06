@@ -52,29 +52,6 @@ struct 	hstate {
 	unsigned int flags; /* output flags */
 };
 
-enum rndr_meta_key {
-	RNDR_META_AFFIL,
-	RNDR_META_AUTHOR,
-	RNDR_META_CSS,
-	RNDR_META_DATE,
-	RNDR_META_RCSAUTHOR,
-	RNDR_META_RCSDATE,
-	RNDR_META_SCRIPT,
-	RNDR_META_TITLE,
-	RNDR_META__MAX
-};
-
-static const char *rndr_meta_keys[RNDR_META__MAX] = {
-	"affiliation", /* RNDR_META_AFFIL */
-	"author", /* RNDR_META_AUTHOR */
-	"css", /* RNDR_META_CSS */
-	"date", /* RNDR_META_DATE */
-	"rcsauthor", /* RNDR_META_RCSAUTHOR */
-	"rcsdate", /* RNDR_META_RCSDATE */
-	"javascript", /* RNDR_META_SCRIPT */
-	"title", /* RNDR_META_TITLE */
-};
-
 /*
  * Escape regular text that shouldn't be HTML.
  */
@@ -753,27 +730,29 @@ rndr_root(hbuf *ob, const hbuf *content, const struct hstate *st)
  * characters, padding the output with "starttag" and "endtag".
  */
 static void
-rndr_doc_header_multi(hbuf *ob, const hbuf *b,
+rndr_meta_multi(hbuf *ob, const char *b,
 	const char *starttag, const char *endtag)
 {
 	const char	*start;
-	size_t		 sz, i;
+	size_t		 sz, i, bsz;
 
-	for (i = 0; i < b->size; i++) {
-		while (i < b->size &&
-		       isspace((unsigned char)b->data[i]))
+	bsz = strlen(b);
+
+	for (i = 0; i < bsz; i++) {
+		while (i < bsz &&
+		       isspace((unsigned char)b[i]))
 			i++;
-		if (i == b->size)
+		if (i == bsz)
 			continue;
-		start = &b->data[i];
+		start = &b[i];
 
-		for (; i < b->size; i++)
-			if (i < b->size - 1 &&
-			    isspace((unsigned char)b->data[i]) &&
-			    isspace((unsigned char)b->data[i + 1]))
+		for (; i < bsz; i++)
+			if (i < bsz - 1 &&
+			    isspace((unsigned char)b[i]) &&
+			    isspace((unsigned char)b[i + 1]))
 				break;
 
-		if ((sz = &b->data[i] - start) == 0)
+		if ((sz = &b[i] - start) == 0)
 			continue;
 
 		hbuf_puts(ob, starttag);
@@ -787,73 +766,52 @@ rndr_doc_header_multi(hbuf *ob, const hbuf *b,
 
 static void
 rndr_meta(hbuf *ob, const hbuf *tmp, struct lowdown_metaq *mq,
-	const struct lowdown_node *n, const struct hstate *st)
+	const struct lowdown_node *n)
 {
-	enum rndr_meta_key	 key;
 	struct lowdown_meta	*m;
 
-	if (mq != NULL) {
-		m = xcalloc(1, sizeof(struct lowdown_meta));
-		TAILQ_INSERT_TAIL(mq, m, entries);
-		m->key = xstrndup(n->rndr_meta.key.data,
-			n->rndr_meta.key.size);
-		m->value = xstrndup(tmp->data, tmp->size);
-	}
-
-	if (!(st->flags & LOWDOWN_STANDALONE))
-		return;
-
-	for (key = 0; key < RNDR_META__MAX; key++)
-		if (hbuf_streq(&n->rndr_meta.key, rndr_meta_keys[key]))
-			break;
-
-	/* TODO: rcsauthor, rcsdate. */
-
-	switch (key) {
-	case RNDR_META_AFFIL:
-		rndr_doc_header_multi(ob, tmp, 
-			"<meta name=\"creator\" content=", 
-			" />");
-		break;
-	case RNDR_META_AUTHOR:
-		rndr_doc_header_multi(ob, tmp, 
-			"<meta name=\"author\" content=", 
-			" />");
-		break;
-	case RNDR_META_CSS:
-		rndr_doc_header_multi(ob, tmp, 
-			"<link rel=\"stylesheet\" href=", 
-			" />");
-		break;
-	case RNDR_META_DATE:
-		hbuf_printf(ob, "<meta name=\"date\" "
-			"scheme=\"YYYY-MM-DD\" content=\"");
-		hbuf_putb(ob, tmp);
-		HBUF_PUTSL(ob, "\" />\n");
-		break;
-	case RNDR_META_SCRIPT:
-		rndr_doc_header_multi(ob, tmp, 
-			"<script src=", 
-			"></script>");
-		break;
-	case RNDR_META_TITLE:
-		HBUF_PUTSL(ob, "<title>");
-		hbuf_putb(ob, tmp);
-		HBUF_PUTSL(ob, "</title>\n");
-		break;
-	default:
-		break;
-	};
+	m = xcalloc(1, sizeof(struct lowdown_meta));
+	TAILQ_INSERT_TAIL(mq, m, entries);
+	m->key = xstrndup(n->rndr_meta.key.data,
+		n->rndr_meta.key.size);
+	m->value = xstrndup(tmp->data, tmp->size);
 }
 
 static void
 rndr_doc_header(hbuf *ob, const hbuf *content,
-	const struct hstate *st, const struct lowdown_node *n)
+	const struct lowdown_metaq *mq, const struct hstate *st)
 {
-	struct lowdown_node	*nn;
+	const struct lowdown_meta	*m;
+	const char			*author = NULL, *title = NULL,
+					*affil = NULL, *date = NULL,
+					*copy = NULL, *rcsauthor = NULL, 
+					*rcsdate = NULL, *css = NULL,
+					*script = NULL;
 
-	if (!(LOWDOWN_STANDALONE & st->flags))
+	if (!(st->flags & LOWDOWN_STANDALONE))
 		return;
+
+	TAILQ_FOREACH(m, mq, entries)
+		if (strcasecmp(m->key, "author") == 0)
+			author = m->value;
+		else if (strcasecmp(m->key, "copyright") == 0)
+			copy = m->value;
+		else if (strcasecmp(m->key, "affiliation") == 0)
+			affil = m->value;
+		else if (strcasecmp(m->key, "date") == 0)
+			date = m->value;
+		else if (strcasecmp(m->key, "rcsauthor") == 0)
+			rcsauthor = rcsauthor2str(m->value);
+		else if (strcasecmp(m->key, "rcsdate") == 0)
+			rcsdate = rcsdate2str(m->value);
+		else if (strcasecmp(m->key, "title") == 0)
+			title = m->value;
+		else if (strcasecmp(m->key, "css") == 0)
+			css = m->value;
+		else if (strcasecmp(m->key, "javascript") == 0)
+			script = m->value;
+
+	hbuf_putb(ob, content);
 
 	HBUF_PUTSL(ob, 
 	      "<head>\n"
@@ -861,35 +819,64 @@ rndr_doc_header(hbuf *ob, const hbuf *content,
 	      "<meta name=\"viewport\""
 	      " content=\"width=device-width,initial-scale=1\" />\n");
 
-	hbuf_putb(ob, content);
+	/* Overrides. */
 
-	/* If we don't have a title, print out a default one. */
+	if (title == NULL)
+		title = "Untitled article";
+	if (rcsdate != NULL)
+		date = rcsdate;
+	if (rcsauthor != NULL)
+		author = rcsauthor;
 
-	TAILQ_FOREACH(nn, &n->children, entries) {
-		if (nn->type != LOWDOWN_META)
-			continue;
-		if (hbuf_streq(&nn->rndr_meta.key, "title"))
-			break;
+	if (affil != NULL)
+		rndr_meta_multi(ob, affil, 
+			"<meta name=\"creator\" content=", " />");
+	if (author != NULL)
+		rndr_meta_multi(ob, author, 
+			"<meta name=\"author\" content=", " />");
+	if (copy != NULL)
+		rndr_meta_multi(ob, copy, 
+			"<meta name=\"copyright\" content=", " />");
+	if (css != NULL)
+		rndr_meta_multi(ob, css, 
+			"<link rel=\"stylesheet\" href=", " />");
+	if (date != NULL) {
+		hbuf_printf(ob, "<meta name=\"date\" "
+			"scheme=\"YYYY-MM-DD\" content=\"");
+		hbuf_puts(ob, date);
+		HBUF_PUTSL(ob, "\" />\n");
 	}
-	if (nn == NULL)
-		hbuf_puts(ob, "<title>Untitled Article</title>");
+	if (script != NULL)
+		rndr_meta_multi(ob, script, 
+			"<script src=", "></script>");
 
+	HBUF_PUTSL(ob, "<title>");
+	hbuf_puts(ob, title);
+	HBUF_PUTSL(ob, "</title>\n");
 	HBUF_PUTSL(ob, "</head>\n<body>\n");
 }
 
 void
-lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *metaq,
+lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *mq,
 	void *ref, const struct lowdown_node *root)
 {
 	const struct lowdown_node	*n;
-	hbuf			*tmp;
-	int32_t			 ent;
-	struct hstate		*st = ref;
+	struct lowdown_metaq		 metaq;
+	hbuf				*tmp;
+	int32_t				 ent;
+	struct hstate			*st = ref;
+
+	/* Temporary metaq if not provided. */
+
+	if (mq == NULL) {
+		TAILQ_INIT(&metaq);
+		mq = &metaq;
+	}
 
 	tmp = hbuf_new(64);
 
 	TAILQ_FOREACH(n, &root->children, entries)
-		lowdown_html_rndr(tmp, metaq, st, n);
+		lowdown_html_rndr(tmp, mq, st, n);
 
 	/*
 	 * These elements can be put in either a block or an inline
@@ -923,10 +910,10 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		rndr_definition_data(ob, tmp);
 		break;
 	case LOWDOWN_DOC_HEADER:
-		rndr_doc_header(ob, tmp, st, root);
+		rndr_doc_header(ob, tmp, mq, st);
 		break;
 	case LOWDOWN_META:
-		rndr_meta(ob, tmp, metaq, root, st);
+		rndr_meta(ob, tmp, mq, root);
 		break;
 	case LOWDOWN_DOC_FOOTER:
 		rndr_doc_footer(ob, st);
@@ -1066,6 +1053,11 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 		HBUF_PUTSL(ob, "</del>");
 
 	hbuf_free(tmp);
+
+	/* Release temporary metaq. */
+
+	if (mq == &metaq)
+		lowdown_metaq_free(mq);
 }
 
 void *
