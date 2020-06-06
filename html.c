@@ -24,6 +24,7 @@
 #endif
 
 #include <ctype.h>
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,9 +48,9 @@ struct	hentry {
 /*
  * Our internal state object.
  */
-struct 	hstate {
+struct 	html {
 	TAILQ_HEAD(, hentry) headers_used;
-	unsigned int flags; /* output flags */
+	unsigned int flags; /* same as "oflags" in lowdown_opts */
 };
 
 /*
@@ -57,7 +58,7 @@ struct 	hstate {
  */
 static void
 escape_html(hbuf *ob, const char *source,
-	size_t length, const struct hstate *st)
+	size_t length, const struct html *st)
 {
 
 	hesc_html(ob, source, length, 
@@ -73,7 +74,7 @@ escape_html(hbuf *ob, const char *source,
  */
 static void
 escape_literal(hbuf *ob, const char *source,
-	size_t length, const struct hstate *st)
+	size_t length, const struct html *st)
 {
 
 	hesc_html(ob, source, length, 
@@ -84,7 +85,7 @@ escape_literal(hbuf *ob, const char *source,
 
 static void
 rndr_autolink(hbuf *ob, const hbuf *link,
-	enum halink_type type, const struct hstate *st)
+	enum halink_type type, const struct html *st)
 {
 
 	if (link->size == 0)
@@ -112,7 +113,7 @@ rndr_autolink(hbuf *ob, const hbuf *link,
 
 static void
 rndr_blockcode(hbuf *ob, const hbuf *text,
-	const hbuf *lang, const struct hstate *st)
+	const hbuf *lang, const struct html *st)
 {
 	if (ob->size) 
 		hbuf_putc(ob, '\n');
@@ -172,7 +173,7 @@ rndr_blockquote(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_codespan(hbuf *ob, const hbuf *text, const struct hstate *st)
+rndr_codespan(hbuf *ob, const hbuf *text, const struct html *st)
 {
 
 	HBUF_PUTSL(ob, "<code>");
@@ -229,7 +230,7 @@ rndr_linebreak(hbuf *ob)
  * This will reference-count the header so we don't have duplicates.
  */
 static void
-rndr_header_id(hbuf *ob, const hbuf *header, struct hstate *state)
+rndr_header_id(hbuf *ob, const hbuf *header, struct html *state)
 {
 	struct hentry	*hentry;
 
@@ -273,7 +274,7 @@ rndr_header_id(hbuf *ob, const hbuf *header, struct hstate *state)
 
 static void
 rndr_header(hbuf *ob, const hbuf *content, 
-	int level, struct hstate *state)
+	int level, struct html *state)
 {
 
 	if (ob->size)
@@ -292,7 +293,7 @@ rndr_header(hbuf *ob, const hbuf *content,
 
 static void
 rndr_link(hbuf *ob, const hbuf *content, const hbuf *link,
-	const hbuf *title, const struct hstate *st)
+	const hbuf *title, const struct html *st)
 {
 
 	HBUF_PUTSL(ob, "<a href=\"");
@@ -385,7 +386,7 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 }
 
 static void
-rndr_paragraph(hbuf *ob, const hbuf *content, struct hstate *state)
+rndr_paragraph(hbuf *ob, const hbuf *content, struct html *state)
 {
 	size_t	i = 0, org;
 
@@ -429,7 +430,7 @@ rndr_paragraph(hbuf *ob, const hbuf *content, struct hstate *state)
 }
 
 static void
-rndr_raw_block(hbuf *ob, const hbuf *text, const struct hstate *st)
+rndr_raw_block(hbuf *ob, const hbuf *text, const struct html *st)
 {
 	size_t	org, sz;
 
@@ -482,7 +483,7 @@ rndr_hrule(hbuf *ob)
 
 static void
 rndr_image(hbuf *ob, const hbuf *link, const hbuf *title, 
-	const hbuf *dims, const hbuf *alt, const struct hstate *st)
+	const hbuf *dims, const hbuf *alt, const struct html *st)
 {
 	char	dimbuf[32];
 	int	x, y, rc = 0;
@@ -523,7 +524,7 @@ rndr_image(hbuf *ob, const hbuf *link, const hbuf *title,
 }
 
 static void
-rndr_raw_html(hbuf *ob, const hbuf *text, const struct hstate *st)
+rndr_raw_html(hbuf *ob, const hbuf *text, const struct html *st)
 {
 
 	if ((st->flags & LOWDOWN_HTML_SKIP_HTML))
@@ -620,7 +621,7 @@ rndr_superscript(hbuf *ob, const hbuf *content)
 
 static void
 rndr_normal_text(hbuf *ob, const hbuf *content,
-	const struct hstate *st)
+	const struct html *st)
 {
 
 	escape_html(ob, content->data, content->size, st);
@@ -688,7 +689,7 @@ rndr_footnote_ref(hbuf *ob, size_t num)
 
 static void
 rndr_math(hbuf *ob, const struct rndr_math *n,
-	const struct hstate *st)
+	const struct html *st)
 {
 
 	if (n->blockmode)
@@ -705,7 +706,7 @@ rndr_math(hbuf *ob, const struct rndr_math *n,
 }
 
 static void
-rndr_doc_footer(hbuf *ob, const struct hstate *st)
+rndr_doc_footer(hbuf *ob, const struct html *st)
 {
 
 	if ((st->flags & LOWDOWN_STANDALONE))
@@ -713,7 +714,7 @@ rndr_doc_footer(hbuf *ob, const struct hstate *st)
 }
 
 static void
-rndr_root(hbuf *ob, const hbuf *content, const struct hstate *st)
+rndr_root(hbuf *ob, const hbuf *content, const struct html *st)
 {
 
 	if ((st->flags & LOWDOWN_STANDALONE))
@@ -779,7 +780,7 @@ rndr_meta(hbuf *ob, const hbuf *tmp, struct lowdown_metaq *mq,
 
 static void
 rndr_doc_header(hbuf *ob, const hbuf *content,
-	const struct lowdown_metaq *mq, const struct hstate *st)
+	const struct lowdown_metaq *mq, const struct html *st)
 {
 	const struct lowdown_meta	*m;
 	const char			*author = NULL, *title = NULL,
@@ -858,13 +859,13 @@ rndr_doc_header(hbuf *ob, const hbuf *content,
 
 void
 lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *mq,
-	void *ref, const struct lowdown_node *root)
+	void *ref, const struct lowdown_node *n)
 {
-	const struct lowdown_node	*n;
+	const struct lowdown_node	*child;
 	struct lowdown_metaq		 metaq;
 	hbuf				*tmp;
 	int32_t				 ent;
-	struct hstate			*st = ref;
+	struct html			*st = ref;
 
 	/* Temporary metaq if not provided. */
 
@@ -875,27 +876,27 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *mq,
 
 	tmp = hbuf_new(64);
 
-	TAILQ_FOREACH(n, &root->children, entries)
-		lowdown_html_rndr(tmp, mq, st, n);
+	TAILQ_FOREACH(child, &n->children, entries)
+		lowdown_html_rndr(tmp, mq, st, child);
 
 	/*
 	 * These elements can be put in either a block or an inline
 	 * context, so we're safe to just use them and forget.
 	 */
 
-	if (root->chng == LOWDOWN_CHNG_INSERT)
+	if (n->chng == LOWDOWN_CHNG_INSERT)
 		HBUF_PUTSL(ob, "<ins>");
-	if (root->chng == LOWDOWN_CHNG_DELETE)
+	if (n->chng == LOWDOWN_CHNG_DELETE)
 		HBUF_PUTSL(ob, "<del>");
 
-	switch (root->type) {
+	switch (n->type) {
 	case LOWDOWN_ROOT:
 		rndr_root(ob, tmp, st);
 		break;
 	case LOWDOWN_BLOCKCODE:
 		rndr_blockcode(ob, 
-			&root->rndr_blockcode.text, 
-			&root->rndr_blockcode.lang, st);
+			&n->rndr_blockcode.text, 
+			&n->rndr_blockcode.lang, st);
 		break;
 	case LOWDOWN_BLOCKQUOTE:
 		rndr_blockquote(ob, tmp);
@@ -913,23 +914,23 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *mq,
 		rndr_doc_header(ob, tmp, mq, st);
 		break;
 	case LOWDOWN_META:
-		rndr_meta(ob, tmp, mq, root);
+		rndr_meta(ob, tmp, mq, n);
 		break;
 	case LOWDOWN_DOC_FOOTER:
 		rndr_doc_footer(ob, st);
 		break;
 	case LOWDOWN_HEADER:
 		rndr_header(ob, tmp, 
-			root->rndr_header.level, st);
+			n->rndr_header.level, st);
 		break;
 	case LOWDOWN_HRULE:
 		rndr_hrule(ob);
 		break;
 	case LOWDOWN_LIST:
-		rndr_list(ob, tmp, &root->rndr_list);
+		rndr_list(ob, tmp, &n->rndr_list);
 		break;
 	case LOWDOWN_LISTITEM:
-		rndr_listitem(ob, tmp, root);
+		rndr_listitem(ob, tmp, n);
 		break;
 	case LOWDOWN_PARAGRAPH:
 		rndr_paragraph(ob, tmp, st);
@@ -939,8 +940,8 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *mq,
 		break;
 	case LOWDOWN_TABLE_HEADER:
 		rndr_table_header(ob, tmp, 
-			root->rndr_table_header.flags,
-			root->rndr_table_header.columns);
+			n->rndr_table_header.flags,
+			n->rndr_table_header.columns);
 		break;
 	case LOWDOWN_TABLE_BODY:
 		rndr_table_body(ob, tmp);
@@ -950,29 +951,29 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *mq,
 		break;
 	case LOWDOWN_TABLE_CELL:
 		rndr_tablecell(ob, tmp, 
-			root->rndr_table_cell.flags, 
-			root->rndr_table_cell.col,
-			root->rndr_table_cell.columns);
+			n->rndr_table_cell.flags, 
+			n->rndr_table_cell.col,
+			n->rndr_table_cell.columns);
 		break;
 	case LOWDOWN_FOOTNOTES_BLOCK:
 		rndr_footnotes(ob, tmp);
 		break;
 	case LOWDOWN_FOOTNOTE_DEF:
 		rndr_footnote_def(ob, tmp, 
-			root->rndr_footnote_def.num);
+			n->rndr_footnote_def.num);
 		break;
 	case LOWDOWN_BLOCKHTML:
 		rndr_raw_block(ob, 
-			&root->rndr_blockhtml.text, st);
+			&n->rndr_blockhtml.text, st);
 		break;
 	case LOWDOWN_LINK_AUTO:
 		rndr_autolink(ob, 
-			&root->rndr_autolink.link,
-			root->rndr_autolink.type, st);
+			&n->rndr_autolink.link,
+			n->rndr_autolink.type, st);
 		break;
 	case LOWDOWN_CODESPAN:
 		rndr_codespan(ob, 
-			&root->rndr_codespan.text, st);
+			&n->rndr_codespan.text, st);
 		break;
 	case LOWDOWN_DOUBLE_EMPHASIS:
 		rndr_double_emphasis(ob, tmp);
@@ -985,18 +986,18 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *mq,
 		break;
 	case LOWDOWN_IMAGE:
 		rndr_image(ob, 
-			&root->rndr_image.link,
-			&root->rndr_image.title,
-			&root->rndr_image.dims,
-			&root->rndr_image.alt, st);
+			&n->rndr_image.link,
+			&n->rndr_image.title,
+			&n->rndr_image.dims,
+			&n->rndr_image.alt, st);
 		break;
 	case LOWDOWN_LINEBREAK:
 		rndr_linebreak(ob);
 		break;
 	case LOWDOWN_LINK:
 		rndr_link(ob, tmp,
-			&root->rndr_link.link,
-			&root->rndr_link.title, st);
+			&n->rndr_link.link,
+			&n->rndr_link.title, st);
 		break;
 	case LOWDOWN_TRIPLE_EMPHASIS:
 		rndr_triple_emphasis(ob, tmp);
@@ -1009,23 +1010,23 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *mq,
 		break;
 	case LOWDOWN_FOOTNOTE_REF:
 		rndr_footnote_ref(ob, 
-			root->rndr_footnote_ref.num);
+			n->rndr_footnote_ref.num);
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		rndr_math(ob, &root->rndr_math, st);
+		rndr_math(ob, &n->rndr_math, st);
 		break;
 	case LOWDOWN_RAW_HTML:
-		rndr_raw_html(ob, &root->rndr_raw_html.text, st);
+		rndr_raw_html(ob, &n->rndr_raw_html.text, st);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
 		rndr_normal_text(ob,
-			&root->rndr_normal_text.text, st);
+			&n->rndr_normal_text.text, st);
 		break;
 	case LOWDOWN_ENTITY:
 		if (!(st->flags & LOWDOWN_HTML_NUM_ENT)) {
 			hbuf_put(ob,
-				root->rndr_entity.text.data,
-				root->rndr_entity.text.size);
+				n->rndr_entity.text.data,
+				n->rndr_entity.text.size);
 			break;
 		}
 
@@ -1036,20 +1037,20 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *mq,
 		 * entities.
 		 */
 
-		ent = entity_find_iso(&root->rndr_entity.text);
+		ent = entity_find_iso(&n->rndr_entity.text);
 		if (ent > 0)
-			hbuf_printf(ob, "&#%lld;", (long long)ent);
+			hbuf_printf(ob, "&#%" PRId32 ";", ent);
 		else
-			hbuf_putb(ob, &root->rndr_entity.text);
+			hbuf_putb(ob, &n->rndr_entity.text);
 		break;
 	default:
 		hbuf_put(ob, tmp->data, tmp->size);
 		break;
 	}
 
-	if (root->chng == LOWDOWN_CHNG_INSERT)
+	if (n->chng == LOWDOWN_CHNG_INSERT)
 		HBUF_PUTSL(ob, "</ins>");
-	if (root->chng == LOWDOWN_CHNG_DELETE)
+	if (n->chng == LOWDOWN_CHNG_DELETE)
 		HBUF_PUTSL(ob, "</del>");
 
 	hbuf_free(tmp);
@@ -1063,9 +1064,9 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *mq,
 void *
 lowdown_html_new(const struct lowdown_opts *opts)
 {
-	struct hstate *st;
+	struct html *st;
 
-	st = xcalloc(1, sizeof(struct hstate));
+	st = xcalloc(1, sizeof(struct html));
 
 	TAILQ_INIT(&st->headers_used);
 	st->flags = NULL == opts ? 0 : opts->oflags;
@@ -1076,7 +1077,7 @@ lowdown_html_new(const struct lowdown_opts *opts)
 void
 lowdown_html_free(void *arg)
 {
-	struct hstate	*st = arg;
+	struct html	*st = arg;
 	struct hentry	*hentry;
 
 	while (NULL != (hentry = TAILQ_FIRST(&st->headers_used))) {
