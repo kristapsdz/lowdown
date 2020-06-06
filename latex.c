@@ -33,6 +33,7 @@
 
 struct latex {
 	unsigned int	oflags; /* same as in lowdown_opts */
+	size_t		base_header_level; /* header offset */
 };
 
 static void
@@ -197,13 +198,14 @@ rndr_linebreak(hbuf *ob)
 }
 
 static void
-rndr_header(hbuf *ob, const hbuf *content, size_t level)
+rndr_header(hbuf *ob, const hbuf *content,
+	size_t level, const struct latex *st)
 {
 
 	if (ob->size)
 		HBUF_PUTSL(ob, "\n");
 
-	switch (level) {
+	switch (level + st->base_header_level) {
 	case 0:
 	case 1:
 		HBUF_PUTSL(ob, "\\section{");
@@ -519,8 +521,8 @@ rndr_doc_header(hbuf *ob,
 }
 
 static void
-rndr_meta(hbuf *ob, const hbuf *content,
-	struct lowdown_metaq *mq, const struct lowdown_node *n)
+rndr_meta(hbuf *ob, const hbuf *content, struct lowdown_metaq *mq,
+	const struct lowdown_node *n, struct latex *st)
 {
 	struct lowdown_meta	*m;
 
@@ -529,6 +531,10 @@ rndr_meta(hbuf *ob, const hbuf *content,
 	m->key = xstrndup(n->rndr_meta.key.data,
 		n->rndr_meta.key.size);
 	m->value = xstrndup(content->data, content->size);
+
+	if (strcasecmp(m->key, "baseheaderlevel") == 0)
+		st->base_header_level = 
+			strtonum(m->value, 0, 5, NULL);
 }
 
 void
@@ -587,13 +593,13 @@ lowdown_latex_rndr(hbuf *ob, struct lowdown_metaq *mq,
 		rndr_doc_header(ob, mq, st);
 		break;
 	case LOWDOWN_META:
-		rndr_meta(ob, tmp, mq, n);
+		rndr_meta(ob, tmp, mq, n, st);
 		break;
 	case LOWDOWN_DOC_FOOTER:
 		rndr_doc_footer(ob, st);
 		break;
 	case LOWDOWN_HEADER:
-		rndr_header(ob, tmp, n->rndr_header.level);
+		rndr_header(ob, tmp, n->rndr_header.level, st);
 		break;
 	case LOWDOWN_HRULE:
 		rndr_hrule(ob);

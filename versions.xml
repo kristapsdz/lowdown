@@ -737,6 +737,18 @@
 				This will be expanded in future versions, but for now gets most
 				documents having maths and graphics, too.
 			</p>
+			<p>
+				Significantly improve metadata handling.
+				Until now, metadata was handled inconsistently across output
+				formats, and not always in line with the documented behaviour with
+				respect to overriding.
+				Now, all of the basic metadata keys are properly handled,
+				RCS-specified keys properly override, and all of these is documented
+				more rigorously in <a href="lowdown.1.html">lowdown(1)</a>.
+			</p>
+			<p>
+				Support <code>base header level</code> metadata on all outputs.
+			</p>
 		</aside>
 	</article>
 </articles>

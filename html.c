@@ -49,8 +49,9 @@ struct	hentry {
  * Our internal state object.
  */
 struct 	html {
-	TAILQ_HEAD(, hentry) headers_used;
-	unsigned int flags; /* same as "oflags" in lowdown_opts */
+	TAILQ_HEAD(, hentry) 	 headers_used;
+	size_t			 base_header_level; /* header offset */
+	unsigned int 		 flags; /* "oflags" in lowdown_opts */
 };
 
 /*
@@ -230,7 +231,7 @@ rndr_linebreak(hbuf *ob)
  * This will reference-count the header so we don't have duplicates.
  */
 static void
-rndr_header_id(hbuf *ob, const hbuf *header, struct html *state)
+rndr_header_id(hbuf *ob, const hbuf *header, struct html *st)
 {
 	struct hentry	*hentry;
 
@@ -239,7 +240,7 @@ rndr_header_id(hbuf *ob, const hbuf *header, struct html *state)
 	 * Note that in HTML5, the identifier is case sensitive.
 	 */
 
-	TAILQ_FOREACH(hentry, &state->headers_used, entries) {
+	TAILQ_FOREACH(hentry, &st->headers_used, entries) {
 		if (strlen(hentry->str) != header->size)
 			continue;
 		if (strncmp(hentry->str, 
@@ -269,26 +270,31 @@ rndr_header_id(hbuf *ob, const hbuf *header, struct html *state)
 	hentry = xcalloc(1, sizeof(struct hentry));
 	hentry->count = 1;
 	hentry->str = xstrndup(header->data, header->size);
-	TAILQ_INSERT_TAIL(&state->headers_used, hentry, entries);
+	TAILQ_INSERT_TAIL(&st->headers_used, hentry, entries);
 }
 
 static void
-rndr_header(hbuf *ob, const hbuf *content, 
-	int level, struct html *state)
+rndr_header(hbuf *ob, const hbuf *content,
+	size_t level, struct html *st)
 {
+
+	/* Don't allow greater than <h6>. */
+
+	if ((level += st->base_header_level) > 6)
+		level = 6;
 
 	if (ob->size)
 		hbuf_putc(ob, '\n');
 
-	if (content->size && (state->flags & LOWDOWN_HTML_HEAD_IDS)) {
-		hbuf_printf(ob, "<h%d id=\"", level);
-		rndr_header_id(ob, content, state);
+	if (content->size && (st->flags & LOWDOWN_HTML_HEAD_IDS)) {
+		hbuf_printf(ob, "<h%zu id=\"", level);
+		rndr_header_id(ob, content, st);
 		HBUF_PUTSL(ob, "\">");
 	} else
-		hbuf_printf(ob, "<h%d>", level);
+		hbuf_printf(ob, "<h%zu>", level);
 
 	hbuf_putb(ob, content);
-	hbuf_printf(ob, "</h%d>\n", level);
+	hbuf_printf(ob, "</h%zu>\n", level);
 }
 
 static void
@@ -766,8 +772,8 @@ rndr_meta_multi(hbuf *ob, const char *b,
 }
 
 static void
-rndr_meta(hbuf *ob, const hbuf *tmp, struct lowdown_metaq *mq,
-	const struct lowdown_node *n)
+rndr_meta(hbuf *ob, const hbuf *content, struct lowdown_metaq *mq,
+	const struct lowdown_node *n, struct html *st)
 {
 	struct lowdown_meta	*m;
 
@@ -775,7 +781,11 @@ rndr_meta(hbuf *ob, const hbuf *tmp, struct lowdown_metaq *mq,
 	TAILQ_INSERT_TAIL(mq, m, entries);
 	m->key = xstrndup(n->rndr_meta.key.data,
 		n->rndr_meta.key.size);
-	m->value = xstrndup(tmp->data, tmp->size);
+	m->value = xstrndup(content->data, content->size);
+
+	if (strcasecmp(m->key, "baseheaderlevel") == 0)
+		st->base_header_level = 
+			strtonum(m->value, 0, 5, NULL);
 }
 
 static void
@@ -914,14 +924,13 @@ lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *mq,
 		rndr_doc_header(ob, tmp, mq, st);
 		break;
 	case LOWDOWN_META:
-		rndr_meta(ob, tmp, mq, n);
+		rndr_meta(ob, tmp, mq, n, st);
 		break;
 	case LOWDOWN_DOC_FOOTER:
 		rndr_doc_footer(ob, st);
 		break;
 	case LOWDOWN_HEADER:
-		rndr_header(ob, tmp, 
-			n->rndr_header.level, st);
+		rndr_header(ob, tmp, n->rndr_header.level, st);
 		break;
 	case LOWDOWN_HRULE:
 		rndr_hrule(ob);

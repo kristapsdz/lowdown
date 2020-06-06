@@ -308,6 +308,15 @@ Overridden by
 .Li rcsauthor .
 Used in all output modes but
 .Fl T Ns Ar man .
+.It Li baseheaderlevel
+Document-wide header level offset number.
+This will increase the level of all headers.
+For example, having a base header level of 2 will cause all headers at
+level 1 to be
+.Li <h3>
+in
+.Fl T Ns Ar html .
+This may be between zero and five, inclusive.
 .It Li copyright
 A document copyright (without the word
 .Dq Copyright ) ,

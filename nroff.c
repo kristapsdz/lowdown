@@ -68,6 +68,7 @@ enum	nscope {
 struct 	nroff {
 	int 		 man; /* whether man(7) */
 	unsigned int 	 flags; /* output flags */
+	size_t		 base_header_level; /* header offset */
 	enum nfont	 fonts[NFONT__MAX]; /* see nstate_fonts() */
 };
 
@@ -565,9 +566,12 @@ rndr_linebreak(hbuf *ob)
  * If we're numbered ms(7) w/extensions, use NH and XN (-mspdf).
  */
 static void
-rndr_header(hbuf *ob, const hbuf *content, int level,
-	const struct nroff *st)
+rndr_header(hbuf *ob, const hbuf *content,
+	size_t level, const struct nroff *st)
 {
+
+	if ((level += st->base_header_level) > 6)
+		level = 6;
 
 	if (content->size == 0)
 		return;
@@ -583,9 +587,9 @@ rndr_header(hbuf *ob, const hbuf *content, int level,
 	} 
 
 	if ((st->flags & LOWDOWN_NROFF_GROFF))
-		hbuf_printf(ob, ".SH %d\n", level);
+		hbuf_printf(ob, ".SH %zu\n", level);
 	else if ((st->flags & LOWDOWN_NROFF_NUMBERED))
-		hbuf_printf(ob, ".NH %d\n", level);
+		hbuf_printf(ob, ".NH %zu\n", level);
 	else
 		hbuf_printf(ob, ".SH\n");
 
@@ -1072,8 +1076,8 @@ rndr_meta_multi(hbuf *ob, const char *b, const char *env)
 }
 
 static void
-rndr_meta(hbuf *ob, const hbuf *content,
-	struct lowdown_metaq *mq, const struct lowdown_node *n)
+rndr_meta(hbuf *ob, const hbuf *content, struct lowdown_metaq *mq,
+	const struct lowdown_node *n, struct nroff *st)
 {
 	struct lowdown_meta	*m;
 
@@ -1082,6 +1086,10 @@ rndr_meta(hbuf *ob, const hbuf *content,
 	m->key = xstrndup(n->rndr_meta.key.data,
 		n->rndr_meta.key.size);
 	m->value = xstrndup(content->data, content->size);
+
+	if (strcasecmp(m->key, "baseheaderlevel") == 0)
+		st->base_header_level = 
+			strtonum(m->value, 0, 5, NULL);
 }
 
 static void
@@ -1273,7 +1281,7 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 		rndr_doc_header(ob, mq, st);
 		break;
 	case LOWDOWN_META:
-		rndr_meta(ob, tmp, mq, n);
+		rndr_meta(ob, tmp, mq, n, st);
 		break;
 	case LOWDOWN_HEADER:
 		rndr_header(ob, tmp, 
