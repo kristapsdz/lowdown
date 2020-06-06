@@ -65,7 +65,7 @@ enum	nscope {
 	NSCOPE_SPAN
 };
 
-struct 	nstate {
+struct 	nroff {
 	int 		 man; /* whether man(7) */
 	unsigned int 	 flags; /* output flags */
 	enum nfont	 fonts[NFONT__MAX]; /* see nstate_fonts() */
@@ -224,7 +224,7 @@ rndr_one_lineb_noescape(hbuf *ob, const hbuf *b, int ownline)
  * bold, and italic.
  */
 static const char *
-nstate_fonts(const struct nstate *st)
+nstate_fonts(const struct nroff *st)
 {
 	static char 	 fonts[10];
 	char		*cp = fonts;
@@ -264,7 +264,7 @@ nstate_fonts(const struct nstate *st)
  * link, if no text is found).
  */
 static int
-putlink(hbuf *ob, struct nstate *st, const hbuf *link, 
+putlink(hbuf *ob, struct nroff *st, const hbuf *link, 
 	const hbuf *text, struct lowdown_node *next, 
 	struct lowdown_node *prev, enum halink_type type)
 {
@@ -387,7 +387,7 @@ putlink(hbuf *ob, struct nstate *st, const hbuf *link,
 static int
 rndr_autolink(hbuf *ob, const hbuf *link, enum halink_type type, 
 	struct lowdown_node *prev, struct lowdown_node *next,
-	struct nstate *st, int nln)
+	struct nroff *st, int nln)
 {
 
 	if (link->size == 0)
@@ -403,7 +403,7 @@ rndr_autolink(hbuf *ob, const hbuf *link, enum halink_type type,
 
 static void
 rndr_blockcode(hbuf *ob, const hbuf *content, 
-	const hbuf *lang, const struct nstate *st)
+	const hbuf *lang, const struct nroff *st)
 {
 
 	if (content->size == 0)
@@ -566,7 +566,7 @@ rndr_linebreak(hbuf *ob)
  */
 static void
 rndr_header(hbuf *ob, const hbuf *content, int level,
-	const struct nstate *st)
+	const struct nroff *st)
 {
 
 	if (content->size == 0)
@@ -602,7 +602,7 @@ rndr_header(hbuf *ob, const hbuf *content, int level,
 
 static int
 rndr_link(hbuf *ob, const hbuf *content, const hbuf *link, 
-	struct nstate *st, struct lowdown_node *prev, 
+	struct nroff *st, struct lowdown_node *prev, 
 	struct lowdown_node *next, int nln)
 {
 
@@ -691,7 +691,7 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 
 static void
 rndr_paragraph(hbuf *ob, const hbuf *content, 
-	const struct nstate *st, const struct lowdown_node *np)
+	const struct nroff *st, const struct lowdown_node *np)
 {
 	size_t	 i = 0, org;
 
@@ -734,7 +734,7 @@ rndr_paragraph(hbuf *ob, const hbuf *content,
 }
 
 static void
-rndr_raw_block(hbuf *ob, const hbuf *content, const struct nstate *st)
+rndr_raw_block(hbuf *ob, const hbuf *content, const struct nroff *st)
 {
 	size_t	 org = 0, sz = content->size;
 
@@ -756,7 +756,7 @@ rndr_raw_block(hbuf *ob, const hbuf *content, const struct nstate *st)
 }
 
 static void
-rndr_hrule(hbuf *ob, const struct nstate *st)
+rndr_hrule(hbuf *ob, const struct nroff *st)
 {
 
 	/*
@@ -770,7 +770,7 @@ rndr_hrule(hbuf *ob, const struct nstate *st)
 }
 
 static void
-rndr_image(hbuf *ob, const hbuf *link, const struct nstate *st, 
+rndr_image(hbuf *ob, const hbuf *link, const struct nroff *st, 
 	int nln, const struct lowdown_node *prev)
 {
 	const char	*cp;
@@ -802,7 +802,7 @@ rndr_image(hbuf *ob, const hbuf *link, const struct nstate *st,
 }
 
 static void
-rndr_raw_html(hbuf *ob, const hbuf *text, const struct nstate *st)
+rndr_raw_html(hbuf *ob, const hbuf *text, const struct nroff *st)
 {
 
 	if (st->flags & LOWDOWN_NROFF_SKIP_HTML)
@@ -934,7 +934,7 @@ static void
 rndr_normal_text(hbuf *ob, const hbuf *content, size_t offs, 
 	const struct lowdown_node *prev, 
 	const struct lowdown_node *next, 
-	const struct nstate *st, int nl)
+	const struct nroff *st, int nl)
 {
 	size_t	 	 i, size;
 	const char 	*data;
@@ -967,7 +967,7 @@ rndr_normal_text(hbuf *ob, const hbuf *content, size_t offs,
 }
 
 static void
-rndr_footnotes(hbuf *ob, const hbuf *content, const struct nstate *st)
+rndr_footnotes(hbuf *ob, const hbuf *content, const struct nroff *st)
 {
 
 	/* Put a horizontal line in the case of man(7). */
@@ -983,7 +983,7 @@ rndr_footnotes(hbuf *ob, const hbuf *content, const struct nstate *st)
 
 static void
 rndr_footnote_def(hbuf *ob, const hbuf *content,
-	size_t num, const struct nstate *st)
+	size_t num, const struct nroff *st)
 {
 
 	/* 
@@ -1022,7 +1022,7 @@ rndr_footnote_def(hbuf *ob, const hbuf *content,
 }
 
 static void
-rndr_footnote_ref(hbuf *ob, size_t num, const struct nstate *st)
+rndr_footnote_ref(hbuf *ob, size_t num, const struct nroff *st)
 {
 
 	/* 
@@ -1086,7 +1086,7 @@ rndr_meta(hbuf *ob, const hbuf *content,
 
 static void
 rndr_doc_header(hbuf *ob, 
-	const struct lowdown_metaq *mq, const struct nstate *st)
+	const struct lowdown_metaq *mq, const struct nroff *st)
 {
 	const struct lowdown_meta	*m;
 	const char			*author = NULL, *title = NULL,
@@ -1164,25 +1164,25 @@ rndr_doc_header(hbuf *ob,
 }
 
 /*
- * Actually render the node "root" and all of its children into the
- * output buffer "ob".
- * Return whether we should remove nodes relative to "root".
+ * Actually render the node "n" and all of its children into the output
+ * buffer "ob".
+ * Return whether we should remove nodes relative to "n".
  */
 static void
 rndr(hbuf *ob, struct lowdown_metaq *mq, 
-	struct nstate *ref, struct lowdown_node *root)
+	struct nroff *st, struct lowdown_node *n)
 {
-	struct lowdown_node	*n, *next, *prev;
+	struct lowdown_node	*child, *next, *prev;
 	hbuf			*tmp;
 	int			 pnln, keepnext = 1;
 	int32_t			 ent;
 	enum nfont		 fonts[NFONT__MAX];
 
-	assert(root != NULL);
+	assert(n != NULL);
 
 	tmp = hbuf_new(64);
 
-	memcpy(fonts, ref->fonts, sizeof(fonts));
+	memcpy(fonts, st->fonts, sizeof(fonts));
 
 	/*
 	 * Font management.
@@ -1190,31 +1190,31 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 	 * and step out of them in a nested way.
 	 */
 
-	switch (root->type) {
+	switch (n->type) {
 	case LOWDOWN_CODESPAN:
-		ref->fonts[NFONT_FIXED]++;
-		hbuf_puts(ob, nstate_fonts(ref));
+		st->fonts[NFONT_FIXED]++;
+		hbuf_puts(ob, nstate_fonts(st));
 		break;
 	case LOWDOWN_EMPHASIS:
-		ref->fonts[NFONT_ITALIC]++;
-		hbuf_puts(ob, nstate_fonts(ref));
+		st->fonts[NFONT_ITALIC]++;
+		hbuf_puts(ob, nstate_fonts(st));
 		break;
 	case LOWDOWN_HIGHLIGHT:
 	case LOWDOWN_DOUBLE_EMPHASIS:
-		ref->fonts[NFONT_BOLD]++;
-		hbuf_puts(ob, nstate_fonts(ref));
+		st->fonts[NFONT_BOLD]++;
+		hbuf_puts(ob, nstate_fonts(st));
 		break;
 	case LOWDOWN_TRIPLE_EMPHASIS:
-		ref->fonts[NFONT_ITALIC]++;
-		ref->fonts[NFONT_BOLD]++;
-		hbuf_puts(ob, nstate_fonts(ref));
+		st->fonts[NFONT_ITALIC]++;
+		st->fonts[NFONT_BOLD]++;
+		hbuf_puts(ob, nstate_fonts(st));
 		break;
 	default:
 		break;
 	}
 
-	TAILQ_FOREACH(n, &root->children, entries)
-		rndr(tmp, mq, ref, n);
+	TAILQ_FOREACH(child, &n->children, entries)
+		rndr(tmp, mq, st, child);
 
 	/* 
 	 * Compute whether the previous output does have a newline:
@@ -1224,38 +1224,38 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 	 * otherwise, we don't know.
 	 */
 
-	if (root->parent == NULL ||
-	    (n = TAILQ_PREV(root, lowdown_nodeq, entries)) == NULL)
-		n = root->parent;
-	pnln = n == NULL || nscopes[n->type] == NSCOPE_BLOCK;
+	if (n->parent == NULL ||
+	    (prev = TAILQ_PREV(n, lowdown_nodeq, entries)) == NULL)
+		prev = n->parent;
+	pnln = prev == NULL || nscopes[prev->type] == NSCOPE_BLOCK;
 
 	/* Get the last and next emitted node. */
 
-	prev = root->parent == NULL ? NULL : 
-		TAILQ_PREV(root, lowdown_nodeq, entries);
-	next = TAILQ_NEXT(root, entries);
+	prev = n->parent == NULL ? NULL : 
+		TAILQ_PREV(n, lowdown_nodeq, entries);
+	next = TAILQ_NEXT(n, entries);
 
-	if (nscopes[root->type] == NSCOPE_BLOCK) {
-		if (root->chng == LOWDOWN_CHNG_INSERT)
+	if (nscopes[n->type] == NSCOPE_BLOCK) {
+		if (n->chng == LOWDOWN_CHNG_INSERT)
 			HBUF_PUTSL(ob, ".gcolor blue\n");
-		else if (root->chng == LOWDOWN_CHNG_DELETE)
+		else if (n->chng == LOWDOWN_CHNG_DELETE)
 			HBUF_PUTSL(ob, ".gcolor red\n");
 	} else {
 		/*
 		 * FIXME: this is going to disrupt our newline
 		 * computation.
 		 */
-		if (root->chng == LOWDOWN_CHNG_INSERT)
+		if (n->chng == LOWDOWN_CHNG_INSERT)
 			HBUF_PUTSL(ob, "\\m[blue]");
-		else if (root->chng == LOWDOWN_CHNG_DELETE)
+		else if (n->chng == LOWDOWN_CHNG_DELETE)
 			HBUF_PUTSL(ob, "\\m[red]");
 	}
 
-	switch (root->type) {
+	switch (n->type) {
 	case LOWDOWN_BLOCKCODE:
 		rndr_blockcode(ob, 
-			&root->rndr_blockcode.text, 
-			&root->rndr_blockcode.lang, ref);
+			&n->rndr_blockcode.text, 
+			&n->rndr_blockcode.lang, st);
 		break;
 	case LOWDOWN_BLOCKQUOTE:
 		rndr_blockquote(ob, tmp);
@@ -1264,37 +1264,37 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 		rndr_definition(ob, tmp);
 		break;
 	case LOWDOWN_DEFINITION_DATA:
-		rndr_definition_data(ob, root, tmp);
+		rndr_definition_data(ob, n, tmp);
 		break;
 	case LOWDOWN_DEFINITION_TITLE:
-		rndr_definition_title(ob, root, tmp);
+		rndr_definition_title(ob, n, tmp);
 		break;
 	case LOWDOWN_DOC_HEADER:
-		rndr_doc_header(ob, mq, ref);
+		rndr_doc_header(ob, mq, st);
 		break;
 	case LOWDOWN_META:
-		rndr_meta(ob, tmp, mq, root);
+		rndr_meta(ob, tmp, mq, n);
 		break;
 	case LOWDOWN_HEADER:
 		rndr_header(ob, tmp, 
-			root->rndr_header.level, ref);
+			n->rndr_header.level, st);
 		break;
 	case LOWDOWN_HRULE:
-		rndr_hrule(ob, ref);
+		rndr_hrule(ob, st);
 		break;
 	case LOWDOWN_LISTITEM:
-		rndr_listitem(ob, tmp, root, &root->rndr_listitem);
+		rndr_listitem(ob, tmp, n, &n->rndr_listitem);
 		break;
 	case LOWDOWN_PARAGRAPH:
-		rndr_paragraph(ob, tmp, ref, root->parent);
+		rndr_paragraph(ob, tmp, st, n->parent);
 		break;
 	case LOWDOWN_TABLE_BLOCK:
 		rndr_table(ob, tmp);
 		break;
 	case LOWDOWN_TABLE_HEADER:
 		rndr_table_header(ob, tmp, 
-			root->rndr_table_header.flags,
-			root->rndr_table_header.columns);
+			n->rndr_table_header.flags,
+			n->rndr_table_header.columns);
 		break;
 	case LOWDOWN_TABLE_BODY:
 		rndr_table_body(ob, tmp);
@@ -1304,38 +1304,38 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 		break;
 	case LOWDOWN_TABLE_CELL:
 		rndr_tablecell(ob, tmp, 
-			root->rndr_table_cell.col);
+			n->rndr_table_cell.col);
 		break;
 	case LOWDOWN_FOOTNOTES_BLOCK:
-		rndr_footnotes(ob, tmp, ref);
+		rndr_footnotes(ob, tmp, st);
 		break;
 	case LOWDOWN_FOOTNOTE_DEF:
 		rndr_footnote_def(ob, tmp, 
-			root->rndr_footnote_def.num, ref);
+			n->rndr_footnote_def.num, st);
 		break;
 	case LOWDOWN_BLOCKHTML:
-		rndr_raw_block(ob, &root->rndr_blockhtml.text, ref);
+		rndr_raw_block(ob, &n->rndr_blockhtml.text, st);
 		break;
 	case LOWDOWN_LINK_AUTO:
 		keepnext = rndr_autolink(ob, 
-			&root->rndr_autolink.link,
-			root->rndr_autolink.type,
-			prev, next, ref, pnln);
+			&n->rndr_autolink.link,
+			n->rndr_autolink.type,
+			prev, next, st, pnln);
 		break;
 	case LOWDOWN_CODESPAN:
-		rndr_codespan(ob, &root->rndr_codespan.text);
+		rndr_codespan(ob, &n->rndr_codespan.text);
 		break;
 	case LOWDOWN_IMAGE:
-		rndr_image(ob, &root->rndr_image.link,
-			ref, pnln, prev);
+		rndr_image(ob, &n->rndr_image.link,
+			st, pnln, prev);
 		break;
 	case LOWDOWN_LINEBREAK:
 		rndr_linebreak(ob);
 		break;
 	case LOWDOWN_LINK:
 		keepnext = rndr_link(ob, tmp,
-			&root->rndr_link.link,
-			ref, prev, next, pnln);
+			&n->rndr_link.link,
+			st, prev, next, pnln);
 		break;
 	case LOWDOWN_STRIKETHROUGH:
 		rndr_strikethrough(ob, tmp);
@@ -1345,24 +1345,24 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 		break;
 	case LOWDOWN_FOOTNOTE_REF:
 		rndr_footnote_ref(ob, 
-			root->rndr_footnote_ref.num, ref);
+			n->rndr_footnote_ref.num, st);
 		break;
 	case LOWDOWN_RAW_HTML:
-		rndr_raw_html(ob, &root->rndr_raw_html.text, ref);
+		rndr_raw_html(ob, &n->rndr_raw_html.text, st);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
 		rndr_normal_text(ob, 
-			&root->rndr_normal_text.text, 
-			root->rndr_normal_text.offs,
-			prev, next, ref, pnln);
+			&n->rndr_normal_text.text, 
+			n->rndr_normal_text.offs,
+			prev, next, st, pnln);
 		break;
 	case LOWDOWN_ENTITY:
-		ent = entity_find_iso(&root->rndr_entity.text);
+		ent = entity_find_iso(&n->rndr_entity.text);
 		if (ent > 0)
 			hbuf_printf(ob, "\\[u%.4llX]", 
 				(unsigned long long)ent);
 		else
-			hbuf_putb(ob, &root->rndr_entity.text);
+			hbuf_putb(ob, &n->rndr_entity.text);
 		break;
 	default:
 		hbuf_put(ob, tmp->data, tmp->size);
@@ -1370,9 +1370,9 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 	}
 
 
-	if (root->chng == LOWDOWN_CHNG_INSERT ||
-	    root->chng == LOWDOWN_CHNG_DELETE) {
-		if (nscopes[root->type] == NSCOPE_BLOCK)
+	if (n->chng == LOWDOWN_CHNG_INSERT ||
+	    n->chng == LOWDOWN_CHNG_DELETE) {
+		if (nscopes[n->type] == NSCOPE_BLOCK)
 			HBUF_PUTSL(ob, ".gcolor\n");
 		else
 			HBUF_PUTSL(ob, "\\m[]");
@@ -1380,14 +1380,14 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 
 	/* Restore the font stack. */
 
-	switch (root->type) {
+	switch (n->type) {
 	case LOWDOWN_CODESPAN:
 	case LOWDOWN_EMPHASIS:
 	case LOWDOWN_HIGHLIGHT:
 	case LOWDOWN_DOUBLE_EMPHASIS:
 	case LOWDOWN_TRIPLE_EMPHASIS:
-		memcpy(ref->fonts, fonts, sizeof(fonts));
-		hbuf_puts(ob, nstate_fonts(ref));
+		memcpy(st->fonts, fonts, sizeof(fonts));
+		hbuf_puts(ob, nstate_fonts(st));
 		break;
 	default:
 		break;
@@ -1409,9 +1409,9 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 
 void
 lowdown_nroff_rndr(hbuf *ob, struct lowdown_metaq *mq,
-	void *ref, struct lowdown_node *n)
+	void *arg, struct lowdown_node *n)
 {
-	struct nstate		*st = ref;
+	struct nroff		*st = arg;
 	struct lowdown_metaq	 metaq;
 
 	/* Temporary metaq if not provided. */
@@ -1422,7 +1422,7 @@ lowdown_nroff_rndr(hbuf *ob, struct lowdown_metaq *mq,
 	}
 
 	memset(st->fonts, 0, sizeof(st->fonts));
-	rndr(ob, mq, ref, n);
+	rndr(ob, mq, st, n);
 
 	/* Release temporary metaq. */
 
@@ -1433,9 +1433,9 @@ lowdown_nroff_rndr(hbuf *ob, struct lowdown_metaq *mq,
 void *
 lowdown_nroff_new(const struct lowdown_opts *opts)
 {
-	struct nstate 	*state;
+	struct nroff 	*state;
 
-	state = xcalloc(1, sizeof(struct nstate));
+	state = xcalloc(1, sizeof(struct nroff));
 	state->flags = opts != NULL ? opts->oflags : 0;
 	state->man = opts != NULL && opts->type == LOWDOWN_MAN;
 	return state;
