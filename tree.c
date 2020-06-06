@@ -91,8 +91,7 @@ rndr_short(hbuf *ob, const hbuf *b)
 }
 
 static void
-rndr(hbuf *ob, struct lowdown_metaq *metaq,
-	const struct lowdown_node *root, size_t indent)
+rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 {
 	const struct lowdown_node	*n;
 	hbuf				*tmp;
@@ -247,7 +246,7 @@ rndr(hbuf *ob, struct lowdown_metaq *metaq,
 
 	tmp = hbuf_new(64);
 	TAILQ_FOREACH(n, &root->children, entries)
-		rndr(tmp, metaq, n, indent + 1);
+		rndr(tmp, n, indent + 1);
 	hbuf_putb(ob, tmp);
 	hbuf_free(tmp);
 }
@@ -258,7 +257,7 @@ lowdown_tree_rndr(hbuf *ob, struct lowdown_metaq *metaq,
 {
 
 	assert(ref == NULL);
-	rndr(ob, metaq, root, 0);
+	rndr(ob, root, 0);
 }
 
 void *

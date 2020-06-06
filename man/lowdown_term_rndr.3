@@ -29,22 +29,64 @@
 .Ft void
 .Fo lowdown_term_rndr
 .Fa "hbuf *out"
+.Fa "struct lowdown_metaq *mq"
 .Fa "void *arg"
-.Fa "const struct lowdown_node *root"
+.Fa "const struct lowdown_node *n"
 .Fc
 .Sh DESCRIPTION
 Renders a node tree
-.Fa root
+.Fa n
 created by
 .Xr lowdown_doc_parse 3
 or
 .Xr lowdown_doc_diff 3
 using the terminal renderer
 .Fa arg
-created by
-.Xr lowdown_term_new 3
-into the output buffer
-.Fa out .
+as returned by
+.Xr lowdown_term_new 3 .
+The output is written into
+.Fa out ,
+which must be initialised and freed by the caller.
+.Pp
+If
+.Fa mq
+is not
+.Dv NULL ,
+it is filled with any metadata as parsed.
+It must be initialised and its contents freed with
+.Xr lowdown_metaq_free 3 .
+.Pp
+The output consists of UTF-8 encoded characters and ANSI (really ISO/IEC
+6429) escape sequences.
+.Sh EXAMPLES
+The following assumes the the string
+.Va buf
+of length
+.Va bsz
+consists of Markdown content.
+.Bd -literal -offset indent
+hbuf *out;
+hdoc *doc;
+void *rndr;
+struct lowdown_node *n;
+
+if ((doc = lowdown_doc_new(NULL)) == NULL)
+	err(1, NULL);
+if ((n = lowdown_doc_parse(doc, NULL, buf, bsz)) == NULL)
+	err(1, NULL);
+lowdown_doc_free(doc);
+
+if ((out = hbuf_new(256)) == NULL)
+	err(1, NULL);
+if ((rndr = lowdown_term_new(NULL)) == NULL)
+	err(1, NULL);
+lowdown_term_rndr(out, NULL, rndr, n);
+lowdown_term_free(rndr);
+lowdown_node_free(n);
+
+fwrite(out->data, 1, out->size, stdout);
+free(out->data);
+.Ed
 .Sh SEE ALSO
 .Xr lowdown 3 ,
 .Xr lowdown_term_free 3 ,
