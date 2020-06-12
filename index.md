@@ -11,7 +11,7 @@ no dependencies.
 
 The tools are documented in
 [lowdown(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) and
-[lowdown-diff(1)](https://kristaps.bsd.lv/lowdown/lowdown-diff.1.html),
+[lowdown-diff(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html),
 the language in
 [lowdown(5)](https://kristaps.bsd.lv/lowdown/lowdown.5.html),
 and the library interface in
@@ -189,7 +189,7 @@ details on running the system.
 [lowdown(3)](https://kristaps.bsd.lv/lowdown/lowdown.3.html).  This
 is what's used internally by
 [lowdown(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) and
-[lowdown-diff(1)](https://kristaps.bsd.lv/lowdown/lowdown-diff.1.html).
+[lowdown-diff(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html).
 
 ## Testing
 
