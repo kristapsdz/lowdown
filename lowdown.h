@@ -272,6 +272,7 @@ struct	lowdown_opts {
 #define	LOWDOWN_METADATA	 0x4000
 #define	LOWDOWN_COMMONMARK	 0x8000
 #define	LOWDOWN_DEFLIST		 0x10000
+#define	LOWDOWN_IMG_EXT	 	 0x20000
 	unsigned int		 oflags;
 #define LOWDOWN_HTML_SKIP_HTML	 0x01 /* skip all HTML */
 #define LOWDOWN_HTML_ESCAPE	 0x02 /* escape HTML (if not skip) */

@@ -571,6 +571,21 @@ These dimensions are pixel sizes.
 ![Picard](https://bsd.lv/picard.jpg =250x250 'Engage!')
 .Ed
 .Pp
+Width and height in units other than pixels may be provided as extended
+image attributes.
+These follow PHP Markdown Extra syntax:
+.Bd -literal -offset indent
+![Picard](https://bsd.lv/picard.jpg){width=20%}
+.Ed
+.Pp
+The open brace must immediately following the closing parenthesis, and
+key-value pairs are separated by spaces.
+Recognised values are
+.Qq width
+and
+.Qq height
+with percentage units.
+.Pp
 The reference style definition consists of an image identifier
 surrounded by square brackets
 .Dq Pq \&[]

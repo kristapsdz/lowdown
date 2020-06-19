@@ -599,7 +599,9 @@ parse_inline(struct lowdown_doc *doc, char *data, size_t size)
 		 */
 
 		n = TAILQ_LAST(&doc->current->children, lowdown_nodeq);
-		if (i < size && data[i] == '{' &&
+
+		if ((doc->ext_flags & LOWDOWN_IMG_EXT) &&
+		    i < size && data[i] == '{' &&
 		    n != NULL && n->type == LOWDOWN_IMAGE) {
 			i = end;
 			end = parse_image_attrs

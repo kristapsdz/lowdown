@@ -508,10 +508,8 @@ rndr_hrule(struct lowdown_buf *ob)
 
 static void
 rndr_image(struct lowdown_buf *ob,
-	const struct lowdown_buf *link,
-	const struct lowdown_buf *title, 
-	const struct lowdown_buf *dims,
-	const struct lowdown_buf *alt, const struct html *st)
+	const struct rndr_image *p, 
+	const struct html *st)
 {
 	char		 dimbuf[32];
 	unsigned int	 x, y;
@@ -523,29 +521,44 @@ rndr_image(struct lowdown_buf *ob,
 	 * that as a cap to the size.
 	 */
 
-	if (dims->size && dims->size < sizeof(dimbuf) - 1) {
+	if (p->dims.size && p->dims.size < sizeof(dimbuf) - 1) {
 		memset(dimbuf, 0, sizeof(dimbuf));
-		memcpy(dimbuf, dims->data, dims->size);
+		memcpy(dimbuf, p->dims.data, p->dims.size);
 		rc = sscanf(dimbuf, "%ux%u", &x, &y);
 	}
 
 	/* Require an "alt", even if blank. */
 
 	HBUF_PUTSL(ob, "<img src=\"");
-	hesc_href(ob, link->data, link->size);
+	hesc_href(ob, p->link.data, p->link.size);
 	HBUF_PUTSL(ob, "\" alt=\"");
-	hesc_attr(ob, alt->data, alt->size);
+	hesc_attr(ob, p->alt.data, p->alt.size);
 	HBUF_PUTSL(ob, "\"");
 
-	if (dims->size && rc > 0) {
+	if (p->attr_width.size || p->attr_height.size) {
+		HBUF_PUTSL(ob, " style=\"");
+		if (p->attr_width.size) {
+			HBUF_PUTSL(ob, "width:");
+			hesc_attr(ob, p->attr_width.data,
+				p->attr_width.size);
+			HBUF_PUTSL(ob, ";");
+		}
+		if (p->attr_height.size) {
+			HBUF_PUTSL(ob, "height:");
+			hesc_attr(ob, p->attr_height.data,
+				p->attr_height.size);
+			HBUF_PUTSL(ob, ";");
+		}
+		HBUF_PUTSL(ob, "\"");
+	} else if (p->dims.size && rc > 0) {
 		hbuf_printf(ob, " width=\"%u\"", x);
 		if (rc > 1)
 			hbuf_printf(ob, " height=\"%u\"", y);
 	}
 
-	if (title->size) {
+	if (p->title.size) {
 		HBUF_PUTSL(ob, " title=\"");
-		escape_html(ob, title->data, title->size, st); 
+		escape_html(ob, p->title.data, p->title.size, st); 
 		HBUF_PUTSL(ob, "\"");
 	}
 
@@ -1033,11 +1046,7 @@ lowdown_html_rndr(struct lowdown_buf *ob,
 		rndr_highlight(ob, tmp);
 		break;
 	case LOWDOWN_IMAGE:
-		rndr_image(ob, 
-			&n->rndr_image.link,
-			&n->rndr_image.title,
-			&n->rndr_image.dims,
-			&n->rndr_image.alt, st);
+		rndr_image(ob, &n->rndr_image, st);
 		break;
 	case LOWDOWN_LINEBREAK:
 		rndr_linebreak(ob);

@@ -298,6 +298,8 @@ main(int argc, char *argv[])
 		{ "parse-no-cmark",	no_argument,	&riflag, LOWDOWN_COMMONMARK },
 		{ "parse-deflists",	no_argument,	&aiflag, LOWDOWN_DEFLIST },
 		{ "parse-no-deflists",	no_argument,	&riflag, LOWDOWN_DEFLIST },
+		{ "parse-img-ext",	no_argument,	&aiflag, LOWDOWN_IMG_EXT },
+		{ "parse-no-img-ext",	no_argument,	&riflag, LOWDOWN_IMG_EXT },
 		{ "parse-maxdepth",	required_argument, NULL, 5 },
 		{ NULL,			0,	NULL,	0 }
 	};
@@ -321,6 +323,7 @@ main(int argc, char *argv[])
 		LOWDOWN_FENCED |
 		LOWDOWN_COMMONMARK |
 		LOWDOWN_DEFLIST |
+		LOWDOWN_IMG_EXT |
 		LOWDOWN_METADATA;
 	opts.oflags = 
 		LOWDOWN_HTML_ESCAPE |
