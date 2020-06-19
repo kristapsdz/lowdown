@@ -144,7 +144,7 @@ static const char *esc_num[] = {
  * This is modelled after the main Markdown parser.
  */
 void
-hesc_attr(hbuf *ob, const char *data, size_t size)
+hesc_attr(struct lowdown_buf *ob, const char *data, size_t size)
 {
 	size_t	 i = 0, mark;
 
@@ -179,7 +179,7 @@ hesc_attr(hbuf *ob, const char *data, size_t size)
  * Escape (part of) a URL inside HTML.
  */
 void
-hesc_href(hbuf *ob, const char *data, size_t size)
+hesc_href(struct lowdown_buf *ob, const char *data, size_t size)
 {
 	static const char 	hex_chars[] = "0123456789ABCDEF";
 	size_t  		i = 0, mark;
@@ -252,7 +252,7 @@ hesc_href(hbuf *ob, const char *data, size_t size)
  * Does nothing if "size" is zero.
  */
 void
-hesc_html(hbuf *ob, const char *data,
+hesc_html(struct lowdown_buf *ob, const char *data,
 	size_t size, int secure, int literal, int num)
 {
 	size_t 		i = 0, mark;

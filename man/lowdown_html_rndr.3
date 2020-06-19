@@ -28,7 +28,7 @@
 .In lowdown.h
 .Ft void
 .Fo lowdown_html_rndr
-.Fa "hbuf *out"
+.Fa "struct lowdown_buf *out"
 .Fa "struct lowdown_metaq *mq"
 .Fa "void *arg"
 .Fa "const struct lowdown_node *n"
@@ -64,7 +64,7 @@ of length
 .Va bsz
 consists of Markdown content.
 .Bd -literal -offset indent
-hbuf *out;
+struct lowdown_buf *out;
 struct lowdown_doc *doc;
 void *rndr;
 struct lowdown_node *n;
@@ -75,7 +75,7 @@ if ((n = lowdown_doc_parse(doc, NULL, buf, bsz)) == NULL)
 	err(1, NULL);
 lowdown_doc_free(doc);
 
-if ((out = hbuf_new(256)) == NULL)
+if ((out = lowdown_buf_new(256)) == NULL)
 	err(1, NULL);
 if ((rndr = lowdown_rndr_new(NULL)) == NULL)
 	err(1, NULL);
@@ -84,7 +84,7 @@ lowdown_rndr_free(rndr);
 lowdown_node_free(n);
 
 fwrite(out->data, 1, out->size, stdout);
-free(out->data);
+lowdown_buf_free(out);
 .Ed
 .Sh SEE ALSO
 .Xr lowdown 3 ,

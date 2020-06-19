@@ -226,7 +226,7 @@ smarty_iswb(char c)
 static int
 smarty_right_wb_r(const struct lowdown_node *n, int skip)
 {
-	const hbuf			*b;
+	const struct lowdown_buf	*b;
 	const struct lowdown_node	*nn;
 
 	/* Check type of node. */
@@ -269,7 +269,7 @@ smarty_right_wb_r(const struct lowdown_node *n, int skip)
 static int
 smarty_right_wb(const struct lowdown_node *n, size_t pos)
 {
-	const hbuf	*b;
+	const struct lowdown_buf	*b;
 
 	assert(n->type == LOWDOWN_NORMAL_TEXT);
 	b = &n->rndr_normal_text.text;
@@ -285,7 +285,8 @@ smarty_right_wb(const struct lowdown_node *n, size_t pos)
  * switch statement.
  */
 static void
-smarty_hbuf(struct lowdown_node *n, size_t *maxn, hbuf *b, struct smarty *s)
+smarty_hbuf(struct lowdown_node *n, size_t *maxn,
+	struct lowdown_buf *b, struct smarty *s)
 {
 	size_t	 i = 0, j, sz;
 

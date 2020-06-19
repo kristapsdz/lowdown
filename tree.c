@@ -72,7 +72,7 @@ static	const char *const names[LOWDOWN__MAX] = {
 };
 
 static void
-rndr_short(hbuf *ob, const hbuf *b)
+rndr_short(struct lowdown_buf *ob, const struct lowdown_buf *b)
 {
 	size_t	 i;
 
@@ -91,10 +91,11 @@ rndr_short(hbuf *ob, const hbuf *b)
 }
 
 static void
-rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
+rndr(struct lowdown_buf *ob,
+	const struct lowdown_node *root, size_t indent)
 {
 	const struct lowdown_node	*n;
-	hbuf				*tmp;
+	struct lowdown_buf		*tmp;
 	size_t	 			 i, j;
 
 	for (i = 0; i < indent; i++)
@@ -275,8 +276,9 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 }
 
 void
-lowdown_tree_rndr(hbuf *ob, struct lowdown_metaq *metaq,
-	void *ref, const struct lowdown_node *root)
+lowdown_tree_rndr(struct lowdown_buf *ob,
+	struct lowdown_metaq *metaq, void *ref,
+	const struct lowdown_node *root)
 {
 
 	assert(ref == NULL);

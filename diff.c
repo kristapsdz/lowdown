@@ -116,7 +116,7 @@ static	const char *const names[LOWDOWN__MAX] = {
 #endif
 
 static void
-MD5Updatebuf(MD5_CTX *ctx, const hbuf *v)
+MD5Updatebuf(MD5_CTX *ctx, const struct lowdown_buf *v)
 {
 
 	MD5Update(ctx, (const uint8_t *)v->data, v->size);

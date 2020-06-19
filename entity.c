@@ -290,7 +290,7 @@ static const struct ent ents[] = {
 };
 
 static int32_t
-entity_find_num(const hbuf *buf)
+entity_find_num(const struct lowdown_buf *buf)
 {
 	char			 b[32];
 	char			*ep;
@@ -340,7 +340,7 @@ entity_find_num(const hbuf *buf)
  * Return -1 on failure.
  */
 static const struct ent *
-entity_find_named(const hbuf *buf)
+entity_find_named(const struct lowdown_buf *buf)
 {
 	char	 b[32];
 	size_t	 i;
@@ -370,7 +370,7 @@ entity_find_named(const hbuf *buf)
  * Return zero on failure, non-zero on success.
  */
 static int
-entity_sane(const hbuf *buf)
+entity_sane(const struct lowdown_buf *buf)
 {
 
 	if (buf->size < 3 ||
@@ -386,7 +386,7 @@ entity_sane(const hbuf *buf)
  * Handles both numeric (decimal and hex) and common named ones.
  */
 int32_t
-entity_find_iso(const hbuf *buf)
+entity_find_iso(const struct lowdown_buf *buf)
 {
 	const struct ent *e;
 
@@ -411,7 +411,7 @@ entity_find_iso(const hbuf *buf)
  * On success, sets the TeX flags.
  */
 const char *
-entity_find_tex(const hbuf *buf, unsigned char *fl)
+entity_find_tex(const struct lowdown_buf *buf, unsigned char *fl)
 {
 	const struct ent	*e;
 	int32_t			 unicode;

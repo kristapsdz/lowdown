@@ -46,7 +46,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 	char **res, size_t *rsz,
 	struct lowdown_metaq *metaq)
 {
-	hbuf			*ob;
+	struct lowdown_buf	*ob;
 	void			*renderer = NULL;
 	struct lowdown_doc	*document;
 	size_t			 maxn;
@@ -55,7 +55,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 
 	/* Create our buffers, renderer, and document. */
 
-	ob = hbuf_new(HBUF_START_BIG);
+	ob = lowdown_buf_new(HBUF_START_BIG);
 	document = lowdown_doc_new(opts);
 	t = opts == NULL ? LOWDOWN_HTML : opts->type;
 
@@ -125,7 +125,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 	*res = ob->data;
 	*rsz = ob->size;
 	ob->data = NULL;
-	hbuf_free(ob);
+	lowdown_buf_free(ob);
 }
 
 /*
@@ -137,8 +137,8 @@ lowdown_buf(const struct lowdown_opts *opts,
 static void
 lowdown_merge_adjacent_text(struct lowdown_node *n)
 {
-	struct lowdown_node *nn, *next;
-	hbuf	*nb, *nextbuf;
+	struct lowdown_node 	*nn, *next;
+	struct lowdown_buf	*nb, *nextbuf;
 
 	TAILQ_FOREACH(nn, &n->children, entries) {
 		if (nn->type != LOWDOWN_NORMAL_TEXT) {
@@ -171,7 +171,7 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	char **res, size_t *rsz,
 	struct lowdown_metaq *metaq)
 {
-	hbuf	 	 	*ob;
+	struct lowdown_buf 	*ob;
 	void 		 	*renderer = NULL;
 	struct lowdown_doc 	*doc;
 	enum lowdown_type 	 t;
@@ -226,7 +226,7 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	    (opts->oflags & LOWDOWN_SMARTY)) 
 		smarty(ndiff, maxn, t);
 
-	ob = hbuf_new(HBUF_START_BIG);
+	ob = lowdown_buf_new(HBUF_START_BIG);
 
 	switch (t) {
 	case LOWDOWN_HTML:
@@ -259,24 +259,24 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	*res = ob->data;
 	*rsz = ob->size;
 	ob->data = NULL;
-	hbuf_free(ob);
+	lowdown_buf_free(ob);
 }
 
 int
 lowdown_file(const struct lowdown_opts *opts, FILE *fin,
 	char **res, size_t *rsz, struct lowdown_metaq *metaq)
 {
-	hbuf	*ib;
-	int	 rc = 0;
+	struct lowdown_buf	*ib;
+	int	 		 rc = 0;
 
-	ib = hbuf_new(HBUF_START_BIG);
+	ib = lowdown_buf_new(HBUF_START_BIG);
 
 	if (hbuf_putf(ib, fin))
 		goto out;
 	lowdown_buf(opts, ib->data, ib->size, res, rsz, metaq);
 	rc = 1;
 out:
-	hbuf_free(ib);
+	lowdown_buf_free(ib);
 	return rc;
 }
 
@@ -285,11 +285,11 @@ lowdown_file_diff(const struct lowdown_opts *opts,
 	FILE *fnew, FILE *fold, char **res, size_t *rsz, 
 	struct lowdown_metaq *metaq)
 {
-	hbuf	*src, *dst;
-	int	 rc = 0;
+	struct lowdown_buf	*src, *dst;
+	int	 		 rc = 0;
 
-	src = hbuf_new(HBUF_START_BIG);
-	dst = hbuf_new(HBUF_START_BIG);
+	src = lowdown_buf_new(HBUF_START_BIG);
+	dst = lowdown_buf_new(HBUF_START_BIG);
 
 	if (hbuf_putf(dst, fold) || hbuf_putf(src, fnew))
 		goto out;
@@ -297,8 +297,8 @@ lowdown_file_diff(const struct lowdown_opts *opts,
 		dst->data, dst->size, res, rsz, metaq);
 	rc = 1;
 out:
-	hbuf_free(src);
-	hbuf_free(dst);
+	lowdown_buf_free(src);
+	lowdown_buf_free(dst);
 	return rc;
 }
 

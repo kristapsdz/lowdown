@@ -45,16 +45,16 @@ struct tstack {
 };
 
 struct term {
-	unsigned int	 opts; /* oflags from lowdown_cfg */
-	size_t		 col; /* output column from zero */
-	ssize_t		 last_blank; /* line breaks or -1 (start) */
-	struct tstack	*stack; /* stack of nodes */
-	size_t		 stackmax; /* size of stack */
-	size_t		 stackpos; /* position in stack */
-	size_t		 maxcol; /* soft limit */
-	size_t		 hmargin; /* left of content */
-	size_t		 vmargin; /* before/after content */
-	hbuf		*tmp; /* for temporary allocations */
+	unsigned int		 opts; /* oflags from lowdown_cfg */
+	size_t			 col; /* output column from zero */
+	ssize_t			 last_blank; /* line breaks or -1 (start) */
+	struct tstack		*stack; /* stack of nodes */
+	size_t			 stackmax; /* size of stack */
+	size_t			 stackpos; /* position in stack */
+	size_t			 maxcol; /* soft limit */
+	size_t			 hmargin; /* left of content */
+	size_t			 vmargin; /* before/after content */
+	struct lowdown_buf	*tmp; /* for temporary allocations */
 };
 
 /*
@@ -165,7 +165,8 @@ static const struct sty sty_uli_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
 	 (_s)->override)
 
 static void
-rndr_escape(struct hbuf *out, const char *buf, size_t sz)
+rndr_escape(struct lowdown_buf *out,
+	const char *buf, size_t sz)
 {
 	size_t	 i, start = 0;
 
@@ -191,7 +192,8 @@ rndr_escape(struct hbuf *out, const char *buf, size_t sz)
  *   (5) print final path component with /.../ if shortened
  */
 static void
-rndr_short_link(struct hbuf *out, const struct hbuf *link)
+rndr_short_link(struct lowdown_buf *out,
+	const struct lowdown_buf *link)
 {
 	size_t		 start = 0, sz;
 	const char	*cp, *rcp;
@@ -257,7 +259,7 @@ rndr_short_link(struct hbuf *out, const struct hbuf *link)
  * If "s" does not have any style information, output nothing.
  */
 static void
-rndr_buf_style(struct hbuf *out, const struct sty *s)
+rndr_buf_style(struct lowdown_buf *out, const struct sty *s)
 {
 	int	has = 0;
 
@@ -398,7 +400,7 @@ rndr_buf_endstyle(const struct lowdown_node *n)
  * style "osty", if applies.
  */
 static void
-rndr_buf_endwords(struct term *term, hbuf *out,
+rndr_buf_endwords(struct term *term, struct lowdown_buf *out,
 	const struct lowdown_node *n, const struct sty *osty)
 {
 
@@ -411,7 +413,7 @@ rndr_buf_endwords(struct term *term, hbuf *out,
  * Like rndr_buf_endwords(), but also terminating the line itself.
  */
 static void
-rndr_buf_endline(struct term *term, hbuf *out,
+rndr_buf_endline(struct term *term, struct lowdown_buf *out,
 	const struct lowdown_node *n, const struct sty *osty)
 {
 
@@ -433,7 +435,7 @@ rndr_buf_endline(struct term *term, hbuf *out,
  * Output optional number of newlines before or after content.
  */
 static void
-rndr_buf_vspace(struct term *term, hbuf *out,
+rndr_buf_vspace(struct term *term, struct lowdown_buf *out,
 	const struct lowdown_node *n, size_t sz)
 {
 
@@ -452,7 +454,8 @@ rndr_buf_vspace(struct term *term, hbuf *out,
  */
 static void
 rndr_buf_startline_prefixes(struct term *term,
-	struct sty *s, const struct lowdown_node *n, hbuf *out)
+	struct sty *s, const struct lowdown_node *n,
+	struct lowdown_buf *out)
 {
 	size_t	 			 i, emit;
 	int	 		 	 pstyle = 0;
@@ -597,7 +600,7 @@ rndr_buf_startline_prefixes(struct term *term,
  * This also outputs all line prefixes of the block context.
  */
 static void
-rndr_buf_startline(struct term *term, hbuf *out, 
+rndr_buf_startline(struct term *term, struct lowdown_buf *out, 
 	const struct lowdown_node *n, const struct sty *osty)
 {
 	struct sty	 s;
@@ -631,7 +634,7 @@ rndr_buf_startwords_style(const struct lowdown_node *n, struct sty *s)
  * rndr_buf_startline().
  */
 static void
-rndr_buf_startwords(struct term *term, hbuf *out,
+rndr_buf_startwords(struct term *term, struct lowdown_buf *out,
 	const struct lowdown_node *n, const struct sty *osty)
 {
 	struct sty	 s;
@@ -647,8 +650,8 @@ rndr_buf_startwords(struct term *term, hbuf *out,
 }
 
 static void
-rndr_buf_literal(struct term *term, hbuf *out, 
-	const struct lowdown_node *n, const hbuf *in,
+rndr_buf_literal(struct term *term, struct lowdown_buf *out, 
+	const struct lowdown_node *n, const struct lowdown_buf *in,
 	const struct sty *osty)
 {
 	size_t		 i = 0, len;
@@ -672,8 +675,8 @@ rndr_buf_literal(struct term *term, hbuf *out,
  * Use "n" and its ancestry to determine our context.
  */
 static void
-rndr_buf(struct term *term, hbuf *out, 
-	const struct lowdown_node *n, const hbuf *in,
+rndr_buf(struct term *term, struct lowdown_buf *out, 
+	const struct lowdown_node *n, const struct lowdown_buf *in,
 	const struct sty *osty)
 {
 	size_t	 	 i = 0, len;
@@ -764,7 +767,7 @@ rndr_buf(struct term *term, hbuf *out,
  * This does no error checking.
  */
 static void
-rndr_entity(hbuf *buf, int32_t val)
+rndr_entity(struct lowdown_buf *buf, int32_t val)
 {
 
 	assert(val > 0);
@@ -795,12 +798,12 @@ rndr_entity(hbuf *buf, int32_t val)
 }
 
 static void
-rndr(hbuf *ob, struct lowdown_metaq *mq,
+rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	struct term *p, const struct lowdown_node *n)
 {
 	const struct lowdown_node	*child, *prev;
 	struct lowdown_meta		*m;
-	hbuf				*metatmp;
+	struct lowdown_buf		*metatmp;
 	int32_t				 entity;
 	size_t				 i, col;
 	ssize_t			 	 last_blank;
@@ -1075,8 +1078,9 @@ rndr(hbuf *ob, struct lowdown_metaq *mq,
 }
 
 void
-lowdown_term_rndr(hbuf *ob, struct lowdown_metaq *mq,
-	void *arg, const struct lowdown_node *n)
+lowdown_term_rndr(struct lowdown_buf *ob,
+	struct lowdown_metaq *mq, void *arg, 
+	const struct lowdown_node *n)
 {
 	struct term	*p = arg;
 

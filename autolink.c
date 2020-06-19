@@ -189,8 +189,8 @@ check_domain(char *data, size_t size)
  * Search for the next www link in data.
  */
 size_t
-halink_www(size_t *rewind_p, hbuf *link, char *data,
-	size_t max_rewind, size_t size)
+halink_www(size_t *rewind_p, struct lowdown_buf *link,
+	char *data, size_t max_rewind, size_t size)
 {
 	size_t link_end;
 
@@ -223,8 +223,8 @@ halink_www(size_t *rewind_p, hbuf *link, char *data,
  * Search for the next email in data.
  */
 size_t
-halink_email(size_t *rewind_p, hbuf *link, char *data,
-	size_t max_rewind, size_t size)
+halink_email(size_t *rewind_p, struct lowdown_buf *link, 
+	char *data, size_t max_rewind, size_t size)
 {
 	size_t	 link_end, rewind;
 	int	 nb = 0, np = 0;
@@ -278,7 +278,7 @@ halink_email(size_t *rewind_p, hbuf *link, char *data,
  * Search for the next URL in data.
  */
 size_t
-halink_url(size_t *rewind_p, hbuf *link,
+halink_url(size_t *rewind_p, struct lowdown_buf *link,
 	char *data, size_t max_rewind, size_t size)
 {
 	size_t link_end, rewind = 0, domain_len;

@@ -34,7 +34,7 @@
 #include "extern.h"
 
 static void
-hbuf_init(hbuf *buf, size_t unit, int buffer_free)
+hbuf_init(struct lowdown_buf *buf, size_t unit, int buffer_free)
 {
 	assert(buf);
 
@@ -50,8 +50,8 @@ hbuf_init(hbuf *buf, size_t unit, int buffer_free)
  * This is a deep copy.
  * Always returns a valid pointer to "v".
  */
-hbuf *
-hbuf_clone(const hbuf *buf, hbuf *v)
+struct lowdown_buf *
+hbuf_clone(const struct lowdown_buf *buf, struct lowdown_buf *v)
 {
 
 	v->data = NULL;
@@ -67,14 +67,14 @@ hbuf_clone(const hbuf *buf, hbuf *v)
 }
 
 void
-hbuf_truncate(hbuf *buf)
+hbuf_truncate(struct lowdown_buf *buf)
 {
 
 	buf->size = 0;
 }
 
 int
-hbuf_streq(const hbuf *buf1, const char *buf2)
+hbuf_streq(const struct lowdown_buf *buf1, const char *buf2)
 {
 	size_t	 sz;
 
@@ -84,7 +84,7 @@ hbuf_streq(const hbuf *buf1, const char *buf2)
 }
 
 int
-hbuf_strprefix(const hbuf *buf1, const char *buf2)
+hbuf_strprefix(const struct lowdown_buf *buf1, const char *buf2)
 {
 	size_t	 sz;
 
@@ -94,7 +94,7 @@ hbuf_strprefix(const hbuf *buf1, const char *buf2)
 }
 
 int
-hbuf_eq(const hbuf *buf1, const hbuf *buf2)
+hbuf_eq(const struct lowdown_buf *buf1, const struct lowdown_buf *buf2)
 {
 
 	return buf1->size == buf2->size &&
@@ -106,12 +106,24 @@ hbuf_eq(const hbuf *buf1, const hbuf *buf2)
  * FIXME: the "unit" value is stupid (see hbuf_grow()).
  * Always returns a valid pointer (ENOMEM aborts).
  */
-hbuf *
+struct lowdown_buf *
 hbuf_new(size_t unit)
 {
-	hbuf *ret = xmalloc(sizeof (hbuf));
+	struct lowdown_buf	*ret;
+
+	ret = xmalloc(sizeof(struct lowdown_buf));
 	hbuf_init(ret, unit, 1);
 	return ret;
+}
+
+/*
+ * Exported function name.
+ */
+struct lowdown_buf *
+lowdown_buf_new(size_t unit)
+{
+
+	return hbuf_new(unit);
 }
 
 /* 
@@ -119,7 +131,7 @@ hbuf_new(size_t unit)
  * Passing NULL is a noop.
  */
 void
-hbuf_free(hbuf *buf)
+hbuf_free(struct lowdown_buf *buf)
 {
 	if (NULL == buf) 
 		return;
@@ -130,6 +142,13 @@ hbuf_free(hbuf *buf)
 		free(buf);
 }
 
+void
+lowdown_buf_free(struct lowdown_buf *buf)
+{
+
+	hbuf_free(buf);
+}
+
 /* 
  * Increase the allocated size to the given value.
  * May not be NULL.
@@ -137,7 +156,7 @@ hbuf_free(hbuf *buf)
  * Note: "unit" must be defined (grow size).
  */
 void
-hbuf_grow(hbuf *buf, size_t neosz)
+hbuf_grow(struct lowdown_buf *buf, size_t neosz)
 {
 	size_t neoasz;
 
@@ -152,6 +171,8 @@ hbuf_grow(hbuf *buf, size_t neosz)
 	if (buf->asize >= neosz)
 		return;
 
+	/* FIXME: don't loop!  Use arithmetic! */
+
 	neoasz = buf->asize + buf->unit;
 	while (neoasz < neosz)
 		neoasz += buf->unit;
@@ -161,7 +182,7 @@ hbuf_grow(hbuf *buf, size_t neosz)
 }
 
 void
-hbuf_putb(hbuf *buf, const hbuf *b)
+hbuf_putb(struct lowdown_buf *buf, const struct lowdown_buf *b)
 {
 
 	if (b != NULL)
@@ -174,7 +195,7 @@ hbuf_putb(hbuf *buf, const hbuf *b)
  * See hbuf_grow().
  */
 void
-hbuf_put(hbuf *buf, const char *data, size_t size)
+hbuf_put(struct lowdown_buf *buf, const char *data, size_t size)
 {
 	assert(buf && buf->unit);
 
@@ -194,7 +215,7 @@ hbuf_put(hbuf *buf, const char *data, size_t size)
  * See hbuf_put().
  */
 void
-hbuf_puts(hbuf *buf, const char *str)
+hbuf_puts(struct lowdown_buf *buf, const char *str)
 {
 
 	assert(buf && str);
@@ -207,7 +228,7 @@ hbuf_puts(hbuf *buf, const char *str)
  * See hbuf_grow().
  */
 void
-hbuf_putc(hbuf *buf, char c)
+hbuf_putc(struct lowdown_buf *buf, char c)
 {
 	assert(buf && buf->unit);
 
@@ -223,7 +244,7 @@ hbuf_putc(hbuf *buf, char c)
  * Returns ferror(3).
  */
 int
-hbuf_putf(hbuf *buf, FILE *file)
+hbuf_putf(struct lowdown_buf *buf, FILE *file)
 {
 	assert(buf && buf->unit);
 
@@ -239,7 +260,7 @@ hbuf_putf(hbuf *buf, FILE *file)
  * Formatted printing to a buffer.
  */
 void
-hbuf_printf(hbuf *buf, const char *fmt, ...)
+hbuf_printf(struct lowdown_buf *buf, const char *fmt, ...)
 {
 	va_list ap;
 	int n;

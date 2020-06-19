@@ -103,13 +103,13 @@ enum	lowdown_rndrt {
 	LOWDOWN__MAX
 };
 
-typedef struct hbuf {
+struct	lowdown_buf {
 	char		*data;	/* actual character data */
 	size_t		 size;	/* size of the string */
 	size_t		 asize;	/* allocated size (0 = volatile) */
 	size_t		 unit;	/* realloc unit size (0 = read-only) */
 	int 		 buffer_free; /* obj should be freed */
-} hbuf;
+};
 
 TAILQ_HEAD(lowdown_nodeq, lowdown_node);
 
@@ -162,7 +162,7 @@ struct	lowdown_node {
 	size_t			 id; /* unique identifier */
 	union {
 		struct rndr_meta {
-			hbuf key;
+			struct lowdown_buf key;
 		} rndr_meta;
 		struct rndr_list {
 			/*
@@ -190,33 +190,33 @@ struct	lowdown_node {
 			size_t level; /* hN level */
 		} rndr_header; 
 		struct rndr_normal_text {
-			hbuf text; /* basic text */
+			struct lowdown_buf text; /* basic text */
 			size_t offs; /* in-render offset */
 		} rndr_normal_text; 
 		struct rndr_entity {
-			hbuf text; /* entity text */
+			struct lowdown_buf text; /* entity text */
 		} rndr_entity; 
 		struct rndr_autolink {
-			hbuf link; /* link address */
-			hbuf text; /* shown address */
+			struct lowdown_buf link; /* link address */
+			struct lowdown_buf text; /* shown address */
 			enum halink_type type; /* type of link */
 		} rndr_autolink; 
 		struct rndr_raw_html {
-			hbuf text; /* raw html buffer */
+			struct lowdown_buf text; /* raw html buffer */
 		} rndr_raw_html; 
 		struct rndr_link {
-			hbuf link; /* link address */
-			hbuf title; /* title of link */
+			struct lowdown_buf link; /* link address */
+			struct lowdown_buf title; /* title of link */
 		} rndr_link; 
 		struct rndr_blockcode {
-			hbuf text; /* raw code buffer */
-			hbuf lang; /* fence language */
+			struct lowdown_buf text; /* raw code buffer */
+			struct lowdown_buf lang; /* fence language */
 		} rndr_blockcode; 
 		struct rndr_definition {
 			enum hlist_fl flags;
 		} rndr_definition; 
 		struct rndr_codespan {
-			hbuf text; /* raw code buffer */
+			struct lowdown_buf text; /* raw code buffer */
 		} rndr_codespan; 
 		struct rndr_table_header {
 			enum htbl_flags *flags; /* per-column flags */
@@ -234,20 +234,20 @@ struct	lowdown_node {
 			size_t num; /* footnote number */
 		} rndr_footnote_ref;
 		struct rndr_image {
-			hbuf link; /* image address */
-			hbuf title; /* title of image */
-			hbuf dims; /* dimensions of image */
-			hbuf alt; /* alt-text of image */
+			struct lowdown_buf link; /* image address */
+			struct lowdown_buf title; /* title of image */
+			struct lowdown_buf dims; /* dimensions of image */
+			struct lowdown_buf alt; /* alt-text of image */
 #if 0
-			hbuf attr_width; 
+			struct lowdown_buf attr_width; 
 #endif
 		} rndr_image;
 		struct rndr_math {
-			hbuf text; /* equation (opaque) */
+			struct lowdown_buf text; /* equation (opaque) */
 			int blockmode;
 		} rndr_math;
 		struct rndr_blockhtml {
-			hbuf text;
+			struct lowdown_buf text;
 		} rndr_blockhtml;
 	};
 	struct lowdown_node *parent;
@@ -324,6 +324,10 @@ int	 lowdown_file_diff(const struct lowdown_opts *, FILE *,
  * ways.
  */
 
+struct lowdown_buf
+	*lowdown_buf_new(size_t) __attribute__((malloc));
+void	 lowdown_buf_free(struct lowdown_buf *);
+
 struct lowdown_doc
 	*lowdown_doc_new(const struct lowdown_opts *);
 struct lowdown_node
@@ -339,28 +343,33 @@ void 	 lowdown_node_free(struct lowdown_node *);
 
 void	 lowdown_html_free(void *);
 void	*lowdown_html_new(const struct lowdown_opts *);
-void 	 lowdown_html_rndr(hbuf *, struct lowdown_metaq *,
-		void *, const struct lowdown_node *);
+void 	 lowdown_html_rndr(struct lowdown_buf *,
+		struct lowdown_metaq *, void *, 
+		const struct lowdown_node *);
 
 void	 lowdown_term_free(void *);
 void	*lowdown_term_new(const struct lowdown_opts *);
-void 	 lowdown_term_rndr(hbuf *, struct lowdown_metaq *,
-		void *, const struct lowdown_node *);
+void 	 lowdown_term_rndr(struct lowdown_buf *,
+		struct lowdown_metaq *, void *, 
+		const struct lowdown_node *);
 
 void	 lowdown_nroff_free(void *);
 void	*lowdown_nroff_new(const struct lowdown_opts *);
-void 	 lowdown_nroff_rndr(hbuf *, struct lowdown_metaq *,
-		void *, struct lowdown_node *);
+void 	 lowdown_nroff_rndr(struct lowdown_buf *, 
+		struct lowdown_metaq *, void *, 
+		struct lowdown_node *);
 
 void	 lowdown_tree_free(void *);
 void	*lowdown_tree_new(void);
-void 	 lowdown_tree_rndr(hbuf *, struct lowdown_metaq *,
-		void *, const struct lowdown_node *);
+void 	 lowdown_tree_rndr(struct lowdown_buf *, 
+		struct lowdown_metaq *, void *, 
+		const struct lowdown_node *);
 
 void	 lowdown_latex_free(void *);
 void	*lowdown_latex_new(const struct lowdown_opts *);
-void 	 lowdown_latex_rndr(hbuf *, struct lowdown_metaq *,
-		void *, const struct lowdown_node *);
+void 	 lowdown_latex_rndr(struct lowdown_buf *, 
+		struct lowdown_metaq *, void *, 
+		const struct lowdown_node *);
 
 __END_DECLS
 

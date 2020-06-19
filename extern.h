@@ -27,37 +27,37 @@ char		*xstrdup(const char *);
 
 void	 	 smarty(struct lowdown_node *, size_t, enum lowdown_type);
 
-int32_t	 	 entity_find_iso(const hbuf *);
-const char	*entity_find_tex(const hbuf *, unsigned char *);
+int32_t	 	 entity_find_iso(const struct lowdown_buf *);
+const char	*entity_find_tex(const struct lowdown_buf *, unsigned char *);
 #define		 TEX_ENT_MATH	 0x01
 #define		 TEX_ENT_ASCII	 0x02
 
-int		 hbuf_eq(const hbuf *, const hbuf *);
-int		 hbuf_streq(const hbuf *, const char *);
-int		 hbuf_strprefix(const hbuf *, const char *);
-void		 hbuf_free(hbuf *);
-void		 hbuf_grow(hbuf *, size_t);
-hbuf		*hbuf_clone(const hbuf *, hbuf *);
-hbuf		*hbuf_new(size_t) __attribute__((malloc));
-void		 hbuf_printf(hbuf *, const char *, ...) 
+int		 hbuf_eq(const struct lowdown_buf *, const struct lowdown_buf *);
+int		 hbuf_streq(const struct lowdown_buf *, const char *);
+int		 hbuf_strprefix(const struct lowdown_buf *, const char *);
+void		 hbuf_free(struct lowdown_buf *);
+void		 hbuf_grow(struct lowdown_buf *, size_t);
+struct lowdown_buf *hbuf_clone(const struct lowdown_buf *, struct lowdown_buf *);
+struct lowdown_buf *hbuf_new(size_t) __attribute__((malloc));
+void		 hbuf_printf(struct lowdown_buf *, const char *, ...) 
 			__attribute__((format (printf, 2, 3)));
-void		 hbuf_put(hbuf *, const char *, size_t);
-void		 hbuf_putb(hbuf *, const hbuf *);
-void		 hbuf_putc(hbuf *, char);
-int		 hbuf_putf(hbuf *, FILE *);
-void		 hbuf_puts(hbuf *, const char *);
-void		 hbuf_truncate(hbuf *);
+void		 hbuf_put(struct lowdown_buf *, const char *, size_t);
+void		 hbuf_putb(struct lowdown_buf *, const struct lowdown_buf *);
+void		 hbuf_putc(struct lowdown_buf *, char);
+int		 hbuf_putf(struct lowdown_buf *, FILE *);
+void		 hbuf_puts(struct lowdown_buf *, const char *);
+void		 hbuf_truncate(struct lowdown_buf *);
 
 #define 	 HBUF_PUTSL(output, literal) \
 		 hbuf_put(output, literal, sizeof(literal) - 1)
 
-size_t		 halink_email(size_t *, hbuf *, char *, size_t, size_t);
-size_t		 halink_url(size_t *, hbuf *, char *, size_t, size_t);
-size_t		 halink_www(size_t *, hbuf *, char *, size_t, size_t);
+size_t		 halink_email(size_t *, struct lowdown_buf *, char *, size_t, size_t);
+size_t		 halink_url(size_t *, struct lowdown_buf *, char *, size_t, size_t);
+size_t		 halink_www(size_t *, struct lowdown_buf *, char *, size_t, size_t);
 
-void		 hesc_attr(hbuf *, const char *, size_t);
-void		 hesc_href(hbuf *, const char *, size_t);
-void		 hesc_html(hbuf *, const char *, size_t, int, int, int);
+void		 hesc_attr(struct lowdown_buf *, const char *, size_t);
+void		 hesc_href(struct lowdown_buf *, const char *, size_t);
+void		 hesc_html(struct lowdown_buf *, const char *, size_t, int, int, int);
 
 char		*rcsdate2str(const char *);
 char		*date2str(const char *);

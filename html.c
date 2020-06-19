@@ -58,7 +58,7 @@ struct 	html {
  * Escape regular text that shouldn't be HTML.
  */
 static void
-escape_html(hbuf *ob, const char *source,
+escape_html(struct lowdown_buf *ob, const char *source,
 	size_t length, const struct html *st)
 {
 
@@ -74,7 +74,7 @@ escape_html(hbuf *ob, const char *source,
  * restrictive in what we encode.
  */
 static void
-escape_literal(hbuf *ob, const char *source,
+escape_literal(struct lowdown_buf *ob, const char *source,
 	size_t length, const struct html *st)
 {
 
@@ -85,7 +85,7 @@ escape_literal(hbuf *ob, const char *source,
 }
 
 static void
-rndr_autolink(hbuf *ob, const hbuf *link,
+rndr_autolink(struct lowdown_buf *ob, const struct lowdown_buf *link,
 	enum halink_type type, const struct html *st)
 {
 
@@ -113,8 +113,8 @@ rndr_autolink(hbuf *ob, const hbuf *link,
 }
 
 static void
-rndr_blockcode(hbuf *ob, const hbuf *text,
-	const hbuf *lang, const struct html *st)
+rndr_blockcode(struct lowdown_buf *ob, const struct lowdown_buf *text,
+	const struct lowdown_buf *lang, const struct html *st)
 {
 	if (ob->size) 
 		hbuf_putc(ob, '\n');
@@ -131,7 +131,8 @@ rndr_blockcode(hbuf *ob, const hbuf *text,
 }
 
 static void
-rndr_definition_data(hbuf *ob, const hbuf *content)
+rndr_definition_data(struct lowdown_buf *ob,
+	const struct lowdown_buf *content)
 {
 
 	HBUF_PUTSL(ob, "<dd>\n");
@@ -140,7 +141,8 @@ rndr_definition_data(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_definition_title(hbuf *ob, const hbuf *content)
+rndr_definition_title(struct lowdown_buf *ob,
+	const struct lowdown_buf *content)
 {
 	size_t	 sz;
 
@@ -154,7 +156,8 @@ rndr_definition_title(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_definition(hbuf *ob, const hbuf *content)
+rndr_definition(struct lowdown_buf *ob,
+	const struct lowdown_buf *content)
 {
 	if (ob->size)
 		hbuf_putc(ob, '\n');
@@ -164,7 +167,8 @@ rndr_definition(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_blockquote(hbuf *ob, const hbuf *content)
+rndr_blockquote(struct lowdown_buf *ob,
+	const struct lowdown_buf *content)
 {
 	if (ob->size)
 		hbuf_putc(ob, '\n');
@@ -174,7 +178,8 @@ rndr_blockquote(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_codespan(hbuf *ob, const hbuf *text, const struct html *st)
+rndr_codespan(struct lowdown_buf *ob,
+	const struct lowdown_buf *text, const struct html *st)
 {
 
 	HBUF_PUTSL(ob, "<code>");
@@ -183,7 +188,8 @@ rndr_codespan(hbuf *ob, const hbuf *text, const struct html *st)
 }
 
 static void
-rndr_strikethrough(hbuf *ob, const hbuf *content)
+rndr_strikethrough(struct lowdown_buf *ob,
+	const struct lowdown_buf *content)
 {
 
 	HBUF_PUTSL(ob, "<del>");
@@ -192,7 +198,8 @@ rndr_strikethrough(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_double_emphasis(hbuf *ob, const hbuf *content)
+rndr_double_emphasis(struct lowdown_buf *ob,
+	const struct lowdown_buf *content)
 {
 
 	HBUF_PUTSL(ob, "<strong>");
@@ -201,7 +208,8 @@ rndr_double_emphasis(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_emphasis(hbuf *ob, const hbuf *content)
+rndr_emphasis(struct lowdown_buf *ob,
+	const struct lowdown_buf *content)
 {
 
 	HBUF_PUTSL(ob, "<em>");
@@ -210,7 +218,8 @@ rndr_emphasis(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_highlight(hbuf *ob, const hbuf *content)
+rndr_highlight(struct lowdown_buf *ob,
+	const struct lowdown_buf *content)
 {
 
 	HBUF_PUTSL(ob, "<mark>");
@@ -219,7 +228,7 @@ rndr_highlight(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_linebreak(hbuf *ob)
+rndr_linebreak(struct lowdown_buf *ob)
 {
 
 	HBUF_PUTSL(ob, "<br/>\n");
@@ -231,7 +240,8 @@ rndr_linebreak(hbuf *ob)
  * This will reference-count the header so we don't have duplicates.
  */
 static void
-rndr_header_id(hbuf *ob, const hbuf *header, struct html *st)
+rndr_header_id(struct lowdown_buf *ob,
+	const struct lowdown_buf *header, struct html *st)
 {
 	struct hentry	*hentry;
 
@@ -274,7 +284,8 @@ rndr_header_id(hbuf *ob, const hbuf *header, struct html *st)
 }
 
 static void
-rndr_header(hbuf *ob, const hbuf *content,
+rndr_header(struct lowdown_buf *ob,
+	const struct lowdown_buf *content,
 	size_t level, struct html *st)
 {
 
@@ -298,8 +309,10 @@ rndr_header(hbuf *ob, const hbuf *content,
 }
 
 static void
-rndr_link(hbuf *ob, const hbuf *content, const hbuf *link,
-	const hbuf *title, const struct html *st)
+rndr_link(struct lowdown_buf *ob,
+	const struct lowdown_buf *content,
+	const struct lowdown_buf *link, 
+	const struct lowdown_buf *title, const struct html *st)
 {
 
 	HBUF_PUTSL(ob, "<a href=\"");
@@ -314,7 +327,9 @@ rndr_link(hbuf *ob, const hbuf *content, const hbuf *link,
 }
 
 static void
-rndr_list(hbuf *ob, const hbuf *content, const struct rndr_list *p)
+rndr_list(struct lowdown_buf *ob,
+	const struct lowdown_buf *content,
+	const struct rndr_list *p)
 {
 
 	if (ob->size)
@@ -336,7 +351,8 @@ rndr_list(hbuf *ob, const hbuf *content, const struct rndr_list *p)
 }
 
 static void
-rndr_listitem(hbuf *ob, const hbuf *content,
+rndr_listitem(struct lowdown_buf *ob,
+	const struct lowdown_buf *content,
 	const struct lowdown_node *n)
 {
 	size_t	 size;
@@ -392,7 +408,8 @@ rndr_listitem(hbuf *ob, const hbuf *content,
 }
 
 static void
-rndr_paragraph(hbuf *ob, const hbuf *content, struct html *state)
+rndr_paragraph(struct lowdown_buf *ob,
+	const struct lowdown_buf *content, struct html *state)
 {
 	size_t	i = 0, org;
 
@@ -436,7 +453,8 @@ rndr_paragraph(hbuf *ob, const hbuf *content, struct html *state)
 }
 
 static void
-rndr_raw_block(hbuf *ob, const hbuf *text, const struct html *st)
+rndr_raw_block(struct lowdown_buf *ob,
+	const struct lowdown_buf *text, const struct html *st)
 {
 	size_t	org, sz;
 
@@ -470,7 +488,8 @@ rndr_raw_block(hbuf *ob, const hbuf *text, const struct html *st)
 }
 
 static void
-rndr_triple_emphasis(hbuf *ob, const hbuf *content)
+rndr_triple_emphasis(struct lowdown_buf *ob,
+	const struct lowdown_buf *content)
 {
 
 	HBUF_PUTSL(ob, "<strong><em>");
@@ -479,7 +498,7 @@ rndr_triple_emphasis(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_hrule(hbuf *ob)
+rndr_hrule(struct lowdown_buf *ob)
 {
 
 	if (ob->size)
@@ -488,11 +507,15 @@ rndr_hrule(hbuf *ob)
 }
 
 static void
-rndr_image(hbuf *ob, const hbuf *link, const hbuf *title, 
-	const hbuf *dims, const hbuf *alt, const struct html *st)
+rndr_image(struct lowdown_buf *ob,
+	const struct lowdown_buf *link,
+	const struct lowdown_buf *title, 
+	const struct lowdown_buf *dims,
+	const struct lowdown_buf *alt, const struct html *st)
 {
-	char	dimbuf[32];
-	int	x, y, rc = 0;
+	char		 dimbuf[32];
+	unsigned int	 x, y;
+	int		 rc = 0;
 
 	/*
 	 * Scan in our dimensions, if applicable.
@@ -530,7 +553,8 @@ rndr_image(hbuf *ob, const hbuf *link, const hbuf *title,
 }
 
 static void
-rndr_raw_html(hbuf *ob, const hbuf *text, const struct html *st)
+rndr_raw_html(struct lowdown_buf *ob,
+	const struct lowdown_buf *text, const struct html *st)
 {
 
 	if ((st->flags & LOWDOWN_HTML_SKIP_HTML))
@@ -542,7 +566,8 @@ rndr_raw_html(hbuf *ob, const hbuf *text, const struct html *st)
 }
 
 static void
-rndr_table(hbuf *ob, const hbuf *content)
+rndr_table(struct lowdown_buf *ob,
+	const struct lowdown_buf *content)
 {
 
 	if (ob->size)
@@ -553,7 +578,8 @@ rndr_table(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_table_header(hbuf *ob, const hbuf *content, 
+rndr_table_header(struct lowdown_buf *ob,
+	const struct lowdown_buf *content, 
 	const enum htbl_flags *fl, size_t columns)
 {
 
@@ -565,7 +591,8 @@ rndr_table_header(hbuf *ob, const hbuf *content,
 }
 
 static void
-rndr_table_body(hbuf *ob, const hbuf *content)
+rndr_table_body(struct lowdown_buf *ob,
+	const struct lowdown_buf *content)
 {
 
 	if (ob->size)
@@ -576,7 +603,8 @@ rndr_table_body(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_tablerow(hbuf *ob, const hbuf *content)
+rndr_tablerow(struct lowdown_buf *ob,
+	const struct lowdown_buf *content)
 {
 
 	HBUF_PUTSL(ob, "<tr>\n");
@@ -585,7 +613,8 @@ rndr_tablerow(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_tablecell(hbuf *ob, const hbuf *content, 
+rndr_tablecell(struct lowdown_buf *ob,
+	const struct lowdown_buf *content,
 	enum htbl_flags flags, size_t col, size_t columns)
 {
 
@@ -617,7 +646,8 @@ rndr_tablecell(hbuf *ob, const hbuf *content,
 }
 
 static void
-rndr_superscript(hbuf *ob, const hbuf *content)
+rndr_superscript(struct lowdown_buf *ob,
+	const struct lowdown_buf *content)
 {
 
 	HBUF_PUTSL(ob, "<sup>");
@@ -626,7 +656,8 @@ rndr_superscript(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_normal_text(hbuf *ob, const hbuf *content,
+rndr_normal_text(struct lowdown_buf *ob,
+	const struct lowdown_buf *content,
 	const struct html *st)
 {
 
@@ -634,7 +665,8 @@ rndr_normal_text(hbuf *ob, const hbuf *content,
 }
 
 static void
-rndr_footnotes(hbuf *ob, const hbuf *content)
+rndr_footnotes(struct lowdown_buf *ob,
+	const struct lowdown_buf *content)
 {
 
 	if (ob->size)
@@ -647,7 +679,8 @@ rndr_footnotes(hbuf *ob, const hbuf *content)
 }
 
 static void
-rndr_footnote_def(hbuf *ob, const hbuf *content, size_t num)
+rndr_footnote_def(struct lowdown_buf *ob,
+	const struct lowdown_buf *content, size_t num)
 {
 	size_t	i = 0;
 	int	pfound = 0;
@@ -684,7 +717,7 @@ rndr_footnote_def(hbuf *ob, const hbuf *content, size_t num)
 }
 
 static void
-rndr_footnote_ref(hbuf *ob, size_t num)
+rndr_footnote_ref(struct lowdown_buf *ob, size_t num)
 {
 
 	hbuf_printf(ob, 
@@ -694,8 +727,8 @@ rndr_footnote_ref(hbuf *ob, size_t num)
 }
 
 static void
-rndr_math(hbuf *ob, const struct rndr_math *n,
-	const struct html *st)
+rndr_math(struct lowdown_buf *ob,
+	const struct rndr_math *n, const struct html *st)
 {
 
 	if (n->blockmode)
@@ -712,7 +745,7 @@ rndr_math(hbuf *ob, const struct rndr_math *n,
 }
 
 static void
-rndr_doc_footer(hbuf *ob, const struct html *st)
+rndr_doc_footer(struct lowdown_buf *ob, const struct html *st)
 {
 
 	if ((st->flags & LOWDOWN_STANDALONE))
@@ -720,7 +753,9 @@ rndr_doc_footer(hbuf *ob, const struct html *st)
 }
 
 static void
-rndr_root(hbuf *ob, const hbuf *content, const struct html *st)
+rndr_root(struct lowdown_buf *ob,
+	const struct lowdown_buf *content,
+	const struct html *st)
 {
 
 	if ((st->flags & LOWDOWN_STANDALONE))
@@ -737,7 +772,7 @@ rndr_root(hbuf *ob, const hbuf *content, const struct html *st)
  * characters, padding the output with "starttag" and "endtag".
  */
 static void
-rndr_meta_multi(hbuf *ob, const char *b,
+rndr_meta_multi(struct lowdown_buf *ob, const char *b,
 	const char *starttag, const char *endtag)
 {
 	const char	*start;
@@ -772,7 +807,9 @@ rndr_meta_multi(hbuf *ob, const char *b,
 }
 
 static void
-rndr_meta(hbuf *ob, const hbuf *content, struct lowdown_metaq *mq,
+rndr_meta(struct lowdown_buf *ob,
+	const struct lowdown_buf *content,
+	struct lowdown_metaq *mq,
 	const struct lowdown_node *n, struct html *st)
 {
 	struct lowdown_meta	*m;
@@ -789,7 +826,8 @@ rndr_meta(hbuf *ob, const hbuf *content, struct lowdown_metaq *mq,
 }
 
 static void
-rndr_doc_header(hbuf *ob, const hbuf *content,
+rndr_doc_header(struct lowdown_buf *ob,
+	const struct lowdown_buf *content,
 	const struct lowdown_metaq *mq, const struct html *st)
 {
 	const struct lowdown_meta	*m;
@@ -868,12 +906,13 @@ rndr_doc_header(hbuf *ob, const hbuf *content,
 }
 
 void
-lowdown_html_rndr(hbuf *ob, struct lowdown_metaq *mq,
-	void *ref, const struct lowdown_node *n)
+lowdown_html_rndr(struct lowdown_buf *ob,
+	struct lowdown_metaq *mq, void *ref, 
+	const struct lowdown_node *n)
 {
 	const struct lowdown_node	*child;
 	struct lowdown_metaq		 metaq;
-	hbuf				*tmp;
+	struct lowdown_buf		*tmp;
 	int32_t				 ent;
 	struct html			*st = ref;
 
