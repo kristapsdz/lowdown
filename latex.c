@@ -361,8 +361,33 @@ rndr_image(struct lowdown_buf *ob,
 	const struct lowdown_buf *dims)
 {
 	const char	*cp;
+	char		 dimbuf[32];
+	unsigned int	 x, y;
+	int		 rc = 0;
 
-	HBUF_PUTSL(ob, "\\includegraphics{");
+	/*
+	 * Scan in our dimensions, if applicable.
+	 * It's unreasonable for them to be over 32 characters, so use
+	 * that as a cap to the size.
+	 */
+
+	if (dims->size && dims->size < sizeof(dimbuf) - 1) {
+		memset(dimbuf, 0, sizeof(dimbuf));
+		memcpy(dimbuf, dims->data, dims->size);
+		rc = sscanf(dimbuf, "%ux%u", &x, &y);
+	}
+
+	HBUF_PUTSL(ob, "\\includegraphics");
+
+	if (rc > 0) {
+		HBUF_PUTSL(ob, "[");
+		hbuf_printf(ob, "width=%upx", x);
+		if (rc > 1) 
+			hbuf_printf(ob, ", height=%upx", y);
+		HBUF_PUTSL(ob, "]");
+	}
+
+	HBUF_PUTSL(ob, "{");
 	if ((cp = memrchr(link->data, '.', link->size)) != NULL) {
 		HBUF_PUTSL(ob, "{");
 		rndr_escape_text(ob, link->data, cp - link->data);
