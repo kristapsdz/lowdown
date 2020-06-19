@@ -759,12 +759,19 @@
 		</header>
 		<aside>
 			<p>
-				Changes to internal API: the <code>hdoc</code> structure has been
-				renamed to <code>struct lowdown_doc</code>.
+				Changes to internal API: the <code>hdoc</code> and <code>hbuf</code>
+				structures have been renamed to <code>struct lowdown_doc</code> and
+				<code>struct lowdown_buf</code>.
 				First, I dislike typedefing away the fact that a variable is a
 				structure <strong>very much</strong>.
-				Second, the name is a holdover from the old system and shouldn't be
-				part of the exported API.
+				Second, the names were a holdover from the old system and shouldn't
+				be part of the exported API.
+			</p>
+			<p>
+				Add <a href="lowdown_buf_new.3.html">lowdown_buf_new(3)</a> and
+				<a href="lowdown_buf_free.3.html">lowdown_buf_free(3)</a> to make
+				the low-level library usable, where before it was pointing to
+				private functions.
 			</p>
 		</aside>
 	</article>
