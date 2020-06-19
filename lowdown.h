@@ -238,6 +238,9 @@ struct	lowdown_node {
 			hbuf title; /* title of image */
 			hbuf dims; /* dimensions of image */
 			hbuf alt; /* alt-text of image */
+#if 0
+			hbuf attr_width; 
+#endif
 		} rndr_image;
 		struct rndr_math {
 			hbuf text; /* equation (opaque) */
@@ -295,9 +298,7 @@ struct	lowdown_opts {
 #define LOWDOWN_LATEX_SKIP_HTML	 0x2000 /* skip all HTML */
 };
 
-struct hdoc;
-
-typedef struct hdoc hdoc;
+struct lowdown_doc;
 
 __BEGIN_DECLS
 
@@ -323,13 +324,15 @@ int	 lowdown_file_diff(const struct lowdown_opts *, FILE *,
  * ways.
  */
 
-hdoc 	*lowdown_doc_new(const struct lowdown_opts *);
+struct lowdown_doc
+	*lowdown_doc_new(const struct lowdown_opts *);
 struct lowdown_node
-	*lowdown_doc_parse(hdoc *, size_t *, const char *, size_t);
+	*lowdown_doc_parse(struct lowdown_doc *,
+		size_t *, const char *, size_t);
 struct lowdown_node
 	*lowdown_diff(const struct lowdown_node *,
 		const struct lowdown_node *, size_t *);
-void	 lowdown_doc_free(hdoc *);
+void	 lowdown_doc_free(struct lowdown_doc *);
 void	 lowdown_metaq_free(struct lowdown_metaq *);
 
 void 	 lowdown_node_free(struct lowdown_node *);

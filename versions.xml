@@ -751,4 +751,21 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.7.0</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2020-06-19">2020-06-19</time>
+		</header>
+		<aside>
+			<p>
+				Changes to internal API: the <code>hdoc</code> structure has been
+				renamed to <code>struct lowdown_doc</code>.
+				First, I dislike typedefing away the fact that a variable is a
+				structure <strong>very much</strong>.
+				Second, the name is a holdover from the old system and shouldn't be
+				part of the exported API.
+			</p>
+		</aside>
+	</article>
 </articles>

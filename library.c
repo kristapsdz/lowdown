@@ -48,7 +48,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 {
 	hbuf			*ob;
 	void			*renderer = NULL;
-	hdoc			*document;
+	struct lowdown_doc	*document;
 	size_t			 maxn;
 	enum lowdown_type	 t;
 	struct lowdown_node	*n;
@@ -173,7 +173,7 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 {
 	hbuf	 	 	*ob;
 	void 		 	*renderer = NULL;
-	hdoc 		 	*doc;
+	struct lowdown_doc 	*doc;
 	enum lowdown_type 	 t;
 	struct lowdown_node 	*nnew, *nold, *ndiff;
 	size_t			 maxnew, maxold, maxn;

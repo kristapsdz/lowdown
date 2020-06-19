@@ -132,6 +132,29 @@ rndr(hbuf *ob, const struct lowdown_node *root, size_t indent)
 			rndr_short(ob, &root->rndr_image.title);
 			HBUF_PUTSL(ob, "\n");
 		}
+		if (root->rndr_image.alt.size) {
+			for (i = 0; i < indent + 1; i++)
+				HBUF_PUTSL(ob, "  ");
+			hbuf_printf(ob, "alt: ");
+			rndr_short(ob, &root->rndr_image.alt);
+			HBUF_PUTSL(ob, "\n");
+		}
+		if (root->rndr_image.dims.size) {
+			for (i = 0; i < indent + 1; i++)
+				HBUF_PUTSL(ob, "  ");
+			hbuf_printf(ob, "dims: ");
+			rndr_short(ob, &root->rndr_image.dims);
+			HBUF_PUTSL(ob, "\n");
+		}
+#if 0
+		if (root->rndr_image.attr_width.size) {
+			for (i = 0; i < indent + 1; i++)
+				HBUF_PUTSL(ob, "  ");
+			hbuf_printf(ob, "width (extended): ");
+			rndr_short(ob, &root->rndr_image.attr_width);
+			HBUF_PUTSL(ob, "\n");
+		}
+#endif
 		break;
 	case LOWDOWN_HEADER:
 		for (i = 0; i < indent + 1; i++)
