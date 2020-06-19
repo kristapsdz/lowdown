@@ -1,6 +1,6 @@
 /*	$Id$ */
 /*
- * Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) 2017--2020 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -12,7 +12,7 @@
  * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ / OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 #ifndef LOWDOWN_H
 #define LOWDOWN_H
@@ -48,14 +48,6 @@ enum	lowdown_type {
 	LOWDOWN_TERM,
 	LOWDOWN_TREE,
 	LOWDOWN_NULL
-};
-
-enum	lowdown_err {
-	LOWDOWN_ERR_SPACE_BEFORE_LINK = 0,
-	LOWDOWN_ERR_METADATA_BAD_CHAR,
-	LOWDOWN_ERR_UNKNOWN_FOOTNOTE,
-	LOWDOWN_ERR_DUPE_FOOTNOTE,
-	LOWDOWN_ERR__MAX
 };
 
 /*
