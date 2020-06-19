@@ -356,13 +356,12 @@ rndr_hrule(struct lowdown_buf *ob)
 }
 
 static void
-rndr_image(struct lowdown_buf *ob,
-	const struct lowdown_buf *link, 
-	const struct lowdown_buf *dims)
+rndr_image(struct lowdown_buf *ob, const struct rndr_image *p)
 {
 	const char	*cp;
 	char		 dimbuf[32];
 	unsigned int	 x, y;
+	float		 pct;
 	int		 rc = 0;
 
 	/*
@@ -371,30 +370,52 @@ rndr_image(struct lowdown_buf *ob,
 	 * that as a cap to the size.
 	 */
 
-	if (dims->size && dims->size < sizeof(dimbuf) - 1) {
+	if (p->dims.size && p->dims.size < sizeof(dimbuf) - 1) {
 		memset(dimbuf, 0, sizeof(dimbuf));
-		memcpy(dimbuf, dims->data, dims->size);
+		memcpy(dimbuf, p->dims.data, p->dims.size);
 		rc = sscanf(dimbuf, "%ux%u", &x, &y);
 	}
 
-	HBUF_PUTSL(ob, "\\includegraphics");
+	/* Extended attributes override dimensions. */
 
-	if (rc > 0) {
-		HBUF_PUTSL(ob, "[");
+	HBUF_PUTSL(ob, "\\includegraphics[");
+	if (p->attr_width.size || p->attr_height.size) {
+		if (p->attr_width.size) {
+			memset(dimbuf, 0, sizeof(dimbuf));
+			memcpy(dimbuf, p->attr_width.data, 
+				p->attr_width.size);
+
+			/* Try to parse as a percentage. */
+
+			if (sscanf(dimbuf, "%e%%", &pct) == 1)
+				hbuf_printf(ob, "width=%.2f"
+					"\\linewidth", pct / 100.0);
+			else
+				hbuf_printf(ob, "width=%.*s", 
+					(int)p->attr_width.size, 
+					p->attr_width.data);
+		}
+		if (p->attr_height.size) {
+			if (p->attr_width.size)
+				HBUF_PUTSL(ob, ", ");
+			hbuf_printf(ob, "height=%.*s", 
+				(int)p->attr_height.size, 
+				p->attr_height.data);
+		}
+	} else if (rc > 0) {
 		hbuf_printf(ob, "width=%upx", x);
 		if (rc > 1) 
 			hbuf_printf(ob, ", height=%upx", y);
-		HBUF_PUTSL(ob, "]");
 	}
 
-	HBUF_PUTSL(ob, "{");
-	if ((cp = memrchr(link->data, '.', link->size)) != NULL) {
+	HBUF_PUTSL(ob, "]{");
+	if ((cp = memrchr(p->link.data, '.', p->link.size)) != NULL) {
 		HBUF_PUTSL(ob, "{");
-		rndr_escape_text(ob, link->data, cp - link->data);
+		rndr_escape_text(ob, p->link.data, cp - p->link.data);
 		HBUF_PUTSL(ob, "}");
-		rndr_escape_text(ob, cp, link->size - (cp - link->data));
+		rndr_escape_text(ob, cp, p->link.size - (cp - p->link.data));
 	} else
-		rndr_escape(ob, link);
+		rndr_escape(ob, &p->link);
 	HBUF_PUTSL(ob, "}");
 }
 
@@ -710,9 +731,7 @@ lowdown_latex_rndr(struct lowdown_buf *ob,
 		rndr_highlight(ob, tmp);
 		break;
 	case LOWDOWN_IMAGE:
-		rndr_image(ob, 
-			&n->rndr_image.link,
-			&n->rndr_image.dims);
+		rndr_image(ob, &n->rndr_image);
 		break;
 	case LOWDOWN_LINEBREAK:
 		rndr_linebreak(ob);

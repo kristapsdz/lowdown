@@ -572,7 +572,11 @@ These dimensions are pixel sizes.
 .Ed
 .Pp
 Width and height in units other than pixels may be provided as extended
-image attributes.
+image attributes; however, these must be recognised by the output media
+(for example, HTML may recognise
+.Qq rem ,
+but LaTeX will not).
+Percentage widths are always recognised.
 These follow PHP Markdown Extra syntax:
 .Bd -literal -offset indent
 ![Picard](https://bsd.lv/picard.jpg){width=20%}
@@ -583,8 +587,8 @@ key-value pairs are separated by spaces.
 Recognised values are
 .Qq width
 and
-.Qq height
-with percentage units.
+.Qq height .
+If either are provided, they override set pixel dimensions.
 .Pp
 The reference style definition consists of an image identifier
 surrounded by square brackets
