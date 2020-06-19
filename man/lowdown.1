@@ -408,7 +408,9 @@ or traditional
 .Xr troff 1 .
 Does not support equations and limited image support for encapsulated
 postscript (PS and EPS suffix) images.
-Image dimensions are ignored.
+Images are always block-formatted.
+Image dimensions are ignored, though images are downsized if larger than
+the current text width.
 Table support is provided by
 .Xr tbl 1 .
 Since UTF-8 may be passed as input values,
