@@ -383,7 +383,10 @@ is_mail_autolink(const char *data, size_t size)
 	return 0;
 }
 
-#if 0
+/*
+ * Image nodes may be followed by extended attributes, if configured.
+ * We only recognise several of them---parse them here.
+ */
 static size_t
 parse_image_attrs(struct rndr_image *img, const char *data, size_t size)
 {
@@ -425,6 +428,9 @@ parse_image_attrs(struct rndr_image *img, const char *data, size_t size)
 		if (offs - i == 5 && 
 	  	    strncasecmp(&data[i], "width", 5) == 0)
 			attrbuf = &img->attr_width;
+		else if (offs - i == 6 && 
+	  	    strncasecmp(&data[i], "height", 6) == 0)
+			attrbuf = &img->attr_height;
 		else
 			attrbuf = NULL;
 
@@ -438,7 +444,6 @@ parse_image_attrs(struct rndr_image *img, const char *data, size_t size)
 
 	return end + 1;
 }
-#endif
 
 /*
  * Returns the length of the given tag, or 0 is it's not valid.
@@ -592,7 +597,7 @@ parse_inline(struct lowdown_doc *doc, char *data, size_t size)
 		 * This can be done for other in-line elements, but
 		 * for now this is limited just to images.
 		 */
-#if 0
+
 		n = TAILQ_LAST(&doc->current->children, lowdown_nodeq);
 		if (i < size && data[i] == '{' &&
 		    n != NULL && n->type == LOWDOWN_IMAGE) {
@@ -606,7 +611,6 @@ parse_inline(struct lowdown_doc *doc, char *data, size_t size)
 			i += end;
 			end = consumed = i;
 		}
-#endif
 	}
 }
 
@@ -4042,9 +4046,8 @@ lowdown_node_free(struct lowdown_node *root)
 		hbuf_free(&root->rndr_image.title);
 		hbuf_free(&root->rndr_image.dims);
 		hbuf_free(&root->rndr_image.alt);
-#if 0
 		hbuf_free(&root->rndr_image.attr_width);
-#endif
+		hbuf_free(&root->rndr_image.attr_height);
 		break;
 	case LOWDOWN_MATH_BLOCK:
 		hbuf_free(&root->rndr_math.text);

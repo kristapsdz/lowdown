@@ -147,7 +147,6 @@ rndr(struct lowdown_buf *ob,
 			rndr_short(ob, &root->rndr_image.dims);
 			HBUF_PUTSL(ob, "\n");
 		}
-#if 0
 		if (root->rndr_image.attr_width.size) {
 			for (i = 0; i < indent + 1; i++)
 				HBUF_PUTSL(ob, "  ");
@@ -155,7 +154,13 @@ rndr(struct lowdown_buf *ob,
 			rndr_short(ob, &root->rndr_image.attr_width);
 			HBUF_PUTSL(ob, "\n");
 		}
-#endif
+		if (root->rndr_image.attr_height.size) {
+			for (i = 0; i < indent + 1; i++)
+				HBUF_PUTSL(ob, "  ");
+			hbuf_printf(ob, "height (extended): ");
+			rndr_short(ob, &root->rndr_image.attr_height);
+			HBUF_PUTSL(ob, "\n");
+		}
 		break;
 	case LOWDOWN_HEADER:
 		for (i = 0; i < indent + 1; i++)

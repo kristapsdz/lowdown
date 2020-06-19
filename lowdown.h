@@ -236,11 +236,10 @@ struct	lowdown_node {
 		struct rndr_image {
 			struct lowdown_buf link; /* image address */
 			struct lowdown_buf title; /* title of image */
-			struct lowdown_buf dims; /* dimensions of image */
+			struct lowdown_buf dims; /* NNxNN dimensions */
 			struct lowdown_buf alt; /* alt-text of image */
-#if 0
-			struct lowdown_buf attr_width; 
-#endif
+			struct lowdown_buf attr_width; /* ext: width */
+			struct lowdown_buf attr_height; /* ext: height */
 		} rndr_image;
 		struct rndr_math {
 			struct lowdown_buf text; /* equation (opaque) */
