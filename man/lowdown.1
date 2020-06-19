@@ -407,7 +407,7 @@ macro package suitable for reading by
 or traditional
 .Xr troff 1 .
 Does not support equations and limited image support for encapsulated
-postscript (eps, eps suffix) images.
+postscript (PS and EPS suffix) images.
 Table support is provided by
 .Xr tbl 1 .
 Since UTF-8 may be passed as input values,
@@ -426,8 +426,11 @@ the traditional Markdown output is augmented with features for viewing
 file differences.
 These depend upon the output mode.
 .Bl -tag -width Ds
-.It Fl T Ns Ar term
-Removed and inserted data have different background colours.
+.It Fl T Ns Ar man , Fl T Ns Ar ms
+When data has been removed, it is coloured red.
+When data has been inserted, it is coloured in green.
+In either case, your formatter must support colours or the texts will be
+freely intermingled.
 .It Fl T Ns Ar html
 When data has been removed from the old document, it is marked up with the
 .Li <del>
@@ -435,11 +438,11 @@ element.
 When data has been inserted into the new document,
 .Li <ins>
 is used instead.
-.It Fl T Ns Ar man , Fl T Ns Ar ms
+.It Fl T Ns Ar latex
 When data has been removed, it is coloured red.
 When data has been inserted, it is coloured in green.
-In either case, your formatter must support colours or the texts will be
-freely intermingled.
+.It Fl T Ns Ar term
+Removed and inserted data have different background colours.
 .El
 The algorithm used for diffing derives from
 .Dq Detecting Changes in XML Documents
