@@ -445,6 +445,7 @@ When data has been inserted, it is coloured in green.
 .It Fl T Ns Ar term
 Removed and inserted data have different background colours.
 .El
+.Pp
 The algorithm used for diffing derives from
 .Dq Detecting Changes in XML Documents
 .Pq 2002 .
@@ -474,8 +475,7 @@ lowdown -sTms foo.md | groff -tki -mspdf -Kutf8 -Tutf8 | less -R
 lowdown -sTman foo.md | mandoc | less
 .Ed
 .Pp
-To emit a standalone HTML5 document from a file
-.Pa foo.md :
+To emit a standalone HTML5 document:
 .Pp
 .Dl lowdown -s foo.md > foo.html
 .Pp
@@ -494,7 +494,7 @@ Or using a traditional
 use the following:
 .Bd -literal -offset indent
 lowdown --nroff-no-groff -sTms foo.md | \e
-  tbl | troff -Tps -ms -mpdfmark > foo.ps
+  tbl | pic | troff -Tps -ms -mpdfmark > foo.ps
 .Ed
 .Pp
 Both
@@ -506,6 +506,19 @@ support the
 arguments for PDF output.
 The former also has
 .Xr pdfroff 1 .
+.Bd -literal -offset indent
+lowdown -sTms foo.md | \e
+  groff -tki -mspdf -Kutf8 -Tpdf > foo.pdf
+.Ed
+.Pp
+If the file has PS or EPS images and is being processed by
+.Xr groff 1 ,
+the images are not converted and the file needs to be manually converted
+from PS.
+.Bd -literal -offset indent
+lowdown -sTms foo.md | groff -tki -mspdf -Kutf8 > foo.ps
+ps2dpdf foo.ps
+.Ed
 .Pp
 UTF-8 support for PDF or PS is limited to
 .Xr groff 1
