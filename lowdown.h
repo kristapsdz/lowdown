@@ -288,6 +288,7 @@ struct	lowdown_opts {
 #define	LOWDOWN_HTML_OWASP	 0x800 /* use OWASP escaping */
 #define	LOWDOWN_HTML_NUM_ENT	 0x1000 /* use &#nn; if possible */
 #define LOWDOWN_LATEX_SKIP_HTML	 0x2000 /* skip all HTML */
+#define LOWDOWN_LATEX_NUMBERED	 0x4000 /* numbered sections */
 };
 
 struct lowdown_doc;

@@ -252,6 +252,8 @@ main(int argc, char *argv[])
 		{ "html-no-owasp",	no_argument,	&roflag, LOWDOWN_HTML_OWASP },
 		{ "html-num-ent",	no_argument,	&aoflag, LOWDOWN_HTML_NUM_ENT },
 		{ "html-no-num-ent",	no_argument,	&roflag, LOWDOWN_HTML_NUM_ENT },
+		{ "latex-numbered",	no_argument,	&aoflag, LOWDOWN_LATEX_NUMBERED },
+		{ "latex-no-numbered",	no_argument,	&roflag, LOWDOWN_LATEX_NUMBERED },
 		{ "latex-skiphtml",	no_argument,	&aoflag, LOWDOWN_LATEX_SKIP_HTML },
 		{ "latex-no-skiphtml",	no_argument,	&roflag, LOWDOWN_LATEX_SKIP_HTML },
 		{ "nroff-skiphtml",	no_argument,	&aoflag, LOWDOWN_NROFF_SKIP_HTML },
@@ -335,6 +337,7 @@ main(int argc, char *argv[])
 		LOWDOWN_NROFF_NUMBERED |
 		LOWDOWN_NROFF_SKIP_HTML |
 		LOWDOWN_LATEX_SKIP_HTML |
+		LOWDOWN_LATEX_NUMBERED |
 		LOWDOWN_SMARTY;
 
 	if (strcasecmp(getprogname(), "lowdown-diff") == 0) 

@@ -220,25 +220,30 @@ rndr_header(struct lowdown_buf *ob,
 	switch (level + st->base_header_level) {
 	case 0:
 	case 1:
-		HBUF_PUTSL(ob, "\\section{");
+		HBUF_PUTSL(ob, "\\section");
 		break;
 	case 2:
-		HBUF_PUTSL(ob, "\\subsection{");
+		HBUF_PUTSL(ob, "\\subsection");
 		break;
 	case 3:
-		HBUF_PUTSL(ob, "\\subsubsection{");
+		HBUF_PUTSL(ob, "\\subsubsection");
 		break;
 	case 4:
-		HBUF_PUTSL(ob, "\\paragraph{");
+		HBUF_PUTSL(ob, "\\paragraph");
 		break;
 	default:
-		HBUF_PUTSL(ob, "\\subparagraph{");
+		HBUF_PUTSL(ob, "\\subparagraph");
 		break;
 
 	}
 
+	if (!(st->oflags & LOWDOWN_LATEX_NUMBERED))
+		HBUF_PUTSL(ob, "*");
+
+	HBUF_PUTSL(ob, "{");
+
 	hbuf_putb(ob, content);
-	HBUF_PUTSL(ob, "}");
+	HBUF_PUTSL(ob, "}\n");
 }
 
 static void
