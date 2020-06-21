@@ -572,11 +572,10 @@ rndr_linebreak(struct lowdown_buf *ob)
  * sections.
  * FIXME: use PP then italics or something for third-level etc.
  * For ms(7), just use SH.
- * (Again, see above FIXME.)
- * If we're using ms(7) w/groff extensions, used the numbered version of
- * the SH macro.
+ * If we're using ms(7) w/groff extensions and w/o numbering, used the
+ * numbered version of the SH macro.
  * If we're numbered ms(7), use NH.
- * If we're numbered ms(7) w/extensions, use NH and XN (-mspdf).
+ * With groff extensions, use XN (-mspdf).
  */
 static void
 rndr_header(struct lowdown_buf *ob,
@@ -600,15 +599,16 @@ rndr_header(struct lowdown_buf *ob,
 		return;
 	} 
 
-	if ((st->flags & LOWDOWN_NROFF_GROFF))
-		hbuf_printf(ob, ".SH %zu\n", level);
-	else if ((st->flags & LOWDOWN_NROFF_NUMBERED))
+	if (st->flags & LOWDOWN_NROFF_NUMBERED)
 		hbuf_printf(ob, ".NH %zu\n", level);
+	else if (st->flags & LOWDOWN_NROFF_GROFF)
+		hbuf_printf(ob, ".SH %zu\n", level);
 	else
 		hbuf_printf(ob, ".SH\n");
 
-	if ((st->flags & LOWDOWN_NROFF_NUMBERED) &&
-	    (st->flags & LOWDOWN_NROFF_GROFF)) {
+	/* Used in -mspdf output for creating a TOC. */
+
+	if (st->flags & LOWDOWN_NROFF_GROFF) {
 		HBUF_PUTSL(ob, ".XN ");
 		rndr_one_lineb_noescape(ob, content, 0);
 		HBUF_PUTSL(ob, "\n");
