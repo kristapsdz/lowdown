@@ -138,7 +138,7 @@ index.xml README.xml index.pdf diff.pdf README.pdf: lowdown
 index.html README.html: template.xml
 
 .md.pdf:
-	./lowdown --nroff-numbered -s -Tms $< | \
+	./lowdown --nroff-no-numbered -s -Tms $< | \
 		pdfroff -i -mspdf -t -k -Kutf8 > $@
 
 .xml.html:
