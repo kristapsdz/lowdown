@@ -759,6 +759,12 @@
 		</header>
 		<aside>
 			<p>
+				For <b>-Tms</b>, make numbered output the default.
+				This is because earlier, it was not possible to make numbered output
+				at all with <b>--nroff-groff</b>.
+				Also clarify the role of <b>--no-groff</b> while at it.
+			</p>
+			<p>
 				Initial support for extended image attributes as in PHP Markdown
 				Extra.
 				For the time being, these only allow for non-pixel widths and
