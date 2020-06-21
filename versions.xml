@@ -753,11 +753,21 @@
 	</article>
 	<article data-sblg-article="1" data-sblg-tags="version">
 		<header>
-			<h1>0.7.0</h1>
+			<h1>0.7.1</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2020-06-19">2020-06-19</time>
+			<time datetime="2020-06-21">2020-06-21</time>
 		</header>
 		<aside>
+			<p>
+				Initial support for extended image attributes as in PHP Markdown
+				Extra.
+				For the time being, these only allow for non-pixel widths and
+				heights for images.
+				Spend time in the documentation explaining image support, as it's a
+				little complicated: LaTeX and HTML support any images, but <b>ms</b>
+				only supports EPS and PS, and only in block mode.
+				(Among other complexities&#8230;)
+			</p>
 			<p>
 				Changes to internal API: the <code>hdoc</code> and <code>hbuf</code>
 				structures have been renamed to <code>struct lowdown_doc</code> and
