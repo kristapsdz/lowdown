@@ -150,7 +150,7 @@ a colon in it.
 Otherwise it's considered a regular paragraph.
 Meta-data is escaped according to the output mode; and if the
 .Dv LOWDOWN_SMARTY
-flag is set, also smartypantsed.
+flag is set, also use smart typography.
 .It Dv LOWDOWN_NOCODEIND
 Do not parse indented content as code blocks.
 .It Dv LOWDOWN_NOINTEM
@@ -250,9 +250,7 @@ For any mode, you may specify:
 .Pp
 .Bl -tag -width Ds -compact
 .It Dv LOWDOWN_SMARTY
-Don't use
-.Dq smartypants
-formatting.
+Don't use smart typography formatting.
 .It Dv LOWDOWN_STANDALONE
 Emit a full document instead of a document fragment.
 Parts of this envelope may be populated from metadata if
