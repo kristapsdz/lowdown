@@ -765,6 +765,10 @@
 				Also clarify the role of <b>--no-groff</b> while at it.
 			</p>
 			<p>
+				Add <b>--latex-no-numbered</b> to <b>-Tlatex</b> for symmetry with
+				<b>-Tms</b>.
+			</p>
+			<p>
 				Initial support for extended image attributes as in PHP Markdown
 				Extra.
 				For the time being, these only allow for non-pixel widths and
