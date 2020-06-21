@@ -99,6 +99,7 @@ following Markdown features and extensions:
 - metadata
 - commonmark (**in progress**)
 - definition lists
+- extended image attributes
 
 ## Examples
 
@@ -230,7 +231,7 @@ HTML5 output,
 **-ms** and **-man** output,
 [latex.c](https://github.com/kristapsdz/lowdown/blob/master/latex.c) for
 LaTeX,
-[latex.c](https://github.com/kristapsdz/lowdown/blob/master/term.c)
+[term.c](https://github.com/kristapsdz/lowdown/blob/master/term.c)
 for terminal output, and a debugging renderer
 [tree.c](https://github.com/kristapsdz/lowdown/blob/master/tree.c).
 
