@@ -235,15 +235,17 @@ Hard-wrap paragraph content by outputting line breaks where applicable.
 .It Fl -nroff-no-groff
 Don't use
 .Xr groff 1
-style section headings and don't output PDF hyper-links.
-See
-.Fl -nroff-no-numbered .
+style section headings and PDF hyperlinks.
+If using
+.Fl m Ns Ar spdf
+with
+.Xr groff 1 ,
+these will be further rendered as a table of contents and clickable
+links.
 Only applies to
 .Fl T Ns Ar ms .
 .It Fl -nroff-no-numbered
-If
-.Fl -nroff-no-groff
-is set, don't output numbered headings.
+Don't output numbered headings.
 Only applies to
 .Fl T Ns Ar ms .
 .It Fl -nroff-no-skiphtml
