@@ -5,7 +5,7 @@ author: Kristaps Dzonsons
 # [%title]
 
 *lowdown* is a Markdown translator producing HTML5, *roff* documents
-in the **ms** and **man** formats, and terminal output.
+in the **ms** and **man** formats, LaTeX, and terminal output.
 The [open source](http://opensource.org/licenses/ISC) C source code has
 no dependencies.
 
@@ -81,8 +81,8 @@ traditional text output facilities of [groff](https://www.gnu.org/s/groff) and
 > **-Tterm**
 > **-Tms**
 
-Only **-Thtml** allows images and equations, though **-Tms** has limited
-image support with encapsulated postscript.
+Only **-Thtml** and **-Tlatex** allow images and equations, though
+**-Tms** has limited image support with encapsulated postscript.
 
 ## Input
 
@@ -161,15 +161,15 @@ The same can be effected with systems using
 [mandoc](https://mdocml.bsd.lv):
 
 ```sh
-lowdown -s -Tman README.md | mandoc -Tps > README.ps
-lowdown -s -Tman README.md | mandoc -Tpdf > README.pdf
+lowdown -sTman README.md | mandoc -Tps > README.ps
+lowdown -sTman README.md | mandoc -Tpdf > README.pdf
 ```
 
 More support for PDF (and other print formats) is available with the
 **-Tlatex** output.
 
 ```sh
-lowdown -s -Tlatex README.md | pdflatex
+lowdown -sTlatex README.md | pdflatex
 ```
 
 For terminal output, troff or mandoc may be used in their respective
@@ -223,12 +223,14 @@ the document as a tree of nodes, each node corresponding an input token.
 Once the entire tree has been generated, the AST is passed into the
 front-end renderers, which construct output depth-first.
 
-There are four renderers supported:
+There are a variety of renderers supported:
 [html.c](https://github.com/kristapsdz/lowdown/blob/master/html.c) for
 HTML5 output,
 [nroff.c](https://github.com/kristapsdz/lowdown/blob/master/nroff.c) for
 **-ms** and **-man** output,
-[term.c](https://github.com/kristapsdz/lowdown/blob/master/term.c)
+[latex.c](https://github.com/kristapsdz/lowdown/blob/master/latex.c) for
+LaTeX,
+[latex.c](https://github.com/kristapsdz/lowdown/blob/master/term.c)
 for terminal output, and a debugging renderer
 [tree.c](https://github.com/kristapsdz/lowdown/blob/master/tree.c).
 
