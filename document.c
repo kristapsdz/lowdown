@@ -3258,7 +3258,7 @@ parse_block(struct lowdown_doc *doc, char *data, size_t size)
 
 		/* Fenced code. */
 		
-		if ((doc->ext_flags & LOWDOWN_FENCED) != 0 &&
+		if ((doc->ext_flags & LOWDOWN_FENCED) &&
 		    (i = parse_fencedcode
 		     (doc, txt_data, end)) != 0) {
 			beg += i;
