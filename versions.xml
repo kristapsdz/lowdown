@@ -795,4 +795,16 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.7.2</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2020-07-23">2020-07-23</time>
+		</header>
+		<aside>
+			<p>
+				Invert logic of <b>--parse-codeindent</b> to be correct.
+			</p>
+		</aside>
+	</article>
 </articles>
