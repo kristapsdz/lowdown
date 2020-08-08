@@ -296,8 +296,10 @@ smarty_right_wb(const struct lowdown_node *n, size_t pos)
 /*
  * FIXME: this can be faster with a table-based lookup instead of the
  * switch statement.
+ * Returns non-zero if a left-quote entity was inserted as the next node
+ * of the parse tree, otherwise return zero.
  */
-static void
+static int
 smarty_hbuf(struct lowdown_node *n, size_t *maxn,
 	struct lowdown_buf *b, struct smarty *s)
 {
@@ -321,7 +323,7 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn,
 					continue;
 				smarty_entity(n, maxn, i, 
 					i + sz, syms[j].ent);
-				return;
+				return 0;
 			}
 			break;
 		case '"':
@@ -332,10 +334,10 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn,
 					break;
 				smarty_entity(n, maxn, 
 					i, i + 1, ENT_RDQUO);
-				return;
+				return 0;
 			}
 			smarty_entity(n, maxn, i, i + 1, ENT_LDQUO);
-			return;
+			return 1;
 		case '\'':
 			/* Left-wb and right-wb differ. */
 
@@ -344,10 +346,10 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn,
 					break;
 				smarty_entity(n, maxn, 
 					i, i + 1, ENT_RSQUO);
-				return;
+				return 0;
 			}
 			smarty_entity(n, maxn, i, i + 1, ENT_LSQUO);
-			return;
+			return 1;
 		case '1':
 		case '3':
 			/* Symbols that require wb. */
@@ -365,7 +367,7 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn,
 					continue;
 				smarty_entity(n, maxn, i, 
 					i + sz, syms2[j].ent);
-				return;
+				return 0;
 			}
 			break;
 		default:
@@ -374,6 +376,8 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn,
 
 		s->left_wb = smarty_is_wb_l(b->data[i]);
 	}
+
+	return 0;
 }
 
 static void
@@ -385,8 +389,9 @@ smarty_span(struct lowdown_node *root, size_t *maxn, struct smarty *s)
 		switch (types[n->type]) {
 		case TYPE_TEXT:
 			assert(n->type == LOWDOWN_NORMAL_TEXT);
-			smarty_hbuf(n, maxn, 
-				&n->rndr_normal_text.text, s);
+			if (smarty_hbuf(n, maxn, 
+		 	    &n->rndr_normal_text.text, s))
+				n = TAILQ_NEXT(n, entries);
 			break;
 		case TYPE_SPAN:
 			smarty_span(n, maxn, s);
@@ -420,8 +425,9 @@ smarty_block(struct lowdown_node *root,
 			break;
 		case TYPE_TEXT:
 			assert(n->type == LOWDOWN_NORMAL_TEXT);
-			smarty_hbuf(n, maxn, 
-				&n->rndr_normal_text.text, &s);
+			if (smarty_hbuf(n, maxn, 
+			    &n->rndr_normal_text.text, &s))
+				n = TAILQ_NEXT(n, entries);
 			break;
 		case TYPE_SPAN:
 			smarty_span(n, maxn, &s);
