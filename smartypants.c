@@ -206,12 +206,25 @@ smarty_entity(struct lowdown_node *n, size_t *maxn,
 }
 
 /*
- * Whether the character (ostensibly to the left or right of a word)
- * constitutes a word break.
- * TODO: split into right_iswb and left_iswb.
+ * Whether the character to the left of a word constitutes a word break
+ * on its left side.
+ * This is any space or opening punctuation.
  */
 static int
-smarty_iswb(char c)
+smarty_is_wb_l(char c)
+{
+
+	return isspace((unsigned char)c) || 
+		'(' == c || '[' == c;
+}
+
+/*
+ * Whether the character to the right of a word constitutes a word
+ * break.
+ * This is any space or punctuation.
+ */
+static int
+smarty_is_wb_r(char c)
 {
 
 	return isspace((unsigned char)c) ||
@@ -241,7 +254,7 @@ smarty_right_wb_r(const struct lowdown_node *n, int skip)
 	    n->rndr_normal_text.text.size) {
 		assert(n->type == LOWDOWN_NORMAL_TEXT);
 		b = &n->rndr_normal_text.text;
-		return smarty_iswb(b->data[0]);
+		return smarty_is_wb_r(b->data[0]);
 	}
 
 	/* First scan down. */
@@ -275,7 +288,7 @@ smarty_right_wb(const struct lowdown_node *n, size_t pos)
 	b = &n->rndr_normal_text.text;
 
 	if (pos + 1 <= b->size)
-		return smarty_iswb(b->data[pos]);
+		return smarty_is_wb_r(b->data[pos]);
 
 	return smarty_right_wb_r(n, 1);
 }
@@ -359,7 +372,7 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn,
 			break;
 		}
 
-		s->left_wb = smarty_iswb(b->data[i]);
+		s->left_wb = smarty_is_wb_l(b->data[i]);
 	}
 }
 

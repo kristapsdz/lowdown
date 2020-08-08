@@ -758,8 +758,12 @@ l l l.
 .Pp
 Word boundaries are defined by white-space (including the end of blocks,
 such as paragraphs, or end of file) or punctuation.
-Left and right word boundary refer to white-space or punctuation to the
-left or right of the sequence.
+Left word boundary refers to white-space or a left parenthesis or square
+bracket to the left of the sequence.
+Right refers to white-space or punctuation to the right.
+Smart quotes are not context aware: using a left or right quote depends
+upon the characters surrounding the quote, not whether a quote has
+already been used.
 .
 .Sh SEE ALSO
 .Xr lowdown 1
