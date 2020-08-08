@@ -173,6 +173,7 @@ lowdown.tar.gz.sha512: lowdown.tar.gz
 lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/
 	mkdir -p .dist/lowdown-$(VERSION)/man
+	mkdir -p .dist/lowdown-$(VERSION)/regress/smarty
 	mkdir -p .dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
 	$(INSTALL) -m 0644 *.c *.h *.in.pc Makefile LICENSE.md .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 0644 man/*.1 man/*.3 man/*.5 .dist/lowdown-$(VERSION)/man
@@ -181,6 +182,10 @@ lowdown.tar.gz:
 		.dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
 	$(INSTALL) -m 644 regress/MarkdownTest_1.0.3/*.html \
 		.dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
+	$(INSTALL) -m 644 regress/smarty/*.md \
+		.dist/lowdown-$(VERSION)/regress/smarty
+	$(INSTALL) -m 644 regress/smarty/*.html \
+		.dist/lowdown-$(VERSION)/regress/smarty
 	( cd .dist/ && tar zcf ../$@ ./ )
 	rm -rf .dist/
 
@@ -211,6 +216,12 @@ regress: lowdown
 			sed -e 's!	! !g' | sed -e '/^[ ]*$$/d' > $$tmp2 ; \
 		diff -uw $$tmp1 $$tmp2 ; \
 	done  ; \
+	for f in regress/smarty/*.md ; \
+	do \
+		echo "./lowdown $$f" ; \
+		./lowdown "$$f" > $$tmp1 ; \
+		diff -uw `dirname $$f`/`basename $$f .md`.html $$tmp1 ; \
+	done ; \
 	rm -f $$tmp1 ; \
 	rm -f $$tmp2
 
