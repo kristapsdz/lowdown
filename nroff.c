@@ -739,19 +739,18 @@ rndr_paragraph(struct lowdown_buf *ob,
 			if (i > org)
 				hbuf_put(ob, content->data + org, i - org);
 
-			/*
-			 * do not insert a line break if this newline
-			 * is the last character on the paragraph
-			 */
-			if (i >= content->size - 1)
+			if (i >= content->size - 1) {
+				HBUF_PUTSL(ob, "\n");
 				break;
+			}
 
 			rndr_linebreak(ob);
 			i++;
 		}
-	} else
-		hbuf_put(ob, content->data + i, content->size - i);
+		return;
+	}
 
+	hbuf_put(ob, content->data + i, content->size - i);
 	BUFFER_NEWLINE(content->data + i, content->size - i, ob);
 }
 
