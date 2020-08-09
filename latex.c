@@ -211,14 +211,16 @@ rndr_linebreak(struct lowdown_buf *ob)
 static void
 rndr_header(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
-	size_t level, const struct latex *st)
+	const struct rndr_header *dat,
+	const struct latex *st)
 {
 
 	if (ob->size)
 		HBUF_PUTSL(ob, "\n");
 
-	switch (level + st->base_header_level) {
+	switch (dat->level + st->base_header_level) {
 	case 0:
+		/* FALLTHROUGH */
 	case 1:
 		HBUF_PUTSL(ob, "\\section");
 		break;
@@ -234,14 +236,11 @@ rndr_header(struct lowdown_buf *ob,
 	default:
 		HBUF_PUTSL(ob, "\\subparagraph");
 		break;
-
 	}
 
 	if (!(st->oflags & LOWDOWN_LATEX_NUMBERED))
 		HBUF_PUTSL(ob, "*");
-
 	HBUF_PUTSL(ob, "{");
-
 	hbuf_putb(ob, content);
 	HBUF_PUTSL(ob, "}\n");
 }
@@ -615,13 +614,16 @@ rndr_meta(struct lowdown_buf *ob,
 		n->rndr_meta.key.size);
 	m->value = xstrndup(content->data, content->size);
 
-	if (strcasecmp(m->key, "baseheaderlevel") == 0)
-		st->base_header_level = 
-			strtonum(m->value, 0, 5, NULL);
+	if (strcasecmp(m->key, "baseheaderlevel") == 0) {
+		st->base_header_level = strtonum
+			(m->value, 1, 1000, NULL);
+		if (st->base_header_level == 0)
+			st->base_header_level = 1;
+	}
 }
 
-void
-lowdown_latex_rndr(struct lowdown_buf *ob,
+static void
+rndr(struct lowdown_buf *ob,
 	struct lowdown_metaq *mq, void *arg, 
 	const struct lowdown_node *n)
 {
@@ -630,23 +632,11 @@ lowdown_latex_rndr(struct lowdown_buf *ob,
 	const struct lowdown_node	*child;
 	const char			*tex;
 	unsigned char			 texflags;
-	struct lowdown_metaq		 metaq;
-
-	/* 
-	 * Assign a dummy meta queue, if necessary.
-	 * This will only be done for the root of the parse tree.
-	 * We check at the epilogue if this must be freed.
-	 */
-
-	if (mq == NULL) {
-		TAILQ_INIT(&metaq);
-		mq = &metaq;
-	}
 
 	tmp = hbuf_new(64);
 
 	TAILQ_FOREACH(child, &n->children, entries)
-		lowdown_latex_rndr(tmp, mq, st, child);
+		rndr(tmp, mq, st, child);
 
 	/*
 	 * These elements can be put in either a block or an inline
@@ -683,7 +673,7 @@ lowdown_latex_rndr(struct lowdown_buf *ob,
 		rndr_doc_footer(ob, st);
 		break;
 	case LOWDOWN_HEADER:
-		rndr_header(ob, tmp, n->rndr_header.level, st);
+		rndr_header(ob, tmp, &n->rndr_header, st);
 		break;
 	case LOWDOWN_HRULE:
 		rndr_hrule(ob);
@@ -786,6 +776,27 @@ lowdown_latex_rndr(struct lowdown_buf *ob,
 		HBUF_PUTSL(ob, "}");
 
 	hbuf_free(tmp);
+}
+
+void
+lowdown_latex_rndr(struct lowdown_buf *ob,
+	struct lowdown_metaq *mq, void *arg, 
+	const struct lowdown_node *n)
+{
+	struct latex		*st = arg;
+	struct lowdown_metaq	 metaq;
+
+	/* Temporary metaq if not provided. */
+
+	if (mq == NULL) {
+		TAILQ_INIT(&metaq);
+		mq = &metaq;
+	}
+
+	st->base_header_level = 1;
+	rndr(ob, mq, st, n);
+
+	/* Release temporary metaq. */
 
 	if (mq == &metaq)
 		lowdown_metaq_free(mq);

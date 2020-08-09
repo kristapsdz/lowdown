@@ -425,11 +425,10 @@ elements.
 (Only if configured during parse.)
 .It Dv LOWDOWN_HEADER
 A block-level header.
-Described by one of
+Described (in the HTML case) by one of
 .Li <h1>
 through
 .Li <h6> .
-.Pq The level is bound at 6.
 .It Dv LOWDOWN_HIGHLIGHT
 Marked test.
 Described by the
@@ -628,7 +627,9 @@ For
 .Dv LOWDOWN_HEADER ,
 the
 .Va level
-of the header (1\(en6).
+of the header starting at zero
+This value is relative to the metadata base header level, defaulting to
+one (the top-level header).
 .It Va rndr_normal_text
 The basic
 .Va text

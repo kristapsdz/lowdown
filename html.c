@@ -286,12 +286,13 @@ rndr_header_id(struct lowdown_buf *ob,
 static void
 rndr_header(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
-	size_t level, struct html *st)
+	const struct rndr_header *dat, struct html *st)
 {
+	size_t	level = dat->level + st->base_header_level;
 
-	/* Don't allow greater than <h6>. */
+	/* HTML doesn't allow greater than <h6>. */
 
-	if ((level += st->base_header_level) > 6)
+	if (level > 6)
 		level = 6;
 
 	if (ob->size)
@@ -833,9 +834,12 @@ rndr_meta(struct lowdown_buf *ob,
 		n->rndr_meta.key.size);
 	m->value = xstrndup(content->data, content->size);
 
-	if (strcasecmp(m->key, "baseheaderlevel") == 0)
-		st->base_header_level = 
-			strtonum(m->value, 0, 5, NULL);
+	if (strcasecmp(m->key, "baseheaderlevel") == 0) {
+		st->base_header_level = strtonum
+			(m->value, 1, 1000, NULL);
+		if (st->base_header_level == 0)
+			st->base_header_level = 1;
+	}
 }
 
 static void
@@ -918,28 +922,20 @@ rndr_doc_header(struct lowdown_buf *ob,
 	HBUF_PUTSL(ob, "</head>\n<body>\n");
 }
 
-void
-lowdown_html_rndr(struct lowdown_buf *ob,
+static void
+rndr(struct lowdown_buf *ob,
 	struct lowdown_metaq *mq, void *ref, 
 	const struct lowdown_node *n)
 {
 	const struct lowdown_node	*child;
-	struct lowdown_metaq		 metaq;
 	struct lowdown_buf		*tmp;
 	int32_t				 ent;
 	struct html			*st = ref;
 
-	/* Temporary metaq if not provided. */
-
-	if (mq == NULL) {
-		TAILQ_INIT(&metaq);
-		mq = &metaq;
-	}
-
 	tmp = hbuf_new(64);
 
 	TAILQ_FOREACH(child, &n->children, entries)
-		lowdown_html_rndr(tmp, mq, st, child);
+		rndr(tmp, mq, st, child);
 
 	/*
 	 * These elements can be put in either a block or an inline
@@ -982,7 +978,7 @@ lowdown_html_rndr(struct lowdown_buf *ob,
 		rndr_doc_footer(ob, st);
 		break;
 	case LOWDOWN_HEADER:
-		rndr_header(ob, tmp, n->rndr_header.level, st);
+		rndr_header(ob, tmp, &n->rndr_header, st);
 		break;
 	case LOWDOWN_HRULE:
 		rndr_hrule(ob);
@@ -1111,6 +1107,25 @@ lowdown_html_rndr(struct lowdown_buf *ob,
 		HBUF_PUTSL(ob, "</del>");
 
 	hbuf_free(tmp);
+}
+
+void
+lowdown_html_rndr(struct lowdown_buf *ob,
+	struct lowdown_metaq *mq, void *arg, 
+	const struct lowdown_node *n)
+{
+	struct html		*st = arg;
+	struct lowdown_metaq	 metaq;
+
+	/* Temporary metaq if not provided. */
+
+	if (mq == NULL) {
+		TAILQ_INIT(&metaq);
+		mq = &metaq;
+	}
+
+	st->base_header_level = 1;
+	rndr(ob, mq, st, n);
 
 	/* Release temporary metaq. */
 
@@ -1127,7 +1142,6 @@ lowdown_html_new(const struct lowdown_opts *opts)
 
 	TAILQ_INIT(&st->headers_used);
 	st->flags = NULL == opts ? 0 : opts->oflags;
-
 	return st;
 }
 

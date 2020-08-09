@@ -345,7 +345,7 @@ rndr_node_style(struct sty *s, const struct lowdown_node *n)
 
 	switch (n->type) {
 	case LOWDOWN_HEADER:
-		if (n->rndr_header.level > 1)
+		if (n->rndr_header.level > 0)
 			rndr_node_style_apply(s, &sty_hn);
 		else
 			rndr_node_style_apply(s, &sty_h1);
@@ -554,11 +554,11 @@ rndr_buf_startline_prefixes(struct term *term,
 	case LOWDOWN_HEADER:
 		/* Use the same colour as the text following. */
 
-		if (n->rndr_header.level == 1)
+		if (n->rndr_header.level == 0)
 			break;
 		rndr_buf_style(out, &sinner);
 		pstyle = 1;
-		for (i = 0; i < n->rndr_header.level; i++)
+		for (i = 0; i < n->rndr_header.level + 1; i++)
 			HBUF_PUTSL(out, "#");
 		HBUF_PUTSL(out, " ");
 		rndr_buf_advance(term, i + 1);

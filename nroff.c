@@ -580,11 +580,10 @@ rndr_linebreak(struct lowdown_buf *ob)
 static void
 rndr_header(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
-	size_t level, const struct nroff *st)
+	const struct rndr_header *dat,
+	const struct nroff *st)
 {
-
-	if ((level += st->base_header_level) > 6)
-		level = 6;
+	size_t	level = dat->level + st->base_header_level;
 
 	if (content->size == 0)
 		return;
@@ -1124,9 +1123,12 @@ rndr_meta(struct lowdown_buf *ob,
 		n->rndr_meta.key.size);
 	m->value = xstrndup(content->data, content->size);
 
-	if (strcasecmp(m->key, "baseheaderlevel") == 0)
-		st->base_header_level = 
-			strtonum(m->value, 0, 5, NULL);
+	if (strcasecmp(m->key, "baseheaderlevel") == 0) {
+		st->base_header_level = strtonum
+			(m->value, 1, 1000, NULL);
+		if (st->base_header_level == 0)
+			st->base_header_level = 1;
+	}
 }
 
 static void
@@ -1321,8 +1323,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		rndr_meta(ob, tmp, mq, n, st);
 		break;
 	case LOWDOWN_HEADER:
-		rndr_header(ob, tmp, 
-			n->rndr_header.level, st);
+		rndr_header(ob, tmp, &n->rndr_header, st);
 		break;
 	case LOWDOWN_HRULE:
 		rndr_hrule(ob, st);
@@ -1468,6 +1469,7 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 	}
 
 	memset(st->fonts, 0, sizeof(st->fonts));
+	st->base_header_level = 1;
 	rndr(ob, mq, st, n);
 
 	/* Release temporary metaq. */

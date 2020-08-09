@@ -2244,7 +2244,8 @@ parse_paragraph(struct lowdown_doc *doc, char *data, size_t size)
 	/* Definition data parts. */
 
 	n = pushnode(doc, LOWDOWN_HEADER);
-	n->rndr_header.level = level;
+	assert(level > 0);
+	n->rndr_header.level = level - 1;
 	parse_inline(doc, work.data, work.size);
 	popnode(doc, n);
 	return end;
@@ -2688,7 +2689,8 @@ parse_atxheader(struct lowdown_doc *doc, char *data, size_t size)
 
 	if (end > i) {
 		n = pushnode(doc, LOWDOWN_HEADER);
-		n->rndr_header.level = level;
+		assert(level > 0);
+		n->rndr_header.level = level - 1;
 		parse_inline(doc, data + i, end - i);
 		popnode(doc, n);
 	}
