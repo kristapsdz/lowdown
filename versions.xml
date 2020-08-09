@@ -807,4 +807,28 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.7.3</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2020-08-09">2020-08-09</time>
+		</header>
+		<aside>
+			<p>
+				Fix some smart typography bugs, specifically with ending single or
+				double quotes.
+				While doing so, create a regression suite for smart typography and
+				update the manpage.
+				Bug submitted by Larry Kollar, thanks!
+			</p>
+			<p>
+				Make <code>base header level</code> metadata key work properly.
+				Another bug submitted by Larry Kollar, thanks!
+			</p>
+			<p>
+				Fix <b>--nroff-hard-wrap</b> to emit trailing newlines.
+				Yet another bug submitted by Larry Kollar, thanks!
+			</p>
+		</aside>
+	</article>
 </articles>
