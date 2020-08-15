@@ -67,6 +67,7 @@ enum	nscope {
 
 struct 	nroff {
 	int 		 man; /* whether man(7) */
+	int		 post_para; /* for choosing PP/LP */
 	unsigned int 	 flags; /* output flags */
 	size_t		 base_header_level; /* header offset */
 	enum nfont	 fonts[NFONT__MAX]; /* see nstate_fonts() */
@@ -411,7 +412,7 @@ static void
 rndr_blockcode(struct lowdown_buf *ob,
 	const struct lowdown_buf *content, 
 	const struct lowdown_buf *lang,
-	const struct nroff *st)
+	struct nroff *st)
 {
 
 	if (content->size == 0)
@@ -432,6 +433,8 @@ rndr_blockcode(struct lowdown_buf *ob,
 		HBUF_PUTSL(ob, ".fi\n");
 	else
 		HBUF_PUTSL(ob, ".DE\n");
+
+	st->post_para = 1;
 }
 
 static void
@@ -511,7 +514,8 @@ rndr_definition_data(struct lowdown_buf *ob,
 
 static void
 rndr_definition(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+	const struct lowdown_buf *content,
+	struct nroff *st)
 {
 
 	if (content->size == 0)
@@ -524,11 +528,14 @@ rndr_definition(struct lowdown_buf *ob,
 	hbuf_putb(ob, content);
 	HBUF_NEWLINE(content, ob);
 	HBUF_PUTSL(ob, ".RE\n");
+
+	st->post_para = 1;
 }
 
 static void
 rndr_blockquote(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+	const struct lowdown_buf *content,
+	struct nroff *st)
 {
 
 	if (content->size == 0)
@@ -537,6 +544,8 @@ rndr_blockquote(struct lowdown_buf *ob,
 	hbuf_putb(ob, content);
 	HBUF_NEWLINE(content, ob);
 	HBUF_PUTSL(ob, ".RE\n");
+
+	st->post_para = 1;
 }
 
 static void
@@ -581,7 +590,7 @@ static void
 rndr_header(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
 	const struct rndr_header *dat,
-	const struct nroff *st)
+	struct nroff *st)
 {
 	size_t	level = dat->level + st->base_header_level;
 
@@ -615,6 +624,8 @@ rndr_header(struct lowdown_buf *ob,
 		rndr_one_lineb_noescape(ob, content, 1);
 		HBUF_NEWLINE(content, ob);
 	}
+
+	st->post_para = 1;
 }
 
 static int
@@ -712,7 +723,7 @@ rndr_listitem(struct lowdown_buf *ob,
 static void
 rndr_paragraph(struct lowdown_buf *ob,
 	const struct lowdown_buf *content, 
-	const struct nroff *st, 
+	struct nroff *st, 
 	const struct lowdown_node *np)
 {
 	size_t	 i = 0, org;
@@ -728,7 +739,12 @@ rndr_paragraph(struct lowdown_buf *ob,
 	if (i == content->size)
 		return;
 
-	HBUF_PUTSL(ob, ".LP\n");
+	if (st->post_para) {
+		HBUF_PUTSL(ob, ".LP\n");
+		st->post_para = 0;
+	} else
+		HBUF_PUTSL(ob, ".PP\n");
+
 
 	if ((st->flags & LOWDOWN_NROFF_HARD_WRAP)) {
 		while (i < content->size) {
@@ -838,7 +854,9 @@ rndr_raw_html(struct lowdown_buf *ob,
 }
 
 static void
-rndr_table(struct lowdown_buf *ob, const struct lowdown_buf *content)
+rndr_table(struct lowdown_buf *ob, 
+	const struct lowdown_buf *content,
+	struct nroff *st)
 {
 
 	HBUF_PUTSL(ob, ".TS\n");
@@ -846,6 +864,8 @@ rndr_table(struct lowdown_buf *ob, const struct lowdown_buf *content)
 	hbuf_put(ob, content->data, content->size);
 	HBUF_NEWLINE(content, ob);
 	HBUF_PUTSL(ob, ".TE\n");
+
+	st->post_para = 1;
 }
 
 static void
@@ -1304,10 +1324,10 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			&n->rndr_blockcode.lang, st);
 		break;
 	case LOWDOWN_BLOCKQUOTE:
-		rndr_blockquote(ob, tmp);
+		rndr_blockquote(ob, tmp, st);
 		break;
 	case LOWDOWN_DEFINITION:
-		rndr_definition(ob, tmp);
+		rndr_definition(ob, tmp, st);
 		break;
 	case LOWDOWN_DEFINITION_DATA:
 		rndr_definition_data(ob, n, tmp);
@@ -1334,7 +1354,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		rndr_paragraph(ob, tmp, st, n->parent);
 		break;
 	case LOWDOWN_TABLE_BLOCK:
-		rndr_table(ob, tmp);
+		rndr_table(ob, tmp, st);
 		break;
 	case LOWDOWN_TABLE_HEADER:
 		rndr_table_header(ob, tmp, 
@@ -1469,6 +1489,7 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 
 	memset(st->fonts, 0, sizeof(st->fonts));
 	st->base_header_level = 1;
+	st->post_para = 0;
 	rndr(ob, mq, st, n);
 
 	/* Release temporary metaq. */

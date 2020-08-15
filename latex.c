@@ -559,7 +559,6 @@ rndr_doc_header(struct lowdown_buf *ob,
 	      "\\usepackage{textcomp}\n"
 	      "\\usepackage{lmodern}\n"
 	      "\\usepackage{hyperref}\n"
-	      "\\usepackage[parfill]{parskip}\n"
 	      "\\begin{document}\n");
 
 	TAILQ_FOREACH(m, mq, entries)
