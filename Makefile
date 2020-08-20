@@ -209,7 +209,7 @@ regress: lowdown
 	tmp2=`mktemp` ; \
 	for f in regress/MarkdownTest_1.0.3/*.text ; \
 	do \
-		echo "./lowdown $(REGRESS_ARGS) $$f" ; \
+		echo "$$f" ; \
 		want="`dirname \"$$f\"`/`basename \"$$f\" .text`.html" ; \
 		sed -e '/^[ ]*$$/d' "$$want" > $$tmp1 ; \
 		./lowdown $(REGRESS_ARGS) "$$f" | \
@@ -218,7 +218,7 @@ regress: lowdown
 	done  ; \
 	for f in regress/smarty/*.md ; \
 	do \
-		echo "./lowdown $$f" ; \
+		echo "$$f" ; \
 		./lowdown "$$f" > $$tmp1 ; \
 		diff -uw `dirname $$f`/`basename $$f .md`.html $$tmp1 ; \
 	done ; \

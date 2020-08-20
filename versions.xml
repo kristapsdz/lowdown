@@ -811,7 +811,7 @@
 		<header>
 			<h1>0.7.3</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2020-08-09">2020-08-09</time>
+			<time datetime="2020-08-20">2020-08-20</time>
 		</header>
 		<aside>
 			<p>
@@ -828,6 +828,15 @@
 			<p>
 				Fix <b>--nroff-hard-wrap</b> to emit trailing newlines.
 				Yet another bug submitted by Larry Kollar, thanks!
+			</p>
+			<p>
+				Larry further suggested using typographic conventions in both the
+				<b>-Tlatex</b> and <b>-Tms</b> output to have initial paragraphs
+				not indent, but subsequent ones should.
+				This is the default mode in LaTeX, which I was disabling.
+				I've now removed my override to be more like default LaTeX, and
+				Larry proposed an initial patch for having <b>-Tms</b> do the same.
+				Thanks yet again!
 			</p>
 		</aside>
 	</article>

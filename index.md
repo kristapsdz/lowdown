@@ -42,8 +42,7 @@ BSD.lv's
 *lowdown* produces HTML5 output in XML mode with **-Thtml**.  It may produce
 either a fragment or standalone HTML5 document with **-s**.
 
-It also produces simple LaTeX documents with **-Tlatex**.  This output
-format is the newest and still fairly experimental.  It uses the most
+It also produces simple LaTeX documents with **-Tlatex**.  It uses the most
 basic packages possible.
 
 PDFs may also be produced from *roff* documents via the **-Tms** and
