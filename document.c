@@ -3997,7 +3997,8 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 		free(m);
 	}
 
-	*nsz = doc->nodes;
+	if (nsz != NULL)
+		*nsz = doc->nodes;
 	popnode(doc, root);
 	assert(doc->depth == 0);
 	return root;
