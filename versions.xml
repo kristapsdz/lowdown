@@ -840,4 +840,22 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.7.4</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2020-08-28">2020-08-28</time>
+		</header>
+		<aside>
+			<p>
+				<b>Bug-fix</b>: don't emit stray <code>.PP</code> macros when in
+				<b>-Tman</b> or <b>-Tms</b> mode.
+				This bug was introduced in version 0.7.3.
+			</p>
+			<p>
+                                The library is now usable from C++ applications as-is, without
+                                needing extra compilation flags.
+			</p>
+		</aside>
+	</article>
 </articles>
