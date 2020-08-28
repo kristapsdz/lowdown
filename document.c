@@ -3874,7 +3874,7 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
  */
 struct lowdown_node *
 lowdown_doc_parse(struct lowdown_doc *doc,
-	size_t *nsz, const char *data, size_t size)
+	size_t *maxn, const char *data, size_t size)
 {
 	static const char 	 UTF8_BOM[] = {0xEF, 0xBB, 0xBF};
 	struct lowdown_buf	*text;
@@ -3997,7 +3997,9 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 		free(m);
 	}
 
-	*nsz = doc->nodes;
+	if (maxn != NULL)
+		*maxn = doc->nodes;
+
 	popnode(doc, root);
 	assert(doc->depth == 0);
 	return root;
