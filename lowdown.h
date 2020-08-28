@@ -144,6 +144,75 @@ enum	lowdown_chng {
 	LOWDOWN_CHNG_DELETE,
 };
 
+struct	rndr_meta {
+	struct lowdown_buf key;
+};
+
+struct	rndr_paragraph {
+	size_t lines; /* input lines */
+	int beoln; /* ends on blank line */
+};
+
+struct	rndr_normal_text {
+	struct lowdown_buf text; /* basic text */
+	size_t offs; /* in-render offset */
+};
+
+struct	rndr_entity {
+	struct lowdown_buf text; /* entity text */
+};
+
+struct	rndr_autolink {
+	struct lowdown_buf link; /* link address */
+	struct lowdown_buf text; /* shown address */
+	enum halink_type type; /* type of link */
+};
+
+struct	rndr_raw_html {
+	struct lowdown_buf text; /* raw html buffer */
+};
+
+struct	rndr_link {
+	struct lowdown_buf link; /* link address */
+	struct lowdown_buf title; /* title of link */
+};
+
+struct	rndr_blockcode {
+	struct lowdown_buf text; /* raw code buffer */
+	struct lowdown_buf lang; /* fence language */
+};
+
+struct	rndr_definition {
+	enum hlist_fl flags;
+};
+
+struct	rndr_codespan {
+	struct lowdown_buf text; /* raw code buffer */
+};
+
+struct	rndr_table_header {
+	enum htbl_flags *flags; /* per-column flags */
+	size_t columns; /* number of columns */
+};
+
+struct	rndr_table_cell {
+	enum htbl_flags flags; /* flags for cell */
+	size_t col; /* column number */
+	size_t columns; /* number of columns */
+};
+
+struct	rndr_footnote_def {
+	size_t num; /* footnote number */
+};
+
+struct	rndr_footnote_ref {
+	size_t num; /* footnote number */
+};
+
+struct	rndr_blockhtml {
+	struct lowdown_buf text;
+};
+
 struct	rndr_list {
 	/*
 	 * This should only be checked for bit-wise
@@ -191,65 +260,26 @@ struct	lowdown_node {
 	enum lowdown_chng	 chng; /* change type */
 	size_t			 id; /* unique identifier */
 	union {
-		struct {
-			struct lowdown_buf key;
-		} rndr_meta;
+		struct rndr_meta rndr_meta;
 		struct rndr_list rndr_list; 
-		struct {
-			size_t lines; /* input lines */
-			int beoln; /* ends on blank line */
-		} rndr_paragraph;
+		struct rndr_paragraph rndr_paragraph;
 		struct rndr_listitem rndr_listitem; 
 		struct rndr_header rndr_header; 
-		struct {
-			struct lowdown_buf text; /* basic text */
-			size_t offs; /* in-render offset */
-		} rndr_normal_text; 
-		struct {
-			struct lowdown_buf text; /* entity text */
-		} rndr_entity; 
-		struct {
-			struct lowdown_buf link; /* link address */
-			struct lowdown_buf text; /* shown address */
-			enum halink_type type; /* type of link */
-		} rndr_autolink; 
-		struct {
-			struct lowdown_buf text; /* raw html buffer */
-		} rndr_raw_html; 
-		struct {
-			struct lowdown_buf link; /* link address */
-			struct lowdown_buf title; /* title of link */
-		} rndr_link; 
-		struct {
-			struct lowdown_buf text; /* raw code buffer */
-			struct lowdown_buf lang; /* fence language */
-		} rndr_blockcode; 
-		struct {
-			enum hlist_fl flags;
-		} rndr_definition; 
-		struct {
-			struct lowdown_buf text; /* raw code buffer */
-		} rndr_codespan; 
-		struct {
-			enum htbl_flags *flags; /* per-column flags */
-			size_t columns; /* number of columns */
-		} rndr_table_header; 
-		struct {
-			enum htbl_flags flags; /* flags for cell */
-			size_t col; /* column number */
-			size_t columns; /* number of columns */
-		} rndr_table_cell; 
-		struct {
-			size_t num; /* footnote number */
-		} rndr_footnote_def;
-		struct {
-			size_t num; /* footnote number */
-		} rndr_footnote_ref;
+		struct rndr_normal_text rndr_normal_text; 
+		struct rndr_entity rndr_entity; 
+		struct rndr_autolink rndr_autolink; 
+		struct rndr_raw_html rndr_raw_html; 
+		struct rndr_link rndr_link; 
+		struct rndr_blockcode rndr_blockcode; 
+		struct rndr_definition rndr_definition; 
+		struct rndr_codespan rndr_codespan; 
+		struct rndr_table_header rndr_table_header; 
+		struct rndr_table_cell rndr_table_cell; 
+		struct rndr_footnote_def rndr_footnote_def;
+		struct rndr_footnote_ref rndr_footnote_ref;
 		struct rndr_image rndr_image;
 		struct rndr_math rndr_math;
-		struct {
-			struct lowdown_buf text;
-		} rndr_blockhtml;
+		struct rndr_blockhtml rndr_blockhtml;
 	};
 	struct lowdown_node *parent;
 	struct lowdown_nodeq children;
