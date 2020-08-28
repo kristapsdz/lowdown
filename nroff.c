@@ -491,7 +491,9 @@ rndr_definition_data(struct lowdown_buf *ob,
 
 	/* Start by stripping out all paragraphs. */
 
-	while (csize > 3 && memcmp(cdata, ".LP\n", 4) == 0) {
+	while (csize > 3 && 
+	       (memcmp(cdata, ".PP\n", 4) == 0 ||
+	        memcmp(cdata, ".LP\n", 4) == 0)) {
 		cdata += 4;
 		csize -= 4;
 	}
@@ -705,7 +707,9 @@ rndr_listitem(struct lowdown_buf *ob,
 
 	/* Start by stripping out all paragraphs. */
 
-	while (csize > 3 && memcmp(cdata, ".LP\n", 4) == 0) {
+	while (csize > 3 &&
+	       (memcmp(cdata, ".LP\n", 4) == 0 ||
+	        memcmp(cdata, ".PP\n", 4) == 0)) {
 		cdata += 4;
 		csize -= 4;
 	}
@@ -1053,7 +1057,8 @@ rndr_footnote_def(struct lowdown_buf *ob,
 		HBUF_PUTSL(ob, ".FS\n");
 		/* Ignore leading paragraph marker. */
 		if (content->size > 3 &&
-		    memcmp(content->data, ".LP\n", 4) == 0)
+		    (memcmp(content->data, ".LP\n", 4) == 0 ||
+		     memcmp(content->data, ".PP\n", 4) == 0))
 			hbuf_put(ob, content->data + 4, content->size - 4);
 		else
 			hbuf_put(ob, content->data, content->size);
@@ -1070,7 +1075,8 @@ rndr_footnote_def(struct lowdown_buf *ob,
 	HBUF_PUTSL(ob, ".LP\n");
 	hbuf_printf(ob, "\\0\\fI\\u\\s-3%zu\\s+3\\d\\fP\\0", num);
 	if (content->size > 3 &&
-	    memcmp(content->data, ".LP\n", 4) == 0)
+	    (memcmp(content->data, ".PP\n", 4) == 0 ||
+	     memcmp(content->data, ".LP\n", 4) == 0))
 		hbuf_put(ob, content->data + 4, content->size - 4);
 	else
 		hbuf_put(ob, content->data, content->size);
