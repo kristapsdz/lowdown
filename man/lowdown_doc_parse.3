@@ -34,20 +34,24 @@
 .Fa "size_t inputsz"
 .Fc
 .Sh DESCRIPTION
-Parses a
+Parse a
 .Xr lowdown 5
-document from
+document
 .Fa input
 of length
 .Fa inputsz
 into an AST.
 This function may be invoked multiple times with a single
-.Fa doc .
+.Fa doc
+and different input.
 The returned node is always of type
-.Dv LOWDOWN_ROOT ,
-with
+.Dv LOWDOWN_ROOT .
+The
 .Fa maxn
-set to one greater than the highest node identifier of the returned tree.
+argument, if not
+.Dv NULL ,
+is set to one greater than the highest node identifier of the returned
+tree.
 .Sh RETURN VALUES
 Returns the root of the parse tree.
 The pointer is never
