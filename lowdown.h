@@ -144,6 +144,44 @@ enum	lowdown_chng {
 	LOWDOWN_CHNG_DELETE,
 };
 
+struct	rndr_list {
+	/*
+	 * This should only be checked for bit-wise
+	 * HLIST_FL_ORDERED OR HLIST_FL_BLOCK.
+	 * There may be other private bits set.
+	 */
+	enum hlist_fl flags;
+	/*
+	 * This is string of size >0 iff
+	 * HLIST_FL_ORDERED and we're parsing
+	 * CommonMark, else it's an empty string.
+	 */
+	char start[10];
+};
+
+struct	rndr_listitem {
+	enum hlist_fl flags; /* all possible flags */
+	size_t num; /* index in ordered */
+};
+
+struct	rndr_header{
+	size_t level; /* hN level */
+};
+
+struct	rndr_image {
+	struct lowdown_buf link; /* image address */
+	struct lowdown_buf title; /* title of image */
+	struct lowdown_buf dims; /* NNxNN dimensions */
+	struct lowdown_buf alt; /* alt-text of image */
+	struct lowdown_buf attr_width; /* ext: width */
+	struct lowdown_buf attr_height; /* ext: height */
+};
+
+struct rndr_math {
+	struct lowdown_buf text; /* equation (opaque) */
+	int blockmode;
+};
+
 /*
  * Node parsed from input document.
  * Each node is part of the parse tree.
@@ -153,91 +191,63 @@ struct	lowdown_node {
 	enum lowdown_chng	 chng; /* change type */
 	size_t			 id; /* unique identifier */
 	union {
-		struct rndr_meta {
+		struct {
 			struct lowdown_buf key;
 		} rndr_meta;
-		struct rndr_list {
-			/*
-			 * This should only be checked for bit-wise
-			 * HLIST_FL_ORDERED OR HLIST_FL_BLOCK.
-			 * There may be other private bits set.
-			 */
-			enum hlist_fl flags;
-			/*
-			 * This is string of size >0 iff
-			 * HLIST_FL_ORDERED and we're parsing
-			 * CommonMark, else it's an empty string.
-			 */
-			char start[10];
-		} rndr_list; 
-		struct rndr_paragraph {
+		struct rndr_list rndr_list; 
+		struct {
 			size_t lines; /* input lines */
 			int beoln; /* ends on blank line */
 		} rndr_paragraph;
-		struct rndr_listitem {
-			enum hlist_fl flags; /* all possible flags */
-			size_t num; /* index in ordered */
-		} rndr_listitem; 
-		struct rndr_header {
-			size_t level; /* hN level */
-		} rndr_header; 
-		struct rndr_normal_text {
+		struct rndr_listitem rndr_listitem; 
+		struct rndr_header rndr_header; 
+		struct {
 			struct lowdown_buf text; /* basic text */
 			size_t offs; /* in-render offset */
 		} rndr_normal_text; 
-		struct rndr_entity {
+		struct {
 			struct lowdown_buf text; /* entity text */
 		} rndr_entity; 
-		struct rndr_autolink {
+		struct {
 			struct lowdown_buf link; /* link address */
 			struct lowdown_buf text; /* shown address */
 			enum halink_type type; /* type of link */
 		} rndr_autolink; 
-		struct rndr_raw_html {
+		struct {
 			struct lowdown_buf text; /* raw html buffer */
 		} rndr_raw_html; 
-		struct rndr_link {
+		struct {
 			struct lowdown_buf link; /* link address */
 			struct lowdown_buf title; /* title of link */
 		} rndr_link; 
-		struct rndr_blockcode {
+		struct {
 			struct lowdown_buf text; /* raw code buffer */
 			struct lowdown_buf lang; /* fence language */
 		} rndr_blockcode; 
-		struct rndr_definition {
+		struct {
 			enum hlist_fl flags;
 		} rndr_definition; 
-		struct rndr_codespan {
+		struct {
 			struct lowdown_buf text; /* raw code buffer */
 		} rndr_codespan; 
-		struct rndr_table_header {
+		struct {
 			enum htbl_flags *flags; /* per-column flags */
 			size_t columns; /* number of columns */
 		} rndr_table_header; 
-		struct rndr_table_cell {
+		struct {
 			enum htbl_flags flags; /* flags for cell */
 			size_t col; /* column number */
 			size_t columns; /* number of columns */
 		} rndr_table_cell; 
-		struct rndr_footnote_def {
+		struct {
 			size_t num; /* footnote number */
 		} rndr_footnote_def;
-		struct rndr_footnote_ref {
+		struct {
 			size_t num; /* footnote number */
 		} rndr_footnote_ref;
-		struct rndr_image {
-			struct lowdown_buf link; /* image address */
-			struct lowdown_buf title; /* title of image */
-			struct lowdown_buf dims; /* NNxNN dimensions */
-			struct lowdown_buf alt; /* alt-text of image */
-			struct lowdown_buf attr_width; /* ext: width */
-			struct lowdown_buf attr_height; /* ext: height */
-		} rndr_image;
-		struct rndr_math {
-			struct lowdown_buf text; /* equation (opaque) */
-			int blockmode;
-		} rndr_math;
-		struct rndr_blockhtml {
+		struct rndr_image rndr_image;
+		struct rndr_math rndr_math;
+		struct {
 			struct lowdown_buf text;
 		} rndr_blockhtml;
 	};
