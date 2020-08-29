@@ -90,12 +90,12 @@ lowdown_node_free(n);
 fwrite(out->data, 1, out->size, stdout);
 lowdown_buf_free(out);
 .Ed
+.Sh SEE ALSO
+.Xr lowdown 3 ,
+.Xr lowdown_nroff_free 3 ,
+.Xr lowdown_nroff_new 3
 .Sh CAVEATS
 The contents of
 .Fa n
 may be changed, but not in a way that will change the output with
 multiple passes at rendering.
-.Sh SEE ALSO
-.Xr lowdown 3 ,
-.Xr lowdown_nroff_free 3 ,
-.Xr lowdown_nroff_new 3

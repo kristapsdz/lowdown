@@ -88,7 +88,7 @@ while (!(feof(stdin) || ferror(stdin))) {
   bufsz += sz;
 }
 
-if (ferror(stdin)) 
+if (ferror(stdin))
   err(1, "fread");
 
 memset(&opts, 0, sizeof(struct opts));
