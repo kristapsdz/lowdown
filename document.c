@@ -4075,6 +4075,9 @@ lowdown_metaq_free(struct lowdown_metaq *q)
 {
 	struct lowdown_meta	*m;
 
+	if (q == NULL)
+		return;
+
 	while ((m = TAILQ_FIRST(q)) != NULL) {
 		TAILQ_REMOVE(q, m, entries);
 		free(m->key);
