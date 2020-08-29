@@ -1279,11 +1279,6 @@ node_optimise_bottomup(const struct lowdown_node *n,
 	}
 }
 
-/*
- * Algorithm: Detecting Changes in XML Documents.
- * Gregory Cobena, Serge Abiteboul, Amelie Marian.
- * https://www.cs.rutgers.edu/~amelie/papers/2002/diff.pdf
- */
 struct lowdown_node *
 lowdown_diff(const struct lowdown_node *nold,
 	const struct lowdown_node *nnew, size_t *maxn)
