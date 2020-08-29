@@ -856,6 +856,12 @@
                                 The library is now usable from C++ applications as-is, without
                                 needing extra compilation flags.
 			</p>
+			<p>
+				Add missing
+				<a href="lowdown_diff.3.html">lowdown_diff(3)</a> and
+				<a href="lowdown_metaq_free.3.html">lowdown_metaq_free(3)</a>
+				manpages.
+			</p>
 		</aside>
 	</article>
 </articles>
