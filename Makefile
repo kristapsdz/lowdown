@@ -36,6 +36,7 @@ MANS		 = man/lowdown.1.html \
 		   man/lowdown_buf_diff.3.html \
 		   man/lowdown_buf_free.3.html \
 		   man/lowdown_buf_new.3.html \
+		   man/lowdown_diff.3.html \
 		   man/lowdown_doc_free.3.html \
 		   man/lowdown_doc_new.3.html \
 		   man/lowdown_doc_parse.3.html \
@@ -47,6 +48,7 @@ MANS		 = man/lowdown.1.html \
 		   man/lowdown_latex_free.3.html \
 		   man/lowdown_latex_new.3.html \
 		   man/lowdown_latex_rndr.3.html \
+		   man/lowdown_metaq_free.3.html \
 		   man/lowdown_nroff_free.3.html \
 		   man/lowdown_nroff_new.3.html \
 		   man/lowdown_nroff_rndr.3.html \
