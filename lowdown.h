@@ -41,6 +41,7 @@
 #endif
 
 enum	lowdown_type {
+	LOWDOWN_GEMINI,
 	LOWDOWN_HTML,
 	LOWDOWN_LATEX,
 	LOWDOWN_MAN,
@@ -329,6 +330,8 @@ struct	lowdown_opts {
 #define	LOWDOWN_HTML_NUM_ENT	 0x1000 /* use &#nn; if possible */
 #define LOWDOWN_LATEX_SKIP_HTML	 0x2000 /* skip all HTML */
 #define LOWDOWN_LATEX_NUMBERED	 0x4000 /* numbered sections */
+#define	LOWDOWN_GEMINI_LINK_END	 0x8000 /* links at end */
+#define	LOWDOWN_GEMINI_LINK_IN	 0x10000 /* links inline */
 };
 
 struct lowdown_doc;
@@ -377,6 +380,12 @@ void 	 lowdown_node_free(struct lowdown_node *);
 void	 lowdown_html_free(void *);
 void	*lowdown_html_new(const struct lowdown_opts *);
 void 	 lowdown_html_rndr(struct lowdown_buf *,
+		struct lowdown_metaq *, void *, 
+		const struct lowdown_node *);
+
+void	 lowdown_gemini_free(void *);
+void	*lowdown_gemini_new(const struct lowdown_opts *);
+void 	 lowdown_gemini_rndr(struct lowdown_buf *,
 		struct lowdown_metaq *, void *, 
 		const struct lowdown_node *);
 

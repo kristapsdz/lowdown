@@ -9,6 +9,7 @@ OBJS		 = autolink.o \
 		   diff.o \
 		   document.o \
 		   entity.o \
+		   gemini.o \
 		   html.o \
 		   html_escape.o \
 		   latex.o \
@@ -58,7 +59,10 @@ MANS		 = man/lowdown.1.html \
 		   man/lowdown_tree_free.3.html \
 		   man/lowdown_tree_new.3.html \
 		   man/lowdown_tree_rndr.3.html
-PDFS		 = diff.pdf index.pdf README.pdf
+PDFS		 = diff.pdf \
+		   index.pdf \
+		   README.latex.pdf \
+		   README.nroff.pdf
 MDS		 = index.md README.md
 CSSS		 = diff.css template.css
 JSS		 = diff.js
@@ -135,13 +139,17 @@ distcheck: lowdown.tar.gz.sha512
 	( cd .distcheck/lowdown-$(VERSION) && $(MAKE) install )
 	rm -rf .distcheck
 
-index.xml README.xml index.pdf diff.pdf README.pdf: lowdown
+$(PDFS) index.xml README.xml: lowdown
 
 index.html README.html: template.xml
 
 .md.pdf:
 	./lowdown --nroff-no-numbered -s -Tms $< | \
 		pdfroff -i -mspdf -t -k -Kutf8 > $@
+
+README.latex.pdf: README.md
+	./lowdown -s -Tlatex README.md >README.latex.latex
+	pdflatex README.latex.latex
 
 .xml.html:
 	sblg -t template.xml -s date -o $@ -C $< $< versions.xml
@@ -202,6 +210,7 @@ clean:
 	rm -f lowdown lowdown-diff liblowdown.a lowdown.pc
 	rm -f index.xml diff.xml diff.diff.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
 	rm -f $(PDFS) $(HTMLS) $(THUMBS)
+	rm -f README.latex.aux README.latex.latex README.latex.log README.latex.out
 
 distclean: clean
 	rm -f Makefile.configure config.h config.log

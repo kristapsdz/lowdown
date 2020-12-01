@@ -268,6 +268,10 @@ main(int argc, char *argv[])
 		{ "term-hmargin",	required_argument, NULL, 2 },
 		{ "term-vmargin",	required_argument, NULL, 3 },
 		{ "term-columns",	required_argument, NULL, 4 },
+		{ "gemini-link-end",	no_argument, 	&aoflag, LOWDOWN_GEMINI_LINK_END },
+		{ "gemini-no-link-end",	no_argument, 	&roflag, LOWDOWN_GEMINI_LINK_END },
+		{ "gemini-link-inline",	no_argument, 	&aoflag, LOWDOWN_GEMINI_LINK_IN },
+		{ "gemini-no-link-inline",no_argument, 	&roflag, LOWDOWN_GEMINI_LINK_IN },
 		{ "term-shortlinks",	no_argument, 	&aoflag, LOWDOWN_TERM_SHORTLINK },
 		{ "term-no-shortlinks",	no_argument, 	&roflag, LOWDOWN_TERM_SHORTLINK },
 		{ "out-smarty",		no_argument,	&aoflag, LOWDOWN_SMARTY },
@@ -375,6 +379,8 @@ main(int argc, char *argv[])
 		case 'T':
 			if (strcasecmp(optarg, "ms") == 0)
 				opts.type = LOWDOWN_NROFF;
+			else if (strcasecmp(optarg, "gemini") == 0)
+				opts.type = LOWDOWN_GEMINI;
 			else if (strcasecmp(optarg, "html") == 0)
 				opts.type = LOWDOWN_HTML;
 			else if (strcasecmp(optarg, "latex") == 0)
