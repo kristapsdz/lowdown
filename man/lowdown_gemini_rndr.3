@@ -1,0 +1,94 @@
+.\"	$Id$
+.\"
+.\" Copyright (c) 2020 Kristaps Dzonsons <kristaps@bsd.lv>
+.\"
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\"
+.Dd $Mdocdate$
+.Dt LOWDOWN_GEMINI_RNDR 3
+.Os
+.Sh NAME
+.Nm lowdown_gemini_rndr
+.Nd render Markdown into gemini
+.Sh LIBRARY
+.Lb liblowdown
+.Sh SYNOPSIS
+.In sys/queue.h
+.In stdio.h
+.In lowdown.h
+.Ft void
+.Fo lowdown_gemini_rndr
+.Fa "struct lowdown_buf *out"
+.Fa "struct lowdown_metaq *mq"
+.Fa "void *arg"
+.Fa "const struct lowdown_node *n"
+.Fc
+.Sh DESCRIPTION
+Renders a node tree
+.Fa n
+created by
+.Xr lowdown_doc_parse 3
+or
+.Xr lowdown_diff 3
+using the gemini renderer
+.Fa arg
+as returned by
+.Xr lowdown_gemini_new 3 .
+The output is written into
+.Fa out ,
+which must be initialised and freed by the caller.
+.Pp
+If
+.Fa mq
+is not
+.Dv NULL ,
+it is filled with any metadata as parsed.
+It must be initialised and its contents freed with
+.Xr lowdown_metaq_free 3 .
+.Sh EXAMPLES
+The following assumes the the string
+.Va buf
+of length
+.Va bsz
+consists of Markdown content.
+.Bd -literal -offset indent
+struct lowdown_buf *out;
+struct lowdown_doc *doc;
+void *rndr;
+struct lowdown_node *n;
+
+if ((doc = lowdown_doc_new(NULL)) == NULL)
+	err(1, NULL);
+if ((n = lowdown_doc_parse(doc, NULL, buf, bsz)) == NULL)
+	err(1, NULL);
+lowdown_doc_free(doc);
+
+if ((out = lowdown_buf_new(256)) == NULL)
+	err(1, NULL);
+if ((rndr = lowdown_gemini_new(NULL)) == NULL)
+	err(1, NULL);
+lowdown_gemini_rndr(out, NULL, rndr, n);
+lowdown_gemini_free(rndr);
+lowdown_node_free(n);
+
+fwrite(out->data, 1, out->size, stdout);
+lowdown_buf_free(out);
+.Ed
+.Sh SEE ALSO
+.Xr lowdown 3 ,
+.Xr lowdown_gemini_free 3 ,
+.Xr lowdown_gemini_new 3
+.Sh STANDARDS
+The gemini format is documented in
+.Lk https://gemini.circumlunar.space/docs/specification.html .
+The version at the time of writing is 0.14.3.

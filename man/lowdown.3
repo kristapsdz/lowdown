@@ -197,7 +197,31 @@ If not set, the entities are used as given in the input.
 Do not render in-document HTML at all.
 .El
 .Pp
-FOr
+For
+.Dv LOWDOWN_GEMINI ,
+there are several flags for controlling link placement.
+By default, links (images, autolinks, and links) are queued when
+specified in-line then emitted in a block sequence after the nearest
+block element.
+.Pp
+.Bl -tag -width Ds -compact
+.It Dv LOWDOWN_GEMINI_LINK_END
+Emit the queue of links at the end of the document instead of after the
+nearest block element.
+.It Dv LOWDOWN_GEMINI_LINK_IN
+Render all links within the flow of text.
+This will cause breakage when nested links, such as images within links,
+links in blockquotes, etc.
+It should not be used unless in carefully crafted documents.
+.El
+.Pp
+There may only be one of
+.Dv LOWDOWN_GEMINI_LINK_END
+or
+.Dv LOWDOWN_GEMINI_LINK_IN .
+If both are specified, the latter is unset.
+.Pp
+For
 .Dv LOWDOWN_LATEX :
 .Pp
 .Bl -tag -width Ds -compact
@@ -292,7 +316,9 @@ for
 .Fl man
 macros,
 .Dv LOWDOWN_TERM
-for ANSI-compatible UTF-8 terminal output, or
+for ANSI-compatible UTF-8 terminal output,
+.Dv LOWDOWN_GEMINI
+for the Gemini format, or
 .Dv LOWDOWN_NROFF
 for
 .Fl ms
@@ -747,6 +773,9 @@ the opaque HTML
 .Xr lowdown_doc_parse 3 ,
 .Xr lowdown_file 3 ,
 .Xr lowdown_file_diff 3 ,
+.Xr lowdown_gemini_free 3 ,
+.Xr lowdown_gemini_new 3 ,
+.Xr lowdown_gemini_rndr 3 ,
 .Xr lowdown_html_free 3 ,
 .Xr lowdown_html_new 3 ,
 .Xr lowdown_html_rndr 3 ,

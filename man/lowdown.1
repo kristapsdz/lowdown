@@ -66,6 +66,7 @@ See
 .Sx Metadata
 on providing information to the document envelope.
 This only applies to
+.Fl T Ns Ar gemini ,
 .Fl T Ns Ar html ,
 .Fl T Ns Ar latex ,
 .Fl T Ns Ar ms ,
@@ -84,6 +85,8 @@ This may be
 for HTML5 output,
 .Ar latex
 for LaTeX,
+.Ar gemini
+for the Gemini format,
 .Ar ms
 for roff output using the classic (i.e., no-extension)
 .Fl ms
@@ -279,6 +282,23 @@ Set the soft limit on the number of characters per line.
 This may be exceeded by literal text.
 The default (or if zero) is the number of terminal columns or 80 at
 most.
+.El
+.Pp
+The
+.Fl T Ns Ar gemini
+output has several flags that control the placement of links.
+By default, links (images, autolinks, and links) are queued when
+specified in-line then emitted in a block sequence after the nearest
+block element.
+.Bl -tag -width Ds
+.It Fl -gemini-link-end
+Emit the queue of links at the end of the document instead of after the
+nearest block element.
+.It Fl -gemini-link-inline
+Render all links within the flow of text.
+This will cause breakage when nested links, such as images within links,
+links in blockquotes, etc.
+It should not be used unless in carefully crafted documents.
 .El
 .Pp
 The
