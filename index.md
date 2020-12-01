@@ -59,8 +59,11 @@ By way of example: this page,
 [groff](https://www.gnu.org/s/groff/) and **-Tms**.
 Another example is the GitHub
 [README.md](https://kristaps.bsd.lv/lowdown/README.md) rendered as
-[README.html](https://kristaps.bsd.lv/lowdown/README.html) or
-[README.pdf](https://kristaps.bsd.lv/lowdown/README.pdf).
+[README.html](https://kristaps.bsd.lv/lowdown/README.html),
+[README-latex.pdf](https://kristaps.bsd.lv/lowdown/README-latex.pdf)
+(with LaTeX), or
+[README-nroff.pdf](https://kristaps.bsd.lv/lowdown/README-nroff.pdf)
+(with nroff).
 
 [^nomanpages]:
     You may be tempted to write [manpages](https://man.openbsd.org)
