@@ -93,13 +93,17 @@ main(void)
  */
 
 #include <err.h>
+#include <errno.h>
 
 int
 main(void)
 {
 	warnx("%d. warnx", 1);
+	warnc(ENOENT, "%d. warn", ENOENT);
 	warn("%d. warn", 2);
 	err(0, "%d. err", 3);
+	errx(0, "%d. err", 3);
+	errc(0, ENOENT, "%d. err", 3);
 	/* NOTREACHED */
 	return 1;
 }
