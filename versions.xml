@@ -864,4 +864,25 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.7.5</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2020-12-01">2020-12-01</time>
+		</header>
+		<aside>
+			<p>
+				Add support for the
+				<a href="https://gemini.circumlunar.space/docs/specification.html">Gemini</a>
+				protocol I've been hearing so much about.
+				This may now be used from
+				<a href="lowdown.1.html">lowdown(1)</a>
+				or as a library in
+				<a href="lowdown.3.html">lowdown(3)</a>.
+				This is a very simple output:
+				it basically does no formatting at all, but does have some logic to
+				shuffle around links.
+			</p>
+		</aside>
+	</article>
 </articles>
