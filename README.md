@@ -1,4 +1,4 @@
-## Synopsis
+# Synopsis
 
 **lowdown** is a fork of [hoedown](https://github.com/hoedown/hoedown),
 although the parser and front-ends have changed significantly.
@@ -10,7 +10,7 @@ are all available at the [website](https://kristaps.bsd.lv/lowdown).
 
 If you have any comments or patches, please feel free to post them here.
 
-## License
+# License
 
 All sources use the ISC license.
 See the [LICENSE.md](LICENSE.md) file for details.
