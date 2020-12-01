@@ -43,6 +43,9 @@ MANS		 = man/lowdown.1.html \
 		   man/lowdown_doc_parse.3.html \
 		   man/lowdown_file.3.html \
 		   man/lowdown_file_diff.3.html \
+		   man/lowdown_gemini_free.3.html \
+		   man/lowdown_gemini_new.3.html \
+		   man/lowdown_gemini_rndr.3.html \
 		   man/lowdown_html_free.3.html \
 		   man/lowdown_html_new.3.html \
 		   man/lowdown_html_rndr.3.html \
