@@ -154,6 +154,10 @@ README.latex.pdf: README.md
 	./lowdown -s -Tlatex README.md >README.latex.latex
 	pdflatex README.latex.latex
 
+README.nroff.pdf: README.md
+	./lowdown --nroff-no-numbered -s -Tms README.md | \
+		pdfroff -i -mspdf -t -k -Kutf8 > $@
+
 .xml.html:
 	sblg -t template.xml -s date -o $@ -C $< $< versions.xml
 
