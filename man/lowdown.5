@@ -426,6 +426,57 @@ Footnote contents may be on the same line as the colon.
 The footnote name is rendered as a number.
 If a footnote definition is not referred to, it is not printed.
 .
+.Ss HTML Blocks
+Embedded HTML is discouraged, as it inhibits formatting into non-HTML
+output, but is still accepted.
+Blocks of HTML must begin with a recognised HTML block-level element.
+.Pp
+In the original Markdown, block-level elements were well-defined by
+HTML4.
+HTML5 elements are also accepted, but as there is no concept of
+block-level in HTML5, these are non-canonical.
+Accepted elements are
+.Li <address> ,
+.Li <article> ,
+.Li <aside> ,
+.Li <blockquote> ,
+.Li <del> ,
+.Li <details> ,
+.Li <dialog> ,
+.Li <dd> ,
+.Li <div> ,
+.Li <dl> ,
+.Li <dt> ,
+.Li <fieldset> ,
+.Li <figcaption> ,
+.Li <figure> ,
+.Li <footer> ,
+.Li <form> ,
+.Li <h1> ,
+.Li <h2> ,
+.Li <h3> ,
+.Li <h4> ,
+.Li <h5> ,
+.Li <h6> ,
+.Li <header> ,
+.Li <hgroup> ,
+.Li <iframe> ,
+.Li <ins> ,
+.Li <li> ,
+.Li <main> ,
+.Li <math> ,
+.Li <nav> ,
+.Li <noscript> ,
+.Li <ol> ,
+.Li <p> ,
+.Li <pre> ,
+.Li <section> ,
+.Li <script> ,
+.Li <style> ,
+.Li <table> ,
+.Li <ul> ,
+and self-closing
+.Li <hr /> .
 .Sh SPAN ELEMENTS
 Span elements are inline elements (including normal text) within block
 elements, for example, a span of emphasised text or a hyperlink.
@@ -658,6 +709,20 @@ an open parenthesis, the close parenthesis.
 Though a great book, Q\(ha2 (Q\(ha(squared)) isn't Star Trek canon.
 .Ed
 .
+.Ss HTML Content
+While block-level HTML must begin with a recognised block-level HTML
+element, span-level HTML need only begin and end with angle brackets,
+and not contain a hyperlink.
+.Pp
+Thus,
+.Li <p> ,
+.Li <Leonard Nimoy> ,
+and
+.Li <span class="foo">
+are all accepted.
+Even malformed content, such as
+.Li <span class="foo>
+is accepted, so long as it begins and ends with angle brackets.
 .
 .Sh ESCAPES
 .
