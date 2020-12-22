@@ -25,7 +25,6 @@
 # include <sys/capsicum.h>
 #endif
 #include <sys/ioctl.h>
-#include <sys/termios.h> /* struct winsize */
 
 #if HAVE_ERR
 # include <err.h>
@@ -40,6 +39,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <termios.h> /* struct winsize */
 #include <unistd.h>
 
 #include "lowdown.h"
