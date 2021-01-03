@@ -32,6 +32,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include <limits.h> /* INT_MAX */
+#include <locale.h> /* set_locale() */
 #if HAVE_SANDBOX_INIT
 # include <sandbox.h>
 #endif
@@ -446,6 +447,9 @@ main(int argc, char *argv[])
 
 	argc -= optind;
 	argv += optind;
+
+	if (opts.type == LOWDOWN_TERM)
+		setlocale(LC_CTYPE, "");
 
 	/* 
 	 * By default, try to show 80 columns.

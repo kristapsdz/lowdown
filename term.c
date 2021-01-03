@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <wchar.h>
 
 #include "lowdown.h"
 #include "extern.h"
@@ -55,6 +56,8 @@ struct term {
 	size_t			 hmargin; /* left of content */
 	size_t			 vmargin; /* before/after content */
 	struct lowdown_buf	*tmp; /* for temporary allocations */
+	wchar_t			*buf; /* buffer for counting wchar */
+	size_t			 bufsz; /* size of buf */
 };
 
 /*
@@ -164,20 +167,55 @@ static const struct sty sty_uli_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
 	 (_s)->under || (_s)->strike || (_s)->bcolour || \
 	 (_s)->override)
 
-static void
-rndr_escape(struct lowdown_buf *out,
+static size_t
+rndr_escape(struct term *term, struct lowdown_buf *out,
 	const char *buf, size_t sz)
 {
-	size_t	 i, start = 0;
+	size_t	 	 i, start = 0, wsz, cols = 0, csz;
+	const char	*cp;
 
 	for (i = 0; i < sz; i++) {
 		if (iscntrl((unsigned char)buf[i])) {
+			cp = &buf[start];
+			wsz = mbsnrtowcs(term->buf, 
+				&cp, i - start, wsz, NULL);
+			if (wsz != (size_t)-1) {
+				if (term->bufsz < wsz) {
+					term->bufsz = wsz;
+					term->buf = xrealloc
+						(term->buf, wsz);
+				}
+				cp = &buf[start];
+				mbsnrtowcs(term->buf,
+					&cp, i - start, wsz, NULL);
+				csz = wcswidth(term->buf, wsz);
+				cols += csz != (size_t)-1 ? 
+					csz : (i - start);
+			} else
+				cols += (i - start);
 			hbuf_put(out, buf + start, i - start);
 			start = i + 1;
 		}
 	}
-	if (start < sz) 
+	if (start < sz) {
+		cp = &buf[start];
+		wsz = mbsnrtowcs(NULL, &cp, sz - start, wsz, NULL);
+		if (wsz != (size_t)-1) {
+			if (term->bufsz < wsz) {
+				term->bufsz = wsz;
+				term->buf = xrealloc(term->buf, wsz);
+			}
+			cp = &buf[start];
+			mbsnrtowcs(term->buf, 
+				&cp, sz - start, wsz, NULL);
+			csz = wcswidth(term->buf, wsz);
+			cols += csz != (size_t)-1 ? csz : (i - start);
+		} else
+			cols += (sz - start);
 		hbuf_put(out, buf + start, sz - start);
+	}
+
+	return cols;
 }
 
 /*
@@ -664,7 +702,13 @@ rndr_buf_literal(struct term *term, struct lowdown_buf *out,
 		len = &in->data[i] - start;
 		i++;
 		rndr_buf_startline(term, out, n, osty);
-		rndr_escape(out, start, len);
+
+		/* 
+		 * No need to record the column width here because we're
+		 * going to reset to zero anyway.
+		 */
+
+		rndr_escape(term, out, start, len);
 		rndr_buf_advance(term, len);
 		rndr_buf_endline(term, out, n, osty);
 	}
@@ -679,7 +723,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 	const struct lowdown_node *n, const struct lowdown_buf *in,
 	const struct sty *osty)
 {
-	size_t	 	 i = 0, len;
+	size_t	 	 i = 0, len, cols;
 	int 		 needspace, begin = 1, end = 0;
 	const char	*start;
 	const struct lowdown_node *nn;
@@ -751,8 +795,8 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 
 		/* Emit the word itself. */
 
-		rndr_escape(out, start, len);
-		rndr_buf_advance(term, len);
+		cols = rndr_escape(term, out, start, len);
+		rndr_buf_advance(term, cols);
 	}
 
 	if (end) {
@@ -1114,6 +1158,7 @@ lowdown_term_free(void *arg)
 		return;
 
 	hbuf_free(p->tmp);
+	free(p->buf);
 	free(p->stack);
 	free(p);
 }
