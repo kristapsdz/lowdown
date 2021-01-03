@@ -885,4 +885,18 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.7.5</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2021-01-03">2021-01-03</time>
+		</header>
+		<aside>
+			<p>
+				Have the <b>-Tterm</b> output correctly adjust columns for UTF-8
+				wide characters.  This makes both ASCII and UTF-8 (e.g, Russian)
+				correctly align on terminal output.
+			</p>
+		</aside>
+	</article>
 </articles>
