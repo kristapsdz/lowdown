@@ -32,14 +32,6 @@
 #include "lowdown.h"
 #include "extern.h"
 
-#if 0
-Not done yet:
-LOWDOWN_TABLE_HEADER		-> 
-LOWDOWN_TABLE_BODY		-> 
-LOWDOWN_TABLE_ROW		-> done
-LOWDOWN_TABLE_CELL		-> 
-#endif
-
 struct tstack {
 	const struct lowdown_node 	*n; /* node in question */
 	size_t				 lines; /* times emitted */
@@ -167,51 +159,62 @@ static const struct sty sty_uli_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
 	 (_s)->under || (_s)->strike || (_s)->bcolour || \
 	 (_s)->override)
 
+/* Forward declaration. */
+static void
+rndr(struct lowdown_buf *, struct lowdown_metaq *, 
+	struct term *, const struct lowdown_node *);
+
+/*
+ * Get the column width of a multi-byte sequence.
+ * If the sequence is bad, return the number of raw bytes to print.
+ */
+static size_t
+rndr_mbswidth(struct term *term, const char *buf, size_t sz)
+{
+	size_t	 	 wsz, csz;
+	const char	*cp;
+
+	cp = buf;
+	wsz = mbsnrtowcs(NULL, &cp, sz, 0, NULL);
+	if (wsz == (size_t)-1)
+		return sz;
+
+	if (term->bufsz < wsz) {
+		term->bufsz = wsz;
+		term->buf = xrealloc(term->buf, wsz);
+	}
+
+	cp = buf;
+	mbsnrtowcs(term->buf, &cp, sz, wsz, NULL);
+	csz = wcswidth(term->buf, wsz);
+	return csz == (size_t)-1 ? sz : csz;
+}
+
+/*
+ * Copy the buffer into "out", escaping along the width.
+ * Returns the number of actual printed columns, which in the case of
+ * multi-byte glyphs, may be less than the given bytes.
+ */
 static size_t
 rndr_escape(struct term *term, struct lowdown_buf *out,
 	const char *buf, size_t sz)
 {
-	size_t	 	 i, start = 0, wsz, cols = 0, csz;
-	const char	*cp;
+	size_t	  i, start = 0, cols = 0;
 
-	for (i = 0; i < sz; i++) {
+	/* Don't allow control characters through. */
+
+	for (i = 0; i < sz; i++)
 		if (iscntrl((unsigned char)buf[i])) {
-			cp = &buf[start];
-			wsz = mbsnrtowcs(term->buf, 
-				&cp, i - start, wsz, NULL);
-			if (wsz != (size_t)-1) {
-				if (term->bufsz < wsz) {
-					term->bufsz = wsz;
-					term->buf = xrealloc
-						(term->buf, wsz);
-				}
-				cp = &buf[start];
-				mbsnrtowcs(term->buf,
-					&cp, i - start, wsz, NULL);
-				csz = wcswidth(term->buf, wsz);
-				cols += csz != (size_t)-1 ? 
-					csz : (i - start);
-			} else
-				cols += (i - start);
+			cols += rndr_mbswidth
+				(term, buf + start, i - start);
 			hbuf_put(out, buf + start, i - start);
 			start = i + 1;
 		}
-	}
+
+	/* Remaining bytes. */
+
 	if (start < sz) {
-		cp = &buf[start];
-		wsz = mbsnrtowcs(NULL, &cp, sz - start, wsz, NULL);
-		if (wsz != (size_t)-1) {
-			if (term->bufsz < wsz) {
-				term->bufsz = wsz;
-				term->buf = xrealloc(term->buf, wsz);
-			}
-			cp = &buf[start];
-			mbsnrtowcs(term->buf, 
-				&cp, sz - start, wsz, NULL);
-			csz = wcswidth(term->buf, wsz);
-			cols += csz != (size_t)-1 ? csz : (i - start);
-		} else
-			cols += (sz - start);
+		cols += rndr_mbswidth(term, buf + start, sz - start);
 		hbuf_put(out, buf + start, sz - start);
 	}
 
@@ -842,6 +845,139 @@ rndr_entity(struct lowdown_buf *buf, int32_t val)
 }
 
 static void
+rndr_stackpos_init(struct term *p, const struct lowdown_node *n)
+{
+	if (p->stackpos >= p->stackmax) {
+		p->stackmax += 256;
+		p->stack = xreallocarray(p->stack,
+			p->stackmax, sizeof(struct tstack));
+	}
+	memset(&p->stack[p->stackpos], 0, sizeof(struct tstack));
+	p->stack[p->stackpos].n = n;
+}
+
+static void
+rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
+	struct term *p, const struct lowdown_node *n)
+{
+	size_t				*widths;
+	const struct lowdown_node	*row, *top, *cell;
+	struct lowdown_buf		*celltmp, *rowtmp;
+	size_t				 col, i, maxcol, sz;
+	ssize_t			 	 last_blank;
+
+	assert(n->type == LOWDOWN_TABLE_BLOCK);
+	widths = xcalloc(n->rndr_table.columns, sizeof(size_t));
+	rowtmp = hbuf_new(128);
+	celltmp = hbuf_new(128);
+
+	/*
+	 * Begin by counting the number of printable columns in each
+	 * column in each row.
+	 */
+
+	TAILQ_FOREACH(top, &n->children, entries) {
+		switch (top->type) {
+		case LOWDOWN_TABLE_HEADER:
+		case LOWDOWN_TABLE_BODY:
+			break;
+		default:
+			abort();
+		}
+
+		TAILQ_FOREACH(row, &top->children, entries) {
+			TAILQ_FOREACH(cell, &row->children, entries) {
+				i = cell->rndr_table_cell.col;
+				assert(i < n->rndr_table.columns);
+				hbuf_truncate(celltmp);
+
+				/* 
+				 * Simulate that we're starting within
+				 * the line by unsetting last_blank,
+				 * having a non-zero column, and an
+				 * infinite maximum column to prevent
+				 * line wrapping.
+				 */
+
+				maxcol = p->maxcol;
+				last_blank = p->last_blank;
+				col = p->col;
+				p->last_blank = 0;
+				p->maxcol = SIZE_MAX;
+				p->col = 1;
+				rndr(celltmp, mq, p, cell);
+				if (widths[i] < p->col)
+					widths[i] = p->col;
+				p->last_blank = last_blank;
+				p->col = col;
+				p->maxcol = maxcol;
+			}
+		}
+	}
+
+	/* Now actually print, row-by-row into the output. */
+
+	TAILQ_FOREACH(top, &n->children, entries) {
+		switch (top->type) {
+		case LOWDOWN_TABLE_HEADER:
+		case LOWDOWN_TABLE_BODY:
+			row = TAILQ_FIRST(&top->children);
+			break;
+		default:
+			abort();
+		}
+
+		TAILQ_FOREACH(row, &top->children, entries) {
+			hbuf_truncate(rowtmp);
+			TAILQ_FOREACH(cell, &row->children, entries) {
+				i = cell->rndr_table_cell.col;
+				hbuf_truncate(celltmp);
+				maxcol = p->maxcol;
+				last_blank = p->last_blank;
+				col = p->col;
+				p->last_blank = 0;
+				p->maxcol = SIZE_MAX;
+				p->col = 1;
+				rndr(celltmp, mq, p, cell);
+				hbuf_putb(rowtmp, celltmp);
+				assert(widths[i] >= p->col);
+				sz = widths[i] - p->col;
+				for (i = 0; i < sz; i++)
+					HBUF_PUTSL(rowtmp, " ");
+				p->last_blank = last_blank;
+				p->col = col;
+				p->maxcol = maxcol;
+				if (TAILQ_NEXT(cell, entries) != NULL)
+					HBUF_PUTSL(rowtmp, " ");
+			}
+
+			/* 
+			 * Some magic here.
+			 * First, emulate rndr() by setting the
+			 * stackpos to the table, which is required for
+			 * checking the line start.
+			 * Then directly print, as we've already escaped
+			 * all characters, and have embedded escapes of
+			 * our own.  Then end the line.
+			 */
+
+			p->stackpos++;
+			rndr_stackpos_init(p, n);
+			rndr_buf_startline(p, ob, n, NULL);
+			hbuf_putb(ob, rowtmp);
+			rndr_buf_advance(p, 1);
+			rndr_buf_endline(p, ob, n, NULL);
+			rndr_buf_vspace(p, ob, n, 1);
+			p->stackpos--;
+		}
+	}
+
+	hbuf_free(celltmp);
+	hbuf_free(rowtmp);
+	free(widths);
+}
+
+static void
 rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	struct term *p, const struct lowdown_node *n)
 {
@@ -854,13 +990,8 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	
 	/* Current nodes we're servicing. */
 
-	if (p->stackpos >= p->stackmax) {
-		p->stackmax += 256;
-		p->stack = xreallocarray(p->stack,
-			p->stackmax, sizeof(struct tstack));
-	}
-	memset(&p->stack[p->stackpos], 0, sizeof(struct tstack));
-	p->stack[p->stackpos].n = n;
+	rndr_stackpos_init(p, n);
+
 	prev = n->parent == NULL ? NULL :
 		TAILQ_PREV(n, lowdown_nodeq, entries);
 
@@ -923,7 +1054,6 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_LINEBREAK:
 	case LOWDOWN_LISTITEM:
 	case LOWDOWN_META:
-	case LOWDOWN_TABLE_ROW:
 		rndr_buf_vspace(p, ob, n, 1);
 		break;
 	default:
@@ -985,7 +1115,10 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 
 	TAILQ_FOREACH(child, &n->children, entries) {
 		p->stackpos++;
-		rndr(ob, mq, p, child);
+		if (child->type == LOWDOWN_TABLE_BLOCK)
+			rndr_table(ob, mq, p, child);
+		else
+			rndr(ob, mq, p, child);
 		p->stackpos--;
 	}
 
@@ -1102,7 +1235,6 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_HRULE:
 	case LOWDOWN_LISTITEM:
 	case LOWDOWN_META:
-	case LOWDOWN_TABLE_ROW:
 		rndr_buf_vspace(p, ob, n, 1);
 		break;
 	case LOWDOWN_ROOT:
