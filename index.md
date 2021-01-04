@@ -303,11 +303,6 @@ the font markers on different lines.
 - Footnotes in **-Tms** with groff extensions should use pdfmark to link
 to and from the definition.
 
-- Tables in **-Tterm**.
-
-Lastly, you can always just fuzz the system through your fuzzer of
-choice.  For just the parser, use the **-Tnull** output channel.
-
 If you want a larger project, a **-Tpdf** seems most interesting (and
 quite difficult given that UTF-8 need be present).  Another project that
 has been implemented elsewhere is a parser for mathematics such that
