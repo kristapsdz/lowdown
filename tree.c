@@ -211,6 +211,28 @@ rndr(struct lowdown_buf *ob,
 			HLIST_FL_BLOCK & root->rndr_definition.flags ? 
 			"block" : "span");
 		break;
+	case LOWDOWN_TABLE_BLOCK:
+		for (i = 0; i < indent + 1; i++)
+			HBUF_PUTSL(ob, "  ");
+		hbuf_printf(ob, "columns: %zu\n", 
+			root->rndr_table.columns);
+		break;
+	case LOWDOWN_TABLE_HEADER:
+		for (i = 0; i < indent + 1; i++)
+			HBUF_PUTSL(ob, "  ");
+		hbuf_printf(ob, "columns: %zu\n", 
+			root->rndr_table_header.columns);
+		break;
+	case LOWDOWN_TABLE_CELL:
+		for (i = 0; i < indent + 1; i++)
+			HBUF_PUTSL(ob, "  ");
+		hbuf_printf(ob, "columns: %zu\n", 
+			root->rndr_table_cell.columns);
+		for (i = 0; i < indent + 1; i++)
+			HBUF_PUTSL(ob, "  ");
+		hbuf_printf(ob, "current: %zu\n", 
+			root->rndr_table_cell.col);
+		break;
 	case LOWDOWN_LISTITEM:
 		for (i = 0; i < indent + 1; i++)
 			HBUF_PUTSL(ob, "  ");

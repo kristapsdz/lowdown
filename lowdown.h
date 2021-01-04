@@ -191,6 +191,10 @@ struct	rndr_codespan {
 	struct lowdown_buf text; /* raw code buffer */
 };
 
+struct	rndr_table{
+	size_t columns; /* number of columns */
+};
+
 struct	rndr_table_header {
 	enum htbl_flags *flags; /* per-column flags */
 	size_t columns; /* number of columns */
@@ -274,6 +278,7 @@ struct	lowdown_node {
 		struct rndr_blockcode rndr_blockcode; 
 		struct rndr_definition rndr_definition; 
 		struct rndr_codespan rndr_codespan; 
+		struct rndr_table rndr_table; 
 		struct rndr_table_header rndr_table_header; 
 		struct rndr_table_cell rndr_table_cell; 
 		struct rndr_footnote_def rndr_footnote_def;

@@ -3157,6 +3157,8 @@ parse_table_header(struct lowdown_node **np,
 	/* (This calls pushnode for the table row.) */
 
 	*np = pushnode(doc, LOWDOWN_TABLE_BLOCK);
+	(*np)->rndr_table.columns = *columns;
+
 	n = pushnode(doc, LOWDOWN_TABLE_HEADER);
 	n->rndr_table_header.flags = 
 		xcalloc(*columns, sizeof(int));

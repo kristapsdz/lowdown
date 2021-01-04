@@ -50,29 +50,72 @@ and
 .Xr lowdown_doc_free 3
 for parsing
 .Xr lowdown 5
-documents into an abstract syntax tree, then
-.Xr lowdown_html_free 3 ,
-.Xr lowdown_html_new 3 ,
-and
+documents into an abstract syntax tree.
+.Pp
+The front-end functions for freeing, allocation, and rendering are as
+follows.
+.Bl -bullet
+.It
+HTML5:
+.Bl -item -compact
+.It
+.Xr lowdown_html_free 3
+.It
+.Xr lowdown_html_new 3
+.It
 .Xr lowdown_html_rndr 3
-for HTML formatting;
-.Xr lowdown_nroff_free 3 ,
-.Xr lowdown_nroff_new 3 ,
-and
+.El
+.It
+gemini:
+.Bl -item -compact
+.It
+.Xr lowdown_gemini_free 3
+.It
+.Xr lowdown_gemini_new 3
+.It
+.Xr lowdown_gemini_rndr 3
+.El
+.It
+LaTeX:
+.Bl -item -compact
+.It
+.Xr lowdown_latex_free 3
+.It
+.Xr lowdown_latex_new 3
+.It
+.Xr lowdown_latex_rndr 3
+.El
+.It
+roff:
+.Bl -item -compact
+.It
+.Xr lowdown_nroff_free 3
+.It
+.Xr lowdown_nroff_new 3
+.It
 .Xr lowdown_nroff_rndr 3
-for
-.Xr roff 7
-output;
-.Xr lowdown_term_free 3 ,
-.Xr lowdown_term_new 3 ,
-and
+.El
+.It
+UTF-8 ANSI terminal:
+.Bl -item -compact
+.It
+.Xr lowdown_term_free 3
+.It
+.Xr lowdown_term_new 3
+.It
 .Xr lowdown_term_rndr 3
-for ANSI-escaped UTF-8 terminal output; and finally
-.Xr lowdown_tree_free 3 ,
-.Xr lowdown_tree_new 3 ,
-and
+.El
+.It
+debugging:
+.Bl -item -compact
+.It
+.Xr lowdown_tree_free 3
+.It
+.Xr lowdown_tree_new 3
+.It
 .Xr lowdown_tree_rndr 3
-for formatting debugging output.
+.El
+.El
 .Pp
 To compile and link, use
 .Xr pkg-config 1 :
@@ -701,6 +744,18 @@ of the code language.
 The opaque
 .Va text
 of the contents.
+.It Va rndr_table
+For
+.Dv LOWDOWN_TABLE_BLOCK ,
+the number of
+.Va columns
+in each row or header row.
+The number of columns in
+.Va rndr_table ,
+.Va rndr_table_header ,
+and
+.Va rndr_table_cell
+are the same.
 .It Va rndr_table_header
 For
 .Dv LOWDOWN_TABLE_HEADER ,
@@ -717,6 +772,12 @@ when masked with
 .Dv HTBL_FL_ALIGNMASK ;
 or
 .Dv HTBL_FL_HEADER .
+The number of columns in
+.Va rndr_table ,
+.Va rndr_table_header ,
+and
+.Va rndr_table_cell
+are the same.
 .It Va rndr_table_cell
 For
 .Dv LOWDOWN_TABLE_CELL ,
@@ -728,6 +789,12 @@ See
 .Va rndr_table_header
 for a description of the bits in
 .Va flags .
+The number of columns in
+.Va rndr_table ,
+.Va rndr_table_header ,
+and
+.Va rndr_table_cell
+are the same.
 .It Va rndr_footnote_def
 For
 .Dv LOWDOWN_FOOTNOTE_DEF ,
