@@ -863,8 +863,9 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	size_t				*widths;
 	const struct lowdown_node	*row, *top, *cell;
 	struct lowdown_buf		*celltmp, *rowtmp;
-	size_t				 col, i, maxcol, sz;
+	size_t				 col, i, j, maxcol, sz;
 	ssize_t			 	 last_blank;
+	unsigned int			 flags;
 
 	assert(n->type == LOWDOWN_TABLE_BLOCK);
 	widths = xcalloc(n->rndr_table.columns, sizeof(size_t));
@@ -939,16 +940,42 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 				p->maxcol = SIZE_MAX;
 				p->col = 1;
 				rndr(celltmp, mq, p, cell);
-				hbuf_putb(rowtmp, celltmp);
 				assert(widths[i] >= p->col);
 				sz = widths[i] - p->col;
-				for (i = 0; i < sz; i++)
-					HBUF_PUTSL(rowtmp, " ");
+
+				/* 
+				 * Alignment is either beginning,
+				 * ending, or splitting the remaining
+				 * spaces around the word.
+				 * Be careful about uneven splitting in
+				 * the case of centre.
+				 */
+
+				flags = cell->rndr_table_cell.flags & 
+					HTBL_FL_ALIGNMASK;
+				if (flags == HTBL_FL_ALIGN_RIGHT)
+					for (j = 0; j < sz; j++)
+						HBUF_PUTSL(rowtmp, " ");
+				if (flags == HTBL_FL_ALIGN_CENTER)
+					for (j = 0; j < sz / 2; j++)
+						HBUF_PUTSL(rowtmp, " ");
+				hbuf_putb(rowtmp, celltmp);
+				if (flags == 0 ||
+				    flags == HTBL_FL_ALIGN_LEFT)
+					for (j = 0; j < sz; j++)
+						HBUF_PUTSL(rowtmp, " ");
+				if (flags == HTBL_FL_ALIGN_CENTER) {
+					sz = (sz % 2) ? 
+						(sz / 2) + 1 : (sz / 2);
+					for (j = 0; j < sz; j++)
+						HBUF_PUTSL(rowtmp, " ");
+				}
+
 				p->last_blank = last_blank;
 				p->col = col;
 				p->maxcol = maxcol;
 				if (TAILQ_NEXT(cell, entries) != NULL)
-					HBUF_PUTSL(rowtmp, " ");
+					HBUF_PUTSL(rowtmp, " | ");
 			}
 
 			/* 
