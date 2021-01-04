@@ -886,7 +886,7 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			abort();
 		}
 
-		TAILQ_FOREACH(row, &top->children, entries) {
+		TAILQ_FOREACH(row, &top->children, entries)
 			TAILQ_FOREACH(cell, &row->children, entries) {
 				i = cell->rndr_table_cell.col;
 				assert(i < n->rndr_table.columns);
@@ -913,7 +913,6 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 				p->col = col;
 				p->maxcol = maxcol;
 			}
-		}
 	}
 
 	/* Now actually print, row-by-row into the output. */
@@ -992,6 +991,22 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			rndr_stackpos_init(p, n);
 			rndr_buf_startline(p, ob, n, NULL);
 			hbuf_putb(ob, rowtmp);
+			rndr_buf_advance(p, 1);
+			rndr_buf_endline(p, ob, n, NULL);
+			rndr_buf_vspace(p, ob, n, 1);
+			p->stackpos--;
+		}
+
+		if (top->type == LOWDOWN_TABLE_HEADER) {
+			p->stackpos++;
+			rndr_stackpos_init(p, n);
+			rndr_buf_startline(p, ob, n, NULL);
+			for (i = 0; i < n->rndr_table.columns; i++) {
+				for (j = 0; j < widths[i]; j++)
+					HBUF_PUTSL(ob, "-");
+				if (i < n->rndr_table.columns - 1)
+					HBUF_PUTSL(ob, "|-");
+			}
 			rndr_buf_advance(p, 1);
 			rndr_buf_endline(p, ob, n, NULL);
 			rndr_buf_vspace(p, ob, n, 1);
