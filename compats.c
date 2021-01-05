@@ -2523,7 +2523,7 @@ setresuid(uid_t ruid, uid_t euid, uid_t suid)
 	return ret;
 }
 #endif /* !HAVE_SETRESUID */
-#if !HAVE_SHA2_H
+#if !HAVE_SHA2
 /*	$OpenBSD$	*/
 
 /*
@@ -3659,7 +3659,7 @@ SHA512Data(const u_char *data, size_t len, char *buf)
 	SHA512Update(&ctx, data, len);
 	return (SHA512End(&ctx, buf));
 }
-#endif /* !HAVE_SHA2_H */
+#endif /* !HAVE_SHA2 */
 #if !HAVE_STRLCAT
 /*
  * Copyright (c) 1998 Todd C. Miller <Todd.Miller@courtesan.com>

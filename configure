@@ -15,7 +15,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-OCONFIGURE_VERSION="0.2.7"
+OCONFIGURE_VERSION="0.3.0"
 
 #
 # This script outputs two files: config.h and Makefile.configure.
@@ -54,19 +54,33 @@ set -e
 exec 3> config.log
 echo "config.log: writing..."
 
+MAKE_FLAGS=""
+
+if [ -n "${MAKELEVEL}" ]; then
+	if [ "${MAKELEVEL}" -gt 0 ] ; then
+		MAKE_FLAGS="--no-print-directory"
+	fi
+fi
+
+if [ -n "$MAKE_FLAGS" ]; then 
+	echo "GNU submake detected: using --no-print-directory" 1>&2
+	echo "GNU submake detected: using --no-print-directory" 1>&3
+fi
+
 #----------------------------------------------------------------------
 # Initialize all variables here such that nothing can leak in from the
 # environment except for CC and CFLAGS, which we might have passed in.
 #----------------------------------------------------------------------
 
-CC=`printf "all:\\n\\t@echo \\\$(CC)\\n" | make -sf -`
-CFLAGS=`printf "all:\\n\\t@echo \\\$(CFLAGS)\\n" | make -sf -`
+CC=`printf "all:\\n\\t@echo \\\$(CC)\\n" | make ${MAKE_FLAGS} -sf -`
+CFLAGS=`printf "all:\\n\\t@echo \\\$(CFLAGS)\\n" | make ${MAKE_FLAGS} -sf -`
 CFLAGS="${CFLAGS} -g -W -Wall -Wextra -Wmissing-prototypes -Wstrict-prototypes"
 CFLAGS="${CFLAGS} -Wwrite-strings -Wno-unused-parameter"
 LDADD=
 LDADD_B64_NTOP=
 LDADD_CRYPT=
 LDADD_MD5=
+LDADD_SHA2=
 LDADD_LIB_SOCKET=
 LDADD_STATIC=
 CPPFLAGS=
@@ -185,6 +199,7 @@ HAVE_SECCOMP_FILTER=
 HAVE_SETRESGID=
 HAVE_SETRESUID=
 HAVE_SOCK_NONBLOCK=
+HAVE_SHA2=
 HAVE_SHA2_H=
 HAVE_STRLCAT=
 HAVE_STRLCPY=
@@ -251,18 +266,18 @@ singletest() {
 	extralib=""
 	cat 1>&3 << __HEREDOC__
 ${1}: testing...
-${COMP} -DTEST_${2} ${3} -o test-${1} tests.c ${4}
+${COMP} -DTEST_${2} ${3} -o test-${1} tests.c ${LDFLAGS} ${4}
 __HEREDOC__
-	if ${COMP} -DTEST_${2} ${3} -o "test-${1}" tests.c ${4} 1>&3 2>&3; then
+	if ${COMP} -DTEST_${2} ${3} -o "test-${1}" tests.c ${LDFLAGS} ${4} 1>&3 2>&3; then
 		echo "${1}: ${CC} succeeded" 1>&3
 	else 
 		if [ -n "${5}" ] ; then
 			echo "${1}: ${CC} failed with $? (retrying)" 1>&3
 			cat 1>&3 << __HEREDOC__
 ${1}: testing...
-${COMP} -DTEST_${2} ${3} -o test-${1} tests.c ${5}
+${COMP} -DTEST_${2} ${3} -o test-${1} tests.c ${LDFLAGS} ${5}
 __HEREDOC__
-			if ${COMP} -DTEST_${2} ${3} -o "test-${1}" tests.c ${5} 1>&3 2>&3; then
+			if ${COMP} -DTEST_${2} ${3} -o "test-${1}" tests.c ${LDFLAGS} ${5} 1>&3 2>&3; then
 				echo "${1}: ${CC} succeeded" 1>&3
 				extralib="(with ${5})"
 			else 
@@ -350,7 +365,7 @@ runtest sandbox_init	SANDBOX_INIT	"-Wno-deprecated" || true
 runtest seccomp-filter	SECCOMP_FILTER			  || true
 runtest setresgid	SETRESGID			  || true
 runtest setresuid	SETRESUID			  || true
-runtest sha2_h		SHA2_H 				  || true
+runtest sha2		SHA2 "" "" "-lmd"		  || true
 runtest SOCK_NONBLOCK	SOCK_NONBLOCK			  || true
 runtest static		STATIC "" "-static"		  || true
 runtest strlcat		STRLCAT				  || true
@@ -431,7 +446,7 @@ if [ ${HAVE_FTS} -eq 0 -o \
      ${HAVE_RECALLOCARRAY} -eq 0 -o \
      ${HAVE_SETRESGID} -eq 0 -o \
      ${HAVE_SETRESUID} -eq 0 -o \
-     ${HAVE_SHA2_H} -eq 0 -o \
+     ${HAVE_SHA2} -eq 0 -o \
      ${HAVE_STRLCAT} -eq 0 -o \
      ${HAVE_STRLCPY} -eq 0 -o \
      ${HAVE_STRNDUP} -eq 0 -o \
@@ -442,7 +457,7 @@ then
 fi
 
 if [ ${HAVE_MD5} -eq 0 -o \
-     ${HAVE_SHA2_H} -eq 0 ]
+     ${HAVE_SHA2} -eq 0 ]
 then
 	echo "#include <stdint.h> /* C99 [u]int[nn]_t types */"
 	echo
@@ -509,7 +524,8 @@ cat << __HEREDOC__
 #define HAVE_SECCOMP_FILTER ${HAVE_SECCOMP_FILTER}
 #define HAVE_SETRESGID ${HAVE_SETRESGID}
 #define HAVE_SETRESUID ${HAVE_SETRESUID}
-#define HAVE_SHA2_H ${HAVE_SHA2_H}
+#define HAVE_SHA2 ${HAVE_SHA2}
+#define HAVE_SHA2_H ${HAVE_SHA2}
 #define HAVE_SOCK_NONBLOCK ${HAVE_SOCK_NONBLOCK}
 #define HAVE_STRLCAT ${HAVE_STRLCAT}
 #define HAVE_STRLCPY ${HAVE_STRLCPY}
@@ -662,7 +678,7 @@ extern void MD5Final(uint8_t [MD5_DIGEST_LENGTH], MD5_CTX *);
 
 __HEREDOC__
 
-[ ${HAVE_SHA2_H} -eq 0 ] && \
+[ ${HAVE_SHA2} -eq 0 ] && \
 	cat << __HEREDOC__
 /*
  * Compatibility for sha2(3).
@@ -2438,6 +2454,7 @@ LDADD_B64_NTOP	 = ${LDADD_B64_NTOP}
 LDADD_CRYPT	 = ${LDADD_CRYPT}
 LDADD_LIB_SOCKET = ${LDADD_LIB_SOCKET}
 LDADD_MD5	 = ${LDADD_MD5}
+LDADD_SHA2	 = ${LDADD_SHA2}
 LDADD_STATIC	 = ${LDADD_STATIC}
 LDFLAGS		 = ${LDFLAGS}
 STATIC		 = ${STATIC}
