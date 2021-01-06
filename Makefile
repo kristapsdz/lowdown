@@ -229,7 +229,7 @@ lowdown.tar.gz:
 		.dist/lowdown-$(VERSION)/regress/smarty
 	$(INSTALL) -m 644 regress/smarty/*.html \
 		.dist/lowdown-$(VERSION)/regress/smarty
-	( cd .dist/ && tar zcf ../$@ ./ )
+	( cd .dist/ && tar zcf ../$@ lowdown-$(VERSION) )
 	rm -rf .dist/
 
 $(OBJS) $(COMPAT_OBJS) main.o: config.h
