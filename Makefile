@@ -62,6 +62,30 @@ MANS		 = man/lowdown.1.html \
 		   man/lowdown_tree_free.3.html \
 		   man/lowdown_tree_new.3.html \
 		   man/lowdown_tree_rndr.3.html
+SOURCES		 = autolink.c \
+		   buffer.c \
+		   compats.c \
+		   diff.c \
+		   document.c \
+		   entity.c \
+		   gemini.c \
+		   html.c \
+		   html_escape.c \
+		   latex.c \
+		   libdiff.c \
+		   library.c \
+		   log.c \
+		   main.c \
+		   nroff.c \
+		   smartypants.c \
+		   term.c \
+		   tests.c \
+		   tree.c \
+		   util.c \
+		   xmalloc.c
+HEADERS 	 = extern.h \
+		   libdiff.h \
+		   lowdown.h
 PDFS		 = diff.pdf \
 		   index.pdf \
 		   README.latex.pdf \
@@ -192,7 +216,9 @@ lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/man
 	mkdir -p .dist/lowdown-$(VERSION)/regress/smarty
 	mkdir -p .dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
-	$(INSTALL) -m 0644 *.c *.h *.in.pc Makefile LICENSE.md .dist/lowdown-$(VERSION)
+	$(INSTALL) -m 0644 $(HEADERS) .dist/lowdown-$(VERSION)
+	$(INSTALL) -m 0644 $(SOURCES) .dist/lowdown-$(VERSION)
+	$(INSTALL) -m 0644 lowdown.in.pc Makefile LICENSE.md .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 0644 man/*.1 man/*.3 man/*.5 .dist/lowdown-$(VERSION)/man
 	$(INSTALL) -m 0755 configure .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 644 regress/MarkdownTest_1.0.3/*.text \
