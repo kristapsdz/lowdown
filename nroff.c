@@ -1163,8 +1163,8 @@ rndr_doc_header(struct lowdown_buf *ob,
 	const struct lowdown_meta	*m;
 	const char			*author = NULL, *title = NULL,
 					*affil = NULL, *date = NULL,
-					*copy = NULL, *rcsauthor = NULL, 
-					*rcsdate = NULL;
+					*copy = NULL, *section = NULL,
+					*rcsauthor = NULL, *rcsdate = NULL;
 
 	if (!(st->flags & LOWDOWN_STANDALONE))
 		return;
@@ -1184,11 +1184,15 @@ rndr_doc_header(struct lowdown_buf *ob,
 			rcsdate = rcsdate2str(m->value);
 		else if (strcasecmp(m->key, "title") == 0)
 			title = m->value;
+		else if (strcasecmp(m->key, "section") == 0)
+			section = m->value;
 
 	/* Overrides. */
 
 	if (title == NULL)
 		title = "Untitled article";
+	if (section == NULL)
+		section = "7";
 	if (rcsdate != NULL)
 		date = rcsdate;
 	if (rcsauthor != NULL)
@@ -1225,7 +1229,8 @@ rndr_doc_header(struct lowdown_buf *ob,
 	} else {
 		HBUF_PUTSL(ob, ".TH \"");
 		rndr_one_line_noescape(ob, title, strlen(title), 0);
-		HBUF_PUTSL(ob, "\" 7");
+		HBUF_PUTSL(ob, "\" ");
+		rndr_one_line_noescape(ob, section, strlen(section), 0);
 		if (date != NULL) {
 			HBUF_PUTSL(ob, " ");
 			rndr_one_line_noescape
