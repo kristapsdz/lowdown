@@ -181,7 +181,7 @@ rndr_mbswidth(struct term *term, const char *buf, size_t sz)
 
 	if (term->bufsz < wsz) {
 		term->bufsz = wsz;
-		term->buf = xrealloc(term->buf, wsz);
+		term->buf = xreallocarray(term->buf, wsz, sizeof(wchar_t));
 	}
 
 	cp = buf;
@@ -522,6 +522,7 @@ rndr_buf_startline_prefixes(struct term *term,
 	 * prefix.
 	 * This is used for (e.g.) lists, where we only output the list
 	 * prefix once.
+	 * FIXME: read backwards for faster perf.
 	 */
 
 	for (i = 0; i <= term->stackpos; i++)
