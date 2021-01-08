@@ -425,19 +425,23 @@ rndr_blockcode(struct lowdown_buf *ob,
 
 	if (st->man) {
 		HBUF_PUTSL(ob, ".sp 1\n");
-		HBUF_PUTSL(ob, ".nf\n");
+		if (!(st->flags & LOWDOWN_NROFF_GROFF))
+			HBUF_PUTSL(ob, ".nf\n.ft CR\n");
+		else
+			HBUF_PUTSL(ob, ".EX\n");
 	} else
-		HBUF_PUTSL(ob, ".LD\n");
+		HBUF_PUTSL(ob, ".LD\n.ft CR\n");
 
-	HBUF_PUTSL(ob, ".ft CR\n");
 	rndr_block(ob, content->data, content->size);
 	HBUF_NEWLINE(content, ob);
-	HBUF_PUTSL(ob, ".ft\n");
 
-	if (st->man)
-		HBUF_PUTSL(ob, ".fi\n");
-	else
-		HBUF_PUTSL(ob, ".DE\n");
+	if (st->man) {
+		if (!(st->flags & LOWDOWN_NROFF_GROFF))
+			HBUF_PUTSL(ob, ".ft\n.fi\n");
+		else
+			HBUF_PUTSL(ob, ".EE\n");
+	} else
+		HBUF_PUTSL(ob, ".ft\n.DE\n");
 
 	st->post_para = 1;
 }
