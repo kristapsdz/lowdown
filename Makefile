@@ -259,12 +259,24 @@ regress: lowdown
 		./lowdown $(REGRESS_ARGS) "$$f" | \
 			sed -e 's!	! !g' | sed -e '/^[ ]*$$/d' > $$tmp2 ; \
 		diff -uw $$tmp1 $$tmp2 ; \
+		./lowdown -s -Thtml "$$f" >/dev/null 2>&1 ; \
+		./lowdown -s -Tlatex "$$f" >/dev/null 2>&1 ; \
+		./lowdown -s -Tman "$$f" >/dev/null 2>&1 ; \
+		./lowdown -s -Tms "$$f" >/dev/null 2>&1 ; \
+		./lowdown -s -Tterm "$$f" >/dev/null 2>&1 ; \
+		./lowdown -s -Ttree "$$f" >/dev/null 2>&1 ; \
 	done  ; \
 	for f in regress/smarty/*.md ; \
 	do \
 		echo "$$f" ; \
 		./lowdown "$$f" > $$tmp1 ; \
 		diff -uw `dirname $$f`/`basename $$f .md`.html $$tmp1 ; \
+		./lowdown -s -Thtml "$$f" >/dev/null 2>&1 ; \
+		./lowdown -s -Tlatex "$$f" >/dev/null 2>&1 ; \
+		./lowdown -s -Tman "$$f" >/dev/null 2>&1 ; \
+		./lowdown -s -Tms "$$f" >/dev/null 2>&1 ; \
+		./lowdown -s -Tterm "$$f" >/dev/null 2>&1 ; \
+		./lowdown -s -Ttree "$$f" >/dev/null 2>&1 ; \
 	done ; \
 	rm -f $$tmp1 ; \
 	rm -f $$tmp2
