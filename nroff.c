@@ -707,10 +707,12 @@ rndr_listitem(struct lowdown_buf *ob,
 	 * list item that comes after us (i.e., anything after us).
 	 */
 
-	if (TAILQ_NEXT(np, entries) != NULL &&
-	    !(np->rndr_listitem.flags & HLIST_FL_BLOCK))
+	if (np->rndr_listitem.flags & HLIST_FL_BLOCK)
+		return;
+	if (np->rndr_listitem.flags & HLIST_FL_DEF)
+		np = np->parent;
+	if (TAILQ_NEXT(np, entries) != NULL)
 		HBUF_PUTSL(ob, ".sp -1.0v\n");
-
 }
 
 static void
