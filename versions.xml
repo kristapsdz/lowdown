@@ -914,6 +914,21 @@
 				Allow the <q>section</q> metadata key to set the manpage section
 				when used with <b>-Tman</b>.
 			</p>
+			<p>
+				Significantly clean up lists (definition, ordered, unordered) and
+				how indenting and compacting is handled in <b>-Tman</b> and
+				<b>-Tms</b>.
+			</p>
+			<p>
+				Use <code>EX</code> and <code>EE</code> for block code when in
+				<b>-Tman</b>.  These only apply in <code>LOWDOWN_NROFF_GROFF</code>
+				mode.  While looking at block codes, fix how much trailing space is
+				emitted and make sure that subsequent paragraphs are indented.
+			</p>
+			<p>
+				Don't have sections in <b>-Tman</b> be followed by superfluous
+				paragraph macros (<code>PP</code>, etc.).
+			</p>
 		</aside>
 	</article>
 </articles>
