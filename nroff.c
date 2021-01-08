@@ -151,6 +151,11 @@ hesc_nroff(struct lowdown_buf *ob, const char *data,
 			break;
 		case '\n':
 			hbuf_putc(ob, oneline ? ' ' : '\n');
+			/*
+			 * Prevent leading spaces on the line.
+			 */
+			while (i + 1 < size && data[i + 1] == ' ')
+				i++;
 			break;
 		case '\\':
 			HBUF_PUTSL(ob, "\\e");
@@ -439,39 +444,15 @@ rndr_blockcode(struct lowdown_buf *ob,
 
 static void
 rndr_definition_title(struct lowdown_buf *ob,
-	const struct lowdown_node *root,
+	const struct lowdown_node *np,
 	const struct lowdown_buf *content)
 {
-	const struct lowdown_node	*prev, *pp;
 
 	if (content->size == 0)
 		return;
-
-	prev = TAILQ_PREV(root, lowdown_nodeq, entries);
-	pp = root->parent;
-
-	/* Vertical space if preceded by data in block mode. */
-
-	if (prev != NULL) {
-		if (prev->type == LOWDOWN_DEFINITION_DATA && 
-		    pp != NULL &&
-		    pp->type == LOWDOWN_DEFINITION &&
-		    (pp->rndr_definition.flags & HLIST_FL_BLOCK))
-			HBUF_PUTSL(ob, ".sp 1.0v\n");
-		else
-			HBUF_PUTSL(ob, ".br\n");
-	}
-
-	/*
-	 * If "ti" exceeds the margin from RS, it will simply flow into
-	 * the content, which is what we want.
-	 */
-
-	HBUF_PUTSL(ob, ".ti -\\w\'");
-	hbuf_putb(ob, content);
-	HBUF_PUTSL(ob, " \'u\n");
-	hbuf_putb(ob, content);
-	HBUF_NEWLINE(content, ob);
+	HBUF_PUTSL(ob, ".IP \"");
+	rndr_one_lineb_noescape(ob, content, 0);
+	HBUF_PUTSL(ob, "\"\n");
 }
 
 static void
@@ -479,43 +460,37 @@ rndr_definition_data(struct lowdown_buf *ob,
 	const struct lowdown_node *root,
 	const struct lowdown_buf *content)
 {
-	const char			*cdata;
-	size_t				 csize;
-	const struct lowdown_node	*prev, *pp;
+	const char	*cdata;
+	size_t		 csize;
 
-	prev = TAILQ_PREV(root, lowdown_nodeq, entries);
-	pp = root->parent;
+	/* 
+	 * Strip out leading paragraphs.
+	 * XXX: shouldn't these all be handled by the child list item?
+	 */
 
 	cdata = content->data;
 	csize = content->size;
 
-	/* Start by stripping out all paragraphs. */
-
 	while (csize > 3 && 
 	       (memcmp(cdata, ".PP\n", 4) == 0 ||
+	        memcmp(cdata, ".IP\n", 4) == 0 ||
 	        memcmp(cdata, ".LP\n", 4) == 0)) {
 		cdata += 4;
 		csize -= 4;
-	}
-
-	/* Vertical space if coming after data in block mode. */
-
-	if (prev != NULL) {
-		if (prev->type == LOWDOWN_DEFINITION_DATA &&
-		    pp != NULL &&
-		    pp->type == LOWDOWN_DEFINITION &&
-		    (pp->rndr_definition.flags & HLIST_FL_BLOCK))
-			HBUF_PUTSL(ob, ".sp 1.0v\n");
-		else
-			HBUF_PUTSL(ob, ".br\n");
 	}
 
 	hbuf_put(ob, cdata, csize);
 	BUFFER_NEWLINE(cdata, csize, ob);
 }
 
+/*
+ * Used by both definition and regular lists.
+ * The only handling this does is to increment the left margin if nested
+ * within another list item.
+ */
 static void
-rndr_definition(struct lowdown_buf *ob,
+rndr_list(struct lowdown_buf *ob,
+	const struct lowdown_node *np,
 	const struct lowdown_buf *content,
 	struct nroff *st)
 {
@@ -523,13 +498,24 @@ rndr_definition(struct lowdown_buf *ob,
 	if (content->size == 0)
 		return;
 
-	/* Always precede with vertical space. */
+	/* 
+	 * If we have a nested list, we need to use RS/RE to indent the
+	 * nested component.  Otherwise the `IP` used for the titles and
+	 * contained paragraphs won't indent properly.
+	 */
 
-	HBUF_PUTSL(ob, ".sp 1.0v\n");
-	HBUF_PUTSL(ob, ".RS\n");
+	for (np = np->parent; np != NULL; np = np->parent)
+		if (np->type == LOWDOWN_LISTITEM)
+			break;
+
+	if (np != NULL)
+		HBUF_PUTSL(ob, ".RS\n");
+
 	hbuf_putb(ob, content);
 	HBUF_NEWLINE(content, ob);
-	HBUF_PUTSL(ob, ".RE\n");
+
+	if (np != NULL)
+		HBUF_PUTSL(ob, ".RE\n");
 
 	st->post_para = 1;
 }
@@ -542,11 +528,13 @@ rndr_blockquote(struct lowdown_buf *ob,
 
 	if (content->size == 0)
 		return;
+
 	HBUF_PUTSL(ob, ".RS\n");
+
 	hbuf_putb(ob, content);
 	HBUF_NEWLINE(content, ob);
-	HBUF_PUTSL(ob, ".RE\n");
 
+	HBUF_PUTSL(ob, ".RE\n");
 	st->post_para = 1;
 }
 
@@ -650,10 +638,15 @@ rndr_link(struct lowdown_buf *ob,
 		content, next, prev, HALINK_NORMAL);
 }
 
+/*
+ * The list item is part of both definition and regular lists.
+ * In the former case, it's within the "data" part of the definition
+ * list, so the title `IP` has already been emitted.
+ */
 static void
 rndr_listitem(struct lowdown_buf *ob,
 	const struct lowdown_buf *content, 
-	const struct lowdown_node *root,
+	const struct lowdown_node *np,
 	const struct rndr_listitem *p)
 {
 	const char	*cdata;
@@ -662,66 +655,41 @@ rndr_listitem(struct lowdown_buf *ob,
 	if (content->size == 0)
 		return;
 
-	/* Definition lists are handled "higher up". */
+	if (p->flags & HLIST_FL_ORDERED)
+		hbuf_printf(ob, ".IP \"%zu.  \"\n", p->num);
+	else if (p->flags & HLIST_FL_UNORDERED)
+		HBUF_PUTSL(ob,  ".IP \"\\(bu  \"\n");
 
-	if (p->flags & HLIST_FL_DEF) {
-		hbuf_putb(ob, content);
-		return;
-	}
-
-	/* 
-	 * If we're in a "block" list item or are starting the list,
-	 * start vertical spacing.
-	 * Then put us into an indented paragraph.
-	 */
-
-	if (TAILQ_PREV(root, lowdown_nodeq, entries) == NULL || 
-	   (root->parent != NULL &&
-	    root->parent->type == LOWDOWN_LIST &&
-	    (root->parent->rndr_list.flags & HLIST_FL_BLOCK)))
-		HBUF_PUTSL(ob, ".sp 1.0v\n");
-
-	HBUF_PUTSL(ob, ".RS\n");
-
-	/* 
-	 * Now back out by the size of our list glyph(s) and print the
-	 * glyph(s) (padding with two spaces).
-	 */
-
-	if ((p->flags & HLIST_FL_ORDERED))
-		hbuf_printf(ob, ".ti -\\w'%zu.  "
-			"\'u\n%zu.  ", p->num, p->num);
-	else if ((p->flags & HLIST_FL_UNORDERED))
-		HBUF_PUTSL(ob, ".ti -\\w'\\(bu  \'u\n\\(bu  ");
-
-	/*
-	 * Now we get shitty.
-	 * If we have macros on the content, we need to handle them in a
-	 * special way.
-	 * Paragraphs (.LP) can be stripped out.
-	 * Links need a newline.
-	 */
+	/* Strip out all leading redundant paragraphs. */
 
 	cdata = content->data;
 	csize = content->size;
 
-	/* Start by stripping out all paragraphs. */
-
 	while (csize > 3 &&
 	       (memcmp(cdata, ".LP\n", 4) == 0 ||
+	        memcmp(cdata, ".IP\n", 4) == 0 ||
 	        memcmp(cdata, ".PP\n", 4) == 0)) {
 		cdata += 4;
 		csize -= 4;
 	}
 
-	/* Now make sure we have a newline before links. */
+	/* Make sure we have a newline before links. */
 
 	if (csize > 8 && memcmp(cdata, ".pdfhref ", 9) == 0)
 		HBUF_PUTSL(ob, "\n");
 
 	hbuf_put(ob, cdata, csize);
 	BUFFER_NEWLINE(cdata, csize, ob);
-	HBUF_PUTSL(ob, ".RE\n");
+
+	/* 
+	 * Suppress trailing space if we're not in a block and there's a
+	 * list item that comes after us (i.e., anything after us).
+	 */
+
+	if (TAILQ_NEXT(np, entries) != NULL &&
+	    !(np->rndr_listitem.flags & HLIST_FL_BLOCK))
+		HBUF_PUTSL(ob, ".sp -1.0v\n");
+
 }
 
 static void
@@ -743,7 +711,19 @@ rndr_paragraph(struct lowdown_buf *ob,
 	if (i == content->size)
 		return;
 
-	if (st->post_para) {
+	/* 
+	 * If we're in a list item, make sure that we don't reset our
+	 * text indent by using an `IP`.
+	 */
+
+	for ( ; np != NULL; np = np->parent)
+		if (np->type == LOWDOWN_LISTITEM)
+			break;
+
+	if (np != NULL) {
+		HBUF_PUTSL(ob, ".IP\n");
+		st->post_para = 0;
+	} else if (st->post_para) {
 		HBUF_PUTSL(ob, ".LP\n");
 		st->post_para = 0;
 	} else
@@ -753,11 +733,13 @@ rndr_paragraph(struct lowdown_buf *ob,
 	if ((st->flags & LOWDOWN_NROFF_HARD_WRAP)) {
 		while (i < content->size) {
 			org = i;
-			while (i < content->size && content->data[i] != '\n')
+			while (i < content->size && 
+			      content->data[i] != '\n')
 				i++;
 
 			if (i > org)
-				hbuf_put(ob, content->data + org, i - org);
+				hbuf_put(ob, content->data + org, 
+					i - org);
 
 			if (i >= content->size - 1) {
 				HBUF_PUTSL(ob, "\n");
@@ -1338,7 +1320,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		rndr_blockquote(ob, tmp, st);
 		break;
 	case LOWDOWN_DEFINITION:
-		rndr_definition(ob, tmp, st);
+		rndr_list(ob, n, tmp, st);
 		break;
 	case LOWDOWN_DEFINITION_DATA:
 		rndr_definition_data(ob, n, tmp);
@@ -1357,6 +1339,9 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		break;
 	case LOWDOWN_HRULE:
 		rndr_hrule(ob, st);
+		break;
+	case LOWDOWN_LIST:
+		rndr_list(ob, n, tmp, st);
 		break;
 	case LOWDOWN_LISTITEM:
 		rndr_listitem(ob, tmp, n, &n->rndr_listitem);
