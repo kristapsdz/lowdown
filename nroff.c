@@ -121,7 +121,7 @@ static const enum nscope nscopes[LOWDOWN__MAX] = {
  */
 static void
 hesc_nroff(struct lowdown_buf *ob, const char *data, 
-	size_t size, int span, int oneline)
+	size_t size, int span, int oneline, int keep)
 {
 	size_t	 i;
 
@@ -151,6 +151,8 @@ hesc_nroff(struct lowdown_buf *ob, const char *data,
 			break;
 		case '\n':
 			hbuf_putc(ob, oneline ? ' ' : '\n');
+			if (keep)
+				break;
 			/*
 			 * Prevent leading spaces on the line.
 			 */
@@ -179,7 +181,7 @@ static void
 rndr_span(struct lowdown_buf *ob, const char *source, size_t length)
 {
 
-	hesc_nroff(ob, source, length, 1, 0);
+	hesc_nroff(ob, source, length, 1, 0, 0);
 }
 
 /*
@@ -191,7 +193,18 @@ static void
 rndr_block(struct lowdown_buf *ob, const char *source, size_t length)
 {
 
-	hesc_nroff(ob, source, length, 0, 0);
+	hesc_nroff(ob, source, length, 0, 0, 0);
+}
+
+/*
+ * Like rndr_block(), but not collapsing spaces at the start of lines.
+ */
+static void
+rndr_block_keep(struct lowdown_buf *ob, 
+	const char *source, size_t length)
+{
+
+	hesc_nroff(ob, source, length, 0, 0, 1);
 }
 
 /*
@@ -387,7 +400,7 @@ putlink(struct lowdown_buf *ob, struct nroff *st,
 			else
 				hbuf_put(ob, link->data, link->size);
 		} else
-			hesc_nroff(ob, text->data, text->size, 0, 1);
+			hesc_nroff(ob, text->data, text->size, 0, 1, 0);
 	}
 
 	HBUF_PUTSL(ob, "\n");
@@ -413,6 +426,12 @@ rndr_autolink(struct lowdown_buf *ob,
 	return putlink(ob, st, link, NULL, next, prev, type);
 }
 
+/*
+ * Render code.
+ * This should have no indentation and be rendered with a fixed font
+ * while keeping spaces and indentations.
+ * Use EX/EE if possible, else nf/fi.
+ */
 static void
 rndr_blockcode(struct lowdown_buf *ob,
 	const struct lowdown_buf *content, 
@@ -423,27 +442,25 @@ rndr_blockcode(struct lowdown_buf *ob,
 	if (content->size == 0)
 		return;
 
-	if (st->man) {
-		HBUF_PUTSL(ob, ".sp 1\n");
-		if (!(st->flags & LOWDOWN_NROFF_GROFF))
-			HBUF_PUTSL(ob, ".nf\n.ft CR\n");
-		else
-			HBUF_PUTSL(ob, ".EX\n");
-	} else
-		HBUF_PUTSL(ob, ".LD\n.ft CR\n");
+	/*
+	 * XXX: intentionally don't use LD/DE because it introduces
+	 * vertical space.  This means that subsequent blocks
+	 * (paragraphs, etc.) will have a double-newline.
+	 */
 
-	rndr_block(ob, content->data, content->size);
+	HBUF_PUTSL(ob, ".sp 1\n");
+	if (st->man && (st->flags & LOWDOWN_NROFF_GROFF))
+		HBUF_PUTSL(ob, ".EX\n");
+	else
+		HBUF_PUTSL(ob, ".nf\n.ft CR\n");
+
+	rndr_block_keep(ob, content->data, content->size);
 	HBUF_NEWLINE(content, ob);
 
-	if (st->man) {
-		if (!(st->flags & LOWDOWN_NROFF_GROFF))
-			HBUF_PUTSL(ob, ".ft\n.fi\n");
-		else
-			HBUF_PUTSL(ob, ".EE\n");
-	} else
-		HBUF_PUTSL(ob, ".ft\n.DE\n");
-
-	st->post_para = 1;
+	if (st->man && (st->flags & LOWDOWN_NROFF_GROFF))
+		HBUF_PUTSL(ob, ".EE\n");
+	else
+		HBUF_PUTSL(ob, ".ft\n.fi\n");
 }
 
 static void
@@ -702,7 +719,9 @@ rndr_paragraph(struct lowdown_buf *ob,
 	struct nroff *st, 
 	const struct lowdown_node *np)
 {
-	size_t	 i = 0, org;
+	size_t	 			 i = 0, org;
+	const struct lowdown_node	*prev;
+	int				 no_macro = 0;
 
 	if (content->size == 0)
 		return;
@@ -712,52 +731,57 @@ rndr_paragraph(struct lowdown_buf *ob,
 	while (i < content->size && 
 	       isspace((unsigned char)content->data[i]))
 		i++;
+
 	if (i == content->size)
 		return;
 
+	prev = TAILQ_PREV(np, lowdown_nodeq, entries);
+
 	/* 
-	 * If we're in a list item, make sure that we don't reset our
-	 * text indent by using an `IP`.
+	 * We don't just blindly print a paragraph macro: it depends
+	 * upon what came before.  If we're following a HEADER, don't do
+	 * anything at all.  If we're in a list item, make sure that we
+	 * don't reset our text indent by using an `IP`.
 	 */
 
-	for ( ; np != NULL; np = np->parent)
-		if (np->type == LOWDOWN_LISTITEM)
-			break;
+	if (st->man && prev != NULL && prev->type == LOWDOWN_HEADER)
+		no_macro = 1;
 
-	if (np != NULL) {
-		HBUF_PUTSL(ob, ".IP\n");
-		st->post_para = 0;
-	} else if (st->post_para) {
-		HBUF_PUTSL(ob, ".LP\n");
-		st->post_para = 0;
-	} else
-		HBUF_PUTSL(ob, ".PP\n");
-
-
-	if ((st->flags & LOWDOWN_NROFF_HARD_WRAP)) {
-		while (i < content->size) {
-			org = i;
-			while (i < content->size && 
-			      content->data[i] != '\n')
-				i++;
-
-			if (i > org)
-				hbuf_put(ob, content->data + org, 
-					i - org);
-
-			if (i >= content->size - 1) {
-				HBUF_PUTSL(ob, "\n");
+	if (!no_macro) {
+		for ( ; np != NULL; np = np->parent)
+			if (np->type == LOWDOWN_LISTITEM)
 				break;
-			}
+		if (np != NULL)
+			HBUF_PUTSL(ob, ".IP\n");
+		else if (st->post_para)
+			HBUF_PUTSL(ob, ".LP\n");
+		else
+			HBUF_PUTSL(ob, ".PP\n");
+	}
 
-			rndr_linebreak(ob);
-			i++;
-		}
+	st->post_para = 0;
+
+	if (!(st->flags & LOWDOWN_NROFF_HARD_WRAP)) {
+		hbuf_put(ob, content->data + i, 
+			content->size - i);
+		BUFFER_NEWLINE(content->data + i, 
+			content->size - i, ob);
 		return;
 	}
 
-	hbuf_put(ob, content->data + i, content->size - i);
-	BUFFER_NEWLINE(content->data + i, content->size - i, ob);
+	while (i < content->size) {
+		org = i;
+		while (i < content->size && content->data[i] != '\n')
+			i++;
+		if (i > org)
+			hbuf_put(ob, content->data + org, i - org);
+		if (i >= content->size - 1) {
+			HBUF_PUTSL(ob, "\n");
+			break;
+		}
+		rndr_linebreak(ob);
+		i++;
+	}
 }
 
 static void
@@ -840,7 +864,7 @@ rndr_raw_html(struct lowdown_buf *ob,
 
 	if (st->flags & LOWDOWN_NROFF_SKIP_HTML)
 		return;
-	rndr_block(ob, text->data, text->size);
+	rndr_block_keep(ob, text->data, text->size);
 }
 
 static void
@@ -1351,7 +1375,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		rndr_listitem(ob, tmp, n, &n->rndr_listitem);
 		break;
 	case LOWDOWN_PARAGRAPH:
-		rndr_paragraph(ob, tmp, st, n->parent);
+		rndr_paragraph(ob, tmp, st, n);
 		break;
 	case LOWDOWN_TABLE_BLOCK:
 		rndr_table(ob, tmp, st);
