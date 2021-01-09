@@ -15,7 +15,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-OCONFIGURE_VERSION="0.3.1"
+OCONFIGURE_VERSION="0.3.2"
 
 #
 # This script outputs two files: config.h and Makefile.configure.
@@ -54,11 +54,17 @@ set -e
 exec 3> config.log
 echo "config.log: writing..."
 
+# GNU submake prints different output if invoked recursively, which
+# messes up CC and CFLAGS detection.  Pass --no-print-directory if
+# we have a MAKELEVEL (GNU and FreeBSD make) and the argument is
+# allowed.
+
 MAKE_FLAGS=""
 
 if [ -n "${MAKELEVEL}" ]; then
 	if [ "${MAKELEVEL}" -gt 0 ] ; then
 		MAKE_FLAGS="--no-print-directory"
+		echo "all:" | make ${MAKE_FLAGS} -sf - 2>/dev/null || MAKE_FLAGS=""
 	fi
 fi
 
