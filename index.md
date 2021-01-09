@@ -289,11 +289,11 @@ of the `make regress` functionality.
 
 Want to hack on *lowdown*?  Of course you do.
 
-There are lots of bits and bobs remaining to be fixed or implemented.
+- There are lots of bits and bobs remaining to be fixed or implemented.
 You can always just search for `TODO`, `XXX`, or `FIXME` in the source
 code.  This is your best bet.
 
-There are some larger known issues, mostly in PDF (**-Tms** and
+- There are some larger known issues, mostly in PDF (**-Tms** and
 **-Tman**) output.
 
 - There needs to be logic to handle when a link is the first or last

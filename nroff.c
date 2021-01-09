@@ -448,7 +448,7 @@ rndr_blockcode(struct lowdown_buf *ob,
 	 * (paragraphs, etc.) will have a double-newline.
 	 */
 
-	HBUF_PUTSL(ob, ".sp 1\n");
+	HBUF_PUTSL(ob, ".sp\n");
 	if (st->man && (st->flags & LOWDOWN_NROFF_GROFF))
 		HBUF_PUTSL(ob, ".EX\n");
 	else
@@ -712,7 +712,9 @@ rndr_listitem(struct lowdown_buf *ob,
 	if (np->rndr_listitem.flags & HLIST_FL_DEF)
 		np = np->parent;
 	if (TAILQ_NEXT(np, entries) != NULL)
-		HBUF_PUTSL(ob, ".sp -1.0v\n");
+		HBUF_PUTSL(ob, 
+			".if n \\\n.sp -1\n"
+			".if t \\\n.sp -0.25v\n");
 }
 
 static void
