@@ -679,7 +679,7 @@ rndr_listitem(struct lowdown_buf *ob,
 	if (p->flags & HLIST_FL_ORDERED)
 		hbuf_printf(ob, ".IP \"%zu.  \"\n", p->num);
 	else if (p->flags & HLIST_FL_UNORDERED)
-		HBUF_PUTSL(ob,  ".IP \"\\(bu  \"\n");
+		HBUF_PUTSL(ob,  ".IP \"\\(bu\" 2\n");
 
 	/* Strip out all leading redundant paragraphs. */
 
