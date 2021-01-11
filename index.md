@@ -56,11 +56,11 @@ only) [mandoc](https://mdocml.bsd.lv).
 By way of example: this page,
 [index.md](https://kristaps.bsd.lv/lowdown/index.md), renders as
 [index.latex.pdf](https://kristaps.bsd.lv/lowdown/index.latex.pdf)
-with LaTeX,
+with LaTeX (via **-Tms**),
 [index.mandoc.pdf](https://kristaps.bsd.lv/lowdown/index.mandoc.pdf)
-with mandoc, or
+with mandoc (via **-Tman**), or
 [index.nroff.pdf](https://kristaps.bsd.lv/lowdown/index.nroff.pdf)
-with nroff.
+with groff (via **-Tms**).
 
 [^nomanpages]:
     You may be tempted to write [manpages](https://man.openbsd.org)
