@@ -88,8 +88,9 @@ HEADERS 	 = extern.h \
 		   lowdown.h
 PDFS		 = diff.pdf \
 		   index.pdf \
-		   README.latex.pdf \
-		   README.nroff.pdf
+		   index.latex.pdf \
+		   index.mandoc.pdf \
+		   index.nroff.pdf
 MDS		 = index.md README.md
 CSSS		 = diff.css template.css
 JSS		 = diff.js
@@ -174,12 +175,16 @@ index.html README.html: template.xml
 	./lowdown --nroff-no-numbered -s -Tms $< | \
 		pdfroff -i -mspdf -t -k -Kutf8 > $@
 
-README.latex.pdf: README.md
-	./lowdown -s -Tlatex README.md >README.latex.latex
-	pdflatex README.latex.latex
+index.latex.pdf: index.md
+	./lowdown -s -Tlatex README.md >index.latex.latex
+	pdflatex index.latex.latex
 
-README.nroff.pdf: README.md
-	./lowdown --nroff-no-numbered -s -Tms README.md | \
+index.mandoc.pdf: index.md
+	./lowdown --nroff-no-numbered -s -Tman index.md | \
+		mandoc -Tpdf > $@
+
+index.nroff.pdf: index.md
+	./lowdown --nroff-no-numbered -s -Tms index.md | \
 		pdfroff -i -mspdf -t -k -Kutf8 > $@
 
 .xml.html:
@@ -243,7 +248,7 @@ clean:
 	rm -f lowdown lowdown-diff liblowdown.a lowdown.pc
 	rm -f index.xml diff.xml diff.diff.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
 	rm -f $(PDFS) $(HTMLS) $(THUMBS)
-	rm -f README.latex.aux README.latex.latex README.latex.log README.latex.out
+	rm -f index.latex.aux index.latex.latex index.latex.log index.latex.out
 
 distclean: clean
 	rm -f Makefile.configure config.h config.log

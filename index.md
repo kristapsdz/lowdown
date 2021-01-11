@@ -55,15 +55,12 @@ only) [mandoc](https://mdocml.bsd.lv).
 
 By way of example: this page,
 [index.md](https://kristaps.bsd.lv/lowdown/index.md), renders as
-[index.pdf](https://kristaps.bsd.lv/lowdown/index.pdf) from
-[groff](https://www.gnu.org/s/groff/) and **-Tms**.
-Another example is the GitHub
-[README.md](https://kristaps.bsd.lv/lowdown/README.md) rendered as
-[README.html](https://kristaps.bsd.lv/lowdown/README.html),
-[README-latex.pdf](https://kristaps.bsd.lv/lowdown/README-latex.pdf)
-(with LaTeX), or
-[README-nroff.pdf](https://kristaps.bsd.lv/lowdown/README-nroff.pdf)
-(with nroff).
+[index.latex.pdf](https://kristaps.bsd.lv/lowdown/index.latex.pdf)
+with LaTeX,
+[index.mandoc.pdf](https://kristaps.bsd.lv/lowdown/index.mandoc.pdf)
+with mandoc, or
+[index.nroff.pdf](https://kristaps.bsd.lv/lowdown/index.nroff.pdf)
+with nroff.
 
 [^nomanpages]:
     You may be tempted to write [manpages](https://man.openbsd.org)
