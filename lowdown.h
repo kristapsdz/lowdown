@@ -378,6 +378,7 @@ struct lowdown_node
 	*lowdown_diff(const struct lowdown_node *,
 		const struct lowdown_node *, size_t *);
 void	 lowdown_doc_free(struct lowdown_doc *);
+void	 lowdown_meta_free(struct lowdown_meta *);
 void	 lowdown_metaq_free(struct lowdown_metaq *);
 
 void 	 lowdown_node_free(struct lowdown_node *);

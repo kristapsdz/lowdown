@@ -4088,6 +4088,14 @@ lowdown_node_free(struct lowdown_node *root)
 }
 
 void
+lowdown_meta_free(struct lowdown_meta *m)
+{
+	free(m->key);
+	free(m->value);
+	free(m);
+}
+
+void
 lowdown_metaq_free(struct lowdown_metaq *q)
 {
 	struct lowdown_meta	*m;
@@ -4097,9 +4105,7 @@ lowdown_metaq_free(struct lowdown_metaq *q)
 
 	while ((m = TAILQ_FIRST(q)) != NULL) {
 		TAILQ_REMOVE(q, m, entries);
-		free(m->key);
-		free(m->value);
-		free(m);
+		lowdown_meta_free(m);
 	}
 }
 
