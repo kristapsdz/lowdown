@@ -1249,8 +1249,6 @@ rndr_doc_header(struct lowdown_buf *ob,
 		/*
 		 * The syntax of this macro, according to man(7), is 
 		 * TH name section date [source [volume]].
-		 * We may not have a date (or it may be empty), in which
-		 * case man(7) says the current date is used.
 		 */
 
 		HBUF_PUTSL(ob, ".TH \"");
@@ -1258,6 +1256,11 @@ rndr_doc_header(struct lowdown_buf *ob,
 		HBUF_PUTSL(ob, "\" \"");
 		rndr_one_line_noescape(ob, section, strlen(section), 0);
 		HBUF_PUTSL(ob, "\"");
+
+		/*
+		 * We may not have a date (or it may be empty), in which
+		 * case man(7) says the current date is used.
+		 */
 
 		if (date != NULL) {
 			HBUF_PUTSL(ob, " \"");
@@ -1267,21 +1270,29 @@ rndr_doc_header(struct lowdown_buf *ob,
 		} else
 			HBUF_PUTSL(ob, " \"\"");
 
-		if (source != NULL) {
-			HBUF_PUTSL(ob, " \"");
-			rndr_one_line_noescape
-				(ob, source, strlen(source), 0);
-			HBUF_PUTSL(ob, "\"");
-		} else
-			HBUF_PUTSL(ob, " \"\"");
+		/*
+		 * Don't print these unless necessary, as the latter
+		 * overrides the default system printing for the
+		 * section.
+		 */
 
-		if (volume != NULL) {
-			HBUF_PUTSL(ob, " \"");
-			rndr_one_line_noescape
-				(ob, volume, strlen(volume), 0);
-			HBUF_PUTSL(ob, "\"");
-		} else
-			HBUF_PUTSL(ob, " \"\"");
+		if (source != NULL || volume != NULL) {
+			if (source != NULL) {
+				HBUF_PUTSL(ob, " \"");
+				rndr_one_line_noescape
+					(ob, source, strlen(source), 0);
+				HBUF_PUTSL(ob, "\"");
+			} else
+				HBUF_PUTSL(ob, " \"\"");
+
+			if (volume != NULL) {
+				HBUF_PUTSL(ob, " \"");
+				rndr_one_line_noescape
+					(ob, volume, strlen(volume), 0);
+				HBUF_PUTSL(ob, "\"");
+			} else if (source != NULL)
+				HBUF_PUTSL(ob, " \"\"");
+		}
 
 		HBUF_PUTSL(ob, "\n");
 	}
