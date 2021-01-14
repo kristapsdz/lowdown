@@ -1,0 +1,8 @@
+*.o
+*.a
+*.pc
+lowdown
+lowdown-diff
+config.h
+config.log
+Makefile.configure
