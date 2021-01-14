@@ -302,6 +302,8 @@ struct	lowdown_opts {
 	size_t			 hmargin; /* -Tterm left margin */
 	size_t			 vmargin; /* -Tterm top/bot margin */
 	unsigned int		 feat;
+	struct lowdown_metaq	 meta;
+	struct lowdown_metaq	 metaovr;
 #define LOWDOWN_TABLES		 0x01
 #define LOWDOWN_FENCED		 0x02
 #define LOWDOWN_FOOTNOTES	 0x04

@@ -33,6 +33,7 @@
 #include <getopt.h>
 #include <limits.h> /* INT_MAX */
 #include <locale.h> /* set_locale() */
+#include <ctype.h>
 #if HAVE_SANDBOX_INIT
 # include <sandbox.h>
 #endif
@@ -44,6 +45,7 @@
 #include <unistd.h>
 
 #include "lowdown.h"
+#include "extern.h"
 
 /*
  * Start with all of the sandboxes.
@@ -236,7 +238,7 @@ main(int argc, char *argv[])
 	int			 c, diff = 0,
 				 status = EXIT_SUCCESS, feat, aoflag = 0, roflag = 0,
 				 aiflag = 0, riflag = 0, centre = 0;
-	char			*ret = NULL;
+	char			*ret = NULL, *meta;
 	size_t		 	 retsz = 0, rcols;
 	struct lowdown_meta 	*m;
 	struct lowdown_metaq	 mq;
@@ -319,6 +321,8 @@ main(int argc, char *argv[])
 
 	TAILQ_INIT(&mq);
 	memset(&opts, 0, sizeof(struct lowdown_opts));
+	TAILQ_INIT(&opts.meta);
+	TAILQ_INIT(&opts.metaovr);
 
 	opts.maxdepth = 128;
 	opts.type = LOWDOWN_HTML;
@@ -349,7 +353,7 @@ main(int argc, char *argv[])
 		diff = 1;
 
 	while ((c = getopt_long
-		(argc, argv, "D:d:E:e:sT:o:X:", lo, NULL)) != -1)
+		(argc, argv, "D:d:E:e:sT:o:X:M:m:", lo, NULL)) != -1)
 		switch (c) {
 		case 'D':
 			if ((feat = feature_out(optarg)) == 0)
@@ -399,6 +403,27 @@ main(int argc, char *argv[])
 			break;
 		case 'X':
 			extract = optarg;
+			break;
+		case 'm':
+		case 'M':
+			/* find separator */
+			if ((meta = strchr(optarg, ':')) == NULL)
+			   errx(EXIT_FAILURE, "invalid metadata argument: '%s'", optarg);
+			/* split into two strings */
+			*meta = 0;
+			meta++;
+			/* find when metadata value begins */
+			while (isspace(*meta) && *meta) meta++;
+			if (*meta == 0)
+			   errx(EXIT_FAILURE, "missing value for metadata key: '%s'", optarg);
+			/* store into appropriate queue */
+			m = xcalloc(1, sizeof(struct lowdown_meta));
+			m->key = xstrdup(optarg);
+			m->value = xstrdup(meta);
+			if (c == 'm')
+			   TAILQ_INSERT_TAIL(&opts.meta, m, entries);
+			else
+			   TAILQ_INSERT_TAIL(&opts.metaovr, m, entries);
 			break;
 		case 0:
 			if (roflag)

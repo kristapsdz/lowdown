@@ -87,7 +87,7 @@ struct footnote_ref {
 TAILQ_HEAD(footnote_refq, footnote_ref);
 
 struct 	lowdown_doc {
-	const struct lowdown_opts *opts;
+	struct lowdown_opts *opts;
 	struct link_refq refq; /* all internal references */
 	struct footnote_refq footnotes; /* all footnotes */
 	size_t		 footnotesz; /* # of used footnotes */
@@ -3792,7 +3792,10 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 	const char		*key, *val;
 	struct hbufn		*m;
 	struct lowdown_node	*n, *nn;
+	struct lowdown_meta	*md;
 	char			*cp;
+
+	struct lowdown_metaq 	*mdqs[] = {&doc->opts->meta, &doc->opts->metaovr};
 
 	if (sz == 0 || data[sz - 1] != '\n')
 		return 0;
@@ -3848,6 +3851,23 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 		}
 		n->rndr_meta.key.size = cp - n->rndr_meta.key.data;
 
+		/*
+		 * If key matches one in opts->meta, remove that entry from opts->meta,
+		 * since it shouldn't override values from document.
+		 */
+
+		TAILQ_FOREACH(md, &doc->opts->meta, entries) {
+			if (hbuf_streq(&n->rndr_meta.key, md->key)) {
+				TAILQ_REMOVE(&doc->opts->meta, md, entries);
+				lowdown_meta_free(md);
+				/*
+				 * XXX: can break here because it assumes there aren't repeated metadata
+				 * keys in the command line input
+				 */
+				break;
+			}
+		}
+
 		/* Canonical order: title comes first. */
 
 		if (hbuf_streq(&n->rndr_meta.key, "title")) {
@@ -3871,13 +3891,57 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 			break;
 		}
 
+		/* Unconditionally, we need to obtain valsz and store metadata in m */
+
 		val = parse_metadata_val(&data[i], sz - i, &valsz);
 		nn = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 		m->val = &nn->rndr_normal_text.text;
-		pushbuffer(&nn->rndr_normal_text.text, val, valsz);
-		popnode(doc, nn);
+
+		/* If key matches one from doc->opts->metaovr, we override the value from the document */
+
+		TAILQ_FOREACH(md, &doc->opts->metaovr, entries) {
+			if (hbuf_streq(&n->rndr_meta.key, md->key)) {
+				pushbuffer(&nn->rndr_normal_text.text, md->value, strlen(md->value));
+				popnode(doc, nn);
+				nn = NULL;
+
+				TAILQ_REMOVE(&doc->opts->metaovr, md, entries);
+				lowdown_meta_free(md);
+				break;
+			}
+		}
+
+		/* nn will have been NULL'd above if something has already been written into it */
+
+		if (nn) {
+			pushbuffer(&nn->rndr_normal_text.text, val, valsz);
+			popnode(doc, nn);
+		}
+
 		popnode(doc, n);
 		pos = i + valsz + 1;
+	}
+
+	/* loop through remaining doc->opts->{meta,metaovr} and add them to the document */
+
+	for (i = 0; i < sizeof(mdqs)/sizeof(mdqs[0]); i++) {
+		TAILQ_FOREACH(md, mdqs[i], entries) {
+			m = xcalloc(1, sizeof(struct hbufn));
+			TAILQ_INSERT_TAIL(&doc->metaq, m, entries);
+
+			n = pushnode(doc, LOWDOWN_META);
+			m->key = &n->rndr_meta.key;
+			pushbuffer(&n->rndr_meta.key, md->key, strlen(md->key));
+
+			nn = pushnode(doc, LOWDOWN_NORMAL_TEXT);
+			m->val = &nn->rndr_normal_text.text;
+			pushbuffer(&nn->rndr_normal_text.text, md->value, strlen(md->value));
+
+			popnode(doc, nn);
+			popnode(doc, n);
+		}
+
+		lowdown_metaq_free(mdqs[i]);
 	}
 
 	return 1;
