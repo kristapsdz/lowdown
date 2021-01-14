@@ -1243,13 +1243,16 @@ rndr_doc_header(struct lowdown_buf *ob,
 	} else {
 		HBUF_PUTSL(ob, ".TH \"");
 		rndr_one_line_noescape(ob, title, strlen(title), 0);
-		HBUF_PUTSL(ob, "\" ");
+		HBUF_PUTSL(ob, "\" \"");
 		rndr_one_line_noescape(ob, section, strlen(section), 0);
+		HBUF_PUTSL(ob, "\"");
 		if (date != NULL) {
-			HBUF_PUTSL(ob, " ");
+			HBUF_PUTSL(ob, " \"");
 			rndr_one_line_noescape
 				(ob, date, strlen(date), 0);
-		}
+			HBUF_PUTSL(ob, "\"");
+		} else
+			HBUF_PUTSL(ob, " \"\"");
 		HBUF_PUTSL(ob, "\n");
 	}
 }
