@@ -931,4 +931,18 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.7.9</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2021-01-11">2021-01-11</time>
+		</header>
+		<aside>
+			<p>
+				Recognise the <code>volume</code>, <code>source</code>, and
+				<code>section</code> metadata.
+				These are currently only used by <b>-Tman</b>.
+			</p>
+		</aside>
+	</article>
 </articles>
