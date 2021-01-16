@@ -1,7 +1,7 @@
 .\"	$Id$
 .\"
 .\" Copyright (c) 2017 Christina Sophonpanich <huck@divelog.blue>
-.\" Copyright (c) 2017, 2018, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
+.\" Copyright (c) 2017--2021 Kristaps Dzonsons <kristaps@bsd.lv>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -359,6 +359,16 @@ Metadata values are opaque text: Markdown statements (e.g., italics,
 entities, etc.) are copied as-is.
 The values will have leading white-space stripped, i.e., space following
 the colon.
+.Pp
+Metadata values may be pasted into a document by referencing the
+.Li \&[%key] ,
+such as using the above example, again with the caveat that Markdown
+annotations (italics, etc.) are copied verbatim:
+.Bd -literal -offset indent
+Stardate: 43917.4
+
+It's currently stardate [%stardate].
+.Ed
 .
 .
 .Ss Mathematics
