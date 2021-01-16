@@ -1,6 +1,6 @@
 /*	$Id$ */
 /*
- * Copyright (c) 2017, 2018, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) 2017--2021 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -306,17 +306,19 @@ int
 lowdown_file(const struct lowdown_opts *opts, FILE *fin,
 	char **res, size_t *rsz, struct lowdown_metaq *metaq)
 {
-	struct lowdown_buf	*ib;
+	struct lowdown_buf	*bin;
 	int	 		 rc = 0;
 
-	ib = lowdown_buf_new(HBUF_START_BIG);
+	bin = lowdown_buf_new(HBUF_START_BIG);
 
-	hbuf_putf(ib, fin);
-	if (!lowdown_buf(opts, ib->data, ib->size, res, rsz, metaq))
+	hbuf_putf(bin, fin);
+
+	if (!lowdown_buf(opts,
+	    bin->data, bin->size, res, rsz, metaq))
 		goto out;
 	rc = 1;
 out:
-	lowdown_buf_free(ib);
+	lowdown_buf_free(bin);
 	return rc;
 }
 
@@ -325,24 +327,24 @@ lowdown_file_diff(const struct lowdown_opts *opts,
 	FILE *fnew, FILE *fold, char **res, size_t *rsz, 
 	struct lowdown_metaq *metaq)
 {
-	struct lowdown_buf	*src, *dst;
+	struct lowdown_buf	*bnew, *bold;
 	int	 		 rc = 0;
 
-	src = lowdown_buf_new(HBUF_START_BIG);
-	dst = lowdown_buf_new(HBUF_START_BIG);
+	bnew = lowdown_buf_new(HBUF_START_BIG);
+	bold = lowdown_buf_new(HBUF_START_BIG);
 
-	hbuf_putf(dst, fold);
-	hbuf_putf(src, fnew);
+	hbuf_putf(bold, fold);
+	hbuf_putf(bnew, fnew);
 
 	if (!lowdown_buf_diff(opts, 
-	    src->data, src->size, 
-	    dst->data, dst->size, 
+	    bnew->data, bnew->size, 
+	    bold->data, bold->size, 
 	    res, rsz, metaq))
 		goto out;
 	rc = 1;
 out:
-	lowdown_buf_free(src);
-	lowdown_buf_free(dst);
+	lowdown_buf_free(bnew);
+	lowdown_buf_free(bold);
 	return rc;
 }
 

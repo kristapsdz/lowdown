@@ -27,10 +27,10 @@
 .In stdio.h
 .In lowdown.h
 .Ft int
-.Fo lowdown_file
+.Fo lowdown_file_diff
 .Fa "const struct lowdown_opts *opts"
-.Fa "FILE *ftarget"
-.Fa "FILE *forigin"
+.Fa "FILE *fnew"
+.Fa "FILE *fold"
 .Fa "char **ret"
 .Fa "size_t *retsz"
 .Fa "struct lowdown_metaq *metaq"
@@ -39,9 +39,9 @@
 Parses
 .Xr lowdown 5
 file streams
-.Fa ftarget
+.Fa fnew
 and
-.Fa forigin
+.Fa fold
 and produces an edit script in
 .Fa ret
 of size
@@ -67,7 +67,12 @@ and
 .Fa metaq .
 .Sh RETURN VALUES
 Returns zero on failure, non-zero on success.
-Failure occurs when the file read failed.
+Failure occurs when the file read failed or on memory exhaustion.
+On failure, the contents of
+.Fa ret
+and
+.Fa retsz
+are undefined.
 .Sh SEE ALSO
 .Xr lowdown 3 ,
 .Xr lowdown_metaq_free 3
