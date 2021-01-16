@@ -40,7 +40,7 @@
  */
 #define HBUF_START_SMALL 128
 
-void
+int
 lowdown_buf(const struct lowdown_opts *opts,
 	const char *data, size_t datasz,
 	char **res, size_t *rsz,
@@ -48,15 +48,25 @@ lowdown_buf(const struct lowdown_opts *opts,
 {
 	struct lowdown_buf	*ob;
 	void			*renderer = NULL;
-	struct lowdown_doc	*document;
+	struct lowdown_doc	*doc;
 	size_t			 maxn;
 	enum lowdown_type	 t;
 	struct lowdown_node	*n;
 
-	/* Create our buffers, renderer, and document. */
+	/* Parse the markdown into our AST. */
+
+	if ((doc = lowdown_doc_new(opts)) == NULL)
+		return 0;
+
+	n = lowdown_doc_parse(doc, &maxn, data, datasz);
+	lowdown_doc_free(doc);
+	if (n == NULL)
+		return 0;
+	assert(n->type == LOWDOWN_ROOT);
+
+	/* Now render it. */
 
 	ob = lowdown_buf_new(HBUF_START_BIG);
-	document = lowdown_doc_new(opts);
 	t = opts == NULL ? LOWDOWN_HTML : opts->type;
 
 	switch (t) {
@@ -85,9 +95,6 @@ lowdown_buf(const struct lowdown_opts *opts,
 
 	/* Parse the output and free resources. */
 
-	n = lowdown_doc_parse(document, &maxn, data, datasz);
-	assert(n == NULL || n->type == LOWDOWN_ROOT);
-	lowdown_doc_free(document);
 
 	/* Conditionally apply smartypants. */
 
@@ -133,6 +140,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 	*rsz = ob->size;
 	ob->data = NULL;
 	lowdown_buf_free(ob);
+	return 1;
 }
 
 /*
@@ -285,9 +293,9 @@ lowdown_file(const struct lowdown_opts *opts, FILE *fin,
 
 	ib = lowdown_buf_new(HBUF_START_BIG);
 
-	if (hbuf_putf(ib, fin))
+	hbuf_putf(ib, fin);
+	if (!lowdown_buf(opts, ib->data, ib->size, res, rsz, metaq))
 		goto out;
-	lowdown_buf(opts, ib->data, ib->size, res, rsz, metaq);
 	rc = 1;
 out:
 	lowdown_buf_free(ib);

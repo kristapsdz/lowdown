@@ -348,7 +348,7 @@ __BEGIN_DECLS
  * These use the "lowdown_opts" to determine how to parse and render
  * content, and extract that content from a buffer, file, or descriptor.
  */
-void	 lowdown_buf(const struct lowdown_opts *, 
+int	 lowdown_buf(const struct lowdown_opts *, 
 		const char *, size_t,
 		char **, size_t *, struct lowdown_metaq *);
 void	 lowdown_buf_diff(const struct lowdown_opts *, 
