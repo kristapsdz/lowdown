@@ -3347,9 +3347,8 @@ parse_block(struct lowdown_doc *doc, char *data, size_t size)
 }
 
 /* 
- * Returns whether a line is a footnote definition or not.
- * This is invoked during the first pass to establish all possible
- * footnotes.
+ * Returns >0 if a line is a footnote definition, 0 if not, <0 on
+ * failure.
  */
 static int
 is_footnote(struct lowdown_doc *doc, const char *data, 
@@ -3406,7 +3405,8 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 
 		if (is_empty(data + start, i - start)) {
 			in_empty = 1;
-			if (i < end && (data[i] == '\n' || data[i] == '\r')) {
+			if (i < end && 
+			    (data[i] == '\n' || data[i] == '\r')) {
 				i++;
 				if (i < end && data[i] == '\n' && 
 				    data[i - 1] == '\r') 
@@ -3425,7 +3425,8 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 		 * to continue, just like lists */
 
 		if (ind == 0) {
-			if (start == id_end + 2 && data[start] == '\t') {
+			if (start == id_end + 2 && 
+			    data[start] == '\t') {
 				/* XXX: wtf? */
 			} else 
 				break;
@@ -3457,19 +3458,22 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 	if (last)
 		*last = start;
 
-	ref = xcalloc(1, sizeof(struct footnote_ref));
+	if ((ref = calloc(1, sizeof(struct footnote_ref))) == NULL)
+		return -1;
+
 	TAILQ_INSERT_TAIL(&doc->footnotes, ref, entries);
 	ref->contents = contents;
 	if (id_end - id_offset) {
 		ref->name = hbuf_new(id_end - id_offset);
-		hbuf_put(ref->name, data + id_offset, id_end - id_offset);
+		hbuf_put(ref->name, data + id_offset, 
+			id_end - id_offset);
 	} 
 
 	return 1;
 }
 
 /* 
- * Returns whether a line is a reference or not.
+ * Returns >0 if the line is a reference, 0 if not, <0 on failure.
  */
 static int
 is_ref(struct lowdown_doc *doc, const char *data, 
@@ -3594,19 +3598,24 @@ is_ref(struct lowdown_doc *doc, const char *data,
 	if (last)
 		*last = line_end;
 
-	ref = xcalloc(1, sizeof(struct link_ref));
+	if ((ref = calloc(1, sizeof(struct link_ref))) == NULL)
+		return -1;
 	TAILQ_INSERT_TAIL(&doc->refq, ref, entries);
 
 	if (id_end - id_offset) {
 		ref->name = hbuf_new(id_end - id_offset);
-		hbuf_put(ref->name, data + id_offset, id_end - id_offset);
+		hbuf_put(ref->name, data + id_offset, 
+			id_end - id_offset);
 	}
+
 	ref->link = hbuf_new(link_end - link_offset);
-	hbuf_put(ref->link, data + link_offset, link_end - link_offset);
+	hbuf_put(ref->link, data + link_offset, 
+		link_end - link_offset);
 
 	if (title_end > title_offset) {
 		ref->title = hbuf_new(title_end - title_offset);
-		hbuf_put(ref->title, data + title_offset, title_end - title_offset);
+		hbuf_put(ref->title, data + title_offset, 
+			title_end - title_offset);
 	}
 
 	return 1;
@@ -3969,34 +3978,46 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 	 * everything else. 
 	 */
 
-	while (beg < size)
-		if ((doc->ext_flags & LOWDOWN_FOOTNOTES) &&
-		    is_footnote(doc, data, beg, size, &end))
-			beg = end;
-		else if (is_ref(doc, data, beg, size, &end))
-			beg = end;
-		else {
-			/* Skipping to the next line. */
-			end = beg;
-			while (end < size && data[end] != '\n' &&
-			       data[end] != '\r')
-				end++;
-
-			/* Adding the line body if present. */
-			if (end > beg)
-				expand_tabs(text, data + beg, end - beg);
-
-			while (end < size && (data[end] == '\n' ||
-			       data[end] == '\r')) {
-				/* Add one \n per newline. */
-				if (data[end] == '\n' ||
-				    (end + 1 < size && data[end + 1] != '\n'))
-					hbuf_putc(text, '\n');
-				end++;
-			}
-
-			beg = end;
+	while (beg < size) {
+		if (doc->ext_flags & LOWDOWN_FOOTNOTES) {
+		    c = is_footnote(doc, data, beg, size, &end);
+		    if (c > 0) {
+			    beg = end;
+			    continue;
+		    } else if (c < 0)
+			    goto out;
 		}
+
+		if ((c = is_ref(doc, data, beg, size, &end)) > 0) {
+			beg = end;
+			continue;
+		} else if (c < 0)
+			goto out;
+
+		/* Skipping to the next line. */
+
+		end = beg;
+		while (end < size && data[end] != '\n' &&
+		       data[end] != '\r')
+			end++;
+
+		/* Adding the line body if present. */
+
+		if (end > beg)
+			expand_tabs(text, data + beg, end - beg);
+
+		/* Add one \n per newline. */
+
+		while (end < size && (data[end] == '\n' ||
+		       data[end] == '\r')) {
+			if (data[end] == '\n' ||
+			    (end + 1 < size && data[end + 1] != '\n'))
+				hbuf_putc(text, '\n');
+			end++;
+		}
+
+		beg = end;
+	}
 
 	popnode(doc, n);
 
