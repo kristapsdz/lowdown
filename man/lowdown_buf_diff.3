@@ -26,13 +26,13 @@
 .In sys/queue.h
 .In stdio.h
 .In lowdown.h
-.Ft void
-.Fo lowdown_buf
+.Ft int
+.Fo lowdown_buf_diff
 .Fa "const struct lowdown_opts *opts"
-.Fa "const char *btarget"
-.Fa "size_t btargetsz"
-.Fa "const char *otarget"
-.Fa "size_t otargetsz"
+.Fa "const char *new"
+.Fa "size_t newsz"
+.Fa "const char *old"
+.Fa "size_t oldsz"
 .Fa "char **ret"
 .Fa "size_t *retsz"
 .Fa "struct lowdown_metaq *metaq"
@@ -41,19 +41,23 @@
 Parses
 .Xr lowdown 5
 buffers
-.Fa btarget
+.Fa new
 of size
-.Fa btargetsz
+.Fa newsz
 and
-.Fa otarget
+.Fa old
 of size
-.Fa otargetsz
+.Fa oldsz
 and produces an edit script in
 .Fa ret
 of size
 .Fa retsz
 according to configurations
 .Fa opts .
+The script defines differences from
+.Fa old
+to
+.Fa new .
 The output format is specified by
 .Fa opts->type .
 If
@@ -71,6 +75,9 @@ The caller is responsible for freeing
 .Fa ret
 and
 .Fa metaq .
+.Sh RETURN VALUES
+Returns zero on failure, non-zero on success.
+Failure occurs from memory exhaustion.
 .Sh SEE ALSO
 .Xr lowdown 3 ,
 .Xr lowdown_metaq_free 3

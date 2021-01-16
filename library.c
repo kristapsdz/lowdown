@@ -179,7 +179,7 @@ lowdown_merge_adjacent_text(struct lowdown_node *n)
 	}
 }
 
-void
+int
 lowdown_buf_diff(const struct lowdown_opts *opts,
 	const char *new, size_t newsz,
 	const char *old, size_t oldsz,
@@ -193,6 +193,24 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	struct lowdown_node 	*nnew, *nold, *ndiff;
 	size_t			 maxnew, maxold, maxn;
 
+	/* Parse the markdown into our ASTs. */
+
+	if ((doc = lowdown_doc_new(opts)) == NULL)
+		return 0;
+
+	nnew = lowdown_doc_parse(doc, &maxnew, new, newsz);
+	nold = lowdown_doc_parse(doc, &maxold, old, oldsz);
+	lowdown_doc_free(doc);
+
+	if (nnew == NULL || nold == NULL) {
+		lowdown_node_free(nnew);
+		lowdown_node_free(nold);
+		return 0;
+	}
+
+	/* Now render it. */
+
+	ob = lowdown_buf_new(HBUF_START_BIG);
 	t = opts == NULL ? LOWDOWN_HTML : opts->type;
 
 	switch (t) {
@@ -219,16 +237,6 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 		break;
 	}
 
-	/* Parse the output and free resources. */
-
-	doc = lowdown_doc_new(opts);
-	nnew = lowdown_doc_parse(doc, &maxnew, new, newsz);
-	lowdown_doc_free(doc);
-
-	doc = lowdown_doc_new(opts);
-	nold = lowdown_doc_parse(doc, &maxold, old, oldsz);
-	lowdown_doc_free(doc);
-
 	/* Merge adjacent text nodes. */
 
 	lowdown_merge_adjacent_text(nnew);
@@ -243,8 +251,6 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
     	if (opts != NULL && 
 	    (opts->oflags & LOWDOWN_SMARTY)) 
 		smarty(ndiff, maxn, t);
-
-	ob = lowdown_buf_new(HBUF_START_BIG);
 
 	switch (t) {
 	case LOWDOWN_GEMINI:
@@ -282,6 +288,7 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	*rsz = ob->size;
 	ob->data = NULL;
 	lowdown_buf_free(ob);
+	return 1;
 }
 
 int
@@ -313,10 +320,14 @@ lowdown_file_diff(const struct lowdown_opts *opts,
 	src = lowdown_buf_new(HBUF_START_BIG);
 	dst = lowdown_buf_new(HBUF_START_BIG);
 
-	if (hbuf_putf(dst, fold) || hbuf_putf(src, fnew))
+	hbuf_putf(dst, fold);
+	hbuf_putf(src, fnew);
+
+	if (!lowdown_buf_diff(opts, 
+	    src->data, src->size, 
+	    dst->data, dst->size, 
+	    res, rsz, metaq))
 		goto out;
-	lowdown_buf_diff(opts, src->data, src->size, 
-		dst->data, dst->size, res, rsz, metaq);
 	rc = 1;
 out:
 	lowdown_buf_free(src);
