@@ -3658,7 +3658,9 @@ lowdown_doc_new(const struct lowdown_opts *opts)
 	struct lowdown_doc	*doc;
 	unsigned int		 extensions = opts ? opts->feat : 0;
 
-	doc = xcalloc(1, sizeof(struct lowdown_doc));
+	doc = calloc(1, sizeof(struct lowdown_doc));
+	if (doc == NULL)
+		return NULL;
 
 	doc->maxdepth = opts == NULL ? 128 : opts->maxdepth;
 	doc->active_char['*'] = MD_CHAR_EMPHASIS;

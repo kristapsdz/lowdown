@@ -33,12 +33,39 @@
 .Sh DESCRIPTION
 Allocates a Markdown parser instance with configuration
 .Fa opts .
-It must be freed with a call to
-.Xr lowdown_doc_free 3 .
+If
+.Fa opts
+is
+.Dv NULL ,
+all values are assumed to be zero except for the maximum parse depth,
+which is fixed at 128.
+.Pp
 The returned instance may be used with multiple invocations of
 .Xr lowdown_doc_parse 3 .
 .Sh RETURN VALUES
-Always returns a valid pointer.
+Returns a pointer to the parser or
+.Dv NULL
+on memory allocation failure.
+The returned pointer must be freed with a call to
+.Xr lowdown_doc_free 3 .
+.Sh EXAMPLES
+The following parses a document in the NUL-terminated string
+.Va data
+and throws away the result.
+.Bd -literal -offset indent
+struct lowdown_doc *doc;
+struct lowdown_node *n;
+
+doc = lowdown_doc_new(NULL);
+if (doc == NULL)
+  err(1, NULL);
+
+n = lowdown_doc_parse(doc, NULL, data, strlen(data));
+if (n == NULL)
+  err(1, NULL);
+
+lowdown_node_free(n);
+lowdown_doc_free(doc);
 .Sh SEE ALSO
 .Xr lowdown 3 ,
 .Xr lowdown_doc_free 3 ,
