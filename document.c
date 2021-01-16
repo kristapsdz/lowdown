@@ -185,18 +185,19 @@ pushnode(struct lowdown_doc *doc, enum lowdown_rndrt t)
 	return n;
 }
 
-static void
+static int
 pushbuffer(struct lowdown_buf *buf, const char *data, size_t datasz)
 {
 
 	memset(buf, 0, sizeof(struct lowdown_buf));
 
-	if (0 == datasz)
-		return;
+	if (datasz) {
+		buf->data = xmalloc(datasz);
+		buf->size = buf->asize = datasz;
+		memcpy(buf->data, data, datasz);
+	}
 
-	buf->data = xmalloc(datasz);
-	buf->size = buf->asize = datasz;
-	memcpy(buf->data, data, datasz);
+	return 1;
 }
 
 static void
@@ -3696,7 +3697,7 @@ lowdown_doc_new(const struct lowdown_opts *opts)
  * If the value spans multiple lines, leading whitespace from the first
  * line will be stripped and any following lines will be taken as is.
  * Returns a pointer to the value and the length of the value will be
- * written to len.
+ * written to "len";
  */
 static const char *
 parse_metadata_val(const char *data, size_t sz, size_t *len)
@@ -3714,8 +3715,8 @@ parse_metadata_val(const char *data, size_t sz, size_t *len)
 
 	/* Find end of line and count trailing whitespace. */
 
-	for (i = nspaces = 0; i < sz && '\n' != data[i]; i++)
-		if (' ' == data[i])
+	for (i = nspaces = 0; i < sz && data[i] != '\n'; i++)
+		if (data[i] == ' ')
 			nspaces++;
 		else
 			nspaces = 0;
@@ -3728,8 +3729,8 @@ parse_metadata_val(const char *data, size_t sz, size_t *len)
 	 */
 
 	startws = i + 1 < sz &&
-		(' ' == data[i + 1] || 
-		 '\t' == data[i + 1]);
+		(data[i + 1] == ' ' || 
+		 data[i + 1] == '\t');
 
 	for (i++; i < sz; i++) {
 		/*
@@ -3740,11 +3741,11 @@ parse_metadata_val(const char *data, size_t sz, size_t *len)
 		 * and should stop.
 		 */
 
-		if (0 == startws && ':' == data[i])
+		if (startws == 0 && data[i] == ':')
 			break;
 
 		peek++;
-		if ('\n' != data[i]) 
+		if (data[i] != '\n') 
 			continue;
 
 		/*
@@ -3758,13 +3759,13 @@ parse_metadata_val(const char *data, size_t sz, size_t *len)
 
 		/* (Filtered out prior to calling parse_metdata().) */
 
-		assert( ! (i + 1 < sz && '\n' == data[i + 1]));
+		assert(!(i + 1 < sz && data[i + 1] == '\n'));
 
 		/* Check if the next line has leading whitespace. */
 
 		startws = i + 1 < sz &&
-			(' ' == data[i + 1] || 
-			 '\t' == data[i + 1]);
+			(data[i + 1] == ' ' || 
+			 data[i + 1] == '\t');
 	}
 
 	/* Last metadata in section. */
@@ -3781,9 +3782,10 @@ parse_metadata_val(const char *data, size_t sz, size_t *len)
 }
 
 /*
- * Parse MMD meta-data.
- * This consists of key-value pairs.
- * Returns zero if this is not metadata, non-zero of it is.
+ * Parse MMD key-value meta-data pairs.
+ * Store the output in the doc's "metaq", as we might be using the
+ * values for variable replacement elsewhere in this document.
+ * Returns 0 if this is not metadata, >0 of it is, <0 on failure.
  */
 static int
 parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
@@ -3817,10 +3819,13 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 	 */
 
 	for (pos = 0; pos < sz; ) {
-		m = xcalloc(1, sizeof(struct hbufn));
+		if ((m = calloc(1, sizeof(struct hbufn))) == NULL)
+			return -1;
 		TAILQ_INSERT_TAIL(&doc->metaq, m, entries);
 
-		n = pushnode(doc, LOWDOWN_META);
+		if ((n = pushnode(doc, LOWDOWN_META)) == NULL)
+			return -1;
+
 		m->key = &n->rndr_meta.key;
 
 		key = &data[pos];
@@ -3830,13 +3835,15 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 		keysz = i - pos;
 
 		/*
-		 * Start by normalising the key to have only lowercase
-		 * alphanumerics, -, and _.
-		 * The whitespace we discard; other characters we
-		 * replace with a question mark.
+		 * Normalise the key to lowercase alphanumerics, "-",
+		 * and "_", discard whitespace, replace other characters
+		 * with a question mark.
 		 */
 
 		n->rndr_meta.key.data = cp = malloc(keysz);
+		if (cp == NULL)
+			return -1;
+
 		for (j = 0; j < keysz; j++) {
 			if (isalnum((unsigned char)key[j]) ||
 			    '-' == key[j] || '_' == key[j]) {
@@ -3872,9 +3879,11 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 		}
 
 		val = parse_metadata_val(&data[i], sz - i, &valsz);
-		nn = pushnode(doc, LOWDOWN_NORMAL_TEXT);
+		if ((nn = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
+			return -1;
 		m->val = &nn->rndr_normal_text.text;
-		pushbuffer(&nn->rndr_normal_text.text, val, valsz);
+		if (!pushbuffer(&nn->rndr_normal_text.text, val, valsz))
+			return -1;
 		popnode(doc, nn);
 		popnode(doc, n);
 		pos = i + valsz + 1;
@@ -3899,7 +3908,7 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 	const char		*sv;
 	struct lowdown_node 	*n, *root = NULL;
 	struct hbufn		*m;
-	int			 rc = 0;
+	int			 c, rc = 0;
 
 	/* Initialise the parser. */
 
@@ -3947,8 +3956,10 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 			    data[end - 1] == '\n')
 				break;
 		}
-		if (parse_metadata(doc, sv, end - beg))
+		if ((c = parse_metadata(doc, sv, end - beg)) > 0)
 			beg = end + 1;
+		else if (c < 0)
+			goto out;
 	}
 
 	/* 
