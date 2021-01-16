@@ -351,7 +351,7 @@ __BEGIN_DECLS
 int	 lowdown_buf(const struct lowdown_opts *, 
 		const char *, size_t,
 		char **, size_t *, struct lowdown_metaq *);
-void	 lowdown_buf_diff(const struct lowdown_opts *, 
+int	 lowdown_buf_diff(const struct lowdown_opts *, 
 		const char *, size_t, const char *, size_t,
 		char **, size_t *, struct lowdown_metaq *);
 int	 lowdown_file(const struct lowdown_opts *, 
