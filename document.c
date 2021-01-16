@@ -3893,36 +3893,32 @@ struct lowdown_node *
 lowdown_doc_parse(struct lowdown_doc *doc,
 	size_t *maxn, const char *data, size_t size)
 {
-	static const char 	 UTF8_BOM[] = {0xEF, 0xBB, 0xBF};
+	static const char 	 UTF8_BOM[] = { 0xEF, 0xBB, 0xBF };
 	struct lowdown_buf	*text;
 	size_t		 	 beg, end;
-	int		 	 footnotes_enabled;
 	const char		*sv;
-	struct lowdown_node 	*n, *root;
+	struct lowdown_node 	*n, *root = NULL;
 	struct hbufn		*m;
+	int			 rc = 0;
+
+	/* Initialise the parser. */
 
 	doc->depth = 0;
 	doc->current = NULL;
 	doc->in_link_body = 0;
-
-	text = hbuf_new(64);
-	root = pushnode(doc, LOWDOWN_ROOT);
-
-	/*
-	 * Preallocate enough space for our buffer to avoid expanding
-	 * while copying.
-	 */
-
-	hbuf_grow(text, size);
-
-	/* Reset the references table. */
-
+	doc->footnotesz = 0;
 	TAILQ_INIT(&doc->metaq);
 	TAILQ_INIT(&doc->refq);
 	TAILQ_INIT(&doc->footnotes);
 
-	doc->footnotesz = 0;
-	footnotes_enabled = doc->ext_flags & LOWDOWN_FOOTNOTES;
+	if ((text = hbuf_new(64)) == NULL)
+		goto out;
+	if ((root = pushnode(doc, LOWDOWN_ROOT)) == NULL)
+		goto out;
+
+	/* XXX: is this necessary? */
+
+	hbuf_grow(text, size);
 
 	/*
 	 * Skip a possible UTF-8 BOM, even though the Unicode standard
@@ -3933,30 +3929,35 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 	if (size >= 3 && memcmp(data, UTF8_BOM, 3) == 0)
 		beg += 3;
 
+	if ((n = pushnode(doc, LOWDOWN_DOC_HEADER)) == NULL)
+		goto out;
+
 	/*
 	 * Zeroth pass: see if we should collect metadata.
 	 * Only do so if we're toggled to look for metadata.
 	 * (Only parse if we must.)
 	 */
 
-	n = pushnode(doc, LOWDOWN_DOC_HEADER);
-
-	if (LOWDOWN_METADATA & doc->ext_flags &&
-	    beg < size - 1 && isalnum((unsigned char)data[beg])) {
+	if ((doc->ext_flags & LOWDOWN_METADATA) &&
+	    beg < size - 1 && 
+	    isalnum((unsigned char)data[beg])) {
 		sv = &data[beg];
 		for (end = beg + 1; end < size; end++) {
-			if ('\n' == data[end] &&
-			    '\n' == data[end - 1])
+			if (data[end] == '\n' &&
+			    data[end - 1] == '\n')
 				break;
 		}
 		if (parse_metadata(doc, sv, end - beg))
 			beg = end + 1;
 	}
 
-	/* First pass: looking for references, copying everything else. */
+	/* 
+	 * First pass: looking for references and footnotes, copying
+	 * everything else. 
+	 */
 
 	while (beg < size)
-		if (footnotes_enabled &&
+		if ((doc->ext_flags & LOWDOWN_FOOTNOTES) &&
 		    is_footnote(doc, data, beg, size, &end))
 			beg = end;
 		else if (is_ref(doc, data, beg, size, &end))
@@ -3984,9 +3985,12 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 			beg = end;
 		}
 
-	/* Second pass: actual rendering. */
-
 	popnode(doc, n);
+
+	/* 
+	 * Second pass (after header): rendering the document body and
+	 * footnotes.
+	 */
 
 	if (text->size) {
 		/* Adding a final newline if not already present. */
@@ -3996,29 +4000,37 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 		parse_block(doc, text->data, text->size);
 	}
 
-	/* Footnotes. */
-
-	if (footnotes_enabled)
+	if (doc->ext_flags & LOWDOWN_FOOTNOTES)
 		parse_footnote_list(doc);
-	n = pushnode(doc, LOWDOWN_DOC_FOOTER);
+
+	/* FIXME: this node isn't necessary. */
+
+	if ((n = pushnode(doc, LOWDOWN_DOC_FOOTER)) == NULL)
+		goto out;
 	popnode(doc, n);
 
-	/* Clean-up. */
-
+	rc = 1;
+out:
 	hbuf_free(text);
 	free_link_refs(&doc->refq);
 	free_footnote_refs(&doc->footnotes);
+
+	/* The contents of these hbufs have been copied elsewhere. */
 
 	while ((m = TAILQ_FIRST(&doc->metaq)) != NULL) {
 		TAILQ_REMOVE(&doc->metaq, m, entries);
 		free(m);
 	}
 
-	if (maxn != NULL)
-		*maxn = doc->nodes;
-
-	popnode(doc, root);
-	assert(doc->depth == 0);
+	if (rc) {
+		if (maxn != NULL)
+			*maxn = doc->nodes;
+		popnode(doc, root);
+		assert(doc->depth == 0);
+	} else {
+		lowdown_node_free(root);
+		root = NULL;
+	}
 	return root;
 }
 
