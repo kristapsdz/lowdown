@@ -103,26 +103,26 @@ struct 	lowdown_doc {
 };
 
 /*
- * Function pointer to render active chars.
- * Returns the number of chars taken care of.
- * "data" is the pointer of the beginning of the span.
- * "offset" is the number of valid chars before data.
+ * Function pointer to render active chars, where "data" is the pointer
+ * of the beginning of the span and "offset" is the number of valid
+ * chars before data.
+ * Returns the number of chars taken care of, or <0 on failure.
  */
-typedef size_t (*char_trigger)(struct lowdown_doc *, char *, size_t, size_t);
+typedef ssize_t (*char_trigger)(struct lowdown_doc *, char *, size_t, size_t);
 
-static size_t char_emphasis(struct lowdown_doc *, char *, size_t, size_t);
-static size_t char_linebreak(struct lowdown_doc *, char *, size_t, size_t);
-static size_t char_codespan(struct lowdown_doc *, char *, size_t, size_t);
-static size_t char_escape(struct lowdown_doc *, char *, size_t, size_t);
-static size_t char_entity(struct lowdown_doc *, char *, size_t, size_t);
-static size_t char_langle_tag(struct lowdown_doc *, char *, size_t, size_t);
-static size_t char_autolink_url(struct lowdown_doc *, char *, size_t, size_t);
-static size_t char_autolink_email(struct lowdown_doc *, char *, size_t, size_t);
-static size_t char_autolink_www(struct lowdown_doc *, char *, size_t, size_t);
-static size_t char_link(struct lowdown_doc *, char *, size_t, size_t);
-static size_t char_image(struct lowdown_doc *, char *, size_t, size_t);
-static size_t char_superscript(struct lowdown_doc *, char *, size_t, size_t);
-static size_t char_math(struct lowdown_doc *, char *, size_t, size_t);
+static ssize_t char_emphasis(struct lowdown_doc *, char *, size_t, size_t);
+static ssize_t char_linebreak(struct lowdown_doc *, char *, size_t, size_t);
+static ssize_t char_codespan(struct lowdown_doc *, char *, size_t, size_t);
+static ssize_t char_escape(struct lowdown_doc *, char *, size_t, size_t);
+static ssize_t char_entity(struct lowdown_doc *, char *, size_t, size_t);
+static ssize_t char_langle_tag(struct lowdown_doc *, char *, size_t, size_t);
+static ssize_t char_autolink_url(struct lowdown_doc *, char *, size_t, size_t);
+static ssize_t char_autolink_email(struct lowdown_doc *, char *, size_t, size_t);
+static ssize_t char_autolink_www(struct lowdown_doc *, char *, size_t, size_t);
+static ssize_t char_link(struct lowdown_doc *, char *, size_t, size_t);
+static ssize_t char_image(struct lowdown_doc *, char *, size_t, size_t);
+static ssize_t char_superscript(struct lowdown_doc *, char *, size_t, size_t);
+static ssize_t char_math(struct lowdown_doc *, char *, size_t, size_t);
 
 enum markdown_char_t {
 	MD_CHAR_NONE = 0,
@@ -142,7 +142,7 @@ enum markdown_char_t {
 	MD_CHAR_MATH
 };
 
-static char_trigger markdown_char_ptrs[] = {
+static const char_trigger markdown_char_ptrs[] = {
 	NULL,
 	&char_emphasis,
 	&char_codespan,
@@ -600,9 +600,12 @@ parse_inline(struct lowdown_doc *doc, char *data, size_t size)
 			break;
 
 		i = end;
-		end = markdown_char_ptrs[
+		rc = markdown_char_ptrs[
 			active_char[(unsigned char)data[end]]]
 			(doc, data + i, i - consumed, size - i);
+		if (rc < 0)
+			return 0;
+		end = rc;
 
 		/* Check if no action from the callback. */
 
@@ -959,7 +962,7 @@ parse_math(struct lowdown_doc *doc, char *data, size_t offset,
 /* 
  * Single and double emphasis parsing.
  */
-static size_t
+static ssize_t
 char_emphasis(struct lowdown_doc *doc,
 	char *data, size_t offset, size_t size)
 {
@@ -1009,7 +1012,7 @@ char_emphasis(struct lowdown_doc *doc,
 /* 
  * '\n' preceded by two spaces (assuming linebreak != 0) 
  */
-static size_t
+static ssize_t
 char_linebreak(struct lowdown_doc *doc,
 	char *data, size_t offset, size_t size)
 {
@@ -1048,7 +1051,7 @@ char_linebreak(struct lowdown_doc *doc,
 /* 
  * '`' parsing a code span (assuming codespan != 0) 
  */
-static size_t
+static ssize_t
 char_codespan(struct lowdown_doc *doc,
 	char *data, size_t offset, size_t size)
 {
@@ -1103,7 +1106,7 @@ char_codespan(struct lowdown_doc *doc,
 /*
  * '\\' backslash escape
  */
-static size_t
+static ssize_t
 char_escape(struct lowdown_doc *doc,
 	char *data, size_t offset, size_t size)
 {
@@ -1158,7 +1161,7 @@ char_escape(struct lowdown_doc *doc,
  * '&' escaped when it doesn't belong to an entity 
  * Valid entities are assumed to be anything matching &#?[A-Za-z0-9]+;
  */
-static size_t
+static ssize_t
 char_entity(struct lowdown_doc *doc,
 	char *data, size_t offset, size_t size)
 {
@@ -1185,7 +1188,7 @@ char_entity(struct lowdown_doc *doc,
 /* 
  * '<' when tags or autolinks are allowed.
  */
-static size_t
+static ssize_t
 char_langle_tag(struct lowdown_doc *doc,
 	char *data, size_t offset, size_t size)
 {
@@ -1230,7 +1233,7 @@ char_langle_tag(struct lowdown_doc *doc,
 		return end;
 }
 
-static size_t
+static ssize_t
 char_autolink_www(struct lowdown_doc *doc,
 	char *data, size_t offset, size_t size)
 {
@@ -1278,7 +1281,7 @@ char_autolink_www(struct lowdown_doc *doc,
 /*
  * FIXME: merge with char_autolink_url().
  */
-static size_t
+static ssize_t
 char_autolink_email(struct lowdown_doc *doc,
 	char *data, size_t offset, size_t size)
 {
@@ -1315,7 +1318,7 @@ char_autolink_email(struct lowdown_doc *doc,
 	return link_len;
 }
 
-static size_t
+static ssize_t
 char_autolink_url(struct lowdown_doc *doc,
 	char *data, size_t offset, size_t size)
 {
@@ -1352,7 +1355,7 @@ char_autolink_url(struct lowdown_doc *doc,
 	return link_len;
 }
 
-static size_t
+static ssize_t
 char_image(struct lowdown_doc *doc,
 	char *data, size_t offset, size_t size)
 {
@@ -1372,7 +1375,7 @@ char_image(struct lowdown_doc *doc,
 /* 
  * '[': parsing a link, footnote, metadata, or image.
  */
-static size_t
+static ssize_t
 char_link(struct lowdown_doc *doc,
 	char *data, size_t offset, size_t size)
 {
@@ -1776,7 +1779,7 @@ cleanup:
 	return ret ? i : 0;
 }
 
-static size_t
+static ssize_t
 char_superscript(struct lowdown_doc *doc,
 	char *data, size_t offset, size_t size)
 {
@@ -1808,7 +1811,7 @@ char_superscript(struct lowdown_doc *doc,
 	return (sup_start == 2) ? sup_len + 1 : sup_len;
 }
 
-static size_t
+static ssize_t
 char_math(struct lowdown_doc *doc,
 	char *data, size_t offset, size_t size)
 {
