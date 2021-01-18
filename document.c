@@ -966,48 +966,47 @@ static ssize_t
 char_emphasis(struct lowdown_doc *doc,
 	char *data, size_t offset, size_t size)
 {
-	char c = data[0];
-	size_t ret;
+	char	 c = data[0];
+	ssize_t	 ret;
 
 	if (doc->ext_flags & LOWDOWN_NOINTEM) 
 		if (offset > 0 && !xisspace(data[-1]) && 
 		    data[-1] != '>' && data[-1] != '(')
 			return 0;
 
-	if (size > 2 && data[1] != c) {
-		/* 
-		 * Spacing cannot follow an opening emphasis;
-		 * strikethrough and highlight only takes '~~'.
-		 */
-		if (c == '~' || c == '=' || xisspace(data[1]) || 
-		    (ret = parse_emph1(doc, 
-		     data + 1, size - 1, c)) == 0)
-			return 0;
+	/* 
+	 * Spacing cannot follow an opening emphasis: strikethrough and
+	 * highlight only takes '~~'.
+	 * FIXME: don't depend upon the "ret =" as the last part of an
+	 * "or" chain---it's hard to read.
+	 */
 
-		return ret + 1;
+	if (size > 2 && data[1] != c) {
+		if (c == '~' || c == '=' || xisspace(data[1]) || 
+		    (ret = parse_emph1
+		     (doc, data + 1, size - 1, c)) == 0)
+			return 0;
+		return ret > 0 ? ret + 1 : ret;
 	}
 
 	if (size > 3 && data[1] == c && data[2] != c) {
 		if (xisspace(data[2]) || 
-		    (ret = parse_emph2(doc, 
-		     data + 2, size - 2, c)) == 0)
+		    (ret = parse_emph2
+		     (doc, data + 2, size - 2, c)) == 0)
 			return 0;
-
-		return ret + 2;
+		return ret > 0 ? ret + 2 : ret;
 	}
 
 	if (size > 4 && data[1] == c && data[2] == c && data[3] != c) {
 		if (c == '~' || c == '=' || xisspace(data[3]) || 
-		    (ret = parse_emph3(doc, 
-		     data + 3, size - 3, c)) == 0)
+		    (ret = parse_emph3
+		     (doc, data + 3, size - 3, c)) == 0)
 			return 0;
-
-		return ret + 3;
+		return ret > 0 ? ret + 3 : ret;
 	}
 
 	return 0;
 }
-
 
 /* 
  * '\n' preceded by two spaces (assuming linebreak != 0) 
@@ -1025,9 +1024,9 @@ char_linebreak(struct lowdown_doc *doc,
 
 	/* Removing the last space from nodes. */
 
-	assert(NULL != doc->current);
+	assert(doc->current != NULL);
 	n = TAILQ_LAST(&doc->current->children, lowdown_nodeq);
-	assert(NULL != n && LOWDOWN_NORMAL_TEXT == n->type);
+	assert(n != NULL && LOWDOWN_NORMAL_TEXT == n->type);
 	b = &n->rndr_normal_text.text;
 
 	while (b->size && b->data[b->size - 1] == ' ')
@@ -1039,14 +1038,14 @@ char_linebreak(struct lowdown_doc *doc,
 	 */
 
 	for (w = 1; w < size; w++)
-		if (' ' != data[w])
+		if (data[w] != ' ')
 			break;
 
-	n = pushnode(doc, LOWDOWN_LINEBREAK);
+	if ((n = pushnode(doc, LOWDOWN_LINEBREAK)) == NULL)
+		return -1;
 	popnode(doc, n);
 	return w;
 }
-
 
 /* 
  * '`' parsing a code span (assuming codespan != 0) 
@@ -1056,8 +1055,8 @@ char_codespan(struct lowdown_doc *doc,
 	char *data, size_t offset, size_t size)
 {
 	struct lowdown_buf	 work;
-	size_t	 		 end, nb = 0, i, f_begin, f_end;
 	struct lowdown_node 	*n;
+	size_t	 		 end, nb = 0, i, f_begin, f_end;
 
 	memset(&work, 0, sizeof(struct lowdown_buf));
 
@@ -1089,13 +1088,15 @@ char_codespan(struct lowdown_doc *doc,
 
 	/* Real code span. */
 
-	n = pushnode(doc, LOWDOWN_CODESPAN);
+	if ((n = pushnode(doc, LOWDOWN_CODESPAN)) == NULL)
+		return -1;
 
 	if (f_begin < f_end) {
 		work.data = data + f_begin;
 		work.size = f_end - f_begin;
-		pushbuffer(&n->rndr_codespan.text,
-			work.data, work.size);
+		if (!pushbuffer(&n->rndr_codespan.text, 
+		    work.data, work.size))
+			return -1;
 	} 
 
 	popnode(doc, n);
@@ -1114,6 +1115,7 @@ char_escape(struct lowdown_doc *doc,
 		"\\`*_{}[]()#+-.!:|&<>^~=\"$";
 	struct lowdown_buf	 work;
 	size_t		 	 w;
+	ssize_t		 	 ret;
 	const char		*end;
 	struct lowdown_node 	*n;
 
@@ -1125,32 +1127,40 @@ char_escape(struct lowdown_doc *doc,
 		    size > 2 &&
 		    (data[2] == '(' || data[2] == '[')) {
 			end = (data[2] == '[') ? "\\\\]" : "\\\\)";
-			w = parse_math(doc, data, offset,
+			ret = parse_math(doc, data, offset,
 				size, end, 3, data[2] == '[');
-			if (w)
-				return w;
+			if (ret != 0)
+				return ret;
 		}
+
+		/* Swallow leading white-space of next line. */
 
 		if (LOWDOWN_COMMONMARK & doc->ext_flags &&
 		    data[1] == '\n') {
-			/* Swallow leading white-space of next line. */
 			for (w = 2; w < size; w++)
-				if (' ' != data[w])
+				if (data[w] != ' ')
 					break;
 			n = pushnode(doc, LOWDOWN_LINEBREAK);
+			if (n == NULL)
+				return -1;
 			popnode(doc, n);
 			return w;
 		}
 
 		if (strchr(escape_chars, data[1]) == NULL)
 			return 0;
-
-		n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
-		pushbuffer(&n->rndr_normal_text.text, data + 1, 1);
+		if ((n = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
+			return -1;
+		if (!pushbuffer
+		    (&n->rndr_normal_text.text, data + 1, 1))
+			return -1;
 		popnode(doc, n);
 	} else if (size == 1) {
-		n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
-		pushbuffer(&n->rndr_normal_text.text, data, 1);
+		if ((n = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
+			return -1;
+		if (!pushbuffer
+		    (&n->rndr_normal_text.text, data, 1))
+			return -1;
 		popnode(doc, n);
 	}
 
@@ -1171,7 +1181,7 @@ char_entity(struct lowdown_doc *doc,
 	if (end < size && data[end] == '#')
 		end++;
 
-	while (end < size && isalnum(data[end]))
+	while (end < size && isalnum((unsigned char)data[end]))
 		end++;
 
 	if (end < size && data[end] == ';')
@@ -1179,8 +1189,10 @@ char_entity(struct lowdown_doc *doc,
 	else
 		return 0; /* lone '&' */
 
-	n = pushnode(doc, LOWDOWN_ENTITY);
-	pushbuffer(&n->rndr_entity.text, data, end);
+	if ((n = pushnode(doc, LOWDOWN_ENTITY)) == NULL)
+		return -1;
+	if (!pushbuffer(&n->rndr_entity.text, data, end))
+		return -1;
 	popnode(doc, n);
 	return end;
 }
@@ -1212,25 +1224,30 @@ char_langle_tag(struct lowdown_doc *doc,
 			unscape_text(u_link, &work);
 
 			n = pushnode(doc, LOWDOWN_LINK_AUTO);
+			if (n == NULL)
+				return -1;
 			n->rndr_autolink.type = altype;
-			pushbuffer(&n->rndr_autolink.link, 
-				u_link->data, u_link->size);
-			pushbuffer(&n->rndr_autolink.text, 
-				u_link->data, u_link->size);
+			if (!pushbuffer(&n->rndr_autolink.link, 
+			    u_link->data, u_link->size))
+				return -1;
+			if (!pushbuffer(&n->rndr_autolink.text, 
+			    u_link->data, u_link->size))
+				return -1;
 			popnode(doc, n);
 			hbuf_free(u_link);
 		} else {
 			n = pushnode(doc, LOWDOWN_RAW_HTML);
-			pushbuffer(&n->rndr_raw_html.text, data, end);
+			if (n == NULL)
+				return -1;
+			if (!pushbuffer(&n->rndr_raw_html.text, 
+			    data, end))
+				return -1;
 			popnode(doc, n);
 		}
 		ret = 1;
 	}
 
-	if (!ret) 
-		return 0;
-	else 
-		return end;
+	return !ret ? 0 : end;
 }
 
 static ssize_t
@@ -1263,12 +1280,16 @@ char_autolink_www(struct lowdown_doc *doc,
 				n->rndr_normal_text.text.size = 0;
 		}
 
-		n = pushnode(doc, LOWDOWN_LINK);
-		pushbuffer(&n->rndr_link.link, 
-			link_url->data, link_url->size);
-		nn = pushnode(doc, LOWDOWN_NORMAL_TEXT);
-		pushbuffer(&n->rndr_normal_text.text, 
-			link->data, link->size);
+		if ((n = pushnode(doc, LOWDOWN_LINK)) == NULL)
+			return -1;
+		if (!pushbuffer(&n->rndr_link.link, 
+		    link_url->data, link_url->size))
+			return -1;
+		if ((nn = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
+			return -1;
+		if (!pushbuffer(&n->rndr_normal_text.text, 
+		    link->data, link->size))
+			return -1;
 		popnode(doc, nn);
 		popnode(doc, n);
 		hbuf_free(link_url);
@@ -1307,10 +1328,12 @@ char_autolink_email(struct lowdown_doc *doc,
 				n->rndr_normal_text.text.size = 0;
 		}
 
-		n = pushnode(doc, LOWDOWN_LINK_AUTO);
+		if ((n = pushnode(doc, LOWDOWN_LINK_AUTO)) == NULL)
+			return -1;
 		n->rndr_autolink.type = HALINK_EMAIL;
-		pushbuffer(&n->rndr_autolink.link, 
-			link->data, link->size);
+		if (!pushbuffer(&n->rndr_autolink.link, 
+		    link->data, link->size))
+			return -1;
 		popnode(doc, n);
 	}
 
@@ -1344,10 +1367,12 @@ char_autolink_url(struct lowdown_doc *doc,
 				n->rndr_normal_text.text.size = 0;
 		}
 
-		n = pushnode(doc, LOWDOWN_LINK_AUTO);
+		if ((n = pushnode(doc, LOWDOWN_LINK_AUTO)) == NULL)
+			return -1;
 		n->rndr_autolink.type = HALINK_NORMAL;
-		pushbuffer(&n->rndr_autolink.link, 
-			link->data, link->size);
+		if (!pushbuffer(&n->rndr_autolink.link, 
+		    link->data, link->size))
+			return -1;
 		popnode(doc, n);
 	}
 
@@ -1359,17 +1384,13 @@ static ssize_t
 char_image(struct lowdown_doc *doc,
 	char *data, size_t offset, size_t size)
 {
-	size_t	 ret;
+	ssize_t	 ret;
 
 	if (size < 2 || data[1] != '[') 
 		return 0;
 
 	ret = char_link(doc, data + 1, offset + 1, size - 1);
-
-	if (!ret) 
-		return 0;
-
-	return ret + 1;
+	return ret <= 0 ? ret : ret + 1;
 }
 
 /* 
@@ -1396,10 +1417,10 @@ char_link(struct lowdown_doc *doc,
 
 	is_img = offset && data[-1] == '!' && 
 		!is_escaped(data - offset, offset - 1);
-	is_footnote = (doc->ext_flags & LOWDOWN_FOOTNOTES && 
-			data[1] == '^');
-	is_metadata = (doc->ext_flags & LOWDOWN_METADATA && 
-			data[1] == '%');
+	is_footnote = (doc->ext_flags & LOWDOWN_FOOTNOTES) && 
+			data[1] == '^';
+	is_metadata = (doc->ext_flags & LOWDOWN_METADATA) && 
+			data[1] == '%';
 
 	/* Looking for the matching closing bracket. */
 
