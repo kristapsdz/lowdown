@@ -228,12 +228,16 @@ popnode(struct lowdown_doc *doc, const struct lowdown_node *n)
 	doc->current = doc->current->parent;
 }
 
-static void
+/*
+ * Remove the backslash from a text sequence.
+ * Return zero on failure (memory), non-zero on success.
+ */
+static int
 unscape_text(struct lowdown_buf *ob, struct lowdown_buf *src)
 {
-	size_t	 i = 0, org;
+	size_t	 i, org;
 
-	while (i < src->size) {
+	for (i = 0; i < src->size; i += 2) {
 		org = i;
 		while (i < src->size && src->data[i] != '\\')
 			i++;
@@ -242,8 +246,9 @@ unscape_text(struct lowdown_buf *ob, struct lowdown_buf *src)
 		if (i + 1 >= src->size)
 			break;
 		hbuf_putc(ob, src->data[i + 1]);
-		i += 2;
 	}
+
+	return 1;
 }
 
 static struct link_ref *
@@ -345,8 +350,9 @@ countspaces(const char *data, size_t offset, size_t size, size_t maxlen)
  * Replace all spacing characters in data with spaces.
  * As a special case, this collapses a newline with the previous space,
  * if possible.
+ * Return zero on failure (memory), non-zero on success.
  */
-static void
+static int
 replace_spacing(struct lowdown_buf *ob, const char *data, size_t size)
 {
 	size_t	 i, mark;
@@ -360,9 +366,11 @@ replace_spacing(struct lowdown_buf *ob, const char *data, size_t size)
 		hbuf_put(ob, data + mark, i - mark);
 		if (i >= size)
 			break;
-		if (!(i > 0 && data[i-1] == ' '))
+		if (!(i > 0 && data[i - 1] == ' '))
 			hbuf_putc(ob, ' ');
 	}
+
+	return 1;
 }
 
 /*
@@ -1221,7 +1229,8 @@ char_langle_tag(struct lowdown_doc *doc,
 			u_link = hbuf_new(64);
 			work.data = data + 1;
 			work.size = end - 2;
-			unscape_text(u_link, &work);
+			if (!unscape_text(u_link, &work))
+				return -1;
 
 			n = pushnode(doc, LOWDOWN_LINK_AUTO);
 			if (n == NULL)
@@ -1460,24 +1469,24 @@ char_link(struct lowdown_doc *doc,
 		if (fr != NULL && !fr->is_used) {
 			n = pushnode(doc, LOWDOWN_FOOTNOTE_REF);
 			if (n == NULL)
-				return -1;
+				goto err;
 			fr->num = ++doc->footnotesz;
 			fr->is_used = 1;
 			n->rndr_footnote_ref.num = fr->num;
 		} else if (fr != NULL && fr->is_used) {
 			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 			if (n == NULL)
-				return -1;
+				goto err;
 			if (!pushbuffer(&n->rndr_normal_text.text, 
 			    data, txt_e + 1))
-				return -1;
+				goto err;
 		} else {
 			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 			if (n == NULL)
-				return -1;
+				goto err;
 			if (!pushbuffer(&n->rndr_normal_text.text, 
 			    data, txt_e + 1))
-				return -1;
+				goto err;
 		}
 
 		popnode(doc, n);
@@ -1506,11 +1515,11 @@ char_link(struct lowdown_doc *doc,
 			if (m->val != NULL) {
 				n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 				if (n == NULL)
-					return -1;
+					goto err;
 				if (!pushbuffer
 				    (&n->rndr_normal_text.text,
 				     m->val->data, m->val->size))
-					return -1;
+					goto err;
 				popnode(doc, n);
 			}
 			break;
@@ -1695,9 +1704,10 @@ again:
 
 		/* Finding the link_ref. */
 
-		if (link_b == link_e)
-			replace_spacing(idp, data + 1, txt_e - 1);
-		else
+		if (link_b == link_e) {
+			if (!replace_spacing(idp, data + 1, txt_e - 1))
+				goto err;
+		} else
 			hbuf_put(idp, data + link_b, link_e - link_b);
 
 		lr = find_link_ref(&doc->refq, idp->data, idp->size);
@@ -1717,7 +1727,8 @@ again:
 
 		/* Crafting the id. */
 
-		replace_spacing(idp, data + 1, txt_e - 1);
+		if (!replace_spacing(idp, data + 1, txt_e - 1))
+			goto err;
 
 		/* Finding the link_ref. */
 
@@ -1737,7 +1748,7 @@ again:
 
 	n = pushnode(doc, is_img ? LOWDOWN_IMAGE : LOWDOWN_LINK);
 	if (n == NULL)
-		return -1;
+		goto err;
 
 	/* 
 	 * Building content: img alt is kept, only link content is
@@ -1752,7 +1763,7 @@ again:
 			 */
 			doc->in_link_body = 1;
 			if (!parse_inline(doc, data + 1, txt_e - 1))
-				return -1;
+				goto err;
 			doc->in_link_body = 0;
 		} else {
 			content = hbuf_new(64);
@@ -1762,7 +1773,8 @@ again:
 
 	if (link) {
 		u_link = hbuf_new(64);
-		unscape_text(u_link, link);
+		if (!unscape_text(u_link, link))
+			goto err;
 	}
 
 	/* Calling the relevant rendering function. */
@@ -1770,28 +1782,31 @@ again:
 	if (is_img) {
 		if (u_link != NULL && !pushbuffer
 		    (&n->rndr_image.link, u_link->data, u_link->size))
-			return -1;
+			goto err;
 		if (title != NULL && !pushbuffer
 		    (&n->rndr_image.title, title->data, title->size))
-			return -1;
+			goto err;
 		if (dims != NULL && !pushbuffer
 		    (&n->rndr_image.dims, dims->data, dims->size))
-			return -1;
+			goto err;
 		if (content != NULL && !pushbuffer
 		    (&n->rndr_image.alt, content->data, content->size))
-			return -1;
+			goto err;
 		ret = 1;
 	} else {
 		if (u_link != NULL && !pushbuffer
 		    (&n->rndr_link.link, u_link->data, u_link->size))
-			return -1;
+			goto err;
 		if (title != NULL && !pushbuffer
 		    (&n->rndr_link.title, title->data, title->size))
-			return -1;
+			goto err;
 		ret = 1;
 	}
-	popnode(doc, n);
 
+	popnode(doc, n);
+	goto cleanup;
+err:
+	ret = -1;
 cleanup:
 	hbuf_free(linkp);
 	hbuf_free(titlep);
@@ -3830,10 +3845,14 @@ is_ref(struct lowdown_doc *doc, const char *data,
 	return 1;
 }
 
-static void 
+/*
+ * Replace tabs with 4 spaces.
+ * Return zero on failure (memory), non-zero on success.
+ */
+static int 
 expand_tabs(struct lowdown_buf *ob, const char *line, size_t size)
 {
-	size_t  i = 0, tab = 0, org;
+	size_t  i, tab = 0, org;
 
 	/* 
 	 * This code makes two assumptions:
@@ -3845,19 +3864,16 @@ expand_tabs(struct lowdown_buf *ob, const char *line, size_t size)
 	 * characters should be skipped but are not.)
 	 */
 
-	while (i < size) {
+	for (i = 0; i < size; i++) {
 		org = i;
-
 		while (i < size && line[i] != '\t') {
 			/* ignore UTF-8 continuation bytes */
 			if ((line[i] & 0xc0) != 0x80)
 				tab++;
 			i++;
 		}
-
 		if (i > org)
 			hbuf_put(ob, line + org, i - org);
-
 		if (i >= size)
 			break;
 
@@ -3865,9 +3881,9 @@ expand_tabs(struct lowdown_buf *ob, const char *line, size_t size)
 			hbuf_putc(ob, ' '); 
 			tab++;
 		} while (tab % 4);
-
-		i++;
 	}
+
+	return 1;
 }
 
 struct lowdown_doc *
@@ -4212,8 +4228,9 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 
 		/* Adding the line body if present. */
 
-		if (end > beg)
-			expand_tabs(text, data + beg, end - beg);
+		if (end > beg &&
+		    !expand_tabs(text, data + beg, end - beg))
+			goto out;
 
 		/* Add one \n per newline. */
 
