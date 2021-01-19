@@ -40,10 +40,14 @@ The renderer type in
 .Fa opts
 is ignored.
 .Pp
-The returned renderer must be freed with a call to
-.Xr lowdown_html_free 3 .
 It may be used with multiple invocations of
 .Xr lowdown_html_rndr 3 .
+.Sh RETURN VALUES
+Returns a pointer to the renderer or
+.Dv NULL
+on memory failure.
+The returned pointer must be freed with
+.Xr lowdown_html_free 3 .
 .Sh EXAMPLES
 The following assumes the the string
 .Va buf

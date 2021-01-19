@@ -1166,13 +1166,14 @@ lowdown_html_rndr(struct lowdown_buf *ob,
 void *
 lowdown_html_new(const struct lowdown_opts *opts)
 {
-	struct html *st;
+	struct html	*p;
 
-	st = xcalloc(1, sizeof(struct html));
+	if ((p = calloc(1, sizeof(struct html))) == NULL)
+		return NULL;
 
-	TAILQ_INIT(&st->headers_used);
-	st->flags = NULL == opts ? 0 : opts->oflags;
-	return st;
+	TAILQ_INIT(&p->headers_used);
+	p->flags = opts == NULL ? 0 : opts->oflags;
+	return p;
 }
 
 void
@@ -1181,7 +1182,10 @@ lowdown_html_free(void *arg)
 	struct html	*st = arg;
 	struct hentry	*hentry;
 
-	while (NULL != (hentry = TAILQ_FIRST(&st->headers_used))) {
+	if (st == NULL)
+		return;
+
+	while ((hentry = TAILQ_FIRST(&st->headers_used)) != NULL) {
 		TAILQ_REMOVE(&st->headers_used, hentry, entries);
 		free(hentry->str);
 		free(hentry);
