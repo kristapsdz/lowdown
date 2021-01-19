@@ -52,7 +52,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 	size_t			 maxn;
 	enum lowdown_type	 t;
 	struct lowdown_node	*n = NULL;
-	int			 rc = 0;
+	int			 rc = 0, c;
 
 	t = opts == NULL ? LOWDOWN_HTML : opts->type;
 
@@ -72,8 +72,10 @@ lowdown_buf(const struct lowdown_opts *opts,
 	case LOWDOWN_GEMINI:
 		if ((rndr = lowdown_gemini_new(opts)) == NULL)
 			goto err;
-		lowdown_gemini_rndr(ob, metaq, rndr, n);
+		c = lowdown_gemini_rndr(ob, metaq, rndr, n);
 		lowdown_gemini_free(rndr);
+		if (!c)
+			goto err;
 		break;
 	case LOWDOWN_HTML:
 		rndr = lowdown_html_new(opts);
@@ -174,7 +176,7 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	struct lowdown_node 	*nnew = NULL, *nold = NULL, 
 				*ndiff = NULL;
 	size_t			 maxnew, maxold, maxn;
-	int			 rc = 0;
+	int			 rc = 0, c;
 
 	t = opts == NULL ? LOWDOWN_HTML : opts->type;
 
@@ -204,8 +206,10 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	case LOWDOWN_GEMINI:
 		if ((rndr = lowdown_gemini_new(opts)) == NULL)
 			goto err;
-		lowdown_gemini_rndr(ob, metaq, rndr, ndiff);
+		c = lowdown_gemini_rndr(ob, metaq, rndr, ndiff);
 		lowdown_gemini_free(rndr);
+		if (!c)
+			goto err;
 		break;
 	case LOWDOWN_HTML:
 		rndr = lowdown_html_new(opts);

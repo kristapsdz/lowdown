@@ -1,6 +1,6 @@
 /*	$Id$ */
 /*
- * Copyright (c) 2020 Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) 2020--2021 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -65,7 +65,7 @@ struct gemini {
 /*
  * Forward declaration.
  */
-static void
+static int
 rndr(struct lowdown_buf *, struct lowdown_metaq *, 
 	struct gemini *, const struct lowdown_node *);
 
@@ -185,12 +185,12 @@ rndr_entity(struct lowdown_buf *buf, int32_t val)
  * Render the key and value, then store the results in our "mq"
  * conditional to it existing.
  */
-static void
+static int
 rndr_meta(struct gemini *gemini, struct lowdown_buf *out,
 	const struct lowdown_node *n, struct lowdown_metaq *mq)
 {
 	ssize_t				 last_blank;
-	struct lowdown_buf		*metatmp;
+	struct lowdown_buf		*tmp = NULL;
 	struct lowdown_meta		*m;
 	const struct lowdown_node	*child;
 
@@ -199,7 +199,7 @@ rndr_meta(struct gemini *gemini, struct lowdown_buf *out,
 	rndr_buf(gemini, out, n, gemini->tmp);
 
 	if (mq == NULL)
-		return;
+		return 1;
 
 	/*
 	 * Manually render the children of the meta into a
@@ -210,16 +210,32 @@ rndr_meta(struct gemini *gemini, struct lowdown_buf *out,
 
 	last_blank = gemini->last_blank;
 	gemini->last_blank = -1;
-	metatmp = hbuf_new(128);
-	m = xcalloc(1, sizeof(struct lowdown_meta));
+
+	if ((tmp = hbuf_new(128)) == NULL)
+		goto err;
+	if ((m = calloc(1, sizeof(struct lowdown_meta))) == NULL)
+		goto err;
 	TAILQ_INSERT_TAIL(mq, m, entries);
-	m->key = xstrndup(n->rndr_meta.key.data,
+
+	m->key = strndup(n->rndr_meta.key.data,
 		n->rndr_meta.key.size);
+	if (m->key == NULL)
+		goto err;
+
 	TAILQ_FOREACH(child, &n->children, entries)
-		rndr(metatmp, mq, gemini, child);
-	m->value = xstrndup(metatmp->data, metatmp->size);
-	hbuf_free(metatmp);
+		if (!rndr(tmp, mq, gemini, child))
+			goto err;
+
+	m->value = strndup(tmp->data, tmp->size);
+	if (m->value == NULL)
+		goto err;
+
+	hbuf_free(tmp);
 	gemini->last_blank = last_blank;
+	return 1;
+err:
+	hbuf_free(tmp);
+	return 0;
 }
 
 static void
@@ -242,7 +258,7 @@ rndr_flush_linkq(struct gemini *gemini, struct lowdown_buf *out)
 	}
 }
 
-static void
+static int
 rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	struct gemini *p, const struct lowdown_node *n)
 {
@@ -381,7 +397,8 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		p->last_blank = -1;
 		break;
 	case LOWDOWN_META:
-		rndr_meta(p, ob, n, mq);
+		if (!rndr_meta(p, ob, n, mq))
+			return 0;
 		break;
 	case LOWDOWN_SUPERSCRIPT:
 		HBUF_PUTSL(p->tmp, "^");
@@ -394,7 +411,8 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	/* Descend into children. */
 
 	TAILQ_FOREACH(child, &n->children, entries)
-		rndr(ob, mq, p, child);
+		if (!rndr(ob, mq, p, child))
+			return 0;
 
 	/* Output non-child or trailing content. */
 
@@ -440,7 +458,8 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		if (IS_STANDALONE_LINK(n, prev) ||
 		    (p->flags & LOWDOWN_GEMINI_LINK_IN))
 			break;
-		l = xcalloc(1, sizeof(struct link));
+		if ((l = calloc(1, sizeof(struct link))) == NULL)
+			return 0;
 		l->n = n;
 		l->id = ++p->linkqsz;
 		TAILQ_INSERT_TAIL(&p->linkq, l, entries);
@@ -527,16 +546,17 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		HBUF_PUTSL(ob, "\n");
 		p->last_blank = 2;
 	}
+
+	return 1;
 }
 
-void
+int
 lowdown_gemini_rndr(struct lowdown_buf *ob,
 	struct lowdown_metaq *mq, void *arg, 
 	const struct lowdown_node *n)
 {
-	struct gemini	*p = arg;
 
-	rndr(ob, mq, p, n);
+	return rndr(ob, mq, (struct gemini *)arg, n);
 }
 
 void *

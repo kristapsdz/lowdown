@@ -1,6 +1,6 @@
 .\"	$Id$
 .\"
-.\" Copyright (c) 2020 Kristaps Dzonsons <kristaps@bsd.lv>
+.\" Copyright (c) 2020--2021 Kristaps Dzonsons <kristaps@bsd.lv>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -58,8 +58,9 @@ if ((out = lowdown_buf_new(256)) == NULL)
   err(1, NULL);
 if ((rndr = lowdown_gemini_new(NULL)) == NULL)
   err(1, NULL);
+if (!lowdown_gemini_rndr(out, NULL, rndr, n))
+  err(1, NULL);
 
-lowdown_gemini_rndr(out, NULL, rndr, n);
 fwrite(out->data, 1, out->size, stdout);
 
 lowdown_gemini_free(rndr);

@@ -1,6 +1,6 @@
 /*	$Id$ */
 /*
- * Copyright (c) 2017--2020 Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) 2017--2021 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -390,7 +390,7 @@ void 	 lowdown_html_rndr(struct lowdown_buf *,
 
 void	 lowdown_gemini_free(void *);
 void	*lowdown_gemini_new(const struct lowdown_opts *);
-void 	 lowdown_gemini_rndr(struct lowdown_buf *,
+int 	 lowdown_gemini_rndr(struct lowdown_buf *,
 		struct lowdown_metaq *, void *, 
 		const struct lowdown_node *);
 
