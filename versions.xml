@@ -945,4 +945,26 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.7.9</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2021-01-11">2021-01-11</time>
+		</header>
+		<aside>
+			<p>
+				Convert all internal functions to return an error code on memory
+				allocation failure.
+				Prior to this, these functions had a chance of exiting and printing
+				failure to stderr.
+				Now, this is left as the responsibility of the front-end.
+			</p>
+			<p>
+				There's no significant API change except that all renderers return a
+				value.
+				The only API that has changed is the tree renderer, which is
+				generally only used for debugging anyway.
+			</p>
+		</aside>
+	</article>
 </articles>

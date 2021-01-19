@@ -1148,7 +1148,7 @@ rndr_meta_multi(struct lowdown_buf *ob, const char *b, const char *env)
 	}
 }
 
-static void
+static int
 rndr_meta(struct lowdown_buf *ob,
 	const struct lowdown_buf *content, 
 	struct lowdown_metaq *mq,
@@ -1156,11 +1156,17 @@ rndr_meta(struct lowdown_buf *ob,
 {
 	struct lowdown_meta	*m;
 
-	m = xcalloc(1, sizeof(struct lowdown_meta));
+	if ((m = calloc(1, sizeof(struct lowdown_meta))) == NULL)
+		return 0;
 	TAILQ_INSERT_TAIL(mq, m, entries);
-	m->key = xstrndup(n->rndr_meta.key.data,
+
+	m->key = strndup(n->rndr_meta.key.data,
 		n->rndr_meta.key.size);
-	m->value = xstrndup(content->data, content->size);
+	if (m->key == NULL)
+		return 0;
+	m->value = strndup(content->data, content->size);
+	if (m->value == NULL)
+		return 0;
 
 	if (strcasecmp(m->key, "baseheaderlevel") == 0) {
 		st->base_header_level = strtonum
@@ -1168,6 +1174,7 @@ rndr_meta(struct lowdown_buf *ob,
 		if (st->base_header_level == 0)
 			st->base_header_level = 1;
 	}
+	return 1;
 }
 
 static void
@@ -1303,19 +1310,20 @@ rndr_doc_header(struct lowdown_buf *ob,
  * buffer "ob".
  * Return whether we should remove nodes relative to "n".
  */
-static void
+static int
 rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq, 
 	struct nroff *st, struct lowdown_node *n)
 {
 	struct lowdown_node	*child, *next, *prev;
 	struct lowdown_buf	*tmp;
-	int			 pnln, keepnext = 1;
+	int			 pnln, keepnext = 1, rc = 0;
 	int32_t			 ent;
 	enum nfont		 fonts[NFONT__MAX];
 
 	assert(n != NULL);
 
-	tmp = hbuf_new(64);
+	if ((tmp = hbuf_new(64)) == NULL)
+		return 0;
 
 	memcpy(fonts, st->fonts, sizeof(fonts));
 
@@ -1349,7 +1357,8 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	}
 
 	TAILQ_FOREACH(child, &n->children, entries)
-		rndr(tmp, mq, st, child);
+		if (!rndr(tmp, mq, st, child))
+			goto out;
 
 	/* 
 	 * Compute whether the previous output does have a newline:
@@ -1408,7 +1417,8 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		rndr_doc_header(ob, mq, st);
 		break;
 	case LOWDOWN_META:
-		rndr_meta(ob, tmp, mq, n, st);
+		if (!rndr_meta(ob, tmp, mq, n, st))
+			goto out;
 		break;
 	case LOWDOWN_HEADER:
 		rndr_header(ob, tmp, &n->rndr_header, st);
@@ -1530,8 +1540,6 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		break;
 	}
 
-	hbuf_free(tmp);
-
 	/* 
 	 * Our processors might want to remove the current or next node,
 	 * so return that knowledge to the parent step.
@@ -1542,15 +1550,21 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		TAILQ_REMOVE(&next->parent->children, next, entries);
 		lowdown_node_free(next);
 	}
+
+	rc = 1;
+out:
+	hbuf_free(tmp);
+	return rc;
 }
 
-void
+int
 lowdown_nroff_rndr(struct lowdown_buf *ob,
 	struct lowdown_metaq *mq, void *arg, 
 	struct lowdown_node *n)
 {
 	struct nroff		*st = arg;
 	struct lowdown_metaq	 metaq;
+	int			 rc;
 
 	/* Temporary metaq if not provided. */
 
@@ -1562,28 +1576,34 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 	memset(st->fonts, 0, sizeof(st->fonts));
 	st->base_header_level = 1;
 	st->post_para = 0;
-	rndr(ob, mq, st, n);
+	rc = rndr(ob, mq, st, n);
 
 	/* Release temporary metaq. */
 
 	if (mq == &metaq)
 		lowdown_metaq_free(mq);
+
+	return rc;
 }
 
 void *
 lowdown_nroff_new(const struct lowdown_opts *opts)
 {
-	struct nroff 	*state;
+	struct nroff 	*p;
 
-	state = xcalloc(1, sizeof(struct nroff));
-	state->flags = opts != NULL ? opts->oflags : 0;
-	state->man = opts != NULL && opts->type == LOWDOWN_MAN;
-	return state;
+	if ((p = calloc(1, sizeof(struct nroff))) == NULL)
+		return NULL;
+
+	p->flags = opts != NULL ? opts->oflags : 0;
+	p->man = opts != NULL && opts->type == LOWDOWN_MAN;
+	return p;
 }
 
 void
-lowdown_nroff_free(void *data)
+lowdown_nroff_free(void *arg)
 {
 
-	free(data);
+	/* No need to check NULL: pass directly to free(). */
+
+	free(arg);
 }

@@ -1,6 +1,6 @@
 .\"	$Id$
 .\"
-.\" Copyright (c) 2017, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
+.\" Copyright (c) 2017--2021 Kristaps Dzonsons <kristaps@bsd.lv>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -26,7 +26,7 @@
 .In sys/queue.h
 .In stdio.h
 .In lowdown.h
-.Ft void
+.Ft int
 .Fo lowdown_nroff_rndr
 .Fa "struct lowdown_buf *out"
 .Fa "struct lowdown_metaq *mq"
@@ -61,6 +61,8 @@ The output consists of roff output using the
 or
 .Ar man
 macro packages.
+.Sh RETURN VALUES
+Returns zero on failure to allocate memory, non-zero on success.
 .Sh EXAMPLES
 The following assumes the the string
 .Va buf
@@ -70,25 +72,26 @@ consists of Markdown content.
 .Bd -literal -offset indent
 struct lowdown_buf *out;
 struct lowdown_doc *doc;
-void *rndr;
 struct lowdown_node *n;
+void *rndr;
 
 if ((doc = lowdown_doc_new(NULL)) == NULL)
-	err(1, NULL);
+  err(1, NULL);
 if ((n = lowdown_doc_parse(doc, NULL, buf, bsz)) == NULL)
-	err(1, NULL);
-lowdown_doc_free(doc);
-
+  err(1, NULL);
 if ((out = lowdown_buf_new(256)) == NULL)
-	err(1, NULL);
+  err(1, NULL);
 if ((rndr = lowdown_nroff_new(NULL)) == NULL)
-	err(1, NULL);
-lowdown_nroff_rndr(out, NULL, rndr, n);
-lowdown_nroff_free(rndr);
-lowdown_node_free(n);
+  err(1, NULL);
+if (!lowdown_nroff_rndr(out, NULL, rndr, n))
+  err(1, NULL);
 
 fwrite(out->data, 1, out->size, stdout);
+
+lowdown_nroff_free(rndr);
 lowdown_buf_free(out);
+lowdown_node_free(n);
+lowdown_doc_free(doc);
 .Ed
 .Sh SEE ALSO
 .Xr lowdown 3 ,

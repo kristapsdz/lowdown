@@ -95,9 +95,12 @@ lowdown_buf(const struct lowdown_opts *opts,
 		break;
 	case LOWDOWN_MAN:
 	case LOWDOWN_NROFF:
-		rndr = lowdown_nroff_new(opts);
-		lowdown_nroff_rndr(ob, metaq, rndr, n);
+		if ((rndr = lowdown_nroff_new(opts)) == NULL)
+			goto err;
+		c = lowdown_nroff_rndr(ob, metaq, rndr, n);
 		lowdown_nroff_free(rndr);
+		if (!c)
+			goto err;
 		break;
 	case LOWDOWN_TERM:
 		if ((rndr = lowdown_term_new(opts)) == NULL)
@@ -236,9 +239,12 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 		break;
 	case LOWDOWN_MAN:
 	case LOWDOWN_NROFF:
-		rndr = lowdown_nroff_new(opts);
-		lowdown_nroff_rndr(ob, metaq, rndr, ndiff);
+		if ((rndr = lowdown_nroff_new(opts)) == NULL)
+			goto err;
+		c = lowdown_nroff_rndr(ob, metaq, rndr, ndiff);
 		lowdown_nroff_free(rndr);
+		if (!c)
+			goto err;
 		break;
 	case LOWDOWN_TERM:
 		if ((rndr = lowdown_term_new(opts)) == NULL)

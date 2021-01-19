@@ -402,7 +402,7 @@ int 	 lowdown_term_rndr(struct lowdown_buf *,
 
 void	 lowdown_nroff_free(void *);
 void	*lowdown_nroff_new(const struct lowdown_opts *);
-void 	 lowdown_nroff_rndr(struct lowdown_buf *, 
+int 	 lowdown_nroff_rndr(struct lowdown_buf *, 
 		struct lowdown_metaq *, void *, 
 		struct lowdown_node *);
 
