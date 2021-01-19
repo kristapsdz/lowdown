@@ -86,9 +86,12 @@ lowdown_buf(const struct lowdown_opts *opts,
 			goto err;
 		break;
 	case LOWDOWN_LATEX:
-		rndr = lowdown_latex_new(opts);
-		lowdown_latex_rndr(ob, metaq, rndr, n);
+		if ((rndr = lowdown_latex_new(opts)) == NULL)
+			goto err;
+		c = lowdown_latex_rndr(ob, metaq, rndr, n);
 		lowdown_latex_free(rndr);
+		if (!c)
+			goto err;
 		break;
 	case LOWDOWN_MAN:
 	case LOWDOWN_NROFF:
@@ -225,9 +228,12 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 			goto err;
 		break;
 	case LOWDOWN_LATEX:
-		rndr = lowdown_latex_new(opts);
-		lowdown_latex_rndr(ob, metaq, rndr, ndiff);
+		if ((rndr = lowdown_latex_new(opts)) == NULL)
+			goto err;
+		c = lowdown_latex_rndr(ob, metaq, rndr, ndiff);
 		lowdown_latex_free(rndr);
+		if (!c)
+			goto err;
 		break;
 	case LOWDOWN_MAN:
 	case LOWDOWN_NROFF:

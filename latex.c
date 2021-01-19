@@ -1,6 +1,6 @@
 /*	$Id$ */
 /*
- * Copyright (c) 2020 Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) 2020--2021 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -599,7 +599,7 @@ rndr_doc_header(struct lowdown_buf *ob,
 	HBUF_PUTSL(ob, "\\maketitle\n");
 }
 
-static void
+static int
 rndr_meta(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
 	struct lowdown_metaq *mq,
@@ -607,11 +607,17 @@ rndr_meta(struct lowdown_buf *ob,
 {
 	struct lowdown_meta	*m;
 
-	m = xcalloc(1, sizeof(struct lowdown_meta));
+	if ((m = calloc(1, sizeof(struct lowdown_meta))) == NULL)
+		return 0;
 	TAILQ_INSERT_TAIL(mq, m, entries);
-	m->key = xstrndup(n->rndr_meta.key.data,
+
+	m->key = strndup(n->rndr_meta.key.data,
 		n->rndr_meta.key.size);
-	m->value = xstrndup(content->data, content->size);
+	if (m->key == NULL)
+		return 0;
+	m->value = strndup(content->data, content->size);
+	if (m->value == NULL)
+		return 0;
 
 	if (strcasecmp(m->key, "baseheaderlevel") == 0) {
 		st->base_header_level = strtonum
@@ -619,9 +625,11 @@ rndr_meta(struct lowdown_buf *ob,
 		if (st->base_header_level == 0)
 			st->base_header_level = 1;
 	}
+
+	return 1;
 }
 
-static void
+static int
 rndr(struct lowdown_buf *ob,
 	struct lowdown_metaq *mq, void *arg, 
 	const struct lowdown_node *n)
@@ -631,11 +639,14 @@ rndr(struct lowdown_buf *ob,
 	const struct lowdown_node	*child;
 	const char			*tex;
 	unsigned char			 texflags;
+	int				 rc = 0;
 
-	tmp = hbuf_new(64);
+	if ((tmp = hbuf_new(64)) == NULL)
+		return 0;
 
 	TAILQ_FOREACH(child, &n->children, entries)
-		rndr(tmp, mq, st, child);
+		if (!rndr(tmp, mq, st, child))
+			goto out;
 
 	/*
 	 * These elements can be put in either a block or an inline
@@ -666,7 +677,8 @@ rndr(struct lowdown_buf *ob,
 		rndr_doc_header(ob, mq, st);
 		break;
 	case LOWDOWN_META:
-		rndr_meta(ob, tmp, mq, n, st);
+		if (!rndr_meta(ob, tmp, mq, n, st))
+			goto out;
 		break;
 	case LOWDOWN_DOC_FOOTER:
 		rndr_doc_footer(ob, st);
@@ -774,16 +786,20 @@ rndr(struct lowdown_buf *ob,
 	    n->chng == LOWDOWN_CHNG_DELETE)
 		HBUF_PUTSL(ob, "}");
 
+	rc = 1;
+out:
 	hbuf_free(tmp);
+	return rc;
 }
 
-void
+int
 lowdown_latex_rndr(struct lowdown_buf *ob,
 	struct lowdown_metaq *mq, void *arg, 
 	const struct lowdown_node *n)
 {
 	struct latex		*st = arg;
 	struct lowdown_metaq	 metaq;
+	int			 rc;
 
 	/* Temporary metaq if not provided. */
 
@@ -793,12 +809,14 @@ lowdown_latex_rndr(struct lowdown_buf *ob,
 	}
 
 	st->base_header_level = 1;
-	rndr(ob, mq, st, n);
+	rc = rndr(ob, mq, st, n);
 
 	/* Release temporary metaq. */
 
 	if (mq == &metaq)
 		lowdown_metaq_free(mq);
+
+	return rc;
 }
 
 void *
@@ -806,7 +824,9 @@ lowdown_latex_new(const struct lowdown_opts *opts)
 {
 	struct latex	*p;
 
-	p = xcalloc(1, sizeof(struct latex));
+	if ((p = calloc(1, sizeof(struct latex))) == NULL)
+		return NULL;
+
 	p->oflags = opts == NULL ? 0 : opts->oflags;
 	return p;
 }
@@ -814,6 +834,8 @@ lowdown_latex_new(const struct lowdown_opts *opts)
 void
 lowdown_latex_free(void *arg)
 {
+
+	/* NULL is ok here. */
 
 	free(arg);
 }

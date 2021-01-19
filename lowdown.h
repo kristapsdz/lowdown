@@ -414,7 +414,7 @@ void 	 lowdown_tree_rndr(struct lowdown_buf *,
 
 void	 lowdown_latex_free(void *);
 void	*lowdown_latex_new(const struct lowdown_opts *);
-void 	 lowdown_latex_rndr(struct lowdown_buf *, 
+int 	 lowdown_latex_rndr(struct lowdown_buf *, 
 		struct lowdown_metaq *, void *, 
 		const struct lowdown_node *);
 
