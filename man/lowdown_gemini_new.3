@@ -40,12 +40,43 @@ The renderer type in
 .Fa opts
 is ignored.
 .Pp
-The returned renderer must be freed with a call to
-.Xr lowdown_gemini_free 3 .
 It may be used with multiple invocations of
 .Xr lowdown_gemini_rndr 3 .
 .Sh RETURN VALUES
-Always returns a valid pointer.
+Returns a pointer to the renderer or
+.Dv NULL
+on memory failure.
+The returned pointer must be freed with
+.Xr lowdown_gemini_free 3 .
+.Sh EXAMPLES
+The following assumes the the string
+.Va buf
+of length
+.Va bsz
+consists of Markdown content.
+.Bd -literal -offset indent
+struct lowdown_buf *out;
+struct lowdown_doc *doc;
+struct lowdown_node *n;
+void *rndr;
+
+if ((doc = lowdown_doc_new(NULL)) == NULL)
+  err(1, NULL);
+if ((n = lowdown_doc_parse(doc, NULL, buf, bsz)) == NULL)
+  err(1, NULL);
+if ((out = lowdown_buf_new(256)) == NULL)
+  err(1, NULL);
+if ((rndr = lowdown_gemini_new(NULL)) == NULL)
+  err(1, NULL);
+
+lowdown_gemini_rndr(out, NULL, rndr, n);
+fwrite(out->data, 1, out->size, stdout);
+
+lowdown_gemini_free(rndr);
+lowdown_buf_free(out);
+lowdown_node_free(n);
+lowdown_doc_free(doc);
+.Ed
 .Sh SEE ALSO
 .Xr lowdown 3 ,
 .Xr lowdown_gemini_free 3 ,

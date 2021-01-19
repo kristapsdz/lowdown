@@ -47,7 +47,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 	struct lowdown_metaq *metaq)
 {
 	struct lowdown_buf	*ob = NULL;
-	void			*renderer = NULL;
+	void			*rndr = NULL;
 	struct lowdown_doc	*doc;
 	size_t			 maxn;
 	enum lowdown_type	 t;
@@ -70,35 +70,36 @@ lowdown_buf(const struct lowdown_opts *opts,
 
 	switch (t) {
 	case LOWDOWN_GEMINI:
-		renderer = lowdown_gemini_new(opts);
-		lowdown_gemini_rndr(ob, metaq, renderer, n);
-		lowdown_gemini_free(renderer);
+		if ((rndr = lowdown_gemini_new(opts)) == NULL)
+			goto err;
+		lowdown_gemini_rndr(ob, metaq, rndr, n);
+		lowdown_gemini_free(rndr);
 		break;
 	case LOWDOWN_HTML:
-		renderer = lowdown_html_new(opts);
-		lowdown_html_rndr(ob, metaq, renderer, n);
-		lowdown_html_free(renderer);
+		rndr = lowdown_html_new(opts);
+		lowdown_html_rndr(ob, metaq, rndr, n);
+		lowdown_html_free(rndr);
 		break;
 	case LOWDOWN_LATEX:
-		renderer = lowdown_latex_new(opts);
-		lowdown_latex_rndr(ob, metaq, renderer, n);
-		lowdown_latex_free(renderer);
+		rndr = lowdown_latex_new(opts);
+		lowdown_latex_rndr(ob, metaq, rndr, n);
+		lowdown_latex_free(rndr);
 		break;
 	case LOWDOWN_MAN:
 	case LOWDOWN_NROFF:
-		renderer = lowdown_nroff_new(opts);
-		lowdown_nroff_rndr(ob, metaq, renderer, n);
-		lowdown_nroff_free(renderer);
+		rndr = lowdown_nroff_new(opts);
+		lowdown_nroff_rndr(ob, metaq, rndr, n);
+		lowdown_nroff_free(rndr);
 		break;
 	case LOWDOWN_TERM:
-		renderer = lowdown_term_new(opts);
-		lowdown_term_rndr(ob, metaq, renderer, n);
-		lowdown_term_free(renderer);
+		rndr = lowdown_term_new(opts);
+		lowdown_term_rndr(ob, metaq, rndr, n);
+		lowdown_term_free(rndr);
 		break;
 	case LOWDOWN_TREE:
-		renderer = lowdown_tree_new();
-		lowdown_tree_rndr(ob, metaq, renderer, n);
-		lowdown_tree_free(renderer);
+		rndr = lowdown_tree_new();
+		lowdown_tree_rndr(ob, metaq, rndr, n);
+		lowdown_tree_free(rndr);
 		break;
 	default:
 		break;
@@ -166,7 +167,7 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	struct lowdown_metaq *metaq)
 {
 	struct lowdown_buf 	*ob = NULL;
-	void 		 	*renderer = NULL;
+	void 		 	*rndr = NULL;
 	struct lowdown_doc 	*doc = NULL;
 	enum lowdown_type 	 t;
 	struct lowdown_node 	*nnew = NULL, *nold = NULL, 
@@ -200,35 +201,36 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 
 	switch (t) {
 	case LOWDOWN_GEMINI:
-		renderer = lowdown_gemini_new(opts);
-		lowdown_gemini_rndr(ob, metaq, renderer, ndiff);
-		lowdown_gemini_free(renderer);
+		if ((rndr = lowdown_gemini_new(opts)) == NULL)
+			goto err;
+		lowdown_gemini_rndr(ob, metaq, rndr, ndiff);
+		lowdown_gemini_free(rndr);
 		break;
 	case LOWDOWN_HTML:
-		renderer = lowdown_html_new(opts);
-		lowdown_html_rndr(ob, metaq, renderer, ndiff);
-		lowdown_html_free(renderer);
+		rndr = lowdown_html_new(opts);
+		lowdown_html_rndr(ob, metaq, rndr, ndiff);
+		lowdown_html_free(rndr);
 		break;
 	case LOWDOWN_LATEX:
-		renderer = lowdown_latex_new(opts);
-		lowdown_latex_rndr(ob, metaq, renderer, ndiff);
-		lowdown_latex_free(renderer);
+		rndr = lowdown_latex_new(opts);
+		lowdown_latex_rndr(ob, metaq, rndr, ndiff);
+		lowdown_latex_free(rndr);
 		break;
 	case LOWDOWN_MAN:
 	case LOWDOWN_NROFF:
-		renderer = lowdown_nroff_new(opts);
-		lowdown_nroff_rndr(ob, metaq, renderer, ndiff);
-		lowdown_nroff_free(renderer);
+		rndr = lowdown_nroff_new(opts);
+		lowdown_nroff_rndr(ob, metaq, rndr, ndiff);
+		lowdown_nroff_free(rndr);
 		break;
 	case LOWDOWN_TERM:
-		renderer = lowdown_term_new(opts);
-		lowdown_term_rndr(ob, metaq, renderer, ndiff);
-		lowdown_term_free(renderer);
+		rndr = lowdown_term_new(opts);
+		lowdown_term_rndr(ob, metaq, rndr, ndiff);
+		lowdown_term_free(rndr);
 		break;
 	case LOWDOWN_TREE:
-		renderer = lowdown_tree_new();
-		lowdown_tree_rndr(ob, metaq, renderer, ndiff);
-		lowdown_tree_free(renderer);
+		rndr = lowdown_tree_new();
+		lowdown_tree_rndr(ob, metaq, rndr, ndiff);
+		lowdown_tree_free(rndr);
 		break;
 	default:
 		break;

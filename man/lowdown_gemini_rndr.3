@@ -64,25 +64,25 @@ consists of Markdown content.
 .Bd -literal -offset indent
 struct lowdown_buf *out;
 struct lowdown_doc *doc;
-void *rndr;
 struct lowdown_node *n;
+void *rndr;
 
 if ((doc = lowdown_doc_new(NULL)) == NULL)
-	err(1, NULL);
+  err(1, NULL);
 if ((n = lowdown_doc_parse(doc, NULL, buf, bsz)) == NULL)
-	err(1, NULL);
-lowdown_doc_free(doc);
-
+  err(1, NULL);
 if ((out = lowdown_buf_new(256)) == NULL)
-	err(1, NULL);
+  err(1, NULL);
 if ((rndr = lowdown_gemini_new(NULL)) == NULL)
-	err(1, NULL);
-lowdown_gemini_rndr(out, NULL, rndr, n);
-lowdown_gemini_free(rndr);
-lowdown_node_free(n);
+  err(1, NULL);
 
+lowdown_gemini_rndr(out, NULL, rndr, n);
 fwrite(out->data, 1, out->size, stdout);
+
+lowdown_gemini_free(rndr);
 lowdown_buf_free(out);
+lowdown_node_free(n);
+lowdown_doc_free(doc);
 .Ed
 .Sh SEE ALSO
 .Xr lowdown 3 ,

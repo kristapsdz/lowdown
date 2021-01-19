@@ -544,10 +544,11 @@ lowdown_gemini_new(const struct lowdown_opts *opts)
 {
 	struct gemini	*p;
 
-	p = xcalloc(1, sizeof(struct gemini));
-	TAILQ_INIT(&p->linkq);
+	if ((p = calloc(1, sizeof(struct gemini))) == NULL)
+		return NULL;
 
-	p->flags = opts->oflags;
+	TAILQ_INIT(&p->linkq);
+	p->flags = opts != NULL ? opts->oflags : 0;
 
 	/* Only use one kind of flag output. */
 
@@ -555,7 +556,11 @@ lowdown_gemini_new(const struct lowdown_opts *opts)
 	    (p->flags & LOWDOWN_GEMINI_LINK_END))
 		p->flags &= ~LOWDOWN_GEMINI_LINK_IN;
 
-	p->tmp = hbuf_new(32);
+	if ((p->tmp = hbuf_new(32)) == NULL) {
+		free(p);
+		return NULL;
+	}
+
 	return p;
 }
 
