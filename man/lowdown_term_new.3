@@ -70,8 +70,9 @@ if ((out = lowdown_buf_new(256)) == NULL)
   err(1, NULL);
 if ((rndr = lowdown_term_new(NULL)) == NULL)
   err(1, NULL);
+if (!lowdown_term_rndr(out, NULL, rndr, n))
+  err(1, NULL);
 
-lowdown_term_rndr(out, NULL, rndr, n);
 fwrite(out->data, 1, out->size, stdout);
 
 lowdown_term_free(rndr);

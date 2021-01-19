@@ -396,7 +396,7 @@ int 	 lowdown_gemini_rndr(struct lowdown_buf *,
 
 void	 lowdown_term_free(void *);
 void	*lowdown_term_new(const struct lowdown_opts *);
-void 	 lowdown_term_rndr(struct lowdown_buf *,
+int 	 lowdown_term_rndr(struct lowdown_buf *,
 		struct lowdown_metaq *, void *, 
 		const struct lowdown_node *);
 

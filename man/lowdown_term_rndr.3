@@ -26,7 +26,7 @@
 .In sys/queue.h
 .In stdio.h
 .In lowdown.h
-.Ft void
+.Ft int
 .Fo lowdown_term_rndr
 .Fa "struct lowdown_buf *out"
 .Fa "struct lowdown_metaq *mq"
@@ -65,6 +65,8 @@ to a
 .Qq UTF-8
 character encoding prior to using this function, otherwise UTF-8
 sequences will not be properly recognised.
+.Sh RETURN VALUES
+Returns zero on failure to allocate memory, non-zero on success.
 .Sh EXAMPLES
 The following assumes the the string
 .Va buf
@@ -87,8 +89,9 @@ if ((out = lowdown_buf_new(256)) == NULL)
   err(1, NULL);
 if ((rndr = lowdown_term_new(NULL)) == NULL)
   err(1, NULL);
+if (!lowdown_term_rndr(out, NULL, rndr, n))
+  err(1, NULL);
 
-lowdown_term_rndr(out, NULL, rndr, n);
 fwrite(out->data, 1, out->size, stdout);
 
 lowdown_term_free(rndr);

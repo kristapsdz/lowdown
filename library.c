@@ -96,8 +96,10 @@ lowdown_buf(const struct lowdown_opts *opts,
 	case LOWDOWN_TERM:
 		if ((rndr = lowdown_term_new(opts)) == NULL)
 			goto err;
-		lowdown_term_rndr(ob, metaq, rndr, n);
+		c = lowdown_term_rndr(ob, metaq, rndr, n);
 		lowdown_term_free(rndr);
+		if (!c)
+			goto err;
 		break;
 	case LOWDOWN_TREE:
 		rndr = lowdown_tree_new();
@@ -230,8 +232,10 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	case LOWDOWN_TERM:
 		if ((rndr = lowdown_term_new(opts)) == NULL)
 			goto err;
-		lowdown_term_rndr(ob, metaq, rndr, ndiff);
+		c = lowdown_term_rndr(ob, metaq, rndr, ndiff);
 		lowdown_term_free(rndr);
+		if (!c)
+			goto err;
 		break;
 	case LOWDOWN_TREE:
 		rndr = lowdown_tree_new();
