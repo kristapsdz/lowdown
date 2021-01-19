@@ -1312,7 +1312,8 @@ lowdown_term_new(const struct lowdown_opts *opts)
 {
 	struct term	*p;
 
-	p = xcalloc(1, sizeof(struct term));
+	if ((p = calloc(1, sizeof(struct term))) == NULL)
+		return NULL;
 
 	/* Give us 80 columns by default. */
 
@@ -1320,7 +1321,11 @@ lowdown_term_new(const struct lowdown_opts *opts)
 	p->hmargin = opts == NULL ? 0 : opts->hmargin;
 	p->vmargin = opts == NULL ? 0 : opts->vmargin;
 	p->opts = opts == NULL ? 0 : opts->oflags;
-	p->tmp = hbuf_new(32);
+
+	if ((p->tmp = hbuf_new(32)) == NULL) {
+		free(p);
+		return NULL;
+	}
 	return p;
 }
 
