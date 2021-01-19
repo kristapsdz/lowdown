@@ -555,8 +555,23 @@ lowdown_gemini_rndr(struct lowdown_buf *ob,
 	struct lowdown_metaq *mq, void *arg, 
 	const struct lowdown_node *n)
 {
+	struct gemini	*p = arg;
+	struct link	*l;
+	int		 c;
 
-	return rndr(ob, mq, (struct gemini *)arg, n);
+	/* Set ourselves into a sane state. */
+
+	p->last_blank = 0;
+
+	c = rndr(ob, mq, p, n);
+
+	while ((l = TAILQ_FIRST(&p->linkq)) != NULL) {
+		TAILQ_REMOVE(&p->linkq, l, entries);
+		free(l);
+	}
+	p->linkqsz = 0;
+
+	return c;
 }
 
 void *
@@ -588,15 +603,9 @@ void
 lowdown_gemini_free(void *arg)
 {
 	struct gemini	*p = arg;
-	struct link	*l;
 	
 	if (p == NULL)
 		return;
-
-	while ((l = TAILQ_FIRST(&p->linkq)) != NULL) {
-		TAILQ_REMOVE(&p->linkq, l, entries);
-		free(l);
-	}
 
 	hbuf_free(p->tmp);
 	free(p);
