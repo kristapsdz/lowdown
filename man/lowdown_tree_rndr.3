@@ -1,6 +1,6 @@
 .\"	$Id$
 .\"
-.\" Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
+.\" Copyright (c) 2017, 2021 Kristaps Dzonsons <kristaps@bsd.lv>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -26,11 +26,9 @@
 .In sys/queue.h
 .In stdio.h
 .In lowdown.h
-.Ft void
+.Ft int
 .Fo lowdown_tree_rndr
 .Fa "struct lowdown_buf *out"
-.Fa "struct lowdown_metaq *mq"
-.Fa "void *arg"
 .Fa "const struct lowdown_node *n"
 .Fc
 .Sh DESCRIPTION
@@ -39,21 +37,18 @@ Renders a node tree
 created by
 .Xr lowdown_doc_parse 3
 or
-.Xr lowdown_diff 3
-using the debugging renderer
-.Fa arg
-as returned by
+.Xr lowdown_diff 3 .
 .Xr lowdown_tree_new 3 .
 The output is written into
 .Fa out ,
 which must be initialised and freed by the caller.
 .Pp
-The
-.Fa mq
-variable is ignored.
-.Pp
 The output consists of an UTF-8 tree.
 The format is not standardised and subject to change.
+.Pp
+Unlike other renderers,
+.Fn lowdown_tree_rndr
+accepts no options and thus has no context.
 .Sh EXAMPLES
 The following assumes the the string
 .Va buf
@@ -63,27 +58,23 @@ consists of Markdown content.
 .Bd -literal -offset indent
 struct lowdown_buf *out;
 struct lowdown_doc *doc;
-void *rndr;
 struct lowdown_node *n;
+void *rndr;
 
 if ((doc = lowdown_doc_new(NULL)) == NULL)
-	err(1, NULL);
+  err(1, NULL);
 if ((n = lowdown_doc_parse(doc, NULL, buf, bsz)) == NULL)
-	err(1, NULL);
-lowdown_doc_free(doc);
-
+  err(1, NULL);
 if ((out = lowdown_buf_new(256)) == NULL)
-	err(1, NULL);
-if ((rndr = lowdown_tree_new(NULL)) == NULL)
-	err(1, NULL);
-lowdown_tree_rndr(out, NULL, rndr, n);
-lowdown_tree_free(rndr);
-lowdown_node_free(n);
+  err(1, NULL);
+if (!lowdown_tree_rndr(out, n))
+  err(1, NULL);
 
 fwrite(out->data, 1, out->size, stdout);
+
 lowdown_buf_free(out);
+lowdown_node_free(n);
+lowdown_doc_free(doc);
 .Ed
 .Sh SEE ALSO
-.Xr lowdown 3 ,
-.Xr lowdown_tree_free 3 ,
-.Xr lowdown_tree_new 3
+.Xr lowdown 3

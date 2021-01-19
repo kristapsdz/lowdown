@@ -108,9 +108,8 @@ lowdown_buf(const struct lowdown_opts *opts,
 			goto err;
 		break;
 	case LOWDOWN_TREE:
-		rndr = lowdown_tree_new();
-		lowdown_tree_rndr(ob, metaq, rndr, n);
-		lowdown_tree_free(rndr);
+		if (!lowdown_tree_rndr(ob, n))
+			goto err;
 		break;
 	default:
 		break;
@@ -250,9 +249,8 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 			goto err;
 		break;
 	case LOWDOWN_TREE:
-		rndr = lowdown_tree_new();
-		lowdown_tree_rndr(ob, metaq, rndr, ndiff);
-		lowdown_tree_free(rndr);
+		if (!lowdown_tree_rndr(ob, ndiff))
+			goto err;
 		break;
 	default:
 		break;

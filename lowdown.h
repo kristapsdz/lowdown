@@ -406,10 +406,7 @@ void 	 lowdown_nroff_rndr(struct lowdown_buf *,
 		struct lowdown_metaq *, void *, 
 		struct lowdown_node *);
 
-void	 lowdown_tree_free(void *);
-void	*lowdown_tree_new(void);
-void 	 lowdown_tree_rndr(struct lowdown_buf *, 
-		struct lowdown_metaq *, void *, 
+int 	 lowdown_tree_rndr(struct lowdown_buf *, 
 		const struct lowdown_node *);
 
 void	 lowdown_latex_free(void *);

@@ -1,6 +1,6 @@
 /*	$Id$ */
 /*
- * Copyright (c) 2017, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) 2017--2021 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -90,7 +90,7 @@ rndr_short(struct lowdown_buf *ob, const struct lowdown_buf *b)
 		HBUF_PUTSL(ob, "...");
 }
 
-static void
+static int
 rndr(struct lowdown_buf *ob,
 	const struct lowdown_node *root, size_t indent)
 {
@@ -295,31 +295,25 @@ rndr(struct lowdown_buf *ob,
 		break;
 	}
 
-	tmp = hbuf_new(64);
+	if ((tmp = hbuf_new(64)) == NULL)
+		return 0;
+
 	TAILQ_FOREACH(n, &root->children, entries)
-		rndr(tmp, n, indent + 1);
+		if (!rndr(tmp, n, indent + 1)) {
+			hbuf_free(tmp);
+			return 0;
+		}
+
 	hbuf_putb(ob, tmp);
 	hbuf_free(tmp);
+	return 1;
 }
 
-void
+int
 lowdown_tree_rndr(struct lowdown_buf *ob,
-	struct lowdown_metaq *metaq, void *ref,
 	const struct lowdown_node *root)
 {
 
-	assert(ref == NULL);
-	rndr(ob, root, 0);
+	return rndr(ob, root, 0);
 }
 
-void *
-lowdown_tree_new(void)
-{
-
-	return NULL;
-}
-
-void
-lowdown_tree_free(void *arg)
-{
-}
