@@ -36,7 +36,7 @@ int		 hbuf_eq(const struct lowdown_buf *, const struct lowdown_buf *);
 int		 hbuf_streq(const struct lowdown_buf *, const char *);
 int		 hbuf_strprefix(const struct lowdown_buf *, const char *);
 void		 hbuf_free(struct lowdown_buf *);
-void		 hbuf_grow(struct lowdown_buf *, size_t);
+int		 hbuf_grow(struct lowdown_buf *, size_t);
 struct lowdown_buf *hbuf_clone(const struct lowdown_buf *, struct lowdown_buf *);
 struct lowdown_buf *hbuf_new(size_t) __attribute__((malloc));
 void		 hbuf_printf(struct lowdown_buf *, const char *, ...) 

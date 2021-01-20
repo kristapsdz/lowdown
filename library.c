@@ -284,8 +284,8 @@ lowdown_file(const struct lowdown_opts *opts, FILE *fin,
 
 	if ((bin = lowdown_buf_new(HBUF_START_BIG)) == NULL)
 		goto out;
-
-	hbuf_putf(bin, fin);
+	if (!hbuf_putf(bin, fin))
+		goto out;
 
 	if (!lowdown_buf(opts,
 	    bin->data, bin->size, res, rsz, metaq))
@@ -308,9 +308,10 @@ lowdown_file_diff(const struct lowdown_opts *opts,
 		goto out;
 	if ((bold = lowdown_buf_new(HBUF_START_BIG)) == NULL)
 		goto out;
-
-	hbuf_putf(bold, fold);
-	hbuf_putf(bnew, fnew);
+	if (!hbuf_putf(bold, fold))
+		goto out;
+	if (!hbuf_putf(bnew, fnew))
+		goto out;
 
 	if (!lowdown_buf_diff(opts, 
 	    bnew->data, bnew->size, 

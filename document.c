@@ -204,7 +204,7 @@ pushbuffer(struct lowdown_buf *buf, const char *data, size_t datasz)
 	if (datasz) {
 		if ((buf->data = malloc(datasz)) == NULL)
 			return 0;
-		buf->size = buf->asize = datasz;
+		buf->size = buf->maxsize = datasz;
 		memcpy(buf->data, data, datasz);
 	}
 
@@ -354,7 +354,8 @@ replace_spacing(struct lowdown_buf *ob, const char *data, size_t size)
 {
 	size_t	 i, mark;
 
-	hbuf_grow(ob, size);
+	if (!hbuf_grow(ob, size))
+		return 0;
 
 	for (i = 0; ; i++) {
 		mark = i;
@@ -4215,12 +4216,10 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 
 	if ((text = hbuf_new(64)) == NULL)
 		goto out;
+	if (!hbuf_grow(text, size))
+		goto out;
 	if ((root = pushnode(doc, LOWDOWN_ROOT)) == NULL)
 		goto out;
-
-	/* XXX: is this necessary? */
-
-	hbuf_grow(text, size);
 
 	/*
 	 * Skip a possible UTF-8 BOM, even though the Unicode standard

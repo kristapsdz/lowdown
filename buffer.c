@@ -3,7 +3,7 @@
  * Copyright (c) 2008, Natacha Porté
  * Copyright (c) 2011, Vicent Martí
  * Copyright (c) 2014, Xavier Mendez, Devin Torres and the Hoedown authors
- * Copyright (c) 2016, Kristaps Dzonsons
+ * Copyright (c) 2016, 2021, Kristaps Dzonsons
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -39,7 +39,7 @@ hbuf_init(struct lowdown_buf *buf, size_t unit, int buffer_free)
 	assert(buf);
 
 	buf->data = NULL;
-	buf->size = buf->asize = 0;
+	buf->size = buf->maxsize = 0;
 	buf->unit = unit;
 	buf->buffer_free = buffer_free;
 }
@@ -60,10 +60,10 @@ hbuf_clone(const struct lowdown_buf *buf, struct lowdown_buf *v)
 		memcpy(v->data, buf->data, buf->size);
 	} 
 	v->size = buf->size;
-	v->asize = buf->asize;
+	v->maxsize = buf->maxsize;
 	v->unit = buf->unit;
 	v->buffer_free = buf->buffer_free;
-	return(v);
+	return v;
 }
 
 void
@@ -101,17 +101,13 @@ hbuf_eq(const struct lowdown_buf *buf1, const struct lowdown_buf *buf2)
 	       memcmp(buf1->data, buf2->data, buf1->size) == 0;
 }
 
-/* 
- * Allocate a new buffer.
- * FIXME: the "unit" value is stupid (see hbuf_grow()).
- * Always returns a valid pointer (ENOMEM aborts).
- */
 struct lowdown_buf *
 hbuf_new(size_t unit)
 {
 	struct lowdown_buf	*ret;
 
-	ret = xmalloc(sizeof(struct lowdown_buf));
+	if ((ret = malloc(sizeof(struct lowdown_buf))) == NULL)
+		return NULL;
 	hbuf_init(ret, unit, 1);
 	return ret;
 }
@@ -133,11 +129,10 @@ lowdown_buf_new(size_t unit)
 void
 hbuf_free(struct lowdown_buf *buf)
 {
-	if (NULL == buf) 
+
+	if (buf == NULL) 
 		return;
-
 	free(buf->data);
-
 	if (buf->buffer_free)
 		free(buf);
 }
@@ -149,44 +144,34 @@ lowdown_buf_free(struct lowdown_buf *buf)
 	hbuf_free(buf);
 }
 
-/* 
- * Increase the allocated size to the given value.
- * May not be NULL.
- * Always succeeds: ENOMEM will abort.
- * Note: "unit" must be defined (grow size).
- */
-void
+int
 hbuf_grow(struct lowdown_buf *buf, size_t neosz)
 {
-	size_t neoasz;
+	size_t	 neoasz;
+	void	*pp;
 
-	/* 
-	 * FIXME: this is a stupid assertion.
-	 * hbuf_new should have a default value that doesn't change
-	 * depending on whether we're a block/span, which is just a
-	 * useless micro optimisation.
-	 */
-	assert(buf && buf->unit);
-
-	if (buf->asize >= neosz)
-		return;
+	if (buf->maxsize >= neosz)
+		return 1;
 
 	/* FIXME: don't loop!  Use arithmetic! */
 
-	neoasz = buf->asize + buf->unit;
+	neoasz = buf->maxsize + buf->unit;
 	while (neoasz < neosz)
 		neoasz += buf->unit;
 
-	buf->data = xrealloc(buf->data, neoasz);
-	buf->asize = neoasz;
+	if ((pp = realloc(buf->data, neoasz)) == NULL)
+		return 0;
+	buf->data = pp;
+	buf->maxsize = neoasz;
+	return 1;
 }
 
 void
 hbuf_putb(struct lowdown_buf *buf, const struct lowdown_buf *b)
 {
 
-	if (b != NULL)
-		hbuf_put(buf, b->data, b->size);
+	assert(buf != NULL && b != NULL);
+	hbuf_put(buf, b->data, b->size);
 }
 
 /* 
@@ -197,12 +182,12 @@ hbuf_putb(struct lowdown_buf *buf, const struct lowdown_buf *b)
 void
 hbuf_put(struct lowdown_buf *buf, const char *data, size_t size)
 {
-	assert(buf && buf->unit);
+	assert(buf != NULL && buf->unit);
 
 	if (data == NULL || size == 0)
 		return;
 
-	if (buf->size + size > buf->asize)
+	if (buf->size + size > buf->maxsize)
 		hbuf_grow(buf, buf->size + size);
 
 	memcpy(buf->data + buf->size, data, size);
@@ -218,7 +203,7 @@ void
 hbuf_puts(struct lowdown_buf *buf, const char *str)
 {
 
-	assert(buf && str);
+	assert(buf != NULL && str != NULL);
 	hbuf_put(buf, str, strlen(str));
 }
 
@@ -232,28 +217,26 @@ hbuf_putc(struct lowdown_buf *buf, char c)
 {
 	assert(buf && buf->unit);
 
-	if (buf->size >= buf->asize)
+	if (buf->size >= buf->maxsize)
 		hbuf_grow(buf, buf->size + 1);
 
 	buf->data[buf->size] = c;
 	buf->size += 1;
 }
 
-/* 
- * Read from a file and append to a buffer, until EOF or error.
- * Returns ferror(3).
- */
 int
 hbuf_putf(struct lowdown_buf *buf, FILE *file)
 {
-	assert(buf && buf->unit);
 
+	assert(buf != NULL && buf->unit);
 	while (!(feof(file) || ferror(file))) {
-		hbuf_grow(buf, buf->size + buf->unit);
-		buf->size += fread(buf->data + buf->size, 1, buf->unit, file);
+		if (!hbuf_grow(buf, buf->size + buf->unit))
+			return 0;
+		buf->size += fread(buf->data + buf->size, 
+			1, buf->unit, file);
 	}
 
-	return ferror(file);
+	return ferror(file) == 0;
 }
 
 /* 
@@ -267,21 +250,21 @@ hbuf_printf(struct lowdown_buf *buf, const char *fmt, ...)
 
 	assert(buf && buf->unit);
 
-	if (buf->size >= buf->asize)
+	if (buf->size >= buf->maxsize)
 		hbuf_grow(buf, buf->size + 1);
 
 	va_start(ap, fmt);
-	n = vsnprintf(buf->data + buf->size, buf->asize - buf->size, fmt, ap);
+	n = vsnprintf(buf->data + buf->size, buf->maxsize - buf->size, fmt, ap);
 	va_end(ap);
 
 	if (n < 0)
 		return;
 
-	if ((size_t)n >= buf->asize - buf->size) {
+	if ((size_t)n >= buf->maxsize - buf->size) {
 		hbuf_grow(buf, buf->size + n + 1);
 
 		va_start(ap, fmt);
-		n = vsnprintf(buf->data + buf->size, buf->asize - buf->size, fmt, ap);
+		n = vsnprintf(buf->data + buf->size, buf->maxsize - buf->size, fmt, ap);
 		va_end(ap);
 	}
 

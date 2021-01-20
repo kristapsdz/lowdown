@@ -99,7 +99,7 @@ enum	lowdown_rndrt {
 struct	lowdown_buf {
 	char		*data;	/* actual character data */
 	size_t		 size;	/* size of the string */
-	size_t		 asize;	/* allocated size (0 = volatile) */
+	size_t		 maxsize; /* allocated size (0 = volatile) */
 	size_t		 unit;	/* realloc unit size (0 = read-only) */
 	int 		 buffer_free; /* obj should be freed */
 };
