@@ -50,7 +50,8 @@ struct lowdown_doc *doc;
 struct lowdown_node *n;
 void *rndr;
 
-setlocale(LC_CTYPE, "en_US.UTF-8");
+if (setlocale(LC_CTYPE, "en_US.UTF-8") == NULL)
+  err(1, NULL);
 
 if ((doc = lowdown_doc_new(NULL)) == NULL)
   err(1, NULL);
