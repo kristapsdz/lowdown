@@ -174,7 +174,7 @@ index.html README.html: template.xml
 		pdfroff -i -mspdf -t -k -Kutf8 > $@
 
 index.latex.pdf: index.md
-	./lowdown -s -Tlatex README.md >index.latex.latex
+	./lowdown -s -Tlatex index.md >index.latex.latex
 	pdflatex index.latex.latex
 
 index.mandoc.pdf: index.md
