@@ -36,27 +36,22 @@
 static void
 hbuf_init(struct lowdown_buf *buf, size_t unit, int buffer_free)
 {
-	assert(buf);
 
+	assert(buf != NULL);
 	buf->data = NULL;
 	buf->size = buf->maxsize = 0;
 	buf->unit = unit;
 	buf->buffer_free = buffer_free;
 }
 
-/*
- * Clone the buffer at "buf" into the one at "v".
- * The storage of "v" is externally managed.
- * This is a deep copy.
- * Always returns a valid pointer to "v".
- */
 struct lowdown_buf *
 hbuf_clone(const struct lowdown_buf *buf, struct lowdown_buf *v)
 {
 
 	v->data = NULL;
 	if (buf->size) {
-		v->data = xmalloc(buf->size);
+		if ((v->data = malloc(buf->size)) == NULL)
+			return NULL;
 		memcpy(v->data, buf->data, buf->size);
 	} 
 	v->size = buf->size;
@@ -112,9 +107,6 @@ hbuf_new(size_t unit)
 	return ret;
 }
 
-/*
- * Exported function name.
- */
 struct lowdown_buf *
 lowdown_buf_new(size_t unit)
 {
@@ -122,10 +114,6 @@ lowdown_buf_new(size_t unit)
 	return hbuf_new(unit);
 }
 
-/* 
- * Free the buffer.
- * Passing NULL is a noop.
- */
 void
 hbuf_free(struct lowdown_buf *buf)
 {
@@ -166,62 +154,51 @@ hbuf_grow(struct lowdown_buf *buf, size_t neosz)
 	return 1;
 }
 
-void
+int
 hbuf_putb(struct lowdown_buf *buf, const struct lowdown_buf *b)
 {
 
 	assert(buf != NULL && b != NULL);
-	hbuf_put(buf, b->data, b->size);
+	return hbuf_put(buf, b->data, b->size);
 }
 
-/* 
- * Append raw data to a buffer.
- * May not be NULL.
- * See hbuf_grow().
- */
-void
+int
 hbuf_put(struct lowdown_buf *buf, const char *data, size_t size)
 {
 	assert(buf != NULL && buf->unit);
 
 	if (data == NULL || size == 0)
-		return;
+		return 1;
 
-	if (buf->size + size > buf->maxsize)
-		hbuf_grow(buf, buf->size + size);
+	if (buf->size + size > buf->maxsize &&
+	    !hbuf_grow(buf, buf->size + size))
+		return 0;
 
 	memcpy(buf->data + buf->size, data, size);
 	buf->size += size;
+	return 1;
 }
 
-/* 
- * Append a nil-terminated string to a buffer.
- * Neither may be NULL.
- * See hbuf_put().
- */
-void
+int
 hbuf_puts(struct lowdown_buf *buf, const char *str)
 {
 
 	assert(buf != NULL && str != NULL);
-	hbuf_put(buf, str, strlen(str));
+	return hbuf_put(buf, str, strlen(str));
 }
 
-/* 
- * Append a single char to a buffer.
- * May not be NULL.
- * See hbuf_grow().
- */
-void
+int
 hbuf_putc(struct lowdown_buf *buf, char c)
 {
 	assert(buf && buf->unit);
 
-	if (buf->size >= buf->maxsize)
-		hbuf_grow(buf, buf->size + 1);
+	if (buf->size >= buf->maxsize &&
+	    !hbuf_grow(buf, buf->size + 1))
+		return 0;
 
 	buf->data[buf->size] = c;
 	buf->size += 1;
+	return 1;
 }
 
 int
@@ -239,37 +216,38 @@ hbuf_putf(struct lowdown_buf *buf, FILE *file)
 	return ferror(file) == 0;
 }
 
-/* 
- * Formatted printing to a buffer.
- */
-void
+int
 hbuf_printf(struct lowdown_buf *buf, const char *fmt, ...)
 {
-	va_list ap;
-	int n;
+	va_list	 ap;
+	int	 n;
 
-	assert(buf && buf->unit);
+	assert(buf != NULL && buf->unit);
 
-	if (buf->size >= buf->maxsize)
-		hbuf_grow(buf, buf->size + 1);
+	if (buf->size >= buf->maxsize &&
+	    !hbuf_grow(buf, buf->size + 1))
+		return 0;
 
 	va_start(ap, fmt);
-	n = vsnprintf(buf->data + buf->size, buf->maxsize - buf->size, fmt, ap);
+	n = vsnprintf(buf->data + buf->size,
+		buf->maxsize - buf->size, fmt, ap);
 	va_end(ap);
 
 	if (n < 0)
-		return;
+		return 0;
 
 	if ((size_t)n >= buf->maxsize - buf->size) {
-		hbuf_grow(buf, buf->size + n + 1);
-
+		if (!hbuf_grow(buf, buf->size + n + 1))
+			return 0;
 		va_start(ap, fmt);
-		n = vsnprintf(buf->data + buf->size, buf->maxsize - buf->size, fmt, ap);
+		n = vsnprintf(buf->data + buf->size,
+			buf->maxsize - buf->size, fmt, ap);
 		va_end(ap);
 	}
 
 	if (n < 0)
-		return;
+		return 0;
 
 	buf->size += n;
+	return 1;
 }

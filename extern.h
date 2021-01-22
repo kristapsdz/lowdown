@@ -39,13 +39,13 @@ void		 hbuf_free(struct lowdown_buf *);
 int		 hbuf_grow(struct lowdown_buf *, size_t);
 struct lowdown_buf *hbuf_clone(const struct lowdown_buf *, struct lowdown_buf *);
 struct lowdown_buf *hbuf_new(size_t) __attribute__((malloc));
-void		 hbuf_printf(struct lowdown_buf *, const char *, ...) 
+int		 hbuf_printf(struct lowdown_buf *, const char *, ...) 
 			__attribute__((format (printf, 2, 3)));
-void		 hbuf_put(struct lowdown_buf *, const char *, size_t);
-void		 hbuf_putb(struct lowdown_buf *, const struct lowdown_buf *);
-void		 hbuf_putc(struct lowdown_buf *, char);
+int		 hbuf_put(struct lowdown_buf *, const char *, size_t);
+int		 hbuf_putb(struct lowdown_buf *, const struct lowdown_buf *);
+int		 hbuf_putc(struct lowdown_buf *, char);
 int		 hbuf_putf(struct lowdown_buf *, FILE *);
-void		 hbuf_puts(struct lowdown_buf *, const char *);
+int		 hbuf_puts(struct lowdown_buf *, const char *);
 void		 hbuf_truncate(struct lowdown_buf *);
 
 #define 	 HBUF_PUTSL(output, literal) \
