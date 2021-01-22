@@ -354,22 +354,11 @@ diff(struct diff *d, diff_cmp cmp, size_t size,
 	struct onp_diff	*p;
 	int		 rc;
 
-	if (NULL == d)
-		return 0;
-
-	memset(d, 0, sizeof(struct diff));
-
 	p = onp_alloc(cmp, size, base1, nmemb1, base2, nmemb2);
 	if (NULL == p)
-		return -1;
+		return 0;
 
 	rc = onp_compose(p, d);
 	onp_free(p);
-
-	if (0 == rc) {
-		free(d->ses);
-		return -1;
-	}
-
-	return 1;
+	return rc;
 }

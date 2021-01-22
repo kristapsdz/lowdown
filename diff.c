@@ -395,21 +395,21 @@ optimality(struct xnode *xnew, struct xmap *xnewmap,
 	d = ceil(log(xnewmap->maxid) * 
 		xnew->weight / xnewmap->maxweight);
 
-	if (0 == d)
+	if (d == 0)
 		d = 1;
 	
 	/* FIXME: are we supposed to bound to "d"? */
 
-	while (NULL != xnew->node->parent &&
-	       NULL != xold->node->parent && i < d) {
+	while (xnew->node->parent != NULL &&
+	       xold->node->parent != NULL && i < d) {
 		xnew = &xnewmap->nodes[xnew->node->parent->id];
 		xold = &xoldmap->nodes[xold->node->parent->id];
-		if (NULL != xnew->match && xnew->match == xold->node) 
+		if (xnew->match != NULL && xnew->match == xold->node) 
 			opt++;
 		i++;
 	}
 
-	return(opt);
+	return opt;
 }
 
 /*
@@ -429,13 +429,12 @@ candidate(struct xnode *xnew, struct xmap *xnewmap,
 	size_t		 opt;
 	long long	 dnew, dold;
 
-	assert(NULL != xnew->node);
-	assert(NULL != xold->node);
+	assert(xnew->node != NULL);
+	assert(xold->node != NULL);
 
-	if (NULL == xnew->optmatch) {
+	if (xnew->optmatch == NULL) {
 		xnew->optmatch = xold->node;
-		xnew->opt = optimality
-			(xnew, xnewmap, xold, xoldmap);
+		xnew->opt = optimality(xnew, xnewmap, xold, xoldmap);
 		return;
 	}
 
@@ -472,22 +471,22 @@ match_eq(const struct lowdown_node *n1,
 {
 
 	if (n1->type != n2->type)
-		return(0);
+		return 0;
 
-	if (LOWDOWN_LINK == n1->type) {
+	if (n1->type == LOWDOWN_LINK) {
 		/*
 		 * Links have both contained nodes (for the alt text,
 		 * which can be nested) and also attributes.
 		 */
-		if ( ! hbuf_eq(&n1->rndr_link.link,
-			       &n2->rndr_link.link))
-			return(0);
-		if ( ! hbuf_eq(&n1->rndr_link.title,
-			       &n2->rndr_link.title))
-			return(0);
+		if (!hbuf_eq
+		    (&n1->rndr_link.link, &n2->rndr_link.link))
+			return 0;
+		if (!hbuf_eq
+		    (&n1->rndr_link.title, &n2->rndr_link.title))
+			return 0;
 	}
 
-	return(1);
+	return 1;
 }
 
 /*
@@ -497,11 +496,10 @@ static int
 match_singleton(const struct lowdown_node *n)
 {
 
-	if (NULL == n->parent)
-		return(1);
-
-	return(TAILQ_NEXT(n, entries) == 
-	       TAILQ_PREV(n, lowdown_nodeq, entries));
+	if (n->parent == NULL)
+		return 1;
+	return TAILQ_NEXT(n, entries) == 
+	       TAILQ_PREV(n, lowdown_nodeq, entries);
 }
 
 /*
@@ -522,18 +520,17 @@ match_up(struct xnode *xnew, struct xmap *xnewmap,
 
 	d = ceil(log(xnewmap->maxid) * 
 		xnew->weight / xnewmap->maxweight);
-	if (0 == d)
+	if (d == 0)
 		d = 1;
 
-	while (NULL != xnew->node->parent &&
-	       NULL != xold->node->parent && i < d) {
+	while (xnew->node->parent != NULL &&
+	       xold->node->parent != NULL && i < d) {
 		/* Are the "labels" the same? */
-		if ( ! match_eq
-		    (xnew->node->parent, xold->node->parent))
+		if (!match_eq(xnew->node->parent, xold->node->parent))
 			break;
 		xnew = &xnewmap->nodes[xnew->node->parent->id];
 		xold = &xoldmap->nodes[xold->node->parent->id];
-		if (NULL != xold->match || NULL != xnew->match)
+		if (xold->match != NULL || xnew->match != NULL)
 			break;
 		xnew->match = xold->node;
 		xold->match = xnew->node;
@@ -548,17 +545,16 @@ match_up(struct xnode *xnew, struct xmap *xnewmap,
 	 * This is an extension of the algorithm.
 	 */
 
-	while (NULL != xnew->node->parent &&
-	       NULL != xold->node->parent) {
-		if ( ! match_singleton(xnew->node) ||
-		     ! match_singleton(xold->node))
+	while (xnew->node->parent != NULL &&
+	       xold->node->parent != NULL) {
+		if (!match_singleton(xnew->node) ||
+		    !match_singleton(xold->node))
 			break;
-		if ( ! match_eq
-		    (xnew->node->parent, xold->node->parent))
+		if (!match_eq(xnew->node->parent, xold->node->parent))
 			break;
 		xnew = &xnewmap->nodes[xnew->node->parent->id];
 		xold = &xoldmap->nodes[xold->node->parent->id];
-		if (NULL != xold->match || NULL != xnew->match)
+		if (xold->match != NULL || xnew->match != NULL)
 			break;
 		xnew->match = xold->node;
 		xold->match = xnew->node;
@@ -576,8 +572,8 @@ match_down(struct xnode *xnew, struct xmap *xnewmap,
 {
 	struct lowdown_node *nnew, *nold;
 
-	assert(NULL == xnew->match);
-	assert(NULL == xold->match);
+	assert(xnew->match == NULL);
+	assert(xold->match == NULL);
 
 	xnew->match = xold->node;
 	xold->match = xnew->node;
@@ -585,7 +581,7 @@ match_down(struct xnode *xnew, struct xmap *xnewmap,
 	nnew = TAILQ_FIRST(&xnew->node->children);
 	nold = TAILQ_FIRST(&xold->node->children);
 
-	while (NULL != nnew) {
+	while (nnew != NULL) {
 		assert(NULL != nold);
 		xnew = &xnewmap->nodes[nnew->id];
 		xold = &xoldmap->nodes[nold->id];
@@ -607,15 +603,18 @@ static struct lowdown_node *
 node_clone(const struct lowdown_node *v, size_t id)
 {
 	struct lowdown_node	*n;
+	int			 rc = 1;
 
-	n = xcalloc(1, sizeof(struct lowdown_node));
+	if ((n = calloc(1, sizeof(struct lowdown_node))) == NULL)
+		return NULL;
+
 	TAILQ_INIT(&n->children);
 	n->type = v->type;
 	n->id = id;
 
 	switch (n->type) {
 	case LOWDOWN_META:
-		hbuf_clone(&v->rndr_meta.key,
+		rc = hbuf_clone(&v->rndr_meta.key, 
 			&n->rndr_meta.key);
 		break;
 	case LOWDOWN_LIST:
@@ -629,38 +628,38 @@ node_clone(const struct lowdown_node *v, size_t id)
 		n->rndr_header.level = v->rndr_header.level;
 		break;
 	case LOWDOWN_NORMAL_TEXT:
-		hbuf_clone(&v->rndr_normal_text.text,
+		rc = hbuf_clone(&v->rndr_normal_text.text,
 			&n->rndr_normal_text.text);
 		break;
 	case LOWDOWN_ENTITY:
-		hbuf_clone(&v->rndr_entity.text,
+		rc = hbuf_clone(&v->rndr_entity.text,
 			&n->rndr_entity.text);
 		break;
 	case LOWDOWN_LINK_AUTO:
-		hbuf_clone(&v->rndr_autolink.link,
-			&n->rndr_autolink.link);
-		hbuf_clone(&v->rndr_autolink.text,
+		rc = hbuf_clone(&v->rndr_autolink.link,
+			&n->rndr_autolink.link) &&
+		     hbuf_clone(&v->rndr_autolink.text,
 			&n->rndr_autolink.text);
 		n->rndr_autolink.type = v->rndr_autolink.type;
 		break;
 	case LOWDOWN_RAW_HTML:
-		hbuf_clone(&v->rndr_raw_html.text,
+		rc = hbuf_clone(&v->rndr_raw_html.text,
 			&n->rndr_raw_html.text);
 		break;
 	case LOWDOWN_LINK:
-		hbuf_clone(&v->rndr_link.link,
-			&n->rndr_link.link);
-		hbuf_clone(&v->rndr_link.title,
+		rc = hbuf_clone(&v->rndr_link.link,
+			&n->rndr_link.link) &&
+		     hbuf_clone(&v->rndr_link.title,
 			&n->rndr_link.title);
 		break;
 	case LOWDOWN_BLOCKCODE:
-		hbuf_clone(&v->rndr_blockcode.text,
-			&n->rndr_blockcode.text);
-		hbuf_clone(&v->rndr_blockcode.lang,
+		rc = hbuf_clone(&v->rndr_blockcode.text,
+			&n->rndr_blockcode.text) &&
+		     hbuf_clone(&v->rndr_blockcode.lang,
 			&n->rndr_blockcode.lang);
 		break;
 	case LOWDOWN_CODESPAN:
-		hbuf_clone(&v->rndr_codespan.text,
+		rc = hbuf_clone(&v->rndr_codespan.text,
 			&n->rndr_codespan.text);
 		break;
 	case LOWDOWN_TABLE_HEADER:
@@ -676,13 +675,13 @@ node_clone(const struct lowdown_node *v, size_t id)
 		/* Don't use footnote number: mutable. */
 		break;
 	case LOWDOWN_IMAGE:
-		hbuf_clone(&v->rndr_image.link,
-			&n->rndr_image.link);
-		hbuf_clone(&v->rndr_image.title,
-			&n->rndr_image.title);
-		hbuf_clone(&v->rndr_image.dims,
-			&n->rndr_image.dims);
-		hbuf_clone(&v->rndr_image.alt,
+		rc = hbuf_clone(&v->rndr_image.link,
+			&n->rndr_image.link) &&
+		     hbuf_clone(&v->rndr_image.title,
+			&n->rndr_image.title) &&
+		     hbuf_clone(&v->rndr_image.dims,
+			&n->rndr_image.dims) &&
+		     hbuf_clone(&v->rndr_image.alt,
 			&n->rndr_image.alt);
 		break;
 	case LOWDOWN_MATH_BLOCK:
@@ -690,14 +689,19 @@ node_clone(const struct lowdown_node *v, size_t id)
 			v->rndr_math.blockmode;
 		break;
 	case LOWDOWN_BLOCKHTML:
-		hbuf_clone(&v->rndr_blockhtml.text,
+		rc = hbuf_clone(&v->rndr_blockhtml.text,
 			&n->rndr_blockhtml.text);
 		break;
 	default:
 		break;
 	}
 
-	return(n);
+	if (!rc) {
+		lowdown_node_free(n);
+		n = NULL;
+	}
+
+	return n;
 }
 
 /*
@@ -711,15 +715,20 @@ node_clonetree(const struct lowdown_node *v, size_t *id)
 	struct lowdown_node *n, *nn;
 	const struct lowdown_node *vv;
 
-	n = node_clone(v, *id++);
+	if ((n = node_clone(v, *id++)) == NULL)
+		return NULL;
 
 	TAILQ_FOREACH(vv, &v->children, entries) {
-		nn = node_clonetree(vv, id);
-		nn->parent = n;
+		if ((nn = node_clonetree(vv, id)) == NULL)
+			goto out;
 		TAILQ_INSERT_TAIL(&n->children, nn, entries);
+		nn->parent = n;
 	}
 
-	return(n);
+	return n;
+out:
+	lowdown_node_free(n);
+	return NULL;
 }
 
 /*
@@ -743,10 +752,10 @@ node_countwords(const struct lowdown_node *n)
 	/* First go through word, then trailing space. */
 
 	while (i < sz) {
-		assert( ! isspace((unsigned char)cp[i]));
+		assert(!isspace((unsigned char)cp[i]));
 		words++;
 		while (i < sz &&
-		       ! isspace((unsigned char)cp[i]))
+		       !isspace((unsigned char)cp[i]))
 			i++;
 		while (i < sz && 
 		       isspace((unsigned char)cp[i]))
@@ -759,8 +768,9 @@ node_countwords(const struct lowdown_node *n)
 /*
  * Like node_countwords(), except dupping individual words into a
  * structure.
+ * Return zero on failure (memory), non-zero on success.
  */
-static void
+static int
 node_tokenise(const struct lowdown_node *n, 
 	struct sesnode *toks, size_t toksz, char **savep)
 {
@@ -769,11 +779,13 @@ node_tokenise(const struct lowdown_node *n,
 
 	*savep = NULL;
 
-	if (0 == toksz)
-		return;
+	if (toksz == 0)
+		return 1;
 
 	sz = n->rndr_normal_text.text.size;
-	*savep = cp = xmalloc(sz + 1);
+	*savep = cp = malloc(sz + 1);
+	if (cp == NULL)
+		return 0;
 	memcpy(cp, n->rndr_normal_text.text.data, sz);
 	cp[sz] = '\0';
 
@@ -790,11 +802,11 @@ node_tokenise(const struct lowdown_node *n,
 
 	while (i < sz) {
 		assert(words < toksz);
-		assert( ! isspace((unsigned char)cp[i]));
+		assert(!isspace((unsigned char)cp[i]));
 		toks[words].buf = &cp[i];
 		toks[words].bufsz = 0;
 		while (i < sz &&
-		       ! isspace((unsigned char)cp[i])) {
+		       !isspace((unsigned char)cp[i])) {
 			toks[words].bufsz++;
 			i++;
 		}
@@ -808,6 +820,7 @@ node_tokenise(const struct lowdown_node *n,
 		       isspace((unsigned char)cp[i]))
 			i++;
 	}
+	return 1;
 }
 
 static int
@@ -820,53 +833,77 @@ node_word_cmp(const void *p1, const void *p2)
 	return 0 == strncmp(l1->buf, l2->buf, l1->bufsz);
 }
 
-static void
+/*
+ * Return zero on failure (memory), non-zero on success.
+ */
+static int
 node_lcs(const struct lowdown_node *nold,
 	const struct lowdown_node *nnew,
 	struct lowdown_node *n, size_t *id)
 {
-	const struct sesnode *tmp;
-	struct lowdown_node *nn;
-	struct sesnode	*newtok, *oldtok;
-	char		*newtokbuf, *oldtokbuf;
-	size_t		 i, newtoksz, oldtoksz;
-	struct diff	 d;
+	const struct sesnode	*tmp;
+	struct lowdown_node	*nn;
+	struct sesnode		*newtok = NULL, *oldtok = NULL;
+	char			*newtokbuf = NULL, *oldtokbuf = NULL;
+	size_t			 i, newtoksz, oldtoksz;
+	struct diff		 d;
+	int			 rc = 0;
+
+	memset(&d, 0, sizeof(struct diff));
 
 	newtoksz = node_countwords(nnew);
 	oldtoksz = node_countwords(nold);
 
-	newtok = xcalloc(newtoksz, sizeof(struct sesnode));
-	oldtok = xcalloc(oldtoksz, sizeof(struct sesnode));
+	newtok = calloc(newtoksz, sizeof(struct sesnode));
+	if (newtok == NULL)
+		goto out;
+	oldtok = calloc(oldtoksz, sizeof(struct sesnode));
+	if (oldtok == NULL)
+		goto out;
 
-	node_tokenise(nnew, newtok, newtoksz, &newtokbuf);
-	node_tokenise(nold, oldtok, oldtoksz, &oldtokbuf);
+	if (!node_tokenise(nnew, newtok, newtoksz, &newtokbuf))
+		goto out;
+	if (!node_tokenise(nold, oldtok, oldtoksz, &oldtokbuf))
+		goto out;
 
-	diff(&d, node_word_cmp, sizeof(struct sesnode), 
-		oldtok, oldtoksz, newtok, newtoksz);
+	if (!diff(&d, node_word_cmp, sizeof(struct sesnode), 
+	    oldtok, oldtoksz, newtok, newtoksz))
+		goto out;
 
 	for (i = 0; i < d.sessz; i++) {
 		tmp = d.ses[i].e;
 
 		if (tmp->headsp) {
-			nn = xcalloc(1, sizeof(struct lowdown_node));
-			TAILQ_INIT(&nn->children);
+			nn = calloc(1, sizeof(struct lowdown_node));
+			if (nn == NULL)
+				goto out;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
+			TAILQ_INIT(&nn->children);
+
 			nn->type = LOWDOWN_NORMAL_TEXT;
 			nn->id = (*id)++;
 			nn->parent = n;
 			nn->rndr_normal_text.text.size = 1;
-			nn->rndr_normal_text.text.data = xstrdup(" ");
+			nn->rndr_normal_text.text.data = strdup(" ");
+			if (nn->rndr_normal_text.text.data == NULL)
+				goto out;
 		}
 
-		nn = xcalloc(1, sizeof(struct lowdown_node));
-		TAILQ_INIT(&nn->children);
+		nn = calloc(1, sizeof(struct lowdown_node));
+		if (nn == NULL)
+			goto out;
 		TAILQ_INSERT_TAIL(&n->children, nn, entries);
+		TAILQ_INIT(&nn->children);
+
 		nn->type = LOWDOWN_NORMAL_TEXT;
 		nn->id = (*id)++;
 		nn->parent = n;
 		nn->rndr_normal_text.text.size = tmp->bufsz;
 		nn->rndr_normal_text.text.data = 
-			xcalloc(1, tmp->bufsz + 1);
+			calloc(1, tmp->bufsz + 1);
+		if (nn->rndr_normal_text.text.data == NULL)
+			goto out;
+
 		memcpy(nn->rndr_normal_text.text.data,
 			tmp->buf, tmp->bufsz);
 		nn->chng = DIFF_DELETE == d.ses[i].type ?
@@ -876,23 +913,30 @@ node_lcs(const struct lowdown_node *nold,
 			LOWDOWN_CHNG_NONE;
 
 		if (tmp->tailsp) {
-			nn = xcalloc(1, sizeof(struct lowdown_node));
-			TAILQ_INIT(&nn->children);
+			nn = calloc(1, sizeof(struct lowdown_node));
+			if (nn == NULL)
+				goto out;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
+			TAILQ_INIT(&nn->children);
 			nn->type = LOWDOWN_NORMAL_TEXT;
 			nn->id = (*id)++;
 			nn->parent = n;
 			nn->rndr_normal_text.text.size = 1;
-			nn->rndr_normal_text.text.data = xstrdup(" ");
+			nn->rndr_normal_text.text.data = strdup(" ");
+			if (nn->rndr_normal_text.text.data == NULL)
+				goto out;
 		}
 	}
 
+	rc = 1;
+out:
 	free(d.ses);
 	free(d.lcs);
 	free(newtok);
 	free(oldtok);
 	free(newtokbuf);
 	free(oldtokbuf);
+	return rc;
 }
 
 /*
@@ -911,31 +955,31 @@ node_merge(const struct lowdown_node *nold,
 	const struct xmap *xnewmap,
 	size_t *id)
 {
-	const struct xnode *xnew, *xold;
-	struct lowdown_node *n, *nn;
-	const struct lowdown_node *nnold;
+	const struct xnode		*xnew, *xold;
+	struct lowdown_node		*n, *nn;
+	const struct lowdown_node	*nnold;
 
 	/* 
 	 * Invariant: the current nodes are matched.
 	 * Start by putting that node into the current output.
 	 */
 
-	assert(NULL != nnew && NULL != nold);
+	assert(nnew != NULL && nold != NULL );
 	xnew = &xnewmap->nodes[nnew->id];
 	xold = &xoldmap->nodes[nold->id];
-	assert(NULL != xnew->match);
-	assert(NULL != xold->match);
-
+	assert(xnew->match != NULL);
+	assert(xold->match != NULL);
 	assert(xnew->match == xold->node);
 
-	n = node_clone(nnew, (*id)++);
+	if ((n = node_clone(nnew, (*id)++)) == NULL)
+		goto err;
 
 	/* Now walk through the children on both sides. */
 
 	nold = TAILQ_FIRST(&nold->children);
 	nnew = TAILQ_FIRST(&nnew->children);
 
-	while (NULL != nnew) {
+	while (nnew != NULL) {
 		/* 
 		 * Begin by flushing out all of the nodes that have been
 		 * deleted from the old tree at this level.
@@ -944,15 +988,16 @@ node_merge(const struct lowdown_node *nold,
 		 * new tree (not necessarily at this level, though).
 		 */
 
-		while (NULL != nold) {
+		while (nold != NULL) {
 			xold = &xoldmap->nodes[nold->id];
-			if (NULL != xold->match ||
+			if (xold->match != NULL ||
 			    LOWDOWN_NORMAL_TEXT == nold->type)
 				break;
-			nn = node_clonetree(nold, id);
+			if ((nn = node_clonetree(nold, id)) == NULL)
+				goto err;
+			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
 			nn->chng = LOWDOWN_CHNG_DELETE;
-			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nold = TAILQ_NEXT(nold, entries);
 		}
 
@@ -963,12 +1008,13 @@ node_merge(const struct lowdown_node *nold,
 		 * (not necessarily at this level) with the old.
 		 */
 
-		while (NULL != nnew) {
+		while (nnew != NULL) {
 			xnew = &xnewmap->nodes[nnew->id];
-			if (NULL != xnew->match ||
+			if (xnew->match != NULL ||
 			    LOWDOWN_NORMAL_TEXT == nnew->type)
 				break;
-			nn = node_clonetree(nnew, id);
+			if ((nn = node_clonetree(nnew, id)) == NULL)
+				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
 			nn->chng = LOWDOWN_CHNG_INSERT;
@@ -981,32 +1027,35 @@ node_merge(const struct lowdown_node *nold,
 		 * This is an extension of the BULD algorithm.
 		 */
 
-		if (NULL != nold && NULL != nnew &&
-		    LOWDOWN_NORMAL_TEXT == nold->type &&
-		    NULL == xold->match &&
-		    LOWDOWN_NORMAL_TEXT == nnew->type &&
-		    NULL == xnew->match) {
-			node_lcs(nold, nnew, n, id);
+		if (nold != NULL && nnew != NULL &&
+		    nold->type == LOWDOWN_NORMAL_TEXT &&
+		    xold->match == NULL &&
+		    nnew->type == LOWDOWN_NORMAL_TEXT &&
+		    xnew->match == NULL) {
+			if (!node_lcs(nold, nnew, n, id))
+				goto err;
 			nold = TAILQ_NEXT(nold, entries);
 			nnew = TAILQ_NEXT(nnew, entries);
 		}
 
-		while (NULL != nold) {
+		while (nold != NULL) {
 			xold = &xoldmap->nodes[nold->id];
-			if (NULL != xold->match)
+			if (xold->match != NULL)
 				break;
-			nn = node_clonetree(nold, id);
+			if ((nn = node_clonetree(nold, id)) == NULL)
+				goto err;
+			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
 			nn->chng = LOWDOWN_CHNG_DELETE;
-			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nold = TAILQ_NEXT(nold, entries);
 		}
 
-		while (NULL != nnew) {
+		while ( nnew != NULL) {
 			xnew = &xnewmap->nodes[nnew->id];
-			if (NULL != xnew->match)
+			if (xnew->match != NULL)
 				break;
-			nn = node_clonetree(nnew, id);
+			if ((nn = node_clonetree(nnew, id)) == NULL)
+				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
 			nn->chng = LOWDOWN_CHNG_INSERT;
@@ -1015,7 +1064,7 @@ node_merge(const struct lowdown_node *nold,
 
 		/* Nothing more to do at this level? */
 
-		if (NULL == nnew)
+		if (nnew == NULL)
 			break;
 
 		/*
@@ -1028,11 +1077,11 @@ node_merge(const struct lowdown_node *nold,
 		 */
 
 		xnew = &xnewmap->nodes[nnew->id];
-		assert(NULL != xnew->match);
+		assert(xnew->match != NULL);
 
 		/* Scan ahead to find a matching old. */
 		
-		for (nnold = nold; NULL != nnold ; ) {
+		for (nnold = nold; nnold != NULL ; ) {
 			xold = &xoldmap->nodes[nnold->id];
 			if (xnew->node == xold->match) 
 				break;
@@ -1045,8 +1094,9 @@ node_merge(const struct lowdown_node *nold,
 		 * somewhere else in the tree.
 		 */
 
-		if (NULL == nnold) {
-			nn = node_clonetree(nnew, id);
+		if (nnold == NULL) {
+			if ((nn = node_clonetree(nnew, id)) == NULL)
+				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
 			nn->chng = LOWDOWN_CHNG_INSERT;
@@ -1056,18 +1106,19 @@ node_merge(const struct lowdown_node *nold,
 
 		/* Match found: flush old nodes til the match. */
 
-		while (NULL != nold) {
+		while (nold != NULL) {
 			xold = &xoldmap->nodes[nold->id];
 			if (xnew->node == xold->match) 
 				break;
-			nn = node_clonetree(nold, id);
+			if ((nn = node_clonetree(nold, id)) == NULL)
+				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
 			nn->chng = LOWDOWN_CHNG_DELETE;
 			nold = TAILQ_NEXT(nold, entries);
 		}
 
-		assert(NULL != nold);
+		assert(nold != NULL);
 
 		/*
 		 * Now we're in lock-step.
@@ -1076,8 +1127,10 @@ node_merge(const struct lowdown_node *nold,
 		 */
 
 		nn = node_merge(nold, xoldmap, nnew, xnewmap, id);
-		nn->parent = n;
+		if (nn == NULL)
+			goto err;
 		TAILQ_INSERT_TAIL(&n->children, nn, entries);
+		nn->parent = n;
 
 		nold = TAILQ_NEXT(nold, entries);
 		nnew = TAILQ_NEXT(nnew, entries);
@@ -1085,8 +1138,9 @@ node_merge(const struct lowdown_node *nold,
 
 	/* Flush remaining old nodes. */
 
-	while (NULL != nold) {
-		nn = node_clonetree(nold, id);
+	while (nold != NULL) {
+		if ((nn = node_clonetree(nold, id)) == NULL)
+			goto err;
 		TAILQ_INSERT_TAIL(&n->children, nn, entries);
 		nn->parent = n;
 		nn->chng = LOWDOWN_CHNG_DELETE;
@@ -1094,6 +1148,9 @@ node_merge(const struct lowdown_node *nold,
 	}
 
 	return n;
+err:
+	lowdown_node_free(n);
+	return NULL;
 }
 
 #if DEBUG
