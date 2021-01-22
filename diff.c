@@ -1,4 +1,4 @@
-
+/*	$Id$ */
 /*
  * Copyright (c) 2017, 2018 Kristaps Dzonsons <kristaps@bsd.lv>
  *
@@ -137,31 +137,36 @@ MD5Updatev(MD5_CTX *ctx, const void *v, size_t sz)
  * Returns the weight of the node rooted at "n".
  * If "parent" is not NULL, its hash is updated with the hash computed
  * for the current "n" and its children.
+ * Return <0 on failure.
  */
 static double
 assign_sigs(MD5_CTX *parent, struct xmap *map, 
 	const struct lowdown_node *n)
 {
-	const struct lowdown_node *nn;
-	size_t		 weight = 0;
-	MD5_CTX		 ctx;
-	double		 v;
-	struct xnode	*xn;
+	const struct lowdown_node	*nn;
+	size_t				 weight = 0;
+	MD5_CTX				 ctx;
+	double				 v = 0.0, vv;
+	struct xnode			*xn;
+	void				*pp;
 
 	/* Get our node slot. */
 
 	if (n->id >= map->maxsize) {
-		map->nodes = xrecallocarray
+		pp = recallocarray
 			(map->nodes, 
 			 map->maxsize, n->id + 64,
 			 sizeof(struct xnode));
+		if (pp == NULL)
+			return -1.0;
+		map->nodes = pp;
 		map->maxsize = n->id + 64;
 	}
 
 	assert(n->id < map->maxsize);
 	xn = &map->nodes[n->id];
-	assert(NULL == xn->node);
-	assert(0.0 == xn->weight);
+	assert(xn->node == NULL);
+	assert(xn->weight == 0.0);
 	xn->node = n;
 	if (n->id > map->maxid)
 		map->maxid = n->id;
@@ -171,9 +176,11 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 	MD5Init(&ctx);
 	MD5Updatev(&ctx, &n->type, sizeof(enum lowdown_rndrt));
 
-	v = 0.0;
-	TAILQ_FOREACH(nn, &n->children, entries)
-		v += assign_sigs(&ctx, map, nn);
+	TAILQ_FOREACH(nn, &n->children, entries) {
+		if ((vv = assign_sigs(&ctx, map, nn)) < 0.0)
+			return vv;
+		v += vv;
+	}
 
 	/* Re-assign "xn": child might have reallocated. */
 
@@ -228,7 +235,7 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 	case LOWDOWN_RAW_HTML:
 	case LOWDOWN_NORMAL_TEXT:
 	case LOWDOWN_ENTITY:
-		assert(0.0 == xn->weight);
+		assert(xn->weight == 0.0);
 		xn->weight = 1.0 + log(weight);
 		break;
 	default:
@@ -314,14 +321,14 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 
 	MD5End(&ctx, xn->sig);
 
-	if (NULL != parent)
+	if (parent != NULL)
 		MD5Update(parent, (uint8_t *)xn->sig, 
 			MD5_DIGEST_STRING_LENGTH - 1);
 
 	if (xn->weight > map->maxweight)
 		map->maxweight = xn->weight;
 
-	return(xn->weight);
+	return xn->weight;
 }
 
 /*
@@ -329,43 +336,46 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
  * Priority is given to weights; and if weights are equal, then
  * proximity to the parse root given by a pre-order identity.
  * FIXME: use a priority heap.
+ * Return zero on failure, non-zero on success.
  */
-static void
+static int
 pqueue(const struct lowdown_node *n, 
 	struct xmap *map, struct pnodeq *pq)
 {
 	struct pnode	*p, *pp;
 	struct xnode	*xnew, *xold;
 
-	p = xmalloc(sizeof(struct pnode));
+	if ((p = malloc(sizeof(struct pnode))) == NULL)
+		return 0;
 	p->node = n;
 
 	xnew = &map->nodes[n->id];
-	assert(NULL != xnew->node);
+	assert(xnew->node != NULL);
 
 	TAILQ_FOREACH(pp, pq, entries) {
 		xold = &map->nodes[pp->node->id];
-		assert(NULL != xold->node);
+		assert(xold->node != NULL);
 		if (xnew->weight >= xold->weight)
 			break;
 	}
-	if (NULL == pp) {
+	if (pp == NULL) {
 		TAILQ_INSERT_TAIL(pq, p, entries);
-		return;
+		return 1;
 	} else if (xnew->weight > xold->weight) {
 		TAILQ_INSERT_BEFORE(pp, p, entries);
-		return;
+		return 1;
 	}
 
-	for (; NULL != pp; pp = TAILQ_NEXT(pp, entries)) {
+	for (; pp != NULL; pp = TAILQ_NEXT(pp, entries)) {
 		assert(p->node->id != pp->node->id);
 		if (p->node->id < pp->node->id)
 			break;
 	}
-	if (NULL == pp) 
+	if (pp == NULL) 
 		TAILQ_INSERT_TAIL(pq, p, entries);
 	else
 		TAILQ_INSERT_BEFORE(pp, p, entries);
+	return 1;
 }
 
 /*
@@ -1122,57 +1132,56 @@ static void
 node_optimise_topdown(const struct lowdown_node *n, 
 	struct xmap *newmap, struct xmap *oldmap)
 {
-	struct xnode	*xn, *xmatch, *xnchild, *xmchild,
-			*xnnext, *xmnext;
-	const struct lowdown_node 
-			*match, *nchild, *mchild, *nnext, 
-			*mnext;
+	struct xnode			*xn, *xmatch, *xnchild, 
+					*xmchild, *xnnext, *xmnext;
+	const struct lowdown_node	*match, *nchild, *mchild, 
+	      				*nnext, *mnext;
 
 	if (TAILQ_EMPTY(&n->children))
 		return;
 
 	xn = &newmap->nodes[n->id];
-	assert(NULL != xn);
+	assert(xn != NULL);
 
-	if (NULL == (match = xn->match))
+	if ((match = xn->match) == NULL)
 		return;
 
 	xmatch = &oldmap->nodes[match->id];
-	assert(NULL != xmatch);
+	assert(xmatch != NULL);
 
 	TAILQ_FOREACH(nchild, &n->children, entries) {
 		if (TAILQ_EMPTY(&nchild->children))
 			continue;
 		xnchild = &newmap->nodes[nchild->id];
-		assert(NULL != xnchild);
-		if (NULL == (mchild = xnchild->match))
+		assert(xnchild != NULL);
+		if ((mchild = xnchild->match) == NULL)
 			continue;
 		if (mchild->parent->id != match->id)
 			continue;
 		xmchild = &oldmap->nodes[mchild->id];
-		assert(NULL != xmchild);
+		assert(xmchild != NULL);
 
 		/* 
 		 * Do we have a non-terminal sibling after us without a
 		 * match? 
 		 */
 
-		if (NULL == (nnext = TAILQ_NEXT(nchild, entries)))
+		if ((nnext = TAILQ_NEXT(nchild, entries)) == NULL)
 			continue;
 		if (TAILQ_EMPTY(&nnext->children))
 			continue;
 		xnnext = &newmap->nodes[nnext->id];
-		assert(NULL != xnnext);
-		if (NULL != xnnext->match)
+		assert(xnnext != NULL);
+		if (xnnext->match != NULL)
 			continue;
 
-		if (NULL == (mnext = TAILQ_NEXT(mchild, entries)))
+		if ((mnext = TAILQ_NEXT(mchild, entries)) == NULL)
 			continue;
 		if (TAILQ_EMPTY(&mnext->children))
 			continue;
 		xmnext = &oldmap->nodes[mnext->id];
-		assert(NULL != xmnext);
-		if (NULL != xmnext->match)
+		assert(xmnext != NULL);
+		if (xmnext->match != NULL)
 			continue;
 
 		if ( ! match_eq(nnext, mnext))
@@ -1205,8 +1214,8 @@ static void
 node_optimise_bottomup(const struct lowdown_node *n, 
 	struct xmap *newmap, struct xmap *oldmap)
 {
-	const struct lowdown_node *nn, *on, *nnn, *maxn = NULL;
-	double		w, maxw = 0.0, tw = 0.0;
+	const struct lowdown_node	*nn, *on, *nnn, *maxn = NULL;
+	double				 w, maxw = 0.0, tw = 0.0;
 
 	/* Do a depth-first pre-order search. */
 
@@ -1223,17 +1232,17 @@ node_optimise_bottomup(const struct lowdown_node *n,
 	 * If we're already matched, then move on.
 	 */
 
-	if (NULL != newmap->nodes[n->id].match)
+	if (newmap->nodes[n->id].match != NULL)
 		return;
 
 	TAILQ_FOREACH(nn, &n->children, entries) {
-		if (NULL == newmap->nodes[nn->id].match)
+		if (newmap->nodes[nn->id].match == NULL)
 			continue;
-		if (NULL == (on = newmap->nodes[nn->id].match->parent))
+		if ((on = newmap->nodes[nn->id].match->parent) == NULL)
 			continue;
 		if (on == maxn)
 			continue;
-		if ( ! match_eq(n, on))
+		if (!match_eq(n, on))
 			continue;
 		
 		/*
@@ -1247,7 +1256,7 @@ node_optimise_bottomup(const struct lowdown_node *n,
 
 		w = 0.0;
 		TAILQ_FOREACH(nnn, &n->children, entries) {
-			if (NULL == newmap->nodes[nnn->id].match)
+			if (newmap->nodes[nnn->id].match == NULL)
 				continue;
 			if (on != newmap->nodes[nnn->id].match->parent)
 				continue;
@@ -1264,7 +1273,7 @@ node_optimise_bottomup(const struct lowdown_node *n,
 
 	/* See if we found any similar sub-trees. */
 
-	if (NULL == maxn)
+	if (maxn == NULL)
 		return;
 
 	/*
@@ -1283,13 +1292,13 @@ struct lowdown_node *
 lowdown_diff(const struct lowdown_node *nold,
 	const struct lowdown_node *nnew, size_t *maxn)
 {
-	struct xmap	 xoldmap, xnewmap;
-	struct xnode	*xnew, *xold;
-	struct pnodeq	 pq;
-	struct pnode	*p;
-	const struct lowdown_node *n, *nn;
-	struct lowdown_node *comp;
-	size_t		 i;
+	struct xmap			 xoldmap, xnewmap;
+	struct xnode			*xnew, *xold;
+	struct pnodeq			 pq;
+	struct pnode			*p;
+	const struct lowdown_node	*n, *nn;
+	struct lowdown_node		*comp = NULL;
+	size_t				 i;
 
 	memset(&xoldmap, 0, sizeof(struct xmap));
 	memset(&xnewmap, 0, sizeof(struct xmap));
@@ -1301,12 +1310,15 @@ lowdown_diff(const struct lowdown_node *nold,
 	 * See "Phase 2", sec 5.2.
 	 */
 
-	(void)assign_sigs(NULL, &xoldmap, nold);
-	(void)assign_sigs(NULL, &xnewmap, nnew);
+	if (assign_sigs(NULL, &xoldmap, nold) < 0.0)
+		goto out;
+	if (assign_sigs(NULL, &xnewmap, nnew) < 0.0)
+		goto out;
 
 	/* Prime the priority queue with the root. */
 
-	pqueue(nnew, &xnewmap, &pq);
+	if (!pqueue(nnew, &xnewmap, &pq))
+		goto out;
 
 	/* 
 	 * Match-make while we have nodes in the priority queue.
@@ -1314,16 +1326,15 @@ lowdown_diff(const struct lowdown_node *nold,
 	 * See "Phase 3", sec 5.2.
 	 */
 
-	while (NULL != (p = TAILQ_FIRST(&pq))) {
-		/* TODO: cache of pnodes. */
+	while ((p = TAILQ_FIRST(&pq)) != NULL) {
 		TAILQ_REMOVE(&pq, p, entries);
 		n = p->node;
 		free(p);
 
 		xnew = &xnewmap.nodes[n->id];
-		assert(NULL == xnew->match);
-		assert(NULL == xnew->optmatch);
-		assert(0 == xnew->opt);
+		assert(xnew->match == NULL);
+		assert(xnew->optmatch == NULL);
+		assert(xnew->opt == 0);
 
 		/*
 		 * Look for candidates: if we have a matching signature,
@@ -1334,22 +1345,23 @@ lowdown_diff(const struct lowdown_node *nold,
 
 		for (i = 0; i < xoldmap.maxid + 1; i++) {
 			xold = &xoldmap.nodes[i];
-			if (NULL == xold->node)
+			if (xold->node == NULL)
 				continue;
-			if (NULL != xold->match)
+			if (xold->match != NULL)
 				continue;
 			if (strcmp(xnew->sig, xold->sig))
 				continue;
 
-			assert(NULL == xold->match);
+			assert(xold->match == NULL);
 			candidate(xnew, &xnewmap, xold, &xoldmap);
 		}
 
 		/* No match: enqueue children ("Phase 3" cont.). */
 
-		if (NULL == xnew->optmatch) {
+		if (xnew->optmatch == NULL) {
 			TAILQ_FOREACH(nn, &n->children, entries)
-				pqueue(nn, &xnewmap, &pq);
+				if (!pqueue(nn, &xnewmap, &pq))
+					goto out;
 			continue;
 		}
 
@@ -1360,8 +1372,8 @@ lowdown_diff(const struct lowdown_node *nold,
 		 * See "Phase 3", sec. 5.2.
 		 */
 
-		assert(NULL == xnew->match);
-		assert(NULL == xoldmap.nodes[xnew->optmatch->id].match);
+		assert(xnew->match == NULL);
+		assert(xoldmap.nodes[xnew->optmatch->id].match == NULL);
 
 		match_down(xnew, &xnewmap, 
 			&xoldmap.nodes[xnew->optmatch->id], &xoldmap);
@@ -1396,10 +1408,12 @@ lowdown_diff(const struct lowdown_node *nold,
 		xnewmap.maxid + 1 :
 		xoldmap.maxid + 1;
 
-	/* Clean up and exit. */
-
-	assert(TAILQ_EMPTY(&pq));
+out:
+	while ((p = TAILQ_FIRST(&pq)) != NULL) {
+		TAILQ_REMOVE(&pq, p, entries);
+		free(p);
+	}
 	free(xoldmap.nodes);
 	free(xnewmap.nodes);
-	return(comp);
+	return comp;
 }
