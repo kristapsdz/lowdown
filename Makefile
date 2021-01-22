@@ -173,7 +173,7 @@ index.html README.html: template.xml
 	./lowdown --nroff-no-numbered -s -Tms $< | \
 		pdfroff -i -mspdf -t -k -Kutf8 > $@
 
-index.latex.pdf: index.md
+index.latex.pdf: index.md $(THUMBS)
 	./lowdown -s -Tlatex index.md >index.latex.latex
 	pdflatex index.latex.latex
 
