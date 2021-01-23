@@ -93,7 +93,8 @@ lowdown_buf(const struct lowdown_opts *opts,
 		goto err;
 	assert(n->type == LOWDOWN_ROOT);
     	if (opts != NULL && (opts->oflags & LOWDOWN_SMARTY)) 
-		smarty(n, maxn, t);
+		if (!smarty(n, maxn, t))
+			goto err;
 
 	if ((ob = lowdown_buf_new(HBUF_START_BIG)) == NULL)
 		goto err;
@@ -195,7 +196,8 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	ndiff = lowdown_diff(nold, nnew, &maxn);
 
     	if (opts != NULL && (opts->oflags & LOWDOWN_SMARTY)) 
-		smarty(ndiff, maxn, t);
+		if (!smarty(ndiff, maxn, t))
+			goto err;
 
 	if ((ob = lowdown_buf_new(HBUF_START_BIG)) == NULL)
 		goto err;
