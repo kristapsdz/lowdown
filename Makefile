@@ -19,8 +19,7 @@ OBJS		 = autolink.o \
 		   smartypants.o \
 		   term.o \
 		   tree.o \
-		   util.o \
-		   xmalloc.o
+		   util.o
 COMPAT_OBJS	 = compats.o
 WWWDIR		 = /var/www/vhosts/kristaps.bsd.lv/htdocs/lowdown
 HTMLS		 = archive.html \
