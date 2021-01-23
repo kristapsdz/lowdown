@@ -72,49 +72,62 @@ rndr(struct lowdown_buf *, struct lowdown_metaq *,
 /*
  * Convert newlines to spaces, elide control characters.
  * If a newline follows a period, it's converted to two spaces.
+ * Return zero on failure (memory), non-zero on success.
  */
-static void
+static int
 rndr_escape(struct lowdown_buf *out, const char *buf, size_t sz)
 {
 	size_t	 i, start = 0;
 
 	for (i = 0; i < sz; i++) {
 		if (buf[i] == '\n') {
-			hbuf_put(out, buf + start, i - start);
-			if (out->size && out->data[out->size - 1] == '.')
-				hbuf_putc(out, ' ');
-			hbuf_putc(out, ' ');
+			if (!hbuf_put(out, buf + start, i - start))
+				return 0;
+			if (out->size && 
+			    out->data[out->size - 1] == '.' &&
+			    !hbuf_putc(out, ' '))
+				return 0;
+			if (!hbuf_putc(out, ' '))
+				return 0;
 			start = i + 1;
 		} else if (iscntrl((unsigned char)buf[i])) {
-			hbuf_put(out, buf + start, i - start);
+			if (!hbuf_put(out, buf + start, i - start))
+				return 0;
 			start = i + 1;
 		}
 	}
 
-	if (start < sz) 
-		hbuf_put(out, buf + start, sz - start);
+	if (start < sz &&
+	    !hbuf_put(out, buf + start, sz - start))
+		return 0;
+
+	return 1;
 }
 
 /*
  * Output optional number of newlines before or after content.
+ * Return zero on failure (memory), non-zero on success.
  */
-static void
+static int
 rndr_buf_vspace(struct gemini *gemini, struct lowdown_buf *out,
 	const struct lowdown_node *n, size_t sz)
 {
 
-	if (gemini->last_blank < 0)
-		return;
-	while ((size_t)gemini->last_blank < sz) {
-		HBUF_PUTSL(out, "\n");
-		gemini->last_blank++;
-	}
+	if (gemini->last_blank >= 0)
+		while ((size_t)gemini->last_blank < sz) {
+			if (!HBUF_PUTSL(out, "\n"))
+				return 0;
+			gemini->last_blank++;
+		}
+
+	return 1;
 }
 
 /*
  * Emit text in "in" the current line with output "out".
+ * Return zero on failure (memory), non-zero on success.
  */
-static void
+static int
 rndr_buf(struct gemini *gemini, struct lowdown_buf *out, 
 	const struct lowdown_node *n, const struct lowdown_buf *in)
 {
@@ -124,9 +137,8 @@ rndr_buf(struct gemini *gemini, struct lowdown_buf *out,
 	for (nn = n; nn != NULL; nn = nn->parent)
 		if (nn->type == LOWDOWN_BLOCKCODE ||
 	  	    nn->type == LOWDOWN_BLOCKHTML) {
-			hbuf_putb(out, in);
 			gemini->last_blank = 1;
-			return;
+			return hbuf_putb(out, in);
 		}
 
 	/* 
@@ -140,50 +152,47 @@ rndr_buf(struct gemini *gemini, struct lowdown_buf *out,
 			if (!isspace((unsigned char)in->data[i]))
 				break;
 
-	rndr_escape(out, in->data + i, in->size - i);
+	if (!rndr_escape(out, in->data + i, in->size - i))
+		return 0;
 	if (in->size && gemini->last_blank != 0)
 		gemini->last_blank = 0;
+	return 1;
 }
 
 /*
  * Output the unicode entry "val", which must be strictly greater than
  * zero, as a UTF-8 sequence.
  * This does no error checking.
+ * Return zero on failure (memory), non-zero on success.
  */
-static void
+static int
 rndr_entity(struct lowdown_buf *buf, int32_t val)
 {
 
 	assert(val > 0);
-	if (val < 0x80) {
-		hbuf_putc(buf, val);
-		return;
-	}
-       	if (val < 0x800) {
-		hbuf_putc(buf, 192 + val / 64);
-		hbuf_putc(buf, 128 + val % 64);
-		return;
-	}
+	if (val < 0x80)
+		return hbuf_putc(buf, val);
+       	if (val < 0x800)
+		return hbuf_putc(buf, 192 + val / 64) && 
+			hbuf_putc(buf, 128 + val % 64);
        	if (val - 0xd800u < 0x800) 
-		return;
-       	if (val < 0x10000) {
-		hbuf_putc(buf, 224 + val / 4096);
-		hbuf_putc(buf, 128 + val / 64 % 64);
-		hbuf_putc(buf, 128 + val % 64);
-		return;
-	}
-       	if (val < 0x110000) {
-		hbuf_putc(buf, 240 + val / 262144);
-		hbuf_putc(buf, 128 + val / 4096 % 64);
-		hbuf_putc(buf, 128 + val / 64 % 64);
-		hbuf_putc(buf, 128 + val % 64);
-		return;
-	}
+		return 1;
+       	if (val < 0x10000)
+		return hbuf_putc(buf, 224 + val / 4096) &&
+			hbuf_putc(buf, 128 + val / 64 % 64) &&
+			hbuf_putc(buf, 128 + val % 64);
+       	if (val < 0x110000)
+		return hbuf_putc(buf, 240 + val / 262144) &&
+			hbuf_putc(buf, 128 + val / 4096 % 64) &&
+			hbuf_putc(buf, 128 + val / 64 % 64) &&
+			hbuf_putc(buf, 128 + val % 64);
+	return 1;
 }
 
 /*
  * Render the key and value, then store the results in our "mq"
  * conditional to it existing.
+ * Return zero on failure (memory), non-zero on success.
  */
 static int
 rndr_meta(struct gemini *gemini, struct lowdown_buf *out,
@@ -194,10 +203,12 @@ rndr_meta(struct gemini *gemini, struct lowdown_buf *out,
 	struct lowdown_meta		*m;
 	const struct lowdown_node	*child;
 
-	rndr_buf(gemini, out, n, &n->rndr_meta.key);
-	HBUF_PUTSL(gemini->tmp, ": ");
-	rndr_buf(gemini, out, n, gemini->tmp);
-
+	if (!rndr_buf(gemini, out, n, &n->rndr_meta.key))
+		return 0;
+	if (!HBUF_PUTSL(gemini->tmp, ": "))
+		return 0;
+	if (!rndr_buf(gemini, out, n, gemini->tmp))
+		return 0;
 	if (mq == NULL)
 		return 1;
 
@@ -238,26 +249,41 @@ err:
 	return 0;
 }
 
-static void
+/*
+ * Return zero on failure (memory), non-zero on success.
+ */
+static int
 rndr_flush_linkq(struct gemini *gemini, struct lowdown_buf *out)
 {
 	struct link	*l;
+	int		 rc;
 
 	while ((l = TAILQ_FIRST(&gemini->linkq)) != NULL) {
 		TAILQ_REMOVE(&gemini->linkq, l, entries);
-		HBUF_PUTSL(out, "=> ");
+		if (!HBUF_PUTSL(out, "=> "))
+			return 0;
 		if (l->n->type == LOWDOWN_LINK)
-			hbuf_putb(out, &l->n->rndr_link.link);
+			rc = hbuf_putb(out, &l->n->rndr_link.link);
 		else if (l->n->type == LOWDOWN_LINK_AUTO)
-			hbuf_putb(out, &l->n->rndr_autolink.link);
+			rc = hbuf_putb(out, &l->n->rndr_autolink.link);
 		else if (l->n->type == LOWDOWN_IMAGE)
-			hbuf_putb(out, &l->n->rndr_image.link);
-		hbuf_printf(out, " [Reference: link-%zu]\n", l->id);
+			rc = hbuf_putb(out, &l->n->rndr_image.link);
+		else
+			rc = 1;
+		if (!rc)
+			return 0;
+		if (!hbuf_printf
+		    (out, " [Reference: link-%zu]\n", l->id))
+			return 0;
 		gemini->last_blank = 1;
 		free(l);
 	}
+	return 1;
 }
 
+/*
+ * Return zero on failure (memory), non-zero on success.
+ */
 static int
 rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	struct gemini *p, const struct lowdown_node *n)
@@ -266,6 +292,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	int32_t				 entity;
 	size_t				 i;
 	struct link			*l;
+	int				 rc = 1;
 	
 	prev = n->parent == NULL ? NULL :
 		TAILQ_PREV(n, lowdown_nodeq, entries);
@@ -298,13 +325,13 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		    n->parent->parent->type == 
 		      LOWDOWN_DEFINITION_DATA &&
 		    prev == NULL)
-			rndr_buf_vspace(p, ob, n, 1);
+			rc = rndr_buf_vspace(p, ob, n, 1);
 		else
-			rndr_buf_vspace(p, ob, n, 2);
+			rc = rndr_buf_vspace(p, ob, n, 2);
 		break;
 	case LOWDOWN_MATH_BLOCK:
 		if (n->rndr_math.blockmode)
-			rndr_buf_vspace(p, ob, n, 1);
+			rc = rndr_buf_vspace(p, ob, n, 1);
 		break;
 	case LOWDOWN_DEFINITION_DATA:
 		/* 
@@ -317,9 +344,9 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		     HLIST_FL_BLOCK) &&
 		    prev != NULL &&
 		    prev->type == LOWDOWN_DEFINITION_DATA)
-			rndr_buf_vspace(p, ob, n, 2);
+			rc = rndr_buf_vspace(p, ob, n, 2);
 		else
-			rndr_buf_vspace(p, ob, n, 1);
+			rc = rndr_buf_vspace(p, ob, n, 1);
 		break;
 	case LOWDOWN_DEFINITION_TITLE:
 	case LOWDOWN_HRULE:
@@ -327,86 +354,99 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_LISTITEM:
 	case LOWDOWN_META:
 	case LOWDOWN_TABLE_ROW:
-		rndr_buf_vspace(p, ob, n, 1);
+		rc = rndr_buf_vspace(p, ob, n, 1);
 		break;
 	case LOWDOWN_IMAGE:
 	case LOWDOWN_LINK:
 	case LOWDOWN_LINK_AUTO:
 		if (p->flags & LOWDOWN_GEMINI_LINK_IN)
-			rndr_buf_vspace(p, ob, n, 1);
+			rc = rndr_buf_vspace(p, ob, n, 1);
 		break;
 	default:
 		break;
 	}
 
+	if (!rc)
+		return 0;
+
 	/* Output leading content. */
 
+	rc = 1;
 	hbuf_truncate(p->tmp);
+
 	switch (n->type) {
 	case LOWDOWN_BLOCKCODE:
 	case LOWDOWN_BLOCKHTML:
-		HBUF_PUTSL(p->tmp, "```\n");
-		rndr_buf(p, ob, n, p->tmp);
+		rc = HBUF_PUTSL(p->tmp, "```\n") &&
+			rndr_buf(p, ob, n, p->tmp);
 		break;
 	case LOWDOWN_BLOCKQUOTE:
-		HBUF_PUTSL(p->tmp, "> ");
-		rndr_buf(p, ob, n, p->tmp);
+		rc = HBUF_PUTSL(p->tmp, "> ") &&
+			rndr_buf(p, ob, n, p->tmp);
 		p->last_blank = -1;
 		break;
 	case LOWDOWN_HEADER:
 		for (i = 0; i <= n->rndr_header.level; i++)
-			HBUF_PUTSL(p->tmp, "#");
-		HBUF_PUTSL(p->tmp, " ");
-		rndr_buf(p, ob, n, p->tmp);
+			if (!HBUF_PUTSL(p->tmp, "#"))
+				return 0;
+		rc = HBUF_PUTSL(p->tmp, " ") &&
+			rndr_buf(p, ob, n, p->tmp);
 		p->last_blank = -1;
 		break;
 	case LOWDOWN_FOOTNOTES_BLOCK:
-		HBUF_PUTSL(p->tmp, "~~~~~~~~");
-		rndr_buf(p, ob, n, p->tmp);
+		rc = HBUF_PUTSL(p->tmp, "~~~~~~~~") &&
+			rndr_buf(p, ob, n, p->tmp);
 		break;
 	case LOWDOWN_FOOTNOTE_DEF:
-		hbuf_printf(p->tmp, "[%zu] ", 
-			n->rndr_footnote_def.num);
-		rndr_buf(p, ob, n, p->tmp);
+		rc = hbuf_printf(p->tmp, "[%zu] ", 
+			n->rndr_footnote_def.num) &&
+			rndr_buf(p, ob, n, p->tmp);
 		p->last_blank = -1;
 		break;
 	case LOWDOWN_IMAGE:
 	case LOWDOWN_LINK:
 	case LOWDOWN_LINK_AUTO:
-		if (IS_STANDALONE_LINK(n, prev) ||
-		    (p->flags & LOWDOWN_GEMINI_LINK_IN)) {
-			HBUF_PUTSL(p->tmp, "=> ");
-			if (n->type == LOWDOWN_LINK_AUTO)
-				hbuf_putb(p->tmp, &n->rndr_autolink.link);
-			else if (n->type == LOWDOWN_LINK)
-				hbuf_putb(p->tmp, &n->rndr_link.link);
-			else if (n->type == LOWDOWN_IMAGE)
-				hbuf_putb(p->tmp, &n->rndr_image.link);
-			HBUF_PUTSL(p->tmp, " ");
+		if (!(IS_STANDALONE_LINK(n, prev) ||
+		     (p->flags & LOWDOWN_GEMINI_LINK_IN)))
+			break;
+		if (!HBUF_PUTSL(p->tmp, "=> "))
+			return 0;
+		if (n->type == LOWDOWN_LINK_AUTO)
+			rc = hbuf_putb(p->tmp, &n->rndr_autolink.link);
+		else if (n->type == LOWDOWN_LINK)
+			rc = hbuf_putb(p->tmp, &n->rndr_link.link);
+		else if (n->type == LOWDOWN_IMAGE)
+			rc = hbuf_putb(p->tmp, &n->rndr_image.link);
+		if (!rc)
+			return 0;
+		rc = HBUF_PUTSL(p->tmp, " ") &&
 			rndr_buf(p, ob, n, p->tmp);
-			p->last_blank = -1;
-		}
+		p->last_blank = -1;
 		break;
 	case LOWDOWN_LISTITEM:
 		if (n->rndr_listitem.flags & HLIST_FL_ORDERED)
-			hbuf_printf(p->tmp, "%zu. ", 
+			rc = hbuf_printf(p->tmp, "%zu. ", 
 				n->rndr_listitem.num);
 		else
-			HBUF_PUTSL(p->tmp, "* ");
-		rndr_buf(p, ob, n, p->tmp);
+			rc = HBUF_PUTSL(p->tmp, "* ");
+		if (!rc)
+			return 0;
+		rc = rndr_buf(p, ob, n, p->tmp);
 		p->last_blank = -1;
 		break;
 	case LOWDOWN_META:
-		if (!rndr_meta(p, ob, n, mq))
-			return 0;
+		rc = rndr_meta(p, ob, n, mq);
 		break;
 	case LOWDOWN_SUPERSCRIPT:
-		HBUF_PUTSL(p->tmp, "^");
-		rndr_buf(p, ob, n, p->tmp);
+		rc = HBUF_PUTSL(p->tmp, "^") &&
+			rndr_buf(p, ob, n, p->tmp);
 		break;
 	default:
 		break;
 	}
+
+	if (!rc)
+		return 0;
 
 	/* Descend into children. */
 
@@ -416,42 +456,44 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 
 	/* Output non-child or trailing content. */
 
+	rc = 1;
 	hbuf_truncate(p->tmp);
+
 	switch (n->type) {
 	case LOWDOWN_HRULE:
-		HBUF_PUTSL(p->tmp, "~~~~~~~~");
-		rndr_buf(p, ob, n, p->tmp);
+		rc = HBUF_PUTSL(p->tmp, "~~~~~~~~") &&
+			rndr_buf(p, ob, n, p->tmp);
 		break;
 	case LOWDOWN_FOOTNOTE_REF:
-		hbuf_printf(p->tmp, "[%zu]", 
-			n->rndr_footnote_ref.num);
-		rndr_buf(p, ob, n, p->tmp);
+		rc = hbuf_printf(p->tmp, "[%zu]", 
+			n->rndr_footnote_ref.num) &&
+			rndr_buf(p, ob, n, p->tmp);
 		break;
 	case LOWDOWN_RAW_HTML:
-		rndr_buf(p, ob, n, &n->rndr_raw_html.text);
+		rc = rndr_buf(p, ob, n, &n->rndr_raw_html.text);
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		rndr_buf(p, ob, n, &n->rndr_math.text);
+		rc = rndr_buf(p, ob, n, &n->rndr_math.text);
 		break;
 	case LOWDOWN_ENTITY:
 		entity = entity_find_iso(&n->rndr_entity.text);
-		if (entity > 0) {
-			rndr_entity(p->tmp, entity);
-			rndr_buf(p, ob, n, p->tmp);
-		} else
-			rndr_buf(p, ob, n, &n->rndr_entity.text);
+		if (entity > 0)
+			rc = rndr_entity(p->tmp, entity) &&
+				rndr_buf(p, ob, n, p->tmp);
+		else
+			rc = rndr_buf(p, ob, n, &n->rndr_entity.text);
 		break;
 	case LOWDOWN_BLOCKCODE:
-		rndr_buf(p, ob, n, &n->rndr_blockcode.text);
+		rc = rndr_buf(p, ob, n, &n->rndr_blockcode.text);
 		break;
 	case LOWDOWN_BLOCKHTML:
-		rndr_buf(p, ob, n, &n->rndr_blockhtml.text);
+		rc = rndr_buf(p, ob, n, &n->rndr_blockhtml.text);
 		break;
 	case LOWDOWN_CODESPAN:
-		rndr_buf(p, ob, n, &n->rndr_codespan.text);
+		rc = rndr_buf(p, ob, n, &n->rndr_codespan.text);
 		break;
 	case LOWDOWN_IMAGE:
-		rndr_buf(p, ob, n, &n->rndr_image.alt);
+		rc = rndr_buf(p, ob, n, &n->rndr_image.alt);
 		/* FALLTHROUGH */
 	case LOWDOWN_LINK:
 	case LOWDOWN_LINK_AUTO:
@@ -463,33 +505,40 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		l->n = n;
 		l->id = ++p->linkqsz;
 		TAILQ_INSERT_TAIL(&p->linkq, l, entries);
-		hbuf_printf(p->tmp, "[Reference: link-%zu]", l->id);
-		rndr_buf(p, ob, n, p->tmp);
+		rc = hbuf_printf(p->tmp, 
+			"[Reference: link-%zu]", l->id) &&
+			rndr_buf(p, ob, n, p->tmp);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
-		rndr_buf(p, ob, n, &n->rndr_normal_text.text);
+		rc = rndr_buf(p, ob, n, &n->rndr_normal_text.text);
 		break;
 	case LOWDOWN_ROOT:
 		if (TAILQ_EMPTY(&p->linkq) || 
 		    !(p->flags & LOWDOWN_GEMINI_LINK_END))
 			break;
-		rndr_buf_vspace(p, ob, n, 2);
-		rndr_flush_linkq(p, ob);
+		rc = rndr_buf_vspace(p, ob, n, 2) &&
+			rndr_flush_linkq(p, ob);
 		break;
 	default:
 		break;
 	}
+	if (!rc)
+		return 0;
 
 	/* Trailing block spaces. */
 
+	rc = 1;
 	hbuf_truncate(p->tmp);
+
 	switch (n->type) {
 	case LOWDOWN_BLOCKCODE:
 	case LOWDOWN_BLOCKHTML:
-		HBUF_PUTSL(p->tmp, "```");
-		rndr_buf(p, ob, n, p->tmp);
+		if (!HBUF_PUTSL(p->tmp, "```"))
+			return 0;
+		if (!rndr_buf(p, ob, n, p->tmp))
+			return 0;
 		p->last_blank = 0;
-		rndr_buf_vspace(p, ob, n, 2);
+		rc = rndr_buf_vspace(p, ob, n, 2);
 		break;
 	case LOWDOWN_BLOCKQUOTE:
 	case LOWDOWN_DEFINITION:
@@ -499,15 +548,15 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_LIST:
 	case LOWDOWN_PARAGRAPH:
 	case LOWDOWN_TABLE_BLOCK:
-		rndr_buf_vspace(p, ob, n, 2);
+		rc = rndr_buf_vspace(p, ob, n, 2);
 		break;
 	case LOWDOWN_MATH_BLOCK:
 		if (n->rndr_math.blockmode)
-			rndr_buf_vspace(p, ob, n, 1);
+			rc = rndr_buf_vspace(p, ob, n, 1);
 		break;
 	case LOWDOWN_DOC_HEADER:
 		if (!TAILQ_EMPTY(&n->children))
-			rndr_buf_vspace(p, ob, n, 2);
+			rc = rndr_buf_vspace(p, ob, n, 2);
 		break;
 	case LOWDOWN_DEFINITION_DATA:
 	case LOWDOWN_DEFINITION_TITLE:
@@ -515,14 +564,14 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_LISTITEM:
 	case LOWDOWN_META:
 	case LOWDOWN_TABLE_ROW:
-		rndr_buf_vspace(p, ob, n, 1);
+		rc = rndr_buf_vspace(p, ob, n, 1);
 		break;
 	case LOWDOWN_IMAGE:
 	case LOWDOWN_LINK:
 	case LOWDOWN_LINK_AUTO:
 		if (IS_STANDALONE_LINK(n, prev) ||
 		    (p->flags & LOWDOWN_GEMINI_LINK_IN))
-			rndr_buf_vspace(p, ob, n, 1);
+			rc = rndr_buf_vspace(p, ob, n, 1);
 		break;
 	case LOWDOWN_ROOT:
 		/*
@@ -531,19 +580,24 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		 * This tidies up the output.
 		 */
 
-		rndr_buf_vspace(p, ob, n, 1);
+		if (!rndr_buf_vspace(p, ob, n, 1))
+			return 0;
 		while (ob->size && ob->data[ob->size - 1] == '\n')
 			ob->size--;
-		HBUF_PUTSL(ob, "\n");
+		rc = HBUF_PUTSL(ob, "\n");
 		break;
 	default:
 		break;
 	}
+	if (!rc)
+		return 0;
 
 	if (p->last_blank > 1 && !TAILQ_EMPTY(&p->linkq) &&
 	    !(p->flags & LOWDOWN_GEMINI_LINK_END)) {
-		rndr_flush_linkq(p, ob);
-		HBUF_PUTSL(ob, "\n");
+		if (!rndr_flush_linkq(p, ob))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\n"))
+			return 0;
 		p->last_blank = 2;
 	}
 
