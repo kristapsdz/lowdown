@@ -199,15 +199,16 @@ static int
 pushbuffer(struct lowdown_buf *buf, const char *data, size_t datasz)
 {
 
+	assert(buf->size == 0);
+	assert(buf->data == NULL);
 	memset(buf, 0, sizeof(struct lowdown_buf));
-
 	if (datasz) {
 		if ((buf->data = malloc(datasz)) == NULL)
 			return 0;
+		buf->unit = 1;
 		buf->size = buf->maxsize = datasz;
 		memcpy(buf->data, data, datasz);
 	}
-
 	return 1;
 }
 
@@ -4206,6 +4207,7 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 
 	/* Initialise the parser. */
 
+	doc->nodes = 0;
 	doc->depth = 0;
 	doc->current = NULL;
 	doc->in_link_body = 0;
