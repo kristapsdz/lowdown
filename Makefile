@@ -79,8 +79,7 @@ SOURCES		 = autolink.c \
 		   term.c \
 		   tests.c \
 		   tree.c \
-		   util.c \
-		   xmalloc.c
+		   util.c
 HEADERS 	 = extern.h \
 		   libdiff.h \
 		   lowdown.h
