@@ -163,8 +163,9 @@ static const enum type types[LOWDOWN__MAX] = {
  * This behaves properly if the leading or trailing sequence is
  * zero-length.
  * It may modify the subtree rooted at the parent of "n".
+ * Return zero on failure (memory), non-zero on success.
  */
-static void
+static int
 smarty_entity(struct lowdown_node *n, size_t *maxn,
 	size_t start, size_t end, enum entity entity)
 {
@@ -174,19 +175,29 @@ smarty_entity(struct lowdown_node *n, size_t *maxn,
 
 	/* Allocate the subsequent entity. */
 
-	nent = xcalloc(1, sizeof(struct lowdown_node));
+	nent = calloc(1, sizeof(struct lowdown_node));
+	if (nent == NULL)
+		return 0;
+	TAILQ_INSERT_AFTER(&n->parent->children, n, nent, entries);
+
 	nent->id = (*maxn)++;
 	nent->type = LOWDOWN_ENTITY;
 	nent->parent = n->parent;
 	TAILQ_INIT(&nent->children);
-	nent->rndr_entity.text.data = xstrdup(ents[entity]);
+	nent->rndr_entity.text.data = strdup(ents[entity]);
+	if (nent->rndr_entity.text.data == NULL)
+		return 0;
 	nent->rndr_entity.text.size = strlen(ents[entity]);
-	TAILQ_INSERT_AFTER(&n->parent->children, n, nent, entries);
 
 	/* Allocate the remaining bits, if applicable. */
 
 	if (n->rndr_normal_text.text.size - end > 0) {
-		nn = xcalloc(1, sizeof(struct lowdown_node));
+		nn = calloc(1, sizeof(struct lowdown_node));
+		if (nn == NULL)
+			return 0;
+		TAILQ_INSERT_AFTER(&n->parent->children, 
+			nent, nn, entries);
+
 		nn->id = (*maxn)++;
 		nn->type = LOWDOWN_NORMAL_TEXT;
 		nn->parent = n->parent;
@@ -194,15 +205,16 @@ smarty_entity(struct lowdown_node *n, size_t *maxn,
 		nn->rndr_normal_text.text.size = 
 			n->rndr_normal_text.text.size - end;
 		nn->rndr_normal_text.text.data = 
-			xmalloc(nn->rndr_normal_text.text.size);
+			malloc(nn->rndr_normal_text.text.size);
+		if (nn->rndr_normal_text.text.data == NULL)
+			return 0;
 		memcpy(nn->rndr_normal_text.text.data,
 			n->rndr_normal_text.text.data + end,
 			nn->rndr_normal_text.text.size);
-		TAILQ_INSERT_AFTER(&n->parent->children, 
-			nent, nn, entries);
 	}
 
 	n->rndr_normal_text.text.size = start;
+	return 1;
 }
 
 /*
@@ -296,8 +308,8 @@ smarty_right_wb(const struct lowdown_node *n, size_t pos)
 /*
  * FIXME: this can be faster with a table-based lookup instead of the
  * switch statement.
- * Returns non-zero if a left-quote entity was inserted as the next node
- * of the parse tree, otherwise return zero.
+ * Returns >1 if a left-quote entity was inserted as the next node
+ * of the parse tree, <0 on failure, otherwise return zero.
  */
 static int
 smarty_hbuf(struct lowdown_node *n, size_t *maxn,
@@ -321,8 +333,9 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn,
 				if (memcmp(syms[j].key, 
 				    &b->data[i], sz))
 					continue;
-				smarty_entity(n, maxn, i, 
-					i + sz, syms[j].ent);
+				if (!smarty_entity(n, maxn, 
+				    i, i + sz, syms[j].ent))
+					return -1;
 				return 0;
 			}
 			break;
@@ -332,11 +345,14 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn,
 			if (!s->left_wb) {
 				if (!smarty_right_wb(n, i + 1)) 
 					break;
-				smarty_entity(n, maxn, 
-					i, i + 1, ENT_RDQUO);
+				if (!smarty_entity(n, maxn, 
+				    i, i + 1, ENT_RDQUO))
+					return -1;
 				return 0;
 			}
-			smarty_entity(n, maxn, i, i + 1, ENT_LDQUO);
+			if (!smarty_entity
+			    (n, maxn, i, i + 1, ENT_LDQUO))
+				return -1;
 			return 1;
 		case '\'':
 			/* Left-wb and right-wb differ. */
@@ -344,11 +360,14 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn,
 			if (!s->left_wb) {
 				if (!smarty_right_wb(n, i + 1))
 					break;
-				smarty_entity(n, maxn, 
-					i, i + 1, ENT_RSQUO);
+				if (!smarty_entity(n, maxn, 
+				    i, i + 1, ENT_RSQUO))
+					return -1;
 				return 0;
 			}
-			smarty_entity(n, maxn, i, i + 1, ENT_LSQUO);
+			if (!smarty_entity
+			    (n, maxn, i, i + 1, ENT_LSQUO))
+				return -1;
 			return 1;
 		case '1':
 		case '3':
@@ -365,8 +384,9 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn,
 					continue;
 				if (!smarty_right_wb(n, i + sz)) 
 					continue;
-				smarty_entity(n, maxn, i, 
-					i + sz, syms2[j].ent);
+				if (!smarty_entity(n, maxn, i, 
+				    i + sz, syms2[j].ent))
+					return -1;
 				return 0;
 			}
 			break;
@@ -380,21 +400,26 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn,
 	return 0;
 }
 
-static void
+static int
 smarty_span(struct lowdown_node *root, size_t *maxn, struct smarty *s)
 {
 	struct lowdown_node	*n;
+	int			 c;
 
-	TAILQ_FOREACH(n, &root->children, entries)  {
+	TAILQ_FOREACH(n, &root->children, entries)
 		switch (types[n->type]) {
 		case TYPE_TEXT:
 			assert(n->type == LOWDOWN_NORMAL_TEXT);
-			if (smarty_hbuf(n, maxn, 
-		 	    &n->rndr_normal_text.text, s))
+			c = smarty_hbuf(n, maxn, 
+				&n->rndr_normal_text.text, s);
+			if (c < 0)
+				return 0;
+			if (c > 0)
 				n = TAILQ_NEXT(n, entries);
 			break;
 		case TYPE_SPAN:
-			smarty_span(n, maxn, s);
+			if (!smarty_span(n, maxn, s))
+				return 0;
 			break;
 		case TYPE_OPAQUE:
 			s->left_wb = 0;
@@ -404,33 +429,40 @@ smarty_span(struct lowdown_node *root, size_t *maxn, struct smarty *s)
 			abort();
 			break;
 		}
-	}
+
+	return 1;
 }
 
-static void
+static int
 smarty_block(struct lowdown_node *root,
 	size_t *maxn, enum lowdown_type type)
 {
 	struct smarty		 s;
 	struct lowdown_node	*n;
+	int			 c;
 
 	s.left_wb = 1;
 
-	TAILQ_FOREACH(n, &root->children, entries) {
+	TAILQ_FOREACH(n, &root->children, entries)
 		switch (types[n->type]) {
 		case TYPE_ROOT:
 		case TYPE_BLOCK:
 			s.left_wb = 1;
-			smarty_block(n, maxn, type);
+			if (!smarty_block(n, maxn, type))
+				return 0;
 			break;
 		case TYPE_TEXT:
 			assert(n->type == LOWDOWN_NORMAL_TEXT);
-			if (smarty_hbuf(n, maxn, 
-			    &n->rndr_normal_text.text, &s))
+			c = smarty_hbuf(n, maxn, 
+				&n->rndr_normal_text.text, &s);
+			if (c < 0)
+				return 0;
+			if (c > 0)
 				n = TAILQ_NEXT(n, entries);
 			break;
 		case TYPE_SPAN:
-			smarty_span(n, maxn, &s);
+			if (!smarty_span(n, maxn, &s))
+				return 0;
 			break;
 		case TYPE_OPAQUE:
 			s.left_wb = 0;
@@ -438,18 +470,17 @@ smarty_block(struct lowdown_node *root,
 		default:
 			break;
 		}
-	}
 
 	s.left_wb = 1;
+	return 1;
 }
 
-void
-smarty(struct lowdown_node *n,
-	size_t maxn, enum lowdown_type type)
+int
+smarty(struct lowdown_node *n, size_t maxn, enum lowdown_type type)
 {
 
 	if (n == NULL)
-		return;
+		return 1;
 	assert(types[n->type] == TYPE_ROOT);
-	smarty_block(n, &maxn, type);
+	return smarty_block(n, &maxn, type);
 }
