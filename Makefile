@@ -53,6 +53,7 @@ MANS		 = man/lowdown.1.html \
 		   man/lowdown_latex_new.3.html \
 		   man/lowdown_latex_rndr.3.html \
 		   man/lowdown_metaq_free.3.html \
+		   man/lowdown_node_free.3.html \
 		   man/lowdown_nroff_free.3.html \
 		   man/lowdown_nroff_new.3.html \
 		   man/lowdown_nroff_rndr.3.html \
