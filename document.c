@@ -461,7 +461,7 @@ parse_image_attrs(struct rndr_image *img, const char *data, size_t size)
 		while (offs < end && !xisspace(data[offs]))
 			offs++;
 
-		if (buf != NULL && offs > i)
+		if (buf != NULL && buf->size == 0 && offs > i)
 			if (!pushbuffer(buf, &data[i], offs - i))
 				return -1;
 	}
@@ -1302,7 +1302,7 @@ char_autolink_www(struct lowdown_doc *doc,
 			goto err;
 		if ((nn = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
 			goto err;
-		if (!pushbuffer(&n->rndr_normal_text.text, 
+		if (!pushbuffer(&nn->rndr_normal_text.text, 
 		    link->data, link->size))
 			goto err;
 		popnode(doc, nn);
