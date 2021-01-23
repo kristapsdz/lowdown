@@ -26,7 +26,7 @@
 .In sys/queue.h
 .In stdio.h
 .In lowdown.h
-.Ft void
+.Ft "struct lowdown_node *"
 .Fo lowdown_diff
 .Fa "const struct lowdown_node *nold"
 .Fa "const struct lowdown_node *nnew"
@@ -41,7 +41,7 @@ parsed by
 .Xr lowdown_doc_parse 3 .
 It uses the
 .Vt enum lowdown_chng
-type in the generated nodes to dictate insertions into and deletions
+type in the return tree's nodes to dictate insertions into and deletions
 from
 .Fa nold .
 The
@@ -50,6 +50,61 @@ argument, if not
 .Dv NULL ,
 is set to one greater than the highest node identifier of the returned
 tree.
+.Sh RETURN VALUES
+Returns a pointer to the difference tree or
+.Dv NULL
+on memory exhaution.
+The pointer must be freed with
+.Xr lowdown_node_free 3 .
+.Sh EXAMPLES
+The following parses and compares the NUL-terminated strings
+.Va old
+and
+.Va new .
+It first allocates the parser, then the document, then the renderer
+(HTML is used in this case).
+Then it passes output to the renderer, prints it, and cleans up
+resources.
+On any memory errors, it exits with
+.Xr err 3 .
+.Bd -literal -offset indent
+struct lowdown_doc *doc;
+struct lowdown_node *nold, *nnew, *diff;
+struct lowdown_buf *ob;
+void *rndr;
+
+doc = lowdown_doc_new(NULL);
+if (doc == NULL)
+  err(1, NULL);
+
+nold = lowdown_doc_parse(doc, NULL, old, strlen(old));
+if (nold == NULL)
+  err(1, NULL);
+nnew = lowdown_doc_parse(doc, NULL, new, strlen(new));
+if (nnew == NULL)
+  err(1, NULL);
+diff = lowdown_diff(nold, nnew, NULL);
+if (diff == NULL)
+  err(1, NULL);
+
+rndr = lowdown_html_new(NULL);
+if (rndr == NULL)
+  err(1, NULL);
+
+ob = lowdown_buf_new(1024);
+
+if (!lowdown_html_rndr(ob, NULL, rndr, diff))
+  err(1, NULL);
+
+fwrite(stdout, 1, ob->size, ob->data);
+
+lowdown_buf_free(ob);
+lowdown_html_rndr_free(rndr);
+lowdown_node_free(nold);
+lowdown_node_free(nnew);
+lowdown_node_free(diff);
+lowdown_doc_free(doc);
+.Ed
 .Sh SEE ALSO
 .Xr lowdown 3
 .Rs
