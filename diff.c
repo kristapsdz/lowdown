@@ -37,8 +37,6 @@
 #include "libdiff.h"
 #include "extern.h"
 
-#define	DEBUG 0
-
 struct	xnode {
 	char		 sig[MD5_DIGEST_STRING_LENGTH]; /* signature */
 	double		 weight; /* priority queue weight */
@@ -50,8 +48,9 @@ struct	xnode {
 
 struct	xmap {
 	struct xnode	*nodes; /* all of the nodes (dense table) */
-	size_t		 maxid; /* maximum id in nodes */
 	size_t		 maxsize; /* size of "nodes" (allocation) */
+	size_t		 maxid; /* maximum id in nodes */
+	size_t		 maxnodes; /* filled entries in "nodes" */
 	double		 maxweight; /* maximum node weight */
 };
 
@@ -71,49 +70,6 @@ struct	sesnode {
 	int		 tailsp; /* whether there's trailing space */
 	int		 headsp; /* whether there's leading space */
 };
-
-#if DEBUG
-static	const char *const names[LOWDOWN__MAX] = {
-	"LOWDOWN_ROOT",			/* LOWDOWN_ROOT */
-	"LOWDOWN_BLOCKCODE",            /* LOWDOWN_BLOCKCODE */
-	"LOWDOWN_BLOCKQUOTE",           /* LOWDOWN_BLOCKQUOTE */
-	"LOWDOWN_DEFINITION",		/* LOWDOWN_DEFINITION */
-	"LOWDOWN_DEFINITION_TITLE",	/* LOWDOWN_DEFINITION_TITLE */
-	"LOWDOWN_DEFINITION_DATA",	/* LOWDOWN_DEFINITION_DATA */
-	"LOWDOWN_HEADER",               /* LOWDOWN_HEADER */
-	"LOWDOWN_HRULE",                /* LOWDOWN_HRULE */
-	"LOWDOWN_LIST",                 /* LOWDOWN_LIST */
-	"LOWDOWN_LISTITEM",             /* LOWDOWN_LISTITEM */
-	"LOWDOWN_PARAGRAPH",            /* LOWDOWN_PARAGRAPH */
-	"LOWDOWN_TABLE_BLOCK",          /* LOWDOWN_TABLE_BLOCK */
-	"LOWDOWN_TABLE_HEADER",         /* LOWDOWN_TABLE_HEADER */
-	"LOWDOWN_TABLE_BODY",           /* LOWDOWN_TABLE_BODY */
-	"LOWDOWN_TABLE_ROW",            /* LOWDOWN_TABLE_ROW */
-	"LOWDOWN_TABLE_CELL",           /* LOWDOWN_TABLE_CELL */
-	"LOWDOWN_FOOTNOTES_BLOCK",      /* LOWDOWN_FOOTNOTES_BLOCK */
-	"LOWDOWN_FOOTNOTE_DEF",         /* LOWDOWN_FOOTNOTE_DEF */
-	"LOWDOWN_BLOCKHTML",            /* LOWDOWN_BLOCKHTML */
-	"LOWDOWN_LINK_AUTO",            /* LOWDOWN_LINK_AUTO */
-	"LOWDOWN_CODESPAN",             /* LOWDOWN_CODESPAN */
-	"LOWDOWN_DOUBLE_EMPHASIS",      /* LOWDOWN_DOUBLE_EMPHASIS */
-	"LOWDOWN_EMPHASIS",             /* LOWDOWN_EMPHASIS */
-	"LOWDOWN_HIGHLIGHT",            /* LOWDOWN_HIGHLIGHT */
-	"LOWDOWN_IMAGE",                /* LOWDOWN_IMAGE */
-	"LOWDOWN_LINEBREAK",            /* LOWDOWN_LINEBREAK */
-	"LOWDOWN_LINK",                 /* LOWDOWN_LINK */
-	"LOWDOWN_TRIPLE_EMPHASIS",      /* LOWDOWN_TRIPLE_EMPHASIS */
-	"LOWDOWN_STRIKETHROUGH",        /* LOWDOWN_STRIKETHROUGH */
-	"LOWDOWN_SUPERSCRIPT",          /* LOWDOWN_SUPERSCRIPT */
-	"LOWDOWN_FOOTNOTE_REF",         /* LOWDOWN_FOOTNOTE_REF */
-	"LOWDOWN_MATH_BLOCK",           /* LOWDOWN_MATH_BLOCK */
-	"LOWDOWN_RAW_HTML",             /* LOWDOWN_RAW_HTML */
-	"LOWDOWN_ENTITY",               /* LOWDOWN_ENTITY */
-	"LOWDOWN_NORMAL_TEXT",          /* LOWDOWN_NORMAL_TEXT */
-	"LOWDOWN_DOC_HEADER",           /* LOWDOWN_DOC_HEADER */
-	"LOWDOWN_META",           	/* LOWDOWN_META */
-	"LOWDOWN_DOC_FOOTER",           /* LOWDOWN_DOC_FOOTER */
-};
-#endif
 
 static void
 MD5Updatebuf(MD5_CTX *ctx, const struct lowdown_buf *v)
@@ -144,7 +100,7 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 	const struct lowdown_node *n)
 {
 	const struct lowdown_node	*nn;
-	size_t				 weight = 0;
+	ssize_t				 weight = -1;
 	MD5_CTX				 ctx;
 	double				 v = 0.0, vv;
 	struct xnode			*xn;
@@ -153,23 +109,22 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 	/* Get our node slot. */
 
 	if (n->id >= map->maxsize) {
-		pp = recallocarray
-			(map->nodes, 
-			 map->maxsize, n->id + 64,
-			 sizeof(struct xnode));
+		pp = recallocarray(map->nodes, map->maxsize, 
+			n->id + 64, sizeof(struct xnode));
 		if (pp == NULL)
 			return -1.0;
 		map->nodes = pp;
 		map->maxsize = n->id + 64;
 	}
 
-	assert(n->id < map->maxsize);
 	xn = &map->nodes[n->id];
 	assert(xn->node == NULL);
 	assert(xn->weight == 0.0);
 	xn->node = n;
 	if (n->id > map->maxid)
 		map->maxid = n->id;
+	assert(map->maxid < map->maxsize);
+	map->maxnodes++;
 
 	/* Recursive step. */
 
@@ -226,22 +181,12 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 		break;
 	}
 
-	switch (n->type) {
-	case LOWDOWN_BLOCKCODE:
-	case LOWDOWN_BLOCKHTML:
-	case LOWDOWN_LINK_AUTO:
-	case LOWDOWN_CODESPAN:
-	case LOWDOWN_IMAGE:
-	case LOWDOWN_RAW_HTML:
-	case LOWDOWN_NORMAL_TEXT:
-	case LOWDOWN_ENTITY:
-		assert(xn->weight == 0.0);
-		xn->weight = 1.0 + log(weight);
-		break;
-	default:
+	/* Weight can be zero if text size is zero. */
+
+	if (weight >= 0)
+		xn->weight = 1.0 + (weight == 0 ? 0.0 : log(weight));
+	else
 		xn->weight += 1.0;
-		break;
-	}
 
 	/*
 	 * Augment our signature from our attributes.
@@ -328,6 +273,9 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 	if (xn->weight > map->maxweight)
 		map->maxweight = xn->weight;
 
+	assert(isfinite(xn->weight));
+	assert(isnormal(xn->weight));
+	assert(xn->weight > 0.0);
 	return xn->weight;
 }
 
@@ -392,7 +340,7 @@ optimality(struct xnode *xnew, struct xmap *xnewmap,
 
 	/* Height: log(n) * W/W_0 or at least 1. */
 
-	d = ceil(log(xnewmap->maxid) * 
+	d = ceil(log(xnewmap->maxnodes) * 
 		xnew->weight / xnewmap->maxweight);
 
 	if (d == 0)
@@ -518,7 +466,7 @@ match_up(struct xnode *xnew, struct xmap *xnewmap,
 
 	/* Height: log(n) * W/W_0 or at least 1. */
 
-	d = ceil(log(xnewmap->maxid) * 
+	d = ceil(log(xnewmap->maxnodes) * 
 		xnew->weight / xnewmap->maxweight);
 	if (d == 0)
 		d = 1;
@@ -572,6 +520,21 @@ match_down(struct xnode *xnew, struct xmap *xnewmap,
 {
 	struct lowdown_node *nnew, *nold;
 
+	/* 
+	 * If we're matching into a component that has already been
+	 * matched, we're in the subtree proper (the subtree root is
+	 * checked that it's not already matched) and the fact that this
+	 * is within a match indicates we're more the "larger" of the
+	 * matches, so unset its match status.
+	 */
+
+	if (xold->match != NULL) {
+		assert(xold->node == 
+			xnewmap->nodes[xold->match->id].match);
+		xnewmap->nodes[xold->match->id].match = NULL;
+		xold->match = NULL;
+	}
+
 	assert(xnew->match == NULL);
 	assert(xold->match == NULL);
 
@@ -589,6 +552,7 @@ match_down(struct xnode *xnew, struct xmap *xnewmap,
 		nnew = TAILQ_NEXT(nnew, entries);
 		nold = TAILQ_NEXT(nold, entries);
 	}
+	assert(nold == NULL);
 }
 
 /*
@@ -1153,31 +1117,6 @@ err:
 	return NULL;
 }
 
-#if DEBUG
-static void
-node_print(const struct lowdown_node *n, const struct xmap *map, size_t ind)
-{
-	const struct lowdown_node *nn;
-	const struct xnode *xn;
-	size_t	 i;
-
-	xn = &map->nodes[n->id];
-	for (i = 0; i < ind; i++)
-		fputc(' ', stderr);
-
-	fprintf(stderr, "%zu:%s (%g)", n->id,names[n->type], xn->weight);
-	if (xn->match) {
-		fprintf(stderr, " -> %zu", xn->match->id);
-	}
-
-	fputc('\n', stderr);
-
-
-	TAILQ_FOREACH(nn, &n->children, entries)
-		node_print(nn, map, ind + 1);
-}
-#endif
-
 /*
  * Optimise from top down.
  * This works by selecting matching non-terminal nodes, both adjacent
@@ -1243,12 +1182,6 @@ node_optimise_topdown(const struct lowdown_node *n,
 
 		if ( ! match_eq(nnext, mnext))
 			continue;
-
-#if DEBUG
-		warnx("%s (%zu): subtree match: %s (%zu) -> %zu",
-			names[n->type], n->id, 
-			names[nchild->type], nchild->id, mchild->id);
-#endif
 
 		xnnext->match = mnext;
 		xmnext->match = nnext;
@@ -1447,11 +1380,6 @@ lowdown_diff(const struct lowdown_node *nold,
 	node_optimise_topdown(nnew, &xnewmap, &xoldmap);
 	node_optimise_bottomup(nnew, &xnewmap, &xoldmap);
 
-#if DEBUG
-	node_print(nnew, &xnewmap, 0);
-	node_print(nold, &xoldmap, 0);
-#endif
-
 	/*
 	 * The tree is optimal.
 	 * Now we need to compute the delta and merge the trees.
@@ -1466,6 +1394,7 @@ lowdown_diff(const struct lowdown_node *nold,
 		xoldmap.maxid + 1;
 
 out:
+	assert(comp != NULL);
 	while ((p = TAILQ_FIRST(&pq)) != NULL) {
 		TAILQ_REMOVE(&pq, p, entries);
 		free(p);
