@@ -3,7 +3,7 @@
  * Copyright (c) 2008, Natacha Porté
  * Copyright (c) 2011, Vicent Martí
  * Copyright (c) 2014, Xavier Mendez, Devin Torres and the Hoedown authors
- * Copyright (c) 2016--2017, Kristaps Dzonsons
+ * Copyright (c) 2016--2017, 2021 Kristaps Dzonsons
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -58,7 +58,7 @@ halink_is_safe(const char *data, size_t size)
 		len = strlen(valid_uris[i]);
 		if (size > len &&
 		    strncasecmp(data, valid_uris[i], len) == 0 &&
-		    isalnum(data[len]))
+		    isalnum((unsigned char)data[len]))
 			return 1;
 	}
 
@@ -88,10 +88,12 @@ autolink_delim(char *data,
 		else if (data[link_end - 1] == ';') {
 			new_end = link_end - 2;
 
-			while (new_end > 0 && isalpha(data[new_end]))
+			while (new_end > 0 && 
+			       isalpha((unsigned char)data[new_end]))
 				new_end--;
 
-			if (new_end < link_end - 2 && data[new_end] == '&')
+			if (new_end < link_end - 2 && 
+			    data[new_end] == '&')
 				link_end = new_end;
 			else
 				link_end--;
@@ -169,19 +171,21 @@ autolink_delim(char *data,
 static size_t
 check_domain(char *data, size_t size)
 {
-	size_t i, np = 0;
+	size_t	 i, np = 0;
 
-	if ( ! isalnum(data[0]))
+	if (!isalnum((unsigned char)data[0]))
 		return 0;
 
 	for (i = 1; i < size - 1; ++i) {
 		if (strchr(".:", data[i]) != NULL) 
 			np++;
-		else if ( ! isalnum(data[i]) && data[i] != '-') 
+		else if (!isalnum((unsigned char)data[i]) && 
+			 data[i] != '-') 
 			break;
 	}
 
 	/* A valid domain needs to have at least a dot. */
+
 	return np ? i : 0;
 }
 
@@ -194,7 +198,9 @@ halink_www(size_t *rewind_p, struct lowdown_buf *link,
 {
 	size_t link_end;
 
-	if (max_rewind > 0 && !ispunct(data[-1]) && !isspace(data[-1]))
+	if (max_rewind > 0 && 
+	   !ispunct((unsigned char)data[-1]) && 
+	   !isspace((unsigned char)data[-1]))
 		return 0;
 
 	if (size < 4 || memcmp(data, "www.", strlen("www.")) != 0)
@@ -205,7 +211,8 @@ halink_www(size_t *rewind_p, struct lowdown_buf *link,
 	if (link_end == 0)
 		return 0;
 
-	while (link_end < size && !isspace(data[link_end]))
+	while (link_end < size && 
+	       !isspace((unsigned char)data[link_end]))
 		link_end++;
 
 	link_end = autolink_delim(data, link_end, max_rewind, size);
@@ -233,7 +240,7 @@ halink_email(size_t *rewind_p, struct lowdown_buf *link,
 	for (rewind = 0; rewind < max_rewind; ++rewind) {
 		c = data[-1 - rewind];
 
-		if (isalnum(c))
+		if (isalnum((unsigned char)c))
 			continue;
 
 		if (strchr(".+-_", c) != NULL)
@@ -260,7 +267,7 @@ halink_email(size_t *rewind_p, struct lowdown_buf *link,
 	}
 
 	if (link_end < 2 || nb != 1 || np == 0 ||
-		!isalpha(data[link_end - 1]))
+	    !isalpha((unsigned char)data[link_end - 1]))
 		return 0;
 
 	link_end = autolink_delim(data, link_end, max_rewind, size);
@@ -286,7 +293,8 @@ halink_url(size_t *rewind_p, struct lowdown_buf *link,
 	if (size < 4 || data[1] != '/' || data[2] != '/')
 		return 0;
 
-	while (rewind < max_rewind && isalpha(data[-1 - rewind]))
+	while (rewind < max_rewind && 
+	       isalpha((unsigned char)data[-1 - rewind]))
 		rewind++;
 
 	if (!halink_is_safe(data - rewind, size + rewind))
@@ -300,7 +308,8 @@ halink_url(size_t *rewind_p, struct lowdown_buf *link,
 		return 0;
 
 	link_end += domain_len;
-	while (link_end < size && !isspace(data[link_end]))
+	while (link_end < size && 
+	       !isspace((unsigned char)data[link_end]))
 		link_end++;
 
 	link_end = autolink_delim(data, link_end, max_rewind, size);
