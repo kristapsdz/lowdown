@@ -72,7 +72,6 @@ SOURCES		 = autolink.c \
 		   latex.c \
 		   libdiff.c \
 		   library.c \
-		   log.c \
 		   main.c \
 		   nroff.c \
 		   smartypants.c \
