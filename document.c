@@ -1272,12 +1272,16 @@ char_autolink_www(struct lowdown_doc *doc,
 	struct lowdown_buf	*link = NULL, *link_url = NULL;
 	size_t	 		 link_len, rewind;
 	struct lowdown_node 	*n, *nn;
+	ssize_t			 ret;
 
 	if (doc->in_link_body)
 		return 0;
 	if ((link = hbuf_new(64)) == NULL)
 		goto err;
-	link_len = halink_www(&rewind, link, data, offset, size);
+	ret = halink_www(&rewind, link, data, offset, size);
+	if (ret < 0)
+		goto err;
+	link_len = ret;
 
 	if (link_len > 0) {
 		if ((link_url = hbuf_new(64)) == NULL)
@@ -1327,13 +1331,17 @@ char_autolink_email(struct lowdown_doc *doc,
 {
 	struct lowdown_buf	*link = NULL;
 	size_t	 		 link_len, rewind;
+	ssize_t			 ret;
 	struct lowdown_node 	*n;
 
 	if (doc->in_link_body)
 		return 0;
 	if ((link = hbuf_new(64)) == NULL)
 		goto err;
-	link_len = halink_email(&rewind, link, data, offset, size);
+	ret = halink_email(&rewind, link, data, offset, size);
+	if (ret < 0)
+		goto err;
+	link_len = ret;
 
 	if (link_len > 0) {
 		if (doc->current && 
@@ -1372,12 +1380,16 @@ char_autolink_url(struct lowdown_doc *doc,
 	struct lowdown_buf	*link = NULL;
 	size_t			 link_len, rewind;
 	struct lowdown_node 	*n;
+	ssize_t			 ret;
 
 	if (doc->in_link_body)
 		return 0;
 	if ((link = hbuf_new(64)) == NULL)
 		goto err;
-	link_len = halink_url(&rewind, link, data, offset, size);
+	ret = halink_url(&rewind, link, data, offset, size);
+	if (ret < 0)
+		goto err;
+	link_len = ret;
 
 	if (link_len > 0) {
 		if (doc->current &&

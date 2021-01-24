@@ -43,9 +43,9 @@ void		 hbuf_truncate(struct lowdown_buf *);
 #define 	 HBUF_PUTSL(output, literal) \
 		 hbuf_put(output, literal, sizeof(literal) - 1)
 
-size_t		 halink_email(size_t *, struct lowdown_buf *, char *, size_t, size_t);
-size_t		 halink_url(size_t *, struct lowdown_buf *, char *, size_t, size_t);
-size_t		 halink_www(size_t *, struct lowdown_buf *, char *, size_t, size_t);
+ssize_t		 halink_email(size_t *, struct lowdown_buf *, char *, size_t, size_t);
+ssize_t		 halink_url(size_t *, struct lowdown_buf *, char *, size_t, size_t);
+ssize_t		 halink_www(size_t *, struct lowdown_buf *, char *, size_t, size_t);
 
 void		 hesc_attr(struct lowdown_buf *, const char *, size_t);
 void		 hesc_href(struct lowdown_buf *, const char *, size_t);

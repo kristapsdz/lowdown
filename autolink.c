@@ -192,7 +192,7 @@ check_domain(char *data, size_t size)
 /* 
  * Search for the next www link in data.
  */
-size_t
+ssize_t
 halink_www(size_t *rewind_p, struct lowdown_buf *link,
 	char *data, size_t max_rewind, size_t size)
 {
@@ -220,7 +220,8 @@ halink_www(size_t *rewind_p, struct lowdown_buf *link,
 	if (link_end == 0)
 		return 0;
 
-	hbuf_put(link, data, link_end);
+	if (!hbuf_put(link, data, link_end))
+		return -1;
 	*rewind_p = 0;
 
 	return link_end;
@@ -229,7 +230,7 @@ halink_www(size_t *rewind_p, struct lowdown_buf *link,
 /* 
  * Search for the next email in data.
  */
-size_t
+ssize_t
 halink_email(size_t *rewind_p, struct lowdown_buf *link, 
 	char *data, size_t max_rewind, size_t size)
 {
@@ -275,7 +276,8 @@ halink_email(size_t *rewind_p, struct lowdown_buf *link,
 	if (link_end == 0)
 		return 0;
 
-	hbuf_put(link, data - rewind, link_end + rewind);
+	if (!hbuf_put(link, data - rewind, link_end + rewind))
+		return -1;
 	*rewind_p = rewind;
 
 	return link_end;
@@ -284,7 +286,7 @@ halink_email(size_t *rewind_p, struct lowdown_buf *link,
 /* 
  * Search for the next URL in data.
  */
-size_t
+ssize_t
 halink_url(size_t *rewind_p, struct lowdown_buf *link,
 	char *data, size_t max_rewind, size_t size)
 {
@@ -317,7 +319,8 @@ halink_url(size_t *rewind_p, struct lowdown_buf *link,
 	if (link_end == 0)
 		return 0;
 
-	hbuf_put(link, data - rewind, link_end + rewind);
+	if (!hbuf_put(link, data - rewind, link_end + rewind))
+		return -1;
 	*rewind_p = rewind;
 
 	return link_end;
