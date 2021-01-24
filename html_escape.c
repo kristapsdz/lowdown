@@ -143,57 +143,62 @@ static const char *esc_num[] = {
  * Escape general HTML attributes.
  * This is modelled after the main Markdown parser.
  */
-void
+int
 hesc_attr(struct lowdown_buf *ob, const char *data, size_t size)
 {
-	size_t	 i = 0, mark;
+	size_t	 	 i, mark;
+	int		 rc;
 
 	if (size == 0)
-		return;
+		return 1;
 
-	while (i < size) {
+	for (i = 0; i < size; i++) {
 		mark = i;
 		while (i < size && data[i] != '"' && data[i] != '&') 
 			i++;
 
-		if (mark == 0 && i >= size) {
-			hbuf_put(ob, data, size);
-			return;
-		}
+		if (mark == 0 && i >= size)
+			return hbuf_put(ob, data, size);
 
-		if (i > mark)
-			hbuf_put(ob, data + mark, i - mark);
+		if (i > mark &&
+		    !hbuf_put(ob, data + mark, i - mark))
+			return 0;
+
 		if (i >= size)
 			break;
 
+		rc = 1;
 		if (data[i] == '"')
-			HBUF_PUTSL(ob, "&quot;");
+			rc = HBUF_PUTSL(ob, "&quot;");
 		else if (data[i] == '&')
-			HBUF_PUTSL(ob, "&amp;");
-
-		i++;
+			rc = HBUF_PUTSL(ob, "&amp;");
+		if (!rc)
+			return 0;
 	}
+
+	return 1;
 }
 
 /* 
  * Escape (part of) a URL inside HTML.
+ * Return zero on failure (memory), non-zero otherwise.
  */
-void
+int
 hesc_href(struct lowdown_buf *ob, const char *data, size_t size)
 {
 	static const char 	hex_chars[] = "0123456789ABCDEF";
-	size_t  		i = 0, mark;
+	size_t  		i, mark;
 	char 		 	hex_str[3];
+	int			rc;
 
 	if (size == 0)
-		return;
+		return 1;
 
 	hex_str[0] = '%';
 
-	while (i < size) {
+	for (i = 0; i < size; i++) {
 		mark = i;
-		while (i < size && 
-		       href_tbl[(unsigned char)data[i]]) 
+		while (i < size && href_tbl[(unsigned char)data[i]])
 			i++;
 
 		/* 
@@ -201,13 +206,12 @@ hesc_href(struct lowdown_buf *ob, const char *data, size_t size)
 		 * escape.
 		*/
 
-		if (mark == 0 && i >= size) {
-			hbuf_put(ob, data, size);
-			return;
-		}
+		if (mark == 0 && i >= size)
+			return hbuf_put(ob, data, size);
 
-		if (i > mark)
-			hbuf_put(ob, data + mark, i - mark);
+		if (i > mark &&
+		    !hbuf_put(ob, data + mark, i - mark))
+			return 0;
 
 		/* Escaping... */
 
@@ -220,7 +224,7 @@ hesc_href(struct lowdown_buf *ob, const char *data, size_t size)
 			 * Amp appears all the time in URLs, but needs
 			 * HTML-entity escaping to be inside an href.
 			*/
-			HBUF_PUTSL(ob, "&amp;");
+			rc = HBUF_PUTSL(ob, "&amp;");
 			break;
 		case '\'':
 			/* 
@@ -228,7 +232,7 @@ hesc_href(struct lowdown_buf *ob, const char *data, size_t size)
 			 * according to the standard; it needs HTML
 			 * entity escaping too.
 			*/
-			HBUF_PUTSL(ob, "&#x27;");
+			rc = HBUF_PUTSL(ob, "&#x27;");
 			break;
 		default:
 			/* 
@@ -237,11 +241,14 @@ hesc_href(struct lowdown_buf *ob, const char *data, size_t size)
 			*/
 			hex_str[1] = hex_chars[(data[i] >> 4) & 0xF];
 			hex_str[2] = hex_chars[data[i] & 0xF];
-			hbuf_put(ob, hex_str, 3);
+			rc = hbuf_put(ob, hex_str, 3);
 			break;
 		}
-		i++;
+		if (!rc)
+			return 0;
 	}
+
+	return 1;
 }
 
 /* 
@@ -250,24 +257,25 @@ hesc_href(struct lowdown_buf *ob, const char *data, size_t size)
  * If "secure", also escape characters as suggested by OWASP rules.
  * If "num", use only numeric escapes.
  * Does nothing if "size" is zero.
+ * Return zero on failure (memory), non-zero otherwise.
  */
-void
+int
 hesc_html(struct lowdown_buf *ob, const char *data,
 	size_t size, int secure, int literal, int num)
 {
-	size_t 		i = 0, mark;
-	int		max = 0;
+	size_t 		i, mark;
+	int		max = 0, rc;
 	unsigned char	ch;
 
 	if (size == 0)
-		return;
+		return 1;
 
 	if (!literal && !secure)
 		max = ESC_TBL_OWASP_MAX;
 	else if (literal && !secure)
 		max = ESC_TBL_LITERAL_MAX;
 
-	while (1) {
+	for (i = 0; ; i++) {
 		mark = i;
 		while (i < size && 
 		       esc_tbl[(unsigned char)data[i]] == 0) 
@@ -275,13 +283,12 @@ hesc_html(struct lowdown_buf *ob, const char *data,
 
 		/* Case where there's nothing to escape. */
 
-		if (mark == 0 && i >= size) {
-			hbuf_put(ob, data, size);
-			return;
-		}
+		if (mark == 0 && i >= size)
+			return hbuf_put(ob, data, size);
 
-		if (i > mark)
-			hbuf_put(ob, data + mark, i - mark);
+		if (i > mark &&
+		    !hbuf_put(ob, data + mark, i - mark))
+			return 0;
 
 		if (i >= size) 
 			break;
@@ -289,11 +296,14 @@ hesc_html(struct lowdown_buf *ob, const char *data,
 		ch = (unsigned char)data[i];
 
 		if (esc_tbl[ch] <= max)
-			hbuf_putc(ob, data[i]);
+			rc = hbuf_putc(ob, data[i]);
 		else
-			hbuf_puts(ob, num ?
+			rc = hbuf_puts(ob, num ?
 				esc_num[esc_tbl[ch]] :
 				esc_name[esc_tbl[ch]]);
-		i++;
+		if (!rc)
+			return 0;
 	}
+
+	return 1;
 }

@@ -47,9 +47,9 @@ ssize_t		 halink_email(size_t *, struct lowdown_buf *, char *, size_t, size_t);
 ssize_t		 halink_url(size_t *, struct lowdown_buf *, char *, size_t, size_t);
 ssize_t		 halink_www(size_t *, struct lowdown_buf *, char *, size_t, size_t);
 
-void		 hesc_attr(struct lowdown_buf *, const char *, size_t);
-void		 hesc_href(struct lowdown_buf *, const char *, size_t);
-void		 hesc_html(struct lowdown_buf *, const char *, size_t, int, int, int);
+int		 hesc_attr(struct lowdown_buf *, const char *, size_t);
+int		 hesc_href(struct lowdown_buf *, const char *, size_t);
+int		 hesc_html(struct lowdown_buf *, const char *, size_t, int, int, int);
 
 char		*rcsdate2str(const char *);
 char		*date2str(const char *);
