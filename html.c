@@ -938,8 +938,9 @@ rndr_root(struct lowdown_buf *ob,
 /*
  * Split "val" into multiple strings delimited by two or more whitespace
  * characters, padding the output with "starttag" and "endtag".
+ * Return zero on failure, non-zero on success.
  */
-static void
+static int
 rndr_meta_multi(struct lowdown_buf *ob, const char *b,
 	const char *starttag, const char *endtag)
 {
@@ -965,18 +966,26 @@ rndr_meta_multi(struct lowdown_buf *ob, const char *b,
 		if ((sz = &b[i] - start) == 0)
 			continue;
 
-		hbuf_puts(ob, starttag);
-		HBUF_PUTSL(ob, "\"");
-		hbuf_put(ob, start, sz);
-		HBUF_PUTSL(ob, "\"");
-		hbuf_puts(ob, endtag);
-		HBUF_PUTSL(ob, "\n");
+		if (!hbuf_puts(ob, starttag))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\""))
+			return 0;
+		if (!hbuf_put(ob, start, sz))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\""))
+			return 0;
+		if (!hbuf_puts(ob, endtag))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\n"))
+			return 0;
 	}
+
+	return 1;
 }
 
 /*
  * Allocate a meta-data value on the queue "mq".
- * Return zero on failure (memory), non-zero on success.
+ * Return zero on failure, non-zero on success.
  */
 static int
 rndr_meta(struct lowdown_buf *ob,
@@ -1009,10 +1018,11 @@ rndr_meta(struct lowdown_buf *ob,
 	return 1;
 }
 
-static void
+static int
 rndr_doc_header(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
-	const struct lowdown_metaq *mq, const struct html *st)
+	const struct lowdown_metaq *mq, 
+	const struct html *st)
 {
 	const struct lowdown_meta	*m;
 	const char			*author = NULL, *title = NULL,
@@ -1022,7 +1032,7 @@ rndr_doc_header(struct lowdown_buf *ob,
 					*script = NULL;
 
 	if (!(st->flags & LOWDOWN_STANDALONE))
-		return;
+		return 1;
 
 	TAILQ_FOREACH(m, mq, entries)
 		if (strcasecmp(m->key, "author") == 0)
@@ -1044,13 +1054,15 @@ rndr_doc_header(struct lowdown_buf *ob,
 		else if (strcasecmp(m->key, "javascript") == 0)
 			script = m->value;
 
-	hbuf_putb(ob, content);
+	if (!hbuf_putb(ob, content))
+		return 0;
 
-	HBUF_PUTSL(ob, 
-	      "<head>\n"
-	      "<meta charset=\"utf-8\" />\n"
-	      "<meta name=\"viewport\""
-	      " content=\"width=device-width,initial-scale=1\" />\n");
+	if (!HBUF_PUTSL(ob, 
+	    "<head>\n"
+	    "<meta charset=\"utf-8\" />\n"
+	    "<meta name=\"viewport\""
+	    " content=\"width=device-width,initial-scale=1\" />\n"))
+		return 0;
 
 	/* Overrides. */
 
@@ -1061,32 +1073,43 @@ rndr_doc_header(struct lowdown_buf *ob,
 	if (rcsauthor != NULL)
 		author = rcsauthor;
 
-	if (affil != NULL)
-		rndr_meta_multi(ob, affil, 
-			"<meta name=\"creator\" content=", " />");
-	if (author != NULL)
-		rndr_meta_multi(ob, author, 
-			"<meta name=\"author\" content=", " />");
-	if (copy != NULL)
-		rndr_meta_multi(ob, copy, 
-			"<meta name=\"copyright\" content=", " />");
-	if (css != NULL)
-		rndr_meta_multi(ob, css, 
-			"<link rel=\"stylesheet\" href=", " />");
-	if (date != NULL) {
-		hbuf_printf(ob, "<meta name=\"date\" "
-			"scheme=\"YYYY-MM-DD\" content=\"");
-		hbuf_puts(ob, date);
-		HBUF_PUTSL(ob, "\" />\n");
-	}
-	if (script != NULL)
-		rndr_meta_multi(ob, script, 
-			"<script src=", "></script>");
+	if (affil != NULL && !rndr_meta_multi
+	    (ob, affil, "<meta name=\"creator\" content=", " />"))
+		return 0;
 
-	HBUF_PUTSL(ob, "<title>");
-	hbuf_puts(ob, title);
-	HBUF_PUTSL(ob, "</title>\n");
-	HBUF_PUTSL(ob, "</head>\n<body>\n");
+	if (author != NULL && !rndr_meta_multi
+	    (ob, author, "<meta name=\"author\" content=", " />"))
+		return 0;
+
+	if (copy != NULL && !rndr_meta_multi
+	    (ob, copy, "<meta name=\"copyright\" content=", " />"))
+		return 0;
+
+	if (css != NULL && !rndr_meta_multi
+	    (ob, css, "<link rel=\"stylesheet\" href=", " />"))
+		return 0;
+
+	if (date != NULL) {
+		if (!hbuf_printf(ob, "<meta name="
+		    "\"date\" scheme=\"YYYY-MM-DD\" content=\""))
+			return 0;
+		if (!hbuf_puts(ob, date))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\" />\n"))
+			return 0;
+	}
+
+	if (script != NULL && !rndr_meta_multi
+	    (ob, script, "<script src=", "></script>"))
+		return 0;
+
+	if (!HBUF_PUTSL(ob, "<title>"))
+		return 0;
+	if (!hbuf_puts(ob, title))
+		return 0;
+	if (!HBUF_PUTSL(ob, "</title>\n"))
+		return 0;
+	return HBUF_PUTSL(ob, "</head>\n<body>\n");
 }
 
 static int
@@ -1135,7 +1158,7 @@ rndr(struct lowdown_buf *ob,
 		rc = rndr_definition_data(ob, tmp);
 		break;
 	case LOWDOWN_DOC_HEADER:
-		rndr_doc_header(ob, tmp, mq, st);
+		rc = rndr_doc_header(ob, tmp, mq, st);
 		break;
 	case LOWDOWN_META:
 		rc = rndr_meta(ob, tmp, mq, n, st);
