@@ -37,6 +37,12 @@ IllumOS is enabled by
 BSD.lv's 
 [build system](https://kristaps.bsd.lv/cgi-bin/minci.cgi/index.html?project-name=lowdown).
 
+One major difference between *lowdown* and other Markdown formatters it
+that it internally converts to an AST instead of directly formatting
+output.  This enables some semantic analysis of the content such as with
+the [difference engine](https://kristaps.bsd.lv/lowdown/diff.html),
+which shows the difference between two markdown trees in markdown.
+
 ## Output
 
 *lowdown* produces HTML5 output in XML mode with **-Thtml**.  It may produce
@@ -290,7 +296,7 @@ Want to hack on *lowdown*?  Of course you do.
 You can always just search for `TODO`, `XXX`, or `FIXME` in the source
 code.  This is your best bet.
 
-- There are some larger known issues, mostly in PDF (**-Tms** and
+- There are some larger known issues, mostly in roff (**-Tms** and
 **-Tman**) output.
 
 - There needs to be logic to handle when a link is the first or last
