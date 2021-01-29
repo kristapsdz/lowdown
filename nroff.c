@@ -60,7 +60,7 @@ enum	bscope {
 struct	bnode {
 	const struct lowdown_buf	*buf; /* data */
 	char				*nbuf; /* new buffer */
-	char				*nargs;
+	char				*nargs; /* macro arguments */
 	enum bscope			 scope; /* scope */
 	unsigned int			 font;
 #define	BFONT_ITALIC			 0x01
@@ -74,6 +74,7 @@ struct	bnode {
 
 TAILQ_HEAD(bnodeq, bnode);
 
+#if 0
 /*
  * If "span" is non-zero, don't test for leading periods.
  * Otherwise, a leading period will be escaped.
@@ -140,6 +141,7 @@ hesc_nroff(struct lowdown_buf *ob, const char *data,
 
 	return 1;
 }
+#endif
 
 static const char *
 nstate_colour_buf(unsigned int ft)
@@ -224,25 +226,6 @@ bqueue_block(struct bnodeq *q, const char *macro)
 }
 
 static void
-bqueue_strip_paras(struct bnodeq *bq)
-{
-	struct bnode	*bn;
-
-	while ((bn = TAILQ_FIRST(bq)) != NULL) {
-		if (bn->scope != BSCOPE_BLOCK || bn->nbuf == NULL)
-			break;
-		if (strcmp(bn->nbuf, ".PP") &&
-		    strcmp(bn->nbuf, ".IP") &&
-		    strcmp(bn->nbuf, ".LP"))
-			break;
-		TAILQ_REMOVE(bq, bn, entries);
-		free(bn->nargs);
-		free(bn->nbuf);
-		free(bn);
-	}
-}
-
-static void
 bnode_free(struct bnode *bn)
 {
 
@@ -262,10 +245,28 @@ bqueue_free(struct bnodeq *bq)
 	}
 }
 
+static void
+bqueue_strip_paras(struct bnodeq *bq)
+{
+	struct bnode	*bn;
+
+	while ((bn = TAILQ_FIRST(bq)) != NULL) {
+		if (bn->scope != BSCOPE_BLOCK || bn->nbuf == NULL)
+			break;
+		if (strcmp(bn->nbuf, ".PP") &&
+		    strcmp(bn->nbuf, ".IP") &&
+		    strcmp(bn->nbuf, ".LP"))
+			break;
+		TAILQ_REMOVE(bq, bn, entries);
+		bnode_free(bn);
+	}
+}
+
 static int
 bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq)
 {
 	const struct bnode	*bn, *next;
+	const char		*cp;
 	int		 	 nextblk;
 
 	TAILQ_FOREACH(bn, bq, entries) {
@@ -326,13 +327,20 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq)
 		if (bn->buf != NULL && !hbuf_putb(ob, bn->buf))
 			return 0;
 
-		/* Arguments follow after space. */
+		/* 
+		 * Macro arguments follow after space.
+		 * These must all be printed on the same line.
+		 */
 
 		if (bn->nargs != NULL) {
+			assert(nextblk);
+			assert(bn->scope == BSCOPE_BLOCK);
 			if (!hbuf_putc(ob, ' '))
 				return 0;
-			if (!hbuf_puts(ob, bn->nargs))
-				return 0;
+			for (cp = bn->nargs; *cp != '\0'; cp++)
+				if (!hbuf_putc(ob, 
+				    *cp == '\n' ? ' ' : *cp))
+					return 0;
 		}
 
 		/* Finally, trailing newline. */
@@ -380,20 +388,32 @@ out:
  * otherwise.
  */
 static int
-putlink(struct lowdown_buf *ob, struct nroff *st,
-	const struct lowdown_buf *link,
-	const struct lowdown_buf *text, 
-	struct lowdown_node *next, 
-	struct lowdown_node *prev, 
+putlink(struct bnodeq *obq, struct nroff *st, 
+	const struct lowdown_buf *link, struct bnodeq *bq,
 	enum halink_type type)
 {
-	const struct lowdown_buf	*buf;
-	size_t		 		 i, pos;
-	int		 		 ret = 1, usepdf;
+	struct lowdown_buf	*ob;
+	struct bnode		*bn;
+	size_t			 i;
+	int			 rc = -1;
 
-	usepdf = !st->man && (st->flags & LOWDOWN_NROFF_GROFF);
+	if (st->man || !(st->flags & LOWDOWN_NROFF_GROFF)) {
+		st->fonts[NFONT_ITALIC]++;
+		if (!nstate_fonts(st, obq))
+			return -1;
+		if (bq == NULL) {
+			if ((bn = bqueue_span(obq, NULL)) == NULL)
+				return -1;
+			bn->buf = link;
+		} else
+			TAILQ_CONCAT(obq, bq, entries);
+		st->fonts[NFONT_ITALIC]--;
+		return nstate_fonts(st, obq) ? 1 : -1;
+	}
 
-	if (usepdf && !HBUF_PUTSL(ob, ".pdfhref W "))
+	if ((ob = hbuf_new(32)) == NULL)
+		goto out;
+	if ((bn = bqueue_block(obq, ".pdfhref W ")) == NULL)
 		return -1;
 
 	/*
@@ -402,6 +422,7 @@ putlink(struct lowdown_buf *ob, struct nroff *st,
 	 * If we're not in groff mode, emit the data, but without -P.
 	 */
 
+#if 0
 	if (prev != NULL &&
 	    prev->type == LOWDOWN_NORMAL_TEXT) {
 		buf = &prev->rndr_normal_text.text;
@@ -429,36 +450,9 @@ putlink(struct lowdown_buf *ob, struct nroff *st,
 		    usepdf && !HBUF_PUTSL(ob, "\" "))
 			return -1;
 	}
+#endif
 
-	if (!usepdf) {
-		st->fonts[NFONT_ITALIC]++;
-		/*if (!hbuf_puts(ob, nstate_fonts(st, NULL)))
-			return -1;*/
-		if (text == NULL) {
-			if (hbuf_strprefix(link, "mailto:")) {
-				if (!hbuf_put(ob, 
-				    link->data + 7, link->size - 7))
-					return -1;
-			} else if (!hbuf_putb(ob, link))
-				return -1;
-		} else if (!hbuf_putb(ob, text))
-			return -1;
-		st->fonts[NFONT_ITALIC]--;
-		/*if (!hbuf_puts(ob, nstate_fonts(st, NULL)))
-			return -1;*/
-	}
-
-	/*
-	 * If we're followed by normal text that doesn't begin with a
-	 * space, use the "-A" (affix) option to prevent a space before
-	 * what follows.
-	 * But first, initialise the offset.
-	 */
-
-	if (next != NULL && 
-	    next->type == LOWDOWN_NORMAL_TEXT)
-		next->rndr_normal_text.offs = 0;
-
+#if 0
 	if (next != NULL && 
 	    next->type == LOWDOWN_NORMAL_TEXT &&
 	    next->rndr_normal_text.text.size > 0 &&
@@ -487,55 +481,46 @@ putlink(struct lowdown_buf *ob, struct nroff *st,
 		if (usepdf && !HBUF_PUTSL(ob, "\" "))
 			return -1;
 	}
+#endif
 
 	/* Encode the URL. */
 
-	if (usepdf) {
-		if (!HBUF_PUTSL(ob, "-D "))
-			return -1;
-		if (type == HALINK_EMAIL && 
-		    !HBUF_PUTSL(ob, "mailto:"))
-			return -1;
-		for (i = 0; i < link->size; i++) {
-			if (!isprint((unsigned char)link->data[i]) ||
-			    strchr("<>\\^`{|}\"", 
-			    link->data[i]) != NULL) {
-				if (!hbuf_printf
-				    (ob, "%%%.2X", link->data[i]))
-					return -1;
-			} else if (!hbuf_putc(ob, link->data[i]))
-				return -1;
-		}
-		if (!HBUF_PUTSL(ob, " "))
-			return -1;
-		if (text == NULL) {
-			if (hbuf_strprefix(link, "mailto:")) {
-				if (!hbuf_put(ob, 
-				    link->data + 7, link->size - 7))
-					return -1;
-			} else if (!hbuf_putb(ob, link))
-				return -1;
-		} else {
-			if (!hesc_nroff(ob, 
-			    text->data, text->size, 0, 1, 0))
-				return -1;
-		}
+	if (!HBUF_PUTSL(ob, "-D "))
+		goto out;
+	if (type == HALINK_EMAIL && !HBUF_PUTSL(ob, "mailto:"))
+		goto out;
+	for (i = 0; i < link->size; i++) {
+		if (!isprint((unsigned char)link->data[i]) ||
+		    strchr("<>\\^`{|}\"", link->data[i]) != NULL) {
+			if (!hbuf_printf(ob, "%%%.2X", link->data[i]))
+				goto out;
+		} else if (!hbuf_putc(ob, link->data[i]))
+			goto out;
 	}
+	if (!HBUF_PUTSL(ob, " "))
+		goto out;
+	if (bq == NULL && !hbuf_putb(ob, link))
+		goto out;
+	else if (bq != NULL && !bqueue_flush(ob, bq))
+		goto out;
+	if ((bn->nargs = strndup(ob->data, ob->size)) == NULL)
+		goto out;
 
-	return HBUF_PUTSL(ob, "\n") ? ret : -1;
+	rc = 1;
+out:
+	hbuf_free(ob);
+	return rc;
 }
 
 /*
  * Return <0 on failure, 0 to remove next, >0 otherwise.
  */
 static int
-rndr_autolink(struct lowdown_buf *ob,
-	const struct rndr_autolink *param,
-	struct nroff *st)
+rndr_autolink(struct nroff *st, struct bnodeq *obq,
+	const struct rndr_autolink *param)
 {
 
-	return putlink(ob, st, &param->link, 
-		NULL, NULL, NULL, param->type);
+	return putlink(obq, st, &param->link, NULL, param->type);
 }
 
 static int
@@ -712,14 +697,11 @@ rndr_header(struct nroff *st, struct bnodeq *obq,
  * Return <0 on failure, 0 to remove next, >0 otherwise.
  */
 static int
-rndr_link(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	const struct rndr_link *param,
-	struct nroff *st)
+rndr_link(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
+	const struct rndr_link *param)
 {
 
-	return putlink(ob, st, &param->link,
-		content, NULL, NULL, HALINK_NORMAL);
+	return putlink(obq, st, &param->link, bq, HALINK_NORMAL);
 }
 
 static int
@@ -1486,7 +1468,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_raw_block(st, obq, &n->rndr_blockhtml);
 		break;
 	case LOWDOWN_LINK_AUTO:
-		/*ret = rndr_autolink(ob, &n->rndr_autolink, st);*/
+		ret = rndr_autolink(st, obq, &n->rndr_autolink);
 		break;
 	case LOWDOWN_CODESPAN:
 		rc = rndr_codespan(obq, &n->rndr_codespan);
@@ -1498,7 +1480,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_linebreak(obq);
 		break;
 	case LOWDOWN_LINK:
-		/*ret = rndr_link(ob, tmp, &n->rndr_link, st);*/
+		ret = rndr_link(st, obq, &tmpbq, &n->rndr_link);
 		break;
 	case LOWDOWN_SUPERSCRIPT:
 		rc = rndr_superscript(obq, &tmpbq);
