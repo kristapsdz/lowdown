@@ -3,7 +3,7 @@
  * Copyright (c) 2008, Natacha Porté
  * Copyright (c) 2011, Vicent Martí
  * Copyright (c) 2014, Xavier Mendez, Devin Torres and the Hoedown authors
- * Copyright (c) 2016--2017, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) 2016--2021 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -34,35 +34,11 @@
 #include "lowdown.h"
 #include "extern.h"
 
-/*
- * Emit a newline if and only if the given buffer doesn't end in one.
- */
-#define	BUFFER_NEWLINE(_buf, _sz, _ob) \
-	((_sz) == 0 || \
-	 (_buf)[(_sz) - 1] == '\n' || \
-	 hbuf_putc((_ob), '\n'))
-
-/*
- * See BUFFER_NEWLINE().
- */
-#define	HBUF_NEWLINE(_buf, _ob) \
-	BUFFER_NEWLINE((_buf)->data, (_buf)->size, (_ob))
-
 enum	nfont {
 	NFONT_ITALIC = 0, /* italic */
 	NFONT_BOLD, /* bold */
 	NFONT_FIXED, /* fixed-width */
 	NFONT__MAX
-};
-
-/*
- * This relates to the roff output, not the node type.
- * If NSCOPE_BLOCK, the output is newline-terminated.
- * Otherwise, it is not.
- */
-enum	nscope {
-	NSCOPE_BLOCK,
-	NSCOPE_SPAN
 };
 
 struct 	nroff {
@@ -73,46 +49,30 @@ struct 	nroff {
 	enum nfont	 fonts[NFONT__MAX]; /* see nstate_fonts() */
 };
 
-static const enum nscope nscopes[LOWDOWN__MAX] = {
-	NSCOPE_BLOCK, /* LOWDOWN_ROOT */
-	NSCOPE_BLOCK, /* LOWDOWN_BLOCKCODE */
-	NSCOPE_BLOCK, /* LOWDOWN_BLOCKQUOTE */
-	NSCOPE_BLOCK, /* LOWDOWN_DEFINITION */
-	NSCOPE_BLOCK, /* LOWDOWN_DEFINITION_TITLE */
-	NSCOPE_BLOCK, /* LOWDOWN_DEFINITION_DATA */
-	NSCOPE_BLOCK, /* LOWDOWN_HEADER */
-	NSCOPE_BLOCK, /* LOWDOWN_HRULE */
-	NSCOPE_BLOCK, /* LOWDOWN_LIST */
-	NSCOPE_BLOCK, /* LOWDOWN_LISTITEM */
-	NSCOPE_BLOCK, /* LOWDOWN_PARAGRAPH */
-	NSCOPE_BLOCK, /* LOWDOWN_TABLE_BLOCK */
-	NSCOPE_BLOCK, /* LOWDOWN_TABLE_HEADER */
-	NSCOPE_BLOCK, /* LOWDOWN_TABLE_BODY */
-	NSCOPE_BLOCK, /* LOWDOWN_TABLE_ROW */
-	NSCOPE_BLOCK, /* LOWDOWN_TABLE_CELL */
-	NSCOPE_BLOCK, /* LOWDOWN_FOOTNOTES_BLOCK */
-	NSCOPE_BLOCK, /* LOWDOWN_FOOTNOTE_DEF */
-	NSCOPE_BLOCK, /* LOWDOWN_BLOCKHTML */
-	NSCOPE_BLOCK, /* LOWDOWN_LINK_AUTO */
-	NSCOPE_SPAN, /* LOWDOWN_CODESPAN */
-	NSCOPE_SPAN, /* LOWDOWN_DOUBLE_EMPHASIS */
-	NSCOPE_SPAN, /* LOWDOWN_EMPHASIS */
-	NSCOPE_SPAN, /* LOWDOWN_HIGHLIGHT */
-	NSCOPE_BLOCK, /* LOWDOWN_IMAGE */
-	NSCOPE_BLOCK, /* LOWDOWN_LINEBREAK */
-	NSCOPE_BLOCK, /* LOWDOWN_LINK */
-	NSCOPE_SPAN, /* LOWDOWN_TRIPLE_EMPHASIS */
-	NSCOPE_SPAN, /* LOWDOWN_STRIKETHROUGH */
-	NSCOPE_SPAN, /* LOWDOWN_SUPERSCRIPT */
-	NSCOPE_SPAN, /* LOWDOWN_FOOTNOTE_REF */
-	NSCOPE_BLOCK, /* LOWDOWN_MATH_BLOCK */
-	NSCOPE_SPAN, /* LOWDOWN_RAW_HTML */
-	NSCOPE_SPAN, /* LOWDOWN_ENTITY */
-	NSCOPE_SPAN, /* LOWDOWN_NORMAL_TEXT */
-	NSCOPE_BLOCK, /* LOWDOWN_DOC_HEADER */
-	NSCOPE_BLOCK, /* LOWDOWN_META */
-	NSCOPE_BLOCK /* LOWDOWN_DOC_FOOTER */
+enum	bscope {
+	BSCOPE_BLOCK,
+	BSCOPE_SPAN,
+	BSCOPE_LITERAL,
+	BSCOPE_FONT,
+	BSCOPE_COLOUR
 };
+
+struct	bnode {
+	const struct lowdown_buf	*buf; /* data */
+	char				*nbuf; /* new buffer */
+	char				*nargs;
+	enum bscope			 scope; /* scope */
+	unsigned int			 font;
+#define	BFONT_ITALIC			 0x01
+#define	BFONT_BOLD			 0x02
+#define	BFONT_FIXED			 0x04
+	unsigned int			 colour;
+#define	BFONT_BLUE			 0x01
+#define	BFONT_RED			 0x02
+	TAILQ_ENTRY(bnode)		 entries;
+};
+
+TAILQ_HEAD(bnodeq, bnode);
 
 /*
  * If "span" is non-zero, don't test for leading periods.
@@ -181,119 +141,232 @@ hesc_nroff(struct lowdown_buf *ob, const char *data,
 	return 1;
 }
 
-/*
- * Output "source" of size "length" on as many lines as required,
- * starting on a line with existing content.
- * Escapes text so as not to be roff.
- * Return zero on failure, non-zero on success.
- */
-static int
-rndr_span(struct lowdown_buf *ob, const char *source, size_t length)
+static const char *
+nstate_colour_buf(unsigned int ft)
 {
+	static char 	 fonts[10];
 
-	return hesc_nroff(ob, source, length, 1, 0, 0);
+	fonts[0] = '\0';
+	if (ft == BFONT_BLUE)
+		strlcat(fonts, "blue", sizeof(fonts));
+	else if (ft == BFONT_BLUE)
+		strlcat(fonts, "red", sizeof(fonts));
+	return fonts;
 }
 
-/*
- * Output "source" of size "length" on as many lines as required,
- * starting on its own line.
- * Escapes text so as not to be roff.
- * Return zero on failure, non-zero on success.
- */
-static int
-rndr_block(struct lowdown_buf *ob, const char *source, size_t length)
+static const char *
+nstate_font_buf(unsigned int ft)
 {
+	static char 	 fonts[10];
+	char		*cp = fonts;
 
-	return hesc_nroff(ob, source, length, 0, 0, 0);
+	if (ft & BFONT_FIXED)
+		(*cp++) = 'C';
+	if (ft & BFONT_BOLD)
+		(*cp++) = 'B';
+	if (ft & BFONT_ITALIC)
+		(*cp++) = 'I';
+	if (ft == BFONT_FIXED || ft == 0)
+		(*cp++) = 'R';
+
+	(*cp++) = '\0';
+	return fonts;
 }
 
-/*
- * Like rndr_block(), but not collapsing spaces at the start of lines.
- * Return zero on failure, non-zero on success.
- */
 static int
-rndr_block_keep(struct lowdown_buf *ob, const struct lowdown_buf *in)
+nstate_fonts(const struct nroff *st, struct bnodeq *bq)
 {
+	struct bnode	*bn;
 
-	return hesc_nroff(ob, in->data, in->size, 0, 0, 1);
-}
-
-/*
- * Output "source" of size "length" on a single line.
- * Does not escape the given text, which should already have been
- * escaped, unless "ownline" is given, in which case make sure we don't
- * start with roff.
- * Return zero on failure, non-zero on success.
- */
-static int
-rndr_one_line_noescape(struct lowdown_buf *ob,
-	const char *source, size_t length, int ownline)
-{
-	size_t	 i;
-	char	 c;
-
-	if (ownline && length && 
-	    source[0] == '.' && !HBUF_PUTSL(ob, "\\&"))
+	if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
 		return 0;
+	TAILQ_INSERT_TAIL(bq, bn, entries);
+	bn->scope = BSCOPE_FONT;
+	if (st->fonts[NFONT_FIXED])
+		bn->font |= BFONT_FIXED;
+	if (st->fonts[NFONT_BOLD])
+		bn->font |= BFONT_BOLD;
+	if (st->fonts[NFONT_ITALIC])
+		bn->font |= BFONT_ITALIC;
+	return 1;
+}
 
-	for (i = 0; i < length; i++) {
-		c = isspace((unsigned char)source[i]) ?
-			' ' : source[i];
-		if (!hbuf_putc(ob, c))
+static struct bnode *
+bqueue_span(struct bnodeq *q, const char *text)
+{
+	struct bnode	*bn;
+
+	if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
+		return NULL;
+	bn->scope = BSCOPE_SPAN;
+	if (text != NULL && (bn->nbuf = strdup(text)) == NULL) {
+		free(bn);
+		return NULL;
+	}
+	TAILQ_INSERT_TAIL(q, bn, entries);
+	return bn;
+}
+
+static struct bnode *
+bqueue_block(struct bnodeq *q, const char *macro)
+{
+	struct bnode	*bn;
+
+	if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
+		return NULL;
+	bn->scope = BSCOPE_BLOCK;
+	if (macro != NULL && (bn->nbuf = strdup(macro)) == NULL) {
+		free(bn);
+		return NULL;
+	}
+	TAILQ_INSERT_TAIL(q, bn, entries);
+	return bn;
+}
+
+static void
+bqueue_strip_paras(struct bnodeq *bq)
+{
+	struct bnode	*bn;
+
+	while ((bn = TAILQ_FIRST(bq)) != NULL) {
+		if (bn->scope != BSCOPE_BLOCK || bn->nbuf == NULL)
+			break;
+		if (strcmp(bn->nbuf, ".PP") &&
+		    strcmp(bn->nbuf, ".IP") &&
+		    strcmp(bn->nbuf, ".LP"))
+			break;
+		TAILQ_REMOVE(bq, bn, entries);
+		free(bn->nargs);
+		free(bn->nbuf);
+		free(bn);
+	}
+}
+
+static void
+bnode_free(struct bnode *bn)
+{
+
+	free(bn->nargs);
+	free(bn->nbuf);
+	free(bn);
+}
+
+static void
+bqueue_free(struct bnodeq *bq)
+{
+	struct bnode	*bn;
+
+	while ((bn = TAILQ_FIRST(bq)) != NULL) {
+		TAILQ_REMOVE(bq, bn, entries);
+		bnode_free(bn);
+	}
+}
+
+static int
+bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq)
+{
+	const struct bnode	*bn, *next;
+	int		 	 nextblk;
+
+	TAILQ_FOREACH(bn, bq, entries) {
+		nextblk = 0;
+
+		/* Block scopes start with a newline. */
+
+		if (bn->scope == BSCOPE_BLOCK) {
+			if (ob->size > 0 && 
+			    ob->data[ob->size - 1] != '\n' &&
+			    !hbuf_putc(ob, '\n'))
+				return 0;
+			nextblk = 1;
+		}
+
+		/* 
+		 * Fonts and colours turn into blocks if the next
+		 * element is a block.
+		 */
+
+		if (bn->scope == BSCOPE_FONT || 
+		    bn->scope == BSCOPE_COLOUR) {
+			next = TAILQ_NEXT(bn, entries);
+			if (next != NULL && 
+			    next->scope == BSCOPE_BLOCK) {
+				if (ob->size > 0 && 
+				    ob->data[ob->size - 1] != '\n' &&
+				    !hbuf_putc(ob, '\n'))
+					return 0;
+				nextblk = 1;
+			}
+		}
+
+		/* Print font and colour escapes. */
+
+		if (bn->scope == BSCOPE_FONT && nextblk) {
+			if (!hbuf_printf(ob, ".ft %s",
+			    nstate_font_buf(bn->font)))
+				return 0;
+		} else if (bn->scope == BSCOPE_FONT) {
+			if (!hbuf_printf(ob, "\\f[%s]", 
+			    nstate_font_buf(bn->font)))
+				return 0;
+		} else if (bn->scope == BSCOPE_COLOUR && nextblk) {
+			if (!hbuf_printf(ob, ".gcolor %s", 
+			    nstate_colour_buf(bn->colour)))
+				return 0;
+		} else if (bn->scope == BSCOPE_FONT) {
+			if (!hbuf_printf(ob, "\\m[%s]",
+			    nstate_colour_buf(bn->colour)))
+				return 0;
+		}
+
+		/* Now our data. */
+
+		if (bn->nbuf != NULL && !hbuf_puts(ob, bn->nbuf))
+			return 0;
+		if (bn->buf != NULL && !hbuf_putb(ob, bn->buf))
+			return 0;
+
+		/* Arguments follow after space. */
+
+		if (bn->nargs != NULL) {
+			if (!hbuf_putc(ob, ' '))
+				return 0;
+			if (!hbuf_puts(ob, bn->nargs))
+				return 0;
+		}
+
+		/* Finally, trailing newline. */
+
+		if (nextblk && ob->size > 0 && 
+		    ob->data[ob->size - 1] != '\n' &&
+		    !hbuf_putc(ob, '\n'))
 			return 0;
 	}
 
 	return 1;
 }
 
-/*
- * See rndr_one_line_noescape().
- * Return zero on failure, non-zero on success.
- */
 static int
-rndr_one_lineb_noescape(struct lowdown_buf *ob,
-	const struct lowdown_buf *b, int ownline)
+bqueue_to_nargs(struct bnode *bn, const struct bnodeq *bq, int quoted)
 {
+	struct lowdown_buf	*ob;
+	int			 rc = 0;
 
-	return rndr_one_line_noescape(ob, b->data, b->size, ownline);
-}
-
-/*
- * Return the font string for the current set of fonts.
- * FIXME: I don't think this works for combinations of fixed-width,
- * bold, and italic.
- * Always returns a valid pointer.
- */
-static const char *
-nstate_fonts(const struct nroff *st)
-{
-	static char 	 fonts[10];
-	char		*cp = fonts;
-
-	(*cp++) = '\\';
-	(*cp++) = 'f';
-	(*cp++) = '[';
-
-	if (st->fonts[NFONT_FIXED])
-		(*cp++) = 'C';
-	if (st->fonts[NFONT_BOLD])
-		(*cp++) = 'B';
-	if (st->fonts[NFONT_ITALIC])
-		(*cp++) = 'I';
-	if (st->fonts[NFONT_FIXED] &&
-	    (st->fonts[NFONT_BOLD] == 0 &&
-	     st->fonts[NFONT_ITALIC] == 0))
-		(*cp++) = 'R';
-
-	/* Reset. */
-
-	if (st->fonts[NFONT_BOLD] == 0 &&
-	    st->fonts[NFONT_FIXED] == 0 &&
-	    st->fonts[NFONT_ITALIC] == 0)
-		(*cp++) = 'R';
-	(*cp++) = ']';
-	(*cp++) = '\0';
-	return fonts;
+	if ((ob = hbuf_new(32)) == NULL)
+		goto out;
+	if (quoted && !hbuf_putc(ob, '"'))
+		goto out;
+	if (!bqueue_flush(ob, bq))
+		goto out;
+	if (quoted && !hbuf_putc(ob, '"'))
+		goto out;
+	assert(bn->nargs == NULL);
+	if ((bn->nargs = strndup(ob->data, ob->size)) == NULL)
+		goto out;
+	rc = 1;
+out:
+	hbuf_free(ob);
+	return rc;
 }
 
 /*
@@ -359,8 +432,8 @@ putlink(struct lowdown_buf *ob, struct nroff *st,
 
 	if (!usepdf) {
 		st->fonts[NFONT_ITALIC]++;
-		if (!hbuf_puts(ob, nstate_fonts(st)))
-			return -1;
+		/*if (!hbuf_puts(ob, nstate_fonts(st, NULL)))
+			return -1;*/
 		if (text == NULL) {
 			if (hbuf_strprefix(link, "mailto:")) {
 				if (!hbuf_put(ob, 
@@ -371,8 +444,8 @@ putlink(struct lowdown_buf *ob, struct nroff *st,
 		} else if (!hbuf_putb(ob, text))
 			return -1;
 		st->fonts[NFONT_ITALIC]--;
-		if (!hbuf_puts(ob, nstate_fonts(st)))
-			return -1;
+		/*if (!hbuf_puts(ob, nstate_fonts(st, NULL)))
+			return -1;*/
 	}
 
 	/*
@@ -458,32 +531,18 @@ putlink(struct lowdown_buf *ob, struct nroff *st,
 static int
 rndr_autolink(struct lowdown_buf *ob,
 	const struct rndr_autolink *param,
-	struct lowdown_node *prev, 
-	struct lowdown_node *next,
-	struct nroff *st, int nln)
-{
-
-	if (param->link.size == 0)
-		return 1;
-
-	if (!nln)
-		if (prev == NULL || 
-		    (ob->size && ob->data[ob->size - 1] != '\n'))
-			if (!HBUF_PUTSL(ob, "\n"))
-				return -1;
-
-	return putlink(ob, st, &param->link, 
-		NULL, next, prev, param->type);
-}
-
-static int
-rndr_blockcode(struct lowdown_buf *ob,
-	const struct rndr_blockcode *param,
 	struct nroff *st)
 {
 
-	if (param->text.size == 0)
-		return 1;
+	return putlink(ob, st, &param->link, 
+		NULL, NULL, NULL, param->type);
+}
+
+static int
+rndr_blockcode(const struct nroff *st, struct bnodeq *obq,
+	const struct rndr_blockcode *param)
+{
+	struct bnode	*bn;
 
 	/*
 	 * XXX: intentionally don't use LD/DE because it introduces
@@ -491,168 +550,115 @@ rndr_blockcode(struct lowdown_buf *ob,
 	 * (paragraphs, etc.) will have a double-newline.
 	 */
 
-	HBUF_PUTSL(ob, ".sp\n");
+	if (bqueue_block(obq, ".sp") == NULL)
+		return 0;
+
 	if (st->man && (st->flags & LOWDOWN_NROFF_GROFF)) {
-		if (!HBUF_PUTSL(ob, ".EX\n"))
+		if (bqueue_block(obq, ".EX") == NULL)
 			return 0;
 	} else {
-		if (!HBUF_PUTSL(ob, ".nf\n.ft CR\n"))
+		if (bqueue_block(obq, ".nf") == NULL)
+			return 0;
+		if (bqueue_block(obq, ".ft CR") == NULL)
 			return 0;
 	}
 
-	if (!rndr_block_keep(ob, &param->text))
+	if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
 		return 0;
-	if (!HBUF_NEWLINE(&param->text, ob))
-		return 0;
+	TAILQ_INSERT_TAIL(obq, bn, entries);
+	bn->scope = BSCOPE_LITERAL;
+	bn->buf = &param->text;
 
 	if (st->man && (st->flags & LOWDOWN_NROFF_GROFF))
-		return HBUF_PUTSL(ob, ".EE\n");
-	else
-		return HBUF_PUTSL(ob, ".ft\n.fi\n");
+		return bqueue_block(obq, ".EE") != NULL;
+
+	if (bqueue_block(obq, ".ft") == NULL)
+		return 0;
+	return bqueue_block(obq, ".fi") != NULL;
 }
 
 static int
-rndr_definition_title(struct lowdown_buf *ob,
-	const struct lowdown_node *np,
-	const struct lowdown_buf *content)
+rndr_definition_title(struct bnodeq *obq, struct bnodeq *bq)
 {
+	struct bnode	*bn;
 
-	if (content->size == 0)
-		return 1;
-	if (!HBUF_PUTSL(ob, ".IP \""))
+	if ((bn = bqueue_block(obq, ".IP")) == NULL)
 		return 0;
-	if (!rndr_one_lineb_noescape(ob, content, 0))
-		return 0;
-	return HBUF_PUTSL(ob, "\"\n");
+	return bqueue_to_nargs(bn, bq, 1);
 }
 
 static int
-rndr_definition_data(struct lowdown_buf *ob,
-	const struct lowdown_node *root,
-	const struct lowdown_buf *content)
+rndr_definition_data(struct bnodeq *obq, struct bnodeq *bq)
 {
-	const char	*cdata;
-	size_t		 csize;
-
 	/* 
 	 * Strip out leading paragraphs.
 	 * XXX: shouldn't these all be handled by the child list item?
 	 */
 
-	cdata = content->data;
-	csize = content->size;
-
-	while (csize > 3 && 
-	       (memcmp(cdata, ".PP\n", 4) == 0 ||
-	        memcmp(cdata, ".IP\n", 4) == 0 ||
-	        memcmp(cdata, ".LP\n", 4) == 0)) {
-		cdata += 4;
-		csize -= 4;
-	}
-
-	if (!hbuf_put(ob, cdata, csize))
-		return 0;
-	return BUFFER_NEWLINE(cdata, csize, ob);
+	bqueue_strip_paras(bq);
+	TAILQ_CONCAT(obq, bq, entries);
+	return 1;
 }
 
-/*
- * Used by both definition and regular lists.
- * The only handling this does is to increment the left margin if nested
- * within another list item.
- */
 static int
-rndr_list(struct lowdown_buf *ob,
-	const struct lowdown_node *np,
-	const struct lowdown_buf *content,
-	struct nroff *st)
+rndr_list(const struct nroff *st, struct bnodeq *obq, 
+	const struct lowdown_node *n, struct bnodeq *bq)
 {
-
-	if (content->size == 0)
-		return 1;
-
 	/* 
 	 * If we have a nested list, we need to use RS/RE to indent the
 	 * nested component.  Otherwise the `IP` used for the titles and
 	 * contained paragraphs won't indent properly.
 	 */
 
-	for (np = np->parent; np != NULL; np = np->parent)
-		if (np->type == LOWDOWN_LISTITEM)
+	for (n = n->parent; n != NULL; n = n->parent)
+		if (n->type == LOWDOWN_LISTITEM)
 			break;
 
-	if (np != NULL && !HBUF_PUTSL(ob, ".RS\n"))
+	if (n != NULL && bqueue_block(obq, ".RS") == NULL)
 		return 0;
-
-	if (!hbuf_putb(ob, content))
+	TAILQ_CONCAT(obq, bq, entries);
+	if (n != NULL && bqueue_block(obq, ".RE") == NULL)
 		return 0;
-	if (!HBUF_NEWLINE(content, ob))
-		return 0;
-
-	if (np != NULL && !HBUF_PUTSL(ob, ".RE\n"))
-		return 0;
-
-	st->post_para = 1;
 	return 1;
 }
 
 static int
-rndr_blockquote(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	struct nroff *st)
+rndr_blockquote(const struct nroff *st, 
+	struct bnodeq *obq, struct bnodeq *bq)
 {
 
-	if (content->size == 0)
-		return 1;
-	if (!HBUF_PUTSL(ob, ".RS\n"))
+	if (bqueue_block(obq, ".RS") == NULL)
 		return 0;
-	if (!hbuf_putb(ob, content))
+	TAILQ_CONCAT(obq, bq, entries);
+	return bqueue_block(obq, ".RE") != NULL;
+}
+
+static int
+rndr_codespan(struct bnodeq *obq, const struct rndr_codespan *param)
+{
+	struct bnode	*bn;
+
+	if ((bn = bqueue_span(obq, NULL)) == NULL)
 		return 0;
-	if (!HBUF_NEWLINE(content, ob))
-		return 0;
-	if (!HBUF_PUTSL(ob, ".RE\n"))
-		return 0;
-	st->post_para = 1;
+	bn->buf = &param->text;
 	return 1;
 }
 
 static int
-rndr_codespan(struct lowdown_buf *ob,
-	const struct rndr_codespan *param)
+rndr_linebreak(struct bnodeq *obq)
 {
 
-	return rndr_span(ob, param->text.data, param->text.size);
-}
-
-/*
- * FIXME: not supported.
- */
-static int
-rndr_strikethrough(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
-{
-
-	return hbuf_putb(ob, content);
+	return bqueue_block(obq, ".br") != NULL;
 }
 
 static int
-rndr_linebreak(struct lowdown_buf *ob)
+rndr_header(struct nroff *st, struct bnodeq *obq,
+	struct bnodeq *bq, const struct rndr_header *param)
 {
+	size_t			 level;
+	struct bnode		*bn;
 
-	/* FIXME: should this always have a newline? */
-
-	return HBUF_PUTSL(ob, "\n.br\n");
-}
-
-static int
-rndr_header(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	const struct rndr_header *param,
-	struct nroff *st)
-{
-	size_t	level = param->level + st->base_header_level;
-
-	if (content->size == 0)
-		return 1;
+	level = param->level + st->base_header_level;
 
 	/*
 	 * For man(7), we use SH for the first-level section, SS for
@@ -666,41 +672,37 @@ rndr_header(struct lowdown_buf *ob,
 	 */
 
 	if (st->man) {
-		if (level == 1 && !HBUF_PUTSL(ob, ".SH "))
+		bn = level == 1 ?
+			bqueue_block(obq, ".SH") :
+			bqueue_block(obq, ".SS");
+		if (bn == NULL)
 			return 0;
-		else if (level != 1 && !HBUF_PUTSL(ob, ".SS "))
-			return 0;
-		if (!rndr_one_lineb_noescape(ob, content, 0))
-			return 0;
-		return HBUF_PUTSL(ob, "\n");
+		return bqueue_to_nargs(bn, bq, 0);
 	} 
 
-	if (st->flags & LOWDOWN_NROFF_NUMBERED) {
-		if (!hbuf_printf(ob, ".NH %zu\n", level))
+	if (st->flags & LOWDOWN_NROFF_NUMBERED)
+		bn = bqueue_block(obq, ".NH");
+	else
+		bn = bqueue_block(obq, ".SH");
+	if (bn == NULL)
+		return 0;
+
+	if ((st->flags & LOWDOWN_NROFF_NUMBERED) ||
+	    (st->flags & LOWDOWN_NROFF_GROFF)) 
+		if (asprintf(&bn->nargs, "%zu", level) == -1) {
+			bn->nargs = NULL;
 			return 0;
-	} else if (st->flags & LOWDOWN_NROFF_GROFF) {
-		if (!hbuf_printf(ob, ".SH %zu\n", level))
-			return 0;
-	} else {
-		if (!HBUF_PUTSL(ob, ".SH\n"))
-			return 0;
-	}
+		}
 
 	/* Used in -mspdf output for creating a TOC. */
 
 	if (st->flags & LOWDOWN_NROFF_GROFF) {
-		if (!HBUF_PUTSL(ob, ".XN "))
+		if ((bn = bqueue_block(obq, ".XN")) == NULL)
 			return 0;
-		if (!rndr_one_lineb_noescape(ob, content, 0))
+		if (!bqueue_to_nargs(bn, bq, 0))
 			return 0;
-		if (!HBUF_PUTSL(ob, "\n"))
-			return 0;
-	} else {
-		if (!rndr_one_lineb_noescape(ob, content, 1))
-			return 0;
-		if (!HBUF_NEWLINE(content, ob))
-			return 0;
-	}
+	} else
+		TAILQ_CONCAT(obq, bq, entries);
 
 	st->post_para = 1;
 	return 1;
@@ -713,112 +715,60 @@ static int
 rndr_link(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
 	const struct rndr_link *param,
-	struct nroff *st, 
-	struct lowdown_node *prev, 
-	struct lowdown_node *next, int nln)
+	struct nroff *st)
 {
-
-	if (content->size == 0 && param->link.size == 0)
-		return 1;
-
-	if (!nln)
-		if (prev == NULL ||
-		    (ob->size && ob->data[ob->size - 1] != '\n'))
-			if (!HBUF_PUTSL(ob, "\n"))
-				return -1;
 
 	return putlink(ob, st, &param->link,
-		content, next, prev, HALINK_NORMAL);
+		content, NULL, NULL, HALINK_NORMAL);
 }
 
-/*
- * The list item is part of both definition and regular lists.
- * In the former case, it's within the "data" part of the definition
- * list, so the title `IP` has already been emitted.
- */
 static int
-rndr_listitem(struct lowdown_buf *ob,
-	const struct lowdown_buf *content, 
-	const struct lowdown_node *np,
-	const struct rndr_listitem *param)
+rndr_listitem(struct bnodeq *obq, const struct lowdown_node *n,
+	struct bnodeq *bq, const struct rndr_listitem *param)
 {
-	const char	*cdata;
-	size_t	 	 csize;
-
-	if (content->size == 0)
-		return 1;
+	struct bnode	*bn;
 
 	if (param->flags & HLIST_FL_ORDERED) {
-		if (!hbuf_printf(ob, ".IP \"%zu.  \"\n", param->num))
+		if ((bn = bqueue_block(obq, ".IP")) == NULL)
+			return 0;
+		if (asprintf(&bn->nargs, 
+		    "\"%zu.  \"", param->num) == -1)
 			return 0;
 	} else if (param->flags & HLIST_FL_UNORDERED) {
-		if (!HBUF_PUTSL(ob,  ".IP \"\\(bu\" 2\n"))
+		if (bqueue_block(obq, ".IP \"\\(bu\" 2") == NULL)
 			return 0;
 	}
 
 	/* Strip out all leading redundant paragraphs. */
 
-	cdata = content->data;
-	csize = content->size;
-
-	while (csize > 3 &&
-	       (memcmp(cdata, ".LP\n", 4) == 0 ||
-	        memcmp(cdata, ".IP\n", 4) == 0 ||
-	        memcmp(cdata, ".PP\n", 4) == 0)) {
-		cdata += 4;
-		csize -= 4;
-	}
-
-	/* Make sure we have a newline before links. */
-
-	if (csize > 8 && memcmp(cdata, ".pdfhref ", 9) == 0 &&
-	    !HBUF_PUTSL(ob, "\n"))
-		return 0;
-
-	if (!hbuf_put(ob, cdata, csize))
-		return 0;
-	if (!BUFFER_NEWLINE(cdata, csize, ob))
-		return 0;
+	bqueue_strip_paras(bq);
+	TAILQ_CONCAT(obq, bq, entries);
 
 	/* 
 	 * Suppress trailing space if we're not in a block and there's a
 	 * list item that comes after us (i.e., anything after us).
 	 */
 
-	if (np->rndr_listitem.flags & HLIST_FL_BLOCK)
+	if (n->rndr_listitem.flags & HLIST_FL_BLOCK)
 		return 1;
-	if (np->rndr_listitem.flags & HLIST_FL_DEF)
-		np = np->parent;
-	if (TAILQ_NEXT(np, entries) != NULL)
-		return HBUF_PUTSL(ob, 
-			".if n \\\n.sp -1\n"
-			".if t \\\n.sp -0.25v\n");
+	if (n->rndr_listitem.flags & HLIST_FL_DEF)
+		n = n->parent;
+	if (TAILQ_NEXT(n, entries) != NULL) {
+		if (bqueue_block(obq, ".if n \\\n.sp -1") == NULL)
+			return 0;
+		if (bqueue_block(obq, ".if t \\\n.sp -0.25v\n") == NULL)
+			return 0;
+	}
+
 	return 1;
 }
 
 static int
-rndr_paragraph(struct lowdown_buf *ob,
-	const struct lowdown_buf *content, 
-	struct nroff *st, 
-	const struct lowdown_node *np)
+rndr_paragraph(const struct nroff *st, const struct lowdown_node *n,
+	struct bnodeq *obq, struct bnodeq *nbq)
 {
-	size_t	 			 i = 0, org;
 	const struct lowdown_node	*prev;
-	int				 no_macro = 0;
-
-	if (content->size == 0)
-		return 1;
-
-	/* Strip away initial white-space. */
-
-	while (i < content->size && 
-	       isspace((unsigned char)content->data[i]))
-		i++;
-
-	if (i == content->size)
-		return 1;
-
-	prev = TAILQ_PREV(np, lowdown_nodeq, entries);
+	struct bnode			*bn;
 
 	/* 
 	 * We don't just blindly print a paragraph macro: it depends
@@ -827,361 +777,248 @@ rndr_paragraph(struct lowdown_buf *ob,
 	 * don't reset our text indent by using an `IP`.
 	 */
 
-	if (st->man && prev != NULL && prev->type == LOWDOWN_HEADER)
-		no_macro = 1;
-
-	if (!no_macro) {
-		for ( ; np != NULL; np = np->parent)
-			if (np->type == LOWDOWN_LISTITEM)
+	prev = TAILQ_PREV(n, lowdown_nodeq, entries);
+	if (!st->man || prev == NULL || prev->type != LOWDOWN_HEADER) {
+		for ( ; n != NULL; n = n->parent)
+			if (n->type == LOWDOWN_LISTITEM)
 				break;
-		if (np != NULL) {
-			if (!HBUF_PUTSL(ob, ".IP\n"))
-				return 0;
-		} else if (st->post_para) {
-			if (!HBUF_PUTSL(ob, ".LP\n"))
-				return 0;
-		} else {
-			if (!HBUF_PUTSL(ob, ".PP\n"))
-				return 0;
-		}
+		if (n != NULL)
+			bn = bqueue_block(obq, ".IP");
+		else if (st->post_para)
+			bn = bqueue_block(obq, ".LP");
+		else
+			bn = bqueue_block(obq, ".PP");
+		if (bn == NULL)
+			return 0;
 	}
 
-	st->post_para = 0;
-
-	if (!(st->flags & LOWDOWN_NROFF_HARD_WRAP)) {
-		if (!hbuf_put(ob, content->data + i, 
-		    content->size - i))
-			return 0;
-		return BUFFER_NEWLINE(content->data + i, 
-			content->size - i, ob);
-	}
-
-	while (i < content->size) {
-		org = i;
-		while (i < content->size && content->data[i] != '\n')
-			i++;
-		if (i > org && !hbuf_put
-	   	    (ob, content->data + org, i - org))
-			return 0;
-		if (i >= content->size - 1) {
-			if (!HBUF_PUTSL(ob, "\n"))
-				return 0;
-			break;
-		}
-		if (!rndr_linebreak(ob))
-			return 0;
-		i++;
-	}
-
+	TAILQ_CONCAT(obq, nbq, entries);
 	return 1;
 }
 
 static int
-rndr_raw_block(struct lowdown_buf *ob,
-	const struct rndr_blockhtml *param,
-	const struct nroff *st)
+rndr_raw_block(const struct nroff *st,
+	struct bnodeq *obq, const struct rndr_blockhtml *param)
 {
-	size_t	 org = 0, sz = param->text.size;
+	struct bnode	*bn;
 
-	if (param->text.size == 0 ||
-	    (st->flags & LOWDOWN_NROFF_SKIP_HTML))
+	if (st->flags & LOWDOWN_NROFF_SKIP_HTML)
 		return 1;
-
-	while (sz > 0 && param->text.data[sz - 1] == '\n')
-		sz--;
-	while (org < sz && param->text.data[org] == '\n')
-		org++;
-
-	if (org >= sz)
-		return 1;
-
-	if (!HBUF_NEWLINE(ob, ob))
+	if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
 		return 0;
-	if (!hbuf_put(ob, param->text.data + org, sz - org))
-		return 0;
-	return HBUF_PUTSL(ob, "\n");
+	bn->scope = BSCOPE_LITERAL;
+	bn->buf = &param->text;
+	return 1;
 }
 
 static int
-rndr_hrule(struct lowdown_buf *ob, const struct nroff *st)
+rndr_hrule(const struct nroff *st, struct bnodeq *obq)
 {
-
 	/*
 	 * I'm not sure how else to do horizontal lines.
 	 * The LP is to reset the margins.
 	 */
 
-	if (!HBUF_PUTSL(ob, ".LP\n"))
+	if (bqueue_block(obq, ".LP") == NULL)
 		return 0;
 	if (!st->man && 
-	    !HBUF_PUTSL(ob, "\\l\'\\n(.lu-\\n(\\n[.in]u\'\n"))
+	    bqueue_block(obq, "\\l\'\\n(.lu-\\n(\\n[.in]u\'") == NULL)
 		return 0;
 	return 1;
 }
 
 static int
-rndr_image(struct lowdown_buf *ob,
-	const struct rndr_image *param,
-	const struct nroff *st, int nln, 
-	const struct lowdown_node *prev)
+rndr_image(const struct nroff *st, struct bnodeq *obq, 
+	const struct rndr_image *param)
 {
 	const char	*cp;
 	size_t		 sz;
+	struct bnode	*bn;
 
 	if (st->man)
 		return 1;
 
+	/* Are we suffixed with ps or eps? */
+
 	cp = memrchr(param->link.data, '.', param->link.size);
 	if (cp == NULL)
 		return 1;
-
 	cp++;
 	sz = param->link.size - (cp - param->link.data);
-
 	if (sz == 0)
 		return 1;
-
 	if (!(sz == 2 && memcmp(cp, "ps", 2) == 0) &&
 	    !(sz == 3 && memcmp(cp, "eps", 3) == 0))
 		return 1;
 
-	if (!nln)
-		if (prev == NULL ||
-		    (ob->size && ob->data[ob->size - 1] != '\n'))
-			if (!HBUF_PUTSL(ob, "\n"))
-				return 0;
+	/* If so, use a PSPIC. */
 
-	return hbuf_printf(ob, ".PSPIC %.*s\n", 
-		(int)param->link.size, param->link.data);
+	if ((bn = bqueue_block(obq, ".PSPIC")) == NULL)
+		return 0;
+	if (asprintf(&bn->nargs, "%.*s", 
+	    (int)param->link.size, param->link.data) == -1)
+		bn->nargs = NULL;
+	return bn->nargs != NULL;
 }
 
 static int
-rndr_raw_html(struct lowdown_buf *ob,
-	const struct rndr_raw_html *param,
-	const struct nroff *st)
+rndr_raw_html(const struct nroff *st,
+	struct bnodeq *obq, const struct rndr_raw_html *param)
 {
+	struct bnode	*bn;
 
 	if (st->flags & LOWDOWN_NROFF_SKIP_HTML)
 		return 1;
-	return rndr_block_keep(ob, &param->text);
-}
-
-static int
-rndr_table(struct lowdown_buf *ob, 
-	const struct lowdown_buf *content,
-	struct nroff *st)
-{
-
-	if (!HBUF_PUTSL(ob, ".TS\n"))
+	if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
 		return 0;
-	if (!HBUF_PUTSL(ob, "tab(|) expand allbox;\n"))
-		return 0;
-	if (!hbuf_putb(ob, content))
-		return 0;
-	if (!HBUF_NEWLINE(content, ob))
-		return 0;
-	if (!HBUF_PUTSL(ob, ".TE\n"))
-		return 0;
-
-	st->post_para = 1;
+	bn->scope = BSCOPE_LITERAL;
+	bn->buf = &param->text;
 	return 1;
 }
 
 static int
-rndr_table_header(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
+rndr_table(struct bnodeq *obq, struct bnodeq *bq)
+{
+
+	if (bqueue_block(obq, ".TS") == NULL)
+		return 0;
+	if (bqueue_block(obq, "tab(|) expand allbox;") == NULL)
+		return 0;
+	TAILQ_CONCAT(obq, bq, entries);
+	return bqueue_block(obq, ".TE") != NULL;
+}
+
+static int
+rndr_table_header(struct bnodeq *obq, struct bnodeq *bq, 
 	const struct rndr_table_header *param)
 {
-	size_t	 i;
+	size_t		 	 i;
+	struct lowdown_buf	*ob;
+	struct bnode		*bn;
+	int			 rc = 0;
+
+	if ((ob = hbuf_new(32)) == NULL)
+		return 0;
 
 	/* 
 	 * This specifies the header layout.
 	 * We make the header bold, but this is arbitrary.
 	 */
 
+	if ((bn = bqueue_block(obq, NULL)) == NULL)
+		goto out;
 	for (i = 0; i < param->columns; i++) {
 		if (i > 0 && !HBUF_PUTSL(ob, " "))
-			return 0;
+			goto out;
 		switch (param->flags[i] & HTBL_FL_ALIGNMASK) {
 		case HTBL_FL_ALIGN_CENTER:
 			if (!HBUF_PUTSL(ob, "cb"))
-				return 0;
+				goto out;
 			break;
 		case HTBL_FL_ALIGN_RIGHT:
 			if (!HBUF_PUTSL(ob, "rb"))
-				return 0;
+				goto out;
 			break;
 		default:
 			if (!HBUF_PUTSL(ob, "lb"))
-				return 0;
+				goto out;
 			break;
 		}
 	}
-	if (!HBUF_PUTSL(ob, "\n"))
-		return 0;
+	if ((bn->nbuf = strndup(ob->data, ob->size)) == NULL)
+		goto out;
 
 	/* Now the body layout. */
 
+	hbuf_truncate(ob);
+	if ((bn = bqueue_block(obq, NULL)) == NULL)
+		goto out;
 	for (i = 0; i < param->columns; i++) {
 		if (i > 0 && !HBUF_PUTSL(ob, " "))
-			return 0;
+			goto out;
 		switch (param->flags[i] & HTBL_FL_ALIGNMASK) {
 		case HTBL_FL_ALIGN_CENTER:
 			if (!HBUF_PUTSL(ob, "c"))
-				return 0;
+				goto out;
 			break;
 		case HTBL_FL_ALIGN_RIGHT:
 			if (!HBUF_PUTSL(ob, "r"))
-				return 0;
+				goto out;
 			break;
 		default:
 			if (!HBUF_PUTSL(ob, "l"))
-				return 0;
+				goto out;
 			break;
 		}
 	}
-	if (!HBUF_PUTSL(ob, ".\n"))
-		return 0;
+	if (!hbuf_putc(ob, '.'))
+		goto out;
+	if ((bn->nbuf = strndup(ob->data, ob->size)) == NULL)
+		goto out;
 
-	/* Now the table data. */
-
-	return hbuf_putb(ob, content);
+	TAILQ_CONCAT(obq, bq, entries);
+	rc = 1;
+out:
+	hbuf_free(ob);
+	return rc;
 }
 
 static int
-rndr_table_row(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+rndr_table_row(struct bnodeq *obq, struct bnodeq *bq)
 {
 
-	if (!hbuf_putb(ob, content))
-		return 0;
-	return HBUF_PUTSL(ob, "\n");
+	TAILQ_CONCAT(obq, bq, entries);
+	return bqueue_block(obq, NULL) != NULL;
 }
 
 static int
-rndr_table_cell(struct lowdown_buf *ob,
-	const struct lowdown_buf *content, 
+rndr_table_cell(struct bnodeq *obq, struct bnodeq *bq,
 	const struct rndr_table_cell *param)
 {
 
-	if (param->col > 0 && !HBUF_PUTSL(ob, "|"))
+	if (param->col > 0 && bqueue_span(obq, "|") == NULL)
 		return 0;
-
-	if (content->size) {
-		if (!HBUF_PUTSL(ob, "T{\n"))
-			return 0;
-		if (!hbuf_putb(ob, content))
-			return 0;
-		if (!HBUF_PUTSL(ob, "\nT}"))
-			return 0;
-	}
-
-	return 1;
+	if (bqueue_block(obq, "T{"))
+		return 0;
+	TAILQ_CONCAT(obq, bq, entries);
+	return bqueue_block(obq, "T}") != NULL;
 }
 
 static int
-rndr_superscript(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+rndr_superscript(struct bnodeq *obq, struct bnodeq *bq)
 {
 
-	if (content->size == 0)
-		return 1;
-
-	/*
-	 * If we have a macro contents, it might be the usual macro
-	 * (solo in its buffer) or starting with a newline.
-	 */
-
-	if (content->data[0] == '.' ||
-	    (content->size &&
-	     content->data[0] == '\n' &&
-	     content->data[1] == '.')) {
-		if (!HBUF_PUTSL(ob, "\\u\\s-3"))
-			return 0;
-		if (content->data[0] != '\n' && !HBUF_PUTSL(ob, "\n"))
-			return 0;
-		if (!hbuf_putb(ob, content))
-			return 0;
-		if (!HBUF_NEWLINE(content, ob))
-			return 0;
-		if (!HBUF_PUTSL(ob, "\\s+3\\d\n"))
-			return 0;
-	} else {
-		if (!HBUF_PUTSL(ob, "\\u\\s-3"))
-			return 0;
-		if (!hbuf_putb(ob, content))
-			return 0;
-		if (!HBUF_PUTSL(ob, "\\s+3\\d"))
-			return 0;
-	}
-
-	return 1;
+	if (bqueue_span(obq, "\\u\\s-3") == NULL)
+		return 0;
+	TAILQ_CONCAT(obq, bq, entries);
+	return bqueue_span(obq, "\\s+3\\d") != NULL;
 }
 
 static int
-rndr_normal_text(struct lowdown_buf *ob,
-	const struct rndr_normal_text *param,
-	const struct lowdown_node *prev, 
-	const struct lowdown_node *next, 
-	const struct nroff *st, int nl)
-{
-	size_t	 	 i, size;
-	const char 	*data;
-
-	if (param->text.size == 0)
-		return 1;
-
-	data = param->text.data + param->offs;
-	size = param->text.size - param->offs;
-
-	/* 
-	 * If we don't have trailing space, omit the final word because
-	 * we'll put that in the link's pdfhref.
-	 */
-
-	if (next != NULL &&
-	    (next->type == LOWDOWN_LINK_AUTO ||
-	     next->type == LOWDOWN_LINK))
-		while (size && 
-		       !isspace((unsigned char)data[size - 1]))
-			size--;
-
-	if (nl) {
-		for (i = 0; i < size; i++)
-			if (!isspace((unsigned char)data[i]))
-				break;
-		return rndr_block(ob, data + i, size - i);
-	} 
-
-	return rndr_span(ob, data, size);
-}
-
-static int
-rndr_footnotes(struct lowdown_buf *ob,
-	const struct lowdown_buf *content, 
-	const struct nroff *st)
+rndr_footnotes(const struct nroff *st,
+	struct bnodeq *obq, struct bnodeq *bq)
 {
 
 	/* Put a horizontal line in the case of man(7). */
 
-	if (content->size && st->man) {
-		if (!HBUF_PUTSL(ob, ".LP\n"))
+	if (st->man) {
+		if (bqueue_block(obq, ".LP") == NULL)
 			return 0;
-		if (!HBUF_PUTSL(ob, ".sp 3\n"))
+		if (bqueue_block(obq, ".sp 3") == NULL)
 			return 0;
-		if (!HBUF_PUTSL(ob, "\\l\'2i'\n"))
+		if (bqueue_block(obq, "\\l\'2i'") == NULL)
 			return 0;
 	}
 
-	return hbuf_putb(ob, content);
+	TAILQ_CONCAT(obq, bq, entries);
+	return 1;
 }
 
 static int
-rndr_footnote_def(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	const struct rndr_footnote_def *param,
-	const struct nroff *st)
+rndr_footnote_def(const struct nroff *st, struct bnodeq *obq,
+	struct bnodeq *bq, const struct rndr_footnote_def *param)
 {
+	struct bnode	*bn;
 
 	/* 
 	 * Use groff_ms(7)-style footnotes.
@@ -1191,22 +1028,11 @@ rndr_footnote_def(struct lowdown_buf *ob,
 	 */
 
 	if (!st->man) {
-		if (!HBUF_PUTSL(ob, ".FS\n"))
+		if (bqueue_block(obq, ".FS") == NULL)
 			return 0;
-
-		/* Ignore leading paragraph marker. */
-
-		if (content->size > 3 &&
-		    (memcmp(content->data, ".LP\n", 4) == 0 ||
-		     memcmp(content->data, ".PP\n", 4) == 0)) {
-			if (!hbuf_put(ob,
-			    content->data + 4, content->size - 4))
-				return 0;
-		} else if (!hbuf_putb(ob, content))
-			return 0;
-		if (!HBUF_NEWLINE(content, ob))
-			return 0;
-		return HBUF_PUTSL(ob, ".FE\n");
+		bqueue_strip_paras(bq);
+		TAILQ_CONCAT(obq, bq, entries);
+		return bqueue_block(obq, ".FE") != NULL;
 	}
 
 	/*
@@ -1214,39 +1040,63 @@ rndr_footnote_def(struct lowdown_buf *ob,
 	 * number in italics and superscripted.
 	 */
 
-	if (!HBUF_PUTSL(ob, ".LP\n"))
+	if (bqueue_block(obq, ".LP") == NULL)
 		return 0;
 
-	if (!hbuf_printf(ob, 
-	    "\\0\\fI\\u\\s-3%zu\\s+3\\d\\fP\\0", param->num))
+	if ((bn = bqueue_span(obq, NULL)) == NULL)
 		return 0;
-
-	if (content->size > 3 &&
-	    (memcmp(content->data, ".PP\n", 4) == 0 ||
-	     memcmp(content->data, ".LP\n", 4) == 0)) {
-		if (!hbuf_put(ob, 
-		    content->data + 4, content->size - 4))
-			return 0;
-	} else if (!hbuf_putb(ob, content))
+	if (asprintf(&bn->nbuf, 
+	    "\\0\\fI\\u\\s-3%zu\\s+3\\d\\fP\\0", param->num) == -1) {
+		bn->nbuf = NULL;
 		return 0;
+	}
 
-	return HBUF_NEWLINE(content, ob);
+	bqueue_strip_paras(bq);
+	TAILQ_CONCAT(obq, bq, entries);
+	return 1;
 }
 
 static int
-rndr_footnote_ref(struct lowdown_buf *ob,
-	const struct rndr_footnote_ref *param,
-	const struct nroff *st)
+rndr_footnote_ref(const struct nroff *st,
+	struct bnodeq *obq, const struct rndr_footnote_ref *param)
 {
+	struct bnode	*bn;
 
 	/* 
 	 * Use groff_ms(7)-style automatic footnoting, else just put a
 	 * reference number in small superscripts.
 	 */
 
-	return !st->man ?
-		HBUF_PUTSL(ob, "\\**") :
-		hbuf_printf(ob, "\\u\\s-3%zu\\s+3\\d", param->num);
+	if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
+		return 0;
+	bn->scope = BSCOPE_SPAN;
+
+	if (st->man) {
+		if (asprintf(&bn->nbuf, 
+		    "\\u\\s-3%zu\\s+3\\d", param->num) == -1)
+			bn->nbuf = NULL;
+	} else
+		bn->nbuf = strdup("\\**");
+
+	return bn->nbuf != NULL;
+}
+
+static int
+rndr_entity(struct bnodeq *obq, const struct rndr_entity *param)
+{
+	int32_t		 ent;
+	struct bnode	*bn;
+	char		 buf[32];
+
+	if ((ent = entity_find_iso(&param->text)) > 0) {
+		snprintf(buf, sizeof(buf), 
+			"\\[u%.4llX]", (unsigned long long)ent);
+		return bqueue_span(obq, buf) != NULL;
+	} 
+	if ((bn = bqueue_span(obq, NULL)) == NULL)
+		return 0;
+	bn->buf = &param->text;
+	return 1;
 }
 
 /*
@@ -1256,11 +1106,15 @@ rndr_footnote_ref(struct lowdown_buf *ob,
  * anything but manage white-space.
  */
 static int
-rndr_meta_multi(struct lowdown_buf *ob, const char *b, const char *env)
+rndr_meta_multi(struct bnodeq *obq, const char *b, const char *env)
 {
 	const char	*start;
 	size_t		 sz, i, bsz;
+	struct bnode	*bn;
+	char		 macro[32];
 
+	assert(strlen(env) < sizeof(macro) - 1);
+	snprintf(macro, sizeof(macro), ".%s", env);
 	bsz = strlen(b);
 
 	for (i = 0; i < bsz; i++) {
@@ -1278,33 +1132,39 @@ rndr_meta_multi(struct lowdown_buf *ob, const char *b, const char *env)
 				break;
 		if ((sz = &b[i] - start) == 0)
 			continue;
-		if (!hbuf_printf(ob, ".%s\n", env))
+
+		if ((bn = bqueue_block(obq, macro)) == NULL)
 			return 0;
-		if (!rndr_one_line_noescape(ob, start, sz, 1))
-			return 0;
-		if (!HBUF_PUTSL(ob, "\n"))
+		if ((bn->nargs = strndup(start, sz)) == NULL)
 			return 0;
 	}
+
 	return 1;
 }
 
 static int
-rndr_meta(struct lowdown_buf *ob,
-	const struct lowdown_buf *content, 
-	struct lowdown_metaq *mq,
-	const struct lowdown_node *n, struct nroff *st)
+rndr_meta(struct nroff *st, const struct bnodeq *bq, 
+	struct lowdown_metaq *mq, const struct rndr_meta *params)
 {
 	struct lowdown_meta	*m;
+	struct lowdown_buf	*ob;
 
 	if ((m = calloc(1, sizeof(struct lowdown_meta))) == NULL)
 		return 0;
 	TAILQ_INSERT_TAIL(mq, m, entries);
 
-	m->key = strndup(n->rndr_meta.key.data,
-		n->rndr_meta.key.size);
+	m->key = strndup(params->key.data, params->key.size);
 	if (m->key == NULL)
 		return 0;
-	m->value = strndup(content->data, content->size);
+
+	if ((ob = hbuf_new(32)) == NULL)
+		return 0;
+	if (!bqueue_flush(ob, bq)) {
+		hbuf_free(ob);
+		return 0;
+	}
+	m->value = strndup(ob->data, ob->size);
+	hbuf_free(ob);
 	if (m->value == NULL)
 		return 0;
 
@@ -1318,10 +1178,13 @@ rndr_meta(struct lowdown_buf *ob,
 }
 
 static int
-rndr_doc_header(struct lowdown_buf *ob, 
-	const struct lowdown_metaq *mq, const struct nroff *st)
+rndr_doc_header(const struct nroff *st,
+	struct bnodeq *obq, const struct lowdown_metaq *mq)
 {
+	struct lowdown_buf		*ob;
+	struct bnode			*bn;
 	const struct lowdown_meta	*m;
+	int				 rc = 0;
 	const char			*author = NULL, *title = NULL,
 					*affil = NULL, *date = NULL,
 					*copy = NULL, *section = NULL,
@@ -1364,68 +1227,79 @@ rndr_doc_header(struct lowdown_buf *ob,
 	if (rcsauthor != NULL)
 		author = rcsauthor;
 
+	/* Scratch space. */
+
+	if ((ob = hbuf_new(32)) == NULL)
+		return 0;
+
 	if (!st->man) {
 		if (copy != NULL) {
-			if (!HBUF_PUTSL(ob, 
-			     ".ds LF \\s-2Copyright \\(co "))
-				return 0;
-			if (!rndr_one_line_noescape
-			    (ob, copy, strlen(copy), 0))
-				return 0;
-			if (!HBUF_PUTSL(ob, "\\s+2\n"))
-				return 0;
+			hbuf_truncate(ob);
+			bn = bqueue_block(obq, ".ds");
+			if (bn == NULL)
+				goto out;
+			if (!HBUF_PUTSL(ob, "LF \\s-2") ||
+			    !HBUF_PUTSL(ob, "Copyright \\(co ") ||
+			    !hbuf_puts(ob, copy) ||
+			    !HBUF_PUTSL(ob, "\\s+2"))
+				goto out;
+			bn->nargs = strndup(ob->data, ob->size);
+			if (bn->nargs == NULL)
+				goto out;
 		}
 		if (date != NULL) {
+			hbuf_truncate(ob);
 			if (copy != NULL) {
-				if (!HBUF_PUTSL(ob, ".ds RF \\s-2"))
-					return 0;
-				if (!rndr_one_line_noescape
-				    (ob, date, strlen(date), 0))
-					return 0;
-				if (!HBUF_PUTSL(ob, "\\s+2\n"))
-					return 0;
+				bn = bqueue_block(obq, ".ds");
+				if (bn == NULL)
+					goto out;
+				if (!HBUF_PUTSL(ob, "RF \\s-2") ||
+				    !hbuf_puts(ob, date) ||
+				    !HBUF_PUTSL(ob, "\\s+2"))
+					goto out;
 			} else {
-				if (!HBUF_PUTSL(ob, ".DA \\s-2"))
-					return 0;
-				if (!rndr_one_line_noescape
-				    (ob, date, strlen(date), 0))
-					return 0;
-				if (!HBUF_PUTSL(ob, "\\s+2\n"))
-					return 0;
+				bn = bqueue_block(obq, ".DA");
+				if (bn == NULL)
+					goto out;
+				if (!HBUF_PUTSL(ob, "\\s-2") ||
+				    !hbuf_puts(ob, date) ||
+				    !HBUF_PUTSL(ob, "\\s+2\n"))
+					goto out;
 			}
+			bn->nargs = strndup(ob->data, ob->size);
+			if (bn->nargs == NULL)
+				goto out;
 		}
-		if (!HBUF_PUTSL(ob, ".TL\n"))
-			return 0;
-		if (!rndr_one_line_noescape
-		    (ob, title, strlen(title), 0))
-			return 0;
-		if (!HBUF_PUTSL(ob, "\n"))
-			return 0;
+		hbuf_truncate(ob);
+		if ((bn = bqueue_block(obq, ".TL")) == NULL)
+			goto out;
+		if (!hbuf_puts(ob, title))
+			goto out;
+		bn->nargs = strndup(ob->data, ob->size);
+		if (bn->nargs == NULL)
+			goto out;
 
 		if (author != NULL && 
-		    !rndr_meta_multi(ob, author, "AU"))
-			return 0;
+		    !rndr_meta_multi(obq, author, "AU"))
+			goto out;
 		if (affil != NULL &&
-		    !rndr_meta_multi(ob, affil, "AI"))
-			return 0;
+		    !rndr_meta_multi(obq, affil, "AI"))
+			goto out;
 	} else {
 		/*
 		 * The syntax of this macro, according to man(7), is 
 		 * TH name section date [source [volume]].
 		 */
 
-		if (!HBUF_PUTSL(ob, ".TH \""))
-			return 0;
-		if (!rndr_one_line_noescape
-		    (ob, title, strlen(title), 0))
-			return 0;
-		if (!HBUF_PUTSL(ob, "\" \""))
-			return 0;
-		if (!rndr_one_line_noescape
-		    (ob, section, strlen(section), 0))
-			return 0;
-		if (!HBUF_PUTSL(ob, "\""))
-			return 0;
+		hbuf_truncate(ob);
+		if ((bn = bqueue_block(obq, ".TH")) == NULL)
+			goto out;
+		if (!hbuf_putc(ob, '"') ||
+		    !hbuf_puts(ob, title) ||
+		    !HBUF_PUTSL(ob, "\" \"") ||
+		    !hbuf_puts(ob, section) ||
+		    !hbuf_putc(ob, '"'))
+			goto out;
 
 		/*
 		 * We may not have a date (or it may be empty), in which
@@ -1433,16 +1307,13 @@ rndr_doc_header(struct lowdown_buf *ob,
 		 */
 
 		if (date != NULL) {
-			if (!HBUF_PUTSL(ob, " \""))
-				return 0;
-			if (!rndr_one_line_noescape
-			    (ob, date, strlen(date), 0))
-				return 0;
-			if (!HBUF_PUTSL(ob, "\""))
-				return 0;
+			if (!HBUF_PUTSL(ob, " \"") ||
+			    !hbuf_puts(ob, date) ||
+			    !HBUF_PUTSL(ob, "\""))
+				goto out;
 		} else {
 			if (!HBUF_PUTSL(ob, " \"\""))
-				return 0;
+				goto out;
 		}
 
 		/*
@@ -1453,37 +1324,35 @@ rndr_doc_header(struct lowdown_buf *ob,
 
 		if (source != NULL || volume != NULL) {
 			if (source != NULL) {
-				if (!HBUF_PUTSL(ob, " \""))
-					return 0;
-				if (!rndr_one_line_noescape
-				    (ob, source, strlen(source), 0))
-					return 0;
-				if (!HBUF_PUTSL(ob, "\""))
-					return 0;
+				if (!HBUF_PUTSL(ob, " \"") ||
+				    !hbuf_puts(ob, source) ||
+				    !HBUF_PUTSL(ob, "\""))
+					goto out;
 			} else {
 				if (!HBUF_PUTSL(ob, " \"\""))
-					return 0;
+					goto out;
 			}
 
 			if (volume != NULL) {
-				if (!HBUF_PUTSL(ob, " \""))
-					return 0;
-				if (!rndr_one_line_noescape
-				    (ob, volume, strlen(volume), 0))
-					return 0;
-				if (!HBUF_PUTSL(ob, "\""))
-					return 0;
+				if (!HBUF_PUTSL(ob, " \"") ||
+				    !hbuf_puts(ob, volume) ||
+				    !HBUF_PUTSL(ob, "\""))
+					goto out;
 			} else if (source != NULL) {
 				if (!HBUF_PUTSL(ob, " \"\""))
-					return 0;
+					goto out;
 			}
 		}
 
-		if (!HBUF_PUTSL(ob, "\n"))
-			return 0;
+		bn->nargs = strndup(ob->data, ob->size);
+		if (bn->nargs == NULL)
+			goto out;
 	}
 
-	return 1;
+	rc = 1;
+out:
+	hbuf_free(ob);
+	return rc;
 }
 
 /*
@@ -1492,21 +1361,26 @@ rndr_doc_header(struct lowdown_buf *ob,
  * Return whether we should remove nodes relative to "n".
  */
 static int
-rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq, 
-	struct nroff *st, struct lowdown_node *n)
+rndr(struct lowdown_metaq *mq, struct nroff *st,
+	const struct lowdown_node *n, struct bnodeq *obq)
 {
-	struct lowdown_node	*child, *next, *prev;
-	struct lowdown_buf	*tmp;
-	int			 pnln, keepnext = 1, ret = 0, rc;
-	int32_t			 ent;
-	enum nfont		 fonts[NFONT__MAX];
+	const struct lowdown_node	*child;
+	int				 keepnext, ret = -1, rc = 1;
+	enum nfont			 fonts[NFONT__MAX];
+	struct bnodeq			 tmpbq;
+	struct bnode			*bn;
 
-	assert(n != NULL);
+	TAILQ_INIT(&tmpbq);
 
-	if ((tmp = hbuf_new(64)) == NULL)
-		return 0;
-
-	memcpy(fonts, st->fonts, sizeof(fonts));
+	if (n->chng == LOWDOWN_CHNG_INSERT ||
+	    n->chng == LOWDOWN_CHNG_DELETE) {
+		if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
+			goto out;
+		TAILQ_INSERT_TAIL(obq, bn, entries);
+		bn->scope = BSCOPE_COLOUR;
+		bn->colour = n->chng == LOWDOWN_CHNG_INSERT ? 
+			BFONT_BLUE : BFONT_RED;
+	}
 
 	/*
 	 * Font management.
@@ -1514,191 +1388,143 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	 * and step out of them in a nested way.
 	 */
 
+	memcpy(fonts, st->fonts, sizeof(fonts));
+
 	switch (n->type) {
 	case LOWDOWN_CODESPAN:
 		st->fonts[NFONT_FIXED]++;
-		if (!hbuf_puts(ob, nstate_fonts(st)))
+		if (!nstate_fonts(st, obq))
 			goto out;
 		break;
 	case LOWDOWN_EMPHASIS:
 		st->fonts[NFONT_ITALIC]++;
-		if (!hbuf_puts(ob, nstate_fonts(st)))
+		if (!nstate_fonts(st, obq))
 			goto out;
 		break;
 	case LOWDOWN_HIGHLIGHT:
 	case LOWDOWN_DOUBLE_EMPHASIS:
 		st->fonts[NFONT_BOLD]++;
-		if (!hbuf_puts(ob, nstate_fonts(st)))
+		if (!nstate_fonts(st, obq))
 			goto out;
 		break;
 	case LOWDOWN_TRIPLE_EMPHASIS:
 		st->fonts[NFONT_ITALIC]++;
 		st->fonts[NFONT_BOLD]++;
-		if (!hbuf_puts(ob, nstate_fonts(st)))
+		if (!nstate_fonts(st, obq))
 			goto out;
 		break;
 	default:
 		break;
 	}
 
-	TAILQ_FOREACH(child, &n->children, entries)
-		if (!rndr(tmp, mq, st, child))
-			goto out;
-
-	/* 
-	 * Compute whether the previous output does have a newline:
-	 * if we don't have a previous node, scan up to the parent and
-	 * see if it's a block node.
-	 * If it's a block node, we're absolutely starting on a newline;
-	 * otherwise, we don't know.
-	 */
-
-	if (n->parent == NULL ||
-	    (prev = TAILQ_PREV(n, lowdown_nodeq, entries)) == NULL)
-		prev = n->parent;
-	pnln = prev == NULL || nscopes[prev->type] == NSCOPE_BLOCK;
-
-	/* Get the last and next emitted node. */
-
-	prev = n->parent == NULL ? NULL : 
-		TAILQ_PREV(n, lowdown_nodeq, entries);
-	next = TAILQ_NEXT(n, entries);
-
-	if (nscopes[n->type] == NSCOPE_BLOCK) {
-		if (n->chng == LOWDOWN_CHNG_INSERT &&
-		    !HBUF_PUTSL(ob, ".gcolor blue\n"))
-			goto out;
-		if (n->chng == LOWDOWN_CHNG_DELETE &&
-		    !HBUF_PUTSL(ob, ".gcolor red\n"))
-			goto out;
-	} else {
-		/*
-		 * FIXME: this is going to disrupt our newline
-		 * computation.
-		 */
-		if (n->chng == LOWDOWN_CHNG_INSERT &&
-		    !HBUF_PUTSL(ob, "\\m[blue]"))
-			goto out;
-		if (n->chng == LOWDOWN_CHNG_DELETE &&
-		    !HBUF_PUTSL(ob, "\\m[red]"))
+	keepnext = 1;
+	TAILQ_FOREACH(child, &n->children, entries) {
+		if (keepnext == 0)
+			continue;
+		keepnext = rndr(mq, st, child, &tmpbq);
+		if (keepnext < 0)
 			goto out;
 	}
 
+	ret = 1;
 	switch (n->type) {
 	case LOWDOWN_BLOCKCODE:
-		rc = rndr_blockcode(ob, &n->rndr_blockcode, st);
+		rc = rndr_blockcode(st, obq, &n->rndr_blockcode);
 		break;
 	case LOWDOWN_BLOCKQUOTE:
-		rc = rndr_blockquote(ob, tmp, st);
+		rc = rndr_blockquote(st, obq, &tmpbq);
 		break;
 	case LOWDOWN_DEFINITION:
-		rc = rndr_list(ob, n, tmp, st);
+		rc = rndr_list(st, obq, n, &tmpbq);
 		break;
 	case LOWDOWN_DEFINITION_DATA:
-		rc = rndr_definition_data(ob, n, tmp);
+		rc = rndr_definition_data(obq, &tmpbq);
 		break;
 	case LOWDOWN_DEFINITION_TITLE:
-		rc = rndr_definition_title(ob, n, tmp);
+		rc = rndr_definition_title(obq, &tmpbq);
 		break;
 	case LOWDOWN_DOC_HEADER:
-		rc = rndr_doc_header(ob, mq, st);
+		rc = rndr_doc_header(st, obq, mq);
 		break;
 	case LOWDOWN_META:
-		rc = rndr_meta(ob, tmp, mq, n, st);
+		rc = rndr_meta(st, &tmpbq, mq, &n->rndr_meta);
 		break;
 	case LOWDOWN_HEADER:
-		rc = rndr_header(ob, tmp, &n->rndr_header, st);
+		rc = rndr_header(st, obq, &tmpbq, &n->rndr_header);
 		break;
 	case LOWDOWN_HRULE:
-		rc = rndr_hrule(ob, st);
+		rc = rndr_hrule(st, obq);
 		break;
 	case LOWDOWN_LIST:
-		rc = rndr_list(ob, n, tmp, st);
+		rc = rndr_list(st, obq, n, &tmpbq);
 		break;
 	case LOWDOWN_LISTITEM:
-		rc = rndr_listitem(ob, tmp, n, &n->rndr_listitem);
+		rc = rndr_listitem(obq, n, &tmpbq, &n->rndr_listitem);
 		break;
 	case LOWDOWN_PARAGRAPH:
-		rc = rndr_paragraph(ob, tmp, st, n);
+		rc = rndr_paragraph(st, n, obq, &tmpbq);
 		break;
 	case LOWDOWN_TABLE_BLOCK:
-		rc = rndr_table(ob, tmp, st);
+		rc = rndr_table(obq, &tmpbq);
 		break;
 	case LOWDOWN_TABLE_HEADER:
-		rc = rndr_table_header(ob, tmp, &n->rndr_table_header);
+		rc = rndr_table_header(obq, &tmpbq, &n->rndr_table_header);
 		break;
 	case LOWDOWN_TABLE_ROW:
-		rc = rndr_table_row(ob, tmp);
+		rc = rndr_table_row(obq, &tmpbq);
 		break;
 	case LOWDOWN_TABLE_CELL:
-		rc = rndr_table_cell(ob, tmp, &n->rndr_table_cell);
+		rc = rndr_table_cell(obq, &tmpbq, &n->rndr_table_cell);
 		break;
 	case LOWDOWN_FOOTNOTES_BLOCK:
-		rc = rndr_footnotes(ob, tmp, st);
+		rc = rndr_footnotes(st, obq, &tmpbq);
 		break;
 	case LOWDOWN_FOOTNOTE_DEF:
-		rc = rndr_footnote_def(ob, 
-			tmp, &n->rndr_footnote_def, st);
+		rc = rndr_footnote_def(st, obq, &tmpbq, &n->rndr_footnote_def);
 		break;
 	case LOWDOWN_BLOCKHTML:
-		rc = rndr_raw_block(ob, &n->rndr_blockhtml, st);
+		rc = rndr_raw_block(st, obq, &n->rndr_blockhtml);
 		break;
 	case LOWDOWN_LINK_AUTO:
-		keepnext = rndr_autolink(ob, &n->rndr_autolink,
-			prev, next, st, pnln);
+		/*ret = rndr_autolink(ob, &n->rndr_autolink, st);*/
 		break;
 	case LOWDOWN_CODESPAN:
-		rc = rndr_codespan(ob, &n->rndr_codespan);
+		rc = rndr_codespan(obq, &n->rndr_codespan);
 		break;
 	case LOWDOWN_IMAGE:
-		rc = rndr_image(ob, &n->rndr_image, st, pnln, prev);
+		rc = rndr_image(st, obq, &n->rndr_image);
 		break;
 	case LOWDOWN_LINEBREAK:
-		rc = rndr_linebreak(ob);
+		rc = rndr_linebreak(obq);
 		break;
 	case LOWDOWN_LINK:
-		keepnext = rndr_link(ob, tmp, &n->rndr_link,
-			st, prev, next, pnln);
-		break;
-	case LOWDOWN_STRIKETHROUGH:
-		rc = rndr_strikethrough(ob, tmp);
+		/*ret = rndr_link(ob, tmp, &n->rndr_link, st);*/
 		break;
 	case LOWDOWN_SUPERSCRIPT:
-		rc = rndr_superscript(ob, tmp);
+		rc = rndr_superscript(obq, &tmpbq);
 		break;
 	case LOWDOWN_FOOTNOTE_REF:
-		rc = rndr_footnote_ref(ob, &n->rndr_footnote_ref, st);
+		rc = rndr_footnote_ref(st, obq, &n->rndr_footnote_ref);
 		break;
 	case LOWDOWN_RAW_HTML:
-		rc = rndr_raw_html(ob, &n->rndr_raw_html, st);
+		rc = rndr_raw_html(st, obq, &n->rndr_raw_html);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
-		rc = rndr_normal_text(ob, &n->rndr_normal_text, 
-			prev, next, st, pnln);
+		if ((bn = bqueue_span(obq, NULL)) == NULL)
+			goto out;
+		bn->buf = &n->rndr_normal_text.text;
 		break;
 	case LOWDOWN_ENTITY:
-		ent = entity_find_iso(&n->rndr_entity.text);
-		rc = ent > 0 ?
-			hbuf_printf(ob, "\\[u%.4llX]", 
-				(unsigned long long)ent) :
-			hbuf_putb(ob, &n->rndr_entity.text);
+		rc = rndr_entity(obq, &n->rndr_entity);
 		break;
 	default:
-		rc = hbuf_putb(ob, tmp);
+		TAILQ_CONCAT(obq, &tmpbq, entries);
 		break;
 	}
 
-	if (keepnext < 0 || !rc)
-		goto out;
-
-	if (n->chng == LOWDOWN_CHNG_INSERT ||
-	    n->chng == LOWDOWN_CHNG_DELETE) {
-		if (nscopes[n->type] == NSCOPE_BLOCK)
-			rc = HBUF_PUTSL(ob, ".gcolor\n");
-		else
-			rc = HBUF_PUTSL(ob, "\\m[]");
-	}
 	if (!rc)
+		ret = -1;
+	if (ret < 0)
 		goto out;
 
 	/* Restore the font stack. */
@@ -1710,38 +1536,29 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_DOUBLE_EMPHASIS:
 	case LOWDOWN_TRIPLE_EMPHASIS:
 		memcpy(st->fonts, fonts, sizeof(fonts));
-		if (!hbuf_puts(ob, nstate_fonts(st)))
+		if (!nstate_fonts(st, obq)) {
+			ret = -1;
 			goto out;
+		}
 		break;
 	default:
 		break;
 	}
 
-	/* 
-	 * Our processors might want to remove the current or next node,
-	 * so return that knowledge to the parent step.
-	 */
-
-	if (!keepnext) {
-		assert(next->parent != NULL);
-		TAILQ_REMOVE(&next->parent->children, next, entries);
-		lowdown_node_free(next);
-	}
-
-	ret = 1;
 out:
-	hbuf_free(tmp);
+	bqueue_free(&tmpbq);
 	return ret;
 }
 
 int
 lowdown_nroff_rndr(struct lowdown_buf *ob,
 	struct lowdown_metaq *mq, void *arg, 
-	struct lowdown_node *n)
+	const struct lowdown_node *n)
 {
 	struct nroff		*st = arg;
 	struct lowdown_metaq	 metaq;
 	int			 rc;
+	struct bnodeq		 bq;
 
 	/* Temporary metaq if not provided. */
 
@@ -1750,16 +1567,22 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 		mq = &metaq;
 	}
 
+	TAILQ_INIT(&bq);
 	memset(st->fonts, 0, sizeof(st->fonts));
 	st->base_header_level = 1;
 	st->post_para = 0;
-	rc = rndr(ob, mq, st, n);
+
+	rc = rndr(mq, st, n, &bq);
 
 	/* Release temporary metaq. */
 
 	if (mq == &metaq)
 		lowdown_metaq_free(mq);
 
+	if (rc && !bqueue_flush(ob, &bq))
+		rc = 0;
+
+	bqueue_free(&bq);
 	return rc;
 }
 

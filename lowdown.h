@@ -404,7 +404,7 @@ void	 lowdown_nroff_free(void *);
 void	*lowdown_nroff_new(const struct lowdown_opts *);
 int 	 lowdown_nroff_rndr(struct lowdown_buf *, 
 		struct lowdown_metaq *, void *, 
-		struct lowdown_node *);
+		const struct lowdown_node *);
 
 int 	 lowdown_tree_rndr(struct lowdown_buf *, 
 		const struct lowdown_node *);
