@@ -56,6 +56,13 @@ enum	bscope {
 	BSCOPE_COLOUR
 };
 
+/*
+ * Instead of writing directly into the output buffer, we write
+ * temporarily into bnodes, which are converted into output.  These
+ * nodes are aware of whether they need surrounding newlines.  This way,
+ * we have much more control over where to put newlines, which before
+ * was haphazard at best.
+ */
 struct	bnode {
 	char				*nbuf; /* (safe) 1st data */
 	const struct lowdown_buf	*buf; /* (unsafe) 2nd data */
@@ -63,11 +70,11 @@ struct	bnode {
 	char				*nargs; /* (safe) 1st args */
 	char				*args; /* (unsafe) 2nd args */
 	enum bscope			 scope; /* scope */
-	unsigned int			 font;
+	unsigned int			 font; /* if BNODE_FONT */
 #define	BFONT_ITALIC			 0x01
 #define	BFONT_BOLD			 0x02
 #define	BFONT_FIXED			 0x04
-	unsigned int			 colour;
+	unsigned int			 colour; /* if BNODE_COLOUR */
 #define	BFONT_BLUE			 0x01
 #define	BFONT_RED			 0x02
 	TAILQ_ENTRY(bnode)		 entries;
@@ -132,7 +139,9 @@ hesc_nroff(struct lowdown_buf *ob, const char *data,
 
 			/* Prevent leading spaces on the line. */
 
-			while (i + 1 < size && data[i + 1] == ' ')
+			while (i + 1 < size && 
+			       (data[i + 1] == ' ' || 
+				data[i + 1] == '\n'))
 				i++;
 			break;
 		case '\\':
@@ -1080,9 +1089,8 @@ rndr_footnote_ref(const struct nroff *st,
 	 * reference number in small superscripts.
 	 */
 
-	if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
+	if ((bn = bqueue_span(obq, NULL)) == NULL)
 		return 0;
-	bn->scope = BSCOPE_SPAN;
 
 	if (st->man) {
 		if (asprintf(&bn->nbuf, 
