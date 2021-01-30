@@ -177,11 +177,30 @@ nstate_colour_buf(unsigned int ft)
 	return fonts;
 }
 
+/*
+ * For compatibility with traditional troff, return non-block font code
+ * using the correct sequence of \fX, \f(xx, and \f[xxx].
+ */
 static const char *
-nstate_font_buf(unsigned int ft)
+nstate_font_buf(unsigned int ft, int blk)
 {
 	static char 	 fonts[10];
 	char		*cp = fonts;
+	size_t		 len = 0;
+
+	if (ft & BFONT_FIXED)
+		len++;
+	if (ft & BFONT_BOLD)
+		len++;
+	if (ft & BFONT_ITALIC)
+		len++;
+	if (ft == 0)
+		len++;
+
+	if (!blk && len == 3)
+		(*cp++) = '[';
+	else if (!blk && len == 2)
+		(*cp++) = '(';
 
 	if (ft & BFONT_FIXED)
 		(*cp++) = 'C';
@@ -189,8 +208,11 @@ nstate_font_buf(unsigned int ft)
 		(*cp++) = 'B';
 	if (ft & BFONT_ITALIC)
 		(*cp++) = 'I';
-	if (ft == BFONT_FIXED || ft == 0)
+	if (ft == 0)
 		(*cp++) = 'R';
+
+	if (!blk && len == 3)
+		(*cp++) = ']';
 
 	(*cp++) = '\0';
 	return fonts;
@@ -326,11 +348,11 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq)
 
 		if (bn->scope == BSCOPE_FONT && nextblk) {
 			if (!hbuf_printf(ob, ".ft %s",
-			    nstate_font_buf(bn->font)))
+			    nstate_font_buf(bn->font, nextblk)))
 				return 0;
 		} else if (bn->scope == BSCOPE_FONT) {
-			if (!hbuf_printf(ob, "\\f[%s]", 
-			    nstate_font_buf(bn->font)))
+			if (!hbuf_printf(ob, "\\f%s", 
+			    nstate_font_buf(bn->font, nextblk)))
 				return 0;
 		} else if (bn->scope == BSCOPE_COLOUR && nextblk) {
 			if (!hbuf_printf(ob, ".gcolor %s", 
