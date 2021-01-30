@@ -29,7 +29,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include "lowdown.h"
 #include "extern.h"
@@ -60,6 +59,7 @@ enum	bscope {
 struct	bnode {
 	char				*nbuf; /* (safe) 1st data */
 	const struct lowdown_buf	*buf; /* (unsafe) 2nd data */
+	size_t				 bufchop; /* strip from buf */
 	char				*nargs; /* (safe) 1st args */
 	char				*args; /* (unsafe) 2nd args */
 	enum bscope			 scope; /* scope */
@@ -76,9 +76,10 @@ struct	bnode {
 TAILQ_HEAD(bnodeq, bnode);
 
 /*
- * If "span" is non-zero, don't test for leading periods.
- * Otherwise, a leading period will be escaped.
+ * Escape unsafe text into roff output such that no roff fetaures are
+ * invoked by the text (macros, escapes, etc.).
  * If "oneline" is non-zero, newlines are replaced with spaces.
+ * If "literal", doesn't strip leading space.
  * Return zero on failure, non-zero on success.
  */
 static int
@@ -90,6 +91,8 @@ hesc_nroff(struct lowdown_buf *ob, const char *data,
 	if (size == 0)
 		return 1;
 
+	/* Strip leading whitespace. */
+
 	if (!literal && ob->size > 0 && ob->data[ob->size - 1] == '\n')
 		while (i < size && (data[i] == ' ' || data[i] == '\n'))
 			i++;
@@ -98,7 +101,9 @@ hesc_nroff(struct lowdown_buf *ob, const char *data,
 	 * According to mandoc_char(7), we need to escape the backtick,
 	 * single apostrophe, and tilde or else they'll be considered as
 	 * special Unicode output.
-	 * Slashes need to be escaped too, and newlines if appropriate
+	 * Slashes need to be escaped too.
+	 * We also escape double-quotes because this text might be used
+	 * within quoted macro arguments.
 	 */
 
 	for ( ; i < size; i++)
@@ -113,6 +118,10 @@ hesc_nroff(struct lowdown_buf *ob, const char *data,
 			break;
 		case '`':
 			if (!HBUF_PUTSL(ob, "\\(ga"))
+				return 0;
+			break;
+		case '"':
+			if (!HBUF_PUTSL(ob, "\\(dq"))
 				return 0;
 			break;
 		case '\n':
@@ -338,7 +347,8 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq)
 				return 0;
 		} else if (bn->buf != NULL)
 			if (!hesc_nroff(ob,
-			    bn->buf->data, bn->buf->size, 0, 0))
+			    bn->buf->data + bn->bufchop, 
+			    bn->buf->size - bn->bufchop, 0, 0))
 				return 0;
 
 		/* 
@@ -411,15 +421,17 @@ out:
  * Return <0 on error (memory), 0 if we've snipped the next node, >0
  * otherwise.
  */
-static int
+static ssize_t
 putlink(struct bnodeq *obq, struct nroff *st, 
 	const struct lowdown_buf *link, struct bnodeq *bq,
-	enum halink_type type)
+	enum halink_type type, const struct lowdown_node *next)
 {
-	struct lowdown_buf	*ob;
-	struct bnode		*bn;
-	size_t			 i;
-	int			 rc = -1;
+	struct lowdown_buf		*ob = NULL, *tmp = NULL;
+	const struct lowdown_buf	*nbuf;
+	struct bnode			*bn, *prev;
+	size_t				 sz, i;
+	int				 rc = 0;
+	ssize_t				 ret = 0;
 
 	if (st->man || !(st->flags & LOWDOWN_NROFF_GROFF)) {
 		st->fonts[NFONT_ITALIC]++;
@@ -432,80 +444,67 @@ putlink(struct bnodeq *obq, struct nroff *st,
 		} else
 			TAILQ_CONCAT(obq, bq, entries);
 		st->fonts[NFONT_ITALIC]--;
-		return bqueue_font(st, obq) ? 1 : -1;
+		return bqueue_font(st, obq) ? 0 : -1;
 	}
 
 	if ((ob = hbuf_new(32)) == NULL)
 		goto out;
-	if ((bn = bqueue_block(obq, ".pdfhref W ")) == NULL)
-		return -1;
+
+	prev = TAILQ_LAST(obq, bnodeq);
 
 	/*
 	 * If we're preceded by normal text that doesn't end with space,
 	 * then put that text into the "-P" (prefix) argument.
-	 * If we're not in groff mode, emit the data, but without -P.
 	 */
 
-#if 0
 	if (prev != NULL &&
-	    prev->type == LOWDOWN_NORMAL_TEXT) {
-		buf = &prev->rndr_normal_text.text;
-		i = buf->size;
-		while (i && !isspace((unsigned char)buf->data[i - 1]))
-			i--;
-		if (i != buf->size && 
-		    usepdf && !HBUF_PUTSL(ob, "-P \""))
-			return -1;
-		for (pos = i; pos < buf->size; pos++) {
-			/* Be sure to escape... */
-			if (buf->data[pos] == '"') {
-				if (!HBUF_PUTSL(ob, "\\(dq"))
-					return -1;
-				continue;
-			} else if (buf->data[pos] == '\\') {
-				if (!HBUF_PUTSL(ob, "\\e"))
-					return -1;
-				continue;
-			}
-			if (!hbuf_putc(ob, buf->data[pos]))
-				return -1;
-		}
-		if (i != buf->size && 
-		    usepdf && !HBUF_PUTSL(ob, "\" "))
-			return -1;
-	}
-#endif
+	    prev->scope == BSCOPE_SPAN &&
+	    prev->buf != NULL &&
+	    prev->buf->size > 0 && !isspace
+	    ((unsigned char)prev->buf->data[prev->buf->size - 1])) {
+		sz = prev->buf->size;
+		while (sz && !isspace
+		       ((unsigned char)prev->buf->data[sz - 1]))
+			sz--;
+		assert(sz != prev->buf->size);
 
-#if 0
-	if (next != NULL && 
-	    next->type == LOWDOWN_NORMAL_TEXT &&
-	    next->rndr_normal_text.text.size > 0 &&
-	    next->rndr_normal_text.text.data[0] != ' ') {
-		buf = &next->rndr_normal_text.text;
-		if (usepdf && !HBUF_PUTSL(ob, "-A \""))
-			return -1;
-		for (pos = 0; pos < buf->size; pos++) {
-			if (isspace((unsigned char)buf->data[pos]))
-				break;
-			/* Be sure to escape... */
-			if (buf->data[pos] == '"') {
-				if (!HBUF_PUTSL(ob, "\\(dq"))
-					return -1;
-				continue;
-			} else if (buf->data[pos] == '\\') {
-				if (!HBUF_PUTSL(ob, "\\e"))
-					return -1;
-				continue;
-			}
-			if (!hbuf_putc(ob, buf->data[pos]))
-				return -1;
-		}
-		ret = pos < buf->size;
-		next->rndr_normal_text.offs = pos;
-		if (usepdf && !HBUF_PUTSL(ob, "\" "))
-			return -1;
+		if (!HBUF_PUTSL(ob, "-P \""))
+			goto out;
+		/* FIXME: quotes. */
+		if (!hesc_nroff(ob, 
+		    &prev->buf->data[sz], prev->buf->size - sz, 1, 0))
+			goto out;
+		if (!HBUF_PUTSL(ob, "\" "))
+			goto out;
+
+		if ((tmp = hbuf_new(32)) == NULL)
+			goto out;
+		if (!hesc_nroff(tmp, prev->buf->data, sz, 1, 0))
+			goto out;
+		assert(prev->nbuf == NULL);
+		prev->nbuf = strndup(tmp->data, tmp->size);
+		if (prev->nbuf == NULL)
+			goto out;
+		prev->buf = NULL;
 	}
-#endif
+
+	if (next != NULL && 
+	    next->type == LOWDOWN_NORMAL_TEXT) {
+		nbuf = &next->rndr_normal_text.text;
+		for (sz = 0; sz < nbuf->size; sz++)
+			if (isspace((unsigned char)nbuf->data[sz]))
+				break;
+		if (sz > 0) {
+			if (!HBUF_PUTSL(ob, "-A \""))
+				goto out;
+			/* FIXME: quotes. */
+			if (!hesc_nroff(ob, nbuf->data, sz, 1, 0))
+				goto out;
+			if (!HBUF_PUTSL(ob, "\" "))
+				goto out;
+			ret = sz;
+		}
+	}
 
 	/* Encode the URL. */
 
@@ -527,24 +526,28 @@ putlink(struct bnodeq *obq, struct nroff *st,
 		goto out;
 	else if (bq != NULL && !bqueue_flush(ob, bq))
 		goto out;
+	if ((bn = bqueue_block(obq, ".pdfhref W")) == NULL)
+		goto out;
 	if ((bn->nargs = strndup(ob->data, ob->size)) == NULL)
 		goto out;
 
 	rc = 1;
 out:
+	hbuf_free(tmp);
 	hbuf_free(ob);
-	return rc;
+	return rc ? ret : -1;
 }
 
 /*
  * Return <0 on failure, 0 to remove next, >0 otherwise.
  */
-static int
+static ssize_t
 rndr_autolink(struct nroff *st, struct bnodeq *obq,
-	const struct rndr_autolink *param)
+	const struct rndr_autolink *param, 
+	const struct lowdown_node *next)
 {
 
-	return putlink(obq, st, &param->link, NULL, param->type);
+	return putlink(obq, st, &param->link, NULL, param->type, next);
 }
 
 static int
@@ -610,7 +613,7 @@ rndr_definition_data(struct bnodeq *obq, struct bnodeq *bq)
 }
 
 static int
-rndr_list(const struct nroff *st, struct bnodeq *obq, 
+rndr_list(struct nroff *st, struct bnodeq *obq, 
 	const struct lowdown_node *n, struct bnodeq *bq)
 {
 	/* 
@@ -628,17 +631,20 @@ rndr_list(const struct nroff *st, struct bnodeq *obq,
 	TAILQ_CONCAT(obq, bq, entries);
 	if (n != NULL && bqueue_block(obq, ".RE") == NULL)
 		return 0;
+
+	st->post_para = 1;
 	return 1;
 }
 
 static int
-rndr_blockquote(const struct nroff *st, 
+rndr_blockquote(struct nroff *st, 
 	struct bnodeq *obq, struct bnodeq *bq)
 {
 
 	if (bqueue_block(obq, ".RS") == NULL)
 		return 0;
 	TAILQ_CONCAT(obq, bq, entries);
+	st->post_para = 1;
 	return bqueue_block(obq, ".RE") != NULL;
 }
 
@@ -720,12 +726,13 @@ rndr_header(struct nroff *st, struct bnodeq *obq,
 /*
  * Return <0 on failure, 0 to remove next, >0 otherwise.
  */
-static int
+static ssize_t
 rndr_link(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
-	const struct rndr_link *param)
+	const struct rndr_link *param, 
+	const struct lowdown_node *next)
 {
 
-	return putlink(obq, st, &param->link, bq, HALINK_NORMAL);
+	return putlink(obq, st, &param->link, bq, HALINK_NORMAL, next);
 }
 
 static int
@@ -770,7 +777,7 @@ rndr_listitem(struct bnodeq *obq, const struct lowdown_node *n,
 }
 
 static int
-rndr_paragraph(const struct nroff *st, const struct lowdown_node *n,
+rndr_paragraph(struct nroff *st, const struct lowdown_node *n,
 	struct bnodeq *obq, struct bnodeq *nbq)
 {
 	const struct lowdown_node	*prev;
@@ -799,6 +806,7 @@ rndr_paragraph(const struct nroff *st, const struct lowdown_node *n,
 	}
 
 	TAILQ_CONCAT(obq, nbq, entries);
+	st->post_para = 0;
 	return 1;
 }
 
@@ -881,7 +889,7 @@ rndr_raw_html(const struct nroff *st,
 }
 
 static int
-rndr_table(struct bnodeq *obq, struct bnodeq *bq)
+rndr_table(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq)
 {
 
 	if (bqueue_block(obq, ".TS") == NULL)
@@ -889,6 +897,7 @@ rndr_table(struct bnodeq *obq, struct bnodeq *bq)
 	if (bqueue_block(obq, "tab(|) expand allbox;") == NULL)
 		return 0;
 	TAILQ_CONCAT(obq, bq, entries);
+	st->post_para = 1;
 	return bqueue_block(obq, ".TE") != NULL;
 }
 
@@ -1334,15 +1343,17 @@ out:
 
 /*
  * Actually render the node "n" and all of its children into the output
- * buffer "ob".
- * Return whether we should remove nodes relative to "n".
+ * buffer "ob", chopping "chop" from the current node if specified.
+ * Return what (if anything) we should chop from the next node or <0 on
+ * failure.
  */
-static int
+static ssize_t
 rndr(struct lowdown_metaq *mq, struct nroff *st,
-	const struct lowdown_node *n, struct bnodeq *obq)
+	const struct lowdown_node *n, struct bnodeq *obq, size_t chop)
 {
 	const struct lowdown_node	*child;
-	int				 keepnext, ret = -1, rc = 1;
+	int				 rc = 1;
+	ssize_t				 keepnext, ret = -1;
 	enum nfont			 fonts[NFONT__MAX];
 	struct bnodeq			 tmpbq;
 	struct bnode			*bn;
@@ -1394,16 +1405,14 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		break;
 	}
 
-	keepnext = 1;
+	keepnext = 0;
 	TAILQ_FOREACH(child, &n->children, entries) {
-		if (keepnext == 0)
-			continue;
-		keepnext = rndr(mq, st, child, &tmpbq);
+		keepnext = rndr(mq, st, child, &tmpbq, keepnext);
 		if (keepnext < 0)
 			goto out;
 	}
 
-	ret = 1;
+	ret = 0;
 	switch (n->type) {
 	case LOWDOWN_BLOCKCODE:
 		rc = rndr_blockcode(st, obq, &n->rndr_blockcode);
@@ -1442,7 +1451,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_paragraph(st, n, obq, &tmpbq);
 		break;
 	case LOWDOWN_TABLE_BLOCK:
-		rc = rndr_table(obq, &tmpbq);
+		rc = rndr_table(st, obq, &tmpbq);
 		break;
 	case LOWDOWN_TABLE_HEADER:
 		rc = rndr_table_header(obq, &tmpbq, &n->rndr_table_header);
@@ -1463,7 +1472,8 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_raw_block(st, obq, &n->rndr_blockhtml);
 		break;
 	case LOWDOWN_LINK_AUTO:
-		ret = rndr_autolink(st, obq, &n->rndr_autolink);
+		ret = rndr_autolink(st, obq, 
+			&n->rndr_autolink, TAILQ_NEXT(n, entries));
 		break;
 	case LOWDOWN_CODESPAN:
 		rc = rndr_codespan(obq, &n->rndr_codespan);
@@ -1475,7 +1485,8 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_linebreak(obq);
 		break;
 	case LOWDOWN_LINK:
-		ret = rndr_link(st, obq, &tmpbq, &n->rndr_link);
+		ret = rndr_link(st, obq, &tmpbq, 
+			&n->rndr_link, TAILQ_NEXT(n, entries));
 		break;
 	case LOWDOWN_SUPERSCRIPT:
 		rc = rndr_superscript(obq, &tmpbq);
@@ -1487,9 +1498,12 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_raw_html(st, obq, &n->rndr_raw_html);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
+		if (chop == n->rndr_normal_text.text.size)
+			break;
 		if ((bn = bqueue_span(obq, NULL)) == NULL)
 			goto out;
 		bn->buf = &n->rndr_normal_text.text;
+		bn->bufchop = chop;
 		break;
 	case LOWDOWN_ENTITY:
 		rc = rndr_entity(obq, &n->rndr_entity);
@@ -1534,7 +1548,7 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 {
 	struct nroff		*st = arg;
 	struct lowdown_metaq	 metaq;
-	int			 rc;
+	int			 rc = 0;
 	struct bnodeq		 bq;
 
 	/* Temporary metaq if not provided. */
@@ -1549,16 +1563,17 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 	st->base_header_level = 1;
 	st->post_para = 0;
 
-	rc = rndr(mq, st, n, &bq);
-
-	/* Release temporary metaq. */
-
+	if (rndr(mq, st, n, &bq, 0) >= 0) {
+		if (!bqueue_flush(ob, &bq))
+			goto out;
+		if (ob->size && ob->data[ob->size - 1] != '\n' &&
+		    !hbuf_putc(ob, '\n'))
+			goto out;
+		rc = 1;
+	}
+out:
 	if (mq == &metaq)
 		lowdown_metaq_free(mq);
-
-	if (rc && !bqueue_flush(ob, &bq))
-		rc = 0;
-
 	bqueue_free(&bq);
 	return rc;
 }
