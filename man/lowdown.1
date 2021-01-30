@@ -238,13 +238,13 @@ Hard-wrap paragraph content by outputting line breaks where applicable.
 .It Fl -nroff-no-groff
 Don't use
 .Xr groff 1
-style section headings and PDF hyperlinks.
-If using
+style section headings, PDF hyperlinks (this further requires 
 .Fl m Ns Ar spdf
-with
-.Xr groff 1 ,
-these will be further rendered as a table of contents and clickable
-links.
+passed to
+.Xr groff 1 ) ,
+or Unicode sequence syntax.
+The output is compatible with traditional
+.Xr troff 1 .
 Applies to
 .Fl T Ns Ar man
 and
@@ -512,13 +512,14 @@ To view a Markdown file on an ANSI-compatible, UTF-8 terminal:
 .Pp
 .Dl lowdown -Tterm foo.md | less -R
 .Pp
-If preferred, the terminal may also be used with
+The terminal may also be used with
 .Xr groff 1
 or
 .Xr mandoc 1
 rendering:
 .Bd -literal -offset indent
-lowdown -sTms foo.md | groff -tki -mspdf -Kutf8 -Tutf8 | less -R
+lowdown -sTms foo.md | groff -tki -mspdf -Tutf8 | less -R
+lowdown -sTman foo.md | groff -tki -man -Tutf8 | less -R
 lowdown -sTman foo.md | mandoc | less
 .Ed
 .Pp
@@ -532,44 +533,27 @@ or
 .Xr mandoc 1
 to format as a PS file:
 .Bd -literal -offset indent
-lowdown -sTms foo.md | groff -tki -mspdf -Kutf8 > foo.ps
+lowdown -sTms foo.md | groff -tki -mspdf > foo.ps
 lowdown -sTman foo.md | mandoc -Tps > foo.ps
 .Ed
 .Pp
-Or using a traditional
-.Xr troff 1 ,
-use the following:
+Or with LaTeX:
 .Bd -literal -offset indent
-lowdown --nroff-no-groff -sTms foo.md | \e
-  tbl | pic | troff -Tps -ms -mpdfmark > foo.ps
+lowdown -sTlatex foo.md > foo.latex
+pslatex foo.latex
 .Ed
 .Pp
-Both
+PDF generation follows similar logic:
+.Bd -literal -offset indent
+lowdown -sTms foo.md | pdfroff -i -tk -mspdf > foo.pdf
+lowdown -sTman foo.md | mandoc -Tpdf > foo.pdf
+lowdown -sTlatex foo.md > foo.latex
+pdflatex foo.latex
+.Ed
+.Pp
+UTF-8 support for
 .Xr groff 1
-and
-.Xr mandoc 1
-support the
-.Fl T Ns Ar pdf
-arguments for PDF output.
-The former also has
-.Xr pdfroff 1 .
-.Bd -literal -offset indent
-lowdown -sTms foo.md | \e
-  groff -tki -mspdf -Kutf8 -Tpdf > foo.pdf
-.Ed
-.Pp
-If the file has PS or EPS images and is being processed by
-.Xr groff 1 ,
-the images are not converted and the file needs to be manually converted
-from PS.
-.Bd -literal -offset indent
-lowdown -sTms foo.md | groff -tki -mspdf -Kutf8 > foo.ps
-ps2dpdf foo.ps
-.Ed
-.Pp
-UTF-8 support for PDF or PS is limited to
-.Xr groff 1
-installations with the appropriate fonts, such as the Unicode Times
+PDF or PS output requires appropriate fonts, such as the Unicode Times
 font.
 This and other Unicode fonts are not always installed by default.
 They may be found, for PDF output, in the
@@ -579,8 +563,7 @@ set of the
 font directory and are prefixed with
 .Sq U .
 .Bd -literal -offset indent
-lowdown -sTms foo.md | \e
-  groff -Tpdf -tki -mspdf -Kutf8 -FU-T > foo.pdf
+lowdown -sTms foo.md | pdfroff -i -tk -mspdf -FU-T > foo.pdf
 .Ed
 .Pp
 To extract the HTML-escaped title from a file's metadata:
