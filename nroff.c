@@ -1250,6 +1250,11 @@ rndr_doc_header(const struct nroff *st,
 
 	/* Scratch space. */
 
+	bn = bqueue_block(obq, 
+		".\\\" -*- mode: troff; coding: utf-8 -*-");
+	if (bn == NULL)
+		goto out;
+
 	if (!st->man) {
 		if (copy != NULL) {
 			bn = bqueue_block(obq, ".ds LF Copyright \\(co");
@@ -1269,6 +1274,8 @@ rndr_doc_header(const struct nroff *st,
 				goto out;
 		}
 		if ((bn = bqueue_block(obq, ".TL")) == NULL)
+			goto out;
+		if ((bn = bqueue_block(obq, NULL)) == NULL)
 			goto out;
 		if ((bn->nargs = strdup(title)) == NULL)
 			goto out;
