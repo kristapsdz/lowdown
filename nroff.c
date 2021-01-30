@@ -1125,15 +1125,20 @@ rndr_footnote_ref(const struct nroff *st,
 }
 
 static int
-rndr_entity(struct bnodeq *obq, const struct rndr_entity *param)
+rndr_entity(const struct nroff *st,
+	struct bnodeq *obq, const struct rndr_entity *param)
 {
 	int32_t		 ent;
 	struct bnode	*bn;
 	char		 buf[32];
 
 	if ((ent = entity_find_iso(&param->text)) > 0) {
-		snprintf(buf, sizeof(buf), 
-			"\\[u%.4llX]", (unsigned long long)ent);
+		if (st->flags & LOWDOWN_NROFF_GROFF)
+			snprintf(buf, sizeof(buf), "\\[u%.4llX]", 
+				(unsigned long long)ent);
+		else
+			snprintf(buf, sizeof(buf), "\\U\'%.4llX\'", 
+				(unsigned long long)ent);
 		return bqueue_span(obq, buf) != NULL;
 	} 
 	if ((bn = bqueue_span(obq, NULL)) == NULL)
@@ -1543,7 +1548,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		bn->bufchop = chop;
 		break;
 	case LOWDOWN_ENTITY:
-		rc = rndr_entity(obq, &n->rndr_entity);
+		rc = rndr_entity(st, obq, &n->rndr_entity);
 		break;
 	default:
 		TAILQ_CONCAT(obq, &tmpbq, entries);
