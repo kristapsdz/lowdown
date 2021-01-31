@@ -83,6 +83,7 @@ HEADERS 	 = extern.h \
 		   libdiff.h \
 		   lowdown.h
 PDFS		 = diff.pdf \
+		   diff.diff.pdf \
 		   index.pdf \
 		   index.latex.pdf \
 		   index.mandoc.pdf \
@@ -169,7 +170,7 @@ index.html README.html: template.xml
 
 .md.pdf:
 	./lowdown --nroff-no-numbered -s -Tms $< | \
-		pdfroff -i -mspdf -t -k -Kutf8 > $@
+		pdfroff -i -mspdf -t -k > $@
 
 index.latex.pdf: index.md $(THUMBS)
 	./lowdown -s -Tlatex index.md >index.latex.latex
@@ -181,7 +182,7 @@ index.mandoc.pdf: index.md
 
 index.nroff.pdf: index.md
 	./lowdown --nroff-no-numbered -s -Tms index.md | \
-		pdfroff -i -mspdf -t -k -Kutf8 > $@
+		pdfroff -i -mspdf -t -k > $@
 
 .xml.html:
 	sblg -t template.xml -s date -o $@ -C $< $< versions.xml
@@ -197,6 +198,10 @@ diff.html: diff.md lowdown
 
 diff.diff.html: diff.md diff.old.md lowdown-diff
 	./lowdown-diff -s diff.old.md diff.md >$@
+
+diff.diff.pdf: diff.md diff.old.md lowdown-diff
+	./lowdown-diff --nroff-no-numbered -s -Tms diff.old.md diff.md | \
+		pdfroff -i -mspdf -t -k > $@
 
 $(HTMLS): versions.xml
 

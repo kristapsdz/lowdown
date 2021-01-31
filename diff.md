@@ -28,7 +28,8 @@ Please direct comments to me by e-mail or just use the [GitHub
 interface](https://github.com/kristapsdz/lowdown).
 
 For a quick example of this functionality, see
-[diff.diff.html](https://kristaps.bsd.lv/lowdown/diff.diff.html), which
+[diff.diff.html](https://kristaps.bsd.lv/lowdown/diff.diff.html) 
+(or [diff.diff.pdf](https://kristaps.bsd.lv/lowdown/diff.diff.pdf)), which
 shows the difference between this document and a [fabricated] earlier
 version.
 
