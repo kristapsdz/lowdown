@@ -173,8 +173,10 @@ nstate_colour_buf(unsigned int ft)
 	fonts[0] = '\0';
 	if (ft == BFONT_BLUE)
 		strlcat(fonts, "blue", sizeof(fonts));
-	else if (ft == BFONT_BLUE)
+	else if (ft == BFONT_RED)
 		strlcat(fonts, "red", sizeof(fonts));
+	else
+		strlcat(fonts, "black", sizeof(fonts));
 	return fonts;
 }
 
@@ -335,7 +337,9 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq)
 
 		if (bn->scope == BSCOPE_FONT || 
 		    bn->scope == BSCOPE_COLOUR) {
-			chk = TAILQ_NEXT(bn, entries);
+			chk = bn->close ?
+				TAILQ_PREV(bn, bnodeq, entries) :
+				TAILQ_NEXT(bn, entries);
 			if (chk != NULL && 
 			    chk->scope == BSCOPE_BLOCK) {
 				if (ob->size > 0 && 
@@ -360,7 +364,7 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq)
 			if (!hbuf_printf(ob, ".gcolor %s", 
 			    nstate_colour_buf(bn->colour)))
 				return 0;
-		} else if (bn->scope == BSCOPE_FONT) {
+		} else if (bn->scope == BSCOPE_COLOUR) {
 			if (!hbuf_printf(ob, "\\m[%s]",
 			    nstate_colour_buf(bn->colour)))
 				return 0;
@@ -594,7 +598,7 @@ rndr_blockcode(const struct nroff *st, struct bnodeq *obq,
 	 * (paragraphs, etc.) will have a double-newline.
 	 */
 
-	if (bqueue_block(obq, ".sp") == NULL)
+	if (bqueue_block(obq, ".LP") == NULL)
 		return 0;
 
 	if (st->man && (st->flags & LOWDOWN_NROFF_GROFF)) {
