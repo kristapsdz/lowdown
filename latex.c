@@ -337,6 +337,9 @@ rndr_list(struct lowdown_buf *ob,
 
 	if (!hbuf_printf(ob, "\\begin{%s}\n", type))
 		return 0;
+	if (!(param->flags & HLIST_FL_BLOCK) &&
+	    !HBUF_PUTSL(ob, "\\itemsep -0.2em\n"))
+		return 0;
 	if (!hbuf_putb(ob, content))
 		return 0;
 	return hbuf_printf(ob, "\\end{%s}\n", type);
