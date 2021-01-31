@@ -69,6 +69,7 @@ struct	bnode {
 	size_t				 bufchop; /* strip from buf */
 	char				*nargs; /* (safe) 1st args */
 	char				*args; /* (unsafe) 2nd args */
+	int				 close; /* BNODE_COLOUR/FONT */
 	enum bscope			 scope; /* scope */
 	unsigned int			 font; /* if BNODE_FONT */
 #define	BFONT_ITALIC			 0x01
@@ -219,7 +220,7 @@ nstate_font_buf(unsigned int ft, int blk)
 }
 
 static int
-bqueue_font(const struct nroff *st, struct bnodeq *bq)
+bqueue_font(const struct nroff *st, struct bnodeq *bq, int close)
 {
 	struct bnode	*bn;
 
@@ -227,6 +228,7 @@ bqueue_font(const struct nroff *st, struct bnodeq *bq)
 		return 0;
 	TAILQ_INSERT_TAIL(bq, bn, entries);
 	bn->scope = BSCOPE_FONT;
+	bn->close = close;
 	if (st->fonts[NFONT_FIXED])
 		bn->font |= BFONT_FIXED;
 	if (st->fonts[NFONT_BOLD])
@@ -309,7 +311,7 @@ bqueue_strip_paras(struct bnodeq *bq)
 static int
 bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq)
 {
-	const struct bnode	*bn, *next;
+	const struct bnode	*bn, *chk;
 	const char		*cp;
 	int		 	 nextblk;
 
@@ -333,9 +335,9 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq)
 
 		if (bn->scope == BSCOPE_FONT || 
 		    bn->scope == BSCOPE_COLOUR) {
-			next = TAILQ_NEXT(bn, entries);
-			if (next != NULL && 
-			    next->scope == BSCOPE_BLOCK) {
+			chk = TAILQ_NEXT(bn, entries);
+			if (chk != NULL && 
+			    chk->scope == BSCOPE_BLOCK) {
 				if (ob->size > 0 && 
 				    ob->data[ob->size - 1] != '\n' &&
 				    !hbuf_putc(ob, '\n'))
@@ -466,7 +468,7 @@ putlink(struct bnodeq *obq, struct nroff *st,
 
 	if (st->man || !(st->flags & LOWDOWN_NROFF_GROFF)) {
 		st->fonts[NFONT_ITALIC]++;
-		if (!bqueue_font(st, obq))
+		if (!bqueue_font(st, obq, 0))
 			return -1;
 		if (bq == NULL) {
 			if ((bn = bqueue_span(obq, NULL)) == NULL)
@@ -475,7 +477,7 @@ putlink(struct bnodeq *obq, struct nroff *st,
 		} else
 			TAILQ_CONCAT(obq, bq, entries);
 		st->fonts[NFONT_ITALIC]--;
-		return bqueue_font(st, obq) ? 0 : -1;
+		return bqueue_font(st, obq, 1) ? 0 : -1;
 	}
 
 	if ((ob = hbuf_new(32)) == NULL)
@@ -501,7 +503,6 @@ putlink(struct bnodeq *obq, struct nroff *st,
 
 		if (!HBUF_PUTSL(ob, "-P \""))
 			goto out;
-		/* FIXME: quotes. */
 		if (!hesc_nroff(ob, 
 		    &prev->buf->data[sz], prev->buf->size - sz, 1, 0))
 			goto out;
@@ -528,7 +529,6 @@ putlink(struct bnodeq *obq, struct nroff *st,
 		if (sz > 0) {
 			if (!HBUF_PUTSL(ob, "-A \""))
 				goto out;
-			/* FIXME: quotes. */
 			if (!hesc_nroff(ob, nbuf->data, sz, 1, 0))
 				goto out;
 			if (!HBUF_PUTSL(ob, "\" "))
@@ -551,6 +551,7 @@ putlink(struct bnodeq *obq, struct nroff *st,
 		} else if (!hbuf_putc(ob, link->data[i]))
 			goto out;
 	}
+
 	if (!HBUF_PUTSL(ob, " "))
 		goto out;
 	if (bq == NULL && !hbuf_putb(ob, link))
@@ -1300,13 +1301,10 @@ rndr_doc_header(const struct nroff *st,
 			if ((bn->nargs = strdup(date)) == NULL)
 				goto out;
 		}
-		if ((bn = bqueue_block(obq, ".TL")) == NULL)
+		if (bqueue_block(obq, ".TL") == NULL)
 			goto out;
-		if ((bn = bqueue_block(obq, NULL)) == NULL)
+		if (bqueue_block(obq, title) == NULL)
 			goto out;
-		if ((bn->nargs = strdup(title)) == NULL)
-			goto out;
-
 		if (author != NULL && 
 		    !rndr_meta_multi(obq, author, "AU"))
 			goto out;
@@ -1423,24 +1421,24 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	switch (n->type) {
 	case LOWDOWN_CODESPAN:
 		st->fonts[NFONT_FIXED]++;
-		if (!bqueue_font(st, obq))
+		if (!bqueue_font(st, obq, 0))
 			goto out;
 		break;
 	case LOWDOWN_EMPHASIS:
 		st->fonts[NFONT_ITALIC]++;
-		if (!bqueue_font(st, obq))
+		if (!bqueue_font(st, obq, 0))
 			goto out;
 		break;
 	case LOWDOWN_HIGHLIGHT:
 	case LOWDOWN_DOUBLE_EMPHASIS:
 		st->fonts[NFONT_BOLD]++;
-		if (!bqueue_font(st, obq))
+		if (!bqueue_font(st, obq, 0))
 			goto out;
 		break;
 	case LOWDOWN_TRIPLE_EMPHASIS:
 		st->fonts[NFONT_ITALIC]++;
 		st->fonts[NFONT_BOLD]++;
-		if (!bqueue_font(st, obq))
+		if (!bqueue_font(st, obq, 0))
 			goto out;
 		break;
 	default:
@@ -1569,13 +1567,22 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	case LOWDOWN_DOUBLE_EMPHASIS:
 	case LOWDOWN_TRIPLE_EMPHASIS:
 		memcpy(st->fonts, fonts, sizeof(fonts));
-		if (!bqueue_font(st, obq)) {
+		if (!bqueue_font(st, obq, 1)) {
 			ret = -1;
 			goto out;
 		}
 		break;
 	default:
 		break;
+	}
+
+	if (n->chng == LOWDOWN_CHNG_INSERT ||
+	    n->chng == LOWDOWN_CHNG_DELETE) {
+		if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
+			goto out;
+		TAILQ_INSERT_TAIL(obq, bn, entries);
+		bn->scope = BSCOPE_COLOUR;
+		bn->close = 1;
 	}
 
 out:
