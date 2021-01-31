@@ -292,21 +292,14 @@ of the `make regress` functionality.
 
 Want to hack on *lowdown*?  Of course you do.
 
-- There are lots of bits and bobs remaining to be fixed or implemented.
+- There are bits and bobs remaining to be fixed or implemented.
 You can always just search for `TODO`, `XXX`, or `FIXME` in the source
 code.  This is your best bet.
-
-- There are some larger known issues, mostly in roff (**-Tms** and
-**-Tman**) output.
-
-- There needs to be logic to handle when a link is the first or last
-component of a font change.  For example, \*\[foo\](...)\* will put
-the font markers on different lines.
 
 - Footnotes in **-Tms** with groff extensions should use pdfmark to link
 to and from the definition.
 
-If you want a larger project, a **-Tpdf** seems most interesting (and
+- If you want a larger project, a **-Tpdf** seems most interesting (and
 quite difficult given that UTF-8 need be present).  Another project that
 has been implemented elsewhere is a parser for mathematics such that
 `eqn` or similar may be output.
