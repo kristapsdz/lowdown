@@ -1871,7 +1871,7 @@ cleanup:
 	hbuf_free(idp);
 	hbuf_free(content);
 	hbuf_free(u_link);
-	return ret ? i : 0;
+	return ret > 0 ? (ssize_t)i : ret;
 }
 
 static ssize_t
@@ -3303,7 +3303,7 @@ parse_table_row(struct lowdown_buf *ob, struct lowdown_doc *doc,
 
 		if (!parse_inline(doc, 
 		    data + cell_start, 1 + cell_end - cell_start))
-			return -1;
+			return 0;
 		popnode(doc, nn);
 		i++;
 	}
