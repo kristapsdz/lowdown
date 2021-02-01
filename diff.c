@@ -298,6 +298,7 @@ pqueue(const struct lowdown_node *n,
 	p->node = n;
 
 	xnew = &map->nodes[n->id];
+	assert(xnew != NULL);
 	assert(xnew->node != NULL);
 
 	TAILQ_FOREACH(pp, pq, entries) {

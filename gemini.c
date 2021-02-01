@@ -147,6 +147,7 @@ rndr_buf(struct gemini *gemini, struct lowdown_buf *out,
 	 * This is only likely to happen around links.
 	 */
 
+	assert(in != NULL);
 	if (gemini->last_blank != 0)
 		for ( ; i < in->size; i++)
 			if (!isspace((unsigned char)in->data[i]))
