@@ -3526,7 +3526,11 @@ parse_block(struct lowdown_doc *doc, char *data, size_t size)
 		/* We are at a #header. */
 
 		if (is_atxheader(doc, txt_data, end)) {
-			beg += parse_atxheader(doc, txt_data, end);
+			rc = parse_atxheader(doc, txt_data, end);
+			if (rc < 0)
+				return 0;
+			assert(rc > 0);
+			beg += rc;
 			continue;
 		}
 
