@@ -3251,7 +3251,7 @@ parse_htmlblock(struct lowdown_doc *doc, char *data, size_t size)
 static int
 parse_table_row(struct lowdown_buf *ob, struct lowdown_doc *doc,
 	char *data, size_t size, size_t columns, 
-	enum htbl_flags *col_data, enum htbl_flags header_flag)
+	const enum htbl_flags *col_data, enum htbl_flags header_flag)
 {
 	size_t	 		 i = 0, col, len, cell_start, cell_end;
 	struct lowdown_buf	 empty_cell;
@@ -3418,7 +3418,8 @@ parse_table_header(struct lowdown_node **np,
 	if (n == NULL)
 		return -1;
 
-	n->rndr_table_header.flags = calloc(*columns, sizeof(int));
+	n->rndr_table_header.flags = calloc
+		(*columns, sizeof(enum htbl_flags));
 	if (n->rndr_table_header.flags == NULL)
 		return -1;
 
@@ -3484,6 +3485,7 @@ parse_table(struct lowdown_doc *doc, char *data, size_t size)
 		popnode(doc, n);
 	}
 
+	free(col_data);
 	hbuf_free(header_work);
 	hbuf_free(body_work);
 	return i;
