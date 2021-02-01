@@ -31,7 +31,7 @@
 .Fa "struct lowdown_buf *out"
 .Fa "struct lowdown_metaq *mq"
 .Fa "void *arg"
-.Fa "struct lowdown_node *n"
+.Fa "const struct lowdown_node *n"
 .Fc
 .Sh DESCRIPTION
 Renders a node tree
@@ -97,8 +97,3 @@ lowdown_doc_free(doc);
 .Xr lowdown 3 ,
 .Xr lowdown_nroff_free 3 ,
 .Xr lowdown_nroff_new 3
-.Sh CAVEATS
-The contents of
-.Fa n
-may be changed, but not in a way that will change the output with
-multiple passes at rendering.
