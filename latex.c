@@ -764,7 +764,6 @@ rndr(struct lowdown_buf *ob,
 	    !HBUF_PUTSL(ob, "{\\color{red} "))
 		goto out;
 
-	rc = 1;
 	switch (n->type) {
 	case LOWDOWN_BLOCKCODE:
 		rc = rndr_blockcode(ob, &n->rndr_blockcode);

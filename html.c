@@ -1137,7 +1137,6 @@ rndr(struct lowdown_buf *ob,
 	   !HBUF_PUTSL(ob, "<del>"))
 		goto out;
 
-	rc = 1;
 	switch (n->type) {
 	case LOWDOWN_ROOT:
 		rc = rndr_root(ob, tmp, st);
