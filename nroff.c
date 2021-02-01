@@ -860,6 +860,7 @@ rndr_raw_block(const struct nroff *st,
 		return 1;
 	if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
 		return 0;
+	TAILQ_INSERT_TAIL(obq, bn, entries);
 	bn->scope = BSCOPE_LITERAL;
 	bn->buf = &param->text;
 	return 1;
@@ -923,6 +924,7 @@ rndr_raw_html(const struct nroff *st,
 		return 1;
 	if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
 		return 0;
+	TAILQ_INSERT_TAIL(obq, bn, entries);
 	bn->scope = BSCOPE_LITERAL;
 	bn->buf = &param->text;
 	return 1;
