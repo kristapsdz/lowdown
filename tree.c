@@ -71,23 +71,40 @@ static	const char *const names[LOWDOWN__MAX] = {
 	"LOWDOWN_DOC_FOOTER",           /* LOWDOWN_DOC_FOOTER */
 };
 
-static void
+static int
+rndr_indent(struct lowdown_buf *ob, size_t indent)
+{
+	size_t	 i;
+
+	for (i = 0; i < indent; i++)
+		if (!HBUF_PUTSL(ob, "  "))
+			return 0;
+	return 1;
+}
+
+static int
 rndr_short(struct lowdown_buf *ob, const struct lowdown_buf *b)
 {
 	size_t	 i;
 
 	for (i = 0; i < 20 && i < b->size; i++)
-		if (b->data[i] == '\n')
-			HBUF_PUTSL(ob, "\\n");
-		else if (b->data[i] == '\t')
-			HBUF_PUTSL(ob, "\\t");
-		else if (iscntrl((unsigned char)b->data[i]))
-			hbuf_putc(ob, '?');
-		else
-			hbuf_putc(ob, b->data[i]);
+		if (b->data[i] == '\n') {
+			if (!HBUF_PUTSL(ob, "\\n"))
+				return 0;
+		} else if (b->data[i] == '\t') {
+			if (!HBUF_PUTSL(ob, "\\t"))
+				return 0;
+		} else if (iscntrl((unsigned char)b->data[i])) {
+			if (!hbuf_putc(ob, '?'))
+				return 0;
+		} else {
+			if (!hbuf_putc(ob, b->data[i]))
+				return 0;
+		}
 
-	if (i < b->size)
-		HBUF_PUTSL(ob, "...");
+	if (i < b->size && !HBUF_PUTSL(ob, "..."))
+		return 0;
+	return 1;
 }
 
 static int
@@ -96,200 +113,248 @@ rndr(struct lowdown_buf *ob,
 {
 	const struct lowdown_node	*n;
 	struct lowdown_buf		*tmp;
-	size_t	 			 i, j;
 
-	for (i = 0; i < indent; i++)
-		HBUF_PUTSL(ob, "  ");
-	if (root->chng == LOWDOWN_CHNG_INSERT)
-		HBUF_PUTSL(ob, "INSERT: ");
-	else if (root->chng == LOWDOWN_CHNG_DELETE)
-		HBUF_PUTSL(ob, "DELETE: ");
-	hbuf_puts(ob, names[root->type]);
-	HBUF_PUTSL(ob, "\n");
+	if (!rndr_indent(ob, indent))
+		return 0;
+	if (root->chng == LOWDOWN_CHNG_INSERT && 
+	    !HBUF_PUTSL(ob, "INSERT: "))
+		return 0;
+	if (root->chng == LOWDOWN_CHNG_DELETE && 
+	    !HBUF_PUTSL(ob, "DELETE: "))
+		return 0;
+	if (!hbuf_puts(ob, names[root->type]))
+		return 0;
+	if (!hbuf_putc(ob, '\n'))
+		return 0;
 
 	switch (root->type) {
 	case LOWDOWN_PARAGRAPH:
-		for (i = 0; i < indent + 1; i++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "lines: %zu, blank-after: %d\n", 
-			root->rndr_paragraph.lines,
-			root->rndr_paragraph.beoln);
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "lines: %zu, blank-after: %d\n", 
+		    root->rndr_paragraph.lines,
+		    root->rndr_paragraph.beoln))
+			return 0;
 		break;
 	case LOWDOWN_IMAGE:
-		for (i = 0; i < indent + 1; i++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "source: ");
-		rndr_short(ob, &root->rndr_image.link);
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "source: "))
+			return 0;
+		if (!rndr_short(ob, &root->rndr_image.link))
+			return 0;
 		if (root->rndr_image.dims.size) {
-			HBUF_PUTSL(ob, "(");
-			rndr_short(ob, &root->rndr_image.dims);
-			HBUF_PUTSL(ob, ")");
+			if (!HBUF_PUTSL(ob, "("))
+				return 0;
+			if (!rndr_short(ob, &root->rndr_image.dims))
+				return 0;
+			if (!HBUF_PUTSL(ob, ")"))
+				return 0;
 		}
-		HBUF_PUTSL(ob, "\n");
+		if (!HBUF_PUTSL(ob, "\n"))
+			return 0;
 		if (root->rndr_image.title.size) {
-			for (i = 0; i < indent + 1; i++)
-				HBUF_PUTSL(ob, "  ");
-			hbuf_printf(ob, "title: ");
-			rndr_short(ob, &root->rndr_image.title);
-			HBUF_PUTSL(ob, "\n");
+			if (!rndr_indent(ob, indent + 1))
+				return 0;
+			if (!hbuf_printf(ob, "title: "))
+				return 0;
+			if (!rndr_short(ob, &root->rndr_image.title))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\n"))
+				return 0;
 		}
 		if (root->rndr_image.alt.size) {
-			for (i = 0; i < indent + 1; i++)
-				HBUF_PUTSL(ob, "  ");
-			hbuf_printf(ob, "alt: ");
-			rndr_short(ob, &root->rndr_image.alt);
-			HBUF_PUTSL(ob, "\n");
+			if (!rndr_indent(ob, indent + 1))
+				return 0;
+			if (!hbuf_printf(ob, "alt: "))
+				return 0;
+			if (!rndr_short(ob, &root->rndr_image.alt))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\n"))
+				return 0;
 		}
 		if (root->rndr_image.dims.size) {
-			for (i = 0; i < indent + 1; i++)
-				HBUF_PUTSL(ob, "  ");
-			hbuf_printf(ob, "dims: ");
-			rndr_short(ob, &root->rndr_image.dims);
-			HBUF_PUTSL(ob, "\n");
+			if (!rndr_indent(ob, indent + 1))
+				return 0;
+			if (!hbuf_printf(ob, "dims: "))
+				return 0;
+			if (!rndr_short(ob, &root->rndr_image.dims))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\n"))
+				return 0;
 		}
 		if (root->rndr_image.attr_width.size) {
-			for (i = 0; i < indent + 1; i++)
-				HBUF_PUTSL(ob, "  ");
-			hbuf_printf(ob, "width (extended): ");
-			rndr_short(ob, &root->rndr_image.attr_width);
-			HBUF_PUTSL(ob, "\n");
+			if (!rndr_indent(ob, indent + 1))
+				return 0;
+			if (!hbuf_printf(ob, "width (extended): "))
+				return 0;
+			if (!rndr_short(ob, &root->rndr_image.attr_width))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\n"))
+				return 0;
 		}
 		if (root->rndr_image.attr_height.size) {
-			for (i = 0; i < indent + 1; i++)
-				HBUF_PUTSL(ob, "  ");
-			hbuf_printf(ob, "height (extended): ");
-			rndr_short(ob, &root->rndr_image.attr_height);
-			HBUF_PUTSL(ob, "\n");
+			if (!rndr_indent(ob, indent + 1))
+				return 0;
+			if (!hbuf_printf(ob, "height (extended): "))
+				return 0;
+			if (!rndr_short(ob, &root->rndr_image.attr_height))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\n"))
+				return 0;
 		}
 		break;
 	case LOWDOWN_HEADER:
-		for (i = 0; i < indent + 1; i++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "level: %zu\n",
-			root->rndr_header.level);
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "level: %zu\n",
+		    root->rndr_header.level))
+			return 0;
 		break;
 	case LOWDOWN_FOOTNOTE_REF:
-		for (i = 0; i < indent + 1; i++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "number: %zu\n",
-			root->rndr_footnote_ref.num);
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "number: %zu\n",
+		    root->rndr_footnote_ref.num))
+			return 0;
 		break;
 	case LOWDOWN_FOOTNOTE_DEF:
-		for (i = 0; i < indent + 1; i++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "number: %zu\n",
-			root->rndr_footnote_def.num);
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "number: %zu\n",
+		    root->rndr_footnote_def.num))
+			return 0;
 		break;
 	case LOWDOWN_RAW_HTML:
-		for (i = 0; i < indent + 1; i++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "data: %zu Bytes: ",
-			root->rndr_raw_html.text.size);
-		rndr_short(ob, &root->rndr_raw_html.text);
-		HBUF_PUTSL(ob, "\n");
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "data: %zu Bytes: ",
+		    root->rndr_raw_html.text.size))
+			return 0;
+		if (!rndr_short(ob, &root->rndr_raw_html.text))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\n"))
+			return 0;
 		break;
 	case LOWDOWN_BLOCKHTML:
-		for (i = 0; i < indent + 1; i++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "data: %zu Bytes: ",
-			root->rndr_blockhtml.text.size);
-		rndr_short(ob, &root->rndr_blockhtml.text);
-		HBUF_PUTSL(ob, "\n");
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "data: %zu Bytes: ",
+		    root->rndr_blockhtml.text.size))
+			return 0;
+		if (!rndr_short(ob, &root->rndr_blockhtml.text))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\n"))
+			return 0;
 		break;
 	case LOWDOWN_BLOCKCODE:
-		for (i = 0; i < indent + 1; i++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "data: %zu Bytes: ",
-			root->rndr_blockcode.text.size);
-		rndr_short(ob, &root->rndr_blockcode.text);
-		HBUF_PUTSL(ob, "\n");
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "data: %zu Bytes: ",
+		    root->rndr_blockcode.text.size))
+			return 0;
+		if (!rndr_short(ob, &root->rndr_blockcode.text))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\n"))
+			return 0;
 		break;
 	case LOWDOWN_DEFINITION:
-		for (i = 0; i < indent + 1; i++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "iem scope: %s\n",
-			HLIST_FL_BLOCK & root->rndr_definition.flags ? 
-			"block" : "span");
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "scope: %s\n",
+		    HLIST_FL_BLOCK & root->rndr_definition.flags ? 
+		    "block" : "span"))
+			return 0;
 		break;
 	case LOWDOWN_TABLE_BLOCK:
-		for (i = 0; i < indent + 1; i++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "columns: %zu\n", 
-			root->rndr_table.columns);
-		break;
-	case LOWDOWN_TABLE_HEADER:
-		for (i = 0; i < indent + 1; i++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "columns: %zu\n", 
-			root->rndr_table_header.columns);
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "columns: %zu\n", 
+		    root->rndr_table.columns))
+			return 0;
 		break;
 	case LOWDOWN_TABLE_CELL:
-		for (i = 0; i < indent + 1; i++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "columns: %zu\n", 
-			root->rndr_table_cell.columns);
-		for (i = 0; i < indent + 1; i++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "current: %zu\n", 
-			root->rndr_table_cell.col);
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "current: %zu\n", 
+		    root->rndr_table_cell.col))
+			return 0;
 		break;
 	case LOWDOWN_LISTITEM:
-		for (i = 0; i < indent + 1; i++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "item scope: %s\n",
-			HLIST_FL_BLOCK & root->rndr_listitem.flags ? 
-			"block" : "span");
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "scope: %s\n",
+		    HLIST_FL_BLOCK & root->rndr_listitem.flags ? 
+		    "block" : "span"))
+			return 0;
 		break;
 	case LOWDOWN_LIST:
-		for (i = 0; i < indent + 1; i++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "list type: %s\n",
-			HLIST_FL_ORDERED & root->rndr_list.flags ? 
-			"ordered" : "unordered");
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "list type: %s\n",
+		    HLIST_FL_ORDERED & root->rndr_list.flags ? 
+		    "ordered" : "unordered"))
+			return 0;
 		break;
 	case LOWDOWN_META:
-		for (j = 0; j < indent + 1; j++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "key: ");
-		rndr_short(ob, &root->rndr_meta.key);
-		HBUF_PUTSL(ob, "\n");
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "key: "))
+			return 0;
+		if (!rndr_short(ob, &root->rndr_meta.key))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\n"))
+			return 0;
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		for (i = 0; i < indent + 1; i++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "blockmode: %s\n",
-			root->rndr_math.blockmode ?
-			"block" : "inline");
-		for (i = 0; i < indent + 1; i++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "data: %zu Bytes: ",
-			root->rndr_math.text.size);
-		rndr_short(ob, &root->rndr_math.text);
-		HBUF_PUTSL(ob, "\n");
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "blockmode: %s\n",
+		    root->rndr_math.blockmode ?
+		    "block" : "inline"))
+			return 0;
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "data: %zu Bytes: ",
+		    root->rndr_math.text.size))
+			return 0;
+		if (!rndr_short(ob, &root->rndr_math.text))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\n"))
+			return 0;
 		break;
 	case LOWDOWN_ENTITY:
-		for (i = 0; i < indent + 1; i++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "value: ");
-		rndr_short(ob, &root->rndr_entity.text);
-		HBUF_PUTSL(ob, "\n");
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "value: "))
+			return 0;
+		if (!rndr_short(ob, &root->rndr_entity.text))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\n"))
+			return 0;
 		break;
 	case LOWDOWN_LINK:
 		if (root->rndr_link.title.size) {
-			for (i = 0; i < indent + 1; i++)
-				HBUF_PUTSL(ob, "  ");
-			HBUF_PUTSL(ob, "title: ");
-			rndr_short(ob, &root->rndr_link.title);
-			HBUF_PUTSL(ob, "\n");
+			if (!rndr_indent(ob, indent + 1))
+				return 0;
+			if (!HBUF_PUTSL(ob, "title: "))
+				return 0;
+			if (!rndr_short(ob, &root->rndr_link.title))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\n"))
+				return 0;
 		}
 		break;
 	case LOWDOWN_NORMAL_TEXT:
-		for (i = 0; i < indent + 1; i++)
-			HBUF_PUTSL(ob, "  ");
-		hbuf_printf(ob, "data: %zu Bytes: ",
-			root->rndr_normal_text.text.size);
-		rndr_short(ob, &root->rndr_normal_text.text);
-		HBUF_PUTSL(ob, "\n");
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "data: %zu Bytes: ",
+		    root->rndr_normal_text.text.size))
+			return 0;
+		if (!rndr_short(ob, &root->rndr_normal_text.text))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\n"))
+			return 0;
 		break;
 	default:
 		break;
