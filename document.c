@@ -239,11 +239,13 @@ unscape_text(struct lowdown_buf *ob, struct lowdown_buf *src)
 		org = i;
 		while (i < src->size && src->data[i] != '\\')
 			i++;
-		if (i > org)
-			hbuf_put(ob, src->data + org, i - org);
+		if (i > org && 
+		    !hbuf_put(ob, src->data + org, i - org))
+			return 0;
 		if (i + 1 >= src->size)
 			break;
-		hbuf_putc(ob, src->data[i + 1]);
+		if (!hbuf_putc(ob, src->data[i + 1]))
+			return 0;
 	}
 
 	return 1;
@@ -1288,7 +1290,8 @@ char_autolink_www(struct lowdown_doc *doc,
 	if (link_len > 0) {
 		if ((link_url = hbuf_new(64)) == NULL)
 			goto err;
-		HBUF_PUTSL(link_url, "http://");
+		if (!HBUF_PUTSL(link_url, "http://"))
+			goto err;
 		if (!hbuf_put(link_url, link->data, link->size))
 			goto err;
 
