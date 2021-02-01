@@ -968,14 +968,8 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	 */
 
 	TAILQ_FOREACH(top, &n->children, entries) {
-		switch (top->type) {
-		case LOWDOWN_TABLE_HEADER:
-		case LOWDOWN_TABLE_BODY:
-			break;
-		default:
-			abort();
-		}
-
+		assert(top->type == LOWDOWN_TABLE_HEADER ||
+			top->type == LOWDOWN_TABLE_BODY);
 		TAILQ_FOREACH(row, &top->children, entries)
 			TAILQ_FOREACH(cell, &row->children, entries) {
 				i = cell->rndr_table_cell.col;
@@ -1009,15 +1003,8 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	/* Now actually print, row-by-row into the output. */
 
 	TAILQ_FOREACH(top, &n->children, entries) {
-		switch (top->type) {
-		case LOWDOWN_TABLE_HEADER:
-		case LOWDOWN_TABLE_BODY:
-			row = TAILQ_FIRST(&top->children);
-			break;
-		default:
-			abort();
-		}
-
+		assert(top->type == LOWDOWN_TABLE_HEADER ||
+			top->type == LOWDOWN_TABLE_BODY);
 		TAILQ_FOREACH(row, &top->children, entries) {
 			hbuf_truncate(rowtmp);
 			TAILQ_FOREACH(cell, &row->children, entries) {
