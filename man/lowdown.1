@@ -516,8 +516,8 @@ or
 .Xr mandoc 1
 rendering:
 .Bd -literal -offset indent
-lowdown -sTms foo.md | groff -tki -mspdf -Tutf8 | less -R
-lowdown -sTman foo.md | groff -tki -man -Tutf8 | less -R
+lowdown -sTms foo.md | groff -itk -mspdf -Tutf8 | less -R
+lowdown -sTman foo.md | groff -itk -man -Tutf8 | less -R
 lowdown -sTman foo.md | mandoc | less
 .Ed
 .Pp
@@ -531,7 +531,7 @@ or
 .Xr mandoc 1
 to format as a PS file:
 .Bd -literal -offset indent
-lowdown -sTms foo.md | groff -tki -mspdf > foo.ps
+lowdown -sTms foo.md | groff -itk -mspdf > foo.ps
 lowdown -sTman foo.md | mandoc -Tps > foo.ps
 .Ed
 .Pp
@@ -543,7 +543,7 @@ pslatex foo.latex
 .Pp
 PDF generation follows similar logic:
 .Bd -literal -offset indent
-lowdown -sTms foo.md | pdfroff -i -tk -mspdf > foo.pdf
+lowdown -sTms foo.md | pdfroff -itk -mspdf > foo.pdf
 lowdown -sTman foo.md | mandoc -Tpdf > foo.pdf
 lowdown -sTlatex foo.md > foo.latex
 pdflatex foo.latex
@@ -561,7 +561,7 @@ set of the
 font directory and are prefixed with
 .Sq U .
 .Bd -literal -offset indent
-lowdown -sTms foo.md | pdfroff -i -tk -mspdf -FU-T > foo.pdf
+lowdown -sTms foo.md | pdfroff -itk -mspdf -FU-T > foo.pdf
 .Ed
 .Pp
 To extract the HTML-escaped title from a file's metadata:
