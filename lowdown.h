@@ -156,7 +156,6 @@ struct	rndr_paragraph {
 
 struct	rndr_normal_text {
 	struct lowdown_buf text; /* basic text */
-	size_t offs; /* in-render offset */
 };
 
 struct	rndr_entity {
