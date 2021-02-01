@@ -166,8 +166,6 @@ feature_out(const char *v)
 		return LOWDOWN_HTML_HEAD_IDS;
 	if (strcasecmp(v, "nroff-skiphtml") == 0)
 		return LOWDOWN_NROFF_SKIP_HTML;
-	if (strcasecmp(v, "nroff-hardwrap") == 0)
-		return LOWDOWN_NROFF_HARD_WRAP;
 	if (strcasecmp(v, "nroff-groff") == 0)
 		return LOWDOWN_NROFF_GROFF;
 	if (strcasecmp(v, "nroff-numbered") == 0)
@@ -259,8 +257,6 @@ main(int argc, char *argv[])
 		{ "latex-no-skiphtml",	no_argument,	&roflag, LOWDOWN_LATEX_SKIP_HTML },
 		{ "nroff-skiphtml",	no_argument,	&aoflag, LOWDOWN_NROFF_SKIP_HTML },
 		{ "nroff-no-skiphtml",	no_argument,	&roflag, LOWDOWN_NROFF_SKIP_HTML },
-		{ "nroff-hardwrap",	no_argument,	&aoflag, LOWDOWN_NROFF_HARD_WRAP },
-		{ "nroff-no-hardwrap",	no_argument,	&roflag, LOWDOWN_NROFF_HARD_WRAP },
 		{ "nroff-groff",	no_argument,	&aoflag, LOWDOWN_NROFF_GROFF },
 		{ "nroff-no-groff",	no_argument,	&roflag, LOWDOWN_NROFF_GROFF },
 		{ "nroff-numbered",	no_argument,	&aoflag, LOWDOWN_NROFF_NUMBERED },
