@@ -320,9 +320,17 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq)
 	TAILQ_FOREACH(bn, bq, entries) {
 		nextblk = 0;
 
-		/* Block scopes start with a newline. */
+		/* 
+		 * Block scopes start with a newline.
+		 * Also have colours use their own block, as otherwise
+		 * (bugs in groff?) inline colour selection after a
+		 * hyperlink macro causes line breaks.
+		 * Besides, having spaces around changing colour, which
+		 * indicates differences, improves readability.
+		 */
 
-		if (bn->scope == BSCOPE_BLOCK) {
+		if (bn->scope == BSCOPE_BLOCK ||
+		    bn->scope == BSCOPE_COLOUR) {
 			if (ob->size > 0 && 
 			    ob->data[ob->size - 1] != '\n' &&
 			    !hbuf_putc(ob, '\n'))
@@ -331,12 +339,11 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq)
 		}
 
 		/* 
-		 * Fonts and colours turn into blocks if the next
-		 * element is a block.
+		 * Fonts can either be macros or inline depending upon
+		 * where they set relative to a macro block.
 		 */
 
-		if (bn->scope == BSCOPE_FONT || 
-		    bn->scope == BSCOPE_COLOUR) {
+		if (bn->scope == BSCOPE_FONT) {
 			chk = bn->close ?
 				TAILQ_PREV(bn, bnodeq, entries) :
 				TAILQ_NEXT(bn, entries);
@@ -360,12 +367,9 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq)
 			if (!hbuf_printf(ob, "\\f%s", 
 			    nstate_font_buf(bn->font, nextblk)))
 				return 0;
-		} else if (bn->scope == BSCOPE_COLOUR && nextblk) {
-			if (!hbuf_printf(ob, ".gcolor %s", 
-			    nstate_colour_buf(bn->colour)))
-				return 0;
 		} else if (bn->scope == BSCOPE_COLOUR) {
-			if (!hbuf_printf(ob, "\\m[%s]",
+			assert(nextblk);
+			if (!hbuf_printf(ob, ".gcolor %s", 
 			    nstate_colour_buf(bn->colour)))
 				return 0;
 		}
