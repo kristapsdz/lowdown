@@ -421,17 +421,35 @@ match_eq(const struct lowdown_node *n1,
 	if (n1->type != n2->type)
 		return 0;
 
-	if (n1->type == LOWDOWN_LINK) {
-		/*
-		 * Links have both contained nodes (for the alt text,
-		 * which can be nested) and also attributes.
-		 */
+	switch (n1->type) {
+	case LOWDOWN_LINK:
 		if (!hbuf_eq
 		    (&n1->rndr_link.link, &n2->rndr_link.link))
 			return 0;
 		if (!hbuf_eq
 		    (&n1->rndr_link.title, &n2->rndr_link.title))
 			return 0;
+		break;
+	case LOWDOWN_HEADER:
+		if (n1->rndr_header.level !=
+		    n2->rndr_header.level)
+			return 0;
+		break;
+	case LOWDOWN_FOOTNOTE_DEF:
+		if (n1->rndr_footnote_def.num !=
+		    n2->rndr_footnote_def.num)
+			return 0;
+		break;
+	case LOWDOWN_LISTITEM:
+		if (n1->rndr_listitem.num !=
+		    n2->rndr_listitem.num)
+			return 0;
+		if (n1->rndr_listitem.flags !=
+		    n2->rndr_listitem.flags)
+			return 0;
+		break;
+	default:
+		break;
 	}
 
 	return 1;
