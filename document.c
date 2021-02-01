@@ -362,11 +362,13 @@ replace_spacing(struct lowdown_buf *ob, const char *data, size_t size)
 		mark = i;
 		while (i < size && data[i] != '\n')
 			i++;
-		hbuf_put(ob, data + mark, i - mark);
+		if (!hbuf_put(ob, data + mark, i - mark))
+			return 0;
 		if (i >= size)
 			break;
 		if (!(i > 0 && data[i - 1] == ' '))
-			hbuf_putc(ob, ' ');
+			if (!hbuf_putc(ob, ' '))
+				return 0;
 	}
 
 	return 1;
@@ -1287,7 +1289,8 @@ char_autolink_www(struct lowdown_doc *doc,
 		if ((link_url = hbuf_new(64)) == NULL)
 			goto err;
 		HBUF_PUTSL(link_url, "http://");
-		hbuf_put(link_url, link->data, link->size);
+		if (!hbuf_put(link_url, link->data, link->size))
+			goto err;
 
 		if (doc->current && 
 		    (n = TAILQ_LAST(&doc->current->children, 
@@ -1709,20 +1712,26 @@ again:
 			link = linkp = hbuf_new(64);
 			if (linkp == NULL)
 				goto err;
-			hbuf_put(link, data + link_b, link_e - link_b);
+			if (!hbuf_put(link, 
+			    data + link_b, link_e - link_b))
+				goto err;
 		}
 
 		if (title_e > title_b) {
 			title = titlep = hbuf_new(64);
 			if (titlep == NULL)
 				goto err;
-			hbuf_put(title, data + title_b, title_e - title_b);
+			if (!hbuf_put(title, 
+			    data + title_b, title_e - title_b))
+				goto err;
 		}
 
 		if (dims_e > dims_b) {
 			if ((dims = hbuf_new(64)) == NULL)
 				goto err;
-			hbuf_put(dims, data + dims_b, dims_e - dims_b);
+			if (!hbuf_put(dims,
+			    data + dims_b, dims_e - dims_b))
+				goto err;
 		}
 
 		i++;
@@ -1743,10 +1752,13 @@ again:
 		/* Finding the link_ref. */
 
 		if (link_b == link_e) {
-			if (!replace_spacing(idp, data + 1, txt_e - 1))
+			if (!replace_spacing
+			    (idp, data + 1, txt_e - 1))
 				goto err;
 		} else
-			hbuf_put(idp, data + link_b, link_e - link_b);
+			if (!hbuf_put(idp, 
+			    data + link_b, link_e - link_b))
+				goto err;
 
 		lr = find_link_ref(&doc->refq, idp->data, idp->size);
 		if ( ! lr)
@@ -1807,7 +1819,8 @@ again:
 		} else {
 			if ((content = hbuf_new(64)) == NULL)
 				goto err;
-			hbuf_put(content, data + 1, txt_e - 1);
+			if (!hbuf_put(content, data + 1, txt_e - 1))
+				goto err;
 		}
 	}
 
@@ -2488,10 +2501,14 @@ parse_blockcode(struct lowdown_doc *doc, char *data, size_t size)
 		 */
 
 		if (beg < end) {
-			if (is_empty(data + beg, end - beg))
-				hbuf_putc(work, '\n');
-			else 
-				hbuf_put(work, data + beg, end - beg);
+			if (is_empty(data + beg, end - beg)) {
+				if (!hbuf_putc(work, '\n'))
+					goto err;
+			} else {
+				if (!hbuf_put(work, 
+				    data + beg, end - beg))
+					goto err;
+			}
 		}
 		beg = end;
 	}
@@ -2499,7 +2516,8 @@ parse_blockcode(struct lowdown_doc *doc, char *data, size_t size)
 	while (work->size && work->data[work->size - 1] == '\n')
 		work->size -= 1;
 
-	hbuf_putc(work, '\n');
+	if (!hbuf_putc(work, '\n'))
+		goto err;
 
 	if ((n = pushnode(doc, LOWDOWN_BLOCKCODE)) == NULL)
 		goto err;
@@ -2556,7 +2574,8 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 
 	/* Putting the first line into the working buffer. */
 
-	hbuf_put(work, data + beg, end - beg);
+	if (!hbuf_put(work, data + beg, end - beg))
+		goto err;
 	beg = end;
 	dli_lines = 1;
 
@@ -2662,7 +2681,8 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 		}
 
 		if (in_empty) {
-			hbuf_putc(work, '\n');
+			if (!hbuf_putc(work, '\n'))
+				goto err;
 			has_inside_empty = 1;
 			in_empty = 0;
 		}
@@ -2672,7 +2692,8 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 		 * buffer.
 		 */
 
-		hbuf_put(work, data + beg + i, end - beg - i);
+		if (!hbuf_put(work, data + beg + i, end - beg - i))
+			goto err;
 		beg = end;
 	}
 
@@ -3715,20 +3736,23 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 				/* XXX: wtf? */
 			} else 
 				break;
-		} else if (in_empty) {
-			hbuf_putc(contents, '\n');
-		}
+		} else if (in_empty)
+			if (!hbuf_putc(contents, '\n'))
+				goto err;
 
 		in_empty = 0;
 
 		/* adding the line into the content buffer */
 
-		hbuf_put(contents, data + start + ind, i - start - ind);
+		if (!hbuf_put(contents,
+		    data + start + ind, i - start - ind))
+			goto err;
 
 		/* add carriage return */
 
 		if (i < end) {
-			hbuf_putc(contents, '\n');
+			if (!hbuf_putc(contents, '\n'))
+				goto err;
 			if (i < end && 
 			    (data[i] == '\n' || data[i] == '\r')) {
 				i++;
@@ -3743,10 +3767,8 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 	if (last)
 		*last = start;
 
-	if ((ref = calloc(1, sizeof(struct footnote_ref))) == NULL) {
-		hbuf_free(contents);
-		return -1;
-	}
+	if ((ref = calloc(1, sizeof(struct footnote_ref))) == NULL)
+		goto err;
 
 	TAILQ_INSERT_TAIL(&doc->footnotes, ref, entries);
 	ref->contents = contents;
@@ -3754,11 +3776,15 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 	if (id_end - id_offset) {
 		if ((ref->name = hbuf_new(id_end - id_offset)) == NULL)
 			return -1;
-		hbuf_put(ref->name, data + id_offset, 
-			id_end - id_offset);
+		if (!hbuf_put(ref->name,
+		    data + id_offset, id_end - id_offset))
+			return -1;
 	} 
 
 	return 1;
+err:
+	hbuf_free(contents);
+	return -1;
 }
 
 /* 
@@ -3895,22 +3921,25 @@ is_ref(struct lowdown_doc *doc, const char *data,
 		ref->name = hbuf_new(id_end - id_offset);
 		if (ref->name == NULL)
 			return -1;
-		hbuf_put(ref->name, data + id_offset, 
-			id_end - id_offset);
+		if (!hbuf_put(ref->name,
+		    data + id_offset, id_end - id_offset))
+			return -1;
 	}
 
 	ref->link = hbuf_new(link_end - link_offset);
 	if (ref->link == NULL)
 		return -1;
-	hbuf_put(ref->link, data + link_offset, 
-		link_end - link_offset);
+	if (!hbuf_put(ref->link,
+	    data + link_offset, link_end - link_offset))
+		return -1;
 
 	if (title_end > title_offset) {
 		ref->title = hbuf_new(title_end - title_offset);
 		if (ref->title == NULL)
 			return -1;
-		hbuf_put(ref->title, data + title_offset, 
-			title_end - title_offset);
+		if (!hbuf_put(ref->title,
+		    data + title_offset, title_end - title_offset))
+			return -1;
 	}
 
 	return 1;
@@ -3943,13 +3972,14 @@ expand_tabs(struct lowdown_buf *ob, const char *line, size_t size)
 				tab++;
 			i++;
 		}
-		if (i > org)
-			hbuf_put(ob, line + org, i - org);
+		if (i > org && !hbuf_put(ob, line + org, i - org))
+			return 0;
 		if (i >= size)
 			break;
 
 		do {
-			hbuf_putc(ob, ' '); 
+			if (!hbuf_putc(ob, ' '))
+				return 0;
 			tab++;
 		} while (tab % 4);
 	}
@@ -4308,7 +4338,8 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 		       data[end] == '\r')) {
 			if (data[end] == '\n' ||
 			    (end + 1 < size && data[end + 1] != '\n'))
-				hbuf_putc(text, '\n');
+				if (!hbuf_putc(text, '\n'))
+					goto out;
 			end++;
 		}
 
@@ -4326,7 +4357,8 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 		/* Adding a final newline if not already present. */
 		if (text->data[text->size - 1] != '\n' &&
 		    text->data[text->size - 1] != '\r')
-			hbuf_putc(text, '\n');
+			if (!hbuf_putc(text, '\n'))
+				goto out;
 		if (!parse_block(doc, text->data, text->size))
 			goto out;
 	}
