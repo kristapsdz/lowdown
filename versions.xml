@@ -967,6 +967,9 @@
 				This fixes all known instances of unexpected line breaks and allows
 				for significantly simplified handling of text interspersed with
 				macros (e.g., links, etc.).
+				An API result of this is that the tree passed to
+				<a href="lowdown_nroff_rndr.3.html">lowdown_nroff_rndr(3)</a>
+				is now <code>const</code>.
 			</p>
 			<p>
 				Recognise non-block and block lists for <b>-Tlatex</b> output.
@@ -974,6 +977,10 @@
 			<p>
 				Emit a UTF-8 preconv header to all <b>-Tms</b> and <b>-Tman</b> so
 				that <b>-Kutf8</b> need not be passed to the formatter.
+			</p>
+			<p>
+				Remove the <b>--nroff-hardwrap</b> option, which needlessly
+				complicates code without benefit.
 			</p>
 		</aside>
 	</article>
