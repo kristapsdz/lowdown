@@ -1278,15 +1278,15 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 
 	/* Descend into children. */
 
-	TAILQ_FOREACH(child, &n->children, entries) {
-		p->stackpos++;
-		if (child->type == LOWDOWN_TABLE_BLOCK) {
-			if (!rndr_table(ob, mq, p, child))
+	if (n->type != LOWDOWN_TABLE_BLOCK) {
+		TAILQ_FOREACH(child, &n->children, entries) {
+			p->stackpos++;
+			if (!rndr(ob, mq, p, child))
 				return 0;
-		} else if (!rndr(ob, mq, p, child))
-			return 0;
-		p->stackpos--;
-	}
+			p->stackpos--;
+		}
+	} else if (!rndr_table(ob, mq, p, n))
+		return 0;
 
 	/* Output content. */
 
