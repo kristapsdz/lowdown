@@ -330,6 +330,7 @@ struct	lowdown_opts {
 #define LOWDOWN_HTML_HEAD_IDS	 0x100 /* <hN id="the_name"> */
 #define LOWDOWN_STANDALONE	 0x200 /* emit complete document */
 #define LOWDOWN_TERM_SHORTLINK	 0x400 /* shorten URLs */
+#define LOWDOWN_TERM_NOLINK	 0x20000 /* don't show URLs */
 #define	LOWDOWN_HTML_OWASP	 0x800 /* use OWASP escaping */
 #define	LOWDOWN_HTML_NUM_ENT	 0x1000 /* use &#nn; if possible */
 #define LOWDOWN_LATEX_SKIP_HTML	 0x2000 /* skip all HTML */

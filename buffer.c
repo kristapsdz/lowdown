@@ -251,3 +251,72 @@ hbuf_printf(struct lowdown_buf *buf, const char *fmt, ...)
 	buf->size += n;
 	return 1;
 }
+
+/*
+ * Link shortener.
+ * This only shows the domain name and last path/filename.
+ * It uses the following algorithm:
+ *   (1) strip schema (if none, print in full)
+ *   (2) print domain following
+ *   (3) if no path, return
+ *   (4) if path, look for final path component
+ *   (5) print final path component with /.../ if shortened
+ * Return zero on failure (memory), non-zero on success.
+ */
+int
+hbuf_shortlink(struct lowdown_buf *out, const struct lowdown_buf *link)
+{
+	size_t		 start = 0, sz;
+	const char	*cp, *rcp;
+
+	/* 
+	 * Skip the leading protocol.
+	 * If we don't find a protocol, leave it be.
+	 */
+
+	if (link->size > 7 && strncmp(link->data, "http://", 7) == 0)
+		start = 7;
+	else if (link->size > 8 && strncmp(link->data, "https://", 8) == 0)
+		start = 8;
+	else if (link->size > 7 && strncmp(link->data, "file://", 7) == 0)
+		start = 7;
+	else if (link->size > 7 && strncmp(link->data, "mailto:", 7) == 0)
+		start = 7;
+	else if (link->size > 6 && strncmp(link->data, "ftp://", 6) == 0)
+		start = 6;
+
+	if (start == 0)
+		return hbuf_putb(out, link);
+
+	sz = link->size;
+	if (link->data[link->size - 1] == '/')
+		sz--;
+
+	/* 
+	 * Look for the end of the domain name. 
+	 * If we don't have an end, then print the whole thing.
+	 */
+
+	cp = memchr(link->data + start, '/', sz - start);
+	if (cp == NULL)
+		return hbuf_put(out, link->data + start, sz - start);
+
+	if (!hbuf_put(out, 
+	    link->data + start, cp - (link->data + start)))
+		return 0;
+
+	/* 
+	 * Look for the filename.
+	 * If it's the same as the end of the domain, then print the
+	 * whole thing.
+	 * Otherwise, use a "..." between.
+	 */
+
+	rcp = memrchr(link->data + start, '/', sz - start);
+
+	if (rcp == cp)
+		return hbuf_put(out, cp, sz - (cp - link->data));
+
+	return HBUF_PUTSL(out, "/...") &&
+		hbuf_put(out, rcp, sz - (rcp - link->data));
+}

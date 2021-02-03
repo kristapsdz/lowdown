@@ -271,6 +271,8 @@ main(int argc, char *argv[])
 		{ "gemini-no-link-inline",no_argument, 	&roflag, LOWDOWN_GEMINI_LINK_IN },
 		{ "term-shortlinks",	no_argument, 	&aoflag, LOWDOWN_TERM_SHORTLINK },
 		{ "term-no-shortlinks",	no_argument, 	&roflag, LOWDOWN_TERM_SHORTLINK },
+		{ "term-nolinks",	no_argument, 	&aoflag, LOWDOWN_TERM_NOLINK },
+		{ "term-no-nolinks",	no_argument, 	&roflag, LOWDOWN_TERM_NOLINK },
 		{ "out-smarty",		no_argument,	&aoflag, LOWDOWN_SMARTY },
 		{ "out-no-smarty",	no_argument,	&roflag, LOWDOWN_SMARTY },
 		{ "out-standalone",	no_argument,	&aoflag, LOWDOWN_STANDALONE },

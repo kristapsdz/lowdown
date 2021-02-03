@@ -39,6 +39,7 @@ int		 hbuf_putc(struct lowdown_buf *, char);
 int		 hbuf_putf(struct lowdown_buf *, FILE *);
 int		 hbuf_puts(struct lowdown_buf *, const char *);
 void		 hbuf_truncate(struct lowdown_buf *);
+int		 hbuf_shortlink(struct lowdown_buf *, const struct lowdown_buf *);
 
 #define 	 HBUF_PUTSL(output, literal) \
 		 hbuf_put(output, literal, sizeof(literal) - 1)
