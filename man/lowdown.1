@@ -256,6 +256,25 @@ Output embedded HTML.
 This usually doesn't make sense because the HTML won't be interpreted by
 the output reader.
 By default, HTML is omitted.
+.It Fl -nroff-nolinks
+Don't show URLs for images and links (autolinks are still shown).
+.Pq Link content is still shown.
+Overrides
+.Fl -nroff-shortlinks
+for images and links.
+Applies to
+.Fl T Ns Ar man
+or when
+.Fl nroff-no-groff
+is specified.
+.It Fl -nroff-shortlinks
+Shorten URLs for images, links, and autolinks to only the domain name
+and final path.
+Applies to
+.Fl T Ns Ar man
+or when
+.Fl nroff-no-groff
+is specified.
 .El
 .Pp
 The
@@ -270,15 +289,15 @@ Defaults to what the terminal reports or 72 if in a pipe.
 The number of left margin spaces.
 Truncated to the number of columns.
 Defaults to zero.
-.It Fl -term-shortlinks
-Shorten URLs to only the domain name and final path.
-This is useful for reading when links aren't clickable.
-Applies to images, autolinks, and real links.
 .It Fl -term-nolinks
-Show only URL text, not the URL itself.
-Applies to images and real links (not autolinks).
-Takes precedence over
-.Fl -term-shortlinks .
+Don't show URLs for images and links (autolinks are still shown).
+.Pq Link content is still shown.
+Overrides
+.Fl -term-shortlinks
+for images and links.
+.It Fl -term-shortlinks
+Shorten URLs for images, links, and autolinks to only the domain name
+and final path.
 .It Fl -term-vmargin=margin
 The number of top and bottom margin newlines.
 Defaults to zero.

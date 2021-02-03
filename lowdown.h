@@ -325,6 +325,8 @@ struct	lowdown_opts {
 #define LOWDOWN_NROFF_SKIP_HTML	 0x08 /* skip all HTML */
 #define LOWDOWN_NROFF_HARD_WRAP	 0x10 /* paragraph line breaks */
 #define LOWDOWN_NROFF_GROFF	 0x20 /* use groff extensions */
+#define LOWDOWN_NROFF_SHORTLINK	 0x40000 /* shorten URLs */
+#define LOWDOWN_NROFF_NOLINK	 0x80000 /* don't show URLs */
 #define	LOWDOWN_SMARTY	  	 0x40 /* smart typography */
 #define LOWDOWN_NROFF_NUMBERED	 0x80 /* numbered section headers */
 #define LOWDOWN_HTML_HEAD_IDS	 0x100 /* <hN id="the_name"> */

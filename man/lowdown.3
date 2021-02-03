@@ -302,6 +302,22 @@ output type.
 .It Dv LOWDOWN_NROFF_SKIP_HTML
 Do not render in-document HTML at all.
 Text within HTML elements remains.
+.It Dv LOWDOWN_NROFF_SHORTLINK
+Render link URLs in short form.
+Applies to images, autolinks, and regular links.
+Only in
+.Dv LOWDOWN_MAN
+or when
+.Dv LOWDOWN_NROFF_GROFF
+is not specified.
+.It Dv LOWDOWN_NROFF_NOLINK
+Don't show links at all if they have embedded text.
+Applies to images and regular links.
+Only in
+.Dv LOWDOWN_MAN
+or when
+.Dv LOWDOWN_NROFF_GROFF
+is not specified.
 .El
 .Pp
 For

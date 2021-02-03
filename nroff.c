@@ -467,7 +467,8 @@ putlink(struct bnodeq *obq, struct nroff *st,
 	const struct lowdown_buf *link, struct bnodeq *bq,
 	enum halink_type type, const struct lowdown_node *next)
 {
-	struct lowdown_buf		*ob = NULL, *tmp = NULL;
+	struct lowdown_buf		*ob = NULL, *tmp = NULL, 
+					*slink = NULL;
 	const struct lowdown_buf	*nbuf;
 	struct bnode			*bn, *prev;
 	size_t				 sz, i;
@@ -475,17 +476,75 @@ putlink(struct bnodeq *obq, struct nroff *st,
 	ssize_t				 ret = 0;
 
 	if (st->man || !(st->flags & LOWDOWN_NROFF_GROFF)) {
+		if (bq == NULL) {
+			st->fonts[NFONT_ITALIC]++;
+			if (!bqueue_font(st, obq, 0))
+				goto out;
+			if ((bn = bqueue_span(obq, NULL)) == NULL)
+				goto out;
+			if (st->flags & LOWDOWN_NROFF_SHORTLINK) {
+				if ((tmp = hbuf_new(32)) == NULL)
+					goto out;
+				if ((slink = hbuf_new(32)) == NULL)
+					goto out;
+				if (!hbuf_shortlink(tmp, link))
+					goto out;
+				if (!hesc_nroff(slink, 
+				    tmp->data, tmp->size, 1, 0))
+					goto out;
+				bn->nbuf = strndup
+					(slink->data, slink->size);
+				if (bn->nbuf == NULL)
+					goto out;
+			} else
+				bn->buf = link;
+			st->fonts[NFONT_ITALIC]--;
+			if (!bqueue_font(st, obq, 1))
+				goto out;
+			rc = 1;
+			goto out;
+		}
+		st->fonts[NFONT_BOLD]++;
+		if (!bqueue_font(st, obq, 0))
+			goto out;
+		TAILQ_CONCAT(obq, bq, entries);
+		st->fonts[NFONT_BOLD]--;
+		if (!bqueue_font(st, obq, 1))
+			goto out;
+
+		if (st->flags & LOWDOWN_NROFF_NOLINK) {
+			rc = 1;
+			goto out;
+		}
+
+		if (bqueue_span(obq, " (") == NULL)
+			goto out;
 		st->fonts[NFONT_ITALIC]++;
 		if (!bqueue_font(st, obq, 0))
-			return -1;
-		if (bq == NULL) {
-			if ((bn = bqueue_span(obq, NULL)) == NULL)
-				return -1;
-			bn->buf = link;
+			goto out;
+		if ((bn = bqueue_span(obq, NULL)) == NULL)
+			goto out;
+		if (st->flags & LOWDOWN_NROFF_SHORTLINK) {
+			if ((tmp = hbuf_new(32)) == NULL)
+				goto out;
+			if ((slink = hbuf_new(32)) == NULL)
+				goto out;
+			if (!hbuf_shortlink(tmp, link))
+				goto out;
+			if (!hesc_nroff(slink, tmp->data, tmp->size, 1, 0))
+				goto out;
+			bn->nbuf = strndup(slink->data, slink->size);
+			if (bn->nbuf == NULL)
+				goto out;
 		} else
-			TAILQ_CONCAT(obq, bq, entries);
+ 			bn->buf = link;
 		st->fonts[NFONT_ITALIC]--;
-		return bqueue_font(st, obq, 1) ? 0 : -1;
+		if (!bqueue_font(st, obq, 1))
+			goto out;
+		if (bqueue_span(obq, ")") == NULL)
+			goto out;
+		rc = 1;
+		goto out;
 	}
 
 	if ((ob = hbuf_new(32)) == NULL)
@@ -574,6 +633,7 @@ putlink(struct bnodeq *obq, struct nroff *st,
 	rc = 1;
 out:
 	hbuf_free(tmp);
+	hbuf_free(slink);
 	hbuf_free(ob);
 	return rc ? ret : -1;
 }
