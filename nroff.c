@@ -453,6 +453,33 @@ out:
 }
 
 /*
+ * Convert a link into a short-link and place the escaped output into a
+ * returned string.
+ * Returns NULL on memory allocation failure.
+ */
+static char *
+hbuf2shortlink(const struct lowdown_buf *link)
+{
+	struct lowdown_buf	*tmp = NULL, *slink = NULL;
+	char			*ret = NULL;
+
+	if ((tmp = hbuf_new(32)) == NULL)
+		goto out;
+	if ((slink = hbuf_new(32)) == NULL)
+		goto out;
+	if (!hbuf_shortlink(tmp, link))
+		goto out;
+	if (!hesc_nroff(slink, 
+	    tmp->data, tmp->size, 1, 0))
+		goto out;
+	ret = strndup(slink->data, slink->size);
+out:
+	hbuf_free(tmp);
+	hbuf_free(slink);
+	return ret;
+}
+
+/*
  * Manage hypertext linking with the groff "pdfhref" macro or simply
  * using italics.
  * We use italics because the UR/UE macro doesn't support leading
@@ -467,13 +494,17 @@ putlink(struct bnodeq *obq, struct nroff *st,
 	const struct lowdown_buf *link, struct bnodeq *bq,
 	enum halink_type type, const struct lowdown_node *next)
 {
-	struct lowdown_buf		*ob = NULL, *tmp = NULL, 
-					*slink = NULL;
+	struct lowdown_buf		*ob = NULL, *tmp = NULL;
 	const struct lowdown_buf	*nbuf;
 	struct bnode			*bn, *prev;
 	size_t				 sz, i;
 	int				 rc = 0;
 	ssize_t				 ret = 0;
+
+	/*
+	 * For -Tman or without .pdfhref, format the link as-is, with
+	 * text then link, or use the various shorteners.
+	 */
 
 	if (st->man || !(st->flags & LOWDOWN_NROFF_GROFF)) {
 		if (bq == NULL) {
@@ -483,17 +514,7 @@ putlink(struct bnodeq *obq, struct nroff *st,
 			if ((bn = bqueue_span(obq, NULL)) == NULL)
 				goto out;
 			if (st->flags & LOWDOWN_NROFF_SHORTLINK) {
-				if ((tmp = hbuf_new(32)) == NULL)
-					goto out;
-				if ((slink = hbuf_new(32)) == NULL)
-					goto out;
-				if (!hbuf_shortlink(tmp, link))
-					goto out;
-				if (!hesc_nroff(slink, 
-				    tmp->data, tmp->size, 1, 0))
-					goto out;
-				bn->nbuf = strndup
-					(slink->data, slink->size);
+				bn->nbuf = hbuf2shortlink(link);
 				if (bn->nbuf == NULL)
 					goto out;
 			} else
@@ -511,12 +532,10 @@ putlink(struct bnodeq *obq, struct nroff *st,
 		st->fonts[NFONT_BOLD]--;
 		if (!bqueue_font(st, obq, 1))
 			goto out;
-
 		if (st->flags & LOWDOWN_NROFF_NOLINK) {
 			rc = 1;
 			goto out;
 		}
-
 		if (bqueue_span(obq, " (") == NULL)
 			goto out;
 		st->fonts[NFONT_ITALIC]++;
@@ -525,15 +544,7 @@ putlink(struct bnodeq *obq, struct nroff *st,
 		if ((bn = bqueue_span(obq, NULL)) == NULL)
 			goto out;
 		if (st->flags & LOWDOWN_NROFF_SHORTLINK) {
-			if ((tmp = hbuf_new(32)) == NULL)
-				goto out;
-			if ((slink = hbuf_new(32)) == NULL)
-				goto out;
-			if (!hbuf_shortlink(tmp, link))
-				goto out;
-			if (!hesc_nroff(slink, tmp->data, tmp->size, 1, 0))
-				goto out;
-			bn->nbuf = strndup(slink->data, slink->size);
+			bn->nbuf = hbuf2shortlink(link);
 			if (bn->nbuf == NULL)
 				goto out;
 		} else
@@ -547,16 +558,17 @@ putlink(struct bnodeq *obq, struct nroff *st,
 		goto out;
 	}
 
+	/* Otherwise, use .pdfhref. */
+
 	if ((ob = hbuf_new(32)) == NULL)
 		goto out;
-
-	prev = TAILQ_LAST(obq, bnodeq);
 
 	/*
 	 * If we're preceded by normal text that doesn't end with space,
 	 * then put that text into the "-P" (prefix) argument.
 	 */
 
+	prev = TAILQ_LAST(obq, bnodeq);
 	if (prev != NULL &&
 	    prev->scope == BSCOPE_SPAN &&
 	    prev->buf != NULL &&
@@ -586,6 +598,12 @@ putlink(struct bnodeq *obq, struct nroff *st,
 			goto out;
 		prev->buf = NULL;
 	}
+
+	/* 
+	 * If we're followed by text flush against the node, "chop" the
+	 * node until the next white-space.  This will be handed to the
+	 * next rndr() invocation.
+	 */
 
 	if (next != NULL && 
 	    next->type == LOWDOWN_NORMAL_TEXT) {
@@ -633,7 +651,6 @@ putlink(struct bnodeq *obq, struct nroff *st,
 	rc = 1;
 out:
 	hbuf_free(tmp);
-	hbuf_free(slink);
 	hbuf_free(ob);
 	return rc ? ret : -1;
 }
@@ -943,15 +960,45 @@ rndr_hrule(const struct nroff *st, struct bnodeq *obq)
 }
 
 static int
-rndr_image(const struct nroff *st, struct bnodeq *obq, 
+rndr_image(struct nroff *st, struct bnodeq *obq, 
 	const struct rndr_image *param)
 {
 	const char	*cp;
 	size_t		 sz;
 	struct bnode	*bn;
 
-	if (st->man)
-		return 1;
+	/* In -Tman, we have no images: treat as a link. */
+
+	if (st->man) {
+		st->fonts[NFONT_BOLD]++;
+		if (!bqueue_font(st, obq, 0))
+			return 0;
+		if ((bn = bqueue_span(obq, NULL)) == NULL)
+			return 0;
+		bn->buf = &param->alt;
+		st->fonts[NFONT_BOLD]--;
+		if (!bqueue_font(st, obq, 1))
+			return 0;
+		if (st->flags & LOWDOWN_NROFF_NOLINK)
+			return bqueue_span(obq, " (Image)") != NULL;
+		if (bqueue_span(obq, " (Image: ") == NULL)
+			return 0;
+		st->fonts[NFONT_ITALIC]++;
+		if (!bqueue_font(st, obq, 0))
+			return 0;
+		if ((bn = bqueue_span(obq, NULL)) == NULL)
+			return 0;
+		if (st->flags & LOWDOWN_NROFF_SHORTLINK) {
+			bn->nbuf = hbuf2shortlink(&param->link);
+			if (bn->nbuf == NULL)
+				return 0;
+		} else
+			bn->buf = &param->link;
+		st->fonts[NFONT_ITALIC]--;
+		if (!bqueue_font(st, obq, 1))
+			return 0;
+		return bqueue_span(obq, ")") != NULL;
+	}
 
 	/* Are we suffixed with ps or eps? */
 
