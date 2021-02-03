@@ -1275,7 +1275,7 @@ char_autolink_www(struct lowdown_doc *doc,
 {
 	struct lowdown_buf	*link = NULL, *link_url = NULL;
 	size_t	 		 link_len, rewind;
-	struct lowdown_node 	*n, *nn;
+	struct lowdown_node 	*n;
 	ssize_t			 ret;
 
 	if (doc->in_link_body)
@@ -1305,17 +1305,12 @@ char_autolink_www(struct lowdown_doc *doc,
 				n->rndr_normal_text.text.size = 0;
 		}
 
-		if ((n = pushnode(doc, LOWDOWN_LINK)) == NULL)
+		if ((n = pushnode(doc, LOWDOWN_LINK_AUTO)) == NULL)
 			goto err;
-		if (!pushbuffer(&n->rndr_link.link, 
+		n->rndr_autolink.type = HALINK_NORMAL;
+		if (!pushbuffer(&n->rndr_autolink.link, 
 		    link_url->data, link_url->size))
 			goto err;
-		if ((nn = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
-			goto err;
-		if (!pushbuffer(&nn->rndr_normal_text.text, 
-		    link->data, link->size))
-			goto err;
-		popnode(doc, nn);
 		popnode(doc, n);
 	}
 
