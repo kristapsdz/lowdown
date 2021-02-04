@@ -149,6 +149,7 @@ hesc_nroff(struct lowdown_buf *ob, const char *data,
 			if (!HBUF_PUTSL(ob, "\\e"))
 				return 0;
 			break;
+		case '\'':
 		case '.':
 			if (!oneline &&
 			    ob->size > 0 && 
