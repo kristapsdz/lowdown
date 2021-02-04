@@ -252,7 +252,7 @@ clean:
 	rm -f index.latex.aux index.latex.latex index.latex.log index.latex.out
 
 distclean: clean
-	rm -f Makefile.configure config.h config.log
+	rm -f Makefile.configure config.h config.log config.h.old config.log.old
 
 regress: lowdown
 	tmp1=`mktemp` ; \
