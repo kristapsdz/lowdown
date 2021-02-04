@@ -984,4 +984,24 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.8.0</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2021-01-31">2021-01-31</time>
+		</header>
+		<aside>
+			<p>
+				Add <b>--term-nolinks</b> to strip URLs out of terminal output (when
+				alternative text is available).
+				Then add <b>--nroff-nolinks</b> and <b>--nroff-shortlinks</b>, just
+				like those for <b>-Tterm</b>, for use with <b>-Tman</b> or
+				<b>--nroff-no-groff</b>.
+			</p>
+			<p>
+				Fix long-standing kinda-bug where <code>www</code> autolinks were
+				being reported as regular links instead of autolinks.
+			</p>
+		</aside>
+	</article>
 </articles>
