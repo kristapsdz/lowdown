@@ -360,6 +360,11 @@ entities, etc.) are copied as-is.
 The values will have leading white-space stripped, i.e., space following
 the colon.
 .Pp
+If multiple metadata keys resolve to the same name, only the first is
+retained.
+This check happen safter canonicalising the name by stripping spaces,
+converting to lower-case, and substituting unknown characters.
+.Pp
 Metadata values may be pasted into a document by referencing the
 .Li \&[%key] ,
 such as using the above example, again with the caveat that Markdown

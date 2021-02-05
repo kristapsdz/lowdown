@@ -4132,10 +4132,10 @@ static int
 parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 {
 	size_t	 	 	 i, j, pos = 0, valsz, keysz;
-	const char		*key, *val;
 	struct hbufn		*m;
 	struct lowdown_node	*n, *nn;
-	char			*cp;
+	const char		*val, *key;
+	char			*cp, *buf;
 
 	if (sz == 0 || data[sz - 1] != '\n')
 		return 0;
@@ -4160,30 +4160,20 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 	 */
 
 	for (pos = 0; pos < sz; ) {
-		if ((m = calloc(1, sizeof(struct hbufn))) == NULL)
-			return -1;
-		TAILQ_INSERT_TAIL(&doc->metaq, m, entries);
-
-		if ((n = pushnode(doc, LOWDOWN_META)) == NULL)
-			return -1;
-
-		m->key = &n->rndr_meta.key;
-
 		key = &data[pos];
 		for (i = pos; i < sz; i++)
 			if (data[i] == ':')
 				break;
+
 		keysz = i - pos;
+		if ((cp = buf = malloc(keysz + 1)) == NULL)
+			return -1;
 
 		/*
 		 * Normalise the key to lowercase alphanumerics, "-",
 		 * and "_", discard whitespace, replace other characters
 		 * with a question mark.
 		 */
-
-		n->rndr_meta.key.data = cp = malloc(keysz);
-		if (cp == NULL)
-			return -1;
 
 		for (j = 0; j < keysz; j++) {
 			if (isalnum((unsigned char)key[j]) ||
@@ -4194,17 +4184,42 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 				continue;
 			*cp++ = '?';
 		}
-		n->rndr_meta.key.size = cp - n->rndr_meta.key.data;
+		*cp = '\0';
 
-		/* Canonical order: title comes first. */
+		TAILQ_FOREACH(m, &doc->metaq, entries)
+			if (hbuf_streq(m->key, buf))
+				break;
 
-		if (hbuf_streq(&n->rndr_meta.key, "title")) {
-			TAILQ_REMOVE(&n->parent->children, n, entries);
-			TAILQ_INSERT_HEAD(&n->parent->children, n, entries);
-		}
+		if (m == NULL) {
+			n = pushnode(doc, LOWDOWN_META);
+			if (n == NULL) {
+				free(buf);
+				return -1;
+			}
+			if (!pushbuffer
+			    (&n->rndr_meta.key, buf, cp - buf))
+				return -1;
+
+			m = calloc(1, sizeof(struct hbufn));
+			if (m == NULL)
+				return -1;
+			TAILQ_INSERT_TAIL(&doc->metaq, m, entries);
+			m->key = &n->rndr_meta.key;
+
+			/* Canonical order: title comes first. */
+
+			if (hbuf_streq(m->key, "title")) {
+				TAILQ_REMOVE(&n->parent->children, 
+					n, entries);
+				TAILQ_INSERT_HEAD(&n->parent->children,
+					n, entries);
+			}
+		} else
+			n = NULL;
 
 		if (i == sz) {
-			popnode(doc, n);
+			if (n != NULL)
+				popnode(doc, n);
 			break;
 		}
 
@@ -4215,18 +4230,26 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 		while (i < sz && isspace((unsigned char)data[i]))
 			i++;
 		if (i == sz) {
-			popnode(doc, n);
+			if (n != NULL)
+				popnode(doc, n);
 			break;
 		}
 
-		val = parse_metadata_val(&data[i], sz - i, &valsz);
-		if ((nn = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
-			return -1;
-		m->val = &nn->rndr_normal_text.text;
-		if (!pushbuffer(&nn->rndr_normal_text.text, val, valsz))
-			return -1;
-		popnode(doc, nn);
-		popnode(doc, n);
+		if (n != NULL) {
+			val = parse_metadata_val
+				(&data[i], sz - i, &valsz);
+			nn = pushnode(doc, LOWDOWN_NORMAL_TEXT);
+			if (nn == NULL)
+				return -1;
+			assert(m != NULL);
+			m->val = &nn->rndr_normal_text.text;
+			if (!pushbuffer
+			    (&nn->rndr_normal_text.text, val, valsz))
+				return -1;
+			popnode(doc, nn);
+			popnode(doc, n);
+		}
+
 		pos = i + valsz + 1;
 	}
 
