@@ -4131,7 +4131,7 @@ parse_metadata_val(const char *data, size_t sz, size_t *len)
 static int
 parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 {
-	size_t	 	 	 i, j, pos = 0, valsz, keysz;
+	size_t	 	 	 i, j, pos = 0, vsz, keysz;
 	struct hbufn		*m;
 	struct lowdown_node	*n, *nn;
 	const char		*val, *key;
@@ -4186,40 +4186,55 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 		}
 		*cp = '\0';
 
+		/* 
+		 * If we've already encountered this key, remove it from
+		 * both the local queue and the meta nodes.
+		 */
+
 		TAILQ_FOREACH(m, &doc->metaq, entries)
-			if (hbuf_streq(m->key, buf))
+			if (hbuf_streq(m->key, buf)) {
+				TAILQ_REMOVE(&doc->metaq, m, entries);
+				free(m);
 				break;
-
-		if (m == NULL) {
-			n = pushnode(doc, LOWDOWN_META);
-			if (n == NULL) {
-				free(buf);
-				return -1;
 			}
-			if (!pushbuffer
-			    (&n->rndr_meta.key, buf, cp - buf))
-				return -1;
 
-			m = calloc(1, sizeof(struct hbufn));
-			if (m == NULL)
-				return -1;
-			TAILQ_INSERT_TAIL(&doc->metaq, m, entries);
-			m->key = &n->rndr_meta.key;
-
-			/* Canonical order: title comes first. */
-
-			if (hbuf_streq(m->key, "title")) {
-				TAILQ_REMOVE(&n->parent->children, 
-					n, entries);
-				TAILQ_INSERT_HEAD(&n->parent->children,
-					n, entries);
+		assert(doc->current->type == LOWDOWN_DOC_HEADER);
+		TAILQ_FOREACH(n, &doc->current->children, entries) {
+			assert(n->type == LOWDOWN_META);
+			if (hbuf_streq(&n->rndr_meta.key, buf)) {
+				TAILQ_REMOVE(&doc->current->children, n, entries);
+				lowdown_node_free(n);
+				break;
 			}
-		} else
-			n = NULL;
+		}
+
+		if ((n = pushnode(doc, LOWDOWN_META)) == NULL) {
+			free(buf);
+			return -1;
+		}
+		if (!pushbuffer(&n->rndr_meta.key, buf, cp - buf)) {
+			free(buf);
+			return -1;
+		}
+		free(buf);
+
+		if ((m = calloc(1, sizeof(struct hbufn))) == NULL)
+			return -1;
+		TAILQ_INSERT_TAIL(&doc->metaq, m, entries);
+		m->key = &n->rndr_meta.key;
+
+		/* Canonical order: title comes first. */
+		/* FIXME: remove. */
+
+		if (hbuf_streq(m->key, "title")) {
+			TAILQ_REMOVE(&n->parent->children, 
+				n, entries);
+			TAILQ_INSERT_HEAD(&n->parent->children,
+				n, entries);
+		}
 
 		if (i == sz) {
-			if (n != NULL)
-				popnode(doc, n);
+			popnode(doc, n);
 			break;
 		}
 
@@ -4230,27 +4245,20 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 		while (i < sz && isspace((unsigned char)data[i]))
 			i++;
 		if (i == sz) {
-			if (n != NULL)
-				popnode(doc, n);
+			popnode(doc, n);
 			break;
 		}
 
-		if (n != NULL) {
-			val = parse_metadata_val
-				(&data[i], sz - i, &valsz);
-			nn = pushnode(doc, LOWDOWN_NORMAL_TEXT);
-			if (nn == NULL)
-				return -1;
-			assert(m != NULL);
-			m->val = &nn->rndr_normal_text.text;
-			if (!pushbuffer
-			    (&nn->rndr_normal_text.text, val, valsz))
-				return -1;
-			popnode(doc, nn);
-			popnode(doc, n);
-		}
+		val = parse_metadata_val(&data[i], sz - i, &vsz);
+		if ((nn = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
+			return -1;
+		m->val = &nn->rndr_normal_text.text;
+		if (!pushbuffer(&nn->rndr_normal_text.text, val, vsz))
+			return -1;
+		popnode(doc, nn);
+		popnode(doc, n);
 
-		pos = i + valsz + 1;
+		pos = i + vsz + 1;
 	}
 
 	return 1;
