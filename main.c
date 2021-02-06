@@ -150,68 +150,6 @@ sandbox_pre(void)
 
 #endif
 
-static unsigned int
-feature_out(const char *v)
-{
-
-	if (v == NULL)
-		return 0;
-	if (strcasecmp(v, "html-skiphtml") == 0)
-		return LOWDOWN_HTML_SKIP_HTML;
-	if (strcasecmp(v, "html-escape") == 0)
-		return LOWDOWN_HTML_ESCAPE;
-	if (strcasecmp(v, "html-hardwrap") == 0)
-		return LOWDOWN_HTML_HARD_WRAP;
-	if (strcasecmp(v, "html-head-ids") == 0)
-		return LOWDOWN_HTML_HEAD_IDS;
-	if (strcasecmp(v, "nroff-skiphtml") == 0)
-		return LOWDOWN_NROFF_SKIP_HTML;
-	if (strcasecmp(v, "nroff-groff") == 0)
-		return LOWDOWN_NROFF_GROFF;
-	if (strcasecmp(v, "nroff-numbered") == 0)
-		return LOWDOWN_NROFF_NUMBERED;
-	if (strcasecmp(v, "smarty") == 0)
-		return LOWDOWN_SMARTY;
-
-	warnx("%s: unknown feature", v);
-	return 0;
-}
-
-static unsigned int
-feature_in(const char *v)
-{
-
-	if (v == NULL)
-		return 0;
-	if (strcasecmp(v, "tables") == 0)
-		return LOWDOWN_TABLES;
-	if (strcasecmp(v, "fenced") == 0)
-		return LOWDOWN_TABLES;
-	if (strcasecmp(v, "footnotes") == 0)
-		return LOWDOWN_FOOTNOTES;
-	if (strcasecmp(v, "autolink") == 0)
-		return LOWDOWN_AUTOLINK;
-	if (strcasecmp(v, "strike") == 0)
-		return LOWDOWN_STRIKE;
-	if (strcasecmp(v, "hilite") == 0)
-		return LOWDOWN_HILITE;
-	if (strcasecmp(v, "super") == 0)
-		return LOWDOWN_SUPER;
-	if (strcasecmp(v, "math") == 0)
-		return LOWDOWN_MATH;
-	if (strcasecmp(v, "nointem") == 0)
-		return LOWDOWN_NOINTEM;
-	if (strcasecmp(v, "nocodeind") == 0)
-		return LOWDOWN_NOCODEIND;
-	if (strcasecmp(v, "metadata") == 0)
-		return LOWDOWN_METADATA;
-	if (strcasecmp(v, "commonmark") == 0)
-		return LOWDOWN_COMMONMARK;
-
-	warnx("%s: unknown feature", v);
-	return 0;
-}
-
 static size_t
 get_columns(void)
 {
@@ -232,7 +170,7 @@ main(int argc, char *argv[])
 	      	 		*fndin = NULL, *extract = NULL, *er;
 	struct lowdown_opts 	 opts;
 	int			 c, diff = 0,
-				 status = EXIT_SUCCESS, feat, aoflag = 0, roflag = 0,
+				 status = EXIT_SUCCESS, aoflag = 0, roflag = 0,
 				 aiflag = 0, riflag = 0, centre = 0;
 	char			*ret = NULL, *cp;
 	size_t		 	 i, retsz = 0, rcols;
@@ -351,28 +289,8 @@ main(int argc, char *argv[])
 		diff = 1;
 
 	while ((c = getopt_long
-		(argc, argv, "D:d:E:e:M:m:sT:o:X:", lo, NULL)) != -1)
+		(argc, argv, "M:m:sT:o:X:", lo, NULL)) != -1)
 		switch (c) {
-		case 'D':
-			if ((feat = feature_out(optarg)) == 0)
-				goto usage;
-			opts.oflags &= ~feat;
-			break;
-		case 'd':
-			if ((feat = feature_in(optarg)) == 0)
-				goto usage;
-			opts.feat &= ~feat;
-			break;
-		case 'E':
-			if ((feat = feature_out(optarg)) == 0)
-				goto usage;
-			opts.oflags |= feat;
-			break;
-		case 'e':
-			if ((feat = feature_in(optarg)) == 0)
-				goto usage;
-			opts.feat |= feat;
-			break;
 		case 'M':
 			opts.metaovr = reallocarray(opts.metaovr, 
 				opts.metaovrsz + 1, sizeof(char *));
