@@ -295,50 +295,54 @@ struct	lowdown_node {
  * These options contain everything needed to parse and render content.
  */
 struct	lowdown_opts {
-	enum lowdown_type	 type;
-	size_t			 maxdepth; /* max parse tree depth */
-	size_t			 cols; /* -Tterm width */
-	size_t			 hmargin; /* -Tterm left margin */
-	size_t			 vmargin; /* -Tterm top/bot margin */
-	unsigned int		 feat;
-#define LOWDOWN_TABLES		 0x01
-#define LOWDOWN_FENCED		 0x02
-#define LOWDOWN_FOOTNOTES	 0x04
-#define LOWDOWN_AUTOLINK	 0x08
-#define LOWDOWN_STRIKE		 0x10
-/* Omitted 			 0x20 */
-#define LOWDOWN_HILITE		 0x40
-/* Omitted 			 0x80 */
-#define LOWDOWN_SUPER		 0x100
-#define LOWDOWN_MATH		 0x200
-#define LOWDOWN_NOINTEM		 0x400
-/* Disabled LOWDOWN_MATHEXP	 0x1000 */
-#define LOWDOWN_NOCODEIND	 0x2000
-#define	LOWDOWN_METADATA	 0x4000
-#define	LOWDOWN_COMMONMARK	 0x8000
-#define	LOWDOWN_DEFLIST		 0x10000
-#define	LOWDOWN_IMG_EXT	 	 0x20000
-	unsigned int		 oflags;
-#define LOWDOWN_HTML_SKIP_HTML	 0x01 /* skip all HTML */
-#define LOWDOWN_HTML_ESCAPE	 0x02 /* escape HTML (if not skip) */
-#define LOWDOWN_HTML_HARD_WRAP	 0x04 /* paragraph line breaks */
-#define LOWDOWN_NROFF_SKIP_HTML	 0x08 /* skip all HTML */
-#define LOWDOWN_NROFF_HARD_WRAP	 0x10 /* paragraph line breaks */
-#define LOWDOWN_NROFF_GROFF	 0x20 /* use groff extensions */
-#define LOWDOWN_NROFF_SHORTLINK	 0x40000 /* shorten URLs */
-#define LOWDOWN_NROFF_NOLINK	 0x80000 /* don't show URLs */
-#define	LOWDOWN_SMARTY	  	 0x40 /* smart typography */
-#define LOWDOWN_NROFF_NUMBERED	 0x80 /* numbered section headers */
-#define LOWDOWN_HTML_HEAD_IDS	 0x100 /* <hN id="the_name"> */
-#define LOWDOWN_STANDALONE	 0x200 /* emit complete document */
-#define LOWDOWN_TERM_SHORTLINK	 0x400 /* shorten URLs */
-#define LOWDOWN_TERM_NOLINK	 0x20000 /* don't show URLs */
-#define	LOWDOWN_HTML_OWASP	 0x800 /* use OWASP escaping */
-#define	LOWDOWN_HTML_NUM_ENT	 0x1000 /* use &#nn; if possible */
-#define LOWDOWN_LATEX_SKIP_HTML	 0x2000 /* skip all HTML */
-#define LOWDOWN_LATEX_NUMBERED	 0x4000 /* numbered sections */
-#define	LOWDOWN_GEMINI_LINK_END	 0x8000 /* links at end */
-#define	LOWDOWN_GEMINI_LINK_IN	 0x10000 /* links inline */
+	enum lowdown_type	  type;
+	size_t			  maxdepth; /* max parse tree depth */
+	size_t			  cols; /* -Tterm width */
+	size_t			  hmargin; /* -Tterm left margin */
+	size_t			  vmargin; /* -Tterm top/bot margin */
+	unsigned int		  feat;
+#define LOWDOWN_TABLES		  0x01
+#define LOWDOWN_FENCED		  0x02
+#define LOWDOWN_FOOTNOTES	  0x04
+#define LOWDOWN_AUTOLINK	  0x08
+#define LOWDOWN_STRIKE		  0x10
+/* Omitted 			  0x20 */
+#define LOWDOWN_HILITE		  0x40
+/* Omitted 			  0x80 */
+#define LOWDOWN_SUPER		  0x100
+#define LOWDOWN_MATH		  0x200
+#define LOWDOWN_NOINTEM		  0x400
+/* Disabled LOWDOWN_MATHEXP	  0x1000 */
+#define LOWDOWN_NOCODEIND	  0x2000
+#define	LOWDOWN_METADATA	  0x4000
+#define	LOWDOWN_COMMONMARK	  0x8000
+#define	LOWDOWN_DEFLIST		  0x10000
+#define	LOWDOWN_IMG_EXT	 	  0x20000
+	unsigned int		  oflags;
+#define LOWDOWN_HTML_SKIP_HTML	  0x01 /* skip all HTML */
+#define LOWDOWN_HTML_ESCAPE	  0x02 /* escape HTML (if not skip) */
+#define LOWDOWN_HTML_HARD_WRAP	  0x04 /* paragraph line breaks */
+#define LOWDOWN_NROFF_SKIP_HTML	  0x08 /* skip all HTML */
+/* Disable LOWDOWN_NROFF_HARD_WRAP 0x10 */
+#define LOWDOWN_NROFF_GROFF	  0x20 /* use groff extensions */
+#define LOWDOWN_NROFF_SHORTLINK	  0x40000 /* shorten URLs */
+#define LOWDOWN_NROFF_NOLINK	  0x80000 /* don't show URLs */
+#define	LOWDOWN_SMARTY	  	  0x40 /* smart typography */
+#define LOWDOWN_NROFF_NUMBERED	  0x80 /* numbered section headers */
+#define LOWDOWN_HTML_HEAD_IDS	  0x100 /* <hN id="the_name"> */
+#define LOWDOWN_STANDALONE	  0x200 /* emit complete document */
+#define LOWDOWN_TERM_SHORTLINK	  0x400 /* shorten URLs */
+#define LOWDOWN_TERM_NOLINK	  0x20000 /* don't show URLs */
+#define	LOWDOWN_HTML_OWASP	  0x800 /* use OWASP escaping */
+#define	LOWDOWN_HTML_NUM_ENT	  0x1000 /* use &#nn; if possible */
+#define LOWDOWN_LATEX_SKIP_HTML	  0x2000 /* skip all HTML */
+#define LOWDOWN_LATEX_NUMBERED	  0x4000 /* numbered sections */
+#define	LOWDOWN_GEMINI_LINK_END	  0x8000 /* links at end */
+#define	LOWDOWN_GEMINI_LINK_IN	  0x10000 /* links inline */
+	char			**meta;
+	size_t			  metasz;
+	char			**metaovr;
+	size_t			  metaovrsz;
 };
 
 struct lowdown_doc;

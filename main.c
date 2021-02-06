@@ -234,8 +234,8 @@ main(int argc, char *argv[])
 	int			 c, diff = 0,
 				 status = EXIT_SUCCESS, feat, aoflag = 0, roflag = 0,
 				 aiflag = 0, riflag = 0, centre = 0;
-	char			*ret = NULL;
-	size_t		 	 retsz = 0, rcols;
+	char			*ret = NULL, *cp;
+	size_t		 	 i, retsz = 0, rcols;
 	struct lowdown_meta 	*m;
 	struct lowdown_metaq	 mq;
 	struct option 		 lo[] = {
@@ -351,7 +351,7 @@ main(int argc, char *argv[])
 		diff = 1;
 
 	while ((c = getopt_long
-		(argc, argv, "D:d:E:e:sT:o:X:", lo, NULL)) != -1)
+		(argc, argv, "D:d:E:e:M:m:sT:o:X:", lo, NULL)) != -1)
 		switch (c) {
 		case 'D':
 			if ((feat = feature_out(optarg)) == 0)
@@ -372,6 +372,24 @@ main(int argc, char *argv[])
 			if ((feat = feature_in(optarg)) == 0)
 				goto usage;
 			opts.feat |= feat;
+			break;
+		case 'M':
+			opts.metaovr = reallocarray(opts.metaovr, 
+				opts.metaovrsz + 1, sizeof(char *));
+			if (opts.metaovr == NULL)
+				err(EXIT_FAILURE, NULL);
+			if (asprintf(&cp, "%s\n", optarg) == -1)
+				err(EXIT_FAILURE, NULL);
+			opts.metaovr[opts.metaovrsz++] = cp;
+			break;
+		case 'm':
+			opts.meta = reallocarray(opts.meta, 
+				opts.metasz + 1, sizeof(char *));
+			if (opts.meta == NULL)
+				err(EXIT_FAILURE, NULL);
+			if (asprintf(&cp, "%s\n", optarg) == -1)
+				err(EXIT_FAILURE, NULL);
+			opts.meta[opts.metasz++] = cp;
 			break;
 		case 'o':
 			fnout = optarg;
@@ -537,12 +555,21 @@ main(int argc, char *argv[])
 		fwrite(ret, 1, retsz, fout);
 
 	free(ret);
+
 	if (fout != stdout)
 		fclose(fout);
 	if (din != NULL)
 		fclose(din);
 	if (fin != stdin)
 		fclose(fin);
+
+	for (i = 0; i < opts.metasz; i++)
+		free(opts.meta[i]);
+	for (i = 0; i < opts.metaovrsz; i++)
+		free(opts.metaovr[i]);
+
+	free(opts.meta);
+	free(opts.metaovr);
 
 	lowdown_metaq_free(&mq);
 	return status;

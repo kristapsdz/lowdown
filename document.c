@@ -4266,7 +4266,7 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 {
 	static const char 	 UTF8_BOM[] = { 0xEF, 0xBB, 0xBF };
 	struct lowdown_buf	*text;
-	size_t		 	 beg, end;
+	size_t		 	 beg, end, i;
 	const char		*sv;
 	struct lowdown_node 	*n, *root = NULL;
 	struct hbufn		*m;
@@ -4299,14 +4299,22 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 	if (size >= 3 && memcmp(data, UTF8_BOM, 3) == 0)
 		beg += 3;
 
+	/*
+	 * Zeroth pass: metadata.  First process given metadata, then
+	 * in-document metadata, then overriding metadata.  The
+	 * in-document metadata is conditionally processed.
+	 */
+
 	if ((n = pushnode(doc, LOWDOWN_DOC_HEADER)) == NULL)
 		goto out;
 
-	/*
-	 * Zeroth pass: see if we should collect metadata.
-	 * Only do so if we're toggled to look for metadata.
-	 * (Only parse if we must.)
-	 */
+	for (i = 0; i < doc->opts->metasz; i++)
+		if (parse_metadata(doc, 
+		    doc->opts->meta[i], 
+		    strlen(doc->opts->meta[i])) < 0)
+			goto out;
+
+	/* FIXME: CRLF EOLNs. */
 
 	if ((doc->ext_flags & LOWDOWN_METADATA) &&
 	    beg < size - 1 && 
@@ -4322,6 +4330,14 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 		else if (c < 0)
 			goto out;
 	}
+
+	for (i = 0; i < doc->opts->metaovrsz; i++)
+		if (parse_metadata(doc, 
+		    doc->opts->metaovr[i], 
+		    strlen(doc->opts->metaovr[i])) < 0)
+			goto out;
+
+	popnode(doc, n);
 
 	/* 
 	 * First pass: looking for references and footnotes, copying
@@ -4370,8 +4386,6 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 
 		beg = end;
 	}
-
-	popnode(doc, n);
 
 	/* 
 	 * Second pass (after header): rendering the document body and
