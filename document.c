@@ -4223,16 +4223,6 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 		TAILQ_INSERT_TAIL(&doc->metaq, m, entries);
 		m->key = &n->rndr_meta.key;
 
-		/* Canonical order: title comes first. */
-		/* FIXME: remove. */
-
-		if (hbuf_streq(m->key, "title")) {
-			TAILQ_REMOVE(&n->parent->children, 
-				n, entries);
-			TAILQ_INSERT_HEAD(&n->parent->children,
-				n, entries);
-		}
-
 		if (i == sz) {
 			popnode(doc, n);
 			break;
