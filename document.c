@@ -84,7 +84,6 @@ struct footnote_ref {
 TAILQ_HEAD(footnote_refq, footnote_ref);
 
 struct 	lowdown_doc {
-	const struct lowdown_opts *opts;
 	struct link_refq refq; /* all internal references */
 	struct footnote_refq footnotes; /* all footnotes */
 	size_t		 footnotesz; /* # of used footnotes */
@@ -97,6 +96,10 @@ struct 	lowdown_doc {
 	struct hbufq	 metaq; /* raw metadata key/values */
 	size_t		 depth; /* current parse tree depth */
 	size_t		 maxdepth; /* max parse tree depth */
+	char		**meta; /* primer metadata */
+	size_t		  metasz; /* key-value pairs in meta */
+	char		**metaovr; /* override metadata */
+	size_t		  metaovrsz; /* key-value pairs in metaovr */
 };
 
 /*
@@ -3996,6 +3999,7 @@ lowdown_doc_new(const struct lowdown_opts *opts)
 {
 	struct lowdown_doc	*doc;
 	unsigned int		 extensions = opts ? opts->feat : 0;
+	size_t			 i;
 
 	doc = calloc(1, sizeof(struct lowdown_doc));
 	if (doc == NULL)
@@ -4025,10 +4029,35 @@ lowdown_doc_new(const struct lowdown_opts *opts)
 	if (extensions & LOWDOWN_MATH)
 		doc->active_char['$'] = MD_CHAR_MATH;
 
-	doc->opts = opts;
 	doc->ext_flags = extensions;
 
+	if (opts->metasz > 0) {
+		doc->meta = calloc(opts->metasz, sizeof(char *));
+		if (doc->meta == NULL)
+			goto err;
+		doc->metasz = opts->metasz;
+		for (i = 0; i < doc->metasz; i++) {
+			doc->meta[i] = strdup(opts->meta[i]);
+			if (doc->meta[i] == NULL)
+				goto err;
+		}
+	}
+	if (opts->metaovrsz > 0) {
+		doc->metaovr = calloc(opts->metaovrsz, sizeof(char *));
+		if (doc->metaovr == NULL)
+			goto err;
+		doc->metaovrsz = opts->metaovrsz;
+		for (i = 0; i < doc->metaovrsz; i++) {
+			doc->metaovr[i] = strdup(opts->metaovr[i]);
+			if (doc->metaovr[i] == NULL)
+				goto err;
+		}
+	}
+
 	return doc;
+err:
+	lowdown_doc_free(doc);
+	return NULL;
 }
 
 /*
@@ -4308,10 +4337,9 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 	if ((n = pushnode(doc, LOWDOWN_DOC_HEADER)) == NULL)
 		goto out;
 
-	for (i = 0; i < doc->opts->metasz; i++)
+	for (i = 0; i < doc->metasz; i++)
 		if (parse_metadata(doc, 
-		    doc->opts->meta[i], 
-		    strlen(doc->opts->meta[i])) < 0)
+		    doc->meta[i], strlen(doc->meta[i])) < 0)
 			goto out;
 
 	/* FIXME: CRLF EOLNs. */
@@ -4331,10 +4359,9 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 			goto out;
 	}
 
-	for (i = 0; i < doc->opts->metaovrsz; i++)
+	for (i = 0; i < doc->metaovrsz; i++)
 		if (parse_metadata(doc, 
-		    doc->opts->metaovr[i], 
-		    strlen(doc->opts->metaovr[i])) < 0)
+		    doc->metaovr[i], strlen(doc->metaovr[i])) < 0)
 			goto out;
 
 	popnode(doc, n);
@@ -4521,6 +4548,17 @@ lowdown_metaq_free(struct lowdown_metaq *q)
 void
 lowdown_doc_free(struct lowdown_doc *doc)
 {
+	size_t	 i;
 
+	if (doc == NULL)
+		return;
+
+	for (i = 0; i < doc->metasz; i++)
+		free(doc->meta[i]);
+	for (i = 0; i < doc->metaovrsz; i++)
+		free(doc->metaovr[i]);
+
+	free(doc->meta);
+	free(doc->metaovr);
 	free(doc);
 }
