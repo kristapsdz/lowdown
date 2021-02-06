@@ -48,6 +48,15 @@ Returns a pointer to the parser or
 on memory allocation failure.
 The returned pointer must be freed with a call to
 .Xr lowdown_doc_free 3 .
+.Pp
+Any pointer values in
+.Fa opts ,
+such as those in
+.Va meta
+and
+.Va metaovr ,
+are copied over, so they need not persist after being passed to
+.Fn lowdown_doc_new .
 .Sh EXAMPLES
 The following parses a document in the NUL-terminated string
 .Va data

@@ -26,12 +26,16 @@
 .Op in_opts
 .Op out_opts
 .Op Fl s
+.Op Fl M Ar metadata
+.Op Fl m Ar metadata
 .Op Fl o Ar file
 .Op Fl T Ar mode
 .Op Ar file
 .Nm lowdown
 .Op in_opts
 .Op out_opts
+.Op Fl M Ar metadata
+.Op Fl m Ar metadata
 .Op Fl o Ar file
 .Op Fl T Ar mode
 .Fl X Ar keyword
@@ -40,6 +44,8 @@
 .Op in_opts
 .Op out_opts
 .Op Fl s
+.Op Fl M Ar metadata
+.Op Fl m Ar metadata
 .Op Fl o Ar file
 .Op Fl T Ar mode
 .Ar oldfile
@@ -72,6 +78,17 @@ This only applies to
 .Fl T Ns Ar ms ,
 and
 .Fl T Ns Ar man .
+.It Fl M Ar metadata
+Provide a single metadata key-value pair.
+May be invoked multiple times for each pair.
+This overrides
+.Fl m
+and what's parsed from the document.
+.It Fl m Ar metadata
+Provide a single metadata key-value pair.
+May be invoked multiple times for each pair.
+This is overriden by what's parsed the document, then
+.Fl M .
 .It Fl o Ar file
 Send output to
 .Ar file
@@ -172,8 +189,10 @@ Do not parse emphasis within words and links.
 Do not parse MMD metadata.
 For the first paragraph to count as metadata, the first line must have
 a colon in it.
-Otherwise it's considered a regular paragraph.
-Metadata is escaped according to the output mode.
+This does not affect metadata given on
+.Fl m
+or
+.Fl M .
 .It Fl -parse-no-strike
 Do not parse strikethroughs.
 .It Fl -parse-no-super
@@ -338,11 +357,11 @@ the output reader.
 By default, HTML is omitted.
 .El
 .Ss Metadata
-If not disabled with
-.Fl -parse-no-metadata ,
-the following metadata keys are used when in standalone
-.Pq Fl s
-mode.
+If parsed from the document or as given by
+.Fl m
+or
+.Fl M ,
+the following metadata keys are recognised by output front-ends.
 The metadata keys are canonicalised in lowercase and without spaces.
 .Bl -tag -width Ds
 .It Li affiliation

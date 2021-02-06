@@ -183,13 +183,9 @@ Parse PHP image extended attributes.
 .It Dv LOWDOWN_MATH
 Parse mathematics equations.
 .It Dv LOWDOWN_METADATA
-Parse MMD metadata.
+Parse in-document MMD metadata.
 For the first paragraph to count as meta-data, the first line must have
 a colon in it.
-Otherwise it's considered a regular paragraph.
-Meta-data is escaped according to the output mode; and if the
-.Dv LOWDOWN_SMARTY
-flag is set, also use smart typography.
 .It Dv LOWDOWN_NOCODEIND
 Do not parse indented content as code blocks.
 .It Dv LOWDOWN_NOINTEM
@@ -339,12 +335,12 @@ For any mode, you may specify:
 Don't use smart typography formatting.
 .It Dv LOWDOWN_STANDALONE
 Emit a full document instead of a document fragment.
-Parts of this envelope may be populated from metadata if
+This envelope is largely populated from metadata if
 .Dv LOWDOWN_METADATA
-was provided as an option.
-See
-.Xr lowdown 1
-for details.
+was provided as an option or as given in
+.Va meta
+or
+.Va metaovr .
 .El
 .It Va size_t maxdepth
 The maximum parse depth before the parser exits.
@@ -393,6 +389,31 @@ and
 will use troff tables, which usually require the
 .Xr tbl 1
 preprocessor.
+.It Va char **meta
+An array of metadata key-value pairs or
+.Dv NULL .
+Each pair must appear as if provided on one line (or multiple lines) of
+the input, including the terminating newline character.
+If not consisting of a valid pair (e.g., no newline, no colon), then it is
+ignored.
+When processed, these values are overriden by those in the document (if
+.Dv LOWDOWN_METADATA
+is specified) or by those in
+.Va metaovr .
+.It Va size_t metasz
+Number of pairs in
+.Va metaovr .
+.It Va char **metaovr
+See
+.Va meta .
+The difference is that
+.Va metaovr
+is applied after
+.Va meta
+and in-document metadata, so it overrides prior values.
+.It Va size_t metaovrsz
+Number of pairs in
+.Va metaovr .
 .El
 .Pp
 Another common structure is
@@ -407,6 +428,7 @@ This structure consists of the following fields:
 The metadata key in its lowercase, canonical form.
 .It Va char *value
 The metadata value as rendered in the current output format.
+This may be an empty string.
 .El
 .Pp
 The abstract syntax tree is encoded in
@@ -647,7 +669,7 @@ Each
 .Dv LOWDOWN_META
 key-value pair is represented.
 The keys are lower-case without spaces or non-ASCII characters.
-Enclosed nodes may consist only of
+If provided, enclosed nodes may consist only of
 .Dv LOWDOWN_NORMAL_TEXT
 and
 .Dv LOWDOWN_ENTITY .
