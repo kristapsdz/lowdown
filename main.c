@@ -161,6 +161,47 @@ get_columns(void)
 	return size.ws_col;
 }
 
+/*
+ * Recognise the metadata format of "foo = bar" and "foo: bar".
+ * Translates from the former into the latter.
+ * This way "foo = : bar" -> "foo : : bar", etc.
+ * Errors out if the metadata is malformed (no colon or equal sign).
+ */
+static void
+metadata_parse(char opt, char ***vals, size_t *valsz, const char *arg)
+{
+	const char	*loceq, *loccol;
+	char		*cp;
+
+	loceq = strchr(arg, '=');
+	loccol = strchr(arg, ':');
+
+	if ((loceq != NULL && loccol == NULL) ||
+	    (loceq != NULL && loccol != NULL && loceq < loccol)) {
+		if (asprintf(&cp, "%.*s: %s\n",
+		    (int)(loceq - arg), arg, loceq + 1) == -1)
+			err(EXIT_FAILURE, NULL);
+		*vals = reallocarray(*vals, *valsz + 1, sizeof(char *));
+		if (*vals == NULL)
+			err(EXIT_FAILURE, NULL);
+		(*vals)[*valsz] = cp;
+		(*valsz)++;
+		return;
+	}
+	if ((loccol != NULL && loceq == NULL) ||
+	    (loccol != NULL && loceq != NULL && loccol < loceq)) {
+		if (asprintf(&cp, "%s\n", arg) == -1)
+			err(EXIT_FAILURE, NULL);
+		*vals = reallocarray(*vals, *valsz + 1, sizeof(char *));
+		if (*vals == NULL)
+			err(EXIT_FAILURE, NULL);
+		(*vals)[*valsz] = cp;
+		(*valsz)++;
+		return;
+	}
+	errx(EXIT_FAILURE, "-%c: malformed metadata", opt);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -172,7 +213,7 @@ main(int argc, char *argv[])
 	int			 c, diff = 0,
 				 status = EXIT_SUCCESS, aoflag = 0, roflag = 0,
 				 aiflag = 0, riflag = 0, centre = 0;
-	char			*ret = NULL, *cp;
+	char			*ret = NULL;
 	size_t		 	 i, retsz = 0, rcols;
 	struct lowdown_meta 	*m;
 	struct lowdown_metaq	 mq;
@@ -292,22 +333,12 @@ main(int argc, char *argv[])
 		(argc, argv, "M:m:sT:o:X:", lo, NULL)) != -1)
 		switch (c) {
 		case 'M':
-			opts.metaovr = reallocarray(opts.metaovr, 
-				opts.metaovrsz + 1, sizeof(char *));
-			if (opts.metaovr == NULL)
-				err(EXIT_FAILURE, NULL);
-			if (asprintf(&cp, "%s\n", optarg) == -1)
-				err(EXIT_FAILURE, NULL);
-			opts.metaovr[opts.metaovrsz++] = cp;
+			metadata_parse(c, &opts.metaovr, 
+				&opts.metaovrsz, optarg);
 			break;
 		case 'm':
-			opts.meta = reallocarray(opts.meta, 
-				opts.metasz + 1, sizeof(char *));
-			if (opts.meta == NULL)
-				err(EXIT_FAILURE, NULL);
-			if (asprintf(&cp, "%s\n", optarg) == -1)
-				err(EXIT_FAILURE, NULL);
-			opts.meta[opts.metasz++] = cp;
+			metadata_parse(c, &opts.meta, 
+				&opts.metasz, optarg);
 			break;
 		case 'o':
 			fnout = optarg;

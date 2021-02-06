@@ -80,14 +80,19 @@ and
 .Fl T Ns Ar man .
 .It Fl M Ar metadata
 Provide a single metadata key-value pair.
+This may be in the usual
+.Xr lowdown 5
+colon-separated metadata format or instead separated by an equal sign,
+depending upon which character comes first.
+Exits with an error if given neither colon nor equal sign.
 May be invoked multiple times for each pair.
 This overrides
 .Fl m
 and what's parsed from the document.
 .It Fl m Ar metadata
-Provide a single metadata key-value pair.
-May be invoked multiple times for each pair.
-This is overriden by what's parsed the document, then
+Like
+.Fl M ,
+but is overridden by what's parsed the document, then
 .Fl M .
 .It Fl o Ar file
 Send output to
