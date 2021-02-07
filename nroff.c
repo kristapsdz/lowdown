@@ -1141,7 +1141,7 @@ rndr_table_cell(struct bnodeq *obq, struct bnodeq *bq,
 
 	if (param->col > 0 && bqueue_span(obq, "|") == NULL)
 		return 0;
-	if (bqueue_block(obq, "T{"))
+	if (bqueue_block(obq, "T{") == NULL)
 		return 0;
 	TAILQ_CONCAT(obq, bq, entries);
 	return bqueue_block(obq, "T}") != NULL;
