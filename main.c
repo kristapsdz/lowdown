@@ -58,7 +58,7 @@ sandbox_post(int fdin, int fddin, int fdout)
 {
 
 	if (pledge("stdio", NULL) == -1)
-		err(EXIT_FAILURE, "pledge");
+		err(1, "pledge");
 }
 
 static void
@@ -66,7 +66,7 @@ sandbox_pre(void)
 {
 
 	if (pledge("stdio rpath wpath cpath", NULL) == -1)
-		err(EXIT_FAILURE, "pledge");
+		err(1, "pledge");
 }
 
 #elif HAVE_SANDBOX_INIT
@@ -81,7 +81,7 @@ sandbox_post(int fdin, int fddin, int fdout)
 		(kSBXProfilePureComputation,
 		 SANDBOX_NAMED, &ep);
 	if (rc != 0)
-		errx(EXIT_FAILURE, "sandbox_init: %s", ep);
+		errx(1, "sandbox_init: %s", ep);
 }
 
 static void
@@ -102,25 +102,25 @@ sandbox_post(int fdin, int fddin, int fdout)
 
 	cap_rights_init(&rights, CAP_EVENT, CAP_READ, CAP_FSTAT);
 	if (cap_rights_limit(fdin, &rights) < 0)
- 		err(EXIT_FAILURE, "cap_rights_limit");
+ 		err(1, "cap_rights_limit");
 
 	if (fddin != -1) {
 		cap_rights_init(&rights, 
 			CAP_EVENT, CAP_READ, CAP_FSTAT);
 		if (cap_rights_limit(fddin, &rights) < 0)
-			err(EXIT_FAILURE, "cap_rights_limit");
+			err(1, "cap_rights_limit");
 	}
 
 	cap_rights_init(&rights, CAP_EVENT, CAP_WRITE, CAP_FSTAT);
 	if (cap_rights_limit(STDERR_FILENO, &rights) < 0)
- 		err(EXIT_FAILURE, "cap_rights_limit");
+ 		err(1, "cap_rights_limit");
 
 	cap_rights_init(&rights, CAP_EVENT, CAP_WRITE, CAP_FSTAT);
 	if (cap_rights_limit(fdout, &rights) < 0)
- 		err(EXIT_FAILURE, "cap_rights_limit");
+ 		err(1, "cap_rights_limit");
 
 	if (cap_enter())
-		err(EXIT_FAILURE, "cap_enter");
+		err(1, "cap_enter");
 }
 
 static void
@@ -180,10 +180,10 @@ metadata_parse(char opt, char ***vals, size_t *valsz, const char *arg)
 	    (loceq != NULL && loccol != NULL && loceq < loccol)) {
 		if (asprintf(&cp, "%.*s: %s\n",
 		    (int)(loceq - arg), arg, loceq + 1) == -1)
-			err(EXIT_FAILURE, NULL);
+			err(1, NULL);
 		*vals = reallocarray(*vals, *valsz + 1, sizeof(char *));
 		if (*vals == NULL)
-			err(EXIT_FAILURE, NULL);
+			err(1, NULL);
 		(*vals)[*valsz] = cp;
 		(*valsz)++;
 		return;
@@ -191,15 +191,15 @@ metadata_parse(char opt, char ***vals, size_t *valsz, const char *arg)
 	if ((loccol != NULL && loceq == NULL) ||
 	    (loccol != NULL && loceq != NULL && loccol < loceq)) {
 		if (asprintf(&cp, "%s\n", arg) == -1)
-			err(EXIT_FAILURE, NULL);
+			err(1, NULL);
 		*vals = reallocarray(*vals, *valsz + 1, sizeof(char *));
 		if (*vals == NULL)
-			err(EXIT_FAILURE, NULL);
+			err(1, NULL);
 		(*vals)[*valsz] = cp;
 		(*valsz)++;
 		return;
 	}
-	errx(EXIT_FAILURE, "-%c: malformed metadata", opt);
+	errx(1, "-%c: malformed metadata", opt);
 }
 
 int
@@ -211,7 +211,7 @@ main(int argc, char *argv[])
 	      	 		*fndin = NULL, *extract = NULL, *er;
 	struct lowdown_opts 	 opts;
 	int			 c, diff = 0,
-				 status = EXIT_SUCCESS, aoflag = 0, roflag = 0,
+				 status = 0, aoflag = 0, roflag = 0,
 				 aiflag = 0, riflag = 0, centre = 0;
 	char			*ret = NULL;
 	size_t		 	 i, retsz = 0, rcols;
@@ -383,7 +383,7 @@ main(int argc, char *argv[])
 			opts.cols = strtonum(optarg, 0, INT_MAX, &er);
 			if (er == NULL)
 				break;
-			errx(EXIT_FAILURE, "--term-width: %s", er);
+			errx(1, "--term-width: %s", er);
 		case 2:
 			if (strcmp(optarg, "centre") == 0 ||
 			    strcmp(optarg, "centre") == 0) {
@@ -394,22 +394,22 @@ main(int argc, char *argv[])
 				(optarg, 0, INT_MAX, &er);
 			if (er == NULL)
 				break;
-			errx(EXIT_FAILURE, "--term-hmargin: %s", er);
+			errx(1, "--term-hmargin: %s", er);
 		case 3:
 			opts.vmargin = strtonum(optarg, 0, INT_MAX, &er);
 			if (er == NULL)
 				break;
-			errx(EXIT_FAILURE, "--term-vmargin: %s", er);
+			errx(1, "--term-vmargin: %s", er);
 		case 4:
 			rcols = strtonum(optarg, 1, INT_MAX, &er);
 			if (er == NULL)
 				break;
-			errx(EXIT_FAILURE, "--term-columns: %s", er);
+			errx(1, "--term-columns: %s", er);
 		case 5:
 			opts.maxdepth = strtonum(optarg, 0, INT_MAX, &er);
 			if (er == NULL)
 				break;
-			errx(EXIT_FAILURE, "--parse-maxdepth: %s", er);
+			errx(1, "--parse-maxdepth: %s", er);
 		default:
 			goto usage;
 		}
@@ -443,7 +443,7 @@ main(int argc, char *argv[])
 	 */
 
 	if (diff && extract != NULL)
-		errx(EXIT_FAILURE, "-X not applicable to diff mode");
+		errx(1, "-X not applicable to diff mode");
 
 	if ((diff && (argc == 0 || argc > 2)) || (!diff && argc > 1))
 		goto usage;
@@ -452,16 +452,16 @@ main(int argc, char *argv[])
 		if (argc > 1 && strcmp(argv[1], "-")) {
 			fnin = argv[1];
 			if ((fin = fopen(fnin, "r")) == NULL)
-				err(EXIT_FAILURE, "%s", fnin);
+				err(1, "%s", fnin);
 		}
 		fndin = argv[0];
 		if ((din = fopen(fndin, "r")) == NULL)
-			err(EXIT_FAILURE, "%s", fndin);
+			err(1, "%s", fndin);
 	} else {
 		if (argc && strcmp(argv[0], "-")) {
 			fnin = argv[0];
 			if ((fin = fopen(fnin, "r")) == NULL)
-				err(EXIT_FAILURE, "%s", fnin);
+				err(1, "%s", fnin);
 		}
 	}
 
@@ -469,7 +469,7 @@ main(int argc, char *argv[])
 
 	if (fnout != NULL && strcmp(fnout, "-") &&
 	    (fout = fopen(fnout, "w")) == NULL)
-		err(EXIT_FAILURE, "%s", fnout);
+		err(1, "%s", fnout);
 
 	sandbox_post(fileno(fin), din == NULL ? 
 		-1 : fileno(din), fileno(fout));
@@ -484,10 +484,10 @@ main(int argc, char *argv[])
 	if (diff) {
 		if (!lowdown_file_diff
 		    (&opts, fin, din, &ret, &retsz, &mq))
-			err(EXIT_FAILURE, "%s", fnin);
+			errx(1, "%s: failed parse", fnin);
 	} else {
 		if (!lowdown_file(&opts, fin, &ret, &retsz, &mq))
-			err(EXIT_FAILURE, "%s", fnin);
+			errx(1, "%s: failed parse", fnin);
 	}
 
 	if (extract != NULL) {
@@ -497,7 +497,7 @@ main(int argc, char *argv[])
 		if (m != NULL) {
 			fprintf(fout, "%s\n", m->value);
 		} else {
-			status = EXIT_FAILURE;
+			status = 1;
 			warnx("%s: unknown keyword", extract);
 		}
 	} else
@@ -548,5 +548,5 @@ usage:
 		"[-T mode] "
 		"oldfile "
 		"[file]\n");
-	return EXIT_FAILURE;
+	return 1;
 }
