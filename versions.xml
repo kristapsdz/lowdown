@@ -986,9 +986,9 @@
 	</article>
 	<article data-sblg-article="1" data-sblg-tags="version">
 		<header>
-			<h1>0.8.0</h1>
+			<h1>0.8.1</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2021-01-31">2021-01-31</time>
+			<time datetime="2021-02-07">2021-02-07</time>
 		</header>
 		<aside>
 			<p>
@@ -1001,6 +1001,16 @@
 			<p>
 				Fix long-standing kinda-bug where <code>www</code> autolinks were
 				being reported as regular links instead of autolinks.
+			</p>
+			<p>
+				Introduce <b>-m</b> and <b>-M</b>, which allow metadata to be
+				provided on the command line.
+				Metadata keys are first looked for in <b>-m</b>, overriden by what's
+				in the document, and those overridden by what's in <b>-M</b>.
+			</p>
+			<p>
+				Remove the deprecated <b>-D</b>, <b>-d</b>, <b>-E</b>, and
+				<b>-e</b>, which were long ago replaced by long options.
 			</p>
 		</aside>
 	</article>
