@@ -54,9 +54,9 @@ is not
 .Dv NULL ,
 it is filled with any metadata as parsed.
 It must be initialised and its contents freed with
+.Xr lowdown_metaq_free 3 .
 .Pp
 The output consists of a UTF-8 HTML5 document.
-.Xr lowdown_metaq_free 3 .
 .Sh RETURN VALUES
 Returns zero on failure to allocate memory, non-zero on success.
 .Sh EXAMPLES
@@ -93,3 +93,7 @@ lowdown_doc_free(doc);
 .Xr lowdown 3 ,
 .Xr lowdown_html_free 3 ,
 .Xr lowdown_html_new 3
+.Sh STANDARDS
+The referenced HTML5 standard is
+.Lk https://www.w3.org/TR/html52 HTML5.2 .
+Output is compatible with prior HTML5 standards.
