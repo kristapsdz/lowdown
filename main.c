@@ -252,6 +252,8 @@ main(int argc, char *argv[])
 		{ "gemini-no-link-end",	no_argument, 	&roflag, LOWDOWN_GEMINI_LINK_END },
 		{ "gemini-link-inline",	no_argument, 	&aoflag, LOWDOWN_GEMINI_LINK_IN },
 		{ "gemini-no-link-inline",no_argument, 	&roflag, LOWDOWN_GEMINI_LINK_IN },
+		{ "gemini-metadata",	no_argument, 	&aoflag, LOWDOWN_GEMINI_METADATA },
+		{ "gemini-no-metadata",	no_argument, 	&roflag, LOWDOWN_GEMINI_METADATA },
 		{ "term-shortlinks",	no_argument, 	&aoflag, LOWDOWN_TERM_SHORTLINK },
 		{ "term-no-shortlinks",	no_argument, 	&roflag, LOWDOWN_TERM_SHORTLINK },
 		{ "term-nolinks",	no_argument, 	&aoflag, LOWDOWN_TERM_NOLINK },

@@ -339,6 +339,7 @@ struct	lowdown_opts {
 #define LOWDOWN_LATEX_NUMBERED	  0x4000 /* numbered sections */
 #define	LOWDOWN_GEMINI_LINK_END	  0x8000 /* links at end */
 #define	LOWDOWN_GEMINI_LINK_IN	  0x10000 /* links inline */
+#define LOWDOWN_GEMINI_METADATA	  0x100000 /* show metadata */
 	char			**meta;
 	size_t			  metasz;
 	char			**metaovr;
