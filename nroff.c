@@ -70,6 +70,7 @@ struct	bnode {
 	char				*nargs; /* (safe) 1st args */
 	char				*args; /* (unsafe) 2nd args */
 	int				 close; /* BNODE_COLOUR/FONT */
+	int				 tblhack; /* BSCOPE_SPAN */
 	enum bscope			 scope; /* scope */
 	unsigned int			 font; /* if BNODE_FONT */
 #define	BFONT_ITALIC			 0x01
@@ -374,6 +375,18 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq)
 			    nstate_colour_buf(bn->colour)))
 				return 0;
 		}
+
+		/* 
+		 * A "tblhack" is used by a span macro to indicate
+		 * that it should start its own line, but that data
+		 * continues to flow after it.  This is only used in
+		 * tables with T}, at this point.
+		 */
+
+		if (bn->scope == BSCOPE_SPAN && bn->tblhack &&
+		    ob->size > 0 && ob->data[ob->size - 1] != '\n')
+			if (!hbuf_putc(ob, '\n'))
+				return 0;
 
 		/* Safe data need not be escaped. */
 
@@ -1138,13 +1151,17 @@ static int
 rndr_table_cell(struct bnodeq *obq, struct bnodeq *bq,
 	const struct rndr_table_cell *param)
 {
+	struct bnode	*bn;
 
 	if (param->col > 0 && bqueue_span(obq, "|") == NULL)
 		return 0;
-	if (bqueue_block(obq, "T{") == NULL)
+	if (bqueue_span(obq, "T{\n") == NULL)
 		return 0;
 	TAILQ_CONCAT(obq, bq, entries);
-	return bqueue_block(obq, "T}") != NULL;
+	if ((bn = bqueue_span(obq, "T}")) == NULL)
+		return 0;
+	bn->tblhack = 1;
+	return 1;
 }
 
 static int
