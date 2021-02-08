@@ -49,6 +49,26 @@ it defaults to
 .Dv LOWDOWN_MS .
 The returned pointer may be used with multiple invocations of
 .Xr lowdown_nroff_rndr 3 .
+.Pp
+If
+.Dv LOWDOWN_NROFF_GROFF
+is defined in
+.Fa opts->oflags
+with
+.Dv LOWDOWN_MAN
+mode, macros from the
+.Ar man-ext
+package as well as the original
+.Ar man
+are used in output.
+These are supported by both groff and mandoc.
+If it is defined with
+.Dv LOWDOWN_MS ,
+GNU extensions to
+.Ar ms
+are used along with
+.Ar mspdf .
+These are only supported by groff.
 .Sh RETURN VALUES
 Returns a pointer to the renderer or
 .Dv NULL
