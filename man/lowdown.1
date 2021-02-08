@@ -260,7 +260,7 @@ the following apply:
 .It Fl -nroff-no-groff
 Don't use
 .Xr groff 1
-style section headings, PDF hyperlinks (this further requires 
+style section headings, PDF hyperlinks (this further requires
 .Fl m Ns Ar spdf
 passed to
 .Xr groff 1 ) ,
@@ -463,6 +463,9 @@ is specified or not.
 .Ss Output modes
 A detailed description of the output modes follows.
 .Bl -tag -width Ds
+.It Fl T Ns Ar gemini
+Gemini protocol output.
+This output mode (and the protocol) are experimental.
 .It Fl T Ns Ar html
 HTML5 output with UTF-8 encoding.
 All features of
@@ -628,24 +631,6 @@ To extract the HTML-escaped title from a file's metadata:
 .Sh SEE ALSO
 .Xr lowdown 3 ,
 .Xr lowdown 5
-.Rs
-.%A Gregory Cobena
-.%A Serge Abiteboul
-.%A Amelie Marian
-.%D 2002
-.%T "Detecting Changes in XML Documents"
-.%U https://www.cs.rutgers.edu/~amelie/papers/2002/diff.pdf
-.Re
-.Rs
-.%A Wu Sun
-.%A Manber Udi
-.%A Myers Gene
-.%T "An O(NP) sequence comparison algorithm"
-.%J Information Processing Letters
-.%V Volume 35
-.%I Issue 6
-.%D 1990
-.Re
 .Sh AUTHORS
 .Nm lowdown
 was forked from
