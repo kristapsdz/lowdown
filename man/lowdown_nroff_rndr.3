@@ -97,3 +97,25 @@ lowdown_doc_free(doc);
 .Xr lowdown 3 ,
 .Xr lowdown_nroff_free 3 ,
 .Xr lowdown_nroff_new 3
+.Pp
+This uses both the original troff
+.Ar man
+macros for
+.At v7 ,
+defined in
+.Xr man 7 ,
+and the
+.Ar man-ext
+groff extensions.
+Both are implemented in mandoc.
+.Pp
+The troff
+.Ar ms
+macros are defined in
+.Xr groff_ms 7 ,
+with the
+.Ar mspdf
+groff extensions described in
+.Qq Portable Document Format Publishing with GNU Troff
+by Keith Marshall.
+Neither are implemented in mandoc.
