@@ -248,6 +248,11 @@ Render all links within the flow of text.
 This will cause breakage when nested links, such as images within links,
 links in blockquotes, etc.
 It should not be used unless in carefully crafted documents.
+.It Dv LOWDOWN_GEMINI_METADATA
+Print metadata as the canonicalised key followed by a colon then the
+value, each on one line (newlines replaced by spaces).
+The metadata block is terminated by a double newline.
+If there is no metadata, this does nothing.
 .El
 .Pp
 There may only be one of
