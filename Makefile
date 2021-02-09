@@ -84,7 +84,6 @@ HEADERS 	 = extern.h \
 		   lowdown.h
 PDFS		 = diff.pdf \
 		   diff.diff.pdf \
-		   index.pdf \
 		   index.latex.pdf \
 		   index.mandoc.pdf \
 		   index.nroff.pdf
