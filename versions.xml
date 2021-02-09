@@ -988,7 +988,7 @@
 		<header>
 			<h1>0.8.1</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2021-02-07">2021-02-07</time>
+			<time datetime="2021-02-09">2021-02-09</time>
 		</header>
 		<aside>
 			<p>
@@ -1011,6 +1011,10 @@
 			<p>
 				Remove the deprecated <b>-D</b>, <b>-d</b>, <b>-E</b>, and
 				<b>-e</b>, which were long ago replaced by long options.
+			</p>
+			<p>
+				Inhibit printing of metadata in <b>-Tgemini</b> unless
+				<b>--gemini-metadata</b> is given.
 			</p>
 		</aside>
 	</article>
