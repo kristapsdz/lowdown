@@ -174,6 +174,7 @@ index.html README.html: template.xml
 index.latex.pdf: index.md $(THUMBS)
 	./lowdown -s -Tlatex index.md >index.latex.latex
 	pdflatex index.latex.latex
+	pdflatex index.latex.latex
 
 index.mandoc.pdf: index.md
 	./lowdown --nroff-no-numbered -s -Tman index.md | \
