@@ -312,6 +312,17 @@ enabled by [libdiff](https://github.com/kristapsdz/libdiff), which
 implements an algorithm for computing the longest common
 subsequence[^Wu90].  See [^McIlroy1976] for background information.
 
+### Tables
+
+Tables are currently in the "hacks" state in that they're considered as
+opaque bodies.  Tables that have changed in any way are simply deleted
+and re-added: there's no attempt to discern actual differences.
+
+There are ways to reduce this opacity, such as being able to detect and
+account for added or removed rows.  However, ultimately there is some
+opacity in that changed table headers do not have a representable form
+in the output.
+
 ## API
 
 The result of the algorithm is a new tree marked with insertions and
@@ -328,20 +339,11 @@ A set of convenience functions, `lowdown_buf_diff()` and
 
 There are many possible improvements to the algorithm.
 
-Foremost is the issue of normal text nodes.  There should be a process
-first that merges consecutive text nodes.  This happens, for example,
-when the `w` character is encountered at any time and might signify a
-link.  The parsing algorithm will start a new text node at each such
-character. 
-
 The merging algorithm can also take advantage of
 [libdiff](https://github.com/kristapsdz/libdiff) when ordering the
 output of inserted and deleted components.  Right now, the algorithm is
 simple in the sense of stopping at the earliest matched node without
 considering subsequences.
-
-Lastly, the **-Tms** and **-Tman** output needs work to make sure that
-the insert/delete macros don't disrupt the flow of text.
 
 Document last updated: [%rcsdate]
 
