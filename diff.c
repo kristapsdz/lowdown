@@ -587,6 +587,7 @@ node_clone(const struct lowdown_node *v, size_t id)
 {
 	struct lowdown_node	*n;
 	int			 rc = 1;
+	size_t			 i;
 
 	if ((n = calloc(1, sizeof(struct lowdown_node))) == NULL)
 		return NULL;
@@ -596,6 +597,10 @@ node_clone(const struct lowdown_node *v, size_t id)
 	n->id = id;
 
 	switch (n->type) {
+	case LOWDOWN_DEFINITION:
+		n->rndr_definition.flags =
+			v->rndr_definition.flags;
+		break;
 	case LOWDOWN_META:
 		rc = hbuf_clone(&v->rndr_meta.key, 
 			&n->rndr_meta.key);
@@ -645,13 +650,28 @@ node_clone(const struct lowdown_node *v, size_t id)
 		rc = hbuf_clone(&v->rndr_codespan.text,
 			&n->rndr_codespan.text);
 		break;
+	case LOWDOWN_TABLE_BLOCK:
+		n->rndr_table.columns = v->rndr_table.columns;
+		break;
 	case LOWDOWN_TABLE_HEADER:
-		/* Don't use the column metrics: mutable. */
+		n->rndr_table_header.columns = 
+			v->rndr_table_header.columns;
+		n->rndr_table_header.flags = calloc
+			(n->rndr_table_header.columns, 
+			 sizeof(enum htbl_flags));
+		if (n->rndr_table_header.flags == NULL)
+			return NULL;
+		for (i = 0; i < n->rndr_table_header.columns; i++)
+			n->rndr_table_header.flags[i] =
+				v->rndr_table_header.flags[i];
 		break;
 	case LOWDOWN_TABLE_CELL:
 		n->rndr_table_cell.flags = 
 			v->rndr_table_cell.flags;
-		/* Don't use the column number/count: mutable. */
+		n->rndr_table_cell.col = 
+			v->rndr_table_cell.col;
+		n->rndr_table_cell.columns = 
+			v->rndr_table_cell.columns;
 		break;
 	case LOWDOWN_FOOTNOTE_DEF:
 	case LOWDOWN_FOOTNOTE_REF:
@@ -1152,6 +1172,11 @@ node_optimise_topdown(const struct lowdown_node *n,
 	const struct lowdown_node	*match, *nchild, *mchild, 
 	      				*nnext, *mnext;
 
+	/* Ignore opaque nodes (just tables). */
+
+	if (n->type == LOWDOWN_TABLE_BLOCK)
+		return;
+
 	if (TAILQ_EMPTY(&n->children))
 		return;
 
@@ -1225,6 +1250,11 @@ node_optimise_bottomup(const struct lowdown_node *n,
 {
 	const struct lowdown_node	*nn, *on, *nnn, *maxn = NULL;
 	double				 w, maxw = 0.0, tw = 0.0;
+
+	/* Ignore opaque nodes (just tables). */
+
+	if (n->type == LOWDOWN_TABLE_BLOCK)
+		return;
 
 	/* Do a depth-first pre-order search. */
 
@@ -1365,9 +1395,14 @@ lowdown_diff(const struct lowdown_node *nold,
 			candidate(xnew, &xnewmap, xold, &xoldmap);
 		}
 
-		/* No match: enqueue children ("Phase 3" cont.). */
+		/* 
+		 * No match: enqueue children ("Phase 3" cont.).
+		 * Ignore opaque nodes (just tables).
+		 */
 
 		if (xnew->optmatch == NULL) {
+			if (n->type == LOWDOWN_TABLE_BLOCK)
+				continue;
 			TAILQ_FOREACH(nn, &n->children, entries)
 				if (!pqueue(nn, &xnewmap, &pq))
 					goto out;
