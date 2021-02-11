@@ -1020,7 +1020,7 @@
 	</article>
 	<article data-sblg-article="1" data-sblg-tags="version">
 		<header>
-			<h1>0.8.2</h1>
+			<h1>0.8.1</h1>
 			<address>Kristaps Dzonsons</address>
 			<time datetime="2021-02-09">ongoing</time>
 		</header>
@@ -1035,6 +1035,12 @@
 			<p>
 				Metadata is also now properly handled by both the difference engine
 				and conforming front-ends.
+			</p>
+			<p>
+				Split
+				<a href="lowdown.1.html">lowdown(1)</a>
+				into
+				<a href="lowdown-diff.1.html">lowdown-diff(1)</a> for easier reading.
 			</p>
 		</aside>
 	</article>
