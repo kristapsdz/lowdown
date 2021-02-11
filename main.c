@@ -528,31 +528,12 @@ main(int argc, char *argv[])
 	return status;
 usage:
 	if (!diff) {
-		fprintf(stderr, "usage: lowdown "
-			"[-s] "
-			"[output_features] "
-			"[-d feature] "
-			"[-e feature]\n"
-			"               "
-			"[-o output] "
-			"[-T mode] "
-			"[file]\n");
-		fprintf(stderr, "       lowdown "
-			"[-o output] "
-			"[output_features] "
-			"[-T mode] "
-			"[-X keyword] "
-			"[file]\n");
+		fprintf(stderr, 
+			"usage: lowdown [-s] [input_options] [output_options] [-M metadata]\n"
+			"               [-m metadata] [-o output] [-T mode] [-X keyword] [file]\n");
 	} else
-		fprintf(stderr, "usage: lowdown-diff "
-			"[-s] "
-			"[output_features] "
-			"[-d feature] "
-			"[-e feature]\n"
-			"                    "
-			"[-o output] "
-			"[-T mode] "
-			"oldfile "
-			"[file]\n");
+		fprintf(stderr, 
+			"usage: lowdown-diff [-s] [input_options] [output_options] [-M metadata]\n"
+			"                    [-m metadata] [-o output] [-T mode] oldfile [newfile]\n");
 	return 1;
 }
