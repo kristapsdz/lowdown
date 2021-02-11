@@ -208,7 +208,9 @@ main(int argc, char *argv[])
 	FILE			*fin = stdin, *fout = stdout, 
 				*din = NULL;
 	const char		*fnin = "<stdin>", *fnout = NULL,
-	      	 		*fndin = NULL, *extract = NULL, *er;
+	      	 		*fndin = NULL, *extract = NULL, *er,
+				*mainopts = "M:m:sT:o:X:",
+	      			*diffopts = "M:m:sT:o:";
 	struct lowdown_opts 	 opts;
 	int			 c, diff = 0,
 				 status = 0, aoflag = 0, roflag = 0,
@@ -331,8 +333,8 @@ main(int argc, char *argv[])
 	if (strcasecmp(getprogname(), "lowdown-diff") == 0) 
 		diff = 1;
 
-	while ((c = getopt_long
-		(argc, argv, "M:m:sT:o:X:", lo, NULL)) != -1)
+	while ((c = getopt_long(argc, argv, 
+	       diff ? diffopts : mainopts, lo, NULL)) != -1)
 		switch (c) {
 		case 'M':
 			metadata_parse(c, &opts.metaovr, 
@@ -525,30 +527,32 @@ main(int argc, char *argv[])
 	lowdown_metaq_free(&mq);
 	return status;
 usage:
-	fprintf(stderr, "usage: lowdown "
-		"[-s] "
-		"[output_features] "
-		"[-d feature] "
-		"[-e feature]\n"
-		"               "
-		"[-o output] "
-		"[-T mode] "
-		"[file]\n");
-	fprintf(stderr, "       lowdown "
-		"[-o output] "
-		"[output_features] "
-		"[-T mode] "
-		"[-X keyword] "
-		"[file]\n");
-	fprintf(stderr, "       lowdown-diff "
-		"[-s] "
-		"[output_features] "
-		"[-d feature] "
-		"[-e feature]\n"
-		"                    "
-		"[-o output] "
-		"[-T mode] "
-		"oldfile "
-		"[file]\n");
+	if (!diff) {
+		fprintf(stderr, "usage: lowdown "
+			"[-s] "
+			"[output_features] "
+			"[-d feature] "
+			"[-e feature]\n"
+			"               "
+			"[-o output] "
+			"[-T mode] "
+			"[file]\n");
+		fprintf(stderr, "       lowdown "
+			"[-o output] "
+			"[output_features] "
+			"[-T mode] "
+			"[-X keyword] "
+			"[file]\n");
+	} else
+		fprintf(stderr, "usage: lowdown-diff "
+			"[-s] "
+			"[output_features] "
+			"[-d feature] "
+			"[-e feature]\n"
+			"                    "
+			"[-o output] "
+			"[-T mode] "
+			"oldfile "
+			"[file]\n");
 	return 1;
 }
