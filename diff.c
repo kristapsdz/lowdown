@@ -119,15 +119,13 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 	struct xnode			*xn;
 	struct xnode			 xntmp;
 	void				*pp;
-	int				 reset_xn = 0;
+	int				 ign_chld = ign;
 
 	/* Get our node slot. */
 
-	if (is_opaque(n) || ign) {
-		xn = &xntmp;
-		memset(&xntmp, 0, sizeof(struct xnode));
-		ign = 1;
-	} else {
+	memset(&xntmp, 0, sizeof(struct xnode));
+
+	if (!ign) {
 		if (n->id >= map->maxsize) {
 			pp = recallocarray(map->nodes, map->maxsize, 
 				n->id + 64, sizeof(struct xnode));
@@ -144,7 +142,7 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 			map->maxid = n->id;
 		assert(map->maxid < map->maxsize);
 		map->maxnodes++;
-		reset_xn = 1;
+		ign_chld = is_opaque(n);
 	}
 
 	/* Recursive step. */
@@ -153,16 +151,14 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 	MD5Updatev(&ctx, &n->type, sizeof(enum lowdown_rndrt));
 
 	TAILQ_FOREACH(nn, &n->children, entries) {
-		if ((vv = assign_sigs(&ctx, map, nn, ign)) < 0.0)
+		if ((vv = assign_sigs(&ctx, map, nn, ign_chld)) < 0.0)
 			return vv;
 		v += vv;
 	}
 
 	/* Re-assign "xn": child might have reallocated. */
 
-	if (reset_xn)
-		xn = &map->nodes[n->id];
-
+	xn = ign ? &xntmp : &map->nodes[n->id];
 	xn->weight = v;
 
 	/*
@@ -317,9 +313,6 @@ pqueue(const struct lowdown_node *n,
 	struct xnode	*xnew, *xold;
 
 	/* Ignore opaque nodes. */
-
-	if (is_opaque(n))
-		return 1;
 
 	if ((p = malloc(sizeof(struct pnode))) == NULL)
 		return 0;
@@ -587,6 +580,11 @@ match_down(struct xnode *xnew, struct xmap *xnewmap,
 
 	xnew->match = xold->node;
 	xold->match = xnew->node;
+
+	if (is_opaque(xnew->node)) {
+		assert(is_opaque(xold->node));
+		return;
+	}
 
 	nnew = TAILQ_FIRST(&xnew->node->children);
 	nold = TAILQ_FIRST(&xold->node->children);
@@ -1157,11 +1155,20 @@ node_merge(const struct lowdown_node *nold,
 		 * Then continue on to the next nodes.
 		 */
 
-		nn = node_merge(nold, xoldmap, nnew, xnewmap, id);
-		if (nn == NULL)
-			goto err;
-		TAILQ_INSERT_TAIL(&n->children, nn, entries);
-		nn->parent = n;
+		if (is_opaque(nnew)) {
+			assert(is_opaque(nold));
+			if ((nn = node_clonetree(nnew, id)) == NULL)
+				goto err;
+			TAILQ_INSERT_TAIL(&n->children, nn, entries);
+			nn->parent = n;
+		} else {
+			assert(!is_opaque(nold));
+			nn = node_merge(nold, xoldmap, nnew, xnewmap, id);
+			if (nn == NULL)
+				goto err;
+			TAILQ_INSERT_TAIL(&n->children, nn, entries);
+			nn->parent = n;
+		}
 
 		nold = TAILQ_NEXT(nold, entries);
 		nnew = TAILQ_NEXT(nnew, entries);
@@ -1200,8 +1207,6 @@ node_optimise_topdown(const struct lowdown_node *n,
 	const struct lowdown_node	*match, *nchild, *mchild, 
 	      				*nnext, *mnext;
 
-	/* Ignore opaque nodes. */
-
 	if (is_opaque(n) || TAILQ_EMPTY(&n->children))
 		return;
 
@@ -1215,7 +1220,7 @@ node_optimise_topdown(const struct lowdown_node *n,
 	assert(xmatch != NULL);
 
 	TAILQ_FOREACH(nchild, &n->children, entries) {
-		if (TAILQ_EMPTY(&nchild->children))
+		if (is_opaque(nchild) || TAILQ_EMPTY(&nchild->children))
 			continue;
 		xnchild = &newmap->nodes[nchild->id];
 		assert(xnchild != NULL);
@@ -1233,7 +1238,7 @@ node_optimise_topdown(const struct lowdown_node *n,
 
 		if ((nnext = TAILQ_NEXT(nchild, entries)) == NULL)
 			continue;
-		if (TAILQ_EMPTY(&nnext->children))
+		if (is_opaque(nnext) || TAILQ_EMPTY(&nnext->children))
 			continue;
 		xnnext = &newmap->nodes[nnext->id];
 		assert(xnnext != NULL);
@@ -1242,14 +1247,14 @@ node_optimise_topdown(const struct lowdown_node *n,
 
 		if ((mnext = TAILQ_NEXT(mchild, entries)) == NULL)
 			continue;
-		if (TAILQ_EMPTY(&mnext->children))
+		if (is_opaque(mnext) || TAILQ_EMPTY(&mnext->children))
 			continue;
 		xmnext = &oldmap->nodes[mnext->id];
 		assert(xmnext != NULL);
 		if (xmnext->match != NULL)
 			continue;
 
-		if ( ! match_eq(nnext, mnext))
+		if (!match_eq(nnext, mnext))
 			continue;
 
 		xnnext->match = mnext;
@@ -1423,6 +1428,8 @@ lowdown_diff(const struct lowdown_node *nold,
 		 */
 
 		if (xnew->optmatch == NULL) {
+			if (is_opaque(n))
+				continue;
 			TAILQ_FOREACH(nn, &n->children, entries)
 				if (!pqueue(nn, &xnewmap, &pq))
 					goto out;
