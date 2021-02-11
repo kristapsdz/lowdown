@@ -86,6 +86,19 @@ MD5Updatev(MD5_CTX *ctx, const void *v, size_t sz)
 }
 
 /*
+ * If this returns non-zero, the node should be considered opaque and
+ * we will not do any difference processing of it.  It will still be
+ * marked as different if any changes within the node bubble up.
+ */
+static int
+is_opaque(const struct lowdown_node *n)
+{
+
+	return n->type == LOWDOWN_TABLE_BLOCK ||
+		n->type == LOWDOWN_META;
+}
+
+/*
  * Assign signatures and weights.
  * This is defined by "Phase 2" in sec. 5.2., along with the specific
  * heuristics given in the "Tuning" section.
@@ -97,34 +110,42 @@ MD5Updatev(MD5_CTX *ctx, const void *v, size_t sz)
  */
 static double
 assign_sigs(MD5_CTX *parent, struct xmap *map, 
-	const struct lowdown_node *n)
+	const struct lowdown_node *n, int ign)
 {
 	const struct lowdown_node	*nn;
 	ssize_t				 weight = -1;
 	MD5_CTX				 ctx;
 	double				 v = 0.0, vv;
 	struct xnode			*xn;
+	struct xnode			 xntmp;
 	void				*pp;
+	int				 reset_xn = 0;
 
 	/* Get our node slot. */
 
-	if (n->id >= map->maxsize) {
-		pp = recallocarray(map->nodes, map->maxsize, 
-			n->id + 64, sizeof(struct xnode));
-		if (pp == NULL)
-			return -1.0;
-		map->nodes = pp;
-		map->maxsize = n->id + 64;
+	if (is_opaque(n) || ign) {
+		xn = &xntmp;
+		memset(&xntmp, 0, sizeof(struct xnode));
+		ign = 1;
+	} else {
+		if (n->id >= map->maxsize) {
+			pp = recallocarray(map->nodes, map->maxsize, 
+				n->id + 64, sizeof(struct xnode));
+			if (pp == NULL)
+				return -1.0;
+			map->nodes = pp;
+			map->maxsize = n->id + 64;
+		}
+		xn = &map->nodes[n->id];
+		assert(xn->node == NULL);
+		assert(xn->weight == 0.0);
+		xn->node = n;
+		if (n->id > map->maxid)
+			map->maxid = n->id;
+		assert(map->maxid < map->maxsize);
+		map->maxnodes++;
+		reset_xn = 1;
 	}
-
-	xn = &map->nodes[n->id];
-	assert(xn->node == NULL);
-	assert(xn->weight == 0.0);
-	xn->node = n;
-	if (n->id > map->maxid)
-		map->maxid = n->id;
-	assert(map->maxid < map->maxsize);
-	map->maxnodes++;
 
 	/* Recursive step. */
 
@@ -132,14 +153,16 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 	MD5Updatev(&ctx, &n->type, sizeof(enum lowdown_rndrt));
 
 	TAILQ_FOREACH(nn, &n->children, entries) {
-		if ((vv = assign_sigs(&ctx, map, nn)) < 0.0)
+		if ((vv = assign_sigs(&ctx, map, nn, ign)) < 0.0)
 			return vv;
 		v += vv;
 	}
 
 	/* Re-assign "xn": child might have reallocated. */
 
-	xn = &map->nodes[n->id];
+	if (reset_xn)
+		xn = &map->nodes[n->id];
+
 	xn->weight = v;
 
 	/*
@@ -292,6 +315,11 @@ pqueue(const struct lowdown_node *n,
 {
 	struct pnode	*p, *pp;
 	struct xnode	*xnew, *xold;
+
+	/* Ignore opaque nodes. */
+
+	if (is_opaque(n))
+		return 1;
 
 	if ((p = malloc(sizeof(struct pnode))) == NULL)
 		return 0;
@@ -1172,12 +1200,9 @@ node_optimise_topdown(const struct lowdown_node *n,
 	const struct lowdown_node	*match, *nchild, *mchild, 
 	      				*nnext, *mnext;
 
-	/* Ignore opaque nodes (just tables). */
+	/* Ignore opaque nodes. */
 
-	if (n->type == LOWDOWN_TABLE_BLOCK)
-		return;
-
-	if (TAILQ_EMPTY(&n->children))
+	if (is_opaque(n) || TAILQ_EMPTY(&n->children))
 		return;
 
 	xn = &newmap->nodes[n->id];
@@ -1251,15 +1276,12 @@ node_optimise_bottomup(const struct lowdown_node *n,
 	const struct lowdown_node	*nn, *on, *nnn, *maxn = NULL;
 	double				 w, maxw = 0.0, tw = 0.0;
 
-	/* Ignore opaque nodes (just tables). */
+	/* Ignore opaque nodes. */
 
-	if (n->type == LOWDOWN_TABLE_BLOCK)
+	if (is_opaque(n) || TAILQ_EMPTY(&n->children))
 		return;
 
 	/* Do a depth-first pre-order search. */
-
-	if (TAILQ_EMPTY(&n->children))
-		return;
 
 	TAILQ_FOREACH(nn, &n->children, entries) {
 		tw += newmap->nodes[nn->id].weight;
@@ -1349,9 +1371,9 @@ lowdown_diff(const struct lowdown_node *nold,
 	 * See "Phase 2", sec 5.2.
 	 */
 
-	if (assign_sigs(NULL, &xoldmap, nold) < 0.0)
+	if (assign_sigs(NULL, &xoldmap, nold, 0) < 0.0)
 		goto out;
-	if (assign_sigs(NULL, &xnewmap, nnew) < 0.0)
+	if (assign_sigs(NULL, &xnewmap, nnew, 0) < 0.0)
 		goto out;
 
 	/* Prime the priority queue with the root. */
@@ -1397,12 +1419,10 @@ lowdown_diff(const struct lowdown_node *nold,
 
 		/* 
 		 * No match: enqueue children ("Phase 3" cont.).
-		 * Ignore opaque nodes (just tables).
+		 * Ignore opaque nodes.
 		 */
 
 		if (xnew->optmatch == NULL) {
-			if (n->type == LOWDOWN_TABLE_BLOCK)
-				continue;
 			TAILQ_FOREACH(nn, &n->children, entries)
 				if (!pqueue(nn, &xnewmap, &pq))
 					goto out;
