@@ -1018,4 +1018,24 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.8.2</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2021-02-09">ongoing</time>
+		</header>
+		<aside>
+			<p>
+				Fix tables as processed by the difference engine.
+				Tables are now fully opaque, which means that any changes will
+				result in the deletion and re-addition of the table.
+				This isn't a good fix, but it does mean that any tables run through
+				the difference engine will be sane for output.
+			</p>
+			<p>
+				Metadata is also now properly handled by both the difference engine
+				and conforming front-ends.
+			</p>
+		</aside>
+	</article>
 </articles>
