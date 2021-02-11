@@ -1,6 +1,6 @@
 .\"	$Id$
 .\"
-.\" Copyright (c) 2016--2017, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
+.\" Copyright (c) 2016--2021 Kristaps Dzonsons <kristaps@bsd.lv>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -15,13 +15,13 @@
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
 .Dd $Mdocdate$
-.Dt LOWDOWN 1
+.Dt LOWDOWN-DIFF 1
 .Os
 .Sh NAME
-.Nm lowdown
-.Nd simple markdown translator
+.Nm lowdown-diff
+.Nd view differences in markdown files
 .Sh SYNOPSIS
-.Nm lowdown
+.Nm lowdown-diff
 .Op in_opts
 .Op out_opts
 .Op Fl s
@@ -29,24 +29,12 @@
 .Op Fl m Ar metadata
 .Op Fl o Ar file
 .Op Fl T Ar mode
-.Op Ar file
-.Nm lowdown
-.Op in_opts
-.Op out_opts
-.Op Fl M Ar metadata
-.Op Fl m Ar metadata
-.Op Fl o Ar file
-.Op Fl T Ar mode
-.Fl X Ar keyword
-.Op Ar file
+.Ar oldfile
+.Op Ar newfile
 .Sh DESCRIPTION
-Translate from
+Shows differences between
 .Xr lowdown 5
-into diverse output formats.
-.Nm lowdown
-formats documents, while
-.Nm lowdown Fl X Ar keyword
-extracts metadata keywords.
+documents as formatted output.
 Results are written to standard output.
 .Pp
 The arguments are as follows:
@@ -112,28 +100,13 @@ to show the parse tree of the input document, and
 to parse the document but do no rendering.
 See
 .Sx Output modes .
-.It Fl X Ar keyword
-Instead of converting the file, extract the given metadata keyword and
-exit.
-These will be escaped according to the output mode
-.Fl T ;
-for example, a title of
-.Dq <foo>
-with
-.Fl T Ns Ar html
-will be extracted as
-.Dq &lt;foo&gt; .
-Metadata is not rendered for
-.Fl T Ns Ar tree
-or
-.Fl T Ns Ar null .
-.It Ar file
-Input Markdown document.
-If not given or if
-.Ar file
-is
-.Dq - ,
-read from standard input.
+.It Ar oldfile , newfile
+Markdown documents used for comparison.
+If
+.Ar newfile
+is not given or
+.Sq - ,
+it is read from standard input.
 .El
 .Pp
 The following are options for input parsing.
@@ -510,14 +483,30 @@ Images and equations not supported.
 .It Fl T Ns Ar tree
 Debugging output: not for general use.
 .El
+.Pp
+Output is augmented with features for viewing file differences.
+These depend upon the output mode.
+.Bl -tag -width Ds
+.It Fl T Ns Ar man , Fl T Ns Ar ms
+When data has been removed, it is coloured red.
+When data has been inserted, it is coloured in green.
+In either case, your formatter must support colours or the texts will be
+freely intermingled.
+.It Fl T Ns Ar html
+When data has been removed from the old document, it is marked up with the
+.Li <del>
+element.
+When data has been inserted into the new document,
+.Li <ins>
+is used instead.
+.It Fl T Ns Ar latex
+When data has been removed, it is coloured red.
+When data has been inserted, it is coloured in green.
+.It Fl T Ns Ar term
+Removed and inserted data have different background colours.
+.El
 .Sh EXIT STATUS
 .Ex -std
-.Pp
-If the
-.Fl X
-flag is used,
-.Nm lowdown
-exits with an error if the given keyword is not found.
 .Sh EXAMPLES
 To view a Markdown file on an ANSI-compatible, UTF-8 terminal:
 .Pp
@@ -584,10 +573,7 @@ To extract the HTML-escaped title from a file's metadata:
 .Xr lowdown 3 ,
 .Xr lowdown 5
 .Sh AUTHORS
-.Nm lowdown
-was forked from
-.Lk https://github.com/hoedown/hoedown hoedown
-by
+.Nm
+was written by
 .An Kristaps Dzonsons ,
 .Mt kristaps@bsd.lv .
-It has been considerably modified since.

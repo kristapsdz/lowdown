@@ -1,6 +1,6 @@
 /*	$Id$ */
 /*
- * Copyright (c) 2017, 2018 Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) 2017--2021 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
