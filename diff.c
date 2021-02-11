@@ -181,6 +181,9 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 	case LOWDOWN_CODESPAN:
 		weight = n->rndr_codespan.text.size;
 		break;
+	case LOWDOWN_META:
+		weight = n->rndr_meta.key.size;
+		break;
 	case LOWDOWN_IMAGE:
 		weight = n->rndr_image.link.size +
 			n->rndr_image.title.size +
@@ -231,6 +234,9 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 		break;
 	case LOWDOWN_NORMAL_TEXT:
 		MD5Updatebuf(&ctx, &n->rndr_normal_text.text);
+		break;
+	case LOWDOWN_META:
+		MD5Updatebuf(&ctx, &n->rndr_meta.key);
 		break;
 	case LOWDOWN_ENTITY:
 		MD5Updatebuf(&ctx, &n->rndr_entity.text);
@@ -455,6 +461,11 @@ match_eq(const struct lowdown_node *n1,
 	case LOWDOWN_HEADER:
 		if (n1->rndr_header.level !=
 		    n2->rndr_header.level)
+			return 0;
+		break;
+	case LOWDOWN_META:
+		if (!hbuf_eq
+		    (&n1->rndr_meta.key, &n2->rndr_meta.key))
 			return 0;
 		break;
 	case LOWDOWN_FOOTNOTE_DEF:

@@ -743,7 +743,7 @@ rndr(struct lowdown_buf *ob,
 	struct lowdown_buf		*tmp;
 	struct latex			*st = arg;
 	const struct lowdown_node	*child;
-	int				 ret = 0, rc;
+	int				 ret = 0, rc = 1;
 
 	if ((tmp = hbuf_new(64)) == NULL)
 		return 0;
@@ -781,7 +781,8 @@ rndr(struct lowdown_buf *ob,
 		rc = rndr_doc_header(ob, mq, st);
 		break;
 	case LOWDOWN_META:
-		rc = rndr_meta(ob, tmp, mq, n, st);
+		if (n->chng != LOWDOWN_CHNG_DELETE)
+			rc = rndr_meta(ob, tmp, mq, n, st);
 		break;
 	case LOWDOWN_DOC_FOOTER:
 		rc = rndr_doc_footer(ob, st);

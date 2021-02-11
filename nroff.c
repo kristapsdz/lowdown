@@ -1608,7 +1608,8 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_doc_header(st, obq, mq);
 		break;
 	case LOWDOWN_META:
-		rc = rndr_meta(st, &tmpbq, mq, &n->rndr_meta);
+		if (n->chng != LOWDOWN_CHNG_DELETE)
+			rc = rndr_meta(st, &tmpbq, mq, &n->rndr_meta);
 		break;
 	case LOWDOWN_HEADER:
 		rc = rndr_header(st, obq, &tmpbq, &n->rndr_header);

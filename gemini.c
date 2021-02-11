@@ -461,7 +461,8 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	/* Descend into children. */
 
 	if (n->type == LOWDOWN_META) {
-		if (!rndr_meta(p, n, mq))
+		if (n->chng != LOWDOWN_CHNG_DELETE &&
+		    !rndr_meta(p, n, mq))
 			return 0;
 	} else
 		TAILQ_FOREACH(child, &n->children, entries)

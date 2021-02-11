@@ -323,6 +323,20 @@ account for added or removed rows.  However, ultimately there is some
 opacity in that changed table headers do not have a representable form
 in the output.
 
+### Metadata
+
+Like tables, metadata key-value pairs are opaque bodies.  Metadata has a
+complex relationship with Markdown documents, which leaves how to handle
+the "difference" uncertain.
+
+The difference engine, after computing differences like any other opaque
+nodes, simply passes the difference to front-ends, which determine how
+to handle this for themselves.  For front-ends that use the metadata in
+creating document headers (e.g., HTML, LaTeX, roff), the policy is not
+to process deleted metadata.
+
+Thus, metadata won't strictly represent the document differences.
+
 ## API
 
 The result of the algorithm is a new tree marked with insertions and
