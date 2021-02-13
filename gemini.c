@@ -69,6 +69,17 @@ static int
 rndr(struct lowdown_buf *, struct lowdown_metaq *, 
 	struct gemini *, const struct lowdown_node *);
 
+static void
+link_freeq(struct linkq *q)
+{
+	struct link	*l;
+
+	while ((l = TAILQ_FIRST(q)) != NULL) {
+		TAILQ_REMOVE(q, l, entries);
+		free(l);
+	}
+}
+
 /*
  * Convert newlines to spaces, elide control characters.
  * If a newline follows a period, it's converted to two spaces.
@@ -298,8 +309,174 @@ rndr_flush_linkq(struct gemini *st, struct lowdown_buf *out)
  * Return zero on failure (memory), non-zero on success.
  */
 static int
+rndr_table(struct lowdown_buf *ob, struct gemini *st, 
+	const struct lowdown_node *n)
+{
+	size_t				*widths = NULL;
+	const struct lowdown_node	*row, *top, *cell;
+	struct lowdown_buf		*celltmp = NULL, 
+					*rowtmp = NULL;
+	size_t				 i, j, sz;
+	ssize_t			 	 last_blank;
+	unsigned int			 flags, oflags;
+	int				 rc = 0;
+
+	assert(n->type == LOWDOWN_TABLE_BLOCK);
+
+	/*
+	 * Temporarily make us not use in-line links.
+	 * This is obviously because tables and inline links don't work
+	 * well together.
+	 */
+
+	oflags = st->flags;
+	if (st->flags & LOWDOWN_GEMINI_LINK_IN)
+		st->flags &= ~LOWDOWN_GEMINI_LINK_IN;
+
+	widths = calloc(n->rndr_table.columns, sizeof(size_t));
+	if (widths == NULL)
+		goto out;
+
+	if ((rowtmp = hbuf_new(128)) == NULL ||
+	    (celltmp = hbuf_new(128)) == NULL)
+		goto out;
+
+	/*
+	 * Begin by counting the number of printable columns in each
+	 * column in each row.
+	 */
+
+	assert(st->linkqsz == 0);
+	TAILQ_FOREACH(top, &n->children, entries) {
+		assert(top->type == LOWDOWN_TABLE_HEADER ||
+			top->type == LOWDOWN_TABLE_BODY);
+		TAILQ_FOREACH(row, &top->children, entries)
+			TAILQ_FOREACH(cell, &row->children, entries) {
+				i = cell->rndr_table_cell.col;
+				assert(i < n->rndr_table.columns);
+				hbuf_truncate(celltmp);
+				last_blank = st->last_blank;
+				st->last_blank = 0;
+				if (!rndr(celltmp, NULL, st, cell))
+					goto out;
+				if (widths[i] < celltmp->size)
+					widths[i] = celltmp->size;
+				st->last_blank = last_blank;
+			}
+	}
+
+	/* 
+	 * We may have accumulated links when temporarily rendering.
+	 * Remove these now, as we're going to have them printed for
+	 * real in the subsequent block.
+	 */
+
+	link_freeq(&st->linkq);
+	st->linkqsz = 0;
+
+	/* Now actually print, row-by-row into the output. */
+
+	TAILQ_FOREACH(top, &n->children, entries) {
+		assert(top->type == LOWDOWN_TABLE_HEADER ||
+			top->type == LOWDOWN_TABLE_BODY);
+		TAILQ_FOREACH(row, &top->children, entries) {
+			hbuf_truncate(rowtmp);
+			TAILQ_FOREACH(cell, &row->children, entries) {
+				i = cell->rndr_table_cell.col;
+				hbuf_truncate(celltmp);
+				last_blank = st->last_blank;
+				st->last_blank = 0;
+				if (!rndr(celltmp, NULL, st, cell))
+					goto out;
+				assert(widths[i] >= celltmp->size);
+				sz = widths[i] - celltmp->size;
+
+				/* 
+				 * Alignment is either beginning,
+				 * ending, or splitting the remaining
+				 * spaces around the word.
+				 * Be careful about uneven splitting in
+				 * the case of centre.
+				 */
+
+				flags = cell->rndr_table_cell.flags & 
+					HTBL_FL_ALIGNMASK;
+				if (flags == HTBL_FL_ALIGN_RIGHT)
+					for (j = 0; j < sz; j++)
+						if (!HBUF_PUTSL(rowtmp, " "))
+							goto out;
+				if (flags == HTBL_FL_ALIGN_CENTER)
+					for (j = 0; j < sz / 2; j++)
+						if (!HBUF_PUTSL(rowtmp, " "))
+							goto out;
+				if (!hbuf_putb(rowtmp, celltmp))
+					goto out;
+				if (flags == 0 ||
+				    flags == HTBL_FL_ALIGN_LEFT)
+					for (j = 0; j < sz; j++)
+						if (!HBUF_PUTSL(rowtmp, " "))
+							goto out;
+				if (flags == HTBL_FL_ALIGN_CENTER) {
+					sz = (sz % 2) ? 
+						(sz / 2) + 1 : (sz / 2);
+					for (j = 0; j < sz; j++)
+						if (!HBUF_PUTSL(rowtmp, " "))
+							goto out;
+				}
+
+				st->last_blank = last_blank;
+				if (TAILQ_NEXT(cell, entries) != NULL &&
+				    !HBUF_PUTSL(rowtmp, " | "))
+					goto out;
+			}
+
+			/* 
+			 * Some magic here.
+			 * First, emulate rndr() by setting the
+			 * stackpos to the table, which is required for
+			 * checking the line start.
+			 * Then directly print, as we've already escaped
+			 * all characters, and have embedded escapes of
+			 * our own.  Then end the line.
+			 */
+
+			if (!hbuf_putb(ob, rowtmp))
+				goto out;
+			st->last_blank = 0;
+			if (!rndr_buf_vspace(st, ob, 1))
+				goto out;
+		}
+
+		if (top->type == LOWDOWN_TABLE_HEADER) {
+			for (i = 0; i < n->rndr_table.columns; i++) {
+				for (j = 0; j <= widths[i]; j++)
+					if (!HBUF_PUTSL(ob, "-"))
+						goto out;
+				if (i < n->rndr_table.columns - 1 &&
+				    !HBUF_PUTSL(ob, "|-"))
+					goto out;
+			}
+			st->last_blank = 0;
+			if (!rndr_buf_vspace(st, ob, 1))
+				goto out;
+		}
+	}
+
+	rc = 1;
+out:
+	hbuf_free(celltmp);
+	hbuf_free(rowtmp);
+	free(widths);
+	st->flags = oflags;
+	return rc;
+}
+
+/*
+ * Return zero on failure (memory), non-zero on success.
+ */
+static int
 rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
-	struct gemini *p, const struct lowdown_node *n)
+	struct gemini *st, const struct lowdown_node *n)
 {
 	const struct lowdown_node	*child, *prev;
 	int32_t				 entity;
@@ -314,7 +491,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 
 	switch (n->type) {
 	case LOWDOWN_ROOT:
-		p->last_blank = -1;
+		st->last_blank = -1;
 		break;
 	case LOWDOWN_BLOCKCODE:
 	case LOWDOWN_BLOCKHTML:
@@ -338,13 +515,13 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		    n->parent->parent->type == 
 		      LOWDOWN_DEFINITION_DATA &&
 		    prev == NULL)
-			rc = rndr_buf_vspace(p, ob, 1);
+			rc = rndr_buf_vspace(st, ob, 1);
 		else
-			rc = rndr_buf_vspace(p, ob, 2);
+			rc = rndr_buf_vspace(st, ob, 2);
 		break;
 	case LOWDOWN_MATH_BLOCK:
 		if (n->rndr_math.blockmode)
-			rc = rndr_buf_vspace(p, ob, 1);
+			rc = rndr_buf_vspace(st, ob, 1);
 		break;
 	case LOWDOWN_DEFINITION_DATA:
 		/* 
@@ -357,9 +534,9 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		     HLIST_FL_BLOCK) &&
 		    prev != NULL &&
 		    prev->type == LOWDOWN_DEFINITION_DATA)
-			rc = rndr_buf_vspace(p, ob, 2);
+			rc = rndr_buf_vspace(st, ob, 2);
 		else
-			rc = rndr_buf_vspace(p, ob, 1);
+			rc = rndr_buf_vspace(st, ob, 1);
 		break;
 	case LOWDOWN_DEFINITION_TITLE:
 	case LOWDOWN_HRULE:
@@ -367,13 +544,13 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_LISTITEM:
 	case LOWDOWN_META:
 	case LOWDOWN_TABLE_ROW:
-		rc = rndr_buf_vspace(p, ob, 1);
+		rc = rndr_buf_vspace(st, ob, 1);
 		break;
 	case LOWDOWN_IMAGE:
 	case LOWDOWN_LINK:
 	case LOWDOWN_LINK_AUTO:
-		if (p->flags & LOWDOWN_GEMINI_LINK_IN)
-			rc = rndr_buf_vspace(p, ob, 1);
+		if (st->flags & LOWDOWN_GEMINI_LINK_IN)
+			rc = rndr_buf_vspace(st, ob, 1);
 		break;
 	default:
 		break;
@@ -385,71 +562,73 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	/* Output leading content. */
 
 	rc = 1;
-	hbuf_truncate(p->tmp);
+	hbuf_truncate(st->tmp);
 
 	switch (n->type) {
+	case LOWDOWN_TABLE_BLOCK:
 	case LOWDOWN_BLOCKCODE:
 	case LOWDOWN_BLOCKHTML:
-		rc = HBUF_PUTSL(p->tmp, "```\n") &&
-			rndr_buf(p, ob, n, p->tmp);
+		rc = HBUF_PUTSL(st->tmp, "```") &&
+			rndr_buf(st, ob, n, st->tmp) &&
+			rndr_buf_vspace(st, ob, 1);
 		break;
 	case LOWDOWN_BLOCKQUOTE:
-		rc = HBUF_PUTSL(p->tmp, "> ") &&
-			rndr_buf(p, ob, n, p->tmp);
-		p->last_blank = -1;
+		rc = HBUF_PUTSL(st->tmp, "> ") &&
+			rndr_buf(st, ob, n, st->tmp);
+		st->last_blank = -1;
 		break;
 	case LOWDOWN_HEADER:
 		for (i = 0; i <= n->rndr_header.level; i++)
-			if (!HBUF_PUTSL(p->tmp, "#"))
+			if (!HBUF_PUTSL(st->tmp, "#"))
 				return 0;
-		rc = HBUF_PUTSL(p->tmp, " ") &&
-			rndr_buf(p, ob, n, p->tmp);
-		p->last_blank = -1;
+		rc = HBUF_PUTSL(st->tmp, " ") &&
+			rndr_buf(st, ob, n, st->tmp);
+		st->last_blank = -1;
 		break;
 	case LOWDOWN_FOOTNOTES_BLOCK:
-		rc = HBUF_PUTSL(p->tmp, "~~~~~~~~") &&
-			rndr_buf(p, ob, n, p->tmp);
+		rc = HBUF_PUTSL(st->tmp, "~~~~~~~~") &&
+			rndr_buf(st, ob, n, st->tmp);
 		break;
 	case LOWDOWN_FOOTNOTE_DEF:
-		rc = hbuf_printf(p->tmp, "[%zu] ", 
+		rc = hbuf_printf(st->tmp, "[%zu] ", 
 			n->rndr_footnote_def.num) &&
-			rndr_buf(p, ob, n, p->tmp);
-		p->last_blank = -1;
+			rndr_buf(st, ob, n, st->tmp);
+		st->last_blank = -1;
 		break;
 	case LOWDOWN_IMAGE:
 	case LOWDOWN_LINK:
 	case LOWDOWN_LINK_AUTO:
 		if (!(IS_STANDALONE_LINK(n, prev) ||
-		     (p->flags & LOWDOWN_GEMINI_LINK_IN)))
+		     (st->flags & LOWDOWN_GEMINI_LINK_IN)))
 			break;
-		if (!HBUF_PUTSL(p->tmp, "=> "))
+		if (!HBUF_PUTSL(st->tmp, "=> "))
 			return 0;
 		if (n->type == LOWDOWN_LINK_AUTO)
-			rc = hbuf_putb(p->tmp, &n->rndr_autolink.link);
+			rc = hbuf_putb(st->tmp, &n->rndr_autolink.link);
 		else if (n->type == LOWDOWN_LINK)
-			rc = hbuf_putb(p->tmp, &n->rndr_link.link);
+			rc = hbuf_putb(st->tmp, &n->rndr_link.link);
 		else if (n->type == LOWDOWN_IMAGE)
-			rc = hbuf_putb(p->tmp, &n->rndr_image.link);
+			rc = hbuf_putb(st->tmp, &n->rndr_image.link);
 		if (!rc)
 			return 0;
-		rc = HBUF_PUTSL(p->tmp, " ") &&
-			rndr_buf(p, ob, n, p->tmp);
-		p->last_blank = -1;
+		rc = HBUF_PUTSL(st->tmp, " ") &&
+			rndr_buf(st, ob, n, st->tmp);
+		st->last_blank = -1;
 		break;
 	case LOWDOWN_LISTITEM:
 		if (n->rndr_listitem.flags & HLIST_FL_ORDERED)
-			rc = hbuf_printf(p->tmp, "%zu. ", 
+			rc = hbuf_printf(st->tmp, "%zu. ", 
 				n->rndr_listitem.num);
 		else
-			rc = HBUF_PUTSL(p->tmp, "* ");
+			rc = HBUF_PUTSL(st->tmp, "* ");
 		if (!rc)
 			return 0;
-		rc = rndr_buf(p, ob, n, p->tmp);
-		p->last_blank = -1;
+		rc = rndr_buf(st, ob, n, st->tmp);
+		st->last_blank = -1;
 		break;
 	case LOWDOWN_SUPERSCRIPT:
-		rc = HBUF_PUTSL(p->tmp, "^") &&
-			rndr_buf(p, ob, n, p->tmp);
+		rc = HBUF_PUTSL(st->tmp, "^") &&
+			rndr_buf(st, ob, n, st->tmp);
 		break;
 	default:
 		break;
@@ -460,82 +639,90 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 
 	/* Descend into children. */
 
-	if (n->type == LOWDOWN_META) {
-		if (n->chng != LOWDOWN_CHNG_DELETE &&
-		    !rndr_meta(p, n, mq))
+	switch (n->type) {
+	case LOWDOWN_TABLE_BLOCK:
+		if (!rndr_table(ob, st, n))
 			return 0;
-	} else
+		break;
+	case LOWDOWN_META:
+		if (n->chng != LOWDOWN_CHNG_DELETE &&
+		    !rndr_meta(st, n, mq))
+			return 0;
+		break;
+	default:
 		TAILQ_FOREACH(child, &n->children, entries)
-			if (!rndr(ob, mq, p, child))
+			if (!rndr(ob, mq, st, child))
 				return 0;
+		break;
+	}
 
 	/* Output non-child or trailing content. */
 
 	rc = 1;
-	hbuf_truncate(p->tmp);
+	hbuf_truncate(st->tmp);
 
 	switch (n->type) {
 	case LOWDOWN_HRULE:
-		rc = HBUF_PUTSL(p->tmp, "~~~~~~~~") &&
-			rndr_buf(p, ob, n, p->tmp);
+		rc = HBUF_PUTSL(st->tmp, "~~~~~~~~") &&
+			rndr_buf(st, ob, n, st->tmp);
 		break;
 	case LOWDOWN_FOOTNOTE_REF:
-		rc = hbuf_printf(p->tmp, "[%zu]", 
+		rc = hbuf_printf(st->tmp, "[%zu]", 
 			n->rndr_footnote_ref.num) &&
-			rndr_buf(p, ob, n, p->tmp);
+			rndr_buf(st, ob, n, st->tmp);
 		break;
 	case LOWDOWN_RAW_HTML:
-		rc = rndr_buf(p, ob, n, &n->rndr_raw_html.text);
+		rc = rndr_buf(st, ob, n, &n->rndr_raw_html.text);
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		rc = rndr_buf(p, ob, n, &n->rndr_math.text);
+		rc = rndr_buf(st, ob, n, &n->rndr_math.text);
 		break;
 	case LOWDOWN_ENTITY:
 		entity = entity_find_iso(&n->rndr_entity.text);
 		if (entity > 0)
-			rc = rndr_entity(p->tmp, entity) &&
-				rndr_buf(p, ob, n, p->tmp);
+			rc = rndr_entity(st->tmp, entity) &&
+				rndr_buf(st, ob, n, st->tmp);
 		else
-			rc = rndr_buf(p, ob, n, &n->rndr_entity.text);
+			rc = rndr_buf(st, ob, n, &n->rndr_entity.text);
 		break;
 	case LOWDOWN_BLOCKCODE:
-		rc = rndr_buf(p, ob, n, &n->rndr_blockcode.text);
+		rc = rndr_buf(st, ob, n, &n->rndr_blockcode.text);
 		break;
 	case LOWDOWN_BLOCKHTML:
-		rc = rndr_buf(p, ob, n, &n->rndr_blockhtml.text);
+		rc = rndr_buf(st, ob, n, &n->rndr_blockhtml.text);
 		break;
 	case LOWDOWN_CODESPAN:
-		rc = rndr_buf(p, ob, n, &n->rndr_codespan.text);
+		rc = rndr_buf(st, ob, n, &n->rndr_codespan.text);
 		break;
 	case LOWDOWN_IMAGE:
-		rc = rndr_buf(p, ob, n, &n->rndr_image.alt);
+		rc = rndr_buf(st, ob, n, &n->rndr_image.alt);
 		/* FALLTHROUGH */
 	case LOWDOWN_LINK:
 	case LOWDOWN_LINK_AUTO:
 		if (IS_STANDALONE_LINK(n, prev) ||
-		    (p->flags & LOWDOWN_GEMINI_LINK_IN))
+		    (st->flags & LOWDOWN_GEMINI_LINK_IN))
 			break;
 		if ((l = calloc(1, sizeof(struct link))) == NULL)
 			return 0;
 		l->n = n;
-		l->id = ++p->linkqsz;
-		TAILQ_INSERT_TAIL(&p->linkq, l, entries);
-		rc = hbuf_printf(p->tmp, 
+		l->id = ++st->linkqsz;
+		TAILQ_INSERT_TAIL(&st->linkq, l, entries);
+		rc = hbuf_printf(st->tmp, 
 			"[Reference: link-%zu]", l->id) &&
-			rndr_buf(p, ob, n, p->tmp);
+			rndr_buf(st, ob, n, st->tmp);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
-		rc = rndr_buf(p, ob, n, &n->rndr_normal_text.text);
+		rc = rndr_buf(st, ob, n, &n->rndr_normal_text.text);
 		break;
 	case LOWDOWN_ROOT:
-		if (TAILQ_EMPTY(&p->linkq) || 
-		    !(p->flags & LOWDOWN_GEMINI_LINK_END))
+		if (TAILQ_EMPTY(&st->linkq) || 
+		    !(st->flags & LOWDOWN_GEMINI_LINK_END))
 			break;
-		rc = rndr_buf_vspace(p, ob, 2) &&
-			rndr_flush_linkq(p, ob);
+		rc = rndr_buf_vspace(st, ob, 2) &&
+			rndr_flush_linkq(st, ob);
 		break;
 	case LOWDOWN_DOC_HEADER:
-		rc = rndr_doc_header(p, ob, mq);
+		rc = rndr_doc_header(st, ob, mq);
 		break;
 	default:
 		break;
@@ -546,21 +733,22 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	/* Trailing block spaces. */
 
 	rc = 1;
-	hbuf_truncate(p->tmp);
+	hbuf_truncate(st->tmp);
 
 	switch (n->type) {
+	case LOWDOWN_TABLE_BLOCK:
 	case LOWDOWN_BLOCKCODE:
 	case LOWDOWN_BLOCKHTML:
-		if (!HBUF_PUTSL(p->tmp, "```"))
+		if (!HBUF_PUTSL(st->tmp, "```"))
 			return 0;
-		if (!rndr_buf(p, ob, n, p->tmp))
+		if (!rndr_buf(st, ob, n, st->tmp))
 			return 0;
-		p->last_blank = 0;
-		rc = rndr_buf_vspace(p, ob, 2);
+		st->last_blank = 0;
+		rc = rndr_buf_vspace(st, ob, 2);
 		break;
 	case LOWDOWN_DOC_HEADER:
-		if (p->flags & LOWDOWN_STANDALONE)
-			rc = rndr_buf_vspace(p, ob, 2);
+		if (st->flags & LOWDOWN_STANDALONE)
+			rc = rndr_buf_vspace(st, ob, 2);
 		break;
 	case LOWDOWN_BLOCKQUOTE:
 	case LOWDOWN_DEFINITION:
@@ -569,12 +757,11 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_HEADER:
 	case LOWDOWN_LIST:
 	case LOWDOWN_PARAGRAPH:
-	case LOWDOWN_TABLE_BLOCK:
-		rc = rndr_buf_vspace(p, ob, 2);
+		rc = rndr_buf_vspace(st, ob, 2);
 		break;
 	case LOWDOWN_MATH_BLOCK:
 		if (n->rndr_math.blockmode)
-			rc = rndr_buf_vspace(p, ob, 1);
+			rc = rndr_buf_vspace(st, ob, 1);
 		break;
 	case LOWDOWN_DEFINITION_DATA:
 	case LOWDOWN_DEFINITION_TITLE:
@@ -582,14 +769,14 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_LISTITEM:
 	case LOWDOWN_META:
 	case LOWDOWN_TABLE_ROW:
-		rc = rndr_buf_vspace(p, ob, 1);
+		rc = rndr_buf_vspace(st, ob, 1);
 		break;
 	case LOWDOWN_IMAGE:
 	case LOWDOWN_LINK:
 	case LOWDOWN_LINK_AUTO:
 		if (IS_STANDALONE_LINK(n, prev) ||
-		    (p->flags & LOWDOWN_GEMINI_LINK_IN))
-			rc = rndr_buf_vspace(p, ob, 1);
+		    (st->flags & LOWDOWN_GEMINI_LINK_IN))
+			rc = rndr_buf_vspace(st, ob, 1);
 		break;
 	case LOWDOWN_ROOT:
 		/*
@@ -598,7 +785,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		 * This tidies up the output.
 		 */
 
-		if (!rndr_buf_vspace(p, ob, 1))
+		if (!rndr_buf_vspace(st, ob, 1))
 			return 0;
 		while (ob->size && ob->data[ob->size - 1] == '\n')
 			ob->size--;
@@ -610,13 +797,13 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	if (!rc)
 		return 0;
 
-	if (p->last_blank > 1 && !TAILQ_EMPTY(&p->linkq) &&
-	    !(p->flags & LOWDOWN_GEMINI_LINK_END)) {
-		if (!rndr_flush_linkq(p, ob))
+	if (st->last_blank > 1 && !TAILQ_EMPTY(&st->linkq) &&
+	    !(st->flags & LOWDOWN_GEMINI_LINK_END)) {
+		if (!rndr_flush_linkq(st, ob))
 			return 0;
 		if (!HBUF_PUTSL(ob, "\n"))
 			return 0;
-		p->last_blank = 2;
+		st->last_blank = 2;
 	}
 
 	return 1;
@@ -627,8 +814,7 @@ lowdown_gemini_rndr(struct lowdown_buf *ob,
 	struct lowdown_metaq *mq, void *arg, 
 	const struct lowdown_node *n)
 {
-	struct gemini		*p = arg;
-	struct link		*l;
+	struct gemini		*st = arg;
 	int			 c;
 	struct lowdown_metaq	 metaq;
 
@@ -639,15 +825,12 @@ lowdown_gemini_rndr(struct lowdown_buf *ob,
 
 	/* Set ourselves into a sane state. */
 
-	p->last_blank = 0;
+	st->last_blank = 0;
 
-	c = rndr(ob, mq, p, n);
+	c = rndr(ob, mq, st, n);
 
-	while ((l = TAILQ_FIRST(&p->linkq)) != NULL) {
-		TAILQ_REMOVE(&p->linkq, l, entries);
-		free(l);
-	}
-	p->linkqsz = 0;
+	link_freeq(&st->linkq);
+	st->linkqsz = 0;
 
 	if (mq == &metaq)
 		lowdown_metaq_free(mq);
