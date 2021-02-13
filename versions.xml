@@ -1042,6 +1042,9 @@
 				into
 				<a href="lowdown-diff.1.html">lowdown-diff(1)</a> for easier reading.
 			</p>
+			<p>
+				Render tables for <b>-Tgemini</b> as fixed-width displays.
+			</p>
 		</aside>
 	</article>
 </articles>
