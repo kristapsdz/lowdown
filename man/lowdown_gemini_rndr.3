@@ -55,6 +55,14 @@ is not
 it is filled with any metadata as parsed.
 It must be initialised and its contents freed with
 .Xr lowdown_metaq_free 3 .
+.Pp
+The caller is expected to have invoked
+.Xr setlocale 3
+to a
+.Qq UTF-8
+character encoding prior to using this function, otherwise UTF-8
+sequences will not be properly recognised.
+This is used when formatting table column widths.
 .Sh RETURN VALUES
 Returns zero on failure to allocate memory, non-zero on success.
 .Sh EXAMPLES
@@ -68,6 +76,9 @@ struct lowdown_buf *out;
 struct lowdown_doc *doc;
 struct lowdown_node *n;
 void *rndr;
+
+if (setlocale(LC_CTYPE, "en_US.UTF-8") == NULL)
+  err(1, NULL);
 
 if ((doc = lowdown_doc_new(NULL)) == NULL)
   err(1, NULL);
