@@ -421,7 +421,8 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	if (opts.type == LOWDOWN_TERM)
+	if (opts.type == LOWDOWN_TERM ||
+ 	    opts.type == LOWDOWN_GEMINI)
 		setlocale(LC_CTYPE, "");
 
 	/* 

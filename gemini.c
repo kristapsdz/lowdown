@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <wchar.h>
 
 #include "lowdown.h"
 #include "extern.h"
@@ -60,6 +61,8 @@ struct gemini {
 	struct lowdown_buf	*tmp; /* for temporary allocations */
 	struct linkq		 linkq; /* link queue */
 	size_t			 linkqsz; /* position in link queue */
+	wchar_t			*buf; /* buffer for counting wchar */
+	size_t			 bufsz; /* size of buf */
 };
 
 /*
@@ -296,13 +299,43 @@ rndr_flush_linkq(struct gemini *st, struct lowdown_buf *out)
 			rc = 1;
 		if (!rc)
 			return 0;
-		if (!hbuf_printf
-		    (out, " [Reference: link-%zu]\n", l->id))
+		if (!hbuf_printf(out, " [link-%zu]\n", l->id))
 			return 0;
 		st->last_blank = 1;
 		free(l);
 	}
 	return 1;
+}
+
+/*
+ * Get the column width of a multi-byte sequence.
+ * If the sequence is bad, return the number of raw bytes to print.
+ * Return <0 on failure (memory), >=0 otherwise.
+ */
+static ssize_t
+rndr_mbswidth(struct gemini *st, const struct lowdown_buf *in)
+{
+	size_t	 	 wsz, csz;
+	const char	*cp;
+	void		*pp;
+
+	cp = in->data;
+	wsz = mbsnrtowcs(NULL, &cp, in->size, 0, NULL);
+	if (wsz == (size_t)-1)
+		return in->size;
+
+	if (st->bufsz < wsz) {
+		st->bufsz = wsz;
+		pp = reallocarray(st->buf, wsz, sizeof(wchar_t));
+		if (pp == NULL)
+			return -1;
+		st->buf = pp;
+	}
+
+	cp = in->data;
+	mbsnrtowcs(st->buf, &cp, in->size, wsz, NULL);
+	csz = wcswidth(st->buf, wsz);
+	return csz == (size_t)-1 ? in->size : csz;
 }
 
 /*
@@ -317,7 +350,7 @@ rndr_table(struct lowdown_buf *ob, struct gemini *st,
 	struct lowdown_buf		*celltmp = NULL, 
 					*rowtmp = NULL;
 	size_t				 i, j, sz;
-	ssize_t			 	 last_blank;
+	ssize_t			 	 last_blank, ssz;
 	unsigned int			 flags, oflags;
 	int				 rc = 0;
 
@@ -359,8 +392,11 @@ rndr_table(struct lowdown_buf *ob, struct gemini *st,
 				st->last_blank = 0;
 				if (!rndr(celltmp, NULL, st, cell))
 					goto out;
-				if (widths[i] < celltmp->size)
-					widths[i] = celltmp->size;
+				ssz = rndr_mbswidth(st, celltmp);
+				if (ssz < 0)
+					goto out;
+				if (widths[i] < (size_t)ssz)
+					widths[i] = (size_t)ssz;
 				st->last_blank = last_blank;
 			}
 	}
@@ -388,8 +424,11 @@ rndr_table(struct lowdown_buf *ob, struct gemini *st,
 				st->last_blank = 0;
 				if (!rndr(celltmp, NULL, st, cell))
 					goto out;
-				assert(widths[i] >= celltmp->size);
-				sz = widths[i] - celltmp->size;
+				ssz = rndr_mbswidth(st, celltmp);
+				if (ssz < 0)
+					goto out;
+				assert(widths[i] >= (size_t)ssz);
+				sz = widths[i] - (size_t)ssz;
 
 				/* 
 				 * Alignment is either beginning,
@@ -707,8 +746,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		l->n = n;
 		l->id = ++st->linkqsz;
 		TAILQ_INSERT_TAIL(&st->linkq, l, entries);
-		rc = hbuf_printf(st->tmp, 
-			"[Reference: link-%zu]", l->id) &&
+		rc = hbuf_printf(st->tmp, "[link-%zu]", l->id) &&
 			rndr_buf(st, ob, n, st->tmp);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
@@ -871,5 +909,6 @@ lowdown_gemini_free(void *arg)
 		return;
 
 	hbuf_free(p->tmp);
+	free(p->buf);
 	free(p);
 }
