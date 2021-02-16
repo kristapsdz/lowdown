@@ -1033,8 +1033,19 @@
 				the difference engine will be sane for output.
 			</p>
 			<p>
-				Metadata is also now properly handled by both the difference engine
-				and conforming front-ends.
+				Fix metadata to also be properly handled by both the difference engine
+				and conforming front-ends.  This is a bit unusual since metadata is
+				both processed during parse and also affects document output, such
+				as in document title.  For now use the same rule that front-ends
+				with metadata differences affecting document layout (e.g., title)
+				use the new form, if changed.
+			</p>
+			<p>
+				Lastly, fix footnote reference.  Footnotes will <i>always</i>
+				register as different (for now); and when they're emitted in the new
+				document, the reference definitions are re-ordered in the correct
+				way to allow <b>-Tms</b> and such to work properly.  While here,
+				make sure that all printed footnote numbers start at one.
 			</p>
 			<p>
 				Split
