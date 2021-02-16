@@ -37,26 +37,68 @@
 #include "libdiff.h"
 #include "extern.h"
 
+/*
+ * If "node" is not NULL, this represents our match attempts for a
+ * single node in a node tree.  We basically use "optmatch" and "opt" to
+ * keep trying to find the most optimal candidate in the other tree,
+ * which ends up being "match".
+ */
 struct	xnode {
-	char		 sig[MD5_DIGEST_STRING_LENGTH]; /* signature */
-	double		 weight; /* priority queue weight */
-	const struct lowdown_node *node; /* basis node */
-	const struct lowdown_node *match; /* matching node */
-	size_t		 opt; /* optimality of match */
-	const struct lowdown_node *optmatch; /* current optimal match */
+	char		 		 sig[MD5_DIGEST_STRING_LENGTH];
+	double		 		 weight; /* queue weight */
+	const struct lowdown_node 	*node; /* basis node */
+	const struct lowdown_node 	*match; /* matching node */
+	size_t		 		 opt; /* match optimality */
+	const struct lowdown_node 	*optmatch; /* current optimal */
 };
 
+/*
+ * A map of all nodes in the current tree by their ID.  A map can have
+ * holes (in which case the xnode's "node" is NULL) since we collapse
+ * adjacent text nodes as a preprocess.
+ */
 struct	xmap {
-	struct xnode	*nodes; /* all of the nodes (dense table) */
-	size_t		 maxsize; /* size of "nodes" (allocation) */
-	size_t		 maxid; /* maximum id in nodes */
-	size_t		 maxnodes; /* filled entries in "nodes" */
-	double		 maxweight; /* maximum node weight */
+	struct xnode			*nodes; /* holey table */
+	size_t		 		 maxsize; /* size of "nodes" */
+	size_t		 		 maxid; /* max node id */
+	size_t		 		 maxnodes; /* non-NULL count */
+	double		 		 maxweight; /* node weight */
 };
 
+/*
+ * Queue of nodes.  This is used in creating the priority queue of next
+ * nodes to parse.
+ */
 struct	pnode {
-	const struct lowdown_node *node; /* priority node */
-	TAILQ_ENTRY(pnode) entries;
+	const struct lowdown_node	*node; /* priority node */
+	TAILQ_ENTRY(pnode) 	 	 entries;
+};
+
+/*
+ * When we insert or delete reference (references never match), we
+ * might disrupt their order.  We want to maintain that the order of
+ * footnote reference is the order of their definitions.  Use this to
+ * re-order the definition queue.
+ */
+struct	ref {
+	size_t				 newid;
+	size_t				 oldid;
+	int				 inoldtree;
+	TAILQ_ENTRY(ref)		 entries;
+};
+
+TAILQ_HEAD(refq, ref);
+
+/*
+ * Convenience structure to hold data we use when merging together the
+ * trees, mostly for the maps and reference queue for reassembling the
+ * ordered references.
+ */
+struct	merger {
+	const struct xmap 		*xoldmap;
+	const struct xmap 		*xnewmap;
+	size_t			 	 id; /* maxid in new tree */
+	struct refq		 	 refq; /* ref re-id */
 };
 
 TAILQ_HEAD(pnodeq, pnode);
@@ -75,6 +117,7 @@ static void
 MD5Updatebuf(MD5_CTX *ctx, const struct lowdown_buf *v)
 {
 
+	assert(v != NULL);
 	MD5Update(ctx, (const uint8_t *)v->data, v->size);
 }
 
@@ -82,20 +125,24 @@ static void
 MD5Updatev(MD5_CTX *ctx, const void *v, size_t sz)
 {
 
+	assert(v != NULL);
 	MD5Update(ctx, (const unsigned char *)v, sz);
 }
 
 /*
  * If this returns non-zero, the node should be considered opaque and
- * we will not do any difference processing of it.  It will still be
- * marked as different if any changes within the node bubble up.
+ * we will not do any difference processing within it.  It will still be
+ * marked with weight and signature from child nodes and interior data.
  */
 static int
 is_opaque(const struct lowdown_node *n)
 {
 
+	assert(n != NULL);
 	return n->type == LOWDOWN_TABLE_BLOCK ||
-		n->type == LOWDOWN_META;
+		n->type == LOWDOWN_META ||
+		n->type == LOWDOWN_FOOTNOTE_DEF ||
+		n->type == LOWDOWN_FOOTNOTE_REF;
 }
 
 /*
@@ -120,10 +167,12 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 	struct xnode			 xntmp;
 	void				*pp;
 	int				 ign_chld = ign;
+	uint32_t			 rval;
 
-	/* Get our node slot. */
-
-	memset(&xntmp, 0, sizeof(struct xnode));
+	/* 
+	 * Get our node slot unless we're ignoring the node.
+	 * Ignoring comes when a parent in our chain is opaque.
+	 */
 
 	if (!ign) {
 		if (n->id >= map->maxsize) {
@@ -158,6 +207,7 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 
 	/* Re-assign "xn": child might have reallocated. */
 
+	memset(&xntmp, 0, sizeof(struct xnode));
 	xn = ign ? &xntmp : &map->nodes[n->id];
 	xn->weight = v;
 
@@ -262,16 +312,15 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 		MD5Updatebuf(&ctx, &n->rndr_codespan.text);
 		break;
 	case LOWDOWN_TABLE_HEADER:
-		/* Don't use the column metrics: mutable. */
+		MD5Updatev(&ctx, &n->rndr_table_header.columns,
+			sizeof(size_t));
 		break;
 	case LOWDOWN_TABLE_CELL:
 		MD5Updatev(&ctx, &n->rndr_table_cell.flags,
 			sizeof(enum htbl_flags));
-		/* Don't use the column number/count: mutable. */
+		MD5Updatev(&ctx, &n->rndr_table_cell.col,
+			sizeof(size_t));
 		break;
-	case LOWDOWN_FOOTNOTE_DEF:
-	case LOWDOWN_FOOTNOTE_REF:
-		/* Don't use footnote number: mutable. */
 	case LOWDOWN_IMAGE:
 		MD5Updatebuf(&ctx, &n->rndr_image.link);
 		MD5Updatebuf(&ctx, &n->rndr_image.title);
@@ -284,6 +333,15 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 		break;
 	case LOWDOWN_BLOCKHTML:
 		MD5Updatebuf(&ctx, &n->rndr_blockhtml.text);
+		break;
+	case LOWDOWN_FOOTNOTE_DEF:
+	case LOWDOWN_FOOTNOTE_REF:
+#if HAVE_ARC4RANDOM
+		rval = arc4random();
+#else
+		rval = random();
+#endif
+		MD5Updatev(&ctx, &rval, sizeof(uint32_t));
 		break;
 	default:
 		break;
@@ -466,11 +524,6 @@ match_eq(const struct lowdown_node *n1,
 	case LOWDOWN_META:
 		if (!hbuf_eq
 		    (&n1->rndr_meta.key, &n2->rndr_meta.key))
-			return 0;
-		break;
-	case LOWDOWN_FOOTNOTE_DEF:
-		if (n1->rndr_footnote_def.num !=
-		    n2->rndr_footnote_def.num)
 			return 0;
 		break;
 	case LOWDOWN_LISTITEM:
@@ -709,10 +762,6 @@ node_clone(const struct lowdown_node *v, size_t id)
 			v->rndr_table_cell.col;
 		n->rndr_table_cell.columns = 
 			v->rndr_table_cell.columns;
-		break;
-	case LOWDOWN_FOOTNOTE_DEF:
-	case LOWDOWN_FOOTNOTE_REF:
-		/* Don't use footnote number: mutable. */
 		break;
 	case LOWDOWN_IMAGE:
 		rc = hbuf_clone(&v->rndr_image.link,
@@ -990,14 +1039,13 @@ out:
  */
 static struct lowdown_node *
 node_merge(const struct lowdown_node *nold,
-	const struct xmap *xoldmap,
-	const struct lowdown_node *nnew,
-	const struct xmap *xnewmap,
-	size_t *id)
+	const struct lowdown_node *nnew, struct merger *parms)
 {
 	const struct xnode		*xnew, *xold;
 	struct lowdown_node		*n, *nn;
 	const struct lowdown_node	*nnold;
+	const struct xmap 		*xoldmap = parms->xoldmap,
+	      				*xnewmap = parms->xnewmap;
 
 	/* 
 	 * Invariant: the current nodes are matched.
@@ -1011,7 +1059,7 @@ node_merge(const struct lowdown_node *nold,
 	assert(xold->match != NULL);
 	assert(xnew->match == xold->node);
 
-	if ((n = node_clone(nnew, (*id)++)) == NULL)
+	if ((n = node_clone(nnew, parms->id++)) == NULL)
 		goto err;
 
 	/* Now walk through the children on both sides. */
@@ -1033,7 +1081,8 @@ node_merge(const struct lowdown_node *nold,
 			if (xold->match != NULL ||
 			    LOWDOWN_NORMAL_TEXT == nold->type)
 				break;
-			if ((nn = node_clonetree(nold, id)) == NULL)
+			if ((nn = node_clonetree
+			    (nold, &parms->id)) == NULL)
 				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
@@ -1053,7 +1102,8 @@ node_merge(const struct lowdown_node *nold,
 			if (xnew->match != NULL ||
 			    LOWDOWN_NORMAL_TEXT == nnew->type)
 				break;
-			if ((nn = node_clonetree(nnew, id)) == NULL)
+			if ((nn = node_clonetree
+			    (nnew, &parms->id)) == NULL)
 				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
@@ -1072,7 +1122,7 @@ node_merge(const struct lowdown_node *nold,
 		    xold->match == NULL &&
 		    nnew->type == LOWDOWN_NORMAL_TEXT &&
 		    xnew->match == NULL) {
-			if (!node_lcs(nold, nnew, n, id))
+			if (!node_lcs(nold, nnew, n, &parms->id))
 				goto err;
 			nold = TAILQ_NEXT(nold, entries);
 			nnew = TAILQ_NEXT(nnew, entries);
@@ -1082,7 +1132,8 @@ node_merge(const struct lowdown_node *nold,
 			xold = &xoldmap->nodes[nold->id];
 			if (xold->match != NULL)
 				break;
-			if ((nn = node_clonetree(nold, id)) == NULL)
+			if ((nn = node_clonetree
+			    (nold, &parms->id)) == NULL)
 				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
@@ -1090,11 +1141,12 @@ node_merge(const struct lowdown_node *nold,
 			nold = TAILQ_NEXT(nold, entries);
 		}
 
-		while ( nnew != NULL) {
+		while (nnew != NULL) {
 			xnew = &xnewmap->nodes[nnew->id];
 			if (xnew->match != NULL)
 				break;
-			if ((nn = node_clonetree(nnew, id)) == NULL)
+			if ((nn = node_clonetree
+			    (nnew, &parms->id)) == NULL)
 				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
@@ -1135,7 +1187,8 @@ node_merge(const struct lowdown_node *nold,
 		 */
 
 		if (nnold == NULL) {
-			if ((nn = node_clonetree(nnew, id)) == NULL)
+			if ((nn = node_clonetree
+			    (nnew, &parms->id)) == NULL)
 				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
@@ -1150,7 +1203,8 @@ node_merge(const struct lowdown_node *nold,
 			xold = &xoldmap->nodes[nold->id];
 			if (xnew->node == xold->match) 
 				break;
-			if ((nn = node_clonetree(nold, id)) == NULL)
+			if ((nn = node_clonetree
+			    (nold, &parms->id)) == NULL)
 				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
@@ -1168,13 +1222,14 @@ node_merge(const struct lowdown_node *nold,
 
 		if (is_opaque(nnew)) {
 			assert(is_opaque(nold));
-			if ((nn = node_clonetree(nnew, id)) == NULL)
+			if ((nn = node_clonetree
+			    (nnew, &parms->id)) == NULL)
 				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
 		} else {
 			assert(!is_opaque(nold));
-			nn = node_merge(nold, xoldmap, nnew, xnewmap, id);
+			nn = node_merge(nold, nnew, parms);
 			if (nn == NULL)
 				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
@@ -1188,7 +1243,7 @@ node_merge(const struct lowdown_node *nold,
 	/* Flush remaining old nodes. */
 
 	while (nold != NULL) {
-		if ((nn = node_clonetree(nold, id)) == NULL)
+		if ((nn = node_clonetree (nold, &parms->id)) == NULL)
 			goto err;
 		TAILQ_INSERT_TAIL(&n->children, nn, entries);
 		nn->parent = n;
@@ -1376,6 +1431,7 @@ lowdown_diff(const struct lowdown_node *nold,
 	const struct lowdown_node	*n, *nn;
 	struct lowdown_node		*comp = NULL;
 	size_t				 i;
+	struct merger			 parms;
 
 	memset(&xoldmap, 0, sizeof(struct xmap));
 	memset(&xnewmap, 0, sizeof(struct xmap));
@@ -1478,8 +1534,10 @@ lowdown_diff(const struct lowdown_node *nold,
 	 * See "Phase 5", sec. 5.2.
 	 */
 
-	i = 0;
-	comp = node_merge(nold, &xoldmap, nnew, &xnewmap, &i);
+	memset(&parms, 0, sizeof(struct merger));
+	parms.xoldmap = &xoldmap;
+	parms.xnewmap = &xnewmap;
+	comp = node_merge(nold, nnew, &parms);
 
 	*maxn = xnewmap.maxid > xoldmap.maxid ?
 		xnewmap.maxid + 1 :
