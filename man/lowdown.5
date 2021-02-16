@@ -425,7 +425,10 @@ Table columns may contain arbitrary span elements.
 .
 .Ss Footnote Definition
 Footnotes are a MMD (Multimarkdown) extension of the basic syntax.
-Footnote definitions may occur anywhere in the text and are "pointed to" by a
+Footnote definitions may occur anywhere in the text (except within
+blocks) and are
+.Dq pointed to
+by a
 .Sx Footnote Reference .
 They consist of the footnote name (in square brackets, preceded by the
 caret), a colon, then everything remaining in the block is the footnote
