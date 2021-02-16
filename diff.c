@@ -81,8 +81,8 @@ struct	pnode {
  * re-order the definition queue.
  */
 struct	ref {
-	size_t				 newid;
-	size_t				 oldid;
+	size_t				 newnum;
+	size_t				 oldnum;
 	int				 inoldtree;
 	TAILQ_ENTRY(ref)		 entries;
 };
@@ -99,6 +99,7 @@ struct	merger {
 	const struct xmap 		*xnewmap;
 	size_t			 	 id; /* maxid in new tree */
 	struct refq		 	 refq; /* ref re-id */
+	size_t				 refnum;
 };
 
 TAILQ_HEAD(pnodeq, pnode);
@@ -1028,6 +1029,73 @@ out:
 	return rc;
 }
 
+static int
+ref_insert(struct lowdown_node *nn, 
+	const struct lowdown_node *nf, struct merger *parms)
+{
+	struct ref	*ref;
+
+	if ((ref = calloc(1, sizeof(struct ref))) == NULL)
+		return 0;
+	assert(nf->type == LOWDOWN_FOOTNOTE_REF);
+	TAILQ_INSERT_TAIL(&parms->refq, ref, entries);
+	ref->oldnum = nf->rndr_footnote_ref.num;
+	nn->rndr_footnote_ref.num = parms->refnum++;
+	ref->newnum = nn->rndr_footnote_ref.num;
+	ref->inoldtree = nn->chng == LOWDOWN_CHNG_DELETE;
+	return 1;
+}
+
+static void
+ref_free(struct merger *parms)
+{
+	struct ref	*ref;
+
+	while ((ref = TAILQ_FIRST(&parms->refq)) != NULL) {
+		TAILQ_REMOVE(&parms->refq, ref, entries);
+		free(ref);
+	}
+}
+
+static int
+ref_reorder(struct lowdown_node *n, 
+	const struct lowdown_node *nold,
+	const struct lowdown_node *nnew,
+	struct merger *parms)
+{
+	struct ref			*ref;
+	const struct lowdown_node	*nn;
+	struct lowdown_node		*nc;
+
+	TAILQ_FOREACH(ref, &parms->refq, entries) {
+		nn = NULL;
+		if (ref->inoldtree) {
+			TAILQ_FOREACH(nn, &nold->children, entries) {
+				assert(nn->type == LOWDOWN_FOOTNOTE_DEF);
+				if (nn->rndr_footnote_def.num == ref->oldnum)
+					break;
+			}
+		} else {
+			TAILQ_FOREACH(nn, &nnew->children, entries) {
+				assert(nn->type == LOWDOWN_FOOTNOTE_DEF);
+				if (nn->rndr_footnote_def.num == ref->oldnum)
+					break;
+			}
+		}
+		if (nn == NULL)
+			continue;
+		if ((nc = node_clonetree(nn, &parms->id)) == NULL)
+			return 0;
+		TAILQ_INSERT_TAIL(&n->children, nc, entries);
+		nc->parent = n;
+		nc->chng = ref->inoldtree ? LOWDOWN_CHNG_DELETE : LOWDOWN_CHNG_INSERT;
+		assert(nc->type == LOWDOWN_FOOTNOTE_DEF);
+		nc->rndr_footnote_def.num = ref->newnum;
+	}
+
+	return 1;
+}
+
 /*
  * Merge the new tree "nnew" with the old "nold" using a depth-first
  * algorithm.
@@ -1062,6 +1130,19 @@ node_merge(const struct lowdown_node *nold,
 	if ((n = node_clone(nnew, parms->id++)) == NULL)
 		goto err;
 
+	/* 
+	 * Special handling of footnotes: we might have rearranged the
+	 * order in which footnote definitions are displayed.  So now we
+	 * go through the queue of footnotes and insert them in the
+	 * order they were defined.
+	 */
+
+	if (n->type == LOWDOWN_FOOTNOTES_BLOCK) {
+		if (!ref_reorder(n, nold, nnew, parms))
+			goto err;
+		return n;
+	}
+
 	/* Now walk through the children on both sides. */
 
 	nold = TAILQ_FIRST(&nold->children);
@@ -1087,6 +1168,9 @@ node_merge(const struct lowdown_node *nold,
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
 			nn->chng = LOWDOWN_CHNG_DELETE;
+			if (nn->type == LOWDOWN_FOOTNOTE_REF &&
+			    !ref_insert(nn, nold, parms))
+				goto err;
 			nold = TAILQ_NEXT(nold, entries);
 		}
 
@@ -1108,6 +1192,9 @@ node_merge(const struct lowdown_node *nold,
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
 			nn->chng = LOWDOWN_CHNG_INSERT;
+			if (nn->type == LOWDOWN_FOOTNOTE_REF &&
+			    !ref_insert(nn, nnew, parms))
+				goto err;
 			nnew = TAILQ_NEXT(nnew, entries);
 		}
 
@@ -1138,6 +1225,9 @@ node_merge(const struct lowdown_node *nold,
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
 			nn->chng = LOWDOWN_CHNG_DELETE;
+			if (nn->type == LOWDOWN_FOOTNOTE_REF &&
+			    !ref_insert(nn, nold, parms))
+				goto err;
 			nold = TAILQ_NEXT(nold, entries);
 		}
 
@@ -1151,6 +1241,9 @@ node_merge(const struct lowdown_node *nold,
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
 			nn->chng = LOWDOWN_CHNG_INSERT;
+			if (nn->type == LOWDOWN_FOOTNOTE_REF &&
+			    !ref_insert(nn, nnew, parms))
+				goto err;
 			nnew = TAILQ_NEXT(nnew, entries);
 		}
 
@@ -1193,6 +1286,9 @@ node_merge(const struct lowdown_node *nold,
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
 			nn->chng = LOWDOWN_CHNG_INSERT;
+			if (nn->type == LOWDOWN_FOOTNOTE_REF &&
+			    !ref_insert(nn, nnew, parms))
+				goto err;
 			nnew = TAILQ_NEXT(nnew, entries);
 			continue;
 		}
@@ -1209,6 +1305,9 @@ node_merge(const struct lowdown_node *nold,
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
 			nn->chng = LOWDOWN_CHNG_DELETE;
+			if (nn->type == LOWDOWN_FOOTNOTE_REF &&
+			    !ref_insert(nn, nnew, parms))
+				goto err;
 			nold = TAILQ_NEXT(nold, entries);
 		}
 
@@ -1537,7 +1636,9 @@ lowdown_diff(const struct lowdown_node *nold,
 	memset(&parms, 0, sizeof(struct merger));
 	parms.xoldmap = &xoldmap;
 	parms.xnewmap = &xnewmap;
+	TAILQ_INIT(&parms.refq);
 	comp = node_merge(nold, nnew, &parms);
+	ref_free(&parms);
 
 	*maxn = xnewmap.maxid > xoldmap.maxid ?
 		xnewmap.maxid + 1 :
