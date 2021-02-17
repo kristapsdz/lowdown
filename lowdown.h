@@ -207,11 +207,13 @@ struct	rndr_table_cell {
 
 struct	rndr_footnote_def {
 	size_t num; /* footnote number */
+	struct lowdown_buf key; /* reference key */
 };
 
 struct	rndr_footnote_ref {
 	size_t num; /* footnote number */
 	struct lowdown_buf def; /* (unparsed) definition */
+	struct lowdown_buf key; /* reference key */
 };
 
 struct	rndr_blockhtml {

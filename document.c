@@ -3,7 +3,7 @@
  * Copyright (c) 2008, Natacha Porté
  * Copyright (c) 2011, Vicent Martí
  * Copyright (c) 2014, Xavier Mendez, Devin Torres and the Hoedown authors
- * Copyright (c) 2016--2017, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) 2016--2021 Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -50,9 +50,9 @@
  * Used to hold metadata keys and values.
  * This is for filling in the metadata value with references.
  */
-struct hbufn {
+struct	hbufn {
 	const struct lowdown_buf	*key; /* key of the value */
-	const struct lowdown_buf	*val; /* value (or NULL for no value) */
+	const struct lowdown_buf	*val; /* value (or NULL) */
 	TAILQ_ENTRY(hbufn) entries;
 };
 
@@ -61,8 +61,8 @@ TAILQ_HEAD(hbufq, hbufn);
 /* 
  * Reference to a link.
  */
-struct link_ref {
-	struct lowdown_buf	*name; /* identifier of link (or NULL) */
+struct	link_ref {
+	struct lowdown_buf	*name; /* id of link (or NULL) */
 	struct lowdown_buf	*link; /* link address */
 	struct lowdown_buf	*title; /* optional title */
 	TAILQ_ENTRY(link_ref)	 entries;
@@ -71,35 +71,36 @@ struct link_ref {
 TAILQ_HEAD(link_refq, link_ref);
 
 /* 
- * Feference to a footnote. 
+ * Reference to a footnote.  This keeps track of all footnotes
+ * definitions and whether there's both a definition and reference.
  */
-struct footnote_ref {
-	int		 	 is_used; /* whether has been referenced */
-	size_t		 	 num; /* if referenced, the order */
-	struct lowdown_buf	*name; /* identifier (or NULL) */
-	struct lowdown_buf	*contents; /* contents of footnote */
-	TAILQ_ENTRY(footnote_ref) entries;
+struct	foot_ref {
+	int			 is_used; /* if referenced */
+	size_t			 num; /* if is_used, the order */
+	struct lowdown_buf	*name; /* identifier */
+	struct lowdown_buf	*contents; /* definition */
+	TAILQ_ENTRY(foot_ref)	 entries;
 };
 
-TAILQ_HEAD(footnote_refq, footnote_ref);
+TAILQ_HEAD(foot_refq, foot_ref);
 
 struct 	lowdown_doc {
-	struct link_refq refq; /* all internal references */
-	struct footnote_refq footnotes; /* all footnotes */
-	size_t		 footnotesz; /* # of used footnotes */
-	int		 active_char[256]; /* jump table */
-	unsigned int	 ext_flags; /* options */
-	size_t	 	 cur_par; /* XXX: not used */
-	int		 in_link_body; /* parsing link body */
-	size_t		 nodes; /* number of nodes */
-	struct lowdown_node *current; /* current node */
-	struct hbufq	 metaq; /* raw metadata key/values */
-	size_t		 depth; /* current parse tree depth */
-	size_t		 maxdepth; /* max parse tree depth */
-	char		**meta; /* primer metadata */
-	size_t		  metasz; /* key-value pairs in meta */
-	char		**metaovr; /* override metadata */
-	size_t		  metaovrsz; /* key-value pairs in metaovr */
+	struct link_refq	  refq; /* all internal references */
+	struct foot_refq	  footq; /* all footnotes */
+	size_t			  foots; /* # of used footnotes */
+	int			  active_char[256]; /* jump table */
+	unsigned int		  ext_flags; /* options */
+	size_t			  cur_par; /* XXX: not used */
+	int			  in_link_body; /* parsing link body */
+	size_t			  nodes; /* number of nodes */
+	struct lowdown_node	 *current; /* current node */
+	struct hbufq		  metaq; /* raw metadata key/values */
+	size_t			  depth; /* current parse tree depth */
+	size_t			  maxdepth; /* max parse tree depth */
+	char			**meta; /* primer metadata */
+	size_t			  metasz; /* size of meta */
+	char			**metaovr; /* override metadata */
+	size_t			  metaovrsz; /* size of metaovr */
 };
 
 /*
@@ -199,7 +200,7 @@ pushnode(struct lowdown_doc *doc, enum lowdown_rndrt t)
  * Return zero on failure (memory), non-zero on success.
  */
 static int
-pushbuffer(struct lowdown_buf *buf, const char *data, size_t datasz)
+pushbuf(struct lowdown_buf *buf, const char *data, size_t datasz)
 {
 
 	assert(buf->size == 0);
@@ -213,6 +214,13 @@ pushbuffer(struct lowdown_buf *buf, const char *data, size_t datasz)
 		memcpy(buf->data, data, datasz);
 	}
 	return 1;
+}
+
+static int
+pushlbuf(struct lowdown_buf *buf, const struct lowdown_buf *nbuf)
+{
+
+	return pushbuf(buf, nbuf->data, nbuf->size);
 }
 
 /*
@@ -283,25 +291,10 @@ free_link_refs(struct link_refq *q)
 	}
 }
 
-static struct footnote_ref *
-find_footnote_ref(struct footnote_refq *q, char *name, size_t sz)
-{
-	struct footnote_ref	*ref;
-
-	TAILQ_FOREACH(ref, q, entries)
-		if ((ref->name == NULL && sz == 0) ||
-		    (ref->name != NULL &&
-		     ref->name->size == sz &&
-		     memcmp(ref->name->data, name, sz) == 0))
-			return ref;
-
-	return NULL;
-}
-
 static void
-free_footnote_refs(struct footnote_refq *q)
+free_foot_refq(struct foot_refq *q)
 {
-	struct footnote_ref	*ref;
+	struct foot_ref	*ref;
 
 	while ((ref = TAILQ_FIRST(q)) != NULL) {
 		TAILQ_REMOVE(q, ref, entries);
@@ -469,7 +462,7 @@ parse_image_attrs(struct rndr_image *img, const char *data, size_t size)
 			offs++;
 
 		if (buf != NULL && buf->size == 0 && offs > i)
-			if (!pushbuffer(buf, &data[i], offs - i))
+			if (!pushbuf(buf, &data[i], offs - i))
 				return -1;
 	}
 
@@ -602,7 +595,7 @@ parse_inline(struct lowdown_doc *doc, char *data, size_t size)
 			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 			if (n == NULL)
 				return 0;
-			if (!pushbuffer(&n->rndr_normal_text.text, 
+			if (!pushbuf(&n->rndr_normal_text.text, 
 			    data + i, end - i))
 				return 0;
 			popnode(doc, n);
@@ -956,7 +949,7 @@ parse_math(struct lowdown_doc *doc, char *data, size_t offset,
 		n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 		if (n == NULL)
 			return -1;
-		if (!pushbuffer(&n->rndr_normal_text.text, data, i))
+		if (!pushbuf(&n->rndr_normal_text.text, data, i))
 			return -1;
 		popnode(doc, n);
 		return i;
@@ -965,7 +958,7 @@ parse_math(struct lowdown_doc *doc, char *data, size_t offset,
 	n = pushnode(doc, LOWDOWN_MATH_BLOCK);
 	if (n == NULL)
 		return -1;
-  	if (!pushbuffer(&n->rndr_math.text, 
+  	if (!pushbuf(&n->rndr_math.text, 
 	    data + delimsz, i - 2 * delimsz))
 		return -1;
 	n->rndr_math.blockmode = blockmode;
@@ -1108,8 +1101,7 @@ char_codespan(struct lowdown_doc *doc,
 	if (f_begin < f_end) {
 		work.data = data + f_begin;
 		work.size = f_end - f_begin;
-		if (!pushbuffer(&n->rndr_codespan.text, 
-		    work.data, work.size))
+		if (!pushlbuf(&n->rndr_codespan.text, &work))
 			return -1;
 	} 
 
@@ -1165,15 +1157,13 @@ char_escape(struct lowdown_doc *doc,
 			return 0;
 		if ((n = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
 			return -1;
-		if (!pushbuffer
-		    (&n->rndr_normal_text.text, data + 1, 1))
+		if (!pushbuf(&n->rndr_normal_text.text, data + 1, 1))
 			return -1;
 		popnode(doc, n);
 	} else if (size == 1) {
 		if ((n = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
 			return -1;
-		if (!pushbuffer
-		    (&n->rndr_normal_text.text, data, 1))
+		if (!pushbuf(&n->rndr_normal_text.text, data, 1))
 			return -1;
 		popnode(doc, n);
 	}
@@ -1205,7 +1195,7 @@ char_entity(struct lowdown_doc *doc,
 
 	if ((n = pushnode(doc, LOWDOWN_ENTITY)) == NULL)
 		return -1;
-	if (!pushbuffer(&n->rndr_entity.text, data, end))
+	if (!pushbuf(&n->rndr_entity.text, data, end))
 		return -1;
 	popnode(doc, n);
 	return end;
@@ -1243,19 +1233,16 @@ char_langle_tag(struct lowdown_doc *doc,
 			if (n == NULL)
 				goto err;
 			n->rndr_autolink.type = altype;
-			if (!pushbuffer(&n->rndr_autolink.link, 
-			    u_link->data, u_link->size))
+			if (!pushlbuf(&n->rndr_autolink.link, u_link))
 				goto err;
-			if (!pushbuffer(&n->rndr_autolink.text, 
-			    u_link->data, u_link->size))
+			if (!pushlbuf(&n->rndr_autolink.text, u_link))
 				goto err;
 			popnode(doc, n);
 		} else {
 			n = pushnode(doc, LOWDOWN_RAW_HTML);
 			if (n == NULL)
 				goto err;
-			if (!pushbuffer(&n->rndr_raw_html.text, 
-			    data, end))
+			if (!pushbuf(&n->rndr_raw_html.text, data, end))
 				goto err;
 			popnode(doc, n);
 		}
@@ -1311,8 +1298,7 @@ char_autolink_www(struct lowdown_doc *doc,
 		if ((n = pushnode(doc, LOWDOWN_LINK_AUTO)) == NULL)
 			goto err;
 		n->rndr_autolink.type = HALINK_NORMAL;
-		if (!pushbuffer(&n->rndr_autolink.link, 
-		    link_url->data, link_url->size))
+		if (!pushlbuf(&n->rndr_autolink.link, link_url))
 			goto err;
 		popnode(doc, n);
 	}
@@ -1361,8 +1347,7 @@ char_autolink_email(struct lowdown_doc *doc,
 		if ((n = pushnode(doc, LOWDOWN_LINK_AUTO)) == NULL)
 			goto err;
 		n->rndr_autolink.type = HALINK_EMAIL;
-		if (!pushbuffer(&n->rndr_autolink.link, 
-		    link->data, link->size))
+		if (!pushlbuf(&n->rndr_autolink.link, link))
 			goto err;
 		popnode(doc, n);
 	}
@@ -1409,8 +1394,7 @@ char_autolink_url(struct lowdown_doc *doc,
 		if ((n = pushnode(doc, LOWDOWN_LINK_AUTO)) == NULL)
 			goto err;
 		n->rndr_autolink.type = HALINK_NORMAL;
-		if (!pushbuffer(&n->rndr_autolink.link, 
-		    link->data, link->size))
+		if (!pushlbuf(&n->rndr_autolink.link, link))
 			goto err;
 		popnode(doc, n);
 	}
@@ -1456,7 +1440,7 @@ char_link(struct lowdown_doc *doc,
 				 is_img, is_footnote, is_metadata;
 	struct lowdown_buf	 id;
 	struct link_ref 	*lr;
-	struct footnote_ref 	*fr;
+	struct foot_ref	 	*fr;
 	struct lowdown_node 	*n;
 	struct hbufn		*m;
 
@@ -1490,8 +1474,9 @@ char_link(struct lowdown_doc *doc,
 		id.data = data + 2;
 		id.size = txt_e - 2;
 
-		fr = find_footnote_ref
-			(&doc->footnotes, id.data, id.size);
+		TAILQ_FOREACH(fr, &doc->footq, entries)
+			if (hbuf_eq(fr->name, &id))
+				break;
 
 		/* 
 		 * Mark footnote used.
@@ -1506,24 +1491,27 @@ char_link(struct lowdown_doc *doc,
 			n = pushnode(doc, LOWDOWN_FOOTNOTE_REF);
 			if (n == NULL)
 				goto err;
-			fr->num = ++doc->footnotesz;
+			fr->num = ++doc->foots;
 			fr->is_used = 1;
 			n->rndr_footnote_ref.num = fr->num;
-			if (!pushbuffer(&n->rndr_footnote_ref.def,
-				fr->contents->data, fr->contents->size))
+			if (!pushlbuf
+			    (&n->rndr_footnote_ref.key, fr->name))
+				goto err;
+			if (!pushlbuf
+			    (&n->rndr_footnote_ref.def, fr->contents))
 				goto err;
 		} else if (fr != NULL && fr->is_used) {
 			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 			if (n == NULL)
 				goto err;
-			if (!pushbuffer(&n->rndr_normal_text.text, 
+			if (!pushbuf(&n->rndr_normal_text.text, 
 			    data, txt_e + 1))
 				goto err;
 		} else {
 			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 			if (n == NULL)
 				goto err;
-			if (!pushbuffer(&n->rndr_normal_text.text, 
+			if (!pushbuf(&n->rndr_normal_text.text, 
 			    data, txt_e + 1))
 				goto err;
 		}
@@ -1555,9 +1543,8 @@ char_link(struct lowdown_doc *doc,
 				n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 				if (n == NULL)
 					goto err;
-				if (!pushbuffer
-				    (&n->rndr_normal_text.text,
-				     m->val->data, m->val->size))
+				if (!pushlbuf
+				    (&n->rndr_normal_text.text, m->val))
 					goto err;
 				popnode(doc, n);
 			}
@@ -1838,25 +1825,25 @@ again:
 	/* Calling the relevant rendering function. */
 
 	if (is_img) {
-		if (u_link != NULL && !pushbuffer
-		    (&n->rndr_image.link, u_link->data, u_link->size))
+		if (u_link != NULL &&
+		    !pushlbuf(&n->rndr_image.link, u_link))
 			goto err;
-		if (title != NULL && !pushbuffer
-		    (&n->rndr_image.title, title->data, title->size))
+		if (title != NULL && 
+		    !pushlbuf(&n->rndr_image.title, title))
 			goto err;
-		if (dims != NULL && !pushbuffer
-		    (&n->rndr_image.dims, dims->data, dims->size))
+		if (dims != NULL &&
+		    !pushlbuf(&n->rndr_image.dims, dims))
 			goto err;
-		if (content != NULL && !pushbuffer
-		    (&n->rndr_image.alt, content->data, content->size))
+		if (content != NULL && 
+		    !pushlbuf(&n->rndr_image.alt, content))
 			goto err;
 		ret = 1;
 	} else {
-		if (u_link != NULL && !pushbuffer
-		    (&n->rndr_link.link, u_link->data, u_link->size))
+		if (u_link != NULL && 
+		    !pushlbuf(&n->rndr_link.link, u_link))
 			goto err;
-		if (title != NULL && !pushbuffer
-		    (&n->rndr_link.title, title->data, title->size))
+		if (title != NULL && 
+		    !pushlbuf(&n->rndr_link.title, title))
 			goto err;
 		ret = 1;
 	}
@@ -2461,11 +2448,10 @@ parse_fencedcode(struct lowdown_doc *doc, char *data, size_t size)
 	if ((n = pushnode(doc, LOWDOWN_BLOCKCODE)) == NULL)
 		return -1;
 
-	if (!pushbuffer(&n->rndr_blockcode.text, 
+	if (!pushbuf(&n->rndr_blockcode.text, 
 	    data + text_start, line_start - text_start))
 		return -1;
-	if (!pushbuffer(&n->rndr_blockcode.lang, 
-	    lang.data, lang.size))
+	if (!pushlbuf(&n->rndr_blockcode.lang, &lang))
 		return -1;
 	popnode(doc, n);
 	return i;
@@ -2525,8 +2511,7 @@ parse_blockcode(struct lowdown_doc *doc, char *data, size_t size)
 
 	if ((n = pushnode(doc, LOWDOWN_BLOCKCODE)) == NULL)
 		goto err;
-	if (!pushbuffer(&n->rndr_blockcode.text, 
-	    work->data, work->size))
+	if (!pushlbuf(&n->rndr_blockcode.text, work))
 		goto err;
 	popnode(doc, n);
 	hbuf_free(work);
@@ -2919,15 +2904,17 @@ parse_atxheader(struct lowdown_doc *doc, char *data, size_t size)
  * Return zero on failure, non-zero on success.
  */
 static int
-parse_footnote_def(struct lowdown_doc *doc,
-	unsigned int num, char *data, size_t size)
+parse_footnote_def(struct lowdown_doc *doc, struct foot_ref *ref)
 {
 	struct lowdown_node	*n;
 
 	if ((n = pushnode(doc, LOWDOWN_FOOTNOTE_DEF)) == NULL)
 		return 0;
-	n->rndr_footnote_def.num = num;
-	if (!parse_block(doc, data, size))
+	n->rndr_footnote_def.num = ref->num;
+	if (!pushlbuf(&n->rndr_footnote_def.key, ref->name))
+		return 0;
+	if (!parse_block(doc, 
+	    ref->contents->data, ref->contents->size))
 		return 0;
 	popnode(doc, n);
 	return 1;
@@ -2940,11 +2927,11 @@ parse_footnote_def(struct lowdown_doc *doc,
 static int
 parse_footnote_list(struct lowdown_doc *doc)
 {
-	struct footnote_ref	*ref;
+	struct foot_ref		*ref;
 	struct lowdown_node	*n = NULL;
 	size_t			 i, first = 1;
 
-	if (TAILQ_EMPTY(&doc->footnotes))
+	if (TAILQ_EMPTY(&doc->footq))
 		return 1;
 
 	/*
@@ -2952,8 +2939,8 @@ parse_footnote_list(struct lowdown_doc *doc)
 	 * Only emit the footnote block if we have some.
 	 */
 
-	for (i = 0; i <= doc->footnotesz; i++)
-		TAILQ_FOREACH(ref, &doc->footnotes, entries) {
+	for (i = 0; i <= doc->foots; i++)
+		TAILQ_FOREACH(ref, &doc->footq, entries) {
 			if (ref->num != i || !ref->is_used)
 				continue;
 			if (first) {
@@ -2963,9 +2950,7 @@ parse_footnote_list(struct lowdown_doc *doc)
 					return 0;
 				first = 0;
 			}
-			if (!parse_footnote_def(doc, ref->num,
-			     ref->contents->data, 
-			     ref->contents->size))
+			if (!parse_footnote_def(doc, ref))
 				return 0;
 		}
 
@@ -3168,9 +3153,8 @@ parse_htmlblock(struct lowdown_doc *doc, char *data, size_t size)
 				if (n == NULL)
 					return -1;
 				work.size = i + j;
-				if (!pushbuffer
-				    (&n->rndr_blockhtml.text,
-				     work.data, work.size))
+				if (!pushlbuf
+				    (&n->rndr_blockhtml.text, &work))
 					return -1;
 				popnode(doc, n);
 				return work.size;
@@ -3198,9 +3182,9 @@ parse_htmlblock(struct lowdown_doc *doc, char *data, size_t size)
 					if (n == NULL)
 						return -1;
 					work.size = i + j;
-					if (!pushbuffer
-					    (&n->rndr_blockhtml.text,
-					     work.data, work.size))
+					if (!pushlbuf
+					    (&n->rndr_blockhtml.text, 
+					     &work))
 						return -1;
 					popnode(doc, n);
 					return work.size;
@@ -3241,8 +3225,7 @@ parse_htmlblock(struct lowdown_doc *doc, char *data, size_t size)
 		return -1;
 
 	work.size = tag_end;
-	if (!pushbuffer
-	    (&n->rndr_blockhtml.text, work.data, work.size))
+	if (!pushlbuf(&n->rndr_blockhtml.text, &work))
 		return -1;
 	popnode(doc, n);
 	return tag_end;
@@ -3673,7 +3656,7 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 				 id_offset, id_end;
 	struct lowdown_buf	*contents = NULL;
 	int			 in_empty = 0;
-	struct footnote_ref	*ref = NULL;
+	struct foot_ref		*ref = NULL;
 
 	/* up to 3 optional leading spaces */
 
@@ -3777,10 +3760,10 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 	if (last)
 		*last = start;
 
-	if ((ref = calloc(1, sizeof(struct footnote_ref))) == NULL)
+	if ((ref = calloc(1, sizeof(struct foot_ref))) == NULL)
 		goto err;
 
-	TAILQ_INSERT_TAIL(&doc->footnotes, ref, entries);
+	TAILQ_INSERT_TAIL(&doc->footq, ref, entries);
 	ref->contents = contents;
 
 	if (id_end - id_offset) {
@@ -3789,7 +3772,8 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 		if (!hbuf_put(ref->name,
 		    data + id_offset, id_end - id_offset))
 			return -1;
-	} 
+	}
+	assert(ref->name != NULL);
 
 	return 1;
 err:
@@ -4244,7 +4228,7 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 			free(buf);
 			return -1;
 		}
-		if (!pushbuffer(&n->rndr_meta.key, buf, cp - buf)) {
+		if (!pushbuf(&n->rndr_meta.key, buf, cp - buf)) {
 			free(buf);
 			return -1;
 		}
@@ -4275,7 +4259,7 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 		if ((nn = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
 			return -1;
 		m->val = &nn->rndr_normal_text.text;
-		if (!pushbuffer(&nn->rndr_normal_text.text, val, vsz))
+		if (!pushbuf(&nn->rndr_normal_text.text, val, vsz))
 			return -1;
 		popnode(doc, nn);
 		popnode(doc, n);
@@ -4310,10 +4294,10 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 	doc->depth = 0;
 	doc->current = NULL;
 	doc->in_link_body = 0;
-	doc->footnotesz = 0;
+	doc->foots = 0;
 	TAILQ_INIT(&doc->metaq);
 	TAILQ_INIT(&doc->refq);
-	TAILQ_INIT(&doc->footnotes);
+	TAILQ_INIT(&doc->footq);
 
 	if ((text = hbuf_new(64)) == NULL)
 		goto out;
@@ -4446,7 +4430,7 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 out:
 	hbuf_free(text);
 	free_link_refs(&doc->refq);
-	free_footnote_refs(&doc->footnotes);
+	free_foot_refq(&doc->footq);
 
 	/* The contents of these hbufs have been copied elsewhere. */
 
@@ -4520,8 +4504,12 @@ lowdown_node_free(struct lowdown_node *p)
 	case LOWDOWN_MATH_BLOCK:
 		hbuf_free(&p->rndr_math.text);
 		break;
+	case LOWDOWN_FOOTNOTE_DEF:
+		hbuf_free(&p->rndr_footnote_def.key);
+		break;
 	case LOWDOWN_FOOTNOTE_REF:
 		hbuf_free(&p->rndr_footnote_ref.def);
+		hbuf_free(&p->rndr_footnote_ref.key);
 		break;
 	default:
 		break;
