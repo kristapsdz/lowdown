@@ -211,6 +211,7 @@ struct	rndr_footnote_def {
 
 struct	rndr_footnote_ref {
 	size_t num; /* footnote number */
+	struct lowdown_buf def; /* (unparsed) definition */
 };
 
 struct	rndr_blockhtml {

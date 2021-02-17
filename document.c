@@ -1509,6 +1509,9 @@ char_link(struct lowdown_doc *doc,
 			fr->num = ++doc->footnotesz;
 			fr->is_used = 1;
 			n->rndr_footnote_ref.num = fr->num;
+			if (!pushbuffer(&n->rndr_footnote_ref.def,
+				fr->contents->data, fr->contents->size))
+				goto err;
 		} else if (fr != NULL && fr->is_used) {
 			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 			if (n == NULL)
@@ -4465,68 +4468,71 @@ out:
 }
 
 void
-lowdown_node_free(struct lowdown_node *root)
+lowdown_node_free(struct lowdown_node *p)
 {
 	struct lowdown_node *n;
 
-	if (root == NULL)
+	if (p == NULL)
 		return;
 
-	switch (root->type) {
+	switch (p->type) {
 	case LOWDOWN_META:
-		hbuf_free(&root->rndr_meta.key);
+		hbuf_free(&p->rndr_meta.key);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
-		hbuf_free(&root->rndr_normal_text.text);
+		hbuf_free(&p->rndr_normal_text.text);
 		break;
 	case LOWDOWN_CODESPAN:
-		hbuf_free(&root->rndr_codespan.text);
+		hbuf_free(&p->rndr_codespan.text);
 		break;
 	case LOWDOWN_ENTITY:
-		hbuf_free(&root->rndr_entity.text);
+		hbuf_free(&p->rndr_entity.text);
 		break;
 	case LOWDOWN_LINK_AUTO:
-		hbuf_free(&root->rndr_autolink.text);
-		hbuf_free(&root->rndr_autolink.link);
+		hbuf_free(&p->rndr_autolink.text);
+		hbuf_free(&p->rndr_autolink.link);
 		break;
 	case LOWDOWN_RAW_HTML:
-		hbuf_free(&root->rndr_raw_html.text);
+		hbuf_free(&p->rndr_raw_html.text);
 		break;
 	case LOWDOWN_LINK:
-		hbuf_free(&root->rndr_link.link);
-		hbuf_free(&root->rndr_link.title);
+		hbuf_free(&p->rndr_link.link);
+		hbuf_free(&p->rndr_link.title);
 		break;
 	case LOWDOWN_BLOCKCODE:
-		hbuf_free(&root->rndr_blockcode.text);
-		hbuf_free(&root->rndr_blockcode.lang);
+		hbuf_free(&p->rndr_blockcode.text);
+		hbuf_free(&p->rndr_blockcode.lang);
 		break;
 	case LOWDOWN_BLOCKHTML:
-		hbuf_free(&root->rndr_blockhtml.text);
+		hbuf_free(&p->rndr_blockhtml.text);
 		break;
 	case LOWDOWN_TABLE_HEADER:
-		free(root->rndr_table_header.flags);
+		free(p->rndr_table_header.flags);
 		break;
 	case LOWDOWN_IMAGE:
-		hbuf_free(&root->rndr_image.link);
-		hbuf_free(&root->rndr_image.title);
-		hbuf_free(&root->rndr_image.dims);
-		hbuf_free(&root->rndr_image.alt);
-		hbuf_free(&root->rndr_image.attr_width);
-		hbuf_free(&root->rndr_image.attr_height);
+		hbuf_free(&p->rndr_image.link);
+		hbuf_free(&p->rndr_image.title);
+		hbuf_free(&p->rndr_image.dims);
+		hbuf_free(&p->rndr_image.alt);
+		hbuf_free(&p->rndr_image.attr_width);
+		hbuf_free(&p->rndr_image.attr_height);
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		hbuf_free(&root->rndr_math.text);
+		hbuf_free(&p->rndr_math.text);
+		break;
+	case LOWDOWN_FOOTNOTE_REF:
+		hbuf_free(&p->rndr_footnote_ref.def);
 		break;
 	default:
 		break;
 	}
 
-	while ((n = TAILQ_FIRST(&root->children)) != NULL) {
-		TAILQ_REMOVE(&root->children, n, entries);
+	while ((n = TAILQ_FIRST(&p->children)) != NULL) {
+		TAILQ_REMOVE(&p->children, n, entries);
 		lowdown_node_free(n);
 	}
 
-	free(root);
+	free(p);
 }
 
 void
