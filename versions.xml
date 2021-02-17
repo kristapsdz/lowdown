@@ -1041,11 +1041,11 @@
 				use the new form, if changed.
 			</p>
 			<p>
-				Lastly, fix footnote reference.  Footnotes will <i>always</i>
-				register as different (for now); and when they're emitted in the new
+				Lastly, fix footnote reference.  When they're emitted in the new
 				document, the reference definitions are re-ordered in the correct
 				way to allow <b>-Tms</b> and such to work properly.  While here,
-				make sure that all printed footnote numbers start at one.
+				make sure that all printed footnote numbers start at one and colours
+				are properly represented in output.
 			</p>
 			<p>
 				Split
