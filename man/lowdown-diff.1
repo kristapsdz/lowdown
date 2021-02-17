@@ -508,46 +508,43 @@ Removed and inserted data have different background colours.
 .Sh EXIT STATUS
 .Ex -std
 .Sh EXAMPLES
-To view a Markdown file on an ANSI-compatible, UTF-8 terminal:
+To view Markdown differences on an ANSI-compatible, UTF-8 terminal:
 .Pp
-.Dl lowdown -Tterm foo.md | less -R
+.Dl lowdown-diff -Tterm old.md new.md | less -R
 .Pp
 The terminal may also be used with
 .Xr groff 1
-or
-.Xr mandoc 1
 rendering:
 .Bd -literal -offset indent
-lowdown -sTms foo.md | groff -itk -mspdf -Tutf8 | less -R
-lowdown -sTman foo.md | groff -itk -man -Tutf8 | less -R
-lowdown -sTman foo.md | mandoc | less
+lowdown-diff -sTms old.md new.md | \e
+  groff -itk -mspdf -Tutf8 | less -R
+lowdown-diff -sTman old.md new.md | \e
+  groff -itk -man -Tutf8 | less -R
 .Ed
 .Pp
 To emit a standalone HTML5 document:
 .Pp
-.Dl lowdown -s foo.md > foo.html
+.Dl lowdown-diff -s old.md new.md > foo.html
 .Pp
 To use
 .Xr groff 1
-or
-.Xr mandoc 1
 to format as a PS file:
 .Bd -literal -offset indent
-lowdown -sTms foo.md | groff -itk -mspdf > foo.ps
-lowdown -sTman foo.md | mandoc -Tps > foo.ps
+lowdown-diff -sTms old.md new.md | \e
+  groff -itk -mspdf > foo.ps
 .Ed
 .Pp
 Or with LaTeX:
 .Bd -literal -offset indent
-lowdown -sTlatex foo.md > foo.latex
+lowdown-diff -sTlatex old.md new.md > foo.latex
 pslatex foo.latex
 .Ed
 .Pp
 PDF generation follows similar logic:
 .Bd -literal -offset indent
-lowdown -sTms foo.md | pdfroff -itk -mspdf > foo.pdf
-lowdown -sTman foo.md | mandoc -Tpdf > foo.pdf
-lowdown -sTlatex foo.md > foo.latex
+lowdown-diff -sTms old.md new.md | \e
+  pdfroff -itk -mspdf > foo.pdf
+lowdown-diff -sTlatex old.md new.md > foo.latex
 pdflatex foo.latex
 .Ed
 .Pp
@@ -563,13 +560,11 @@ set of the
 font directory and are prefixed with
 .Sq U .
 .Bd -literal -offset indent
-lowdown -sTms foo.md | pdfroff -itk -mspdf -FU-T > foo.pdf
+lowdown-diff -sTms old.md new.md | \e
+  pdfroff -itk -mspdf -FU-T > foo.pdf
 .Ed
-.Pp
-To extract the HTML-escaped title from a file's metadata:
-.Pp
-.Dl lowdown -X title foo.md
 .Sh SEE ALSO
+.Xr lowdown 1 ,
 .Xr lowdown 3 ,
 .Xr lowdown 5
 .Sh AUTHORS
