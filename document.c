@@ -77,8 +77,8 @@ TAILQ_HEAD(link_refq, link_ref);
 struct	foot_ref {
 	int			 is_used; /* if referenced */
 	size_t			 num; /* if is_used, the order */
-	struct lowdown_buf	*name; /* identifier */
-	struct lowdown_buf	*contents; /* definition */
+	struct lowdown_buf	 name; /* identifier */
+	struct lowdown_buf	 contents; /* definition */
 	TAILQ_ENTRY(foot_ref)	 entries;
 };
 
@@ -298,8 +298,8 @@ free_foot_refq(struct foot_refq *q)
 
 	while ((ref = TAILQ_FIRST(q)) != NULL) {
 		TAILQ_REMOVE(q, ref, entries);
-		hbuf_free(ref->contents);
-		hbuf_free(ref->name);
+		hbuf_free(&ref->contents);
+		hbuf_free(&ref->name);
 		free(ref);
 	}
 }
@@ -1475,7 +1475,7 @@ char_link(struct lowdown_doc *doc,
 		id.size = txt_e - 2;
 
 		TAILQ_FOREACH(fr, &doc->footq, entries)
-			if (hbuf_eq(fr->name, &id))
+			if (hbuf_eq(&fr->name, &id))
 				break;
 
 		/* 
@@ -1495,10 +1495,10 @@ char_link(struct lowdown_doc *doc,
 			fr->is_used = 1;
 			n->rndr_footnote_ref.num = fr->num;
 			if (!pushlbuf
-			    (&n->rndr_footnote_ref.key, fr->name))
+			    (&n->rndr_footnote_ref.key, &fr->name))
 				goto err;
 			if (!pushlbuf
-			    (&n->rndr_footnote_ref.def, fr->contents))
+			    (&n->rndr_footnote_ref.def, &fr->contents))
 				goto err;
 		} else if (fr != NULL && fr->is_used) {
 			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
@@ -2911,10 +2911,10 @@ parse_footnote_def(struct lowdown_doc *doc, struct foot_ref *ref)
 	if ((n = pushnode(doc, LOWDOWN_FOOTNOTE_DEF)) == NULL)
 		return 0;
 	n->rndr_footnote_def.num = ref->num;
-	if (!pushlbuf(&n->rndr_footnote_def.key, ref->name))
+	if (!pushlbuf(&n->rndr_footnote_def.key, &ref->name))
 		return 0;
 	if (!parse_block(doc, 
-	    ref->contents->data, ref->contents->size))
+	    ref->contents.data, ref->contents.size))
 		return 0;
 	popnode(doc, n);
 	return 1;
@@ -3653,7 +3653,7 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 	size_t beg, size_t end, size_t *last)
 {
 	size_t	 		 i = 0, ind = 0, start = 0, 
-				 id_offset, id_end;
+				 id_offs, id_end;
 	struct lowdown_buf	*contents = NULL;
 	int			 in_empty = 0;
 	struct foot_ref		*ref = NULL;
@@ -3672,7 +3672,7 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 	if (i >= end || data[i] != '^') 
 		return 0;
 	i++;
-	id_offset = i;
+	id_offs = i;
 	while (i < end && data[i] != '\n' && 
 	       data[i] != '\r' && data[i] != ']')
 		i++;
@@ -3764,17 +3764,10 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 		goto err;
 
 	TAILQ_INSERT_TAIL(&doc->footq, ref, entries);
-	ref->contents = contents;
-
-	if (id_end - id_offset) {
-		if ((ref->name = hbuf_new(id_end - id_offset)) == NULL)
-			return -1;
-		if (!hbuf_put(ref->name,
-		    data + id_offset, id_end - id_offset))
-			return -1;
-	}
-	assert(ref->name != NULL);
-
+	if (!pushlbuf(&ref->contents, contents))
+		return -1;
+	if (!pushbuf(&ref->name, data + id_offs, id_end - id_offs))
+		return -1;
 	return 1;
 err:
 	hbuf_free(contents);
