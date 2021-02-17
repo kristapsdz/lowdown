@@ -191,29 +191,29 @@ struct	rndr_codespan {
 };
 
 struct	rndr_table{
-	size_t columns; /* number of columns */
+	size_t columns;
 };
 
 struct	rndr_table_header {
-	enum htbl_flags *flags; /* per-column flags */
-	size_t columns; /* number of columns */
+	enum htbl_flags *flags;
+	size_t columns;
 };
 
 struct	rndr_table_cell {
-	enum htbl_flags flags; /* flags for cell */
-	size_t col; /* column number */
-	size_t columns; /* number of columns */
+	enum htbl_flags flags;
+	size_t col;
+	size_t columns;
 };
 
 struct	rndr_footnote_def {
-	size_t num; /* footnote number */
-	struct lowdown_buf key; /* reference key */
+	size_t num;
+	struct lowdown_buf key;
 };
 
 struct	rndr_footnote_ref {
-	size_t num; /* footnote number */
-	struct lowdown_buf def; /* (unparsed) definition */
-	struct lowdown_buf key; /* reference key */
+	size_t num;
+	struct lowdown_buf def;
+	struct lowdown_buf key;
 };
 
 struct	rndr_blockhtml {

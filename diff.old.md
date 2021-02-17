@@ -112,7 +112,9 @@ library is able to produce a full parse tree for analysis, it stands to
 reason, given the wealth of literature on tree differences (instead of
 the usual linear difference, as in the case of
 [diff(1)](https://man.openbsd.org/diff.1) and friends), one can work
-within the language to produce differences.
+within the language to produce differences.[^oldfootnote]
+
+[^oldfootnote]: This is just to illustrate a removed footnote.
 
 ## Algorithm
 

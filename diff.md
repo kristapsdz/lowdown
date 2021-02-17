@@ -337,6 +337,14 @@ to process deleted metadata.
 
 Thus, metadata won't strictly represent the document differences.
 
+### Footnotes
+
+Footnotes required some consideration because the order in which the
+definitions and references are printed must be synchronised.  Now a
+process keeps track of all references (added, deleted, unchanged) and
+renumbers then.  When references are emitted, these are emitted in the
+correct order.
+
 ## API
 
 The result of the algorithm is a new tree marked with insertions and
