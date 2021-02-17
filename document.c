@@ -4034,7 +4034,7 @@ lowdown_doc_new(const struct lowdown_opts *opts)
 
 	doc->ext_flags = extensions;
 
-	if (opts->metasz > 0) {
+	if (opts != NULL && opts->metasz > 0) {
 		doc->meta = calloc(opts->metasz, sizeof(char *));
 		if (doc->meta == NULL)
 			goto err;
@@ -4045,7 +4045,7 @@ lowdown_doc_new(const struct lowdown_opts *opts)
 				goto err;
 		}
 	}
-	if (opts->metaovrsz > 0) {
+	if (opts != NULL && opts->metaovrsz > 0) {
 		doc->metaovr = calloc(opts->metaovrsz, sizeof(char *));
 		if (doc->metaovr == NULL)
 			goto err;
