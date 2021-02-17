@@ -147,6 +147,7 @@ static const struct sty sty_chng_del =	{ 0, 0, 0, 0, 100,  0, 0 };
  */
 
 static const struct sty sty_ddata_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
+static const struct sty sty_fdef_pfx =	{ 0, 0, 0, 0,   0, 92, 1 };
 static const struct sty sty_bkqt_pfx =	{ 0, 0, 0, 0,   0, 37, 0 };
 static const struct sty sty_oli_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
 static const struct sty sty_uli_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
@@ -553,6 +554,7 @@ rndr_buf_startline_prefixes(struct term *term,
 		rndr_buf_advance(term, 4);
 		break;
 	case LOWDOWN_FOOTNOTE_DEF:
+		rndr_node_style_apply(&sinner, &sty_fdef_pfx);
 		if (!rndr_buf_style(out, &sinner))
 			return 0;
 		pstyle = 1;
