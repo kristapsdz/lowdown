@@ -224,6 +224,22 @@ nstate_font_buf(unsigned int ft, int blk)
 }
 
 static int
+bqueue_colour(struct bnodeq *bq, enum lowdown_chng chng, int close)
+{
+	struct bnode	*bn;
+
+	if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
+		return 0;
+	TAILQ_INSERT_TAIL(bq, bn, entries);
+	bn->scope = BSCOPE_COLOUR;
+	bn->close = close;
+	bn->colour = close ? 0 :
+		chng == LOWDOWN_CHNG_INSERT ? 
+		BFONT_BLUE : BFONT_RED;
+	return 1;
+}
+
+static int
 bqueue_font(const struct nroff *st, struct bnodeq *bq, int close)
 {
 	struct bnode	*bn;
@@ -1196,7 +1212,8 @@ rndr_footnotes(const struct nroff *st,
 
 static int
 rndr_footnote_def(const struct nroff *st, struct bnodeq *obq,
-	struct bnodeq *bq, const struct rndr_footnote_def *param)
+	struct bnodeq *bq, const struct lowdown_node *n,
+	const struct rndr_footnote_def *param)
 {
 	struct bnode	*bn;
 
@@ -1210,8 +1227,16 @@ rndr_footnote_def(const struct nroff *st, struct bnodeq *obq,
 	if (!st->man) {
 		if (bqueue_block(obq, ".FS") == NULL)
 			return 0;
+		if ((n->chng == LOWDOWN_CHNG_INSERT ||
+		     n->chng == LOWDOWN_CHNG_DELETE) &&
+		    !bqueue_colour(obq, n->chng, 0))
+			return 0;
 		bqueue_strip_paras(bq);
 		TAILQ_CONCAT(obq, bq, entries);
+		if ((n->chng == LOWDOWN_CHNG_INSERT ||
+		     n->chng == LOWDOWN_CHNG_DELETE) &&
+		    !bqueue_colour(obq, n->chng, 1))
+			return 0;
 		return bqueue_block(obq, ".FE") != NULL;
 	}
 
@@ -1222,17 +1247,25 @@ rndr_footnote_def(const struct nroff *st, struct bnodeq *obq,
 
 	if (bqueue_block(obq, ".LP") == NULL)
 		return 0;
+	if ((n->chng == LOWDOWN_CHNG_INSERT ||
+	     n->chng == LOWDOWN_CHNG_DELETE) &&
+	    !bqueue_colour(obq, n->chng, 0))
+		return 0;
 
 	if ((bn = bqueue_span(obq, NULL)) == NULL)
 		return 0;
 	if (asprintf(&bn->nbuf, 
-	    "\\0\\fI\\u\\s-3%zu\\s+3\\d\\fP\\0", param->num) == -1) {
+	    "\\0\\fI\\u\\s-3%zu\\s+3\\d\\fP\\0", param->num + 1) == -1) {
 		bn->nbuf = NULL;
 		return 0;
 	}
 
 	bqueue_strip_paras(bq);
 	TAILQ_CONCAT(obq, bq, entries);
+	if ((n->chng == LOWDOWN_CHNG_INSERT ||
+	     n->chng == LOWDOWN_CHNG_DELETE) &&
+	    !bqueue_colour(obq, n->chng, 1))
+		return 0;
 	return 1;
 }
 
@@ -1252,7 +1285,7 @@ rndr_footnote_ref(const struct nroff *st,
 
 	if (st->man) {
 		if (asprintf(&bn->nbuf, 
-		    "\\u\\s-3%zu\\s+3\\d", param->num) == -1)
+		    "\\u\\s-3%zu\\s+3\\d", param->num + 1) == -1)
 			bn->nbuf = NULL;
 	} else
 		bn->nbuf = strdup("\\**");
@@ -1535,15 +1568,11 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 
 	TAILQ_INIT(&tmpbq);
 
-	if (n->chng == LOWDOWN_CHNG_INSERT ||
-	    n->chng == LOWDOWN_CHNG_DELETE) {
-		if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
-			goto out;
-		TAILQ_INSERT_TAIL(obq, bn, entries);
-		bn->scope = BSCOPE_COLOUR;
-		bn->colour = n->chng == LOWDOWN_CHNG_INSERT ? 
-			BFONT_BLUE : BFONT_RED;
-	}
+	if ((n->chng == LOWDOWN_CHNG_INSERT ||
+	     n->chng == LOWDOWN_CHNG_DELETE) &&
+	    n->type != LOWDOWN_FOOTNOTE_DEF &&
+	    !bqueue_colour(obq, n->chng, 0))
+		goto out;
 
 	/*
 	 * Font management.
@@ -1642,7 +1671,8 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_footnotes(st, obq, &tmpbq);
 		break;
 	case LOWDOWN_FOOTNOTE_DEF:
-		rc = rndr_footnote_def(st, obq, &tmpbq, &n->rndr_footnote_def);
+		rc = rndr_footnote_def(st, obq, 
+			&tmpbq, n, &n->rndr_footnote_def);
 		break;
 	case LOWDOWN_BLOCKHTML:
 		rc = rndr_raw_block(st, obq, &n->rndr_blockhtml);
@@ -1712,13 +1742,12 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		break;
 	}
 
-	if (n->chng == LOWDOWN_CHNG_INSERT ||
-	    n->chng == LOWDOWN_CHNG_DELETE) {
-		if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
-			goto out;
-		TAILQ_INSERT_TAIL(obq, bn, entries);
-		bn->scope = BSCOPE_COLOUR;
-		bn->close = 1;
+	if ((n->chng == LOWDOWN_CHNG_INSERT ||
+	     n->chng == LOWDOWN_CHNG_DELETE) &&
+	    n->type != LOWDOWN_FOOTNOTE_DEF &&
+	    !bqueue_colour(obq, n->chng, 1)) {
+		ret = -1;
+		goto out;
 	}
 
 out:
