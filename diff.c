@@ -1311,7 +1311,7 @@ node_merge(const struct lowdown_node *nold,
 			nn->parent = n;
 			nn->chng = LOWDOWN_CHNG_DELETE;
 			if (nn->type == LOWDOWN_FOOTNOTE_REF &&
-			    !ref_insert(nn, nnew, parms))
+			    !ref_insert(nn, nold, parms))
 				goto err;
 			nold = TAILQ_NEXT(nold, entries);
 		}
