@@ -343,6 +343,8 @@ struct	lowdown_opts {
 #define	LOWDOWN_GEMINI_LINK_END	  0x8000 /* links at end */
 #define	LOWDOWN_GEMINI_LINK_IN	  0x10000 /* links inline */
 #define LOWDOWN_GEMINI_METADATA	  0x100000 /* show metadata */
+#define	LOWDOWN_GEMINI_LINK_NOREF 0x200000 /* for !inline, no names */
+#define	LOWDOWN_GEMINI_LINK_ROMAN 0x400000 /* roman link names */
 	char			**meta;
 	size_t			  metasz;
 	char			**metaovr;

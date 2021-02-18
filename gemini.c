@@ -83,6 +83,78 @@ link_freeq(struct linkq *q)
 	}
 }
 
+static int
+rndr_link_ref(const struct gemini *st,
+	struct lowdown_buf *out, const struct link *l, int nl)
+{
+	char		 buf[32], c;
+	size_t		 ref = l->id, sz = 0, i;
+
+	assert(ref);
+
+	if (st->flags & LOWDOWN_GEMINI_LINK_NOREF)
+		return hbuf_printf(out, "%s", nl ? "\n" : "");
+
+	buf[0] = '\0';
+	if (st->flags & LOWDOWN_GEMINI_LINK_ROMAN) {
+		while(ref)
+			if (ref >= 1000) {
+				strlcat(buf, "m", sizeof(buf));
+				ref -= 1000;
+			} else if (ref >= 900) {
+				strlcat(buf, "cm", sizeof(buf));
+				ref -= 900;
+			} else if (ref >= 500) {
+				strlcat(buf, "d", sizeof(buf));
+				ref -= 500;
+			} else if (ref >= 400) {
+				strlcat(buf, "cd", sizeof(buf));
+				ref -= 400;
+			} else if (ref >= 100) {
+				strlcat(buf, "c", sizeof(buf));
+				ref -= 100;
+			} else if (ref >= 90) {
+				strlcat(buf, "xc", sizeof(buf));
+				ref -= 90;
+			} else if (ref >= 50) {
+				strlcat(buf, "l", sizeof(buf));
+				ref -= 50;
+			} else if (ref >= 40) {
+				strlcat(buf, "xl", sizeof(buf));
+				ref -= 40;
+			} else if (ref >= 10) {
+				strlcat(buf, "x", sizeof(buf));
+				ref -= 10;
+			} else if (ref >= 9) {
+				strlcat(buf, "ix", sizeof(buf));
+				ref -= 9;
+			} else if (ref >= 5) {
+				strlcat(buf, "v", sizeof(buf));
+				ref -= 5;
+			} else if (ref >= 4) {
+				strlcat(buf, "iv", sizeof(buf));
+				ref -= 4;
+			} else if (ref >= 1) {
+				strlcat(buf, "i", sizeof(buf));
+				ref -= 1;
+			}
+	} else {
+		while (ref && sz < sizeof(buf) - 1) {
+			buf[sz++] = 'a' + (ref - 1) % 26;
+			ref = (ref - 1) / 26;
+		}
+		buf[sz] = '\0';
+		for (i = 0; i < sz; i++, sz--) {
+			c = buf[i];
+			buf[i] = buf[sz - 1];
+			buf[sz - 1] = c;
+		}
+	}
+
+	return hbuf_printf(out, "%s[%s]%s", 
+		nl ? " " : "", buf, nl ? "\n" : "");
+}
+
 /*
  * Convert newlines to spaces, elide control characters.
  * If a newline follows a period, it's converted to two spaces.
@@ -299,7 +371,7 @@ rndr_flush_linkq(struct gemini *st, struct lowdown_buf *out)
 			rc = 1;
 		if (!rc)
 			return 0;
-		if (!hbuf_printf(out, " [link-%zu]\n", l->id))
+		if (!rndr_link_ref(st, out, l, 1))
 			return 0;
 		st->last_blank = 1;
 		free(l);
@@ -746,7 +818,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		l->n = n;
 		l->id = ++st->linkqsz;
 		TAILQ_INSERT_TAIL(&st->linkq, l, entries);
-		rc = hbuf_printf(st->tmp, "[link-%zu]", l->id) &&
+		rc = rndr_link_ref(st, st->tmp, l, 0) &&
 			rndr_buf(st, ob, n, st->tmp);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
