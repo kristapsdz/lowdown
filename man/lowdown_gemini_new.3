@@ -36,11 +36,21 @@ Allocates a gemini renderer using the flags in
 which can be
 .Dv NULL
 in which case all fields are zero.
-The renderer type in
-.Fa opts
-is ignored.
 The returned pointer may be used with multiple invocations of
 .Xr lowdown_gemini_rndr 3 .
+.Pp
+The only field recognised within
+.Fa opts
+is
+.Fa opts->oflags .
+The relevant bits are
+.Dv LOWDOWN_GEMINI_LINK_IN ,
+.Dv LOWDOWN_GEMINI_LINK_END ,
+.Dv LOWDOWN_GEMINI_METADATA ,
+and
+.Dv LOWDOWN_STANDALONE .
+These are documented in
+.Xr lowdown 3 .
 .Sh RETURN VALUES
 Returns a pointer to the renderer or
 .Dv NULL
