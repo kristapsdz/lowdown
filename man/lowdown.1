@@ -318,6 +318,19 @@ Render all links within the flow of text.
 This will cause breakage when nested links, such as images within links,
 links in blockquotes, etc.
 It should not be used unless in carefully crafted documents.
+.It Fl -gemini-link-noref
+Do not format link labels.
+Takes precedence over
+.Fl -gemini-link-roman .
+.It Fl -gemini-link-roman
+When formatting link labels, use lower-case Roman numerals instead of the
+default lower-case hexavigesimal (i.e.,
+.Dq a ,
+.Dq b ,
+\&...,
+.Dq aa ,
+.Dq ab ,
+\&...).
 .It Fl -gemini-metadata
 Print metadata as the canonicalised key followed by a colon then the
 value, each on one line (newlines replaced by spaces).
