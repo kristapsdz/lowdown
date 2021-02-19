@@ -31,38 +31,29 @@
 .Fa "const struct lowdown_opts *opts"
 .Fc
 .Sh DESCRIPTION
-Allocates a terminal renderer using the flags in
-.Fa opts ,
-which can be
-.Dv NULL
-in which case all fields are zero.
-The renderer type in
+Allocates a terminal renderer using
+.Fa opts->cols ,
+.Fa opts->hmargin ,
+.Fa opts->vmargin ,
+and
+.Fa opts->oflags ,
+or 80 and all others zero, respectively, if
 .Fa opts
-is ignored.
+is
+.Dv NULL .
+These fields are documented in
+.Xr lowdown 3 .
 The returned pointer may be used with multiple invocations of
-.Xr lowdown_term_rndr 3 .
+.Xr lowdown_term_rndr 3
+and must be freed with
+.Xr lowdown_term_free 3 .
 .Pp
-Values recognised in
-.Fa opts
-are as follows:
-.Bl -tag -width Ds -offset indent
-.It Va cols
-The maximum number of columns in the output.
-If zero, this sets to the default.
-.It Va hmargin
-Horizontal margin (left of content).
-.It Va vmargin
-Vertical margin (before and after content).
-.It Va oflags
-Bit flags affecting output.
-The only flag recognised is
-.Dv LOWDOWN_TERM_SHORTLINK ,
-which signals that links should be shortened.
-.El
-.Pp
-By default,
-.Fn lowdown_term_new
-uses 80 columns of output, has no margins, and has no flags set.
+The bits recognised in
+.Fa opts->oflags
+are
+.Dv LOWDOWN_TERM_SHORTLINK
+and
+.Dv LOWDOWN_TERM_NOLINK .
 .Sh RETURN VALUES
 Returns a pointer to the renderer or
 .Dv NULL
@@ -106,3 +97,5 @@ lowdown_doc_free(doc);
 .Xr lowdown 3 ,
 .Xr lowdown_term_free 3 ,
 .Xr lowdown_term_rndr 3
+.Sh STANDARDS
+ANSI escape codes are described in ISO/IEC 6429, previously ECMA-48.
