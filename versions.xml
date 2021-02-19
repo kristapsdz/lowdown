@@ -1022,7 +1022,7 @@
 		<header>
 			<h1>0.8.2</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2021-02-17">2021-02-17</time>
+			<time datetime="2021-02-19">2021-02-19</time>
 		</header>
 		<aside>
 			<p>
@@ -1054,7 +1054,14 @@
 				<a href="lowdown-diff.1.html">lowdown-diff(1)</a> for easier reading.
 			</p>
 			<p>
-				Render tables for <b>-Tgemini</b> as fixed-width displays.
+				Properly render tables for <b>-Tgemini</b> as fixed-width displays.
+			</p>
+			<p>
+				By default, render Gemini link labels using <q>Excel</q> format
+				(hexavigesimal) with the option of using Roman numerals
+				(<b>--gemini-link-roman</b>) or without labels at all
+				(<b>--gemini-link-noref</b>).  This choice of default may change in
+				later versions, hwoever.
 			</p>
 		</aside>
 	</article>
