@@ -31,16 +31,30 @@
 .Fa "const struct lowdown_opts *opts"
 .Fc
 .Sh DESCRIPTION
-Allocates an HTML5 renderer using the flags in
-.Fa opts ,
-which can be
-.Dv NULL
-in which case all fields are zero.
-The renderer type in
+Allocates an HTML5 renderer using
+.Fa opts->flags ,
+or zero if
 .Fa opts
-is ignored.
+is
+.Dv NULL .
 The returned pointer may be used with multiple invocations of
-.Xr lowdown_html_rndr 3 .
+.Xr lowdown_html_rndr 3
+and must be freed with
+.Xr lowdown_html_free 3 .
+.Pp
+The bits recognised in
+.Fa opts->oflags
+are
+.Dv LOWDOWN_HTML_OWASP ,
+.Dv LOWDOWN_HTML_NUM_ENT ,
+.Dv LOWDOWN_HTML_HEAD_IDS ,
+.Dv LOWDOWN_HTML_HARD_WRAP ,
+.Dv LOWDOWN_HTML_SKIP_HTML ,
+.Dv LOWDOWN_HTML_ESCAPE ,
+and
+.Dv LOWDOWN_STANDALONE .
+These are documented in
+.Xr lowdown 3 .
 .Sh RETURN VALUES
 Returns a pointer to the renderer or
 .Dv NULL
