@@ -31,19 +31,20 @@
 .Fa "const struct lowdown_opts *opts"
 .Fc
 .Sh DESCRIPTION
-Allocates a gemini renderer using the flags in
-.Fa opts ,
-which can be
-.Dv NULL
-in which case all fields are zero.
-The returned pointer may be used with multiple invocations of
-.Xr lowdown_gemini_rndr 3 .
-.Pp
-The only field recognised within
+Allocates a Gemini renderer using
+.Fa opts->oflags ,
+or zero if
 .Fa opts
 is
-.Fa opts->oflags .
-The relevant bits are
+.Dv NULL .
+The returned pointer may be used with multiple invocations of
+.Xr lowdown_gemini_rndr 3
+and must be freed with
+.Xr lowdown_gemini_free 3 .
+.Pp
+The bits recognised in
+.Fa opts->oflags
+are
 .Dv LOWDOWN_GEMINI_LINK_IN ,
 .Dv LOWDOWN_GEMINI_LINK_END ,
 .Dv LOWDOWN_GEMINI_LINK_NOREF ,

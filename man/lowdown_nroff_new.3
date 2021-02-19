@@ -31,30 +31,46 @@
 .Fa "const struct lowdown_opts *opts"
 .Fc
 .Sh DESCRIPTION
-Allocates a roff renderer (using the
-.Ar man
-or
-.Ar ms
-macros) using the flags in
-.Fa opts ,
-which may be
-.Dv NULL
-in which case all fields are zero and the renderer type is
-.Dv LOWDOWN_MS .
-If the type is not
-.Dv LOWDOWN_MAN
-or
+Allocates a roff renderer using
+.Fa opts->oflags
+and
+.Fa opts->type ,
+or zero and
 .Dv LOWDOWN_MS ,
-it defaults to
-.Dv LOWDOWN_MS .
+respectively, if
+.Fa opts
+is
+.Dv NULL .
 The returned pointer may be used with multiple invocations of
-.Xr lowdown_nroff_rndr 3 .
+.Xr lowdown_nroff_rndr 3
+and must be freed with
+.Xr lowdown_nroff_free 3 .
+.Pp
+The bits recognised in
+.Fa opts->oflags
+are
+.Dv LOWDOWN_NROFF_GROFF ,
+.Dv LOWDOWN_NROFF_NOLINK ,
+.Dv LOWDOWN_NROFF_NUMBERED ,
+.Dv LOWDOWN_NROFF_SHORTLINK ,
+.Dv LOWDOWN_NROFF_SKIP_HTML ,
+and
+.Dv LOWDOWN_STANDALONE .
+These are documented in
+.Xr lowdown 3 .
+.Pp
+The values recognised in
+.Fa opts->type
+are
+.Dv LOWDOWN_MAN
+and
+.Dv LOWDOWN_MS :
+anything else triggers
+.Dv LOWDOWN_MS .
 .Pp
 If
 .Dv LOWDOWN_NROFF_GROFF
-is defined in
-.Fa opts->oflags
-with
+is set in
 .Dv LOWDOWN_MAN
 mode, macros from the
 .Ar man-ext
@@ -62,9 +78,9 @@ package as well as the original
 .Ar man
 are used in output.
 These are supported by both groff and mandoc.
-If it is defined with
-.Dv LOWDOWN_MS ,
-GNU extensions to
+If in
+.Dv LOWDOWN_MS
+mode, GNU extensions to
 .Ar ms
 are used along with
 .Ar mspdf .
