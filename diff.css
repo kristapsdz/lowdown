@@ -17,3 +17,4 @@ ins 			{ text-decoration: none;
 del 			{ text-decoration: none;
 			  background-color: #fbb6c2; 
 			  color: #555; }
+ins *, del *		{ background-color: inherit; } /* why!?!? */
