@@ -15,7 +15,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-OCONFIGURE_VERSION="0.3.3"
+OCONFIGURE_VERSION="0.3.4"
 
 #
 # This script outputs two files: config.h and Makefile.configure.
@@ -646,12 +646,12 @@ __HEREDOC__
 /*
  * Compatibility functions for err(3).
  */
-extern void err(int, const char *, ...);
-extern void errc(int, int, const char *, ...);
-extern void errx(int, const char *, ...);
-extern void verr(int, const char *, va_list);
-extern void verrc(int, int, const char *, va_list);
-extern void verrx(int, const char *, va_list);
+extern void err(int, const char *, ...) __attribute__((noreturn));
+extern void errc(int, int, const char *, ...) __attribute__((noreturn));
+extern void errx(int, const char *, ...) __attribute__((noreturn));
+extern void verr(int, const char *, va_list) __attribute__((noreturn));
+extern void verrc(int, int, const char *, va_list) __attribute__((noreturn));
+extern void verrx(int, const char *, va_list) __attribute__((noreturn));
 extern void warn(const char *, ...);
 extern void warnx(const char *, ...);
 extern void warnc(int, const char *, ...);
