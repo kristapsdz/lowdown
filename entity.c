@@ -182,17 +182,17 @@ static const struct ent ents[] = {
 	{ "lowast",	8727,	"_\\ast",	TEX_ENT_MATH },
 	{ "lrm",	8206,	NULL,		0 }, /* XXX */
 	{ "lsaquo",	8249,	NULL,		0 },
-	{ "lsquo",	8216,	"`{}",		0 },
+	{ "lsquo",	8216,	"`",		TEX_ENT_ASCII },
 	{ "lt",		60,	"textless{}",	0 },
 	{ "macr", 	175,	"={}",		0 },
-	{ "mdash",	8212,	"textemdash{}",	0 },
+	{ "mdash",	8212,	"---",		TEX_ENT_ASCII },
 	{ "micro", 	181,	"textmu{}",	0 },
 	{ "middot", 	183,	"textperiodcentered{}", 0 },
 	{ "minus",	8722,	"-{}",		0 },
 	{ "mu",		956,	"mu",		TEX_ENT_MATH },
 	{ "nabla",	8711,	"nabla",	TEX_ENT_MATH },
 	{ "nbsp", 	160,	"~",		TEX_ENT_ASCII },
-	{ "ndash",	8211,	"textendash{}",	0 },
+	{ "ndash",	8211,	"--",		TEX_ENT_ASCII },
 	{ "ne",		8800,	"not=",		TEX_ENT_MATH },
 	{ "ni",		8715,	"ni",		TEX_ENT_MATH },
 	{ "not", 	172,	"lnot",		TEX_ENT_MATH },
@@ -242,7 +242,7 @@ static const struct ent ents[] = {
 	{ "rho",	961,	"rho",		TEX_ENT_MATH },
 	{ "rlm",	8207,	NULL,		0 }, /* XXX */
 	{ "rsaquo",	8250,	NULL,		0 }, /* XXX */
-	{ "rsquo",	8217,	"'{}",		0 },
+	{ "rsquo",	8217,	"'",		TEX_ENT_ASCII },
 	{ "sbquo",	8218,	NULL,		0 }, /* XXX */
 	{ "scaron",	353,	"v{s}",		0 },
 	{ "sdot",	8901,	"cdot",		TEX_ENT_MATH },
