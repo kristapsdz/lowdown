@@ -597,7 +597,7 @@ rndr_footnote_def(struct lowdown_buf *ob,
 	const struct rndr_footnote_def *param)
 {
 
-	if (!hbuf_printf(ob, "\\footnotetext[%zu]{", param->num + 1))
+	if (!hbuf_printf(ob, "\\footnotetext[%zu]{", param->num))
 		return 0;
 	if (n->chng == LOWDOWN_CHNG_INSERT &&
 	    !HBUF_PUTSL(ob, "\\textcolor{blue}{"))
@@ -619,7 +619,7 @@ rndr_footnote_ref(struct lowdown_buf *ob,
 	const struct rndr_footnote_ref *param)
 {
 
-	return hbuf_printf(ob, "\\footnotemark[%zu]", param->num + 1);
+	return hbuf_printf(ob, "\\footnotemark[%zu]", param->num);
 }
 
 static int

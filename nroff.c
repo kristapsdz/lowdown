@@ -1255,7 +1255,7 @@ rndr_footnote_def(const struct nroff *st, struct bnodeq *obq,
 	if ((bn = bqueue_span(obq, NULL)) == NULL)
 		return 0;
 	if (asprintf(&bn->nbuf, 
-	    "\\0\\fI\\u\\s-3%zu\\s+3\\d\\fP\\0", param->num + 1) == -1) {
+	    "\\0\\fI\\u\\s-3%zu\\s+3\\d\\fP\\0", param->num) == -1) {
 		bn->nbuf = NULL;
 		return 0;
 	}
@@ -1285,7 +1285,7 @@ rndr_footnote_ref(const struct nroff *st,
 
 	if (st->man) {
 		if (asprintf(&bn->nbuf, 
-		    "\\u\\s-3%zu\\s+3\\d", param->num + 1) == -1)
+		    "\\u\\s-3%zu\\s+3\\d", param->num) == -1)
 			bn->nbuf = NULL;
 	} else
 		bn->nbuf = strdup("\\**");

@@ -857,7 +857,7 @@ rndr_footnote_def(struct lowdown_buf *ob,
 		break;
 	}
 
-	if (!hbuf_printf(ob, "\n<li id=\"fn%zu\">\n", param->num + 1))
+	if (!hbuf_printf(ob, "\n<li id=\"fn%zu\">\n", param->num))
 		return 0;
 
 	if (pfound) {
@@ -866,7 +866,7 @@ rndr_footnote_def(struct lowdown_buf *ob,
 		if (!hbuf_printf(ob, "&#160;"
 		    "<a href=\"#fnref%zu\" rev=\"footnote\">"
 		    "&#8617;"
-		    "</a>", param->num + 1))
+		    "</a>", param->num))
 			return 0;
 		if (!hbuf_put(ob, 
 		    content->data + i, content->size - i))
@@ -888,7 +888,7 @@ rndr_footnote_ref(struct lowdown_buf *ob,
 		"<sup id=\"fnref%zu\">"
 		"<a href=\"#fn%zu\" rel=\"footnote\">"
 		"%zu</a></sup>", 
-		param->num + 1, param->num + 1, param->num + 1);
+		param->num, param->num, param->num);
 }
 
 static int

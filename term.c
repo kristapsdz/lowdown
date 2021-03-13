@@ -559,7 +559,7 @@ rndr_buf_startline_prefixes(struct term *term,
 			return 0;
 		pstyle = 1;
 		if (emit == 0 && !hbuf_printf
-		    (out, "%2zu. ", n->rndr_footnote_def.num + 1))
+		    (out, "%2zu. ", n->rndr_footnote_def.num))
 			return 0;
 		else if (emit != 0 && !HBUF_PUTSL(out, "    "))
 			return 0;
@@ -1232,7 +1232,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_FOOTNOTE_REF:
 		hbuf_truncate(p->tmp);
 		if (!hbuf_printf(p->tmp, "[%zu]", 
-		    n->rndr_footnote_ref.num + 1))
+		    n->rndr_footnote_ref.num))
 			return 0;
 		rc = rndr_buf(p, ob, n, p->tmp, NULL);
 		break;
