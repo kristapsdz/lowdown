@@ -803,16 +803,10 @@ underscore
 .
 .Sh TYPOGRAPHY
 .Xr lowdown 1
-and other Markdown formatters often filter certain character sequences
-for easier reading.
-This is sometimes called
-.Qq smartypants
-or just
+renders certain character sequences for easier reading.
+This is called
 .Qq smart formatting .
-.Pp
-In
-.Xr lowdown 1 ,
-the following character sequences are converted to output-specific
+The following character sequences are converted to output-specific
 glyphs.
 The table shows whether the sequences must be on word boundaries.
 .Bd -filled -offset indent
@@ -835,7 +829,7 @@ l l l.
 "	left-double	left word boundary
 "	right-double	right word boundary
 \&'	left-single	left word boundary
-\&'	right-single	right word boundary
+\&'	right-single	not left word boundary
 .TE
 .Ed
 .Pp
@@ -845,9 +839,9 @@ Left word boundary refers to white-space or a left parenthesis or square
 bracket to the left of the sequence.
 Right refers to white-space or punctuation to the right.
 .Pp
-Smart quotes are not context aware: using a left or right quote depends
-upon the characters surrounding the quote, not whether a quote has
-already been used.
+Smart quotes (single and double) are not context aware: using a left or
+right quote depends upon the characters surrounding the quote, not
+whether a prior quote mark has already been used.
 .
 .Sh SEE ALSO
 .Xr lowdown 1
