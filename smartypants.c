@@ -358,8 +358,6 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn,
 			/* Left-wb and right-wb differ. */
 
 			if (!s->left_wb) {
-				if (!smarty_right_wb(n, i + 1))
-					break;
 				if (!smarty_entity(n, maxn, 
 				    i, i + 1, ENT_RSQUO))
 					return -1;
