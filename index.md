@@ -292,6 +292,8 @@ of the `make regress` functionality.
 
 Want to hack on *lowdown*?  Of course you do.
 
+- Using a perfect hash (such as **gperf**) for entities.
+
 - There are bits and bobs remaining to be fixed or implemented.
 You can always just search for `TODO`, `XXX`, or `FIXME` in the source
 code.  This is your best bet.
