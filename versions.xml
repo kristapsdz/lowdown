@@ -1065,4 +1065,19 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.8.3</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2021-03-13">2021-03-13</time>
+		</header>
+		<aside>
+			<p>
+				Several fixes to <b>-Tlatex</b> smart typography (single quotes and
+				dashes).  The smart typography now handles single quotes within
+				words.  Lastly, fix a bug where footnotes started at two instead of
+				one.
+			</p>
+		</aside>
+	</article>
 </articles>
