@@ -481,12 +481,6 @@ See below for a description of each one.
 The nodes may be one of the following types, with default rendering in
 HTML5 to illustrate functionality.
 .Bl -tag -width Ds -offset indent
-.It Dv LOWDOWN_ROOT
-The root of the document.
-This is always the topmost node, and the only node where the
-.Va parent
-field is
-.Dv NULL .
 .It Dv LOWDOWN_BLOCKCODE
 A block-level (and possibly language-specific) snippet of code.
 Described by the
@@ -622,6 +616,12 @@ element.
 .It Dv LOWDOWN_RAW_HTML
 An inline of raw HTML.
 (Only if configured during parse.)
+.It Dv LOWDOWN_ROOT
+The root of the document.
+This is always the topmost node, and the only node where the
+.Va parent
+field is
+.Dv NULL .
 .It Dv LOWDOWN_STRIKETHROUGH
 Content struck through.
 Described by the
