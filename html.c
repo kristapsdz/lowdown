@@ -420,9 +420,9 @@ rndr_list(struct lowdown_buf *ob,
 	if (ob->size && !hbuf_putc(ob, '\n'))
 		return 0;
 	if (param->flags & HLIST_FL_ORDERED) {
-		if (param->start[0] != '\0') {
+		if (param->start > 1) {
 			if (!hbuf_printf(ob, 
-			    "<ol start=\"%s\">\n", param->start))
+			    "<ol start=\"%zu\">\n", param->start))
 				return 0;
 		} else {
 			if (!HBUF_PUTSL(ob, "<ol>\n"))

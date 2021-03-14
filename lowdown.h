@@ -221,23 +221,13 @@ struct	rndr_blockhtml {
 };
 
 struct	rndr_list {
-	/*
-	 * This should only be checked for bit-wise
-	 * HLIST_FL_ORDERED OR HLIST_FL_BLOCK.
-	 * There may be other private bits set.
-	 */
 	enum hlist_fl flags;
-	/*
-	 * This is string of size >0 iff
-	 * HLIST_FL_ORDERED and we're parsing
-	 * CommonMark, else it's an empty string.
-	 */
-	char start[10];
+	size_t start;
 };
 
 struct	rndr_listitem {
-	enum hlist_fl flags; /* all possible flags */
-	size_t num; /* index in ordered */
+	enum hlist_fl flags;
+	size_t num;
 };
 
 struct	rndr_header{

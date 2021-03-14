@@ -713,9 +713,12 @@ for an unordered one.
 If
 .Dv HLIST_FL_BLOCK
 is set, the list should be output as if items were separate blocks.
-If
+The
 .Va start
-is a non-empty string, it is the first list item value.
+value for
+.Dv HLIST_FL_ORDERED
+is the starting list item position, which is one by default and never
+zero.
 .It Va rndr_paragraph
 For
 .Dv LOWDOWN_PARAGRAPH ,
@@ -746,7 +749,14 @@ should not be used: use the parent list (or definition list) flags for
 this.
 The
 .Va num
-is the index in an ordered list.
+is the index in a
+.Dv HLIST_FL_ORDERED
+list.
+It is monotonically increasing with each item in the list, starting at
+the
+.Va start
+variable given in
+.Vt struct rndr_list .
 .It Va rndr_header
 For
 .Dv LOWDOWN_HEADER ,

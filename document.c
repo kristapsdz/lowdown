@@ -2817,8 +2817,7 @@ parse_list(struct lowdown_doc *doc,
 	char *data, size_t size, const char *oli_data)
 {
 	struct lowdown_buf	*work = NULL;
-	const char	    	*er = NULL;
-	size_t	 	     	 i = 0, k = 1;
+	size_t	 	     	 i = 0, pos;
 	ssize_t			 ret;
 	enum hlist_fl	     	 flags;
 	struct lowdown_node 	*n;
@@ -2829,20 +2828,20 @@ parse_list(struct lowdown_doc *doc,
 		goto err;
 	if ((n = pushnode(doc, LOWDOWN_LIST)) == NULL)
 		goto err;
+	n->rndr_list.start = 1;
 	n->rndr_list.flags = flags;
 
-	/* Set start point appropriately. */
-
 	if (oli_data != NULL && oli_data[0] != '\0') {
-		memcpy(n->rndr_list.start, oli_data,
-			sizeof(n->rndr_list.start));
-		k = strtonum(oli_data, 0, UINT32_MAX, &er);
-		assert(er == NULL);
+		n->rndr_list.start = strtonum
+			(oli_data, 0, UINT32_MAX, NULL);
+		if (n->rndr_list.start == 0)
+			n->rndr_list.start = 1;
 	}
 
+	pos = n->rndr_list.start;
 	while (i < size) {
 		ret = parse_listitem(work, doc, 
-			data + i, size - i, &flags, k++);
+			data + i, size - i, &flags, pos++);
 		if (ret < 0)
 			goto err;
 		i += ret;
