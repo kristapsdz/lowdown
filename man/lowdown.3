@@ -682,15 +682,38 @@ and
 The following anonymous union structures correspond to certain nodes.
 Note that all buffers may be zero-length.
 .Bl -tag -width Ds -offset indent
-.It Va rndr_meta
-Each
-.Dv LOWDOWN_META
-key-value pair is represented.
-The keys are lower-case without spaces or non-ASCII characters.
-If provided, enclosed nodes may consist only of
-.Dv LOWDOWN_NORMAL_TEXT
-and
-.Dv LOWDOWN_ENTITY .
+.It Va rndr_autolink
+For
+.Dv LOWDOWN_LINK_AUTO ,
+the link address as
+.Va link ;
+the textual component
+.Va text ;
+and the link type
+.Va type ,
+which may be one of
+.Dv HALINK_EMAIL
+for e-mail links and
+.Dv HALINK_NORMAL
+otherwise.
+Any buffer may be empty-sized.
+.It Va rndr_blockcode
+For
+.Dv LOWDOWN_BLOCKCODE ,
+the opaque
+.Va text
+of the block and the optional
+.Va lang
+of the code language.
+.It Va rndr_blockhtml
+For
+.Dv LOWDOWN_BLOCKHTML ,
+the opaque HTML
+.Va text .
+.It Va rndr_codespan
+The opaque
+.Va text
+of the contents.
 .It Va rndr_definition
 For
 .Dv LOWDOWN_DEFINITION ,
@@ -700,6 +723,60 @@ that may be
 .Dv HLIST_FL_BLOCK
 if the definition list should be interpreted as containing block
 elements.
+.It Va rndr_entity
+For
+.Dv LOWDOWN_ENTITY ,
+the entity
+.Va text .
+.It Va rndr_footnote_def
+For
+.Dv LOWDOWN_FOOTNOTE_DEF ,
+the footnote number
+.Va  num
+(starting at one).
+This matches a single
+.Dv LOWDOWN_FOOTNOTE_DEF
+similarly numbered.
+The
+.Va key
+is its original in-document reference key.
+.It Va rndr_footnote_ref
+For a
+.Dv LOWDOWN_FOOTNOTE_REF
+reference to a
+.Dv LOWDOWN_FOOTNOTE_DEF ,
+the footnote number
+.Va num
+(starting at one).
+The
+.Va def
+is the content parsed as children to the matching
+.Dv LOWDOWN_FOOTNOTE_DEF .
+The
+.Va key
+is its original in-document reference key.
+.It Va rndr_header
+For
+.Dv LOWDOWN_HEADER ,
+the
+.Va level
+of the header starting at zero
+This value is relative to the metadata base header level, defaulting to
+one (the top-level header).
+.It Va rndr_image
+For
+.Dv LOWDOWN_IMAGE ,
+the image address
+.Va link ,
+the image title
+.Va title ,
+dimensions NxN (width by height) in
+.Va dims ,
+and alternate text
+.Va alt .
+.It Va rndr_link
+Like
+.Va rndr_autolink .
 .It Va rndr_list
 For
 .Dv LOWDOWN_LIST ,
@@ -719,15 +796,6 @@ value for
 .Dv HLIST_FL_ORDERED
 is the starting list item position, which is one by default and never
 zero.
-.It Va rndr_paragraph
-For
-.Dv LOWDOWN_PARAGRAPH ,
-species how many
-.Va lines
-the paragraph has in the input file and
-.Va beoln ,
-set to non-zero if the paragraph ends with an empty line instead of a
-breaking block element.
 .It Va rndr_listitem
 For
 .Dv LOWDOWN_LISTITEM ,
@@ -757,65 +825,63 @@ the
 .Va start
 variable given in
 .Vt struct rndr_list .
-.It Va rndr_header
+.It Va rndr_math
 For
-.Dv LOWDOWN_HEADER ,
-the
-.Va level
-of the header starting at zero
-This value is relative to the metadata base header level, defaulting to
-one (the top-level header).
+.Dv LOWDOWN_MATH ,
+the mode of display
+.Va displaymode :
+if 1, in-line math; if 2, multi-line.
+.It Va rndr_meta
+Each
+.Dv LOWDOWN_META
+key-value pair is represented.
+The keys are lower-case without spaces or non-ASCII characters.
+If provided, enclosed nodes may consist only of
+.Dv LOWDOWN_NORMAL_TEXT
+and
+.Dv LOWDOWN_ENTITY .
 .It Va rndr_normal_text
 The basic
 .Va text
 content for
 .Dv LOWDOWN_NORMAL_TEXT .
-.It Va rndr_entity
+.It Va rndr_paragraph
 For
-.Dv LOWDOWN_ENTITY ,
-the entity
-.Va text .
-.It Va rndr_autolink
-For
-.Dv LOWDOWN_LINK_AUTO ,
-the link address as
-.Va link ;
-the textual component
-.Va text ;
-and the link type
-.Va type ,
-which may be one of
-.Dv HALINK_EMAIL
-for e-mail links and
-.Dv HALINK_NORMAL
-otherwise.
-Any buffer may be empty-sized.
+.Dv LOWDOWN_PARAGRAPH ,
+species how many
+.Va lines
+the paragraph has in the input file and
+.Va beoln ,
+set to non-zero if the paragraph ends with an empty line instead of a
+breaking block element.
 .It Va rndr_raw_html
 For
 .Dv LOWDOWN_RAW_HTML ,
 the opaque HTML
 .Va text .
-.It Va rndr_link
-Like
-.Va rndr_autolink .
-.It Va rndr_blockcode
-For
-.Dv LOWDOWN_BLOCKCODE ,
-the opaque
-.Va text
-of the block and the optional
-.Va lang
-of the code language.
-.It Va rndr_codespan
-The opaque
-.Va text
-of the contents.
 .It Va rndr_table
 For
 .Dv LOWDOWN_TABLE_BLOCK ,
 the number of
 .Va columns
 in each row or header row.
+The number of columns in
+.Va rndr_table ,
+.Va rndr_table_header ,
+and
+.Va rndr_table_cell
+are the same.
+.It Va rndr_table_cell
+For
+.Dv LOWDOWN_TABLE_CELL ,
+the current
+.Va col
+column number out of
+.Va columns .
+See
+.Va rndr_table_header
+for a description of the bits in
+.Va flags .
 The number of columns in
 .Va rndr_table ,
 .Va rndr_table_header ,
@@ -844,72 +910,6 @@ The number of columns in
 and
 .Va rndr_table_cell
 are the same.
-.It Va rndr_table_cell
-For
-.Dv LOWDOWN_TABLE_CELL ,
-the current
-.Va col
-column number out of
-.Va columns .
-See
-.Va rndr_table_header
-for a description of the bits in
-.Va flags .
-The number of columns in
-.Va rndr_table ,
-.Va rndr_table_header ,
-and
-.Va rndr_table_cell
-are the same.
-.It Va rndr_footnote_def
-For
-.Dv LOWDOWN_FOOTNOTE_DEF ,
-the footnote number
-.Va  num
-(starting at one).
-This matches a single
-.Dv LOWDOWN_FOOTNOTE_DEF
-similarly numbered.
-The
-.Va key
-is its original in-document reference key.
-.It Va rndr_footnote_ref
-For a
-.Dv LOWDOWN_FOOTNOTE_REF
-reference to a
-.Dv LOWDOWN_FOOTNOTE_DEF ,
-the footnote number
-.Va num
-(starting at one).
-The
-.Va def
-is the content parsed as children to the matching
-.Dv LOWDOWN_FOOTNOTE_DEF .
-The
-.Va key
-is its original in-document reference key.
-.It Va rndr_image
-For
-.Dv LOWDOWN_IMAGE ,
-the image address
-.Va link ,
-the image title
-.Va title ,
-dimensions NxN (width by height) in
-.Va dims ,
-and alternate text
-.Va alt .
-.It Va rndr_math
-For
-.Dv LOWDOWN_MATH ,
-the mode of display
-.Va displaymode :
-if 1, in-line math; if 2, multi-line.
-.It Va rndr_blockhtml
-For
-.Dv LOWDOWN_BLOCKHTML ,
-the opaque HTML
-.Va text .
 .El
 .Sh SEE ALSO
 .Xr lowdown 1 ,
