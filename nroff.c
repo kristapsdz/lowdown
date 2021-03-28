@@ -1070,8 +1070,11 @@ rndr_raw_html(const struct nroff *st,
 static int
 rndr_table(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq)
 {
+	const char	*macro;
 
-	if (bqueue_block(obq, ".TS") == NULL)
+	macro = st->man || !(st->flags & LOWDOWN_NROFF_GROFF) ?
+		".TS" : ".TS H";
+	if (bqueue_block(obq, macro) == NULL)
 		return 0;
 	if (bqueue_block(obq, "tab(|) expand allbox;") == NULL)
 		return 0;
@@ -1081,8 +1084,8 @@ rndr_table(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq)
 }
 
 static int
-rndr_table_header(struct bnodeq *obq, struct bnodeq *bq, 
-	const struct rndr_table_header *param)
+rndr_table_header(const struct nroff *st, struct bnodeq *obq,
+	struct bnodeq *bq, const struct rndr_table_header *param)
 {
 	size_t		 	 i;
 	struct lowdown_buf	*ob;
@@ -1149,6 +1152,11 @@ rndr_table_header(struct bnodeq *obq, struct bnodeq *bq,
 		goto out;
 
 	TAILQ_CONCAT(obq, bq, entries);
+
+	if (!st->man && (st->flags & LOWDOWN_NROFF_GROFF) &&
+	    bqueue_block(obq, ".TH") == NULL)
+		goto out;
+
 	rc = 1;
 out:
 	hbuf_free(ob);
@@ -1659,7 +1667,8 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_table(st, obq, &tmpbq);
 		break;
 	case LOWDOWN_TABLE_HEADER:
-		rc = rndr_table_header(obq, &tmpbq, &n->rndr_table_header);
+		rc = rndr_table_header(st, 
+			obq, &tmpbq, &n->rndr_table_header);
 		break;
 	case LOWDOWN_TABLE_ROW:
 		rc = rndr_table_row(obq, &tmpbq);
