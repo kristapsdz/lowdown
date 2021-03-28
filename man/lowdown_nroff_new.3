@@ -36,7 +36,7 @@ Allocates a roff renderer using
 and
 .Fa opts->type ,
 or zero and
-.Dv LOWDOWN_MS ,
+.Dv LOWDODN_NROFF ,
 respectively, if
 .Fa opts
 is
@@ -64,9 +64,9 @@ The values recognised in
 are
 .Dv LOWDOWN_MAN
 and
-.Dv LOWDOWN_MS :
+.Dv LOWDODN_NROFF :
 anything else triggers
-.Dv LOWDOWN_MS .
+.Dv LOWDODN_NROFF .
 .Pp
 If
 .Dv LOWDOWN_NROFF_GROFF
@@ -79,7 +79,7 @@ package as well as the original
 are used in output.
 These are supported by both groff and mandoc.
 If in
-.Dv LOWDOWN_MS
+.Dv LOWDODN_NROFF
 mode, GNU extensions to
 .Ar ms
 are used along with
