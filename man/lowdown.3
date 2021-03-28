@@ -296,11 +296,16 @@ and
 Use GNU extensions (i.e., for
 .Xr groff 1 )
 when rendering output.
-You'll need to include
-.Fl m Ar pdfmark
-when invoking
-.Xr groff 1
-for formatting links.
+The groff arguments must include
+.Fl m Ns Ar pdfmark
+for formatting links with
+.Dv LOWDOWN_MAN
+or
+.Fl m Ns Ar spdf
+instead of
+.Fl m Ns Ar s
+for
+.Dv LOWDOWN_NROFF .
 Applies to the
 .Dv LOWDOWN_MAN
 and
@@ -386,7 +391,7 @@ for HTML5 output,
 for LaTeX,
 .Dv LOWDOWN_MAN
 for
-.Fl man
+.Fl m Ns Ar an
 macros,
 .Dv LOWDOWN_TERM
 for ANSI-compatible UTF-8 terminal output,
@@ -394,7 +399,7 @@ for ANSI-compatible UTF-8 terminal output,
 for the Gemini format, or
 .Dv LOWDOWN_NROFF
 for
-.Fl ms
+.Fl m Ns Ar s
 macros.
 The
 .Dv LOWDOWN_TREE
@@ -403,7 +408,7 @@ type causes a debug tree to be written.
 Both
 .Dv LOWDOWN_MAN
 and
-.Dv LOWDOWN_MS
+.Dv LOWDOWN_NROFF
 will use troff tables, which usually require the
 .Xr tbl 1
 preprocessor.
