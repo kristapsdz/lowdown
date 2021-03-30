@@ -59,6 +59,7 @@ struct gemini {
 	unsigned int		 flags; /* output flags */
 	ssize_t			 last_blank; /* line breaks or -1 (start) */
 	struct lowdown_buf	*tmp; /* for temporary allocations */
+	size_t			 nolinkqsz; /* if >0, don't record links */
 	struct linkq		 linkq; /* link queue */
 	size_t			 linkqsz; /* position in link queue */
 	wchar_t			*buf; /* buffer for counting wchar */
@@ -85,10 +86,10 @@ link_freeq(struct linkq *q)
 
 static int
 rndr_link_ref(const struct gemini *st,
-	struct lowdown_buf *out, const struct link *l, int nl)
+	struct lowdown_buf *out, size_t ref, int nl)
 {
 	char		 buf[32], c;
-	size_t		 ref = l->id, sz = 0, i;
+	size_t		 sz = 0, i;
 
 	assert(ref);
 
@@ -357,6 +358,8 @@ rndr_flush_linkq(struct gemini *st, struct lowdown_buf *out)
 	struct link	*l;
 	int		 rc;
 
+	assert(st->nolinkqsz == 0);
+
 	while ((l = TAILQ_FIRST(&st->linkq)) != NULL) {
 		TAILQ_REMOVE(&st->linkq, l, entries);
 		if (!HBUF_PUTSL(out, "=> "))
@@ -371,11 +374,13 @@ rndr_flush_linkq(struct gemini *st, struct lowdown_buf *out)
 			rc = 1;
 		if (!rc)
 			return 0;
-		if (!rndr_link_ref(st, out, l, 1))
+		if (!rndr_link_ref(st, out, l->id, 1))
 			return 0;
 		st->last_blank = 1;
 		free(l);
 	}
+
+	st->linkqsz = 0;
 	return 1;
 }
 
@@ -448,10 +453,11 @@ rndr_table(struct lowdown_buf *ob, struct gemini *st,
 
 	/*
 	 * Begin by counting the number of printable columns in each
-	 * column in each row.
+	 * column in each row.  Don't let us accumulate any links, as
+	 * we're going to re-run this after.
 	 */
 
-	assert(st->linkqsz == 0);
+	st->nolinkqsz = st->linkqsz + 1;
 	TAILQ_FOREACH(top, &n->children, entries) {
 		assert(top->type == LOWDOWN_TABLE_HEADER ||
 			top->type == LOWDOWN_TABLE_BODY);
@@ -472,15 +478,7 @@ rndr_table(struct lowdown_buf *ob, struct gemini *st,
 				st->last_blank = last_blank;
 			}
 	}
-
-	/* 
-	 * We may have accumulated links when temporarily rendering.
-	 * Remove these now, as we're going to have them printed for
-	 * real in the subsequent block.
-	 */
-
-	link_freeq(&st->linkq);
-	st->linkqsz = 0;
+	st->nolinkqsz = 0;
 
 	/* Now actually print, row-by-row into the output. */
 
@@ -813,12 +811,16 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		if (IS_STANDALONE_LINK(n, prev) ||
 		    (st->flags & LOWDOWN_GEMINI_LINK_IN))
 			break;
-		if ((l = calloc(1, sizeof(struct link))) == NULL)
-			return 0;
-		l->n = n;
-		l->id = ++st->linkqsz;
-		TAILQ_INSERT_TAIL(&st->linkq, l, entries);
-		rc = rndr_link_ref(st, st->tmp, l, 0) &&
+		if (st->nolinkqsz == 0) {
+			if ((l = calloc(1, sizeof(struct link))) == NULL)
+				return 0;
+			l->n = n;
+			l->id = ++st->linkqsz;
+			TAILQ_INSERT_TAIL(&st->linkq, l, entries);
+			i = l->id;
+		} else
+			i = st->nolinkqsz++;
+		rc = rndr_link_ref(st, st->tmp, i, 0) &&
 			rndr_buf(st, ob, n, st->tmp);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
@@ -907,7 +909,8 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	if (!rc)
 		return 0;
 
-	if (st->last_blank > 1 && !TAILQ_EMPTY(&st->linkq) &&
+	if (st->nolinkqsz == 0 && st->last_blank > 1 && 
+	    !TAILQ_EMPTY(&st->linkq) && 
 	    !(st->flags & LOWDOWN_GEMINI_LINK_END)) {
 		if (!rndr_flush_linkq(st, ob))
 			return 0;
@@ -941,6 +944,7 @@ lowdown_gemini_rndr(struct lowdown_buf *ob,
 
 	link_freeq(&st->linkq);
 	st->linkqsz = 0;
+	st->nolinkqsz = 0;
 
 	if (mq == &metaq)
 		lowdown_metaq_free(mq);
