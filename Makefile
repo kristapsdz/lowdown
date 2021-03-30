@@ -230,12 +230,26 @@ lowdown.tar.gz:
 	$(INSTALL) -m 0755 configure .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 644 regress/MarkdownTest_1.0.3/*.text \
 		.dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
+	$(INSTALL) -m 644 regress/MarkdownTest_1.0.3/*.md \
+		.dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
 	$(INSTALL) -m 644 regress/MarkdownTest_1.0.3/*.html \
 		.dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
 	$(INSTALL) -m 644 regress/smarty/*.md \
 		.dist/lowdown-$(VERSION)/regress/smarty
 	$(INSTALL) -m 644 regress/smarty/*.html \
 		.dist/lowdown-$(VERSION)/regress/smarty
+	$(INSTALL) -m 644 regress/*.md \
+		.dist/lowdown-$(VERSION)/regress
+	$(INSTALL) -m 644 regress/*.html \
+		.dist/lowdown-$(VERSION)/regress
+	$(INSTALL) -m 644 regress/*.ms \
+		.dist/lowdown-$(VERSION)/regress
+	$(INSTALL) -m 644 regress/*.man \
+		.dist/lowdown-$(VERSION)/regress
+	$(INSTALL) -m 644 regress/*.latex \
+		.dist/lowdown-$(VERSION)/regress
+	$(INSTALL) -m 644 regress/*.gemini \
+		.dist/lowdown-$(VERSION)/regress
 	( cd .dist/ && tar zcf ../$@ lowdown-$(VERSION) )
 	rm -rf .dist/
 
