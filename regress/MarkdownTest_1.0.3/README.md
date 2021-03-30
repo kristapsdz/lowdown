@@ -1,4 +1,3 @@
-
 This contains Markdown testing suites, currently limited to the Markdown
 suite v1.0.3.
 

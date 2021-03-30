@@ -285,6 +285,44 @@ regress: lowdown
 		./lowdown -s -Tterm "$$f" >/dev/null 2>&1 ; \
 		./lowdown -s -Ttree "$$f" >/dev/null 2>&1 ; \
 	done ; \
+	for f in regress/*.md ; \
+	do \
+		if [ -f regress/`basename $$f .md`.html ]; then \
+			echo "regress/`basename $$f .md`.{md,html}" ; \
+			./lowdown -Thtml $$f >$$tmp1 2>&1 ; \
+			diff -uw regress/`basename $$f .md`.html $$tmp1 ; \
+		else \
+			echo "regress/`basename $$f .md`.{md,html} (skipping)" ; \
+		fi ; \
+		if [ -f regress/`basename $$f .md`.latex ]; then \
+			echo "regress/`basename $$f .md`.{md,latex}" ; \
+			./lowdown -Tlatex $$f >$$tmp1 2>&1 ; \
+			diff -uw regress/`basename $$f .md`.latex $$tmp1 ; \
+		else \
+			echo "regress/`basename $$f .md`.{md,latex} (skipping)" ; \
+		fi ; \
+		if [ -f regress/`basename $$f .md`.ms ]; then \
+			echo "regress/`basename $$f .md`.{md,ms}" ; \
+			./lowdown -Tms $$f >$$tmp1 2>&1 ; \
+			diff -uw regress/`basename $$f .md`.ms $$tmp1 ; \
+		else \
+			echo "regress/`basename $$f .md`.{md,ms} (skipping)" ; \
+		fi ; \
+		if [ -f regress/`basename $$f .md`.man ]; then \
+			echo "regress/`basename $$f .md`.{md,man}" ; \
+			./lowdown -Tman $$f >$$tmp1 2>&1 ; \
+			diff -uw regress/`basename $$f .md`.man $$tmp1 ; \
+		else \
+			echo "regress/`basename $$f .md`.{md,man} (skipping)" ; \
+		fi ; \
+		if [ -f regress/`basename $$f .md`.gemini ]; then \
+			echo "regress/`basename $$f .md`.{md,gemini}" ; \
+			./lowdown -Tgemini $$f >$$tmp1 2>&1 ; \
+			diff -uw regress/`basename $$f .md`.gemini $$tmp1 ; \
+		else \
+			echo "regress/`basename $$f .md`.{md,gemini} (skipping)" ; \
+		fi ; \
+	done ; \
 	rm -f $$tmp1 ; \
 	rm -f $$tmp2
 
