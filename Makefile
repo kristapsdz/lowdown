@@ -97,6 +97,9 @@ IMAGES		 = screen-mandoc.png \
 THUMBS		 = screen-mandoc.thumb.jpg \
 		   screen-groff.thumb.jpg \
 		   screen-term.thumb.jpg
+
+# Only for MarkdownTestv1.0.3.
+
 REGRESS_ARGS	 = "--out-no-smarty"
 REGRESS_ARGS	+= "--parse-no-img-ext"
 REGRESS_ARGS	+= "--parse-no-metadata"
@@ -221,7 +224,6 @@ lowdown.tar.gz.sha512: lowdown.tar.gz
 lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/
 	mkdir -p .dist/lowdown-$(VERSION)/man
-	mkdir -p .dist/lowdown-$(VERSION)/regress/smarty
 	mkdir -p .dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
 	$(INSTALL) -m 0644 $(HEADERS) .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 0644 $(SOURCES) .dist/lowdown-$(VERSION)
@@ -234,10 +236,6 @@ lowdown.tar.gz:
 		.dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
 	$(INSTALL) -m 644 regress/MarkdownTest_1.0.3/*.html \
 		.dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
-	$(INSTALL) -m 644 regress/smarty/*.md \
-		.dist/lowdown-$(VERSION)/regress/smarty
-	$(INSTALL) -m 644 regress/smarty/*.html \
-		.dist/lowdown-$(VERSION)/regress/smarty
 	$(INSTALL) -m 644 regress/*.md \
 		.dist/lowdown-$(VERSION)/regress
 	$(INSTALL) -m 644 regress/*.html \
@@ -287,18 +285,6 @@ regress: lowdown
 		./lowdown -s -Tterm "$$f" >/dev/null 2>&1 ; \
 		./lowdown -s -Ttree "$$f" >/dev/null 2>&1 ; \
 	done  ; \
-	for f in regress/smarty/*.md ; \
-	do \
-		echo "$$f" ; \
-		./lowdown "$$f" > $$tmp1 ; \
-		diff -uw `dirname $$f`/`basename $$f .md`.html $$tmp1 ; \
-		./lowdown -s -Thtml "$$f" >/dev/null 2>&1 ; \
-		./lowdown -s -Tlatex "$$f" >/dev/null 2>&1 ; \
-		./lowdown -s -Tman "$$f" >/dev/null 2>&1 ; \
-		./lowdown -s -Tms "$$f" >/dev/null 2>&1 ; \
-		./lowdown -s -Tterm "$$f" >/dev/null 2>&1 ; \
-		./lowdown -s -Ttree "$$f" >/dev/null 2>&1 ; \
-	done ; \
 	for f in regress/*.md ; \
 	do \
 		if [ -f regress/`basename $$f .md`.html ]; then \
