@@ -1080,4 +1080,19 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.8.4</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2021-04-03">2021-04-03</time>
+		</header>
+		<aside>
+			<p>
+				Fix a crash in <b>-Tgemini</b> with tables.
+				Allow for multi-page tables in <b>-Tms</b>.
+				Start to expand on regression suite.
+				Clean up documentation, when possible, and add some minor code polish.
+			</p>
+		</aside>
+	</article>
 </articles>
