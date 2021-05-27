@@ -631,7 +631,21 @@ brackets
 .Dq Pq \&[]
 followed by the URL or the path in parentheses
 .Dq Pq \&() .
-The parentheses may also contain optional dimensions
+.Pp
+Unlike link text within square brackets, the alternate text is interpreted
+as-is.
+Thus, passing Markdown or HTML entities will be passed directly to output
+(escaped according to output medium).
+Alternate text
+.Em may not
+begin with the caret
+.Pq Dq \&^
+or percent
+.Pq Dq \&% ,
+else they will be interpreted as footnote or metadata references,
+respectively.
+.Pp
+The parentheses may contain optional dimensions
 .Pq Ar width Ns x Ns Op Ar height
 starting with an equal sign or a quoted (single or double quotes) title
 in any order after the URL or path.
