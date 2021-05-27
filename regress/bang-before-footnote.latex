@@ -1,0 +1,5 @@
+
+This is a test!\footnotemark[1]
+\footnotetext[1]{
+footnote text.
+}
