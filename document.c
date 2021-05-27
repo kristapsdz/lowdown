@@ -1461,6 +1461,20 @@ char_link(struct lowdown_doc *doc,
 	else 
 		goto cleanup;
 
+	/*
+	 * If we start as an image then change into metadata or a
+	 * footnote, make sure to emit the exclamation mark.
+	 */
+
+	if (is_img && (is_footnote || is_metadata)) {
+		n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
+		if (n == NULL)
+			goto err;
+		if (!pushbuf(&n->rndr_normal_text.text, &data[-1], 1))
+			goto err;
+		popnode(doc, n);
+	}
+
 	/* 
 	 * Footnote (in footer): look up footnote by its key in our
 	 * array of footnotes.  If we've already listed the footnote,
