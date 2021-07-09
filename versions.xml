@@ -1095,4 +1095,18 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.8.5</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2021-07-09">2021-07-09</time>
+		</header>
+		<aside>
+			<p>
+				Add support for <code>NO_COLOR</code> and the flag version,
+				<b>--term-nocolour</b>.
+				This only applies to <b>-Tterm</b> output when no in difference mode.
+			</p>
+		</aside>
+	</article>
 </articles>
