@@ -494,7 +494,7 @@ main(int argc, char *argv[])
 
 	/* 
 	 * Allow NO_COLOUR to dictate colours.
-	 * This only works for -Tterm output.
+	 * This only works for -Tterm output when not in diff mode.
 	 */
 
 	if (getenv("NO_COLOR") != NULL ||
@@ -502,6 +502,7 @@ main(int argc, char *argv[])
 		opts.oflags |= LOWDOWN_TERM_NOCOLOUR;
 
 	if (diff) {
+		opts.oflags &= ~LOWDOWN_TERM_NOCOLOUR;
 		if (!lowdown_file_diff
 		    (&opts, fin, din, &ret, &retsz, &mq))
 			errx(1, "%s: failed parse", fnin);
