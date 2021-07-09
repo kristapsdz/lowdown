@@ -287,6 +287,10 @@ Defaults to what the terminal reports or 72 if in a pipe.
 The number of left margin spaces.
 Truncated to the number of columns.
 Defaults to zero.
+.It Fl -term-nocolour
+Don't show colours.
+This will still decorate text with underlines, bolds, and italics, but
+not emit any colour codes.
 .It Fl -term-nolinks
 Don't show URLs for images and links (autolinks are still shown).
 .Pq Link content is still shown.
@@ -512,6 +516,17 @@ ANSI-escaped UTF-8 output suitable for reading on the terminal.
 Images and equations not supported.
 .It Fl T Ns Ar tree
 Debugging output: not for general use.
+.El
+.Sh ENVIRONMENT
+The following environment variables affect the execution of
+.Nm :
+.Bl -tag -width Ds
+.It Ev NO_COLOR
+Do not emit colours when in
+.Fl T Ns Ar term
+mode.
+Synonym for
+.Ev NO_COLOUR .
 .El
 .Sh EXIT STATUS
 .Ex -std
