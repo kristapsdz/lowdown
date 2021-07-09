@@ -244,7 +244,8 @@ rndr_escape(struct term *term, struct lowdown_buf *out,
  * Return zero on failure (memory), non-zero on success.
  */
 static int
-rndr_buf_style(struct lowdown_buf *out, const struct sty *s)
+rndr_buf_style(const struct term *term,
+	struct lowdown_buf *out, const struct sty *s)
 {
 	int	has = 0;
 
@@ -276,13 +277,13 @@ rndr_buf_style(struct lowdown_buf *out, const struct sty *s)
 		if (!HBUF_PUTSL(out, "9"))
 			return 0;
 	}
-	if (s->bcolour) {
+	if (s->bcolour && !(term->opts & LOWDOWN_TERM_NOCOLOUR)) {
 		if (has++ && !HBUF_PUTSL(out, ";"))
 			return 0;
 		if (!hbuf_printf(out, "%zu", s->bcolour))
 			return 0;
 	}
-	if (s->colour) {
+	if (s->colour && !(term->opts & LOWDOWN_TERM_NOCOLOUR)) {
 		if (has++ && !HBUF_PUTSL(out, ";"))
 			return 0;
 		if (!hbuf_printf(out, "%zu", s->colour))
@@ -518,7 +519,7 @@ rndr_buf_startline_prefixes(struct term *term,
 		}
 		break;
 	case LOWDOWN_BLOCKCODE:
-		if (!rndr_buf_style(out, &sinner))
+		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
 		pstyle = 1;
 		if (!HBUF_PUTSL(out, "      "))
@@ -526,7 +527,7 @@ rndr_buf_startline_prefixes(struct term *term,
 		rndr_buf_advance(term, 6);
 		break;
 	case LOWDOWN_ROOT:
-		if (!rndr_buf_style(out, &sinner))
+		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
 		pstyle = 1;
 		for (i = 0; i < term->hmargin; i++)
@@ -535,7 +536,7 @@ rndr_buf_startline_prefixes(struct term *term,
 		break;
 	case LOWDOWN_BLOCKQUOTE:
 		rndr_node_style_apply(&sinner, &sty_bkqt_pfx);
-		if (!rndr_buf_style(out, &sinner))
+		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
 		pstyle = 1;
 		if (!HBUF_PUTSL(out, "  | "))
@@ -544,7 +545,7 @@ rndr_buf_startline_prefixes(struct term *term,
 		break;
 	case LOWDOWN_DEFINITION_DATA:
 		rndr_node_style_apply(&sinner, &sty_ddata_pfx);
-		if (!rndr_buf_style(out, &sinner))
+		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
 		pstyle = 1;
 		if (emit == 0 && !HBUF_PUTSL(out, "  : "))
@@ -555,7 +556,7 @@ rndr_buf_startline_prefixes(struct term *term,
 		break;
 	case LOWDOWN_FOOTNOTE_DEF:
 		rndr_node_style_apply(&sinner, &sty_fdef_pfx);
-		if (!rndr_buf_style(out, &sinner))
+		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
 		pstyle = 1;
 		if (emit == 0 && !hbuf_printf
@@ -570,7 +571,7 @@ rndr_buf_startline_prefixes(struct term *term,
 
 		if (n->rndr_header.level == 0)
 			break;
-		if (!rndr_buf_style(out, &sinner))
+		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
 		pstyle = 1;
 		for (i = 0; i < n->rndr_header.level + 1; i++)
@@ -589,7 +590,7 @@ rndr_buf_startline_prefixes(struct term *term,
 			rndr_node_style_apply(&sinner, &sty_oli_pfx);
 		else
 			rndr_node_style_apply(&sinner, &sty_uli_pfx);
-		if (!rndr_buf_style(out, &sinner))
+		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
 		pstyle = 1;
 		if (n->parent->rndr_list.flags & HLIST_FL_UNORDERED) {
@@ -636,7 +637,7 @@ rndr_buf_startline(struct term *term, struct lowdown_buf *out,
 		return 0;
 	if (osty != NULL)
 		rndr_node_style_apply(&s, osty);
-	return rndr_buf_style(out, &s);
+	return rndr_buf_style(term, out, &s);
 }
 
 /*
@@ -671,7 +672,7 @@ rndr_buf_startwords(struct term *term, struct lowdown_buf *out,
 	rndr_buf_startwords_style(n, &s);
 	if (osty != NULL)
 		rndr_node_style_apply(&s, osty);
-	return rndr_buf_style(out, &s);
+	return rndr_buf_style(term, out, &s);
 }
 
 /*

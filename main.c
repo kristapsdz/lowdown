@@ -264,6 +264,8 @@ main(int argc, char *argv[])
 		{ "term-no-shortlinks",	no_argument, 	&roflag, LOWDOWN_TERM_SHORTLINK },
 		{ "term-nolinks",	no_argument, 	&aoflag, LOWDOWN_TERM_NOLINK },
 		{ "term-no-nolinks",	no_argument, 	&roflag, LOWDOWN_TERM_NOLINK },
+		{ "term-no-colour",	no_argument, 	&aoflag, LOWDOWN_TERM_NOCOLOUR },
+		{ "term-colour",	no_argument, 	&roflag, LOWDOWN_TERM_NOCOLOUR },
 		{ "out-smarty",		no_argument,	&aoflag, LOWDOWN_SMARTY },
 		{ "out-no-smarty",	no_argument,	&roflag, LOWDOWN_SMARTY },
 		{ "out-standalone",	no_argument,	&aoflag, LOWDOWN_STANDALONE },
@@ -489,6 +491,15 @@ main(int argc, char *argv[])
 
 	if (extract)
 		opts.feat |= LOWDOWN_METADATA;
+
+	/* 
+	 * Allow NO_COLOUR to dictate colours.
+	 * This only works for -Tterm output.
+	 */
+
+	if (getenv("NO_COLOR") != NULL ||
+	    getenv("NO_COLOUR") != NULL)
+		opts.oflags |= LOWDOWN_TERM_NOCOLOUR;
 
 	if (diff) {
 		if (!lowdown_file_diff
