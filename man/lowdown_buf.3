@@ -98,7 +98,7 @@ while (!(feof(stdin) || ferror(stdin))) {
 if (ferror(stdin))
   err(1, "fread");
 
-memset(&opts, 0, sizeof(struct opts));
+memset(&opts, 0, sizeof(struct lowdown_opts));
 opts.type = LOWDOWN_HTML;
 opts.feat = LOWDOWN_FOOTNOTES |
   LOWDOWN_AUTOLINK |

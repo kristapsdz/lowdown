@@ -80,7 +80,7 @@ struct lowdown_opts opts;
 char *buf;
 size_t bufsz;
 
-memset(&opts, 0, sizeof(struct opts));
+memset(&opts, 0, sizeof(struct lowdown_opts));
 opts.type = LOWDOWN_HTML;
 opts.feat = LOWDOWN_FOOTNOTES |
   LOWDOWN_AUTOLINK |
