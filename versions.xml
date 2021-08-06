@@ -1109,4 +1109,18 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.8.6</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2021-08-06">2021-08-06</time>
+		</header>
+		<aside>
+			<p>
+				Bug-fix: the <b>--parse-no-intraemph</b> flag would set the
+				condition (i.e., intra-emphasis was not parse) instead of unsetting
+				it.  Now it does the correct thing.
+			</p>
+		</aside>
+	</article>
 </articles>
