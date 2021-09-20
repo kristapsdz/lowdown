@@ -349,6 +349,28 @@ rndr(struct lowdown_buf *ob,
 		if (!HBUF_PUTSL(ob, "\n"))
 			return 0;
 		break;
+	case LOWDOWN_LINK_AUTO:
+		if (root->rndr_autolink.text.size) {
+			if (!rndr_indent(ob, indent + 1))
+				return 0;
+			if (!HBUF_PUTSL(ob, "text: "))
+				return 0;
+			if (!rndr_short(ob, &root->rndr_autolink.text))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\n"))
+				return 0;
+		}
+		if (root->rndr_autolink.link.size) {
+			if (!rndr_indent(ob, indent + 1))
+				return 0;
+			if (!HBUF_PUTSL(ob, "link: "))
+				return 0;
+			if (!rndr_short(ob, &root->rndr_autolink.link))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\n"))
+				return 0;
+		}
+		break;
 	case LOWDOWN_LINK:
 		if (root->rndr_link.title.size) {
 			if (!rndr_indent(ob, indent + 1))
@@ -356,6 +378,16 @@ rndr(struct lowdown_buf *ob,
 			if (!HBUF_PUTSL(ob, "title: "))
 				return 0;
 			if (!rndr_short(ob, &root->rndr_link.title))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\n"))
+				return 0;
+		}
+		if (root->rndr_link.link.size) {
+			if (!rndr_indent(ob, indent + 1))
+				return 0;
+			if (!HBUF_PUTSL(ob, "link: "))
+				return 0;
+			if (!rndr_short(ob, &root->rndr_link.link))
 				return 0;
 			if (!HBUF_PUTSL(ob, "\n"))
 				return 0;
