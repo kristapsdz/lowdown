@@ -164,7 +164,6 @@ struct	rndr_entity {
 
 struct	rndr_autolink {
 	struct lowdown_buf link; /* link address */
-	struct lowdown_buf text; /* shown address */
 	enum halink_type type; /* type of link */
 };
 

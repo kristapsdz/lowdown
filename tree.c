@@ -350,16 +350,6 @@ rndr(struct lowdown_buf *ob,
 			return 0;
 		break;
 	case LOWDOWN_LINK_AUTO:
-		if (root->rndr_autolink.text.size) {
-			if (!rndr_indent(ob, indent + 1))
-				return 0;
-			if (!HBUF_PUTSL(ob, "text: "))
-				return 0;
-			if (!rndr_short(ob, &root->rndr_autolink.text))
-				return 0;
-			if (!HBUF_PUTSL(ob, "\n"))
-				return 0;
-		}
 		if (root->rndr_autolink.link.size) {
 			if (!rndr_indent(ob, indent + 1))
 				return 0;

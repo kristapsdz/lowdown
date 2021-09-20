@@ -1235,8 +1235,6 @@ char_langle_tag(struct lowdown_doc *doc,
 			n->rndr_autolink.type = altype;
 			if (!pushlbuf(&n->rndr_autolink.link, u_link))
 				goto err;
-			if (!pushlbuf(&n->rndr_autolink.text, u_link))
-				goto err;
 			popnode(doc, n);
 		} else {
 			n = pushnode(doc, LOWDOWN_RAW_HTML);
@@ -4479,7 +4477,6 @@ lowdown_node_free(struct lowdown_node *p)
 		hbuf_free(&p->rndr_entity.text);
 		break;
 	case LOWDOWN_LINK_AUTO:
-		hbuf_free(&p->rndr_autolink.text);
 		hbuf_free(&p->rndr_autolink.link);
 		break;
 	case LOWDOWN_RAW_HTML:

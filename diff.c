@@ -291,7 +291,6 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 		break;
 	case LOWDOWN_LINK_AUTO:
 		MD5Updatebuf(&ctx, &n->rndr_autolink.link);
-		MD5Updatebuf(&ctx, &n->rndr_autolink.text);
 		MD5Updatev(&ctx, &n->rndr_autolink.type, 
 			sizeof(enum halink_type));
 		break;
@@ -707,9 +706,7 @@ node_clone(const struct lowdown_node *v, size_t id)
 		break;
 	case LOWDOWN_LINK_AUTO:
 		rc = hbuf_clone(&v->rndr_autolink.link,
-			&n->rndr_autolink.link) &&
-		     hbuf_clone(&v->rndr_autolink.text,
-			&n->rndr_autolink.text);
+			&n->rndr_autolink.link);
 		n->rndr_autolink.type = v->rndr_autolink.type;
 		break;
 	case LOWDOWN_RAW_HTML:
