@@ -270,8 +270,7 @@ distclean: clean
 regress: lowdown
 	tmp1=`mktemp` ; \
 	tmp2=`mktemp` ; \
-	for f in regress/MarkdownTest_1.0.3/*.text ; \
-	do \
+	for f in regress/MarkdownTest_1.0.3/*.text ; do \
 		echo "$$f" ; \
 		want="`dirname \"$$f\"`/`basename \"$$f\" .text`.html" ; \
 		sed -e '/^[ ]*$$/d' "$$want" > $$tmp1 ; \
@@ -285,42 +284,50 @@ regress: lowdown
 		./lowdown -s -Tterm "$$f" >/dev/null 2>&1 ; \
 		./lowdown -s -Ttree "$$f" >/dev/null 2>&1 ; \
 	done  ; \
-	for f in regress/*.md ; \
-	do \
+	for f in regress/*.md ; do \
+		echo "$$f" ; \
 		if [ -f regress/`basename $$f .md`.html ]; then \
-			echo "regress/`basename $$f .md`.{md,html}" ; \
 			./lowdown -Thtml $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/`basename $$f .md`.html $$tmp1 ; \
-		else \
-			echo "regress/`basename $$f .md`.{md,html} (skipping)" ; \
 		fi ; \
 		if [ -f regress/`basename $$f .md`.latex ]; then \
-			echo "regress/`basename $$f .md`.{md,latex}" ; \
 			./lowdown -Tlatex $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/`basename $$f .md`.latex $$tmp1 ; \
-		else \
-			echo "regress/`basename $$f .md`.{md,latex} (skipping)" ; \
 		fi ; \
 		if [ -f regress/`basename $$f .md`.ms ]; then \
-			echo "regress/`basename $$f .md`.{md,ms}" ; \
 			./lowdown -Tms $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/`basename $$f .md`.ms $$tmp1 ; \
-		else \
-			echo "regress/`basename $$f .md`.{md,ms} (skipping)" ; \
 		fi ; \
 		if [ -f regress/`basename $$f .md`.man ]; then \
-			echo "regress/`basename $$f .md`.{md,man}" ; \
 			./lowdown -Tman $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/`basename $$f .md`.man $$tmp1 ; \
-		else \
-			echo "regress/`basename $$f .md`.{md,man} (skipping)" ; \
 		fi ; \
 		if [ -f regress/`basename $$f .md`.gemini ]; then \
-			echo "regress/`basename $$f .md`.{md,gemini}" ; \
 			./lowdown -Tgemini $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/`basename $$f .md`.gemini $$tmp1 ; \
-		else \
-			echo "regress/`basename $$f .md`.{md,gemini} (skipping)" ; \
+		fi ; \
+	done ; \
+	for f in regress/standalone/*.md ; do \
+		echo "$$f" ; \
+		if [ -f regress/standalone/`basename $$f .md`.html ]; then \
+			./lowdown -s -Thtml $$f >$$tmp1 2>&1 ; \
+			diff -uw regress/standalone/`basename $$f .md`.html $$tmp1 ; \
+		fi ; \
+		if [ -f regress/standalone/`basename $$f .md`.latex ]; then \
+			./lowdown -s -Tlatex $$f >$$tmp1 2>&1 ; \
+			diff -uw regress/standalone/`basename $$f .md`.latex $$tmp1 ; \
+		fi ; \
+		if [ -f regress/standalone/`basename $$f .md`.ms ]; then \
+			./lowdown -s -Tms $$f >$$tmp1 2>&1 ; \
+			diff -uw regress/standalone/`basename $$f .md`.ms $$tmp1 ; \
+		fi ; \
+		if [ -f regress/standalone/`basename $$f .md`.man ]; then \
+			./lowdown -s -Tman $$f >$$tmp1 2>&1 ; \
+			diff -uw regress/standalone/`basename $$f .md`.man $$tmp1 ; \
+		fi ; \
+		if [ -f regress/standalone/`basename $$f .md`.gemini ]; then \
+			./lowdown -s -Tgemini $$f >$$tmp1 2>&1 ; \
+			diff -uw regress/standalone/`basename $$f .md`.gemini $$tmp1 ; \
 		fi ; \
 	done ; \
 	rm -f $$tmp1 ; \
