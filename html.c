@@ -23,6 +23,7 @@
 # include <sys/queue.h>
 #endif
 
+#include <assert.h>
 #include <ctype.h>
 #include <inttypes.h>
 #include <stdint.h>
@@ -52,6 +53,7 @@ struct 	html {
 	TAILQ_HEAD(, hentry) 	 headers_used;
 	size_t			 base_header_level; /* header offset */
 	unsigned int 		 flags; /* "oflags" in lowdown_opts */
+	int			 noescape; /* don't escape text */
 };
 
 /*
@@ -63,6 +65,7 @@ escape_html(struct lowdown_buf *ob, const char *source,
 	size_t length, const struct html *st)
 {
 
+	assert(st->noescape == 0);
 	return hesc_html(ob, source, length, 
 		st->flags & LOWDOWN_HTML_OWASP, 0,
 		st->flags & LOWDOWN_HTML_NUM_ENT);
@@ -76,7 +79,9 @@ escape_htmlb(struct lowdown_buf *ob,
 	const struct lowdown_buf *in, const struct html *st)
 {
 
-	return escape_html(ob, in->data, in->size, st);
+	return st->noescape ?
+		hbuf_putb(ob, in) :
+		escape_html(ob, in->data, in->size, st);
 }
 
 /*
@@ -89,6 +94,7 @@ escape_literal(struct lowdown_buf *ob,
 	const struct lowdown_buf *in, const struct html *st)
 {
 
+	assert(st->noescape == 0);
 	return hesc_html(ob, in->data, in->size, 
 		st->flags & LOWDOWN_HTML_OWASP, 1,
 		st->flags & LOWDOWN_HTML_NUM_ENT);
@@ -99,9 +105,11 @@ escape_literal(struct lowdown_buf *ob,
  * Return zero on failure, non-zero on success.
  */
 static int
-escape_href(struct lowdown_buf *ob, const struct lowdown_buf *in)
+escape_href(struct lowdown_buf *ob, const struct lowdown_buf *in,
+	const struct html *st)
 {
 
+	assert(st->noescape == 0);
 	return hesc_href(ob, in->data, in->size);
 }
 
@@ -129,7 +137,7 @@ rndr_autolink(struct lowdown_buf *ob,
 		return 0;
 	if (parm->type == HALINK_EMAIL && !HBUF_PUTSL(ob, "mailto:"))
 		return 0;
-	if (!escape_href(ob, &parm->link))
+	if (!escape_href(ob, &parm->link, st))
 		return 0;
 	if (!HBUF_PUTSL(ob, "\">"))
 		return 0;
@@ -164,7 +172,7 @@ rndr_blockcode(struct lowdown_buf *ob,
 	if (parm->lang.size) {
 		if (!HBUF_PUTSL(ob, "<pre><code class=\"language-"))
 			return 0;
-		if (!escape_href(ob, &parm->lang))
+		if (!escape_href(ob, &parm->lang, st))
 			return 0;
 		if (!HBUF_PUTSL(ob, "\">"))
 			return 0;
@@ -330,7 +338,7 @@ rndr_header_id(struct lowdown_buf *ob,
 
 	/* Convert to escaped values. */
 
-	if (!escape_href(ob, header))
+	if (!escape_href(ob, header, st))
 		return 0;
 
 	/*
@@ -396,7 +404,7 @@ rndr_link(struct lowdown_buf *ob,
 
 	if (!HBUF_PUTSL(ob, "<a href=\""))
 		return 0;
-	if (!escape_href(ob, &param->link))
+	if (!escape_href(ob, &param->link, st))
 		return 0;
 	if (param->title.size) {
 		if (!HBUF_PUTSL(ob, "\" title=\""))
@@ -635,7 +643,7 @@ rndr_image(struct lowdown_buf *ob,
 
 	if (!HBUF_PUTSL(ob, "<img src=\""))
 		return 0;
-	if (!escape_href(ob, &param->link))
+	if (!escape_href(ob, &param->link, st))
 		return 0;
 	if (!HBUF_PUTSL(ob, "\" alt=\""))
 		return 0;
@@ -941,11 +949,14 @@ rndr_root(struct lowdown_buf *ob,
  * Return zero on failure, non-zero on success.
  */
 static int
-rndr_meta_multi(struct lowdown_buf *ob, const char *b,
+rndr_meta_multi(struct lowdown_buf *ob, const char *b, int href,
 	const char *starttag, const char *endtag)
 {
 	const char	*start;
 	size_t		 sz, i, bsz;
+
+	if (b == NULL)
+		return 1;
 
 	bsz = strlen(b);
 
@@ -970,7 +981,9 @@ rndr_meta_multi(struct lowdown_buf *ob, const char *b,
 			return 0;
 		if (!HBUF_PUTSL(ob, "\""))
 			return 0;
-		if (!hbuf_put(ob, start, sz))
+		if (!href && !hesc_attr(ob, start, sz))
+			return 0;
+		else if (href && !hesc_href(ob, start, sz))
 			return 0;
 		if (!HBUF_PUTSL(ob, "\""))
 			return 0;
@@ -1073,39 +1086,47 @@ rndr_doc_header(struct lowdown_buf *ob,
 	if (rcsauthor != NULL)
 		author = rcsauthor;
 
-	if (affil != NULL && !rndr_meta_multi
-	    (ob, affil, "<meta name=\"creator\" content=", " />"))
+	if (!rndr_meta_multi(ob, affil, 0,
+	    "<meta name=\"creator\" content=", " />"))
 		return 0;
 
-	if (author != NULL && !rndr_meta_multi
-	    (ob, author, "<meta name=\"author\" content=", " />"))
+	if (!rndr_meta_multi(ob, author, 0,
+	    "<meta name=\"author\" content=", " />"))
 		return 0;
 
-	if (copy != NULL && !rndr_meta_multi
-	    (ob, copy, "<meta name=\"copyright\" content=", " />"))
+	if (!rndr_meta_multi(ob, copy, 0,
+	    "<meta name=\"copyright\" content=", " />"))
 		return 0;
 
-	if (css != NULL && !rndr_meta_multi
-	    (ob, css, "<link rel=\"stylesheet\" href=", " />"))
-		return 0;
+	/*
+	 * FIXME: don't use "scheme" if the date isn't in the
+	 * appropriate format, or modify it depending upon the position
+	 * of the year?
+	 */
 
 	if (date != NULL) {
 		if (!hbuf_printf(ob, "<meta name="
 		    "\"date\" scheme=\"YYYY-MM-DD\" content=\""))
 			return 0;
-		if (!hbuf_puts(ob, date))
+		if (!hesc_attr(ob, date, strlen(date)))
 			return 0;
 		if (!HBUF_PUTSL(ob, "\" />\n"))
 			return 0;
 	}
 
-	if (script != NULL && !rndr_meta_multi
-	    (ob, script, "<script src=", "></script>"))
+	if (!rndr_meta_multi(ob, css, 1,
+	    "<link rel=\"stylesheet\" href=", " />"))
+		return 0;
+
+	if (!rndr_meta_multi(ob, script, 1,
+	     "<script src=", "></script>"))
 		return 0;
 
 	if (!HBUF_PUTSL(ob, "<title>"))
 		return 0;
-	if (!hbuf_puts(ob, title))
+	if (!hesc_html(ob, title, strlen(title), 
+	    st->flags & LOWDOWN_HTML_OWASP, 0,
+	    st->flags & LOWDOWN_HTML_NUM_ENT))
 		return 0;
 	if (!HBUF_PUTSL(ob, "</title>\n"))
 		return 0;
@@ -1125,6 +1146,16 @@ rndr(struct lowdown_buf *ob,
 
 	if ((tmp = hbuf_new(64)) == NULL)
 		return 0;
+
+	/*
+	 * If we're processing metadata, don't escape the content as we
+	 * read and parse it.  This prevents double-escaping.  We'll
+	 * properly escape things as we inline them (standalone mode) or
+	 * when we write body text.
+	 */
+
+	if (n->type == LOWDOWN_META)
+		st->noescape = 1;
 
 	TAILQ_FOREACH(child, &n->children, entries)
 		if (!rndr(tmp, mq, st, child))
@@ -1160,6 +1191,7 @@ rndr(struct lowdown_buf *ob,
 		rc = rndr_doc_header(ob, tmp, mq, st);
 		break;
 	case LOWDOWN_META:
+		st->noescape = 0;
 		if (n->chng != LOWDOWN_CHNG_DELETE)
 			rc = rndr_meta(ob, tmp, mq, n, st);
 		break;

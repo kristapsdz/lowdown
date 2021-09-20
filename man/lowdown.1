@@ -364,6 +364,10 @@ or
 .Fl M ,
 the following metadata keys are recognised by output front-ends.
 The metadata keys are canonicalised in lowercase and without spaces.
+.Pp
+Metadata values should not be encoded in their output format, e.g.,
+.Dq css: foo&amp;bar .
+The renderer will perform any necessary output encoding.
 .Bl -tag -width Ds
 .It Li affiliation
 Author affiliation (organisation or institution).
