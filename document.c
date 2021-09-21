@@ -46,18 +46,6 @@
 			 HLIST_FL_ORDERED | \
 			 HLIST_FL_UNORDERED)
 
-/*
- * Used to hold metadata keys and values.
- * This is for filling in the metadata value with references.
- */
-struct	hbufn {
-	const struct lowdown_buf	*key; /* key of the value */
-	const struct lowdown_buf	*val; /* value (or NULL) */
-	TAILQ_ENTRY(hbufn) entries;
-};
-
-TAILQ_HEAD(hbufq, hbufn);
-
 /* 
  * Reference to a link.
  */
@@ -94,7 +82,7 @@ struct 	lowdown_doc {
 	int			  in_link_body; /* parsing link body */
 	size_t			  nodes; /* number of nodes */
 	struct lowdown_node	 *current; /* current node */
-	struct hbufq		  metaq; /* raw metadata key/values */
+	struct lowdown_metaq	 *metaq; /* raw metadata key/values */
 	size_t			  depth; /* current parse tree depth */
 	size_t			  maxdepth; /* max parse tree depth */
 	char			**meta; /* primer metadata */
@@ -1440,7 +1428,7 @@ char_link(struct lowdown_doc *doc,
 	struct link_ref 	*lr;
 	struct foot_ref	 	*fr;
 	struct lowdown_node 	*n;
-	struct hbufn		*m;
+	struct lowdown_meta	*m;
 
 	is_img = offset && data[-1] == '!' && 
 		!is_escaped(data - offset, offset - 1);
@@ -1548,18 +1536,17 @@ char_link(struct lowdown_doc *doc,
 
 		/* FIXME: slow O(n). */
 
-		TAILQ_FOREACH(m, &doc->metaq, entries) {
-			if (!hbuf_eq(m->key, &id))
+		TAILQ_FOREACH(m, doc->metaq, entries) {
+			if (!hbuf_streq(&id, m->key))
 				continue;
-			if (m->val != NULL) {
-				n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
-				if (n == NULL)
-					goto err;
-				if (!pushlbuf
-				    (&n->rndr_normal_text.text, m->val))
-					goto err;
-				popnode(doc, n);
-			}
+			assert(m->value != NULL);
+			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
+			if (n == NULL)
+				goto err;
+			if (!pushbuf(&n->rndr_normal_text.text,
+			    m->value, strlen(m->value)))
+				goto err;
+			popnode(doc, n);
 			break;
 		}
 
@@ -4152,7 +4139,7 @@ static int
 parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 {
 	size_t	 	 	 i, j, pos = 0, vsz, keysz;
-	struct hbufn		*m;
+	struct lowdown_meta	*m;
 	struct lowdown_node	*n, *nn;
 	const char		*val, *key;
 	char			*cp, *buf;
@@ -4175,8 +4162,8 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 		return 0;
 
 	/*
-	 * Also put the metadata into the document's metaq because we
-	 * might set variables.
+	 * Put the metadata into the document's metaq because we might
+	 * set variables.
 	 */
 
 	for (pos = 0; pos < sz; ) {
@@ -4211,9 +4198,11 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 		 * both the local queue and the meta nodes.
 		 */
 
-		TAILQ_FOREACH(m, &doc->metaq, entries)
-			if (hbuf_streq(m->key, buf)) {
-				TAILQ_REMOVE(&doc->metaq, m, entries);
+		TAILQ_FOREACH(m, doc->metaq, entries)
+			if (strcmp(m->key, buf) == 0) {
+				TAILQ_REMOVE(doc->metaq, m, entries);
+				free(m->key);
+				free(m->value);
 				free(m);
 				break;
 			}
@@ -4238,33 +4227,50 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 		}
 		free(buf);
 
-		if ((m = calloc(1, sizeof(struct hbufn))) == NULL)
+		m = calloc(1, sizeof(struct lowdown_meta));
+		if (m == NULL)
 			return -1;
-		TAILQ_INSERT_TAIL(&doc->metaq, m, entries);
-		m->key = &n->rndr_meta.key;
+		TAILQ_INSERT_TAIL(doc->metaq, m, entries);
+
+		m->key = strndup
+			(n->rndr_meta.key.data,
+			 n->rndr_meta.key.size);
+		if (m->key == NULL)
+			return -1;
 
 		if (i == sz) {
+			if ((m->value = strdup("")) == NULL)
+				return -1;
 			popnode(doc, n);
 			break;
 		}
 
-		/* Parse the value, creating a node if nonempty. */
+		/*
+		 * Parse the value, creating a node if nonempty.  Make
+		 * sure that the metadata has an empty value if there's
+		 * no value to be parsed.
+		 */
 
 		assert(data[i] == ':');
 		i++;
 		while (i < sz && isspace((unsigned char)data[i]))
 			i++;
 		if (i == sz) {
+			if ((m->value = strdup("")) == NULL)
+				return -1;
 			popnode(doc, n);
 			break;
 		}
 
 		val = parse_metadata_val(&data[i], sz - i, &vsz);
+
+		if ((m->value = strndup(val, vsz)) == NULL)
+			return -1;
 		if ((nn = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
 			return -1;
-		m->val = &nn->rndr_normal_text.text;
 		if (!pushbuf(&nn->rndr_normal_text.text, val, vsz))
 			return -1;
+
 		popnode(doc, nn);
 		popnode(doc, n);
 
@@ -4281,16 +4287,26 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
  * (Obviously only applicable if LOWDOWN_METADATA has been set.)
  */
 struct lowdown_node *
-lowdown_doc_parse(struct lowdown_doc *doc,
-	size_t *maxn, const char *data, size_t size)
+lowdown_doc_parse(struct lowdown_doc *doc, size_t *maxn,
+	const char *data, size_t size, struct lowdown_metaq *metaq)
 {
 	static const char 	 UTF8_BOM[] = { 0xEF, 0xBB, 0xBF };
 	struct lowdown_buf	*text;
 	size_t		 	 beg, end, i;
 	const char		*sv;
 	struct lowdown_node 	*n, *root = NULL;
-	struct hbufn		*m;
+	struct lowdown_metaq	 mq;
 	int			 c, rc = 0;
+
+	/*
+	 * Have a temporary "mq" if "metaq" is not set.  We clear this
+	 * automatically at the tail of the function.
+	 */
+
+	TAILQ_INIT(&mq);
+
+	if (metaq == NULL)
+		metaq = &mq;
 
 	/* Initialise the parser. */
 
@@ -4299,7 +4315,9 @@ lowdown_doc_parse(struct lowdown_doc *doc,
 	doc->current = NULL;
 	doc->in_link_body = 0;
 	doc->foots = 0;
-	TAILQ_INIT(&doc->metaq);
+	doc->metaq = metaq;
+
+	TAILQ_INIT(doc->metaq);
 	TAILQ_INIT(&doc->refq);
 	TAILQ_INIT(&doc->footq);
 
@@ -4435,13 +4453,7 @@ out:
 	hbuf_free(text);
 	free_link_refs(&doc->refq);
 	free_foot_refq(&doc->footq);
-
-	/* The contents of these hbufs have been copied elsewhere. */
-
-	while ((m = TAILQ_FIRST(&doc->metaq)) != NULL) {
-		TAILQ_REMOVE(&doc->metaq, m, entries);
-		free(m);
-	}
+	lowdown_metaq_free(&mq);
 
 	if (rc) {
 		if (maxn != NULL)

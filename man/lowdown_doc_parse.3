@@ -1,6 +1,6 @@
 .\"	$Id$
 .\"
-.\" Copyright (c) 2017, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
+.\" Copyright (c) 2017--2021 Kristaps Dzonsons <kristaps@bsd.lv>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -32,6 +32,7 @@
 .Fa "size_t *maxn"
 .Fa "const char *input"
 .Fa "size_t inputsz"
+.Fa "struct lowdown_metaq *metaq"
 .Fc
 .Sh DESCRIPTION
 Parse a
@@ -49,6 +50,15 @@ argument, if not
 is set to one greater than the highest node identifier.
 Its value is undefined if the function returns
 .Dv NULL .
+.Pp
+If
+.Fa metaq
+is not
+.Dv NULL ,
+it is filled in with document metadata (if any).
+Metadata key names are canonicalised and duplicate names are ignored.
+The results should be freed with
+.Xr lowdown_metaq_free 3 .
 .Pp
 This function may be invoked multiple times with a single
 .Fa doc
@@ -78,20 +88,22 @@ void *rndr;
 
 doc = lowdown_doc_new(NULL);
 if (doc == NULL)
-  err(1, NULL);
+	err(1, NULL);
 
-n = lowdown_doc_parse(doc, NULL, data, strlen(data));
+n = lowdown_doc_parse(doc, NULL, data, strlen(data), NULL);
 if (n == NULL)
-  err(1, NULL);
+	err(1, NULL);
 
 rndr = lowdown_html_new(NULL);
 if (rndr == NULL)
-  err(1, NULL);
+	err(1, NULL);
 
 ob = lowdown_buf_new(1024);
+if (ob == NULL)
+	err(1, NULL);
 
 if (!lowdown_html_rndr(ob, NULL, rndr, n))
-  err(1, NULL);
+	err(1, NULL);
 
 fwrite(stdout, 1, ob->size, ob->data);
 

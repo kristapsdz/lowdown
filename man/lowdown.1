@@ -100,20 +100,12 @@ to parse the document but do no rendering.
 See
 .Sx Output modes .
 .It Fl X Ar keyword
-Instead of outputting the full translated file, extract only the given
-metadata keyword and exit.
-These will be escaped according to the output mode
-.Fl T ;
-for example, a title of
-.Dq <foo>
-with
-.Fl T Ns Ar html
-will be extracted as
-.Dq &lt;foo&gt; .
-Metadata is not rendered for
-.Fl T Ns Ar tree
-or
-.Fl T Ns Ar null .
+Output the metadata value of
+.Ar keyword
+or an empty string if not found.
+The
+.Fl T
+mode is ignored.
 .It Ar file
 Input Markdown document.
 If not given or if

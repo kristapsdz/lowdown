@@ -89,9 +89,12 @@ lowdown_buf(const struct lowdown_opts *opts,
 
 	if ((doc = lowdown_doc_new(opts)) == NULL)
 		goto err;
-	if ((n = lowdown_doc_parse(doc, &maxn, data, datasz)) == NULL)
+
+	n = lowdown_doc_parse(doc, &maxn, data, datasz, metaq);
+	if (n == NULL)
 		goto err;
 	assert(n->type == LOWDOWN_ROOT);
+
     	if (opts != NULL && (opts->oflags & LOWDOWN_SMARTY)) 
 		if (!smarty(n, maxn, t))
 			goto err;
@@ -103,7 +106,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 	case LOWDOWN_GEMINI:
 		if ((rndr = lowdown_gemini_new(opts)) == NULL)
 			goto err;
-		c = lowdown_gemini_rndr(ob, metaq, rndr, n);
+		c = lowdown_gemini_rndr(ob, NULL, rndr, n);
 		lowdown_gemini_free(rndr);
 		if (!c)
 			goto err;
@@ -111,7 +114,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 	case LOWDOWN_HTML:
 		if ((rndr = lowdown_html_new(opts)) == NULL)
 			goto err;
-		c = lowdown_html_rndr(ob, metaq, rndr, n);
+		c = lowdown_html_rndr(ob, NULL, rndr, n);
 		lowdown_html_free(rndr);
 		if (!c)
 			goto err;
@@ -119,7 +122,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 	case LOWDOWN_LATEX:
 		if ((rndr = lowdown_latex_new(opts)) == NULL)
 			goto err;
-		c = lowdown_latex_rndr(ob, metaq, rndr, n);
+		c = lowdown_latex_rndr(ob, NULL, rndr, n);
 		lowdown_latex_free(rndr);
 		if (!c)
 			goto err;
@@ -128,7 +131,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 	case LOWDOWN_NROFF:
 		if ((rndr = lowdown_nroff_new(opts)) == NULL)
 			goto err;
-		c = lowdown_nroff_rndr(ob, metaq, rndr, n);
+		c = lowdown_nroff_rndr(ob, NULL, rndr, n);
 		lowdown_nroff_free(rndr);
 		if (!c)
 			goto err;
@@ -136,7 +139,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 	case LOWDOWN_TERM:
 		if ((rndr = lowdown_term_new(opts)) == NULL)
 			goto err;
-		c = lowdown_term_rndr(ob, metaq, rndr, n);
+		c = lowdown_term_rndr(ob, NULL, rndr, n);
 		lowdown_term_free(rndr);
 		if (!c)
 			goto err;
@@ -181,10 +184,10 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	if ((doc = lowdown_doc_new(opts)) == NULL)
 		goto err;
 
-	nnew = lowdown_doc_parse(doc, NULL, new, newsz);
+	nnew = lowdown_doc_parse(doc, NULL, new, newsz, NULL);
 	if (nnew == NULL)
 		goto err;
-	nold = lowdown_doc_parse(doc, NULL, old, oldsz);
+	nold = lowdown_doc_parse(doc, NULL, old, oldsz, NULL);
 	if (nold == NULL)
 		goto err;
 
@@ -206,7 +209,7 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	case LOWDOWN_GEMINI:
 		if ((rndr = lowdown_gemini_new(opts)) == NULL)
 			goto err;
-		c = lowdown_gemini_rndr(ob, metaq, rndr, ndiff);
+		c = lowdown_gemini_rndr(ob, NULL, rndr, ndiff);
 		lowdown_gemini_free(rndr);
 		if (!c)
 			goto err;
@@ -214,7 +217,7 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	case LOWDOWN_HTML:
 		if ((rndr = lowdown_html_new(opts)) == NULL)
 			goto err;
-		c = lowdown_html_rndr(ob, metaq, rndr, ndiff);
+		c = lowdown_html_rndr(ob, NULL, rndr, ndiff);
 		lowdown_html_free(rndr);
 		if (!c)
 			goto err;
@@ -222,7 +225,7 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	case LOWDOWN_LATEX:
 		if ((rndr = lowdown_latex_new(opts)) == NULL)
 			goto err;
-		c = lowdown_latex_rndr(ob, metaq, rndr, ndiff);
+		c = lowdown_latex_rndr(ob, NULL, rndr, ndiff);
 		lowdown_latex_free(rndr);
 		if (!c)
 			goto err;
@@ -231,7 +234,7 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	case LOWDOWN_NROFF:
 		if ((rndr = lowdown_nroff_new(opts)) == NULL)
 			goto err;
-		c = lowdown_nroff_rndr(ob, metaq, rndr, ndiff);
+		c = lowdown_nroff_rndr(ob, NULL, rndr, ndiff);
 		lowdown_nroff_free(rndr);
 		if (!c)
 			goto err;
@@ -239,7 +242,7 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	case LOWDOWN_TERM:
 		if ((rndr = lowdown_term_new(opts)) == NULL)
 			goto err;
-		c = lowdown_term_rndr(ob, metaq, rndr, ndiff);
+		c = lowdown_term_rndr(ob, NULL, rndr, ndiff);
 		lowdown_term_free(rndr);
 		if (!c)
 			goto err;

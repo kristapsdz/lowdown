@@ -374,8 +374,8 @@ void	 lowdown_buf_free(struct lowdown_buf *);
 struct lowdown_doc
 	*lowdown_doc_new(const struct lowdown_opts *);
 struct lowdown_node
-	*lowdown_doc_parse(struct lowdown_doc *,
-		size_t *, const char *, size_t);
+	*lowdown_doc_parse(struct lowdown_doc *, size_t *,
+		const char *, size_t, struct lowdown_metaq *);
 struct lowdown_node
 	*lowdown_diff(const struct lowdown_node *,
 		const struct lowdown_node *, size_t *);
