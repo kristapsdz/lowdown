@@ -391,20 +391,17 @@ int 	 lowdown_html_rndr(struct lowdown_buf *, void *,
 
 void	 lowdown_gemini_free(void *);
 void	*lowdown_gemini_new(const struct lowdown_opts *);
-int 	 lowdown_gemini_rndr(struct lowdown_buf *,
-		struct lowdown_metaq *, void *, 
+int 	 lowdown_gemini_rndr(struct lowdown_buf *, void *, 
 		const struct lowdown_node *);
 
 void	 lowdown_term_free(void *);
 void	*lowdown_term_new(const struct lowdown_opts *);
-int 	 lowdown_term_rndr(struct lowdown_buf *,
-		struct lowdown_metaq *, void *, 
+int 	 lowdown_term_rndr(struct lowdown_buf *, void *, 
 		const struct lowdown_node *);
 
 void	 lowdown_nroff_free(void *);
 void	*lowdown_nroff_new(const struct lowdown_opts *);
-int 	 lowdown_nroff_rndr(struct lowdown_buf *, 
-		struct lowdown_metaq *, void *, 
+int 	 lowdown_nroff_rndr(struct lowdown_buf *, void *, 
 		const struct lowdown_node *);
 
 int 	 lowdown_tree_rndr(struct lowdown_buf *, 
@@ -412,8 +409,7 @@ int 	 lowdown_tree_rndr(struct lowdown_buf *,
 
 void	 lowdown_latex_free(void *);
 void	*lowdown_latex_new(const struct lowdown_opts *);
-int 	 lowdown_latex_rndr(struct lowdown_buf *, 
-		struct lowdown_metaq *, void *, 
+int 	 lowdown_latex_rndr(struct lowdown_buf *, void *, 
 		const struct lowdown_node *);
 
 __END_DECLS

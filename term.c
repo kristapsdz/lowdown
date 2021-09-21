@@ -1391,16 +1391,20 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 
 int
 lowdown_term_rndr(struct lowdown_buf *ob,
-	struct lowdown_metaq *mq, void *arg, 
-	const struct lowdown_node *n)
+	void *arg, const struct lowdown_node *n)
 {
-	struct term	*p = arg;
+	struct term		*p = arg;
+	struct lowdown_metaq	 metaq;
+	int			 rc;
 
-	/* Reset ourselves to a sane parse point. */
+	TAILQ_INIT(&metaq);
 
 	p->stackpos = 0;
 
-	return rndr(ob, mq, p, n);
+	rc = rndr(ob, &metaq, p, n);
+
+	lowdown_metaq_free(&metaq);
+	return rc;
 }
 
 void *

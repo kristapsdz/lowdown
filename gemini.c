@@ -924,30 +924,22 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 
 int
 lowdown_gemini_rndr(struct lowdown_buf *ob,
-	struct lowdown_metaq *mq, void *arg, 
-	const struct lowdown_node *n)
+	void *arg, const struct lowdown_node *n)
 {
 	struct gemini		*st = arg;
 	int			 c;
 	struct lowdown_metaq	 metaq;
 
-	if (mq == NULL) {
-		TAILQ_INIT(&metaq);
-		mq = &metaq;
-	}
-
-	/* Set ourselves into a sane state. */
-
+	TAILQ_INIT(&metaq);
 	st->last_blank = 0;
 
-	c = rndr(ob, mq, st, n);
+	c = rndr(ob, &metaq, st, n);
 
 	link_freeq(&st->linkq);
 	st->linkqsz = 0;
 	st->nolinkqsz = 0;
 
-	if (mq == &metaq)
-		lowdown_metaq_free(mq);
+	lowdown_metaq_free(&metaq);
 	return c;
 }
 

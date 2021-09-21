@@ -1782,27 +1782,21 @@ out:
 
 int
 lowdown_nroff_rndr(struct lowdown_buf *ob,
-	struct lowdown_metaq *mq, void *arg, 
-	const struct lowdown_node *n)
+	void *arg, const struct lowdown_node *n)
 {
 	struct nroff		*st = arg;
 	struct lowdown_metaq	 metaq;
 	int			 rc = 0;
 	struct bnodeq		 bq;
 
-	/* Temporary metaq if not provided. */
-
-	if (mq == NULL) {
-		TAILQ_INIT(&metaq);
-		mq = &metaq;
-	}
-
+	TAILQ_INIT(&metaq);
 	TAILQ_INIT(&bq);
+
 	memset(st->fonts, 0, sizeof(st->fonts));
 	st->base_header_level = 1;
 	st->post_para = 0;
 
-	if (rndr(mq, st, n, &bq, 0) >= 0) {
+	if (rndr(&metaq, st, n, &bq, 0) >= 0) {
 		if (!bqueue_flush(ob, &bq, 1))
 			goto out;
 		if (ob->size && ob->data[ob->size - 1] != '\n' &&
@@ -1811,8 +1805,7 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 		rc = 1;
 	}
 out:
-	if (mq == &metaq)
-		lowdown_metaq_free(mq);
+	lowdown_metaq_free(&metaq);
 	bqueue_free(&bq);
 	return rc;
 }

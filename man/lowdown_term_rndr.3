@@ -29,7 +29,6 @@
 .Ft int
 .Fo lowdown_term_rndr
 .Fa "struct lowdown_buf *out"
-.Fa "struct lowdown_metaq *mq"
 .Fa "void *arg"
 .Fa "const struct lowdown_node *n"
 .Fc
@@ -47,14 +46,6 @@ as returned by
 The output is written into
 .Fa out ,
 which must be initialised and freed by the caller.
-.Pp
-If
-.Fa mq
-is not
-.Dv NULL ,
-it is filled with any metadata as parsed.
-It must be initialised and its contents freed with
-.Xr lowdown_metaq_free 3 .
 .Pp
 The output consists of UTF-8 encoded characters and ANSI (really ISO/IEC
 6429) escape sequences.
@@ -80,18 +71,18 @@ struct lowdown_node *n;
 void *rndr;
 
 if (setlocale(LC_CTYPE, "en_US.UTF-8") == NULL)
-  err(1, NULL);
+	err(1, NULL);
 
 if ((doc = lowdown_doc_new(NULL)) == NULL)
-  err(1, NULL);
-if ((n = lowdown_doc_parse(doc, NULL, buf, bsz)) == NULL)
-  err(1, NULL);
+	err(1, NULL);
+if ((n = lowdown_doc_parse(doc, NULL, buf, bsz, NULL)) == NULL)
+	err(1, NULL);
 if ((out = lowdown_buf_new(256)) == NULL)
-  err(1, NULL);
+	err(1, NULL);
 if ((rndr = lowdown_term_new(NULL)) == NULL)
-  err(1, NULL);
-if (!lowdown_term_rndr(out, NULL, rndr, n))
-  err(1, NULL);
+	err(1, NULL);
+if (!lowdown_term_rndr(out, rndr, n))
+	err(1, NULL);
 
 fwrite(out->data, 1, out->size, stdout);
 

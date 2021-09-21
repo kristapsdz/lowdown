@@ -897,28 +897,18 @@ out:
 
 int
 lowdown_latex_rndr(struct lowdown_buf *ob,
-	struct lowdown_metaq *mq, void *arg, 
-	const struct lowdown_node *n)
+	void *arg, const struct lowdown_node *n)
 {
 	struct latex		*st = arg;
 	struct lowdown_metaq	 metaq;
 	int			 rc;
 
-	/* Temporary metaq if not provided. */
-
-	if (mq == NULL) {
-		TAILQ_INIT(&metaq);
-		mq = &metaq;
-	}
-
+	TAILQ_INIT(&metaq);
 	st->base_header_level = 1;
-	rc = rndr(ob, mq, st, n);
 
-	/* Release temporary metaq. */
+	rc = rndr(ob, &metaq, st, n);
 
-	if (mq == &metaq)
-		lowdown_metaq_free(mq);
-
+	lowdown_metaq_free(&metaq);
 	return rc;
 }
 

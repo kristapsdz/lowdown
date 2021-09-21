@@ -106,7 +106,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 	case LOWDOWN_GEMINI:
 		if ((rndr = lowdown_gemini_new(opts)) == NULL)
 			goto err;
-		c = lowdown_gemini_rndr(ob, NULL, rndr, n);
+		c = lowdown_gemini_rndr(ob, rndr, n);
 		lowdown_gemini_free(rndr);
 		if (!c)
 			goto err;
@@ -122,7 +122,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 	case LOWDOWN_LATEX:
 		if ((rndr = lowdown_latex_new(opts)) == NULL)
 			goto err;
-		c = lowdown_latex_rndr(ob, NULL, rndr, n);
+		c = lowdown_latex_rndr(ob, rndr, n);
 		lowdown_latex_free(rndr);
 		if (!c)
 			goto err;
@@ -131,7 +131,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 	case LOWDOWN_NROFF:
 		if ((rndr = lowdown_nroff_new(opts)) == NULL)
 			goto err;
-		c = lowdown_nroff_rndr(ob, NULL, rndr, n);
+		c = lowdown_nroff_rndr(ob, rndr, n);
 		lowdown_nroff_free(rndr);
 		if (!c)
 			goto err;
@@ -139,7 +139,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 	case LOWDOWN_TERM:
 		if ((rndr = lowdown_term_new(opts)) == NULL)
 			goto err;
-		c = lowdown_term_rndr(ob, NULL, rndr, n);
+		c = lowdown_term_rndr(ob, rndr, n);
 		lowdown_term_free(rndr);
 		if (!c)
 			goto err;
@@ -209,7 +209,7 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	case LOWDOWN_GEMINI:
 		if ((rndr = lowdown_gemini_new(opts)) == NULL)
 			goto err;
-		c = lowdown_gemini_rndr(ob, NULL, rndr, ndiff);
+		c = lowdown_gemini_rndr(ob, rndr, ndiff);
 		lowdown_gemini_free(rndr);
 		if (!c)
 			goto err;
@@ -225,7 +225,7 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	case LOWDOWN_LATEX:
 		if ((rndr = lowdown_latex_new(opts)) == NULL)
 			goto err;
-		c = lowdown_latex_rndr(ob, NULL, rndr, ndiff);
+		c = lowdown_latex_rndr(ob, rndr, ndiff);
 		lowdown_latex_free(rndr);
 		if (!c)
 			goto err;
@@ -234,7 +234,7 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	case LOWDOWN_NROFF:
 		if ((rndr = lowdown_nroff_new(opts)) == NULL)
 			goto err;
-		c = lowdown_nroff_rndr(ob, NULL, rndr, ndiff);
+		c = lowdown_nroff_rndr(ob, rndr, ndiff);
 		lowdown_nroff_free(rndr);
 		if (!c)
 			goto err;
@@ -242,7 +242,7 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	case LOWDOWN_TERM:
 		if ((rndr = lowdown_term_new(opts)) == NULL)
 			goto err;
-		c = lowdown_term_rndr(ob, NULL, rndr, ndiff);
+		c = lowdown_term_rndr(ob, rndr, ndiff);
 		lowdown_term_free(rndr);
 		if (!c)
 			goto err;
