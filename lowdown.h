@@ -386,8 +386,7 @@ void 	 lowdown_node_free(struct lowdown_node *);
 
 void	 lowdown_html_free(void *);
 void	*lowdown_html_new(const struct lowdown_opts *);
-int 	 lowdown_html_rndr(struct lowdown_buf *,
-		struct lowdown_metaq *, void *, 
+int 	 lowdown_html_rndr(struct lowdown_buf *, void *, 
 		const struct lowdown_node *);
 
 void	 lowdown_gemini_free(void *);

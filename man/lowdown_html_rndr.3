@@ -29,7 +29,6 @@
 .Ft int
 .Fo lowdown_html_rndr
 .Fa "struct lowdown_buf *out"
-.Fa "struct lowdown_metaq *mq"
 .Fa "void *arg"
 .Fa "const struct lowdown_node *n"
 .Fc
@@ -48,14 +47,6 @@ The output is written into
 .Fa out ,
 which must be initialised and freed by the caller.
 .Pp
-If
-.Fa mq
-is not
-.Dv NULL ,
-it is filled with any metadata as parsed.
-It must be initialised and its contents freed with
-.Xr lowdown_metaq_free 3 .
-.Pp
 The output consists of a UTF-8 HTML5 document.
 .Sh RETURN VALUES
 Returns zero on failure to allocate memory, non-zero on success.
@@ -72,15 +63,15 @@ struct lowdown_node *n;
 void *rndr;
 
 if ((doc = lowdown_doc_new(NULL)) == NULL)
-  err(1, NULL);
-if ((n = lowdown_doc_parse(doc, NULL, buf, bsz)) == NULL)
-  err(1, NULL);
+	err(1, NULL);
+if ((n = lowdown_doc_parse(doc, NULL, buf, bsz, NULL)) == NULL)
+	err(1, NULL);
 if ((out = lowdown_buf_new(256)) == NULL)
-  err(1, NULL);
+	err(1, NULL);
 if ((rndr = lowdown_html_new(NULL)) == NULL)
-  err(1, NULL);
+	err(1, NULL);
 if (!lowdown_html_rndr(out, NULL, rndr, n))
-  err(1, NULL);
+	err(1, NULL);
 
 fwrite(out->data, 1, out->size, stdout);
 

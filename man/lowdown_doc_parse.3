@@ -89,15 +89,12 @@ void *rndr;
 doc = lowdown_doc_new(NULL);
 if (doc == NULL)
 	err(1, NULL);
-
 n = lowdown_doc_parse(doc, NULL, data, strlen(data), NULL);
 if (n == NULL)
 	err(1, NULL);
-
 rndr = lowdown_html_new(NULL);
 if (rndr == NULL)
 	err(1, NULL);
-
 ob = lowdown_buf_new(1024);
 if (ob == NULL)
 	err(1, NULL);

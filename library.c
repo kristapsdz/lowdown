@@ -114,7 +114,7 @@ lowdown_buf(const struct lowdown_opts *opts,
 	case LOWDOWN_HTML:
 		if ((rndr = lowdown_html_new(opts)) == NULL)
 			goto err;
-		c = lowdown_html_rndr(ob, NULL, rndr, n);
+		c = lowdown_html_rndr(ob, rndr, n);
 		lowdown_html_free(rndr);
 		if (!c)
 			goto err;
@@ -217,7 +217,7 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	case LOWDOWN_HTML:
 		if ((rndr = lowdown_html_new(opts)) == NULL)
 			goto err;
-		c = lowdown_html_rndr(ob, NULL, rndr, ndiff);
+		c = lowdown_html_rndr(ob, rndr, ndiff);
 		lowdown_html_free(rndr);
 		if (!c)
 			goto err;
