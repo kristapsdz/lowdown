@@ -1,0 +1,14 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+\usepackage{lmodern}
+\usepackage{hyperref}
+\begin{document}
+\title{ab\textasciitilde{}cde\textbackslash{}\{foo\}\$bar}
+\maketitle
+
+foo bar
+\end{document}
