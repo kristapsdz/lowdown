@@ -217,7 +217,10 @@ the following apply:
 .It Fl -nroff-no-groff
 Don't use
 .Xr groff 1
-style section headings, PDF hyperlinks (this further requires
+style section headings, PDF hyperlinks and multi-page tables (these further
+require
+.Fl T Ns Ar ms
+mode and
 .Fl m Ns Ar spdf
 passed to
 .Xr groff 1 ) ,
@@ -270,6 +273,10 @@ Defaults to what the terminal reports or 72 if in a pipe.
 The number of left margin spaces.
 Truncated to the number of columns.
 Defaults to zero.
+.It Fl -term-nocolour
+Don't show colours.
+This will still decorate text with underlines, bolds, and italics, but
+not emit any colour codes.
 .It Fl -term-nolinks
 Don't show URLs for images and links (autolinks are still shown).
 .Pq Link content is still shown.
@@ -304,6 +311,19 @@ Render all links within the flow of text.
 This will cause breakage when nested links, such as images within links,
 links in blockquotes, etc.
 It should not be used unless in carefully crafted documents.
+.It Fl -gemini-link-noref
+Do not format link labels.
+Takes precedence over
+.Fl -gemini-link-roman .
+.It Fl -gemini-link-roman
+When formatting link labels, use lower-case Roman numerals instead of the
+default lower-case hexavigesimal (i.e.,
+.Dq a ,
+.Dq b ,
+\&...,
+.Dq aa ,
+.Dq ab ,
+\&...).
 .It Fl -gemini-metadata
 Print metadata as the canonicalised key followed by a colon then the
 value, each on one line (newlines replaced by spaces).
@@ -330,34 +350,35 @@ or
 .Fl M ,
 the following metadata keys are recognised by output front-ends.
 The metadata keys are canonicalised in lowercase and without spaces.
+.Pp
+Metadata values should not be encoded in their output format, e.g.,
+.Dq css: foo&amp;bar .
+The renderer will perform any necessary output encoding.
 .Bl -tag -width Ds
 .It Li affiliation
 Author affiliation (organisation or institution).
-Multiple affiliations may be separated by more than one space (including
+Multiple affiliations may be separated by two or more spaces (including
 newlines).
-Used in all output modes but
-.Fl T Ns Ar man .
+Used in
+.Fl T Ns Ar html ,
+.Fl T Ns Ar latex ,
+and
+.Fl T Ns Ar ms .
 .It Li author
 Document author.
-Multiple authors may be separated by more than one space (including
+Multiple authors may be separated by two or more spaces (including
 newlines).
 Overridden by
 .Li rcsauthor .
-Used in all output modes but
-.Fl T Ns Ar man .
-.It Li baseheaderlevel
-The
-.Dq top-most
-header level.
-For example, having a base header level of 2 will cause all headers
-originally level 1 to be level 2.
-So for
+Used in
 .Fl T Ns Ar html ,
-any instance of
-.Li <h1>
-would be instead
-.Li <h2> .
-If unset or less than one, defaults to one.
+.Fl T Ns Ar latex ,
+and
+.Fl T Ns Ar ms .
+.It Li baseheaderlevel
+Added to each header level.
+Deprecated in favour of
+.Li shiftheadinglevelby .
 .It Li copyright
 A document copyright (without the word
 .Dq Copyright ) ,
@@ -369,7 +390,7 @@ and
 .Fl T Ns Ar html .
 .It Li css
 A CSS file included in the HTML5 document head.
-Multiple CSS files (in order) may be separated by more than one space
+Multiple CSS files (in order) may be separated by two or more spaces
 (including newlines).
 Only used in
 .Fl T Ns Ar html .
@@ -377,28 +398,52 @@ Only used in
 Document date in ISO-8601 YYYY-MM-DD format.
 Overridden by
 .Li rcsdate .
-Used in all output modes.
+Used in
+.Fl T Ns Ar html ,
+.Fl T Ns Ar latex ,
+.Fl T Ns Ar man ,
+and
+.Fl T Ns Ar ms .
 .It Li javascript
 A JavaScript file included in the HTML5 document head.
-Multiple script files (in order) may be separated by more than one space
+Multiple script files (in order) may be separated by two or more spaces
 (including newlines).
 Only used in
 .Fl T Ns Ar html .
 .It Li rcsauthor
-Document author in RCS author format.
+Like
+.Li author ,
+but in RCS author format.
 Overrides
 .Li author .
-Used in all output modes.
 .It Li rcsdate
-Document date in RCS date format.
+Like
+.Li date ,
+but in RCS date format.
 Overrides
 .Li date .
-Used in all output modes.
 .It Li section
 Man page section, defaulting to
 .Dq 7 .
 Only used in
 .Fl T Ns Ar man .
+.It Li shiftheadinglevelby
+Shift all headers by the given number.
+For example, a value of 1 causes headers originally at level 1
+.Pq Dq <h1>
+to be level 2
+.Pq Dq <h2> ,
+while a value of -1 moves level 2 to 1.
+Levels will not move to less than 1.
+Takes precedence over
+.Li baseheaderlevel .
+If unset or not a valid number, defaults to zero.
+Used in
+.Fl T Ns Ar html ,
+.Fl T Ns Ar latex ,
+.Fl T Ns Ar man ,
+and
+.Fl T Ns Ar ms .
 .It Li source
 Man page source (organisation providing the manual).
 Only used in
@@ -410,13 +455,25 @@ Only used in
 .It Li title
 Document title, defaulting to
 .Dq Untitled article .
-Used in all output modes.
+Used in
+.Fl T Ns Ar html ,
+.Fl T Ns Ar latex ,
+.Fl T Ns Ar man ,
+and
+.Fl T Ns Ar ms .
 .El
 .Pp
-Metadata values are parsed and may be pasted in markdown documents
-regardless of whether
+Metadata values are parsed and may be used as variables in markdown
+documents regardless of whether
 .Fl s
 is specified or not.
+.Pp
+Default values, such
+.Dq Untitled article
+for the
+.Li title ,
+are not set as metadata values, and will not appear if the metadata key
+is used as a variable.
 .Ss Output modes
 A detailed description of the output modes follows.
 .Bl -tag -width Ds
@@ -504,6 +561,19 @@ When data has been removed, it is coloured red.
 When data has been inserted, it is coloured in green.
 .It Fl T Ns Ar term
 Removed and inserted data have different background colours.
+.El
+.Sh ENVIRONMENT
+The following environment variables affect the execution of
+.Nm :
+.Bl -tag -width Ds
+.It Ev NO_COLOR
+Do not emit colours when in
+.Fl T Ns Ar term
+mode.
+Synonym for
+.Ev NO_COLOUR .
+Same as
+.Fl -term-nocolour .
 .El
 .Sh EXIT STATUS
 .Ex -std
