@@ -44,7 +44,7 @@ struct 	nroff {
 	int 		 man; /* whether man(7) */
 	int		 post_para; /* for choosing PP/LP */
 	unsigned int 	 flags; /* output flags */
-	size_t		 base_header_level; /* header offset */
+	ssize_t		 headers_offs; /* header offset */
 	enum nfont	 fonts[NFONT__MAX]; /* see bqueue_font() */
 };
 
@@ -827,10 +827,12 @@ static int
 rndr_header(struct nroff *st, struct bnodeq *obq,
 	struct bnodeq *bq, const struct rndr_header *param)
 {
-	size_t			 level;
+	ssize_t			 level;
 	struct bnode		*bn;
 
-	level = param->level + st->base_header_level;
+	level = (ssize_t)param->level + st->headers_offs;
+	if (level < 1)
+		level = 1;
 
 	/*
 	 * For man(7), we use SH for the first-level section, SS for
@@ -861,7 +863,7 @@ rndr_header(struct nroff *st, struct bnodeq *obq,
 
 	if ((st->flags & LOWDOWN_NROFF_NUMBERED) ||
 	    (st->flags & LOWDOWN_NROFF_GROFF)) 
-		if (asprintf(&bn->nargs, "%zu", level) == -1) {
+		if (asprintf(&bn->nargs, "%zd", level) == -1) {
 			bn->nargs = NULL;
 			return 0;
 		}
@@ -1393,6 +1395,8 @@ rndr_meta(struct nroff *st, const struct bnodeq *bq,
 {
 	struct lowdown_meta	*m;
 	struct lowdown_buf	*ob;
+	ssize_t			 val;
+	const char		*ep;
 
 	if ((m = calloc(1, sizeof(struct lowdown_meta))) == NULL)
 		return 0;
@@ -1413,12 +1417,18 @@ rndr_meta(struct nroff *st, const struct bnodeq *bq,
 	if (m->value == NULL)
 		return 0;
 
-	if (strcasecmp(m->key, "baseheaderlevel") == 0) {
-		st->base_header_level = strtonum
-			(m->value, 1, 1000, NULL);
-		if (st->base_header_level == 0)
-			st->base_header_level = 1;
+	if (strcmp(m->key, "shiftheadinglevelby") == 0) {
+		val = (ssize_t)strtonum
+			(m->value, -100, 100, &ep);
+		if (ep == NULL)
+			st->headers_offs = val + 1;
+	} else if (strcmp(m->key, "baseheaderlevel") == 0) {
+		val = (ssize_t)strtonum
+			(m->value, 1, 100, &ep);
+		if (ep == NULL)
+			st->headers_offs = val;
 	}
+
 	return 1;
 }
 
@@ -1793,7 +1803,7 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 	TAILQ_INIT(&bq);
 
 	memset(st->fonts, 0, sizeof(st->fonts));
-	st->base_header_level = 1;
+	st->headers_offs = 1;
 	st->post_para = 0;
 
 	if (rndr(&metaq, st, n, &bq, 0) >= 0) {

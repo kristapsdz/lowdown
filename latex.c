@@ -33,7 +33,7 @@
 
 struct latex {
 	unsigned int	oflags; /* same as in lowdown_opts */
-	size_t		base_header_level; /* header offset */
+	ssize_t		headers_offs; /* header offset */
 };
 
 /*
@@ -267,13 +267,16 @@ rndr_header(struct lowdown_buf *ob,
 	const struct latex *st)
 {
 	const char	*type;
+	ssize_t		 level;
 
 	if (ob->size && !HBUF_PUTSL(ob, "\n"))
 		return 0;
 
-	switch (param->level + st->base_header_level) {
-	case 0:
-		/* FALLTHROUGH */
+	level = (ssize_t)param->level + st->headers_offs;
+	if (level < 1)
+		level = 1;
+
+	switch (level) {
 	case 1:
 		type = "\\section";
 		break;
@@ -723,6 +726,8 @@ rndr_meta(struct lowdown_buf *ob,
 	const struct lowdown_node *n, struct latex *st)
 {
 	struct lowdown_meta	*m;
+	ssize_t			 val;
+	const char		*ep;
 
 	if ((m = calloc(1, sizeof(struct lowdown_meta))) == NULL)
 		return 0;
@@ -736,11 +741,16 @@ rndr_meta(struct lowdown_buf *ob,
 	if (m->value == NULL)
 		return 0;
 
-	if (strcasecmp(m->key, "baseheaderlevel") == 0) {
-		st->base_header_level = strtonum
-			(m->value, 1, 1000, NULL);
-		if (st->base_header_level == 0)
-			st->base_header_level = 1;
+	if (strcmp(m->key, "shiftheadinglevelby") == 0) {
+		val = (ssize_t)strtonum
+			(m->value, -100, 100, &ep);
+		if (ep == NULL)
+			st->headers_offs = val + 1;
+	} else if (strcmp(m->key, "baseheaderlevel") == 0) {
+		val = (ssize_t)strtonum
+			(m->value, 1, 100, &ep);
+		if (ep == NULL)
+			st->headers_offs = val;
 	}
 
 	return 1;
@@ -904,7 +914,7 @@ lowdown_latex_rndr(struct lowdown_buf *ob,
 	int			 rc;
 
 	TAILQ_INIT(&metaq);
-	st->base_header_level = 1;
+	st->headers_offs = 1;
 
 	rc = rndr(ob, &metaq, st, n);
 

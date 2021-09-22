@@ -51,7 +51,7 @@ struct	hentry {
  */
 struct 	html {
 	TAILQ_HEAD(, hentry) 	 headers_used;
-	size_t			 base_header_level; /* header offset */
+	ssize_t			 headers_offs; /* header offset */
 	unsigned int 		 flags; /* "oflags" in lowdown_opts */
 	int			 noescape; /* don't escape text */
 };
@@ -368,11 +368,12 @@ rndr_header(struct lowdown_buf *ob,
 	const struct rndr_header *param, 
 	struct html *st)
 {
-	size_t	level = param->level + st->base_header_level;
+	ssize_t	level;
 
-	/* HTML doesn't allow greater than <h6>. */
-
-	if (level > 6)
+	level = (ssize_t)param->level + st->headers_offs;
+	if (level < 1)
+		level = 1;
+	else if (level > 6)
 		level = 6;
 
 	if (ob->size && !hbuf_putc(ob, '\n'))
@@ -1007,6 +1008,8 @@ rndr_meta(struct lowdown_buf *ob,
 	const struct lowdown_node *n, struct html *st)
 {
 	struct lowdown_meta	*m;
+	ssize_t			 val;
+	const char		*ep;
 
 	m = calloc(1, sizeof(struct lowdown_meta));
 	if (m == NULL)
@@ -1021,11 +1024,16 @@ rndr_meta(struct lowdown_buf *ob,
 	if (m->value == NULL)
 		return 0;
 
-	if (strcasecmp(m->key, "baseheaderlevel") == 0) {
-		st->base_header_level = strtonum
-			(m->value, 1, 1000, NULL);
-		if (st->base_header_level == 0)
-			st->base_header_level = 1;
+	if (strcmp(m->key, "shiftheadinglevelby") == 0) {
+		val = (ssize_t)strtonum
+			(m->value, -100, 100, &ep);
+		if (ep == NULL)
+			st->headers_offs = val + 1;
+	} else if (strcmp(m->key, "baseheaderlevel") == 0) {
+		val = (ssize_t)strtonum
+			(m->value, 1, 100, &ep);
+		if (ep == NULL)
+			st->headers_offs = val;
 	}
 
 	return 1;
@@ -1329,7 +1337,7 @@ lowdown_html_rndr(struct lowdown_buf *ob,
 	int			 rc;
 
 	TAILQ_INIT(&metaq);
-	st->base_header_level = 1;
+	st->headers_offs = 1;
 
 	rc = rndr(ob, &metaq, st, n);
 
