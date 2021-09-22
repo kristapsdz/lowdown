@@ -55,11 +55,13 @@ macro packages.
 .Sh RETURN VALUES
 Returns zero on failure to allocate memory, non-zero on success.
 .Sh EXAMPLES
-The following assumes the the string
-.Va buf
+The following parses
+.Va b
 of length
 .Va bsz
-consists of Markdown content.
+and outputs in
+.Xr groff_ms 7
+format.
 .Bd -literal -offset indent
 struct lowdown_buf *out;
 struct lowdown_doc *doc;
@@ -68,7 +70,7 @@ void *rndr;
 
 if ((doc = lowdown_doc_new(NULL)) == NULL)
 	err(1, NULL);
-if ((n = lowdown_doc_parse(doc, NULL, buf, bsz, NULL)) == NULL)
+if ((n = lowdown_doc_parse(doc, NULL, b, bsz, NULL)) == NULL)
 	err(1, NULL);
 if ((out = lowdown_buf_new(256)) == NULL)
 	err(1, NULL);

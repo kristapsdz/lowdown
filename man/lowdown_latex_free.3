@@ -39,11 +39,11 @@ is
 .Dv NULL ,
 the function does nothing.
 .Sh EXAMPLES
-The following assumes the the string
-.Va buf
+The following parses
+.Va b
 of length
 .Va bsz
-consists of Markdown content.
+and outputs in LaTeX format.
 .Bd -literal -offset indent
 struct lowdown_buf *out;
 struct lowdown_doc *doc;
@@ -51,15 +51,15 @@ struct lowdown_node *n;
 void *rndr;
 
 if ((doc = lowdown_doc_new(NULL)) == NULL)
-  err(1, NULL);
-if ((n = lowdown_doc_parse(doc, NULL, buf, bsz)) == NULL)
-  err(1, NULL);
+	err(1, NULL);
+if ((n = lowdown_doc_parse(doc, NULL, b, bsz, NULL)) == NULL)
+	err(1, NULL);
 if ((out = lowdown_buf_new(256)) == NULL)
-  err(1, NULL);
+	err(1, NULL);
 if ((rndr = lowdown_latex_new(NULL)) == NULL)
-  err(1, NULL);
-if (!lowdown_latex_rndr(out, NULL, rndr, n))
-  err(1, NULL);
+	err(1, NULL);
+if (!lowdown_latex_rndr(out, rndr, n))
+	err(1, NULL);
 
 fwrite(out->data, 1, out->size, stdout);
 

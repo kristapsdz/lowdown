@@ -72,8 +72,10 @@ If not
 the returned node is always of type
 .Dv LOWDOWN_ROOT .
 .Sh EXAMPLES
-The following parsers the NUL-terminated string
-.Va data .
+The following parses
+.Va b
+of length
+.Va bsz .
 It first allocates the parser, then the document, then the renderer
 (HTML is used in this case).
 Then it passes output to the renderer, prints it, and cleans up
@@ -86,20 +88,15 @@ struct lowdown_node *n;
 struct lowdown_buf *ob;
 void *rndr;
 
-doc = lowdown_doc_new(NULL);
-if (doc == NULL)
+if ((doc = lowdown_doc_new(NULL)) == NULL)
 	err(1, NULL);
-n = lowdown_doc_parse(doc, NULL, data, strlen(data), NULL);
-if (n == NULL)
+if ((n = lowdown_doc_parse(doc, NULL, b, bsz, NULL)) == NULL)
 	err(1, NULL);
-rndr = lowdown_html_new(NULL);
-if (rndr == NULL)
+if ((rndr = lowdown_html_new(NULL)) == NULL)
 	err(1, NULL);
-ob = lowdown_buf_new(1024);
-if (ob == NULL)
+if ((ob = lowdown_buf_new(1024)) == NULL)
 	err(1, NULL);
-
-if (!lowdown_html_rndr(ob, NULL, rndr, n))
+if (!lowdown_html_rndr(ob, rndr, n))
 	err(1, NULL);
 
 fwrite(stdout, 1, ob->size, ob->data);

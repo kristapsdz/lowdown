@@ -58,20 +58,19 @@ and
 are copied over, so they need not persist after being passed to
 .Fn lowdown_doc_new .
 .Sh EXAMPLES
-The following parses a document in the NUL-terminated string
-.Va data
+The following parses
+.Va b
+if length
+.Va bsz
 and throws away the result.
 .Bd -literal -offset indent
 struct lowdown_doc *doc;
 struct lowdown_node *n;
 
-doc = lowdown_doc_new(NULL);
-if (doc == NULL)
-  err(1, NULL);
-
-n = lowdown_doc_parse(doc, NULL, data, strlen(data));
-if (n == NULL)
-  err(1, NULL);
+if ((doc = lowdown_doc_new(NULL)) == NULL)
+	err(1, NULL);
+if ((n = lowdown_doc_parse(doc, NULL, b, bsz, NULL)) == NULL)
+	err(1, NULL);
 
 lowdown_node_free(n);
 lowdown_doc_free(doc);

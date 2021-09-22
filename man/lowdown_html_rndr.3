@@ -51,11 +51,11 @@ The output consists of a UTF-8 HTML5 document.
 .Sh RETURN VALUES
 Returns zero on failure to allocate memory, non-zero on success.
 .Sh EXAMPLES
-The following assumes the the string
-.Va buf
+The following parses
+.Va b
 of length
 .Va bsz
-consists of Markdown content.
+and outputs in HTML format.
 .Bd -literal -offset indent
 struct lowdown_buf *out;
 struct lowdown_doc *doc;
@@ -64,13 +64,13 @@ void *rndr;
 
 if ((doc = lowdown_doc_new(NULL)) == NULL)
 	err(1, NULL);
-if ((n = lowdown_doc_parse(doc, NULL, buf, bsz, NULL)) == NULL)
+if ((n = lowdown_doc_parse(doc, NULL, b, bsz, NULL)) == NULL)
 	err(1, NULL);
 if ((out = lowdown_buf_new(256)) == NULL)
 	err(1, NULL);
 if ((rndr = lowdown_html_new(NULL)) == NULL)
 	err(1, NULL);
-if (!lowdown_html_rndr(out, NULL, rndr, n))
+if (!lowdown_html_rndr(out, rndr, n))
 	err(1, NULL);
 
 fwrite(out->data, 1, out->size, stdout);

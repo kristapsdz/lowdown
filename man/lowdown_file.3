@@ -83,22 +83,22 @@ size_t bufsz;
 memset(&opts, 0, sizeof(struct lowdown_opts));
 opts.type = LOWDOWN_HTML;
 opts.feat = LOWDOWN_FOOTNOTES |
-  LOWDOWN_AUTOLINK |
-  LOWDOWN_TABLES |
-  LOWDOWN_SUPER |
-  LOWDOWN_STRIKE |
-  LOWDOWN_FENCED |
-  LOWDOWN_COMMONMARK |
-  LOWDOWN_DEFLIST |
-  LOWDOWN_IMG_EXT |
-  LOWDOWN_METADATA;
+	LOWDOWN_AUTOLINK |
+	LOWDOWN_TABLES |
+	LOWDOWN_SUPER |
+	LOWDOWN_STRIKE |
+	LOWDOWN_FENCED |
+	LOWDOWN_COMMONMARK |
+	LOWDOWN_DEFLIST |
+	LOWDOWN_IMG_EXT |
+	LOWDOWN_METADATA;
 opts.oflags = LOWDOWN_HTML_HEAD_IDS |
-  LOWDOWN_HTML_NUM_ENT |
-  LOWDOWN_HTML_OWASP |
-  LOWDOWN_SMARTY |
-  LOWDOWN_STANDALONE;
+	LOWDOWN_HTML_NUM_ENT |
+	LOWDOWN_HTML_OWASP |
+	LOWDOWN_SMARTY |
+	LOWDOWN_STANDALONE;
 if (!lowdown_file(&opts, stdin, &buf, &bufsz, NULL))
-  errx(1, "lowdown_file");
+	errx(1, "lowdown_file");
 fwrite(buf, 1, bufsz, stdout);
 free(buf);
 .Ed
