@@ -2213,23 +2213,43 @@ prefix_oli(const struct lowdown_doc *doc,
 }
 
 /* 
- * Returns unordered list item prefix.
+ * Returns unordered list item prefix, including a GFM checkbox.  The
+ * "checked" pointer, if not NULL, is set to whether the check is set
+ * (>0), unset (=0), or not there (<0).
  */
 static size_t
-prefix_uli(const char *data, size_t size)
+prefix_uli(const struct lowdown_doc *doc,
+	const char *data, size_t size, int *checked)
 {
 	size_t	 i;
+
+	if (checked != NULL)
+		*checked = -1;
 
 	i = countspaces(data, 0, size, 3);
 
 	if (i + 1 >= size ||
 	    (data[i] != '*' && data[i] != '+' && 
 	     data[i] != '-') ||
-		data[i + 1] != ' ')
+	    data[i + 1] != ' ')
 		return 0;
 
 	if (is_next_headerline(data + i, size - i))
 		return 0;
+
+	if (!(doc->ext_flags & LOWDOWN_TASKLIST) || i + 5 >= size)
+		return i + 2;
+
+	if (data[i + 2] == '[' &&
+	    (data[i + 3] == ' ' ||
+	     data[i + 3] == 'x' ||
+	     data[i + 3] == 'X') &&
+	    data[i + 4] == ']' &&
+	    data[i + 5] == ' ') {
+		if (checked != NULL)
+			*checked = data[i + 3] != ' ';
+		return i + 6;
+	}
 
 	return i + 2;
 }
@@ -2533,14 +2553,14 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 				 orgpre, i, has_next_uli = 0, dli_lines,
 				 has_next_oli = 0, has_next_dli = 0;
 	int			 in_empty = 0, has_inside_empty = 0,
-				 in_fence = 0, ff;
+				 in_fence = 0, ff, checked = -1;
 	struct lowdown_node	*n;
 
 	/* Keeping track of the first indentation prefix. */
 
 	orgpre = countspaces(data, 0, size, 3);
 
-	beg = prefix_uli(data, size);
+	beg = prefix_uli(doc, data, size, &checked);
 
 	if (!beg)
 		beg = prefix_oli(doc, data, size, NULL);
@@ -2608,8 +2628,8 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 		 */
 
 		if (!in_fence) {
-			has_next_uli = prefix_uli
-				(data + beg + i, end - beg - i);
+			has_next_uli = prefix_uli(doc,
+				data + beg + i, end - beg - i, NULL);
 			has_next_dli =  dli_lines <= 2 && prefix_dli
 				(doc, data + beg + i, end - beg - i);
 			has_next_oli = prefix_oli
@@ -2694,6 +2714,11 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 		goto err;
 	n->rndr_listitem.flags = *flags;
 	n->rndr_listitem.num = num;
+
+	if (checked > 0)
+		n->rndr_listitem.flags |= HLIST_FL_CHECKED;
+	else if (checked == 0)
+		n->rndr_listitem.flags |= HLIST_FL_UNCHECKED;
 
 	if (*flags & HLIST_FL_BLOCK) {
 		/* Intermediate render of block li. */
@@ -3594,7 +3619,7 @@ parse_block(struct lowdown_doc *doc, char *data, size_t size)
 
 		/* Some sort of unordered list. */
 
-		if (prefix_uli(txt_data, end)) {
+		if (prefix_uli(doc, txt_data, end, NULL)) {
 			rc = parse_list(doc, txt_data, end, NULL);
 			if (rc < 0)
 				return 0;

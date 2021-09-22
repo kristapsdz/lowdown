@@ -199,6 +199,8 @@ whitespace in superscripts; or foo^(bar), which puts only the parts in
 parenthesis.
 .It Dv LOWDOWN_TABLES
 Parse GFM tables.
+.It Dv LOWDOWN_TASKLIST
+Parse GFM task list items.
 .El
 .Pp
 The default value is zero (none).
@@ -811,14 +813,19 @@ consists of a bitfield
 .Va flags
 that may be set to
 .Dv HLIST_FL_ORDERED
-.Pq an ordered list ,
+for an ordered list,
 .Dv HLIST_FL_UNORDERED
-.Pq unordered list ,
+for an unordered list,
 .Dv HLIST_FL_DEF
-.Pq definition list data ,
-and/or
+for definition list data,
+.Dv HLIST_FL_CHECKED
+or
+.Dv HLIST_FL_UNCHECKED
+for an unordered
+.Dq task
+list element, and/or
 .Dv HLIST_FL_BLOCK
-.Pq list item output as if containing block elements .
+for list item output as if containing block elements.
 The
 .Dv HLIST_FL_BLOCK
 should not be used: use the parent list (or definition list) flags for

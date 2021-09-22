@@ -124,7 +124,9 @@ enum	hlist_fl {
 	HLIST_FL_ORDERED = (1 << 0), /* <ol> list item */
 	HLIST_FL_BLOCK = (1 << 1), /* <li> containing block data */
 	HLIST_FL_UNORDERED = (1 << 2), /* <ul> list item */
-	HLIST_FL_DEF = (1 << 3) /* <dl> list item */
+	HLIST_FL_DEF = (1 << 3), /* <dl> list item */
+	HLIST_FL_CHECKED = (1 << 4), /* <li> with checked box */
+	HLIST_FL_UNCHECKED = (1 << 5), /* <li> with unchecked box */
 };
 
 /*
@@ -310,6 +312,7 @@ struct	lowdown_opts {
 #define	LOWDOWN_COMMONMARK	  0x8000
 #define	LOWDOWN_DEFLIST		  0x10000
 #define	LOWDOWN_IMG_EXT	 	  0x20000
+#define LOWDOWN_TASKLIST	  0x40000
 	unsigned int		  oflags;
 #define LOWDOWN_HTML_SKIP_HTML	  0x01 /* skip all HTML */
 #define LOWDOWN_HTML_ESCAPE	  0x02 /* escape HTML (if not skip) */
