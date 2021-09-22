@@ -26,6 +26,7 @@
 #endif
 #include <sys/ioctl.h>
 
+#include <assert.h>
 #if HAVE_ERR
 # include <err.h>
 #endif
@@ -453,9 +454,6 @@ main(int argc, char *argv[])
 	 * Non-diff mode takes an optional single argument.
 	 */
 
-	if (diff && extract != NULL)
-		errx(1, "-X not applicable to diff mode");
-
 	if ((diff && (argc == 0 || argc > 2)) || (!diff && argc > 1))
 		goto usage;
 
@@ -504,7 +502,7 @@ main(int argc, char *argv[])
 	if (diff) {
 		opts.oflags &= ~LOWDOWN_TERM_NOCOLOUR;
 		if (!lowdown_file_diff
-		    (&opts, fin, din, &ret, &retsz, &mq))
+		    (&opts, fin, din, &ret, &retsz))
 			errx(1, "%s: failed parse", fnin);
 	} else {
 		if (!lowdown_file(&opts, fin, &ret, &retsz, &mq))
@@ -512,6 +510,7 @@ main(int argc, char *argv[])
 	}
 
 	if (extract != NULL) {
+		assert(!diff);
 		TAILQ_FOREACH(m, &mq, entries) 
 			if (strcasecmp(m->key, extract) == 0)
 				break;

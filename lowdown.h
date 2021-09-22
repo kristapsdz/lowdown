@@ -355,11 +355,11 @@ int	 lowdown_buf(const struct lowdown_opts *,
 		char **, size_t *, struct lowdown_metaq *);
 int	 lowdown_buf_diff(const struct lowdown_opts *, 
 		const char *, size_t, const char *, size_t,
-		char **, size_t *, struct lowdown_metaq *);
+		char **, size_t *);
 int	 lowdown_file(const struct lowdown_opts *, 
 		FILE *, char **, size_t *, struct lowdown_metaq *);
 int	 lowdown_file_diff(const struct lowdown_opts *, FILE *, 
-		FILE *, char **, size_t *, struct lowdown_metaq *);
+		FILE *, char **, size_t *);
 
 /* 
  * Low-level functions.

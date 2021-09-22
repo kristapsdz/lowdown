@@ -33,7 +33,6 @@
 .Fa "FILE *fold"
 .Fa "char **ret"
 .Fa "size_t *retsz"
-.Fa "struct lowdown_metaq *metaq"
 .Fc
 .Sh DESCRIPTION
 Parses
@@ -50,21 +49,9 @@ according to configurations
 .Fa opts .
 The output format is specified by
 .Fa opts->type .
-If
-.Dv LOWDOWN_METADATA
-is set in
-.Fa opts->feat
-and
-.Fa metaq
-is not
-.Dv NULL ,
-.Fa metaq
-is filled with metadata rendered in the given output format.
 .Pp
 On success, the caller is responsible for freeing
-.Fa ret
-and
-.Fa metaq .
+.Fa ret .
 .Sh RETURN VALUES
 Returns zero on failure, non-zero on success.
 Failure occurs when the file read failed or on memory exhaustion.
@@ -74,5 +61,4 @@ and
 .Fa retsz
 are undefined.
 .Sh SEE ALSO
-.Xr lowdown 3 ,
-.Xr lowdown_metaq_free 3
+.Xr lowdown 3

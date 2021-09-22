@@ -167,8 +167,7 @@ int
 lowdown_buf_diff(const struct lowdown_opts *opts,
 	const char *new, size_t newsz,
 	const char *old, size_t oldsz,
-	char **res, size_t *rsz,
-	struct lowdown_metaq *metaq)
+	char **res, size_t *rsz)
 {
 	struct lowdown_buf 	*ob = NULL;
 	void 		 	*rndr = NULL;
@@ -291,8 +290,7 @@ out:
 
 int
 lowdown_file_diff(const struct lowdown_opts *opts,
-	FILE *fnew, FILE *fold, char **res, size_t *rsz, 
-	struct lowdown_metaq *metaq)
+	FILE *fnew, FILE *fold, char **res, size_t *rsz)
 {
 	struct lowdown_buf	*bnew = NULL, *bold = NULL;
 	int	 		 rc = 0;
@@ -309,7 +307,7 @@ lowdown_file_diff(const struct lowdown_opts *opts,
 	if (!lowdown_buf_diff(opts, 
 	    bnew->data, bnew->size, 
 	    bold->data, bold->size, 
-	    res, rsz, metaq))
+	    res, rsz))
 		goto out;
 	rc = 1;
 out:
