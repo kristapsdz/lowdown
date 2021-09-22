@@ -148,7 +148,7 @@ static const struct sty sty_chng_del =	{ 0, 0, 0, 0, 100,  0, 0 };
 
 static const struct sty sty_ddata_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
 static const struct sty sty_fdef_pfx =	{ 0, 0, 0, 0,   0, 92, 1 };
-static const struct sty sty_bkqt_pfx =	{ 0, 0, 0, 0,   0, 37, 0 };
+static const struct sty sty_bkqt_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
 static const struct sty sty_oli_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
 static const struct sty sty_uli_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
 
@@ -539,9 +539,9 @@ rndr_buf_startline_prefixes(struct term *term,
 		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
 		pstyle = 1;
-		if (!HBUF_PUTSL(out, "  | "))
+		if (!HBUF_PUTSL(out, "    | "))
 			return 0;
-		rndr_buf_advance(term, 4);
+		rndr_buf_advance(term, 6);
 		break;
 	case LOWDOWN_DEFINITION_DATA:
 		rndr_node_style_apply(&sinner, &sty_ddata_pfx);
@@ -595,17 +595,17 @@ rndr_buf_startline_prefixes(struct term *term,
 		pstyle = 1;
 		if (n->parent->rndr_list.flags & HLIST_FL_UNORDERED) {
 			if (!hbuf_puts
-			    (out, emit == 0 ?  "  - " : "    "))
+			    (out, emit == 0 ?  "    - " : "      "))
 				return 0;
-			rndr_buf_advance(term, 4);
+			rndr_buf_advance(term, 6);
 			break;
 		}
 		if (emit == 0 && !hbuf_printf
-		    (out, "%2zu. ", n->rndr_listitem.num))
+		    (out, "%4zu. ", n->rndr_listitem.num))
 			return 0;
-		else if (emit != 0 && !HBUF_PUTSL(out, "    "))
+		else if (emit != 0 && !HBUF_PUTSL(out, "      "))
 			return 0;
-		rndr_buf_advance(term, 4);
+		rndr_buf_advance(term, 6);
 		break;
 	default:
 		break;
