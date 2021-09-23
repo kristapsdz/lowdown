@@ -37,7 +37,7 @@
 /*
  * Make sure these are larger than enum hlist_fl.
  */
-#define HLIST_LI_END	(1 << 4) /* End of list item. */
+#define HLIST_LI_END	(1 << 6) /* End of list item. */
 
 /*
  * Mask of all list item types.

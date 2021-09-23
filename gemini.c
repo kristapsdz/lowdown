@@ -745,11 +745,17 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		st->last_blank = -1;
 		break;
 	case LOWDOWN_LISTITEM:
-		if (n->rndr_listitem.flags & HLIST_FL_ORDERED)
+		if (n->rndr_listitem.flags & HLIST_FL_DEF)
+			rc = HBUF_PUTSL(st->tmp, ": ");
+		else if (n->rndr_listitem.flags & HLIST_FL_CHECKED)
+			rc = HBUF_PUTSL(st->tmp, "☑ ");
+		else if (n->rndr_listitem.flags & HLIST_FL_UNCHECKED)
+			rc = HBUF_PUTSL(st->tmp, "☐ ");
+		else if (n->rndr_listitem.flags & HLIST_FL_UNORDERED)
+			rc = HBUF_PUTSL(st->tmp, "* ");
+		else
 			rc = hbuf_printf(st->tmp, "%zu. ", 
 				n->rndr_listitem.num);
-		else
-			rc = HBUF_PUTSL(st->tmp, "* ");
 		if (!rc)
 			return 0;
 		rc = rndr_buf(st, ob, n, st->tmp);

@@ -357,9 +357,18 @@ rndr_listitem(struct lowdown_buf *ob,
 
 	/* Only emit <li> if we're not a <dl> list. */
 
-	if (!(param->flags & HLIST_FL_DEF) &&
-	    !HBUF_PUTSL(ob, "\\item "))
-		return 0;
+	if (!(param->flags & HLIST_FL_DEF)) {
+		if (!HBUF_PUTSL(ob, "\\item"))
+			return 0;
+		if ((param->flags & HLIST_FL_CHECKED) &&
+		    !HBUF_PUTSL(ob, "[$\\rlap{$\\checkmark$}\\square$]"))
+			return 0;
+		if ((param->flags & HLIST_FL_UNCHECKED) &&
+		    !HBUF_PUTSL(ob, "[$\\square$]"))
+			return 0;
+		if (!HBUF_PUTSL(ob, " "))
+			return 0;
+	}
 
 	/* Cut off any trailing space. */
 
@@ -674,6 +683,8 @@ rndr_doc_header(struct lowdown_buf *ob,
 	    "\\usepackage{textcomp}\n"
 	    "\\usepackage{lmodern}\n"
 	    "\\usepackage{hyperref}\n"
+	    "\\usepackage{amsmath}\n"
+	    "\\usepackage{amssymb}\n"
 	    "\\begin{document}\n"))
 		return 0;
 

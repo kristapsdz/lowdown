@@ -300,8 +300,17 @@ rndr(struct lowdown_buf *ob,
 		if (!rndr_indent(ob, indent + 1))
 			return 0;
 		if (!hbuf_printf(ob, "scope: %s\n",
-		    HLIST_FL_BLOCK & root->rndr_listitem.flags ? 
+		    (root->rndr_listitem.flags & HLIST_FL_BLOCK) ?
 		    "block" : "span"))
+			return 0;
+		if (!(root->rndr_listitem.flags &
+		     (HLIST_FL_CHECKED | HLIST_FL_UNCHECKED)))
+			break;
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "check status: %s\n",
+		    (root->rndr_listitem.flags & HLIST_FL_CHECKED) ?
+		    "checked" : "unchecked"))
 			return 0;
 		break;
 	case LOWDOWN_LIST:

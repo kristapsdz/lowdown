@@ -459,10 +459,11 @@ rndr_buf_startline_prefixes(struct term *term,
 	struct sty *s, const struct lowdown_node *n,
 	struct lowdown_buf *out)
 {
-	size_t	 			 i, emit;
-	int	 		 	 pstyle = 0;
 	struct sty			 sinner;
 	const struct lowdown_node	*np;
+	size_t	 			 i, emit;
+	int	 		 	 pstyle = 0;
+	enum hlist_fl			 fl;
 
 	if (n->parent != NULL &&
 	    !rndr_buf_startline_prefixes(term, s, n->parent, out))
@@ -585,26 +586,39 @@ rndr_buf_startline_prefixes(struct term *term,
 		if (n->parent == NULL ||
 		    n->parent->type == LOWDOWN_DEFINITION_DATA)
 			break;
-		if (n->parent->type == LOWDOWN_LIST &&
-		    (n->parent->rndr_list.flags & HLIST_FL_ORDERED))
-			rndr_node_style_apply(&sinner, &sty_oli_pfx);
-		else
-			rndr_node_style_apply(&sinner, &sty_uli_pfx);
-		if (!rndr_buf_style(term, out, &sinner))
-			return 0;
-		pstyle = 1;
-		if (n->parent->rndr_list.flags & HLIST_FL_UNORDERED) {
-			if (!hbuf_puts
-			    (out, emit == 0 ?  "    - " : "      "))
+
+		/* Don't print list item prefix after first. */
+
+		if (emit) {
+			if (!HBUF_PUTSL(out, "      "))
 				return 0;
 			rndr_buf_advance(term, 6);
 			break;
 		}
-		if (emit == 0 && !hbuf_printf
-		    (out, "%4zu. ", n->rndr_listitem.num))
+
+		/* List item prefix depends upon type. */
+
+		fl = n->rndr_list.flags;
+		rndr_node_style_apply(&sinner,
+			(fl & HLIST_FL_ORDERED) ?
+			&sty_oli_pfx : &sty_uli_pfx);
+		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
-		else if (emit != 0 && !HBUF_PUTSL(out, "      "))
-			return 0;
+		pstyle = 1;
+
+		if (fl & HLIST_FL_CHECKED) {
+			if (!hbuf_puts(out, "    ☑ "))
+				return 0;
+		} else if (fl & HLIST_FL_UNCHECKED) {
+			if (!hbuf_puts(out, "    ☐ "))
+				return 0;
+		} else if (fl & HLIST_FL_UNORDERED) {
+			if (!hbuf_puts(out, "    · "))
+				return 0;
+		} else {
+			if (!hbuf_printf(out, "%4zu. ", n->rndr_listitem.num))
+				return 0;
+		}
 		rndr_buf_advance(term, 6);
 		break;
 	default:

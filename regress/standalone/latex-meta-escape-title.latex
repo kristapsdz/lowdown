@@ -6,6 +6,8 @@
 \usepackage{textcomp}
 \usepackage{lmodern}
 \usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amssymb}
 \begin{document}
 \title{ab\textasciitilde{}cde\textbackslash{}\{foo\}\$bar}
 \maketitle

@@ -493,6 +493,15 @@ rndr_listitem(struct lowdown_buf *ob,
 	if (blk && !HBUF_PUTSL(ob, "<p>"))
 		return 0;
 
+	if (n->rndr_listitem.flags &
+	    (HLIST_FL_CHECKED|HLIST_FL_UNCHECKED))
+		HBUF_PUTSL(ob, "<input type=\"checkbox\" ");
+	if (n->rndr_listitem.flags & HLIST_FL_CHECKED)
+		HBUF_PUTSL(ob, "checked=\"checked\" ");
+	if (n->rndr_listitem.flags &
+	    (HLIST_FL_CHECKED|HLIST_FL_UNCHECKED))
+		HBUF_PUTSL(ob, "/>");
+
 	/* Cut off any trailing space. */
 
 	if ((size = content->size) > 0) {

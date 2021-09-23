@@ -899,6 +899,7 @@ rndr_listitem(struct bnodeq *obq, const struct lowdown_node *n,
 	struct bnodeq *bq, const struct rndr_listitem *param)
 {
 	struct bnode	*bn;
+	const char	*box;
 
 	if (param->flags & HLIST_FL_ORDERED) {
 		if ((bn = bqueue_block(obq, ".IP")) == NULL)
@@ -907,7 +908,15 @@ rndr_listitem(struct bnodeq *obq, const struct lowdown_node *n,
 		    "\"%zu.  \"", param->num) == -1)
 			return 0;
 	} else if (param->flags & HLIST_FL_UNORDERED) {
-		if (bqueue_block(obq, ".IP \"\\(bu\" 2") == NULL)
+		if (param->flags & HLIST_FL_CHECKED)
+			box = "[u2611]";
+		else if (param->flags & HLIST_FL_UNCHECKED)
+			box = "[u2610]";
+		else
+			box = "(bu";
+		if ((bn = bqueue_block(obq, ".IP")) == NULL)
+			return 0;
+		if (asprintf(&bn->nargs, "\"\\%s\" 2", box) == -1)
 			return 0;
 	}
 
