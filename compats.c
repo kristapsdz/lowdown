@@ -505,10 +505,10 @@ explicit_bzero(void *p, size_t n)
 #include <strings.h>
 
 /*
- * Indirect bzero through a volatile pointer to hopefully avoid
+ * Indirect memset through a volatile pointer to hopefully avoid
  * dead-store optimisation eliminating the call.
  */
-static void (* volatile ssh_bzero)(void *, size_t) = bzero;
+static void (* volatile ssh_memset)(void *, int, size_t) = memset;
 
 void
 explicit_bzero(void *p, size_t n)
@@ -526,7 +526,7 @@ explicit_bzero(void *p, size_t n)
 # endif
 #endif
 
-	ssh_bzero(p, n);
+	ssh_memset(p, 0, n);
 }
 
 #endif /* HAVE_MEMSET_S */
