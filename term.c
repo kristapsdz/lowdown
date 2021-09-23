@@ -503,6 +503,7 @@ rndr_buf_startline_prefixes(struct term *term,
 	switch (n->type) {
 	case LOWDOWN_TABLE_BLOCK:
 	case LOWDOWN_PARAGRAPH:
+	case LOWDOWN_DEFINITION_TITLE:
 		/*
 		 * Collapse leading white-space if we're already within
 		 * a margin-bearing block statement.
@@ -549,11 +550,11 @@ rndr_buf_startline_prefixes(struct term *term,
 		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
 		pstyle = 1;
-		if (emit == 0 && !HBUF_PUTSL(out, "  : "))
+		if (emit == 0 && !HBUF_PUTSL(out, "    : "))
 			return 0;
-		else if (emit != 0 && !HBUF_PUTSL(out, "    "))
+		else if (emit != 0 && !HBUF_PUTSL(out, "      "))
 			return 0;
-		rndr_buf_advance(term, 4);
+		rndr_buf_advance(term, 6);
 		break;
 	case LOWDOWN_FOOTNOTE_DEF:
 		rndr_node_style_apply(&sinner, &sty_fdef_pfx);
