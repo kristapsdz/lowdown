@@ -249,6 +249,23 @@ use the following syntax:
 .Pp
 This applies to ordered and unordered list types.
 .
+.Ss Task lists
+One form of an unordered list is task lists, a GFM extension.
+These begin with checkboxes (checked or not), rendered similarly in the output.
+.Bd -literal -offset indent
+Star Trek series with episodes in the Delta quadrant:
+
+- [ ] Original series
+- [x] TNG
+- [ ] DS9
+- [x] Voyager
+- [ ] Enterprise
+- [ ] Discovery
+.Ed
+.Pp
+The check may be upper or lower case.
+A space must follow the right square bracket.
+.
 .Ss Definition Lists
 Definition lists are a PHP Markdown Extra extension.
 They're similar to lists except in having key and value pairs, with keys

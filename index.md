@@ -1,5 +1,5 @@
 title: lowdown --- simple markdown translator
-rcsdate: $Date$
+date: 2021-09-23
 author: Kristaps Dzonsons
 
 # [%title]
@@ -51,7 +51,7 @@ either a fragment or standalone HTML5 document with **-s**.
 It also produces simple LaTeX documents with **-Tlatex**.  It uses the most
 basic packages possible.
 
-The experimental **-Tgemini** outputs into the
+The **-Tgemini** outputs into the
 [Gemini](https://gemini.circumlunar.space/docs/specification.html) format.
 
 PDFs may also be produced from *roff* documents via the **-Tms** and
@@ -108,6 +108,7 @@ following Markdown features and extensions:
 - commonmark (**in progress**)
 - definition lists
 - extended image attributes
+- task lists
 
 ## Examples
 
@@ -141,6 +142,9 @@ I do this in my Makefiles:
        lowdown $< ; \
        echo "</article>" ; ) >$@
 ```
+
+**Note**: you'll want to make sure that the title and aside are properly
+HTML formatted, as **-X** will not escape for the output format.
 
 If you just want a straight-up HTML5 file, use standalone mode:
 
