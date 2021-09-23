@@ -2,7 +2,11 @@
 Makefile.configure
 config.h
 config.log
-# Object files
+# object files
 *.[oa]
 # vi swap files
 *.swp
+# generated files
+lowdown
+lowdown-diff
+lowdown.pc

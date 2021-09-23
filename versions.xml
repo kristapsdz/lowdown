@@ -1123,4 +1123,45 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.9.0</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2021-09-23">2021-09-23</time>
+		</header>
+		<aside>
+			<p>
+				Metadata consistency.
+				Make sure that all standalone document metadata (e.g.,
+				<code>css</code> for HTML, <code>volume</code> for manpages, etc.)
+				is properly escaped for its output context.
+			</p>
+			<p>
+				The <code>-X</code> option (metadata extraction) now extracts the
+				unformatted version of the given key.  This is because output media
+				don't necessarily have a single way of formatting data: in
+				<b>-Thtml</b>, for instance, metadata may be formatted differently
+				if it appears in links, attributes, or within HTML content.  It's
+				now the caller's responsibility to escape the results of
+				<code>-X</code>.
+			</p>
+			<p>
+				This generates API changes, because metadata is now recorded during
+				the parse phase, not during the rendering phase.  While here,
+				metadata extraction for <q>diff</q> mode is disabled (as it should
+				be).
+			</p>
+			<p>
+				While here, the <q>base level header</q> metadata key has been
+				replaced with <q>shift-heading-level-by</q>.  This is because the
+				existing <q>base header level</q> never actually worked properly,
+				and instead behaved like <q>shift-heading-level-by</q>.
+			</p>
+			<p>
+				Add <a href="lowdown.5.html">GFM task lists</a> to all output modes.
+				While doing this, clean up list output for <b>-Tgemini</b> and
+				<b>-Tterm</b>.
+			</p>
+		</aside>
+	</article>
 </articles>
