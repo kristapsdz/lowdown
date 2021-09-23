@@ -64,6 +64,7 @@ struct gemini {
 	size_t			 linkqsz; /* position in link queue */
 	wchar_t			*buf; /* buffer for counting wchar */
 	size_t			 bufsz; /* size of buf */
+	ssize_t			 headers_offs; /* header offset */
 };
 
 /*
@@ -311,6 +312,8 @@ rndr_meta(struct gemini *st,
 	struct lowdown_buf		*tmp = NULL;
 	struct lowdown_meta		*m;
 	const struct lowdown_node	*child;
+	ssize_t				 val;
+	const char			*ep;
 
 	/*
 	 * Manually render the children of the meta into a
@@ -340,6 +343,18 @@ rndr_meta(struct gemini *st,
 	m->value = strndup(tmp->data, tmp->size);
 	if (m->value == NULL)
 		goto err;
+
+	if (strcmp(m->key, "shiftheadinglevelby") == 0) {
+		val = (ssize_t)strtonum
+			(m->value, -100, 100, &ep);
+		if (ep == NULL)
+			st->headers_offs = val + 1;
+	} else if (strcmp(m->key, "baseheaderlevel") == 0) {
+		val = (ssize_t)strtonum
+			(m->value, 1, 100, &ep);
+		if (ep == NULL)
+			st->headers_offs = val;
+	}
 
 	hbuf_free(tmp);
 	st->last_blank = last_blank;
@@ -588,9 +603,10 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	struct gemini *st, const struct lowdown_node *n)
 {
 	const struct lowdown_node	*child, *prev;
-	int32_t				 entity;
-	size_t				 i;
 	struct link			*l;
+	size_t				 i;
+	ssize_t				 level;
+	int32_t				 entity;
 	int				 rc = 1;
 	
 	prev = n->parent == NULL ? NULL :
@@ -687,7 +703,11 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		st->last_blank = -1;
 		break;
 	case LOWDOWN_HEADER:
-		for (i = 0; i <= n->rndr_header.level; i++)
+		level = (ssize_t)n->rndr_header.level +
+			st->headers_offs;
+		if (level < 1)
+			level = 1;
+		for (i = 0; i < (size_t)level; i++)
 			if (!HBUF_PUTSL(st->tmp, "#"))
 				return 0;
 		rc = HBUF_PUTSL(st->tmp, " ") &&
@@ -932,6 +952,7 @@ lowdown_gemini_rndr(struct lowdown_buf *ob,
 
 	TAILQ_INIT(&metaq);
 	st->last_blank = 0;
+	st->headers_offs = 1;
 
 	c = rndr(ob, &metaq, st, n);
 
