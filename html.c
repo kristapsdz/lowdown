@@ -403,21 +403,29 @@ rndr_link(struct lowdown_buf *ob,
 	const struct html *st)
 {
 
-	if (!HBUF_PUTSL(ob, "<a href=\""))
+	if (!HBUF_PUTSL(ob, "<a href=\"") ||
+	    !escape_href(ob, &param->link, st))
 		return 0;
-	if (!escape_href(ob, &param->link, st))
-		return 0;
-	if (param->title.size) {
-		if (!HBUF_PUTSL(ob, "\" title=\""))
+
+	if (param->title.size)
+		if (!HBUF_PUTSL(ob, "\" title=\"") ||
+		    !escape_attr(ob, &param->title))
 			return 0;
-		if (!escape_attr(ob, &param->title))
+	if (param->attr_cls.size)
+		if (!HBUF_PUTSL(ob, "\" class=\"") ||
+		    !escape_attr(ob, &param->attr_cls))
 			return 0;
-	}
-	if (!HBUF_PUTSL(ob, "\">"))
+	if (param->attr_id.size)
+		if (!HBUF_PUTSL(ob, "\" id=\"") ||
+		    !escape_attr(ob, &param->attr_id))
+			return 0;
+
+	if (!HBUF_PUTSL(ob, "\">") ||
+	    !hbuf_putb(ob, content) ||
+	    !HBUF_PUTSL(ob, "</a>"))
 		return 0;
-	if (!hbuf_putb(ob, content))
-		return 0;
-	return HBUF_PUTSL(ob, "</a>");
+
+	return 1;
 }
 
 static int
@@ -651,36 +659,37 @@ rndr_image(struct lowdown_buf *ob,
 
 	/* Require an "alt", even if blank. */
 
-	if (!HBUF_PUTSL(ob, "<img src=\""))
+	if (!HBUF_PUTSL(ob, "<img src=\"") ||
+	    !escape_href(ob, &param->link, st) ||
+	    !HBUF_PUTSL(ob, "\" alt=\"") ||
+	    !escape_attr(ob, &param->alt) ||
+	    !HBUF_PUTSL(ob, "\""))
 		return 0;
-	if (!escape_href(ob, &param->link, st))
-		return 0;
-	if (!HBUF_PUTSL(ob, "\" alt=\""))
-		return 0;
-	if (!escape_attr(ob, &param->alt))
-		return 0;
-	if (!HBUF_PUTSL(ob, "\""))
-		return 0;
+
+	if (param->attr_cls.size)
+		if (!HBUF_PUTSL(ob, " class=\"") ||
+		    !escape_attr(ob, &param->attr_cls) ||
+		    !HBUF_PUTSL(ob, "\""))
+			return 0;
+	if (param->attr_id.size)
+		if (!HBUF_PUTSL(ob, " id=\"") ||
+		    !escape_attr(ob, &param->attr_id) ||
+		    !HBUF_PUTSL(ob, "\""))
+			return 0;
 
 	if (param->attr_width.size || param->attr_height.size) {
 		if (!HBUF_PUTSL(ob, " style=\""))
 			return 0;
-		if (param->attr_width.size) {
-			if (!HBUF_PUTSL(ob, "width:"))
+		if (param->attr_width.size)
+			if (!HBUF_PUTSL(ob, "width:") ||
+			    !escape_attr(ob, &param->attr_width) ||
+			    !HBUF_PUTSL(ob, ";"))
 				return 0;
-			if (!escape_attr(ob, &param->attr_width))
+		if (param->attr_height.size)
+			if (!HBUF_PUTSL(ob, "height:") ||
+			    !escape_attr(ob, &param->attr_height) ||
+			    !HBUF_PUTSL(ob, ";"))
 				return 0;
-			if (!HBUF_PUTSL(ob, ";"))
-				return 0;
-		}
-		if (param->attr_height.size) {
-			if (!HBUF_PUTSL(ob, "height:"))
-				return 0;
-			if (!escape_attr(ob, &param->attr_height))
-				return 0;
-			if (!HBUF_PUTSL(ob, ";"))
-				return 0;
-		}
 		if (!HBUF_PUTSL(ob, "\""))
 			return 0;
 	} else if (param->dims.size && rc > 0) {
@@ -690,14 +699,11 @@ rndr_image(struct lowdown_buf *ob,
 			return 0;
 	}
 
-	if (param->title.size) {
-		if (!HBUF_PUTSL(ob, " title=\""))
+	if (param->title.size)
+		if (!HBUF_PUTSL(ob, " title=\"") ||
+		    !escape_htmlb(ob, &param->title, st) ||
+		    !HBUF_PUTSL(ob, "\""))
 			return 0;
-		if (!escape_htmlb(ob, &param->title, st))
-			return 0;
-		if (!HBUF_PUTSL(ob, "\""))
-			return 0;
-	}
 
 	return hbuf_puts(ob, " />");
 }

@@ -297,8 +297,10 @@ main(int argc, char *argv[])
 		{ "parse-no-cmark",	no_argument,	&riflag, LOWDOWN_COMMONMARK },
 		{ "parse-deflists",	no_argument,	&aiflag, LOWDOWN_DEFLIST },
 		{ "parse-no-deflists",	no_argument,	&riflag, LOWDOWN_DEFLIST },
-		{ "parse-img-ext",	no_argument,	&aiflag, LOWDOWN_IMG_EXT },
-		{ "parse-no-img-ext",	no_argument,	&riflag, LOWDOWN_IMG_EXT },
+		{ "parse-img-ext",	no_argument,	&aiflag, LOWDOWN_IMG_EXT }, /* TODO: remove */
+		{ "parse-no-img-ext",	no_argument,	&riflag, LOWDOWN_IMG_EXT }, /* TODO: remove */
+		{ "parse-ext-attrs",	no_argument,	&aiflag, LOWDOWN_ATTRS },
+		{ "parse-no-ext-attrs",	no_argument,	&riflag, LOWDOWN_ATTRS },
 		{ "parse-tasklists",	no_argument,	&aiflag, LOWDOWN_TASKLIST },
 		{ "parse-no-tasklists",	no_argument,	&riflag, LOWDOWN_TASKLIST },
 		{ "parse-maxdepth",	required_argument, NULL, 5 },
@@ -317,12 +319,12 @@ main(int argc, char *argv[])
 	opts.maxdepth = 128;
 	opts.type = LOWDOWN_HTML;
 	opts.feat =
+		LOWDOWN_ATTRS |
 		LOWDOWN_AUTOLINK |
 		LOWDOWN_COMMONMARK |
 		LOWDOWN_DEFLIST |
 		LOWDOWN_FENCED |
 		LOWDOWN_FOOTNOTES |
-		LOWDOWN_IMG_EXT |
 		LOWDOWN_METADATA |
 		LOWDOWN_STRIKE |
 		LOWDOWN_SUPER |

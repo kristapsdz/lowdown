@@ -149,6 +149,8 @@ Features used during the parse.
 This bit-field may have the following bits OR'd:
 .Pp
 .Bl -tag -width Ds -compact
+.It Dv LOWDOWN_ATTRS
+Parse PHP extra link and image attributes.
 .It Dv LOWDOWN_AUTOLINK
 Parse
 .Li http ,
@@ -179,7 +181,10 @@ Parse highlit sequences.
 This are disabled by default because it may be erroneously interpreted
 as section headers.
 .It Dv LOWDOWN_IMG_EXT
-Parse PHP image extended attributes.
+Deprecated.
+Use
+.Dv LOWDOWN_ATTRS
+instead.
 .It Dv LOWDOWN_MATH
 Parse mathematics equations.
 .It Dv LOWDOWN_METADATA
@@ -784,9 +789,23 @@ dimensions NxN (width by height) in
 .Va dims ,
 and alternate text
 .Va alt .
+CSS in-line style for width and height may be given in
+.Va attr_width
+and/or
+.Va attr_height ,
+and a space-separated list of classes may be in
+.Va attr_cls
+and a single identifier may be in
+.Va attr_id .
 .It Va rndr_link
 Like
-.Va rndr_autolink .
+.Va rndr_autolink ,
+but without a type and further defining an optional link title
+.Va title ,
+optional space-separated class list
+.Va attr_cls ,
+and optional single identifier
+.Va attr_id .
 .It Va rndr_list
 For
 .Dv LOWDOWN_LIST ,

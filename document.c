@@ -53,6 +53,7 @@ struct	link_ref {
 	struct lowdown_buf	*name; /* id of link (or NULL) */
 	struct lowdown_buf	*link; /* link address */
 	struct lowdown_buf	*title; /* optional title */
+	struct lowdown_buf	*attrs; /* optional attributes */
 	TAILQ_ENTRY(link_ref)	 entries;
 };
 
@@ -275,6 +276,7 @@ free_link_refs(struct link_refq *q)
 		hbuf_free(r->link);
 		hbuf_free(r->name);
 		hbuf_free(r->title);
+		hbuf_free(r->attrs);
 		free(r);
 	}
 }
@@ -391,70 +393,6 @@ is_mail_autolink(const char *data, size_t size)
 	}
 
 	return 0;
-}
-
-/*
- * Image nodes may be followed by extended attributes, if configured.
- * We only recognise several of them---parse them here.
- * Return 0 if not an image attribute, <0 on failure, >0 on success.
- */
-static ssize_t
-parse_image_attrs(struct rndr_image *img, const char *data, size_t size)
-{
-	size_t	 		 offs, end, i, stack = 1;
-	struct lowdown_buf	*buf;
-
-	assert(data[0] == '{');
-
-	for (end = offs = 1; end < size; end++) {
-		if (data[end] == '{')
-			stack++;
-		else if (data[end] == '}' && --stack == 0)
-			break;
-	}
-
-	/* If at "size", we never reached the closing brace. */
-
-	if (end == size)
-		return 0;
-
-	/* Read in each attribute key-value pair. */
-
-	while (offs < end) {
-		while (offs < end && xisspace(data[offs]))
-			offs++;
-		if (offs == end)
-			break;
-
-		/* Require a breaking equal sign. */
-
-		i = offs;
-		while (offs < end && data[offs] != '=')
-			offs++;
-		if (offs == end)
-			return 0;
-
-		/* Which extended dimensions do we recognise? */
-
-		if (offs - i == 5 && 
-	  	    strncasecmp(&data[i], "width", 5) == 0)
-			buf = &img->attr_width;
-		else if (offs - i == 6 && 
-	  	    strncasecmp(&data[i], "height", 6) == 0)
-			buf = &img->attr_height;
-		else
-			buf = NULL;
-
-		i = ++offs;
-		while (offs < end && !xisspace(data[offs]))
-			offs++;
-
-		if (buf != NULL && buf->size == 0 && offs > i)
-			if (!pushbuf(buf, &data[i], offs - i))
-				return -1;
-	}
-
-	return end + 1;
 }
 
 /*
@@ -611,30 +549,6 @@ parse_inline(struct lowdown_doc *doc, char *data, size_t size)
 
 		i += end;
 		end = consumed = i;
-
-		/*
-		 * Check for image attributes.
-		 * This can be done for other in-line elements, but
-		 * for now this is limited just to images.
-		 */
-
-		n = TAILQ_LAST(&doc->current->children, lowdown_nodeq);
-
-		if ((doc->ext_flags & LOWDOWN_IMG_EXT) &&
-		    i < size && data[i] == '{' &&
-		    n != NULL && n->type == LOWDOWN_IMAGE) {
-			i = end;
-			rc = parse_image_attrs
-				(&n->rndr_image, data + i, size - i);
-			if (rc < 0)
-				return 0;
-			if (rc == 0) {
-				end = i + 1;
-				continue;
-			}
-			i += end;
-			end = consumed = i;
-		}
 	}
 
 	return 1;
@@ -1408,6 +1322,79 @@ char_image(struct lowdown_doc *doc,
 	return ret <= 0 ? ret : ret + 1;
 }
 
+/*
+ * Return 0 on failure or position of *next* word.
+ */
+static size_t
+parse_ext_attrs(const char *data, size_t size,
+	struct lowdown_buf **attrid,
+	struct lowdown_buf **attrcls,
+	struct lowdown_buf **attrwidth,
+	struct lowdown_buf **attrheight)
+{
+	size_t	 word_b, word_e;
+
+	word_b = 0;
+
+	while (word_b < size) {
+		while (word_b < size && data[word_b] == ' ')
+			word_b++;
+		word_e = word_b;
+		while (word_e < size && data[word_e] != ' ')
+		     word_e++;
+
+		/* Classes. */
+
+		if (word_e > word_b + 1 &&
+		    data[word_b] == '#') {
+			if (*attrid == NULL &&
+			    (*attrid = hbuf_new(64)) == NULL)
+				return 0;
+			hbuf_truncate(*attrid);
+			if (!hbuf_put(*attrid,
+			     data + word_b + 1, word_e - word_b - 1))
+				return 0;
+		}
+
+		if (word_e > word_b + 7 &&
+	  	    strncasecmp(&data[word_b], "width=", 6) == 0) {
+			if (*attrwidth == NULL &&
+			    (*attrwidth = hbuf_new(64)) == NULL)
+				return 0;
+			hbuf_truncate(*attrwidth);
+			if (!hbuf_put(*attrwidth,
+			     data + word_b + 6, word_e - word_b - 6))
+				return 0;
+		}
+		if (word_e > word_b + 8 &&
+	  	    strncasecmp(&data[word_b], "height=", 7) == 0) {
+			if (*attrheight == NULL &&
+			    (*attrheight = hbuf_new(64)) == NULL)
+				return 0;
+			hbuf_truncate(*attrheight);
+			if (!hbuf_put(*attrheight,
+			     data + word_b + 7, word_e - word_b - 7))
+				return 0;
+		}
+
+		if (word_e > word_b + 1 &&
+		    data[word_b] == '.') {
+			if (*attrcls != NULL &&
+			    !hbuf_putc(*attrcls, ' '))
+				return 0;
+			if (*attrcls == NULL &&
+			    (*attrcls = hbuf_new(64)) == NULL)
+				return 0;
+			if (!hbuf_put(*attrcls,
+			     data + word_b + 1, word_e - word_b - 1))
+				return 0;
+		}
+		word_b = word_e + 1;
+	}
+
+	return word_b;
+}
+
 /* 
  * '[': parsing a link, footnote, metadata, or image.
  */
@@ -1418,14 +1405,16 @@ char_link(struct lowdown_doc *doc,
 	struct lowdown_buf	*content = NULL, *link = NULL, 
 				*title = NULL, *u_link = NULL, 
 				*dims = NULL, *idp = NULL, 
-				*linkp = NULL, *titlep = NULL;
-	size_t			 i = 1, txt_e, link_b = 0, link_e = 0,
+				*linkp = NULL, *titlep = NULL,
+				*attrcls = NULL, *attrid = NULL,
+				*attrwidth = NULL, *attrheight = NULL;
+	size_t			 i = 1, j, txt_e, link_b = 0, link_e = 0,
 				 title_b = 0, title_e = 0, nb_p, 
 				 dims_b = 0, dims_e = 0;
-	int 	 		 ret = 0, in_title = 0, qtype = 0, 
+	int 	 		 ret = 0, in_title = 0, qtype = 0,
 				 is_img, is_footnote, is_metadata;
 	struct lowdown_buf	 id;
-	struct link_ref 	*lr;
+	struct link_ref 	*lr = NULL;
 	struct foot_ref	 	*fr;
 	struct lowdown_node 	*n;
 	struct lowdown_meta	*m;
@@ -1751,13 +1740,17 @@ again:
 				goto err;
 
 		lr = find_link_ref(&doc->refq, idp->data, idp->size);
-		if ( ! lr)
+		if (lr == NULL)
 			goto cleanup;
 
 		/* Keeping link and title from link_ref. */
 
 		link = lr->link;
 		title = lr->title;
+		if (lr->attrs != NULL && parse_ext_attrs
+		    (lr->attrs->data, lr->attrs->size,
+		     &attrid, &attrcls, &attrwidth, &attrheight) == 0)
+			goto err;
 		i++;
 	} else {
 		/* 
@@ -1774,17 +1767,40 @@ again:
 		/* Finding the link_ref. */
 
 		lr = find_link_ref(&doc->refq, idp->data, idp->size);
-		if ( ! lr)
+		if (lr == NULL)
 			goto cleanup;
 
 		/* Keeping link and title from link_ref. */
 
 		link = lr->link;
 		title = lr->title;
+		if (lr->attrs != NULL && parse_ext_attrs
+		    (lr->attrs->data, lr->attrs->size, 
+		     &attrid, &attrcls, &attrwidth, &attrheight) == 0)
+			goto err;
 
 		/* Rewinding the spacing. */
 
 		i = txt_e + 1;
+	}
+
+	/* PHP markdown extra attributes (if not ref link). */
+
+	if ((doc->ext_flags & LOWDOWN_ATTRS) && lr == NULL &&
+	    i + 2 < size && data[i] == '{') {
+		i++;
+
+		/* Find trailing marker. */
+
+		for (j = i; j < size && data[j] != '}'; j++)
+			continue;
+		j = parse_ext_attrs(&data[i], j - i, 
+			&attrid, &attrcls, &attrwidth, &attrheight);
+		if (j == 0)
+			goto err;
+		i += j;
+		if (i < size && data[i] == '}')
+			i++;
 	}
 
 	n = pushnode(doc, is_img ? LOWDOWN_IMAGE : LOWDOWN_LINK);
@@ -1836,6 +1852,18 @@ again:
 		if (content != NULL && 
 		    !pushlbuf(&n->rndr_image.alt, content))
 			goto err;
+		if (attrcls != NULL &&
+		    !pushlbuf(&n->rndr_image.attr_cls, attrcls))
+			goto err;
+		if (attrid != NULL &&
+		    !pushlbuf(&n->rndr_image.attr_id, attrid))
+			goto err;
+		if (attrwidth != NULL &&
+		    !pushlbuf(&n->rndr_image.attr_width, attrwidth))
+			goto err;
+		if (attrheight != NULL &&
+		    !pushlbuf(&n->rndr_image.attr_height, attrheight))
+			goto err;
 		ret = 1;
 	} else {
 		if (u_link != NULL && 
@@ -1843,6 +1871,12 @@ again:
 			goto err;
 		if (title != NULL && 
 		    !pushlbuf(&n->rndr_link.title, title))
+			goto err;
+		if (attrcls != NULL &&
+		    !pushlbuf(&n->rndr_link.attr_cls, attrcls))
+			goto err;
+		if (attrid != NULL &&
+		    !pushlbuf(&n->rndr_link.attr_id, attrid))
 			goto err;
 		ret = 1;
 	}
@@ -1852,6 +1886,10 @@ again:
 err:
 	ret = -1;
 cleanup:
+	hbuf_free(attrid);
+	hbuf_free(attrcls);
+	hbuf_free(attrheight);
+	hbuf_free(attrwidth);
 	hbuf_free(linkp);
 	hbuf_free(titlep);
 	hbuf_free(dims);
@@ -3804,8 +3842,9 @@ static int
 is_ref(struct lowdown_doc *doc, const char *data, 
 	size_t beg, size_t end, size_t *last)
 {
-	size_t	 	 i, id_offset, id_end, link_offset,
-			 link_end, title_offset, title_end, line_end;
+	size_t	 	 i, id_offset, id_end, link_offset, link_end,
+			 title_offset = 0, title_end = 0, line_end,
+			 garbage, attr_offset = 0, attr_end = 0;
 	struct link_ref	*ref;
 
 	/* Up to 3 optional leading spaces. */
@@ -3862,12 +3901,19 @@ is_ref(struct lowdown_doc *doc, const char *data,
 	else 
 		link_end = i;
 
-	/* Optional spacer: (space | tab)* (newline | '\'' | '"' | '(' ) */
+	/*
+	 * Space: (space | tab)* (newline | '\'' | '"' | '(' )
+	 * Optionally '{' for attributes.
+	 */
 
 	i = countspaces(data, i, end, 0);
 	if (i < end && data[i] != '\n' && data[i] != '\r' && 
 	    data[i] != '\'' && data[i] != '"' && data[i] != '(')
 		return 0;
+	if (i < end && data[i] == '{' &&
+	    !(doc->ext_flags & LOWDOWN_ATTRS))
+		return 0;
+
 	line_end = 0;
 
 	/* computing end-of-line */
@@ -3882,43 +3928,77 @@ is_ref(struct lowdown_doc *doc, const char *data,
 	if (line_end)
 		i = countspaces(data, line_end + 1, end, 0);
 
-	/* optional title: any non-newline sequence enclosed in '"()
-	 * alone on its line */
+	/*
+	 * Optional title: any non-newline sequence enclosed in '"()
+	 * alone on its line.  This is... confusing, because we can have
+	 * any number of embedded delimiters in the text and only the
+	 * last one is valid.
+	 *
+	 *  [link1]: moo.com "hello "world" (hi) there
+	 *                                     ^last
+	 *
+	 * The rule is that there must be only spaces between the last
+	 * delimiter, whatever it is, and the newline OR opening curly
+	 * brace (if parsing), which signifies extended attributes.
+	 */
 
-	title_offset = title_end = 0;
 	if (i + 1 < end && 
 	    (data[i] == '\'' || data[i] == '"' || data[i] == '(')) {
-		i++;
-		title_offset = i;
-
-		/* looking for EOL */
-
-		while (i < end && data[i] != '\n' && data[i] != '\r') 
-			i++;
-		if (i + 1 < end && data[i] == '\n' && data[i + 1] == '\r')
-			title_end = i + 1;
-		else	
-			title_end = i;
-
-		/* stepping back */
-
-		i -= 1;
-		while (i > title_offset && data[i] == ' ')
-			i -= 1;
-		if (i > title_offset && 
-		    (data[i] == '\'' || 
-		     data[i] == '"' || data[i] == ')')) {
-			line_end = title_end;
-			title_end = i; 
-		} 
+		title_offset = ++i;
+		for (garbage = 0; i < end; i++) {
+			if (data[i] == '\'' || data[i] == '"' ||
+			    data[i] == ')') {
+				title_end = i;
+				garbage = 0;
+				continue;
+			}
+			if (data[i] == '\n' || data[i] == '\r' ||
+			    ((doc->ext_flags & LOWDOWN_ATTRS) &&
+			     data[i] == '{'))
+				break;
+			if (data[i] != ' ')
+				garbage = 1;
+		}
+		if (garbage)
+			return 0;
 	}
 
-	/* garbage after the link empty link */
+	/* 
+	 * Now optionally the attributes.  These use similar semantics
+	 * where there can be any number of embedded delimiters: only
+	 * the last one is recorded, and there may be no garbage between
+	 * it and the newline.
+	 */
+
+	if ((doc->ext_flags & LOWDOWN_ATTRS) &&
+	    i + 1 < end && data[i] == '{') {
+		attr_offset = ++i;
+		for (garbage = 0; i < end; i++) {
+			if (data[i] == '}') {
+				attr_end = i;
+				garbage = 0;
+				continue;
+			}
+			if (data[i] == '\n' || data[i] == '\r')
+				break;
+			if (data[i] != ' ')
+				garbage = 1;
+		}
+		if (garbage)
+			return 0;
+	}
+
+	if (i + 1 < end && data[i] == '\n' && data[i + 1] == '\r')
+		line_end = i + 1;
+	else
+		line_end = i;
+
+	/* Garbage after the link or empty link. */
 
 	if (!line_end || link_end == link_offset)
 		return 0; 
 
-	/* a valid ref has been found, filling-in return structures */
+	/* A valid ref has been found, filling-in return structures. */
 
 	if (last)
 		*last = line_end;
@@ -3939,6 +4019,7 @@ is_ref(struct lowdown_doc *doc, const char *data,
 	ref->link = hbuf_new(link_end - link_offset);
 	if (ref->link == NULL)
 		return -1;
+
 	if (!hbuf_put(ref->link,
 	    data + link_offset, link_end - link_offset))
 		return -1;
@@ -3949,6 +4030,15 @@ is_ref(struct lowdown_doc *doc, const char *data,
 			return -1;
 		if (!hbuf_put(ref->title,
 		    data + title_offset, title_end - title_offset))
+			return -1;
+	}
+
+	if (attr_end > attr_offset) {
+		ref->attrs = hbuf_new(attr_end - attr_offset);
+		if (ref->attrs == NULL)
+			return -1;
+		if (!hbuf_put(ref->attrs,
+		    data + attr_offset, attr_end - attr_offset))
 			return -1;
 	}
 
@@ -4522,6 +4612,8 @@ lowdown_node_free(struct lowdown_node *p)
 	case LOWDOWN_LINK:
 		hbuf_free(&p->rndr_link.link);
 		hbuf_free(&p->rndr_link.title);
+		hbuf_free(&p->rndr_link.attr_cls);
+		hbuf_free(&p->rndr_link.attr_id);
 		break;
 	case LOWDOWN_BLOCKCODE:
 		hbuf_free(&p->rndr_blockcode.text);
@@ -4540,6 +4632,8 @@ lowdown_node_free(struct lowdown_node *p)
 		hbuf_free(&p->rndr_image.alt);
 		hbuf_free(&p->rndr_image.attr_width);
 		hbuf_free(&p->rndr_image.attr_height);
+		hbuf_free(&p->rndr_image.attr_cls);
+		hbuf_free(&p->rndr_image.attr_id);
 		break;
 	case LOWDOWN_MATH_BLOCK:
 		hbuf_free(&p->rndr_math.text);

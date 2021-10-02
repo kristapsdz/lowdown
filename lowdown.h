@@ -174,8 +174,10 @@ struct	rndr_raw_html {
 };
 
 struct	rndr_link {
-	struct lowdown_buf link; /* link address */
-	struct lowdown_buf title; /* title of link */
+	struct lowdown_buf link;
+	struct lowdown_buf title;
+	struct lowdown_buf attr_cls;
+	struct lowdown_buf attr_id;
 };
 
 struct	rndr_blockcode {
@@ -236,12 +238,14 @@ struct	rndr_header{
 };
 
 struct	rndr_image {
-	struct lowdown_buf link; /* image address */
-	struct lowdown_buf title; /* title of image */
-	struct lowdown_buf dims; /* NNxNN dimensions */
-	struct lowdown_buf alt; /* alt-text of image */
-	struct lowdown_buf attr_width; /* ext: width */
-	struct lowdown_buf attr_height; /* ext: height */
+	struct lowdown_buf link;
+	struct lowdown_buf title;
+	struct lowdown_buf dims;
+	struct lowdown_buf alt;
+	struct lowdown_buf attr_width;
+	struct lowdown_buf attr_height;
+	struct lowdown_buf attr_cls;
+	struct lowdown_buf attr_id;
 };
 
 struct rndr_math {
@@ -311,8 +315,9 @@ struct	lowdown_opts {
 #define	LOWDOWN_METADATA	  0x4000
 #define	LOWDOWN_COMMONMARK	  0x8000
 #define	LOWDOWN_DEFLIST		  0x10000
-#define	LOWDOWN_IMG_EXT	 	  0x20000
+#define	LOWDOWN_IMG_EXT	 	  0x20000 /* -> LOWDOWN_ATTRS */
 #define LOWDOWN_TASKLIST	  0x40000
+#define LOWDOWN_ATTRS		  0x80000
 	unsigned int		  oflags;
 #define LOWDOWN_HTML_SKIP_HTML	  0x01 /* skip all HTML */
 #define LOWDOWN_HTML_ESCAPE	  0x02 /* escape HTML (if not skip) */
