@@ -1164,4 +1164,24 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.9.1</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2021-10-04">2021-10-04</time>
+		</header>
+		<aside>
+			<p>
+				Expand support for images having PHP Extra attributes to both links
+				and images supporting classes, images, and the existing image attributes.
+				These applies to both reference and inline links.
+			</p>
+			<p>
+				This deprecates <b>--parse-no-img-ext</b> in favour of the more general
+				<b>--parse-no-ext-attrs</b>.  The same applies to the library's
+				<code>LOWDOWN_IMG_EXT</code> deprecated by
+				<code>LOWDOWN_ATTRS</code>.
+			</p>
+		</aside>
+	</article>
 </articles>

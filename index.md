@@ -107,7 +107,7 @@ following Markdown features and extensions:
 - metadata
 - commonmark (**in progress**)
 - definition lists
-- extended image attributes
+- extended attributes
 - task lists
 
 ## Examples
