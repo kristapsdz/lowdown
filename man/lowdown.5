@@ -267,7 +267,7 @@ The check may be upper or lower case.
 A space must follow the right square bracket.
 .
 .Ss Definition Lists
-Definition lists are a PHP Markdown Extra extension.
+Definition lists are a PHP Extra extension.
 They're similar to lists except in having key and value pairs, with keys
 being preceded by a blank line:
 .Bd -literal -offset indent
@@ -597,12 +597,16 @@ brackets
 .Pq Dq \&[]
 followed a colon
 .Pq Dq \&:
-followed by the corresponding URL or path:
+followed by the corresponding URL or path, then an optional title.
 .Bd -literal -offset indent
-[link1]: https://www.bsd.lv/picard.jpg
+[link1]: https://www.bsd.lv/picard.jpg "Optional Title"
 .Ed
 .Pp
-The definition must be on its own line.
+The title may be delimited with single quotes, double quotes, or
+parenthesis.
+It encompasses all text until the last delimiter before the end of line,
+so it may contain delimiters.
+The title may be on its own line.
 .Pp
 Reference the link anywhere in your text using [text to the link] and
 the same [link title], both in square brackets
@@ -614,6 +618,25 @@ Text about [Captain Picard][link1].
 .Pp
 References need not follow the definition: both may appear anywhere in
 relation to the other.
+.Pp
+Reference and inline links may be followed by PHP Extra attributes.
+.Bd -literal -offset indent
+Lowdown [homepage][home] or
+[github](https://github.com/kristapsdz/lowdown){ .gh #link1 }.
+
+[home]: https://kristaps.bsd.lv/lowdown { .home #link2 }
+.Ed
+.Pp
+For inline links, the open brace must immediately follow the closing
+parenthesis.
+Attributes are separated by spaces.
+.Pp
+Values with a leading period
+.Pq Qq \&.class
+are interpreted as HTML (CSS) classes, and values with a leading pound
+symbol
+.Pq Qq \&#id
+are interpreted as HTML identifiers.
 .
 .Ss Automatic Links
 Automatic links are links to URLs or emails addresses that do not require text
@@ -671,25 +694,6 @@ These dimensions are pixel sizes.
 ![Picard](https://bsd.lv/picard.jpg =250x250 'Engage!')
 .Ed
 .Pp
-Width and height in units other than pixels may be provided as extended
-image attributes; however, these must be recognised by the output media
-(for example, HTML may recognise
-.Qq rem ,
-but LaTeX will not).
-Percentage widths are always recognised.
-These follow PHP Markdown Extra syntax:
-.Bd -literal -offset indent
-![Picard](https://bsd.lv/picard.jpg){width=20%}
-.Ed
-.Pp
-The open brace must immediately following the closing parenthesis, and
-key-value pairs are separated by spaces.
-Recognised values are
-.Qq width
-and
-.Qq height .
-If either are provided, they override set pixel dimensions.
-.Pp
 The reference style definition consists of an image identifier
 surrounded by square brackets
 .Dq Pq \&[]
@@ -708,6 +712,32 @@ A picture of the captain: ![Captain Picard][image1]
 .Pp
 As with regular reference links, the definition and references may occur
 anywhere in relation to each other.
+.Pp
+Images may also be followed by PHP Extra attributes for classes,
+identifiers, and width and height.
+Implementation of these depends on the output medium.
+.Bd -literal -offset indent
+![Picard](https://bsd.lv/picard.jpg){width=20% .class}
+.Ed
+.Pp
+The open brace must immediately follow the closing parenthesis.
+Attributes are separated by spaces.
+.Pp
+Value pairs
+.Qq width=xx
+and
+.Qq height=xx
+are interpreted as HTML (CSS) or LaTeX dimensions.
+These override set pixel dimensions.
+Percentages are understood by both media; otherwise, dimension units are
+interpreted according to the medium.
+.Pp
+Values with a leading period
+.Pq Qq \&.class
+are interpreted as HTML (CSS) classes, and values with a leading pound
+symbol
+.Pq Qq \&#id
+are interpreted as HTML identifiers.
 .
 .Ss Code
 In addition to code blocks, inline code spans may be specified within
@@ -884,11 +914,15 @@ Extensions to the language are specifically noted.
 They include:
 .Bl -tag -width Ds
 .It Lk http://commonmark.org CommonMark
-.It Lk http://fletcherpenney.net/multimarkdown Multimarkdown
 .It Lk https://github.github.com/gfm GFM
+.It Lk http://fletcherpenney.net/multimarkdown Multimarkdown
+.It Lk https://michelf.ca/projects/php-markdown/extra PHP Extra
 .El
 .Sh AUTHORS
+.An -nosplit
 The
 .Nm
 reference was originally written by
-.An Christina Sophonpanich .
+.An Christina Sophonpanich
+and is maintained by
+.An Kristaps Dzonsons Aq Mt kristaps@bsd.lv .
