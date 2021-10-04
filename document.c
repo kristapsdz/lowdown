@@ -3907,12 +3907,18 @@ is_ref(struct lowdown_doc *doc, const char *data,
 	 */
 
 	i = countspaces(data, i, end, 0);
-	if (i < end && data[i] != '\n' && data[i] != '\r' &&
-	    data[i] != '\'' && data[i] != '"' && data[i] != '(')
-		return 0;
-	if (i < end && data[i] == '{' &&
-	    !(doc->ext_flags & LOWDOWN_ATTRS))
-		return 0;
+
+	if (doc->ext_flags & LOWDOWN_ATTRS) {
+		if (i < end && data[i] != '\n' && data[i] != '\r' &&
+		    data[i] != '\'' && data[i] != '"' &&
+		    data[i] != '(' && data[i] != '{')
+			return 0;
+	} else {
+		if (i < end && data[i] != '\n' && data[i] != '\r' &&
+		    data[i] != '\'' && data[i] != '"' &&
+		    data[i] != '(')
+			return 0;
+	}
 
 	line_end = 0;
 
