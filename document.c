@@ -33,7 +33,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
- 
+
 /*
  * Make sure these are larger than enum hlist_fl.
  */
@@ -46,7 +46,7 @@
 			 HLIST_FL_ORDERED | \
 			 HLIST_FL_UNORDERED)
 
-/* 
+/*
  * Reference to a link.
  */
 struct	link_ref {
@@ -59,7 +59,7 @@ struct	link_ref {
 
 TAILQ_HEAD(link_refq, link_ref);
 
-/* 
+/*
  * Reference to a footnote.  This keeps track of all footnotes
  * definitions and whether there's both a definition and reference.
  */
@@ -150,11 +150,11 @@ static const char_trigger markdown_char_ptrs[] = {
 	&char_math
 };
 
-static int 
+static int
 parse_block(struct lowdown_doc *, char *, size_t);
 
-static ssize_t 
-parse_listitem(struct lowdown_buf *, struct lowdown_doc *, 
+static ssize_t
+parse_listitem(struct lowdown_buf *, struct lowdown_doc *,
 	char *, size_t, enum hlist_fl *, size_t);
 
 /*
@@ -239,7 +239,7 @@ unscape_text(struct lowdown_buf *ob, struct lowdown_buf *src)
 		org = i;
 		while (i < src->size && src->data[i] != '\\')
 			i++;
-		if (i > org && 
+		if (i > org &&
 		    !hbuf_put(ob, src->data + org, i - org))
 			return 0;
 		if (i + 1 >= src->size)
@@ -256,7 +256,7 @@ find_link_ref(struct link_refq *q, char *name, size_t length)
 {
 	struct link_ref	*ref;
 
-	TAILQ_FOREACH(ref, q, entries) 
+	TAILQ_FOREACH(ref, q, entries)
 		if ((ref->name == NULL && length == 0) ||
 		    (ref->name != NULL &&
 		     ref->name->size == length &&
@@ -511,7 +511,7 @@ parse_inline(struct lowdown_doc *doc, char *data, size_t size)
 	while (i < size) {
 		/* Copying non-macro chars into the output. */
 
-		while (end < size && 
+		while (end < size &&
 		       active_char[(unsigned char)data[end]] == 0)
 			end++;
 
@@ -521,7 +521,7 @@ parse_inline(struct lowdown_doc *doc, char *data, size_t size)
 			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 			if (n == NULL)
 				return 0;
-			if (!pushbuf(&n->rndr_normal_text.text, 
+			if (!pushbuf(&n->rndr_normal_text.text,
 			    data + i, end - i))
 				return 0;
 			popnode(doc, n);
@@ -697,7 +697,7 @@ parse_emph1(struct lowdown_doc *doc, char *data, size_t size, char c)
 
 	/* Skipping one symbol if coming from emph3. */
 
-	if (size > 1 && data[0] == c && data[1] == c) 
+	if (size > 1 && data[0] == c && data[1] == c)
 		i = 1;
 
 	while (i < size) {
@@ -710,7 +710,7 @@ parse_emph1(struct lowdown_doc *doc, char *data, size_t size, char c)
 
 		if (data[i] == c && !xisspace(data[i - 1])) {
 			if ((doc->ext_flags & LOWDOWN_NOINTEM) &&
-			    i + 1 < size && 
+			    i + 1 < size &&
 			    isalnum((unsigned char)data[i + 1]))
 				continue;
 
@@ -740,12 +740,12 @@ parse_emph2(struct lowdown_doc *doc, char *data, size_t size, char c)
 
 	while (i < size) {
 		len = find_emph_char(data + i, size - i, c);
-		if (len == 0) 
+		if (len == 0)
 			return 0;
 		i += len;
 
-		if (i + 1 < size && data[i] == c && 
-		    data[i + 1] == c && i && 
+		if (i + 1 < size && data[i] == c &&
+		    data[i + 1] == c && i &&
 		    !xisspace(data[i - 1])) {
 			if (c == '~')
 				t = LOWDOWN_STRIKETHROUGH;
@@ -767,7 +767,7 @@ parse_emph2(struct lowdown_doc *doc, char *data, size_t size, char c)
 	return 0;
 }
 
-/* 
+/*
  * Parsing single emphase
  * Finds the first closing tag, and delegates to the other emph.
  * Return 0 if not an emphasis, <0 on failure, >0 on success.
@@ -781,7 +781,7 @@ parse_emph3(struct lowdown_doc *doc, char *data, size_t size, char c)
 
 	while (i < size) {
 		len = find_emph_char(data + i, size - i, c);
-		if (len == 0) 
+		if (len == 0)
 			return 0;
 		i += len;
 
@@ -792,7 +792,7 @@ parse_emph3(struct lowdown_doc *doc, char *data, size_t size, char c)
 
 		/* Case for triple, double, and single asterisk. */
 
-		if (i + 2 < size && data[i + 1] == c && 
+		if (i + 2 < size && data[i + 1] == c &&
 		    data[i + 2] == c) {
 			n = pushnode(doc, LOWDOWN_TRIPLE_EMPHASIS);
 			if (n == NULL)
@@ -818,18 +818,18 @@ parse_emph3(struct lowdown_doc *doc, char *data, size_t size, char c)
 	return 0;
 }
 
-/* 
+/*
  * Parses a math span until the given ending delimiter.
  * Return 0 if not math, <0 on failure, >0 on success.
  */
 static ssize_t
-parse_math(struct lowdown_doc *doc, char *data, size_t offset, 
+parse_math(struct lowdown_doc *doc, char *data, size_t offset,
 	size_t size, const char *end, size_t delimsz, int blockmode)
 {
 	size_t			 i;
 	struct lowdown_node	*n;
 
-	/* 
+	/*
 	 * Find ending delimiter.
 	 * All text within the equation is opaque, so we don't need to
 	 * care about embedded macros.
@@ -840,7 +840,7 @@ parse_math(struct lowdown_doc *doc, char *data, size_t offset,
 			i++;
 		if (i >= size)
 			return 0;
-		if (!is_escaped(data, i) && !(i + delimsz > size) && 
+		if (!is_escaped(data, i) && !(i + delimsz > size) &&
 		    memcmp(data + i, end, delimsz) == 0)
 			break;
 	}
@@ -860,7 +860,7 @@ parse_math(struct lowdown_doc *doc, char *data, size_t offset,
 	n = pushnode(doc, LOWDOWN_MATH_BLOCK);
 	if (n == NULL)
 		return -1;
-  	if (!pushbuf(&n->rndr_math.text, 
+  	if (!pushbuf(&n->rndr_math.text,
 	    data + delimsz, i - 2 * delimsz))
 		return -1;
 	n->rndr_math.blockmode = blockmode;
@@ -868,7 +868,7 @@ parse_math(struct lowdown_doc *doc, char *data, size_t offset,
 	return i;
 }
 
-/* 
+/*
  * Single and double emphasis parsing.
  */
 static ssize_t
@@ -878,12 +878,12 @@ char_emphasis(struct lowdown_doc *doc,
 	char	 c = data[0];
 	ssize_t	 ret;
 
-	if (doc->ext_flags & LOWDOWN_NOINTEM) 
-		if (offset > 0 && !xisspace(data[-1]) && 
+	if (doc->ext_flags & LOWDOWN_NOINTEM)
+		if (offset > 0 && !xisspace(data[-1]) &&
 		    data[-1] != '>' && data[-1] != '(')
 			return 0;
 
-	/* 
+	/*
 	 * Spacing cannot follow an opening emphasis: strikethrough and
 	 * highlight only takes '~~'.
 	 * FIXME: don't depend upon the "ret =" as the last part of an
@@ -891,7 +891,7 @@ char_emphasis(struct lowdown_doc *doc,
 	 */
 
 	if (size > 2 && data[1] != c) {
-		if (c == '~' || c == '=' || xisspace(data[1]) || 
+		if (c == '~' || c == '=' || xisspace(data[1]) ||
 		    (ret = parse_emph1
 		     (doc, data + 1, size - 1, c)) == 0)
 			return 0;
@@ -899,7 +899,7 @@ char_emphasis(struct lowdown_doc *doc,
 	}
 
 	if (size > 3 && data[1] == c && data[2] != c) {
-		if (xisspace(data[2]) || 
+		if (xisspace(data[2]) ||
 		    (ret = parse_emph2
 		     (doc, data + 2, size - 2, c)) == 0)
 			return 0;
@@ -907,7 +907,7 @@ char_emphasis(struct lowdown_doc *doc,
 	}
 
 	if (size > 4 && data[1] == c && data[2] == c && data[3] != c) {
-		if (c == '~' || c == '=' || xisspace(data[3]) || 
+		if (c == '~' || c == '=' || xisspace(data[3]) ||
 		    (ret = parse_emph3
 		     (doc, data + 3, size - 3, c)) == 0)
 			return 0;
@@ -917,8 +917,8 @@ char_emphasis(struct lowdown_doc *doc,
 	return 0;
 }
 
-/* 
- * '\n' preceded by two spaces (assuming linebreak != 0) 
+/*
+ * '\n' preceded by two spaces (assuming linebreak != 0)
  */
 static ssize_t
 char_linebreak(struct lowdown_doc *doc,
@@ -941,8 +941,8 @@ char_linebreak(struct lowdown_doc *doc,
 	while (b->size && b->data[b->size - 1] == ' ')
 		b->size--;
 
-	/* 
-	 * Swallow leading white-space of next line. 
+	/*
+	 * Swallow leading white-space of next line.
 	 * XXX: is this just CommonMark?
 	 */
 
@@ -956,8 +956,8 @@ char_linebreak(struct lowdown_doc *doc,
 	return w;
 }
 
-/* 
- * '`' parsing a code span (assuming codespan != 0) 
+/*
+ * '`' parsing a code span (assuming codespan != 0)
  */
 static ssize_t
 char_codespan(struct lowdown_doc *doc,
@@ -978,9 +978,9 @@ char_codespan(struct lowdown_doc *doc,
 
 	i = 0;
 	for (end = nb; end < size && i < nb; end++) {
-		if (data[end] == '`') 
+		if (data[end] == '`')
 			i++;
-		else 
+		else
 			i = 0;
 	}
 
@@ -1005,7 +1005,7 @@ char_codespan(struct lowdown_doc *doc,
 		work.size = f_end - f_begin;
 		if (!pushlbuf(&n->rndr_codespan.text, &work))
 			return -1;
-	} 
+	}
 
 	popnode(doc, n);
 
@@ -1073,7 +1073,7 @@ char_escape(struct lowdown_doc *doc,
 	return 2;
 }
 
-/* 
+/*
  * '&': parse entity, or escape if it's not an entity.
  * Valid entities are assumed to be anything matching &#?[A-Za-z0-9]+;
  */
@@ -1103,7 +1103,7 @@ char_entity(struct lowdown_doc *doc,
 	return end;
 }
 
-/* 
+/*
  * '<': parse link when tags or autolinks are allowed.
  */
 static ssize_t
@@ -1185,8 +1185,8 @@ char_autolink_www(struct lowdown_doc *doc,
 		if (!hbuf_put(link_url, link->data, link->size))
 			goto err;
 
-		if (doc->current && 
-		    (n = TAILQ_LAST(&doc->current->children, 
+		if (doc->current &&
+		    (n = TAILQ_LAST(&doc->current->children,
 		     lowdown_nodeq)) != NULL &&
 		    n->type == LOWDOWN_NORMAL_TEXT) {
 			if (n->rndr_normal_text.text.size > rewind)
@@ -1234,9 +1234,9 @@ char_autolink_email(struct lowdown_doc *doc,
 	link_len = ret;
 
 	if (link_len > 0) {
-		if (doc->current && 
-		    (n = TAILQ_LAST(&doc->current->children, 
-		     lowdown_nodeq)) != NULL && 
+		if (doc->current &&
+		    (n = TAILQ_LAST(&doc->current->children,
+		     lowdown_nodeq)) != NULL &&
 		    n->type == LOWDOWN_NORMAL_TEXT) {
 			if (n->rndr_normal_text.text.size > rewind)
 				n->rndr_normal_text.text.size -= rewind;
@@ -1282,7 +1282,7 @@ char_autolink_url(struct lowdown_doc *doc,
 
 	if (link_len > 0) {
 		if (doc->current &&
-		    (n = TAILQ_LAST(&doc->current->children, 
+		    (n = TAILQ_LAST(&doc->current->children,
 		     lowdown_nodeq)) != NULL &&
 		    n->type == LOWDOWN_NORMAL_TEXT) {
 			if (n->rndr_normal_text.text.size > rewind)
@@ -1315,7 +1315,7 @@ char_image(struct lowdown_doc *doc,
 {
 	ssize_t	 ret;
 
-	if (size < 2 || data[1] != '[') 
+	if (size < 2 || data[1] != '[')
 		return 0;
 
 	ret = char_link(doc, data + 1, offset + 1, size - 1);
@@ -1395,21 +1395,21 @@ parse_ext_attrs(const char *data, size_t size,
 	return word_b;
 }
 
-/* 
+/*
  * '[': parsing a link, footnote, metadata, or image.
  */
 static ssize_t
 char_link(struct lowdown_doc *doc,
 	char *data, size_t offset, size_t size)
 {
-	struct lowdown_buf	*content = NULL, *link = NULL, 
-				*title = NULL, *u_link = NULL, 
-				*dims = NULL, *idp = NULL, 
+	struct lowdown_buf	*content = NULL, *link = NULL,
+				*title = NULL, *u_link = NULL,
+				*dims = NULL, *idp = NULL,
 				*linkp = NULL, *titlep = NULL,
 				*attrcls = NULL, *attrid = NULL,
 				*attrwidth = NULL, *attrheight = NULL;
 	size_t			 i = 1, j, txt_e, link_b = 0, link_e = 0,
-				 title_b = 0, title_e = 0, nb_p, 
+				 title_b = 0, title_e = 0, nb_p,
 				 dims_b = 0, dims_e = 0;
 	int 	 		 ret = 0, in_title = 0, qtype = 0,
 				 is_img, is_footnote, is_metadata;
@@ -1419,11 +1419,11 @@ char_link(struct lowdown_doc *doc,
 	struct lowdown_node 	*n;
 	struct lowdown_meta	*m;
 
-	is_img = offset && data[-1] == '!' && 
+	is_img = offset && data[-1] == '!' &&
 		!is_escaped(data - offset, offset - 1);
-	is_footnote = (doc->ext_flags & LOWDOWN_FOOTNOTES) && 
+	is_footnote = (doc->ext_flags & LOWDOWN_FOOTNOTES) &&
 		data[1] == '^';
-	is_metadata = (doc->ext_flags & LOWDOWN_METADATA) && 
+	is_metadata = (doc->ext_flags & LOWDOWN_METADATA) &&
 		data[1] == '%';
 
 	/* Looking for the matching closing bracket. */
@@ -1431,9 +1431,9 @@ char_link(struct lowdown_doc *doc,
 	i += find_emph_char(data + i, size - i, ']');
 	txt_e = i;
 
-	if (i < size && data[i] == ']') 
+	if (i < size && data[i] == ']')
 		i++;
-	else 
+	else
 		goto cleanup;
 
 	/*
@@ -1450,7 +1450,7 @@ char_link(struct lowdown_doc *doc,
 		popnode(doc, n);
 	}
 
-	/* 
+	/*
 	 * Footnote (in footer): look up footnote by its key in our
 	 * array of footnotes.  If we've already listed the footnote,
 	 * don't render it twice.
@@ -1467,7 +1467,7 @@ char_link(struct lowdown_doc *doc,
 			if (hbuf_eq(&fr->name, &id))
 				break;
 
-		/* 
+		/*
 		 * Mark footnote used.
 		 * If it's NULL, then there was no footnote found.
 		 * If it is NULL and is_used is defined, then we've
@@ -1493,14 +1493,14 @@ char_link(struct lowdown_doc *doc,
 			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 			if (n == NULL)
 				goto err;
-			if (!pushbuf(&n->rndr_normal_text.text, 
+			if (!pushbuf(&n->rndr_normal_text.text,
 			    data, txt_e + 1))
 				goto err;
 		} else {
 			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 			if (n == NULL)
 				goto err;
-			if (!pushbuf(&n->rndr_normal_text.text, 
+			if (!pushbuf(&n->rndr_normal_text.text,
 			    data, txt_e + 1))
 				goto err;
 		}
@@ -1560,8 +1560,8 @@ char_link(struct lowdown_doc *doc,
 
 		link_b = i;
 
-		/* 
-		 * Looking for link end: ' " ) 
+		/*
+		 * Looking for link end: ' " )
 		 * Count the number of open parenthesis.
 		*/
 
@@ -1571,24 +1571,24 @@ char_link(struct lowdown_doc *doc,
 			if (data[i] == '\\') {
 				i += 2;
 			} else if (data[i] == '(' && i != 0) {
-				nb_p++; 
+				nb_p++;
 				i++;
 			} else if (data[i] == ')') {
-				if (nb_p == 0) 
+				if (nb_p == 0)
 					break;
-				else 
+				else
 					nb_p--;
 				i++;
-			} else if (i >= 1 && xisspace(data[i-1]) && 
-				   (data[i] == '\'' || 
+			} else if (i >= 1 && xisspace(data[i-1]) &&
+				   (data[i] == '\'' ||
 				    data[i] == '=' ||
-				    data[i] == '"')) 
+				    data[i] == '"'))
 				break;
-			else 
+			else
 				i++;
 		}
 
-		if (i >= size) 
+		if (i >= size)
 			goto cleanup;
 
 		link_e = i;
@@ -1600,7 +1600,7 @@ char_link(struct lowdown_doc *doc,
 		 */
 again:
 		if (data[i] == '\'' || data[i] == '"') {
-			/* 
+			/*
 			 * Looking for title end if present.
 			 * This is a quoted part after the image.
 			 */
@@ -1614,31 +1614,31 @@ again:
 				if (data[i] == '\\')
 					i++;
 				else if (data[i] == qtype)
-					in_title = 0; 
+					in_title = 0;
 				else if ((data[i] == '=') && !in_title)
 					break;
 				else if ((data[i] == ')') && !in_title)
 					break;
 
-			if (i >= size) 
+			if (i >= size)
 				goto cleanup;
 
 			/* Skipping spacing after title. */
 
 			title_e = i - 1;
-			while (title_e > title_b && 
+			while (title_e > title_b &&
 			       xisspace(data[title_e]))
 				title_e--;
 
 			/* Checking for closing quote presence. */
 
-			if (data[title_e] != '\'' &&  
+			if (data[title_e] != '\'' && 
 			    data[title_e] != '"') {
 				title_b = title_e = 0;
 				link_e = i;
 			}
 
-			/* 
+			/*
 			 * If we're followed by a dimension string, then
 			 * jump back into the parsing engine for it.
 			 */
@@ -1647,7 +1647,7 @@ again:
 				goto again;
 		} else if (data[i] == '=') {
 			dims_b = ++i;
-			for ( ; i < size; i++) 
+			for ( ; i < size; i++)
 				if (data[i] == '\\')
 					i++;
 				else if ('\'' == data[i] || '"' == data[i])
@@ -1661,11 +1661,11 @@ again:
 			/* Skipping spacing after dimensions. */
 
 			dims_e = i;
-			while (dims_e > dims_b && 
+			while (dims_e > dims_b &&
 			       xisspace(data[dims_e]))
 				dims_e--;
 
-			/* 
+			/*
 			 * If we're followed by a title string, then
 			 * jump back into the parsing engine for it.
 			 */
@@ -1691,7 +1691,7 @@ again:
 			link = linkp = hbuf_new(64);
 			if (linkp == NULL)
 				goto err;
-			if (!hbuf_put(link, 
+			if (!hbuf_put(link,
 			    data + link_b, link_e - link_b))
 				goto err;
 		}
@@ -1700,7 +1700,7 @@ again:
 			title = titlep = hbuf_new(64);
 			if (titlep == NULL)
 				goto err;
-			if (!hbuf_put(title, 
+			if (!hbuf_put(title,
 			    data + title_b, title_e - title_b))
 				goto err;
 		}
@@ -1722,9 +1722,9 @@ again:
 
 		i++;
 		link_b = i;
-		while (i < size && data[i] != ']') 
+		while (i < size && data[i] != ']')
 			i++;
-		if (i >= size) 
+		if (i >= size)
 			goto cleanup;
 		link_e = i;
 
@@ -1735,7 +1735,7 @@ again:
 			    (idp, data + 1, txt_e - 1))
 				goto err;
 		} else
-			if (!hbuf_put(idp, 
+			if (!hbuf_put(idp,
 			    data + link_b, link_e - link_b))
 				goto err;
 
@@ -1753,7 +1753,7 @@ again:
 			goto err;
 		i++;
 	} else {
-		/* 
+		/*
 		 * Shortcut reference style link.
 		 */
 		if ((idp = hbuf_new(64)) == NULL)
@@ -1775,7 +1775,7 @@ again:
 		link = lr->link;
 		title = lr->title;
 		if (lr->attrs != NULL && parse_ext_attrs
-		    (lr->attrs->data, lr->attrs->size, 
+		    (lr->attrs->data, lr->attrs->size,
 		     &attrid, &attrcls, &attrwidth, &attrheight) == 0)
 			goto err;
 
@@ -1794,7 +1794,7 @@ again:
 
 		for (j = i; j < size && data[j] != '}'; j++)
 			continue;
-		j = parse_ext_attrs(&data[i], j - i, 
+		j = parse_ext_attrs(&data[i], j - i,
 			&attrid, &attrcls, &attrwidth, &attrheight);
 		if (j == 0)
 			goto err;
@@ -1807,14 +1807,14 @@ again:
 	if (n == NULL)
 		goto err;
 
-	/* 
+	/*
 	 * Building content: img alt is kept, only link content is
-	 * parsed. 
+	 * parsed.
 	 */
 
 	if (txt_e > 1) {
 		if ( ! is_img) {
-			/* 
+			/*
 			 * Disable autolinking when parsing inline the
 			 * content of a link.
 			 */
@@ -1843,13 +1843,13 @@ again:
 		if (u_link != NULL &&
 		    !pushlbuf(&n->rndr_image.link, u_link))
 			goto err;
-		if (title != NULL && 
+		if (title != NULL &&
 		    !pushlbuf(&n->rndr_image.title, title))
 			goto err;
 		if (dims != NULL &&
 		    !pushlbuf(&n->rndr_image.dims, dims))
 			goto err;
-		if (content != NULL && 
+		if (content != NULL &&
 		    !pushlbuf(&n->rndr_image.alt, content))
 			goto err;
 		if (attrcls != NULL &&
@@ -1866,10 +1866,10 @@ again:
 			goto err;
 		ret = 1;
 	} else {
-		if (u_link != NULL && 
+		if (u_link != NULL &&
 		    !pushlbuf(&n->rndr_link.link, u_link))
 			goto err;
-		if (title != NULL && 
+		if (title != NULL &&
 		    !pushlbuf(&n->rndr_link.title, title))
 			goto err;
 		if (attrcls != NULL &&
@@ -1941,7 +1941,7 @@ char_math(struct lowdown_doc *doc,
 		parse_math(doc, data, offset, size, "$", 1, 0);
 }
 
-/* 
+/*
  * Returns the line length when it is empty, 0 otherwise.
  */
 static size_t
@@ -1956,8 +1956,8 @@ is_empty(const char *data, size_t size)
 	return i + 1;
 }
 
-/* 
- * Returns whether a line is a horizontal rule. 
+/*
+ * Returns whether a line is a horizontal rule.
  */
 static int
 is_hrule(const char *data, size_t size)
@@ -1974,7 +1974,7 @@ is_hrule(const char *data, size_t size)
 
 	/* Looking at the hrule char. */
 
-	if (i + 2 >= size || 
+	if (i + 2 >= size ||
 	    (data[i] != '*' && data[i] != '-' && data[i] != '_'))
 		return 0;
 
@@ -1983,7 +1983,7 @@ is_hrule(const char *data, size_t size)
 	/* The whole line must be the char or space. */
 
 	while (i < size && data[i] != '\n') {
-		if (data[i] == c) 
+		if (data[i] == c)
 			n++;
 		else if (data[i] != ' ')
 			return 0;
@@ -1993,8 +1993,8 @@ is_hrule(const char *data, size_t size)
 	return n >= 3;
 }
 
-/* 
- * Check if a line is a code fence; return the end of the code fence. 
+/*
+ * Check if a line is a code fence; return the end of the code fence.
  * If passed, width of the fence rule and character will be returned.
  */
 static size_t
@@ -2025,21 +2025,21 @@ is_codefence(const char *data, size_t size, size_t *width, char *chr)
 	if (n < 3)
 		return 0;
 
-	if (width) 
+	if (width)
 		*width = n;
-	if (chr) 
+	if (chr)
 		*chr = c;
 
 	return i;
 }
 
-/* 
+/*
  * Expects single line, checks if it's a codefence and extracts
- * language. 
+ * language.
  * Return zero if not a code-fence, >0 offset otherwise.
  */
 static size_t
-parse_codefence(char *data, size_t size, 
+parse_codefence(char *data, size_t size,
 	struct lowdown_buf *lang, size_t *width, char *chr)
 {
 	size_t		 i, w, lang_start;
@@ -2064,21 +2064,21 @@ parse_codefence(char *data, size_t size,
 
 	i = lang_start + 2;
 
-	while (i < size && 
-	       !(data[i] == *chr && 
-		 data[i-1] == *chr && 
-		 data[i-2] == *chr)) 
+	while (i < size &&
+	       !(data[i] == *chr &&
+		 data[i-1] == *chr &&
+		 data[i-2] == *chr))
 		i++;
 
 	return i < size ? 0 : w;
 }
 
-/* 
+/*
  * Returns whether the line is a hash-prefixed header.
  * Return zero if not an at-header, non-zero otherwise.
  */
 static int
-is_atxheader(const struct lowdown_doc *doc, 
+is_atxheader(const struct lowdown_doc *doc,
 	const char *data, size_t size)
 {
 	size_t	 level;
@@ -2086,7 +2086,7 @@ is_atxheader(const struct lowdown_doc *doc,
 	if (data[0] != '#')
 		return 0;
 
-	/* 
+	/*
 	 * CommonMark requires a space.
 	 * Classical Markdown does not.
 	 */
@@ -2102,7 +2102,7 @@ is_atxheader(const struct lowdown_doc *doc,
 	return 1;
 }
 
-/* 
+/*
  * Tests for level 1 setext-style header ("=") or level 2 ("-").
  * Returns zero if it's not, non-zero otherwise.
  */
@@ -2139,7 +2139,7 @@ is_next_headerline(const char *data, size_t size)
 	return is_headerline(data + i, size - i);
 }
 
-/* 
+/*
  * Returns unordered list item prefix.
  * This does nothing if LOWDOWN_DEFLIST is not set.
  */
@@ -2161,7 +2161,7 @@ prefix_dli(const struct lowdown_doc *doc, const char *data, size_t size)
 	return i + 2;
 }
 
-/* 
+/*
  * Returns blockquote prefix length.
  */
 static size_t
@@ -2177,7 +2177,7 @@ prefix_quote(const char *data, size_t size)
 	return 0;
 }
 
-/* 
+/*
  * Returns prefix length for block code.
  */
 static size_t
@@ -2190,7 +2190,7 @@ prefix_code(const char *data, size_t size)
 	return 0;
 }
 
-/* 
+/*
  * Returns ordered list item prefix.
  * On success (return value >0) and if "value" is not NULL *and* we're
  * also commonmark processing, copy and NUL-terminate the value into it.
@@ -2227,8 +2227,8 @@ prefix_oli(const struct lowdown_doc *doc,
 	 */
 
 	if (doc->ext_flags & LOWDOWN_COMMONMARK) {
-		if (i + 1 >= size || 
-		    (data[i] != '.' && data[i] != ')') || 
+		if (i + 1 >= size ||
+		    (data[i] != '.' && data[i] != ')') ||
 		    data[i + 1] != ' ')
 			return 0;
 	} else if (i + 1 >= size || data[i] != '.' || data[i + 1] != ' ')
@@ -2250,7 +2250,7 @@ prefix_oli(const struct lowdown_doc *doc,
 	return i + 2;
 }
 
-/* 
+/*
  * Returns unordered list item prefix, including a GFM checkbox.  The
  * "checked" pointer, if not NULL, is set to whether the check is set
  * (>0), unset (=0), or not there (<0).
@@ -2267,7 +2267,7 @@ prefix_uli(const struct lowdown_doc *doc,
 	i = countspaces(data, 0, size, 3);
 
 	if (i + 1 >= size ||
-	    (data[i] != '*' && data[i] != '+' && 
+	    (data[i] != '*' && data[i] != '+' &&
 	     data[i] != '-') ||
 	    data[i + 1] != ' ')
 		return 0;
@@ -2292,7 +2292,7 @@ prefix_uli(const struct lowdown_doc *doc,
 	return i + 2;
 }
 
-/* 
+/*
  * Handles parsing of a blockquote fragment.
  * Return <0 on failure, otherwise the end offset.
  */
@@ -2304,8 +2304,8 @@ parse_blockquote(struct lowdown_doc *doc, char *data, size_t size)
 	struct lowdown_node	*n;
 
 	while (beg < size) {
-		for (end = beg + 1; 
-		     end < size && data[end - 1] != '\n'; 
+		for (end = beg + 1;
+		     end < size && data[end - 1] != '\n';
 		     end++)
 			continue;
 
@@ -2316,7 +2316,7 @@ parse_blockquote(struct lowdown_doc *doc, char *data, size_t size)
 		if (pre)
 			beg += pre;
 		else if (is_empty(data + beg, end - beg) &&
-			 (end >= size || 
+			 (end >= size ||
 			  (prefix_quote(data + end, size - end) == 0 &&
 			   !is_empty(data + end, size - end))))
 			break;
@@ -2325,7 +2325,7 @@ parse_blockquote(struct lowdown_doc *doc, char *data, size_t size)
 			if (!work_data)
 				work_data = data + beg;
 			else if (data + beg != work_data + work_size)
-				memmove(work_data + work_size, 
+				memmove(work_data + work_size,
 					data + beg, end - beg);
 			work_size += end - beg;
 		}
@@ -2365,7 +2365,7 @@ parse_paragraph(struct lowdown_doc *doc, char *data, size_t size)
 		     end < size && data[end - 1] != '\n'; end++)
 			continue;
 
-		/* 
+		/*
 		 * Empty line: end of paragraph.
 		 * However, check if we have a dli prefix following
 		 * that, which means that we're a block-mode dli.
@@ -2417,7 +2417,7 @@ parse_paragraph(struct lowdown_doc *doc, char *data, size_t size)
 		popnode(doc, n);
 		doc->cur_par++;
 		return end;
-	} 
+	}
 
 	/* Paragraph material prior to header break. */
 	
@@ -2442,7 +2442,7 @@ parse_paragraph(struct lowdown_doc *doc, char *data, size_t size)
 			doc->cur_par++;
 			work.data += beg;
 			work.size = i - beg;
-		} else 
+		} else
 			work.size = i;
 	}
 
@@ -2458,7 +2458,7 @@ parse_paragraph(struct lowdown_doc *doc, char *data, size_t size)
 	return end;
 }
 
-/* 
+/*
  * Handles parsing of a block-level code fragment.
  * Return <0 on failure, 0 if not a fragment, >0 on success.
  */
@@ -2488,12 +2488,12 @@ parse_fencedcode(struct lowdown_doc *doc, char *data, size_t size)
 	while ((line_start = i) < size) {
 		while (i < size && data[i] != '\n')
 			i++;
-		w2 = is_codefence(data + line_start, 
+		w2 = is_codefence(data + line_start,
 			i - line_start, &width2, &chr2);
-		if (w == w2 && 
-		    width == width2 && 
+		if (w == w2 &&
+		    width == width2 &&
 		    chr == chr2 &&
-		    is_empty(data + 
+		    is_empty(data +
 		    (line_start+w), i - (line_start+w)))
 			break;
 		i++;
@@ -2505,7 +2505,7 @@ parse_fencedcode(struct lowdown_doc *doc, char *data, size_t size)
 	if ((n = pushnode(doc, LOWDOWN_BLOCKCODE)) == NULL)
 		return -1;
 
-	if (!pushbuf(&n->rndr_blockcode.text, 
+	if (!pushbuf(&n->rndr_blockcode.text,
 	    data + text_start, line_start - text_start))
 		return -1;
 	if (!pushlbuf(&n->rndr_blockcode.lang, &lang))
@@ -2525,26 +2525,26 @@ parse_blockcode(struct lowdown_doc *doc, char *data, size_t size)
 		goto err;
 
 	while (beg < size) {
-		for (end = beg + 1; 
-		     end < size && data[end - 1] != '\n'; 
-		     end++) 
+		for (end = beg + 1;
+		     end < size && data[end - 1] != '\n';
+		     end++)
 			continue;
 
 		pre = prefix_code(data + beg, end - beg);
 
-		/* 
+		/*
 		 * Skip prefix or non-empty non-prefixed line breaking
-		 * the pre. 
+		 * the pre.
 		 */
 
 		if (pre)
-			beg += pre; 
+			beg += pre;
 		else if (!is_empty(data + beg, end - beg))
 			break;
 
-		/* 
+		/*
 		 * Verbatim copy to the working buffer, escaping
-		 * entities. 
+		 * entities.
 		 */
 
 		if (beg < end) {
@@ -2552,7 +2552,7 @@ parse_blockcode(struct lowdown_doc *doc, char *data, size_t size)
 				if (!hbuf_putc(work, '\n'))
 					goto err;
 			} else {
-				if (!hbuf_put(work, 
+				if (!hbuf_put(work,
 				    data + beg, end - beg))
 					goto err;
 			}
@@ -2587,7 +2587,7 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 	char *data, size_t size, enum hlist_fl *flags, size_t num)
 {
 	struct lowdown_buf	*work = NULL;
-	size_t			 beg = 0, end, pre, sublist = 0, 
+	size_t			 beg = 0, end, pre, sublist = 0,
 				 orgpre, i, has_next_uli = 0, dli_lines,
 				 has_next_oli = 0, has_next_dli = 0;
 	int			 in_empty = 0, has_inside_empty = 0,
@@ -2625,7 +2625,7 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 	beg = end;
 	dli_lines = 1;
 
-	/* 
+	/*
 	 * Process the following lines.
 	 * Use the "dli_lines" variable to see if we should consider an
 	 * opening dli prefix to be a valid dli token.
@@ -2684,13 +2684,13 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 			if (in_empty)
 				has_inside_empty = 1;
 
-			/* 
+			/*
 			 * The following item must have the same (or
 			 * less) indentation.
 			 */
 
 			if (pre <= orgpre) {
-				/* 
+				/*
 				 * If the following item has different
 				 * list type, we end this list.
 				 */
@@ -2700,8 +2700,8 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 				       ff == HLIST_FL_UNORDERED ||
 				       ff == HLIST_FL_DEF);
 
-				if (in_empty && 
-				    (((ff == HLIST_FL_ORDERED) && 
+				if (in_empty &&
+				    (((ff == HLIST_FL_ORDERED) &&
 				      (has_next_uli || has_next_dli)) ||
 				     ((ff == HLIST_FL_UNORDERED) &&
 				      (has_next_oli || has_next_dli)) ||
@@ -2716,7 +2716,7 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 			if (!sublist)
 				sublist = work->size;
 		} else if (in_empty && pre == 0) {
-			/* 
+			/*
 			 * Joining only indented stuff after empty
 			 * lines; note that now we only require 1 space
 			 * of indentation to continue a list.
@@ -2733,7 +2733,7 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 			in_empty = 0;
 		}
 
-		/* 
+		/*
 		 * Adding the line without prefix into the working
 		 * buffer.
 		 */
@@ -2762,15 +2762,15 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 		/* Intermediate render of block li. */
 
 		if (sublist && sublist < work->size) {
-			if (!parse_block(doc, 
+			if (!parse_block(doc,
 			    work->data, sublist))
 				goto err;
-			if (!parse_block(doc, 
-			    work->data + sublist, 
+			if (!parse_block(doc,
+			    work->data + sublist,
 			    work->size - sublist))
 				goto err;
 		} else {
-			if (!parse_block(doc, 
+			if (!parse_block(doc,
 			    work->data, work->size))
 				goto err;
 		}
@@ -2778,15 +2778,15 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 		/* Intermediate render of inline li. */
 
 		if (sublist && sublist < work->size) {
-			if (!parse_inline(doc, 
+			if (!parse_inline(doc,
 			    work->data, sublist))
 				goto err;
-			if (!parse_block(doc, 
-			    work->data + sublist, 
+			if (!parse_block(doc,
+			    work->data + sublist,
 			    work->size - sublist))
 				goto err;
 		} else {
-			if (!parse_inline(doc, 
+			if (!parse_inline(doc,
 			    work->data, work->size))
 				goto err;
 		}
@@ -2848,7 +2848,7 @@ parse_definition(struct lowdown_doc *doc, char *data, size_t size)
 		nn = pushnode(doc, LOWDOWN_DEFINITION_DATA);
 		if (nn == NULL)
 			goto err;
-		ret = parse_listitem(work, doc, 
+		ret = parse_listitem(work, doc,
 			data + i, size - i, &flags, k++);
 		if (ret < 0)
 			goto err;
@@ -2869,7 +2869,7 @@ err:
 	return -1;
 }
 
-/* 
+/*
  * Parsing ordered or unordered list block.
  * If "oli_data" is not NULL, it's the numeric string prefix of the
  * ordered entry.  It's either zero-length or well-formed.
@@ -2902,7 +2902,7 @@ parse_list(struct lowdown_doc *doc,
 
 	pos = n->rndr_list.start;
 	while (i < size) {
-		ret = parse_listitem(work, doc, 
+		ret = parse_listitem(work, doc,
 			data + i, size - i, &flags, pos++);
 		if (ret < 0)
 			goto err;
@@ -2922,7 +2922,7 @@ err:
 	return -1;
 }
 
-/* 
+/*
  * Parsing of atx-style headers.
  */
 static ssize_t
@@ -2960,7 +2960,7 @@ parse_atxheader(struct lowdown_doc *doc, char *data, size_t size)
 	return skip;
 }
 
-/* 
+/*
  * Parse a single footnote definition.
  * Return zero on failure, non-zero on success.
  */
@@ -2974,14 +2974,14 @@ parse_footnote_def(struct lowdown_doc *doc, struct foot_ref *ref)
 	n->rndr_footnote_def.num = ref->num;
 	if (!pushlbuf(&n->rndr_footnote_def.key, &ref->name))
 		return 0;
-	if (!parse_block(doc, 
+	if (!parse_block(doc,
 	    ref->contents.data, ref->contents.size))
 		return 0;
 	popnode(doc, n);
 	return 1;
 }
 
-/* 
+/*
  * Render the contents of the footnotes.
  * Return zero on failure, non-zero on success.
  */
@@ -3005,7 +3005,7 @@ parse_footnote_list(struct lowdown_doc *doc)
 			if (ref->num != i || !ref->is_used)
 				continue;
 			if (first) {
-				n = pushnode(doc, 
+				n = pushnode(doc,
 					LOWDOWN_FOOTNOTES_BLOCK);
 				if (n == NULL)
 					return 0;
@@ -3020,8 +3020,8 @@ parse_footnote_list(struct lowdown_doc *doc)
 	return 1;
 }
 
-/* 
- * Check for end of HTML block : </tag>( *)\n 
+/*
+ * Check for end of HTML block : </tag>( *)\n
  * Returns tag length on match, 0 otherwise.
  * Assumes data starts with "<".
  */
@@ -3031,13 +3031,13 @@ htmlblock_is_end(const char *tag, size_t tag_len,
 {
 	size_t i = tag_len + 3, w;
 
-	/* 
-	 * Try to match the end tag 
+	/*
+	 * Try to match the end tag
 	 * Note: we're not considering tags like "</tag >" which are
 	 * still valid.
 	 */
 
-	if (i > size || 
+	if (i > size ||
 	    data[1] != '/' ||
 	    strncasecmp(data + 2, tag, tag_len) != 0 ||
 	    data[tag_len + 2] != '>')
@@ -3051,7 +3051,7 @@ htmlblock_is_end(const char *tag, size_t tag_len,
 	return i + w;
 }
 
-/* 
+/*
  * Try to find HTML block ending tag.
  * Returns the length on match, 0 otherwise.
  */
@@ -3062,22 +3062,22 @@ htmlblock_find_end(const char *tag, size_t tag_len,
 	size_t	i, w = 0;
 
 	for (i = 0; ; i++) {
-		while (i < size && data[i] != '<') 
+		while (i < size && data[i] != '<')
 			i++;
-		if (i >= size) 
+		if (i >= size)
 			return 0;
-		w = htmlblock_is_end(tag, 
+		w = htmlblock_is_end(tag,
 			tag_len, doc, data + i, size - i);
-		if (w) 
+		if (w)
 			break;
 	}
 
 	return i + w;
 }
 
-/* 
+/*
  * Try to find end of HTML block in strict mode (it must be an
- * unindented line, and have a blank line afterwards).  
+ * unindented line, and have a blank line afterwards). 
  * Returns the length on match, 0 otherwise.
  */
 static size_t
@@ -3088,19 +3088,19 @@ htmlblock_find_end_strict(const char *tag, size_t tag_len,
 
 	while (1) {
 		mark = i;
-		while (i < size && data[i] != '\n') 
+		while (i < size && data[i] != '\n')
 			i++;
-		if (i < size) 
+		if (i < size)
 			i++;
-		if (i == mark) 
+		if (i == mark)
 			return 0;
 
-		if (data[mark] == ' ' && mark > 0) 
+		if (data[mark] == ' ' && mark > 0)
 			continue;
-		mark += htmlblock_find_end(tag, tag_len, 
+		mark += htmlblock_find_end(tag, tag_len,
 			doc, data + mark, i - mark);
-		if (mark == i && 
-		    (is_empty(data + i, size - i) || i >= size)) 
+		if (mark == i &&
+		    (is_empty(data + i, size - i) || i >= size))
 			break;
 	}
 
@@ -3166,7 +3166,7 @@ hhtml_find_block(const char *str, size_t len)
 	return NULL;
 }
 
-/* 
+/*
  * Parsing of inline HTML block.
  * Return <0 on failure, >0 on success, 0 if not a block.
  */
@@ -3198,10 +3198,10 @@ parse_htmlblock(struct lowdown_doc *doc, char *data, size_t size)
 	if (!curtag) {
 		/* HTML comment, laxist form. */
 
-		if (size > 5 && data[1] == '!' && 
+		if (size > 5 && data[1] == '!' &&
 		    data[2] == '-' && data[3] == '-') {
 			i = 5;
-			while (i < size && !(data[i - 2] == '-' && 
+			while (i < size && !(data[i - 2] == '-' &&
 			       data[i - 1] == '-' && data[i] == '>'))
 				i++;
 			i++;
@@ -3222,14 +3222,14 @@ parse_htmlblock(struct lowdown_doc *doc, char *data, size_t size)
 			}
 		}
 
-		/* 
+		/*
 		 * HR, which is the only self-closing block tag
 		 * considered.
 		 * FIXME: we should also do <br />.
 		 */
 
-		if (size > 4 && 
-		    (data[1] == 'h' || data[1] == 'H') && 
+		if (size > 4 &&
+		    (data[1] == 'h' || data[1] == 'H') &&
 		    (data[2] == 'r' || data[2] == 'R')) {
 			i = 3;
 			while (i < size && data[i] != '>')
@@ -3238,13 +3238,13 @@ parse_htmlblock(struct lowdown_doc *doc, char *data, size_t size)
 				i++;
 				j = is_empty(data + i, size - i);
 				if (j) {
-					n = pushnode(doc, 
+					n = pushnode(doc,
 						LOWDOWN_BLOCKHTML);
 					if (n == NULL)
 						return -1;
 					work.size = i + j;
 					if (!pushlbuf
-					    (&n->rndr_blockhtml.text, 
+					    (&n->rndr_blockhtml.text,
 					     &work))
 						return -1;
 					popnode(doc, n);
@@ -3264,16 +3264,16 @@ parse_htmlblock(struct lowdown_doc *doc, char *data, size_t size)
 	tag_end = htmlblock_find_end_strict
 		(curtag, tag_len, doc, data, size);
 
-	/* 
+	/*
 	 * If not found, trying a second pass looking for indented match
 	 * but not if tag is "ins" or "del" (following original
 	 * Markdown.pl).
 	 */
 
-	if (!tag_end && 
-	    strcmp(curtag, "ins") != 0 && 
+	if (!tag_end &&
+	    strcmp(curtag, "ins") != 0 &&
 	    strcmp(curtag, "del") != 0)
-		tag_end = htmlblock_find_end(curtag, 
+		tag_end = htmlblock_find_end(curtag,
 			tag_len, doc, data, size);
 
 	if (!tag_end)
@@ -3298,7 +3298,7 @@ parse_htmlblock(struct lowdown_doc *doc, char *data, size_t size)
  */
 static int
 parse_table_row(struct lowdown_buf *ob, struct lowdown_doc *doc,
-	char *data, size_t size, size_t columns, 
+	char *data, size_t size, size_t columns,
 	const enum htbl_flags *col_data, enum htbl_flags header_flag)
 {
 	size_t	 		 i = 0, col, len, cell_start, cell_end;
@@ -3319,7 +3319,7 @@ parse_table_row(struct lowdown_buf *ob, struct lowdown_doc *doc,
 
 		len = find_emph_char(data + i, size - i, '|');
 
-		/* 
+		/*
 		 * Two possibilities for len == 0:
 		 * (1) No more pipe char found in the current line.
 		 * (2) The next pipe is right after the current one,
@@ -3334,7 +3334,7 @@ parse_table_row(struct lowdown_buf *ob, struct lowdown_doc *doc,
 
 		cell_end = i - 1;
 
-		while (cell_end > cell_start && 
+		while (cell_end > cell_start &&
 		       xisspace(data[cell_end]))
 			cell_end--;
 
@@ -3346,7 +3346,7 @@ parse_table_row(struct lowdown_buf *ob, struct lowdown_doc *doc,
 		nn->rndr_table_cell.col = col;
 		nn->rndr_table_cell.columns = columns;
 
-		if (!parse_inline(doc, 
+		if (!parse_inline(doc,
 		    data + cell_start, 1 + cell_end - cell_start))
 			return 0;
 		popnode(doc, nn);
@@ -3373,12 +3373,12 @@ parse_table_row(struct lowdown_buf *ob, struct lowdown_doc *doc,
  * Return <0 on failure, 0 if not a table row, >0 for the offset.
  */
 static ssize_t
-parse_table_header(struct lowdown_node **np, 
-	struct lowdown_buf *ob, struct lowdown_doc *doc, 
-	char *data, size_t size, size_t *columns, 
+parse_table_header(struct lowdown_node **np,
+	struct lowdown_buf *ob, struct lowdown_doc *doc,
+	char *data, size_t size, size_t *columns,
 	enum htbl_flags **column_data)
 {
-	size_t	 		 i = 0, col, header_end, under_end, 
+	size_t	 		 i = 0, col, header_end, under_end,
 				 dashes;
 	ssize_t	 		 pipes = 0;
 	struct lowdown_node	*n;
@@ -3424,18 +3424,18 @@ parse_table_header(struct lowdown_node **np,
 		i = countspaces(data, i, under_end, 0);
 
 		if (data[i] == ':') {
-			i++; 
+			i++;
 			(*column_data)[col] |= HTBL_FL_ALIGN_LEFT;
 			dashes++;
 		}
 
 		while (i < under_end && data[i] == '-') {
-			i++; 
+			i++;
 			dashes++;
 		}
 
 		if (i < under_end && data[i] == ':') {
-			i++; 
+			i++;
 			(*column_data)[col] |= HTBL_FL_ALIGN_RIGHT;
 			dashes++;
 		}
@@ -3475,7 +3475,7 @@ parse_table_header(struct lowdown_node **np,
 		n->rndr_table_header.flags[i] = (*column_data)[i];
 	n->rndr_table_header.columns = *columns;
 
-	if (!parse_table_row(ob, doc, data, header_end, 
+	if (!parse_table_row(ob, doc, data, header_end,
 	    *columns, *column_data, HTBL_FL_HEADER))
 		return -1;
 
@@ -3500,7 +3500,7 @@ parse_table(struct lowdown_doc *doc, char *data, size_t size)
 	    (body_work = hbuf_new(256)) == NULL)
 		goto err;
 
-	ret = parse_table_header(&n, header_work, 
+	ret = parse_table_header(&n, header_work,
 		doc, data, size, &columns, &col_data);
 	if (ret < 0)
 		goto err;
@@ -3523,7 +3523,7 @@ parse_table(struct lowdown_doc *doc, char *data, size_t size)
 			}
 
 			if (!parse_table_row(body_work,
-			     doc, data + row_start, i - row_start, 
+			     doc, data + row_start, i - row_start,
 			     columns, col_data, 0))
 				goto err;
 			i++;
@@ -3544,7 +3544,7 @@ err:
 	return -1;
 }
 
-/* 
+/*
  * Parsing of one block, returning next char to parse.
  * We can assume, entering the block, that our output is newline
  * aligned.
@@ -3559,7 +3559,7 @@ parse_block(struct lowdown_doc *doc, char *data, size_t size)
 	struct lowdown_node	*n;
 	ssize_t			 rc;
 
-	/* 
+	/*
 	 * What kind of block are we?
 	 * Go through all types of blocks, one by one.
 	 */
@@ -3608,7 +3608,7 @@ parse_block(struct lowdown_doc *doc, char *data, size_t size)
 			beg++;
 			popnode(doc, n);
 			continue;
-		} 
+		}
 
 		/* Fenced code. */
 
@@ -3646,7 +3646,7 @@ parse_block(struct lowdown_doc *doc, char *data, size_t size)
 
 		/* Prefixed code (like block-quotes). */
 
-		if (!(doc->ext_flags & LOWDOWN_NOCODEIND) && 
+		if (!(doc->ext_flags & LOWDOWN_NOCODEIND) &&
 		    prefix_code(txt_data, end)) {
 			rc = parse_blockcode(doc, txt_data, end);
 			if (rc < 0)
@@ -3665,7 +3665,7 @@ parse_block(struct lowdown_doc *doc, char *data, size_t size)
 			continue;
 		}
 
-		/* 
+		/*
 		 * A definition list.
 		 * Only use this is preceded by a one-line paragraph.
 		 */
@@ -3674,7 +3674,7 @@ parse_block(struct lowdown_doc *doc, char *data, size_t size)
 		    prefix_dli(doc, txt_data, end)) {
 			n = TAILQ_LAST(&doc->current->children,
 				lowdown_nodeq);
-			if (n != NULL && 
+			if (n != NULL &&
 			    n->type == LOWDOWN_PARAGRAPH &&
 			    n->rndr_paragraph.lines == 1) {
 				rc = parse_definition(doc, txt_data, end);
@@ -3705,15 +3705,15 @@ parse_block(struct lowdown_doc *doc, char *data, size_t size)
 	return 1;
 }
 
-/* 
+/*
  * Returns >0 if a line is a footnote definition, 0 if not, <0 on
  * failure.
  */
 static int
-is_footnote(struct lowdown_doc *doc, const char *data, 
+is_footnote(struct lowdown_doc *doc, const char *data,
 	size_t beg, size_t end, size_t *last)
 {
-	size_t	 		 i = 0, ind = 0, start = 0, 
+	size_t	 		 i = 0, ind = 0, start = 0,
 				 id_offs, id_end;
 	struct lowdown_buf	*contents = NULL;
 	int			 in_empty = 0;
@@ -3727,24 +3727,24 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 
 	/* id part: caret followed by anything between brackets */
 
-	if (data[i] != '[') 
+	if (data[i] != '[')
 		return 0;
 	i++;
-	if (i >= end || data[i] != '^') 
+	if (i >= end || data[i] != '^')
 		return 0;
 	i++;
 	id_offs = i;
-	while (i < end && data[i] != '\n' && 
+	while (i < end && data[i] != '\n' &&
 	       data[i] != '\r' && data[i] != ']')
 		i++;
-	if (i >= end || data[i] != ']') 
+	if (i >= end || data[i] != ']')
 		return 0;
 	id_end = i;
 
 	/* spacer: colon (space | tab)* newline? (space | tab)* */
 
 	i++;
-	if (i >= end || data[i] != ':') 
+	if (i >= end || data[i] != ':')
 		return 0;
 	i++;
 
@@ -3758,18 +3758,18 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 	/* process lines similar to a list item */
 
 	while (i < end) {
-		while (i < end && data[i] != '\n' && data[i] != '\r') 
+		while (i < end && data[i] != '\n' && data[i] != '\r')
 			i++;
 
 		/* process an empty line */
 
 		if (is_empty(data + start, i - start)) {
 			in_empty = 1;
-			if (i < end && 
+			if (i < end &&
 			    (data[i] == '\n' || data[i] == '\r')) {
 				i++;
-				if (i < end && data[i] == '\n' && 
-				    data[i - 1] == '\r') 
+				if (i < end && data[i] == '\n' &&
+				    data[i - 1] == '\r')
 					i++;
 			}
 			start = i;
@@ -3785,10 +3785,10 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 		 * to continue, just like lists */
 
 		if (ind == 0) {
-			if (start == id_end + 2 && 
+			if (start == id_end + 2 &&
 			    data[start] == '\t') {
 				/* XXX: wtf? */
-			} else 
+			} else
 				break;
 		} else if (in_empty)
 			if (!hbuf_putc(contents, '\n'))
@@ -3807,11 +3807,11 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 		if (i < end) {
 			if (!hbuf_putc(contents, '\n'))
 				goto err;
-			if (i < end && 
+			if (i < end &&
 			    (data[i] == '\n' || data[i] == '\r')) {
 				i++;
-				if (i < end && data[i] == '\n' && 
-				    data[i - 1] == '\r') 
+				if (i < end && data[i] == '\n' &&
+				    data[i - 1] == '\r')
 					i++;
 			}
 		}
@@ -3835,11 +3835,11 @@ err:
 	return -1;
 }
 
-/* 
+/*
  * Returns >0 if the line is a reference, 0 if not, <0 on failure.
  */
 static int
-is_ref(struct lowdown_doc *doc, const char *data, 
+is_ref(struct lowdown_doc *doc, const char *data,
 	size_t beg, size_t end, size_t *last)
 {
 	size_t	 	 i, id_offset, id_end, link_offset, link_end,
@@ -3855,36 +3855,36 @@ is_ref(struct lowdown_doc *doc, const char *data,
 
 	/* Id part: anything but a newline between brackets. */
 
-	if (data[i] != '[') 
+	if (data[i] != '[')
 		return 0;
 	i++;
 	id_offset = i;
-	while (i < end && data[i] != '\n' && 
+	while (i < end && data[i] != '\n' &&
 	       data[i] != '\r' && data[i] != ']')
 		i++;
-	if (i >= end || data[i] != ']') 
+	if (i >= end || data[i] != ']')
 		return 0;
 	id_end = i;
 
 	/* Spacer: colon (space | tab)* newline? (space | tab)* */
 
 	i++;
-	if (i >= end || data[i] != ':') 
+	if (i >= end || data[i] != ':')
 		return 0;
 	i++;
 	i = countspaces(data, i, end, 0);
 	if (i < end && (data[i] == '\n' || data[i] == '\r')) {
 		i++;
 		if (i < end && data[i] == '\r' && data[i - 1] == '\n')
-			i++; 
+			i++;
 	}
 	i = countspaces(data, i, end, 0);
-	if (i >= end) 
+	if (i >= end)
 		return 0;
 
-	/* 
+	/*
 	 * Link: spacing-free sequence, optionally between angle
-	 * brackets. 
+	 * brackets.
 	 */
 
 	if (data[i] == '<')
@@ -3892,13 +3892,13 @@ is_ref(struct lowdown_doc *doc, const char *data,
 
 	link_offset = i;
 
-	while (i < end && data[i] != ' ' && 
+	while (i < end && data[i] != ' ' &&
 	       data[i] != '\n' && data[i] != '\r')
 		i++;
 
-	if (data[i - 1] == '>') 
+	if (data[i - 1] == '>')
 		link_end = i - 1;
-	else 
+	else
 		link_end = i;
 
 	/*
@@ -3907,7 +3907,7 @@ is_ref(struct lowdown_doc *doc, const char *data,
 	 */
 
 	i = countspaces(data, i, end, 0);
-	if (i < end && data[i] != '\n' && data[i] != '\r' && 
+	if (i < end && data[i] != '\n' && data[i] != '\r' &&
 	    data[i] != '\'' && data[i] != '"' && data[i] != '(')
 		return 0;
 	if (i < end && data[i] == '{' &&
@@ -3918,7 +3918,7 @@ is_ref(struct lowdown_doc *doc, const char *data,
 
 	/* computing end-of-line */
 
-	if (i >= end || data[i] == '\r' || data[i] == '\n') 
+	if (i >= end || data[i] == '\r' || data[i] == '\n')
 		line_end = i;
 	if (i + 1 < end && data[i] == '\n' && data[i + 1] == '\r')
 		line_end = i + 1;
@@ -3942,7 +3942,7 @@ is_ref(struct lowdown_doc *doc, const char *data,
 	 * brace (if parsing), which signifies extended attributes.
 	 */
 
-	if (i + 1 < end && 
+	if (i + 1 < end &&
 	    (data[i] == '\'' || data[i] == '"' || data[i] == '(')) {
 		title_offset = ++i;
 		for (garbage = 0; i < end; i++) {
@@ -3963,7 +3963,7 @@ is_ref(struct lowdown_doc *doc, const char *data,
 			return 0;
 	}
 
-	/* 
+	/*
 	 * Now optionally the attributes.  These use similar semantics
 	 * where there can be any number of embedded delimiters: only
 	 * the last one is recorded, and there may be no garbage between
@@ -3996,7 +3996,7 @@ is_ref(struct lowdown_doc *doc, const char *data,
 	/* Garbage after the link or empty link. */
 
 	if (!line_end || link_end == link_offset)
-		return 0; 
+		return 0;
 
 	/* A valid ref has been found, filling-in return structures. */
 
@@ -4049,12 +4049,12 @@ is_ref(struct lowdown_doc *doc, const char *data,
  * Replace tabs with 4 spaces.
  * Return zero on failure (memory), non-zero on success.
  */
-static int 
+static int
 expand_tabs(struct lowdown_buf *ob, const char *line, size_t size)
 {
 	size_t  i, tab = 0, org;
 
-	/* 
+	/*
 	 * This code makes two assumptions:
 	 *
 	 * (1) Input is valid UTF-8.  (Any byte with top two bits 10 is
@@ -4185,14 +4185,14 @@ parse_metadata_val(const char *data, size_t sz, size_t *len)
 			nspaces = 0;
 	*len = i;
 
-	/* 
+	/*
 	 * Iterate through zero or more following multilines.
 	 * Multilines are terminated by a line containing a colon (that
 	 * is not offset by whitespace) or a blank line.
 	 */
 
 	startws = i + 1 < sz &&
-		(data[i + 1] == ' ' || 
+		(data[i + 1] == ' ' ||
 		 data[i + 1] == '\t');
 
 	for (i++; i < sz; i++) {
@@ -4208,7 +4208,7 @@ parse_metadata_val(const char *data, size_t sz, size_t *len)
 			break;
 
 		peek++;
-		if (data[i] != '\n') 
+		if (data[i] != '\n')
 			continue;
 
 		/*
@@ -4227,7 +4227,7 @@ parse_metadata_val(const char *data, size_t sz, size_t *len)
 		/* Check if the next line has leading whitespace. */
 
 		startws = i + 1 < sz &&
-			(data[i + 1] == ' ' || 
+			(data[i + 1] == ' ' ||
 			 data[i + 1] == '\t');
 	}
 
@@ -4262,7 +4262,7 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 	if (sz == 0 || data[sz - 1] != '\n')
 		return 0;
 
-	/* 
+	/*
 	 * Check the first line for a colon to see if we should do
 	 * metadata parsing at all.
 	 * This is a convenience for regular markdown so that initial
@@ -4308,7 +4308,7 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 		}
 		*cp = '\0';
 
-		/* 
+		/*
 		 * If we've already encountered this key, remove it from
 		 * both the local queue and the meta nodes.
 		 */
@@ -4462,14 +4462,14 @@ lowdown_doc_parse(struct lowdown_doc *doc, size_t *maxn,
 		goto out;
 
 	for (i = 0; i < doc->metasz; i++)
-		if (parse_metadata(doc, 
+		if (parse_metadata(doc,
 		    doc->meta[i], strlen(doc->meta[i])) < 0)
 			goto out;
 
 	/* FIXME: CRLF EOLNs. */
 
 	if ((doc->ext_flags & LOWDOWN_METADATA) &&
-	    beg < size - 1 && 
+	    beg < size - 1 &&
 	    isalnum((unsigned char)data[beg])) {
 		sv = &data[beg];
 		for (end = beg + 1; end < size; end++) {
@@ -4484,15 +4484,15 @@ lowdown_doc_parse(struct lowdown_doc *doc, size_t *maxn,
 	}
 
 	for (i = 0; i < doc->metaovrsz; i++)
-		if (parse_metadata(doc, 
+		if (parse_metadata(doc,
 		    doc->metaovr[i], strlen(doc->metaovr[i])) < 0)
 			goto out;
 
 	popnode(doc, n);
 
-	/* 
+	/*
 	 * First pass: looking for references and footnotes, copying
-	 * everything else. 
+	 * everything else.
 	 */
 
 	while (beg < size) {
@@ -4538,7 +4538,7 @@ lowdown_doc_parse(struct lowdown_doc *doc, size_t *maxn,
 		beg = end;
 	}
 
-	/* 
+	/*
 	 * Second pass (after header): rendering the document body and
 	 * footnotes.
 	 */
