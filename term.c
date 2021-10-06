@@ -56,15 +56,24 @@ struct term {
  * How to style the output on the screen.
  */
 struct sty {
-	int	 italic;
-	int	 strike;
-	int	 bold;
-	int	 under;
-	size_t	 bcolour; /* not inherited */
-	size_t	 colour; /* not inherited */
-	int	 override; /* don't inherit */
-#define	OSTY_UNDER	0x01
-#define	OSTY_BOLD	0x02
+	int		 italic; /* italic */
+	int		 strike; /* strikethrough */
+	int		 bold; /* bold */
+	int		 under; /* underline */
+	size_t		 bcolour; /* not inherited */
+	size_t		 colour; /* not inherited */
+	int		 override; /* don't inherit... */
+#define	OSTY_UNDER	 0x01 /* underlining */
+#define	OSTY_BOLD	 0x02 /* bold */
+};
+
+/*
+ * Prefixes to put before each line.  This only applies to very specific
+ * circumstances.
+ */
+struct	pfx {
+	const char	*text;
+	size_t		 cols;
 };
 
 #include "term.h"
@@ -418,6 +427,7 @@ rndr_buf_startline_prefixes(struct term *term,
 	struct lowdown_buf *out)
 {
 	struct sty			 sinner;
+	const struct pfx		*pfx;
 	const struct lowdown_node	*np;
 	size_t	 			 i, emit;
 	int	 		 	 pstyle = 0;
@@ -473,9 +483,9 @@ rndr_buf_startline_prefixes(struct term *term,
 			    np->type == LOWDOWN_FOOTNOTE_DEF)
 				break;
 		if (np == NULL) {
-			if (!HBUF_PUTSL(out, "    "))
+			if (!hbuf_puts(out, pfx_para.text))
 				return 0;
-			rndr_buf_advance(term, 4);
+			rndr_buf_advance(term, pfx_para.cols);
 		}
 		break;
 	case LOWDOWN_BLOCKCODE:
@@ -483,9 +493,9 @@ rndr_buf_startline_prefixes(struct term *term,
 		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
 		pstyle = 1;
-		if (!HBUF_PUTSL(out, "    | "))
+		if (!hbuf_puts(out, pfx_bkcd.text))
 			return 0;
-		rndr_buf_advance(term, 6);
+		rndr_buf_advance(term, pfx_bkcd.cols);
 		break;
 	case LOWDOWN_ROOT:
 		if (!rndr_buf_style(term, out, &sinner))
@@ -500,47 +510,57 @@ rndr_buf_startline_prefixes(struct term *term,
 		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
 		pstyle = 1;
-		if (!HBUF_PUTSL(out, "    | "))
+		if (!hbuf_puts(out, pfx_bkqt.text))
 			return 0;
-		rndr_buf_advance(term, 6);
+		rndr_buf_advance(term, pfx_bkqt.cols);
 		break;
 	case LOWDOWN_DEFINITION_DATA:
-		rndr_node_style_apply(&sinner, &sty_ddata_pfx);
+		rndr_node_style_apply(&sinner, &sty_dli_pfx);
 		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
 		pstyle = 1;
-		if (emit == 0 && !HBUF_PUTSL(out, "    : "))
-			return 0;
-		else if (emit != 0 && !HBUF_PUTSL(out, "      "))
-			return 0;
-		rndr_buf_advance(term, 6);
+		if (emit == 0) {
+			if (!hbuf_puts(out, pfx_dli_1.text))
+				return 0;
+			rndr_buf_advance(term, pfx_dli_1.cols);
+		} else {
+			if (!hbuf_puts(out, pfx_li_n.text))
+				return 0;
+			rndr_buf_advance(term, pfx_li_n.cols);
+		}
 		break;
 	case LOWDOWN_FOOTNOTE_DEF:
 		rndr_node_style_apply(&sinner, &sty_fdef_pfx);
 		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
 		pstyle = 1;
-		if (emit == 0 && !hbuf_printf
-		    (out, "%2zu. ", n->rndr_footnote_def.num))
-			return 0;
-		else if (emit != 0 && !HBUF_PUTSL(out, "    "))
-			return 0;
-		rndr_buf_advance(term, 4);
+		if (emit == 0) {
+			if (!hbuf_printf(out, "%2zu. ",
+			     n->rndr_footnote_def.num))
+				return 0;
+			rndr_buf_advance(term, pfx_fdef_1.cols);
+		} else {
+			if (!hbuf_puts(out, pfx_fdef_n.text))
+				return 0;
+			rndr_buf_advance(term, pfx_fdef_n.cols);
+		}
 		break;
 	case LOWDOWN_HEADER:
-		/* Use the same colour as the text following. */
-
 		if (n->rndr_header.level == 0)
-			break;
+			pfx = &pfx_header_1;
+		else
+			pfx = &pfx_header_n;
 		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
 		pstyle = 1;
-		for (i = 0; i < n->rndr_header.level + 1; i++)
-			if (!HBUF_PUTSL(out, "#"))
+		for (i = 0; i < n->rndr_header.level + 1; i++) {
+			if (!hbuf_puts(out, pfx->text))
 				return 0;
+			rndr_buf_advance(term, pfx->cols);
+		}
 		if (!HBUF_PUTSL(out, " "))
 			return 0;
-		rndr_buf_advance(term, i + 1);
+		rndr_buf_advance(term, 1);
 		break;
 	case LOWDOWN_LISTITEM:
 		if (n->parent == NULL ||
@@ -550,36 +570,36 @@ rndr_buf_startline_prefixes(struct term *term,
 		/* Don't print list item prefix after first. */
 
 		if (emit) {
-			if (!HBUF_PUTSL(out, "      "))
+			if (!hbuf_puts(out, pfx_li_n.text))
 				return 0;
-			rndr_buf_advance(term, 6);
+			rndr_buf_advance(term, pfx_li_n.cols);
 			break;
 		}
 
 		/* List item prefix depends upon type. */
 
 		fl = n->rndr_list.flags;
-		rndr_node_style_apply(&sinner,
-			(fl & HLIST_FL_ORDERED) ?
-			&sty_oli_pfx : &sty_uli_pfx);
+		rndr_node_style_apply(&sinner, &sty_li_pfx);
 		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
 		pstyle = 1;
 
-		if (fl & HLIST_FL_CHECKED) {
-			if (!hbuf_puts(out, "    ☑ "))
-				return 0;
-		} else if (fl & HLIST_FL_UNCHECKED) {
-			if (!hbuf_puts(out, "    ☐ "))
-				return 0;
-		} else if (fl & HLIST_FL_UNORDERED) {
-			if (!hbuf_puts(out, "    · "))
-				return 0;
-		} else {
-			if (!hbuf_printf(out, "%4zu. ", n->rndr_listitem.num))
-				return 0;
-		}
-		rndr_buf_advance(term, 6);
+		if (fl & HLIST_FL_CHECKED)
+			pfx = &pfx_uli_c1;
+		else if (fl & HLIST_FL_UNCHECKED)
+			pfx = &pfx_uli_nc1;
+		else if (fl & HLIST_FL_UNORDERED)
+			pfx = &pfx_uli_1;
+		else
+			pfx = &pfx_oli_1;
+
+		if ((fl & HLIST_FL_ORDERED) &&
+		    !hbuf_printf(out, "%4zu. ", n->rndr_listitem.num))
+			return 0;
+		if (pfx->text != NULL &&
+		    !hbuf_puts(out, pfx->text))
+			return 0;
+		rndr_buf_advance(term, pfx->cols);
 		break;
 	default:
 		break;

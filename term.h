@@ -17,6 +17,28 @@
 /*
  * This file is for direct inclusion into term.c.  It allows an easy
  * place to make compile-term overrides of default styles.
+ */
+
+/*
+ * Styles
+ * ======
+ *
+ * Begin with text styles.  Each style should be formatted as follows:
+ *
+ *     static const struct sty sty_STYLE = {
+ *     	italic?, strike?, bold?, under?, bgcolour, colour, override?
+ *     };
+ *
+ * Italic, strike, bold, and under may be zero or non-zero numbers.  If
+ * non-zero, the given style is applied and is inherited by all child
+ * styles.
+ *
+ * Override is a bit-mask of styles that are overridden.  If 1 is set,
+ * the underline is overridden; if 2, the bold.
+ *
+ * Bgcolour and colour may be zero or an 8-bit ANSI colour escape code.
+ * See <https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit>.  These
+ * are not inherited by child styles.
  *
  * Please note that if NO_COLOR is specified during run-time, all of the
  * colour codes will be stripped.  When customising this, please make
@@ -101,18 +123,73 @@ static const struct sty sty_meta_key =	{ 0, 0, 0, 0,   0, 37, 0 };
 /* Entity (if not valid): >&#badent;< */
 static const struct sty sty_bad_ent = 	{ 0, 0, 0, 0,   0, 37, 0 };
 
-/* Definition list data prefix: foo \n >:< bar */
-static const struct sty sty_ddata_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
+/* Definition list data prefix (see pfx_dli_1): foo \n >:< bar */
+static const struct sty sty_dli_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
 
-/* Ordered list prefix: >1.< foo */
-static const struct sty sty_oli_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
+/* List prefix (see pfx_li_1): >1.< foo */
+static const struct sty sty_li_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
 
-/* Unordered list prefix: >-< foo */
-static const struct sty sty_uli_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
-
-/* Block quote prefix: >|< foo */
+/* Block quote prefix (see pfx_bkqt): >|< foo */
 static const struct sty sty_bkqt_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
 
-/* Block code prefix: ``` >|< void \n >|< main``` */
+/* Block code prefix (see pfx_bkcd): ``` >|< void \n >|< main``` */
 static const struct sty sty_bkcd_pfx =	{ 0, 0, 0, 0,   0, 94, 0 };
+
+/*
+ * Prefixes
+ * ========
+ *
+ * What follows are hard-coded prefixes.  These appear on the left of
+ * the output and have various rules not covered here to how they're
+ * inherited by children.  Each prefix is arranged as:
+ *
+ *     static const struct pfx pfx_STYLE = { text, columns };
+ *
+ * The text is a quoted string that will be inserted as-is.  It may
+ * contain UTF-8 values.  It may *only* be NULL if the documentation
+ * specifically says that the value is ignored.
+ *
+ * Columns is the number of terminal columns that the prefix fills.  If
+ * this is wrong, it will throw off line wrapping.  XXX: this may be
+ * dynamically computed in later versions of lowodwn.
+ */
+
+/* Paragraph, table, definition title. */
+static const struct pfx pfx_para =	{ "    ", 4 };
+
+/* Block code (see sty_bkcd_pfx). */
+static const struct pfx pfx_bkcd =	{ "    | ", 6 };
+
+/* Block quote (see sty_bkqt_pfx). */
+static const struct pfx pfx_bkqt =	{ "    | ", 6 };
+
+/* Definition list data, first line (see sty_dli_pfx). */
+static const struct pfx pfx_dli_1 =	{ "    : ", 6 };
+
+/* Ordered list item, first line (see sty_li_pfx).  Text ignored. */
+static const struct pfx pfx_oli_1 =	{ NULL, 6 };
+
+/* Unordered list item, first line (see sty_li_pfx). */
+static const struct pfx pfx_uli_1 =	{ "    · ", 6 };
+
+/* Unordered, checked list data, first line (see sty_li_pfx). */
+static const struct pfx pfx_uli_c1 =	{ "    ☑ ", 6 };
+
+/* Unordered, unchecked list data, first line (see sty_li_pfx). */
+static const struct pfx pfx_uli_nc1 =	{ "    ☐ ", 6 };
+
+/* List items, subsequent lines (see sty_li_pfx). */
+static const struct pfx pfx_li_n =	{ "      ", 6 };
+
+/* Footnote prefix, first line (see sty_fdef_pfx).  Text ignored. */
+static const struct pfx pfx_fdef_1 =	{ NULL, 4 };
+
+/* Footnote prefix, subsequent lines (see sty_fdef_pfx). */
+static const struct pfx pfx_fdef_n =	{ "    ", 4 };
+
+/* Header first prefix (see sty_header_1). */
+static const struct pfx pfx_header_1 =	{ "", 0 };
+
+/* Header non-first prefix, one per head level (see sty_header_n). */
+static const struct pfx pfx_header_n =	{ "#", 1 };
 
