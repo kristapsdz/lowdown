@@ -69,9 +69,10 @@ struct sty {
 
 /* Per-node styles. */
 
-static const struct sty sty_image =	{ 0, 0, 1, 0,   0, 92, 1 };
-static const struct sty sty_foot_ref =	{ 0, 0, 1, 0,   0, 92, 1 };
-static const struct sty sty_codespan = 	{ 0, 0, 0, 0,  47, 31, 0 };
+static const struct sty sty_image =	{ 0, 0, 1, 0,   0, 93, 1 };
+static const struct sty sty_foot_ref =	{ 0, 0, 1, 0,   0, 93, 1 };
+static const struct sty sty_codespan = 	{ 0, 0, 1, 0,   0, 94, 0 };
+static const struct sty sty_blockcode =	{ 0, 0, 1, 0,   0,  0, 0 };
 static const struct sty sty_hrule = 	{ 0, 0, 0, 0,   0, 37, 0 };
 static const struct sty sty_blockhtml =	{ 0, 0, 0, 0,   0, 37, 0 };
 static const struct sty sty_rawhtml = 	{ 0, 0, 0, 0,   0, 37, 0 };
@@ -86,7 +87,7 @@ static const struct sty sty_header =	{ 0, 0, 1, 0,   0,  0, 0 };
 
 static const struct sty *stys[LOWDOWN__MAX] = {
 	NULL, /* LOWDOWN_ROOT */
-	NULL, /* LOWDOWN_BLOCKCODE */
+	&sty_blockcode, /* LOWDOWN_BLOCKCODE */
 	NULL, /* LOWDOWN_BLOCKQUOTE */
 	NULL, /* LOWDOWN_DEFINITION */
 	NULL, /* LOWDOWN_DEFINITION_TITLE */
@@ -130,9 +131,9 @@ static const struct sty *stys[LOWDOWN__MAX] = {
  * These are invoked in key places, below.
  */
 
-static const struct sty sty_h1 = 	{ 0, 0, 0, 0, 104, 37, 0 };
+static const struct sty sty_h1 = 	{ 0, 0, 0, 0,   0, 91, 0 };
 static const struct sty sty_hn = 	{ 0, 0, 0, 0,   0, 36, 0 };
-static const struct sty sty_linkalt =	{ 0, 0, 1, 0,   0, 92, 1|2 };
+static const struct sty sty_linkalt =	{ 0, 0, 1, 0,   0, 93, 1|2 };
 static const struct sty sty_imgurl = 	{ 0, 0, 0, 1,   0, 32, 2 };
 static const struct sty sty_imgurlbox =	{ 0, 0, 0, 0,   0, 37, 2 };
 static const struct sty sty_foots_div =	{ 0, 0, 0, 0,   0, 37, 0 };
@@ -149,6 +150,7 @@ static const struct sty sty_chng_del =	{ 0, 0, 0, 0, 100,  0, 0 };
 static const struct sty sty_ddata_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
 static const struct sty sty_fdef_pfx =	{ 0, 0, 0, 0,   0, 92, 1 };
 static const struct sty sty_bkqt_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
+static const struct sty sty_bkcd_pfx =	{ 0, 0, 0, 0,   0, 94, 0 };
 static const struct sty sty_oli_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
 static const struct sty sty_uli_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
 
@@ -521,10 +523,11 @@ rndr_buf_startline_prefixes(struct term *term,
 		}
 		break;
 	case LOWDOWN_BLOCKCODE:
+		rndr_node_style_apply(&sinner, &sty_bkcd_pfx);
 		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
 		pstyle = 1;
-		if (!HBUF_PUTSL(out, "      "))
+		if (!HBUF_PUTSL(out, "    | "))
 			return 0;
 		rndr_buf_advance(term, 6);
 		break;
