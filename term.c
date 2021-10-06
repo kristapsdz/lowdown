@@ -988,8 +988,13 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 				p->last_blank = last_blank;
 				p->col = col;
 				p->maxcol = maxcol;
-				if (TAILQ_NEXT(cell, entries) != NULL &&
-				    !HBUF_PUTSL(rowtmp, " | "))
+
+				if (TAILQ_NEXT(cell, entries) == NULL)
+					continue;
+
+				if (!rndr_buf_style(p, rowtmp, &sty_table) ||
+				    !hbuf_printf(rowtmp, " %s ", ifx_table_col) ||
+				    !HBUF_PUTSL(rowtmp, "\033[0m"))
 					goto out;
 			}
 
@@ -1022,18 +1027,19 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			p->stackpos++;
 			if (!rndr_stackpos_init(p, n))
 				goto out;
-			if (!rndr_buf_startline(p, ob, n, NULL))
+			if (!rndr_buf_startline(p, ob, n, &sty_table))
 				goto out;
 			for (i = 0; i < n->rndr_table.columns; i++) {
 				for (j = 0; j < widths[i]; j++)
-					if (!HBUF_PUTSL(ob, "-"))
+					if (!hbuf_puts(ob, ifx_table_row))
 						goto out;
 				if (i < n->rndr_table.columns - 1 &&
-				    !HBUF_PUTSL(ob, "|-"))
+				    !hbuf_printf(ob, "%s%s",
+				    ifx_table_col, ifx_table_row))
 					goto out;
 			}
 			rndr_buf_advance(p, 1);
-			if (!rndr_buf_endline(p, ob, n, NULL))
+			if (!rndr_buf_endline(p, ob, n, &sty_table))
 				goto out;
 			if (!rndr_buf_vspace(p, ob, n, 1))
 				goto out;

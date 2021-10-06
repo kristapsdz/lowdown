@@ -137,6 +137,9 @@ static const struct sty sty_bkqt_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
 /* Block code prefix (see pfx_bkcd): ``` >|< void \n >|< main``` */
 static const struct sty sty_bkcd_pfx =	{ 0, 0, 0, 0,   0, 94, 0 };
 
+/* Table separator (see ifx_table_col, ifx_table_col) . */
+static const struct sty sty_table =	{ 0, 0, 0, 0,   0, 93, 0 };
+
 /*
  * Prefixes
  * ========
@@ -230,3 +233,8 @@ static const char *ifx_fref_left =	"[";
 /* Footnote reference right-box (see sty_fref). */
 static const char *ifx_fref_right =	"]";
 
+/* Table column separator (see sty_table). */
+static const char *ifx_table_col =	"|";
+
+/* Table header row separator (see sty_table). */
+static const char *ifx_table_row =	"-";
