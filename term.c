@@ -109,7 +109,7 @@ static const struct sty *stys[LOWDOWN__MAX] = {
 	&sty_t_emph, /* LOWDOWN_TRIPLE_EMPHASIS */
 	&sty_strike, /* LOWDOWN_STRIKETHROUGH */
 	NULL, /* LOWDOWN_SUPERSCRIPT */
-	&sty_foot_ref, /* LOWDOWN_FOOTNOTE_REF */
+	&sty_fref, /* LOWDOWN_FOOTNOTE_REF */
 	NULL, /* LOWDOWN_MATH_BLOCK */
 	&sty_rawhtml, /* LOWDOWN_RAW_HTML */
 	NULL, /* LOWDOWN_ENTITY */
@@ -1143,16 +1143,14 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	switch (n->type) {
 	case LOWDOWN_FOOTNOTES_BLOCK:
 		hbuf_truncate(p->tmp);
-		if (!HBUF_PUTSL(p->tmp, "~~~~~~~~"))
-			return 0;
-		if (!rndr_buf(p, ob, n, p->tmp, &sty_foot))
+		if (!hbuf_puts(p->tmp, ifx_foot) ||
+		    !rndr_buf(p, ob, n, p->tmp, &sty_foot))
 			return 0;
 		break;
 	case LOWDOWN_SUPERSCRIPT:
 		hbuf_truncate(p->tmp);
-		if (!HBUF_PUTSL(p->tmp, "^"))
-			return 0;
-		if (!rndr_buf(p, ob, n, p->tmp, NULL))
+		if (!hbuf_puts(p->tmp, ifx_super) ||
+		    !rndr_buf(p, ob, n, p->tmp, NULL))
 			return 0;
 		break;
 	case LOWDOWN_META:
@@ -1160,9 +1158,8 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		    &n->rndr_meta.key, &sty_meta_key))
 			return 0;
 		hbuf_truncate(p->tmp);
-		if (!HBUF_PUTSL(p->tmp, ": "))
-			return 0;
-		if (!rndr_buf(p, ob, n, p->tmp, &sty_meta_key))
+		if (!hbuf_puts(p->tmp, ifx_meta_key) ||
+		    !rndr_buf(p, ob, n, p->tmp, &sty_meta_key))
 			return 0;
 		if (mq == NULL)
 			break;
@@ -1224,14 +1221,14 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	switch (n->type) {
 	case LOWDOWN_HRULE:
 		hbuf_truncate(p->tmp);
-		if (!HBUF_PUTSL(p->tmp, "~~~~~~~~"))
+		if (!hbuf_puts(p->tmp, ifx_hrule))
 			return 0;
 		rc = rndr_buf(p, ob, n, p->tmp, NULL);
 		break;
 	case LOWDOWN_FOOTNOTE_REF:
 		hbuf_truncate(p->tmp);
-		if (!hbuf_printf(p->tmp, "[%zu]", 
-		    n->rndr_footnote_ref.num))
+		if (!hbuf_printf(p->tmp, "%s%zu%s", ifx_fref_left,
+		    n->rndr_footnote_ref.num, ifx_fref_right))
 			return 0;
 		rc = rndr_buf(p, ob, n, p->tmp, NULL);
 		break;
@@ -1300,15 +1297,16 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		}
 		if (p->opts & LOWDOWN_TERM_NOLINK) {
 			hbuf_truncate(p->tmp);
-			if (!HBUF_PUTSL(p->tmp, "[Image]"))
+			if (!hbuf_puts(p->tmp, ifx_imgbox_left) ||
+			    !hbuf_puts(p->tmp, ifx_imgbox_right))
 				return 0;
-			rc = rndr_buf(p, ob, n, p->tmp, &sty_imgurlbox);
+			rc = rndr_buf(p, ob, n, p->tmp, &sty_imgbox);
 			break;
 		}
 		hbuf_truncate(p->tmp);
-		if (!HBUF_PUTSL(p->tmp, "[Image: "))
-			return 0;
-		if (!rndr_buf(p, ob, n, p->tmp, &sty_imgurlbox))
+		if (!hbuf_puts(p->tmp, ifx_imgbox_left) ||
+		    !hbuf_puts(p->tmp, ifx_imgbox_sep) ||
+		    !rndr_buf(p, ob, n, p->tmp, &sty_imgbox))
 			return 0;
 		if (p->opts & LOWDOWN_TERM_SHORTLINK) {
 			hbuf_truncate(p->tmp);
@@ -1322,9 +1320,9 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			    &n->rndr_image.link, &sty_imgurl))
 				return 0;
 		hbuf_truncate(p->tmp);
-		if (!HBUF_PUTSL(p->tmp, "]"))
+		if (!hbuf_puts(p->tmp, ifx_imgbox_right))
 			return 0;
-		rc = rndr_buf(p, ob, n, p->tmp, &sty_imgurlbox);
+		rc = rndr_buf(p, ob, n, p->tmp, &sty_imgbox);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
 		rc = rndr_buf(p, ob, n, &n->rndr_normal_text.text, NULL);

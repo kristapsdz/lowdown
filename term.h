@@ -57,13 +57,13 @@ static const struct sty sty_chng_del =	{ 0, 0, 0, 0, 100,  0, 0 };
 static const struct sty sty_img =	{ 0, 0, 1, 0,   0, 93, 1 };
 
 /* Box around image link (in sty_img): ![alt](>link<) */
-static const struct sty sty_imgurlbox =	{ 0, 0, 0, 0,   0, 37, 2 };
+static const struct sty sty_imgbox =	{ 0, 0, 0, 0,   0, 37, 2 };
 
-/* Image link text (in sty_imgurlbox): ![alt](>link<) */
+/* Image link text (in sty_img): ![alt](>link<) */
 static const struct sty sty_imgurl = 	{ 0, 0, 0, 1,   0, 32, 2 };
 
 /* Footnote reference (as a number): >[^ref]< */
-static const struct sty sty_foot_ref =	{ 0, 0, 1, 0,   0, 93, 1 };
+static const struct sty sty_fref =	{ 0, 0, 1, 0,   0, 93, 1 };
 
 /* In-line code: >`foo(void)`< */
 static const struct sty sty_codespan = 	{ 0, 0, 1, 0,   0, 94, 0 };
@@ -194,4 +194,39 @@ static const struct pfx pfx_header_1 =	{ "", 0 };
 
 /* Header non-first prefix, one per head level (see sty_header_n). */
 static const struct pfx pfx_header_n =	{ "#", 1 };
+
+/*
+ * Infixes
+ * =======
+ *
+ * These are character strings that appear throughout text.  They may
+ * consist of UTF-8 characters.  NULL is not allowed.
+ */
+
+/* Footnote block header (see sty_foot). */
+static const char *ifx_foot =		"~~~~~~~~";
+
+/* Superscript. */
+static const char *ifx_super =		"^";
+
+/* Metadata key (see sty_meta_key). */
+static const char *ifx_meta_key =	": ";
+
+/* Horizontal rule. */
+static const char *ifx_hrule =		"~~~~~~~~";
+
+/* Image link box left-box (see sty_imgbox). */
+static const char *ifx_imgbox_left =	"[Image";
+
+/* Image link box right-box (see sty_imgbox). */
+static const char *ifx_imgbox_right =	"]";
+
+/* Image link box separator (see sty_imgbox). */
+static const char *ifx_imgbox_sep =	": ";
+
+/* Footnote reference left-box (see sty_fref). */
+static const char *ifx_fref_left =	"[";
+
+/* Footnote reference right-box (see sty_fref). */
+static const char *ifx_fref_right =	"]";
 
