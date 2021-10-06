@@ -401,26 +401,6 @@ rndr_buf_endline(struct term *term, struct lowdown_buf *out,
 }
 
 /*
- * Output optional number of newlines before or after content.
- * Return zero on failure, non-zero on success.
- */
-static int
-rndr_buf_vspace(struct term *term, struct lowdown_buf *out,
-	const struct lowdown_node *n, size_t sz)
-{
-
-	if (term->last_blank == -1)
-		return 1;
-	while ((size_t)term->last_blank < sz) {
-		if (!HBUF_PUTSL(out, "\n"))
-			return 0;
-		term->last_blank++;
-	}
-	term->col = 0;
-	return 1;
-}
-
-/*
  * Output prefixes of the given node in the style further accumulated
  * from the parent nodes.
  * Return zero on failure (memory), non-zero on success.
@@ -636,6 +616,39 @@ rndr_buf_startline(struct term *term, struct lowdown_buf *out,
 	if (osty != NULL)
 		rndr_node_style_apply(&s, osty);
 	return rndr_buf_style(term, out, &s);
+}
+
+/*
+ * Output optional number of newlines before or after content.  If we're
+ * terminating an existing line, do so as-is, but if we're terminating a
+ * line we've inserted, emit the line in the style of the parent.  This
+ * allows nested blocks to retain the line prefixes of the parent.
+ * Return zero on failure, non-zero on success.
+ */
+static int
+rndr_buf_vspace(struct term *term, struct lowdown_buf *out,
+	const struct lowdown_node *n, size_t sz)
+{
+
+	assert(sz > 0);
+	if (term->last_blank == -1)
+		return 1;
+	while ((size_t)term->last_blank < sz) {
+		if (term->col) {
+			if (!HBUF_PUTSL(out, "\n"))
+				return 0;
+		} else {
+			if (!rndr_buf_startline
+			    (term, out, n->parent, NULL))
+				return 0;
+			if (!rndr_buf_endline
+			    (term, out, n->parent, NULL))
+				return 0;
+		}
+		term->last_blank++;
+		term->col = 0;
+	}
+	return 1;
 }
 
 /*
@@ -1342,35 +1355,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	/* Trailing block spaces. */
 
 	rc = 1;
-	switch (n->type) {
-	case LOWDOWN_BLOCKCODE:
-	case LOWDOWN_BLOCKHTML:
-	case LOWDOWN_BLOCKQUOTE:
-	case LOWDOWN_DEFINITION:
-	case LOWDOWN_FOOTNOTES_BLOCK:
-	case LOWDOWN_FOOTNOTE_DEF:
-	case LOWDOWN_HEADER:
-	case LOWDOWN_LIST:
-	case LOWDOWN_PARAGRAPH:
-	case LOWDOWN_TABLE_BLOCK:
-		rc = rndr_buf_vspace(p, ob, n, 2);
-		break;
-	case LOWDOWN_MATH_BLOCK:
-		if (n->rndr_math.blockmode)
-			rc = rndr_buf_vspace(p, ob, n, 1);
-		break;
-	case LOWDOWN_DOC_HEADER:
-		if (!TAILQ_EMPTY(&n->children))
-			rc = rndr_buf_vspace(p, ob, n, 2);
-		break;
-	case LOWDOWN_DEFINITION_DATA:
-	case LOWDOWN_DEFINITION_TITLE:
-	case LOWDOWN_HRULE:
-	case LOWDOWN_LISTITEM:
-	case LOWDOWN_META:
-		rc = rndr_buf_vspace(p, ob, n, 1);
-		break;
-	case LOWDOWN_ROOT:
+	if (n->type == LOWDOWN_ROOT) {
 		if (!rndr_buf_vspace(p, ob, n, 1))
 			return 0;
 		while (ob->size && ob->data[ob->size - 1] == '\n')
@@ -1383,9 +1368,6 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		for (i = 0; i < p->vmargin; i++)
 			if (!HBUF_PUTSL(ob, "\n"))
 				return 0;
-		break;
-	default:
-		break;
 	}
 
 	return rc;
