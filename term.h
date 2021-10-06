@@ -36,8 +36,10 @@
  * Override is a bit-mask of styles that are overridden.  If 1 is set,
  * the underline is overridden; if 2, the bold.
  *
- * Bgcolour and colour may be zero or an 8-bit ANSI colour escape code.
- * See <https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit>.  These
+ * Bgcolour and colour may be zero or an 8-bit ANSI colour escape code
+ * for standard or high-intensity colours, e.g., 30 = black, 36 = cyan,
+ * 91 = bright red.  Non-conforming values are ignored.  See
+ * <https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit>.  These
  * are not inherited by child styles.
  *
  * Please note that if NO_COLOR is specified during run-time, all of the
@@ -146,7 +148,7 @@ static const struct sty sty_bkcd_pfx =	{ 0, 0, 0, 0,   0, 94, 0 };
  *     static const struct pfx pfx_STYLE = { text, columns };
  *
  * The text is a quoted string that will be inserted as-is.  It may
- * contain UTF-8 values.  It may *only* be NULL if the documentation
+ * contain UTF-8 values.  It may be NULL *only* if the documentation
  * specifically says that the value is ignored.
  *
  * Columns is the number of terminal columns that the prefix fills.  If

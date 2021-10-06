@@ -244,13 +244,17 @@ rndr_buf_style(const struct term *term,
 		if (!HBUF_PUTSL(out, "9"))
 			return 0;
 	}
-	if (s->bcolour && !(term->opts & LOWDOWN_TERM_NOCOLOUR)) {
+	if (s->bcolour && !(term->opts & LOWDOWN_TERM_NOCOLOUR) &&
+	    ((s->bcolour >= 30 && s->bcolour <= 37) ||
+	     (s->bcolour >= 90 && s->bcolour <= 97))) {
 		if (has++ && !HBUF_PUTSL(out, ";"))
 			return 0;
 		if (!hbuf_printf(out, "%zu", s->bcolour))
 			return 0;
 	}
-	if (s->colour && !(term->opts & LOWDOWN_TERM_NOCOLOUR)) {
+	if (s->colour && !(term->opts & LOWDOWN_TERM_NOCOLOUR) &&
+	    ((s->colour >= 30 && s->colour <= 37) ||
+	     (s->colour >= 90 && s->colour <= 97))) {
 		if (has++ && !HBUF_PUTSL(out, ";"))
 			return 0;
 		if (!hbuf_printf(out, "%zu", s->colour))
