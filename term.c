@@ -619,22 +619,24 @@ rndr_buf_startline(struct term *term, struct lowdown_buf *out,
 }
 
 /*
- * Output optional number of newlines before or after content.  If we're
- * terminating an existing line, do so as-is, but if we're terminating a
- * line we've inserted, emit the line in the style of the parent.  This
- * allows nested blocks to retain the line prefixes of the parent.
+ * Output optional number of newlines before or after content.
  * Return zero on failure, non-zero on success.
  */
 static int
 rndr_buf_vspace(struct term *term, struct lowdown_buf *out,
 	const struct lowdown_node *n, size_t sz)
 {
+	const struct lowdown_node	*prev;
 
-	assert(sz > 0);
 	if (term->last_blank == -1)
 		return 1;
+
+	prev = n->parent == NULL ? NULL :
+		TAILQ_PREV(n, lowdown_nodeq, entries);
+
+	assert(sz > 0);
 	while ((size_t)term->last_blank < sz) {
-		if (term->col) {
+		if (term->col || prev == NULL) {
 			if (!HBUF_PUTSL(out, "\n"))
 				return 0;
 		} else {
@@ -1147,9 +1149,13 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_DEFINITION_TITLE:
 	case LOWDOWN_HRULE:
 	case LOWDOWN_LINEBREAK:
-	case LOWDOWN_LISTITEM:
 	case LOWDOWN_META:
 		rc = rndr_buf_vspace(p, ob, n, 1);
+		break;
+	case LOWDOWN_LISTITEM:
+		rc = rndr_buf_vspace(p, ob, n,
+			(n->rndr_listitem.flags & HLIST_FL_BLOCK) ?
+			2 : 1);
 		break;
 	default:
 		break;
@@ -1354,7 +1360,6 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 
 	/* Trailing block spaces. */
 
-	rc = 1;
 	if (n->type == LOWDOWN_ROOT) {
 		if (!rndr_buf_vspace(p, ob, n, 1))
 			return 0;
@@ -1370,7 +1375,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 				return 0;
 	}
 
-	return rc;
+	return 1;
 }
 
 int
