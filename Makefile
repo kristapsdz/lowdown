@@ -82,7 +82,8 @@ SOURCES		 = autolink.c \
 		   util.c
 HEADERS 	 = extern.h \
 		   libdiff.h \
-		   lowdown.h
+		   lowdown.h \
+		   term.h
 PDFS		 = diff.pdf \
 		   diff.diff.pdf \
 		   index.latex.pdf \
@@ -254,6 +255,8 @@ lowdown.tar.gz:
 $(OBJS) $(COMPAT_OBJS) main.o: config.h
 
 $(OBJS): extern.h lowdown.h
+
+term.o: term.h
 
 main.o: lowdown.h
 

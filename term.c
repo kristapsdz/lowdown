@@ -63,27 +63,11 @@ struct sty {
 	size_t	 bcolour; /* not inherited */
 	size_t	 colour; /* not inherited */
 	int	 override; /* don't inherit */
-#define	OSTY_ITALIC	0x01
+#define	OSTY_UNDER	0x01
 #define	OSTY_BOLD	0x02
 };
 
-/* Per-node styles. */
-
-static const struct sty sty_image =	{ 0, 0, 1, 0,   0, 93, 1 };
-static const struct sty sty_foot_ref =	{ 0, 0, 1, 0,   0, 93, 1 };
-static const struct sty sty_codespan = 	{ 0, 0, 1, 0,   0, 94, 0 };
-static const struct sty sty_blockcode =	{ 0, 0, 1, 0,   0,  0, 0 };
-static const struct sty sty_hrule = 	{ 0, 0, 0, 0,   0, 37, 0 };
-static const struct sty sty_blockhtml =	{ 0, 0, 0, 0,   0, 37, 0 };
-static const struct sty sty_rawhtml = 	{ 0, 0, 0, 0,   0, 37, 0 };
-static const struct sty sty_strike = 	{ 0, 1, 0, 0,   0,  0, 0 };
-static const struct sty sty_emph = 	{ 1, 0, 0, 0,   0,  0, 0 };
-static const struct sty sty_highlight =	{ 0, 0, 1, 0,   0,  0, 0 };
-static const struct sty sty_d_emph = 	{ 0, 0, 1, 0,   0,  0, 0 };
-static const struct sty sty_t_emph = 	{ 1, 0, 1, 0,   0,  0, 0 };
-static const struct sty sty_link = 	{ 0, 0, 0, 1,   0, 32, 0 };
-static const struct sty sty_autolink =	{ 0, 0, 0, 1,   0, 32, 0 };
-static const struct sty sty_header =	{ 0, 0, 1, 0,   0,  0, 0 };
+#include "term.h"
 
 static const struct sty *stys[LOWDOWN__MAX] = {
 	NULL, /* LOWDOWN_ROOT */
@@ -110,7 +94,7 @@ static const struct sty *stys[LOWDOWN__MAX] = {
 	&sty_d_emph, /* LOWDOWN_DOUBLE_EMPHASIS */
 	&sty_emph, /* LOWDOWN_EMPHASIS */
 	&sty_highlight, /* LOWDOWN_HIGHLIGHT */
-	&sty_image, /* LOWDOWN_IMAGE */
+	&sty_img, /* LOWDOWN_IMAGE */
 	NULL, /* LOWDOWN_LINEBREAK */
 	&sty_link, /* LOWDOWN_LINK */
 	&sty_t_emph, /* LOWDOWN_TRIPLE_EMPHASIS */
@@ -125,34 +109,6 @@ static const struct sty *stys[LOWDOWN__MAX] = {
 	NULL, /* LOWDOWN_META */
 	NULL /* LOWDOWN_DOC_FOOTER */
 };
-
-/* 
- * Special styles.
- * These are invoked in key places, below.
- */
-
-static const struct sty sty_h1 = 	{ 0, 0, 0, 0,   0, 91, 0 };
-static const struct sty sty_hn = 	{ 0, 0, 0, 0,   0, 36, 0 };
-static const struct sty sty_linkalt =	{ 0, 0, 1, 0,   0, 93, 1|2 };
-static const struct sty sty_imgurl = 	{ 0, 0, 0, 1,   0, 32, 2 };
-static const struct sty sty_imgurlbox =	{ 0, 0, 0, 0,   0, 37, 2 };
-static const struct sty sty_foots_div =	{ 0, 0, 0, 0,   0, 37, 0 };
-static const struct sty sty_meta_key =	{ 0, 0, 0, 0,   0, 37, 0 };
-static const struct sty sty_bad_ent = 	{ 0, 0, 0, 0,   0, 37, 0 };
-static const struct sty sty_chng_ins =	{ 0, 0, 0, 0,  47, 30, 0 };
-static const struct sty sty_chng_del =	{ 0, 0, 0, 0, 100,  0, 0 };
-
-/*
- * Prefix styles.
- * These are applied to block-level prefix material.
- */
-
-static const struct sty sty_ddata_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
-static const struct sty sty_fdef_pfx =	{ 0, 0, 0, 0,   0, 92, 1 };
-static const struct sty sty_bkqt_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
-static const struct sty sty_bkcd_pfx =	{ 0, 0, 0, 0,   0, 94, 0 };
-static const struct sty sty_oli_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
-static const struct sty sty_uli_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
 
 /*
  * Whether the style is not empty (i.e., has style attributes).
@@ -314,7 +270,7 @@ rndr_node_style_apply(struct sty *to, const struct sty *from)
 		to->bold = 0;
 	if (from->under)
 		to->under = 1;
-	else if ((from->override & OSTY_ITALIC))
+	else if ((from->override & OSTY_UNDER))
 		to->under = 0;
 	if (from->bcolour)
 		to->bcolour = from->bcolour;
@@ -341,9 +297,9 @@ rndr_node_style(struct sty *s, const struct lowdown_node *n)
 	switch (n->type) {
 	case LOWDOWN_HEADER:
 		if (n->rndr_header.level > 0)
-			rndr_node_style_apply(s, &sty_hn);
+			rndr_node_style_apply(s, &sty_header_n);
 		else
-			rndr_node_style_apply(s, &sty_h1);
+			rndr_node_style_apply(s, &sty_header_1);
 		break;
 	default:
 		/* FIXME: crawl up nested? */
@@ -1165,7 +1121,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		hbuf_truncate(p->tmp);
 		if (!HBUF_PUTSL(p->tmp, "~~~~~~~~"))
 			return 0;
-		if (!rndr_buf(p, ob, n, p->tmp, &sty_foots_div))
+		if (!rndr_buf(p, ob, n, p->tmp, &sty_foot))
 			return 0;
 		break;
 	case LOWDOWN_SUPERSCRIPT:
