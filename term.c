@@ -130,7 +130,7 @@ static const struct sty *stys[LOWDOWN__MAX] = {
 /* Forward declaration. */
 
 static int
-rndr(struct lowdown_buf *, struct lowdown_metaq *, 
+rndr(struct lowdown_buf *, struct lowdown_metaq *,
 	struct term *, const struct lowdown_node *);
 
 /*
@@ -316,15 +316,15 @@ rndr_node_style(struct sty *s, const struct lowdown_node *n)
 		break;
 	default:
 		/* FIXME: crawl up nested? */
-		if (n->parent != NULL && 
+		if (n->parent != NULL &&
 		    n->parent->type == LOWDOWN_LINK)
 			rndr_node_style_apply(s, &sty_linkalt);
 		break;
 	}
 
-	if (n->chng == LOWDOWN_CHNG_INSERT) 
+	if (n->chng == LOWDOWN_CHNG_INSERT)
 		rndr_node_style_apply(s, &sty_chng_ins);
-	if (n->chng == LOWDOWN_CHNG_DELETE) 
+	if (n->chng == LOWDOWN_CHNG_DELETE)
 		rndr_node_style_apply(s, &sty_chng_del);
 }
 
@@ -388,7 +388,7 @@ rndr_buf_endline(struct term *term, struct lowdown_buf *out,
 	if (!rndr_buf_endwords(term, out, n, osty))
 		return 0;
 
-	/* 
+	/*
 	 * We can legit be at col == 0 if, for example, we're in a
 	 * literal context with a blank line.
 	 * assert(term->col > 0);
@@ -455,7 +455,7 @@ rndr_buf_startline_prefixes(struct term *term,
 	switch (n->type) {
 	case LOWDOWN_TABLE_BLOCK:
 	case LOWDOWN_PARAGRAPH:
-	case LOWDOWN_DEFINITION_TITLE:
+	case LOWDOWN_DEFINITION:
 		/*
 		 * Collapse leading white-space if we're already within
 		 * a margin-bearing block statement.
@@ -508,9 +508,9 @@ rndr_buf_startline_prefixes(struct term *term,
 				return 0;
 			rndr_buf_advance(term, pfx_dli_1.cols);
 		} else {
-			if (!hbuf_puts(out, pfx_li_n.text))
+			if (!hbuf_puts(out, pfx_dli_n.text))
 				return 0;
-			rndr_buf_advance(term, pfx_li_n.cols);
+			rndr_buf_advance(term, pfx_dli_n.cols);
 		}
 		break;
 	case LOWDOWN_FOOTNOTE_DEF:
@@ -602,7 +602,7 @@ rndr_buf_startline_prefixes(struct term *term,
  * Return zero on failure (memory), non-zero on success.
  */
 static int
-rndr_buf_startline(struct term *term, struct lowdown_buf *out, 
+rndr_buf_startline(struct term *term, struct lowdown_buf *out,
 	const struct lowdown_node *n, const struct sty *osty)
 {
 	struct sty	 s;
@@ -692,7 +692,7 @@ rndr_buf_startwords(struct term *term, struct lowdown_buf *out,
  * Return zero on failure, non-zero on success.
  */
 static int
-rndr_buf_literal(struct term *term, struct lowdown_buf *out, 
+rndr_buf_literal(struct term *term, struct lowdown_buf *out,
 	const struct lowdown_node *n, const struct lowdown_buf *in,
 	const struct sty *osty)
 {
@@ -708,7 +708,7 @@ rndr_buf_literal(struct term *term, struct lowdown_buf *out,
 		if (!rndr_buf_startline(term, out, n, osty))
 			return 0;
 
-		/* 
+		/*
 		 * No need to record the column width here because we're
 		 * going to reset to zero anyway.
 		 */
@@ -729,7 +729,7 @@ rndr_buf_literal(struct term *term, struct lowdown_buf *out,
  * Return zero on failure, non-zero on success.
  */
 static int
-rndr_buf(struct term *term, struct lowdown_buf *out, 
+rndr_buf(struct term *term, struct lowdown_buf *out,
 	const struct lowdown_node *n, const struct lowdown_buf *in,
 	const struct sty *osty)
 {
@@ -749,7 +749,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 	while (i < in->size) {
 		needspace = isspace((unsigned char)in->data[i]);
 
-		while (i < in->size && 
+		while (i < in->size &&
 		       isspace((unsigned char)in->data[i]))
 			i++;
 
@@ -761,7 +761,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 			i++;
 		len = &in->data[i] - start;
 
-		/* 
+		/*
 		 * If we cross our maximum width and are preceded by a
 		 * space, then break.
 		 * (Leaving out the check for a space will cause
@@ -770,7 +770,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 		 * This will also unset the current style.
 		 */
 
-		if ((needspace || 
+		if ((needspace ||
 	 	     (out->size && isspace
 		      ((unsigned char)out->data[out->size - 1]))) &&
 		    term->col && term->col + len > term->maxcol) {
@@ -843,7 +843,7 @@ rndr_entity(struct lowdown_buf *buf, int32_t val)
 		return hbuf_putc(buf, 192 + val / 64) &&
 			hbuf_putc(buf, 128 + val % 64);
 
-       	if (val - 0xd800u < 0x800) 
+	if (val - 0xd800u < 0x800)
 		return 1;
 
        	if (val < 0x10000)
@@ -891,7 +891,7 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 {
 	size_t				*widths = NULL;
 	const struct lowdown_node	*row, *top, *cell;
-	struct lowdown_buf		*celltmp = NULL, 
+	struct lowdown_buf		*celltmp = NULL,
 					*rowtmp = NULL;
 	size_t				 col, i, j, maxcol, sz;
 	ssize_t			 	 last_blank;
@@ -922,7 +922,7 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 				assert(i < n->rndr_table.columns);
 				hbuf_truncate(celltmp);
 
-				/* 
+				/*
 				 * Simulate that we're starting within
 				 * the line by unsetting last_blank,
 				 * having a non-zero column, and an
@@ -967,7 +967,7 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 				assert(widths[i] >= p->col);
 				sz = widths[i] - p->col;
 
-				/* 
+				/*
 				 * Alignment is either beginning,
 				 * ending, or splitting the remaining
 				 * spaces around the word.
@@ -975,7 +975,7 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 				 * the case of centre.
 				 */
 
-				flags = cell->rndr_table_cell.flags & 
+				flags = cell->rndr_table_cell.flags &
 					HTBL_FL_ALIGNMASK;
 				if (flags == HTBL_FL_ALIGN_RIGHT)
 					for (j = 0; j < sz; j++)
@@ -993,7 +993,7 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 						if (!HBUF_PUTSL(rowtmp, " "))
 							goto out;
 				if (flags == HTBL_FL_ALIGN_CENTER) {
-					sz = (sz % 2) ? 
+					sz = (sz % 2) ?
 						(sz / 2) + 1 : (sz / 2);
 					for (j = 0; j < sz; j++)
 						if (!HBUF_PUTSL(rowtmp, " "))
@@ -1013,7 +1013,7 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 					goto out;
 			}
 
-			/* 
+			/*
 			 * Some magic here.
 			 * First, emulate rndr() by setting the
 			 * stackpos to the table, which is required for
@@ -1078,7 +1078,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	struct lowdown_meta		*m;
 	struct lowdown_buf		*metatmp;
 	int32_t				 entity;
-	size_t				 i, col;
+	size_t				 i, col, vs;
 	ssize_t			 	 last_blank;
 	int				 rc;
 	
@@ -1090,14 +1090,17 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	prev = n->parent == NULL ? NULL :
 		TAILQ_PREV(n, lowdown_nodeq, entries);
 
-	/* Vertical space before content. */
+	/*
+	 * Vertical space before content.
+	 * Blocks in a definition list get special treatment because we
+	 * only put one newline between the title and the data
+	 * regardless of its contents.
+	 * The root gets the vertical margin as well.
+	 */
 
-	rc = 1;
+	vs = 0;
 	switch (n->type) {
 	case LOWDOWN_ROOT:
-
-		/* Emit vmargin. */
-
 		for (i = 0; i < p->vmargin; i++)
 			if (!HBUF_PUTSL(ob, "\n"))
 				return 0;
@@ -1113,54 +1116,40 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_LIST:
 	case LOWDOWN_TABLE_BLOCK:
 	case LOWDOWN_PARAGRAPH:
-		/*
-		 * Blocks in a definition list get special treatment
-		 * because we only put one newline between the title and
-		 * the data regardless of its contents.
-		 */
-
-		if (n->parent != NULL && 
-		    n->parent->type == LOWDOWN_LISTITEM &&
-		    n->parent->parent != NULL &&
-		    n->parent->parent->type == 
-		      LOWDOWN_DEFINITION_DATA &&
-		    prev == NULL)
-			rc = rndr_buf_vspace(p, ob, n, 1);
-		else
-			rc = rndr_buf_vspace(p, ob, n, 2);
+		vs = n->parent != NULL &&
+			n->parent->type == LOWDOWN_LISTITEM &&
+			n->parent->parent != NULL &&
+			n->parent->parent->type ==
+				LOWDOWN_DEFINITION_DATA &&
+			prev == NULL ? 1 : 2;
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		if (n->rndr_math.blockmode)
-			rc = rndr_buf_vspace(p, ob, n, 1);
+		vs = n->rndr_math.blockmode ? 1 : 0;
 		break;
 	case LOWDOWN_DEFINITION_DATA:
-		/* Vertical space if previous block-mode data. */
-
-		if (n->parent != NULL &&
-		    n->parent->type == LOWDOWN_DEFINITION &&
-		    (n->parent->rndr_definition.flags &
-		     HLIST_FL_BLOCK) &&
-		    prev != NULL &&
-		    prev->type == LOWDOWN_DEFINITION_DATA)
-			rc = rndr_buf_vspace(p, ob, n, 2);
-		else
-			rc = rndr_buf_vspace(p, ob, n, 1);
-		break;
-	case LOWDOWN_DEFINITION_TITLE:
 	case LOWDOWN_HRULE:
 	case LOWDOWN_LINEBREAK:
 	case LOWDOWN_META:
-		rc = rndr_buf_vspace(p, ob, n, 1);
+		vs = 1;
 		break;
 	case LOWDOWN_LISTITEM:
-		rc = rndr_buf_vspace(p, ob, n,
-			(n->rndr_listitem.flags & HLIST_FL_BLOCK) ?
-			2 : 1);
+		vs = (n->rndr_listitem.flags & HLIST_FL_BLOCK) ? 2 : 1;
+		if (vs == 2 &&
+		    n->parent != NULL &&
+		    n->parent->type == LOWDOWN_DEFINITION_DATA)
+			vs = 1;
+		break;
+	case LOWDOWN_DEFINITION_TITLE:
+		vs = n->parent != NULL &&
+			n->parent->type == LOWDOWN_DEFINITION &&
+			(n->parent->rndr_definition.flags &
+			 HLIST_FL_BLOCK) ? 2 : 1;
 		break;
 	default:
 		break;
 	}
-	if (!rc)
+
+	if (vs > 0 && !rndr_buf_vspace(p, ob, n, vs))
 		return 0;
 
 	/* Output leading content. */
@@ -1179,7 +1168,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			return 0;
 		break;
 	case LOWDOWN_META:
-		if (!rndr_buf(p, ob, n, 
+		if (!rndr_buf(p, ob, n,
 		    &n->rndr_meta.key, &sty_meta_key))
 			return 0;
 		hbuf_truncate(p->tmp);
@@ -1243,6 +1232,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 
 	/* Output content. */
 
+	rc = 1;
 	switch (n->type) {
 	case LOWDOWN_HRULE:
 		hbuf_truncate(p->tmp);
@@ -1290,7 +1280,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			    (p->tmp, &n->rndr_autolink.link))
 				return 0;
 			rc = rndr_buf(p, ob, n, p->tmp, NULL);
-		} else 
+		} else
 			rc = rndr_buf(p, ob, n, &n->rndr_autolink.link, NULL);
 		break;
 	case LOWDOWN_LINK:
@@ -1307,7 +1297,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			    (p->tmp, &n->rndr_link.link))
 				return 0;
 			rc = rndr_buf(p, ob, n, p->tmp, NULL);
-		} else 
+		} else
 			rc = rndr_buf(p, ob, n, &n->rndr_link.link, NULL);
 		break;
 	case LOWDOWN_IMAGE:
@@ -1341,7 +1331,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			if (!rndr_buf(p, ob, n, p->tmp, &sty_imgurl))
 				return 0;
 		} else
-			if (!rndr_buf(p, ob, n, 
+			if (!rndr_buf(p, ob, n,
 			    &n->rndr_image.link, &sty_imgurl))
 				return 0;
 		hbuf_truncate(p->tmp);

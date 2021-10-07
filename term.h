@@ -169,7 +169,10 @@ static const struct pfx pfx_bkcd =	{ "    | ", 6 };
 static const struct pfx pfx_bkqt =	{ "    | ", 6 };
 
 /* Definition list data, first line (see sty_dli_pfx). */
-static const struct pfx pfx_dli_1 =	{ "    : ", 6 };
+static const struct pfx pfx_dli_1 =	{ ": ", 2 };
+
+/* Definition list data, subsequent line (see sty_dli_pfx). */
+static const struct pfx pfx_dli_n =	{ "  ", 2 };
 
 /* Ordered list item, first line (see sty_li_pfx).  Text ignored. */
 static const struct pfx pfx_oli_1 =	{ NULL, 6 };
