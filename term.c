@@ -481,6 +481,10 @@ rndr_buf_startline_prefixes(struct term *term,
 		if (!hbuf_puts(out, pfx_body.text))
 			return 0;
 		rndr_buf_advance(term, pfx_body.cols);
+	} else if (*depth == 0) {
+		if (!hbuf_puts(out, pfx_header.text))
+			return 0;
+		rndr_buf_advance(term, pfx_header.cols);
 	}
 
 	/*
@@ -565,9 +569,11 @@ rndr_buf_startline_prefixes(struct term *term,
 				return 0;
 			rndr_buf_advance(term, pfx->cols);
 		}
-		if (!HBUF_PUTSL(out, " "))
-			return 0;
-		rndr_buf_advance(term, 1);
+		if (pfx->cols) {
+			if (!HBUF_PUTSL(out, " "))
+				return 0;
+			rndr_buf_advance(term, 1);
+		}
 		break;
 	case LOWDOWN_LISTITEM:
 		if (n->parent == NULL ||
