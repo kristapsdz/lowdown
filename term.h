@@ -145,8 +145,7 @@ static const struct sty sty_table =	{ 0, 0, 0, 0,   0, 93, 0 };
  * ========
  *
  * What follows are hard-coded prefixes.  These appear on the left of
- * the output and have various rules not covered here to how they're
- * inherited by children.  Each prefix is arranged as:
+ * the output. Each prefix is arranged as:
  *
  *     static const struct pfx pfx_STYLE = { text, columns };
  *
@@ -157,39 +156,44 @@ static const struct sty sty_table =	{ 0, 0, 0, 0,   0, 93, 0 };
  * Columns is the number of terminal columns that the prefix fills.  If
  * this is wrong, it will throw off line wrapping.  XXX: this may be
  * dynamically computed in later versions of lowodwn.
+ *
+ * If the prefix text is ignored, the columns are the minimum: for
+ * example, an ordered list may have numbers >100, which with the ". "
+ * would be greater than 4, if 4 is given as the columns.  However, at
+ * least 4 spaces would be printed, even if it were "1. " -> " 1. ".
  */
 
-/* Paragraph, table, definition title. */
-static const struct pfx pfx_para =	{ "    ", 4 };
+/* All non-header (child to the document root) content. */
+static const struct pfx pfx_body =	{ "    ", 4 };
 
 /* Block code (see sty_bkcd_pfx). */
-static const struct pfx pfx_bkcd =	{ "    | ", 6 };
+static const struct pfx pfx_bkcd =	{ "  | ", 4 };
 
 /* Block quote (see sty_bkqt_pfx). */
-static const struct pfx pfx_bkqt =	{ "    | ", 6 };
+static const struct pfx pfx_bkqt =	{ "  | ", 4 };
 
 /* Definition list data, first line (see sty_dli_pfx). */
-static const struct pfx pfx_dli_1 =	{ ": ", 2 };
+static const struct pfx pfx_dli_1 =	{ "  : ", 4 };
 
 /* Definition list data, subsequent line (see sty_dli_pfx). */
-static const struct pfx pfx_dli_n =	{ "  ", 2 };
+static const struct pfx pfx_dli_n =	{ "    ", 4 };
 
-/* Ordered list item, first line (see sty_li_pfx).  Text ignored. */
-static const struct pfx pfx_oli_1 =	{ NULL, 6 };
+/* Minimum ordered list item, first line (see sty_li_pfx).  Text ignored. */
+static const struct pfx pfx_oli_1 =	{ NULL, 4 };
 
 /* Unordered list item, first line (see sty_li_pfx). */
-static const struct pfx pfx_uli_1 =	{ "    · ", 6 };
+static const struct pfx pfx_uli_1 =	{ "  · ", 4 };
 
 /* Unordered, checked list data, first line (see sty_li_pfx). */
-static const struct pfx pfx_uli_c1 =	{ "    ☑ ", 6 };
+static const struct pfx pfx_uli_c1 =	{ "  ☑ ", 4 };
 
 /* Unordered, unchecked list data, first line (see sty_li_pfx). */
-static const struct pfx pfx_uli_nc1 =	{ "    ☐ ", 6 };
+static const struct pfx pfx_uli_nc1 =	{ "  ☐ ", 4 };
 
 /* List items, subsequent lines (see sty_li_pfx). */
-static const struct pfx pfx_li_n =	{ "      ", 6 };
+static const struct pfx pfx_li_n =	{ "    ", 4 };
 
-/* Footnote prefix, first line (see sty_fdef_pfx).  Text ignored. */
+/* Minimum footnote prefix, first line (see sty_fdef_pfx).  Text ignored. */
 static const struct pfx pfx_fdef_1 =	{ NULL, 4 };
 
 /* Footnote prefix, subsequent lines (see sty_fdef_pfx). */

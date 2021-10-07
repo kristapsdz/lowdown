@@ -401,25 +401,51 @@ rndr_buf_endline(struct term *term, struct lowdown_buf *out,
 }
 
 /*
+ * Return the printed width of the number up to six digits (we're
+ * probably not going to have more list items than that).
+ */
+static size_t
+rndr_numlen(size_t sz)
+{
+
+	if (sz > 100000)
+		return 6;
+	if (sz > 10000)
+		return 5;
+	if (sz > 1000)
+		return 4;
+	if (sz > 100)
+		return 3;
+	if (sz > 10)
+		return 2;
+	return 1;
+}
+
+/*
  * Output prefixes of the given node in the style further accumulated
- * from the parent nodes.
+ * from the parent nodes.  "Depth" is set to how deep we are, starting
+ * at -1 (the root).
  * Return zero on failure (memory), non-zero on success.
  */
 static int
 rndr_buf_startline_prefixes(struct term *term,
 	struct sty *s, const struct lowdown_node *n,
-	struct lowdown_buf *out)
+	struct lowdown_buf *out, size_t *depth)
 {
 	struct sty			 sinner;
 	const struct pfx		*pfx;
-	const struct lowdown_node	*np;
-	size_t	 			 i, emit;
+	size_t	 			 i, emit, len;
 	int	 		 	 pstyle = 0;
 	enum hlist_fl			 fl;
 
 	if (n->parent != NULL &&
-	    !rndr_buf_startline_prefixes(term, s, n->parent, out))
+	    !rndr_buf_startline_prefixes(term, s, n->parent, out, depth))
 		return 0;
+
+	if (n->parent == NULL) {
+		assert(n->type == LOWDOWN_ROOT);
+		*depth = -1;
+	}
 
 	/*
 	 * The "sinner" value is temporary for only this function.
@@ -447,31 +473,23 @@ rndr_buf_startline_prefixes(struct term *term,
 	emit = term->stack[i].lines++;
 
 	/*
+	 * If we're below the document root and not a header, that means
+	 * we're in a body part.  Emit the general body indentation.
+	 */
+
+	if (*depth == 0 && n->type != LOWDOWN_HEADER) {
+		if (!hbuf_puts(out, pfx_body.text))
+			return 0;
+		rndr_buf_advance(term, pfx_body.cols);
+	}
+
+	/*
 	 * Output any prefixes.
 	 * Any output must have rndr_buf_style() and set pstyle so that
 	 * we close out the style afterward.
 	 */
 
 	switch (n->type) {
-	case LOWDOWN_TABLE_BLOCK:
-	case LOWDOWN_PARAGRAPH:
-	case LOWDOWN_DEFINITION:
-		/*
-		 * Collapse leading white-space if we're already within
-		 * a margin-bearing block statement.
-		 */
-
-		for (np = n->parent; np != NULL; np = np->parent)
-			if (np->type == LOWDOWN_LISTITEM ||
-			    np->type == LOWDOWN_BLOCKQUOTE ||
-			    np->type == LOWDOWN_FOOTNOTE_DEF)
-				break;
-		if (np == NULL) {
-			if (!hbuf_puts(out, pfx_para.text))
-				return 0;
-			rndr_buf_advance(term, pfx_para.cols);
-		}
-		break;
 	case LOWDOWN_BLOCKCODE:
 		rndr_node_style_apply(&sinner, &sty_bkcd_pfx);
 		if (!rndr_buf_style(term, out, &sinner))
@@ -522,7 +540,12 @@ rndr_buf_startline_prefixes(struct term *term,
 			if (!hbuf_printf(out, "%2zu. ",
 			     n->rndr_footnote_def.num))
 				return 0;
-			rndr_buf_advance(term, pfx_fdef_1.cols);
+			len = rndr_numlen(n->rndr_footnote_def.num);
+			if (len + 2 > pfx_fdef_1.cols)
+				len += 2;
+			else
+				len = pfx_fdef_1.cols;
+			rndr_buf_advance(term, len);
 		} else {
 			if (!hbuf_puts(out, pfx_fdef_n.text))
 				return 0;
@@ -577,13 +600,22 @@ rndr_buf_startline_prefixes(struct term *term,
 		else
 			pfx = &pfx_oli_1;
 
-		if ((fl & HLIST_FL_ORDERED) &&
-		    !hbuf_printf(out, "%4zu. ", n->rndr_listitem.num))
-			return 0;
-		if (pfx->text != NULL &&
-		    !hbuf_puts(out, pfx->text))
-			return 0;
-		rndr_buf_advance(term, pfx->cols);
+		if (pfx == &pfx_oli_1) {
+			if (!hbuf_printf(out, "%2zu. ",
+			     n->rndr_listitem.num))
+				return 0;
+			len = rndr_numlen(n->rndr_listitem.num);
+			if (len + 2 > pfx->cols)
+				len += 2;
+			else
+				len = pfx->cols;
+		} else {
+			if (pfx->text != NULL &&
+			    !hbuf_puts(out, pfx->text))
+				return 0;
+			len = pfx->cols;
+		}
+		rndr_buf_advance(term, len);
 		break;
 	default:
 		break;
@@ -593,6 +625,7 @@ rndr_buf_startline_prefixes(struct term *term,
 		if (!HBUF_PUTSL(out, "\033[0m"))
 			return 0;
 
+	(*depth)++;
 	return 1;
 }
 
@@ -606,12 +639,13 @@ rndr_buf_startline(struct term *term, struct lowdown_buf *out,
 	const struct lowdown_node *n, const struct sty *osty)
 {
 	struct sty	 s;
+	size_t		 depth = 0;
 
 	assert(term->last_blank);
 	assert(term->col == 0);
 
 	memset(&s, 0, sizeof(struct sty));
-	if (!rndr_buf_startline_prefixes(term, &s, n, out))
+	if (!rndr_buf_startline_prefixes(term, &s, n, out, &depth))
 		return 0;
 	if (osty != NULL)
 		rndr_node_style_apply(&s, osty);
