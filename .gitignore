@@ -10,3 +10,4 @@ config.log
 lowdown
 lowdown-diff
 lowdown.pc
+afl/
