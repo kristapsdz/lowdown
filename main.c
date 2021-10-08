@@ -267,6 +267,8 @@ main(int argc, char *argv[])
 		{ "term-no-nolinks",	no_argument, 	&roflag, LOWDOWN_TERM_NOLINK },
 		{ "term-no-colour",	no_argument, 	&aoflag, LOWDOWN_TERM_NOCOLOUR },
 		{ "term-colour",	no_argument, 	&roflag, LOWDOWN_TERM_NOCOLOUR },
+		{ "term-no-ansi",	no_argument, 	&aoflag, LOWDOWN_TERM_NOANSI },
+		{ "term-ansi",		no_argument, 	&roflag, LOWDOWN_TERM_NOANSI },
 		{ "out-smarty",		no_argument,	&aoflag, LOWDOWN_SMARTY },
 		{ "out-no-smarty",	no_argument,	&roflag, LOWDOWN_SMARTY },
 		{ "out-standalone",	no_argument,	&aoflag, LOWDOWN_STANDALONE },

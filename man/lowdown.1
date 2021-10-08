@@ -286,8 +286,12 @@ Defaults to what the terminal reports or 72 if in a pipe.
 The number of left margin spaces.
 Truncated to the number of columns.
 Defaults to zero.
-.It Fl -term-nocolour
-Don't show colours.
+.It Fl -term-no-ansi
+Don't show ANSI styles at all.
+This implies
+.Fl -term-no-colour .
+.It Fl -term-no-colour
+Don't show ANSI colours.
 This will still decorate text with underlines, bolds, and italics, but
 not emit any colour codes.
 .It Fl -term-nolinks

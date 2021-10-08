@@ -213,9 +213,26 @@ rndr_escape(struct term *term, struct lowdown_buf *out,
 }
 
 /*
- * Output style "s" into "out" as an ANSI escape.
- * If "s" does not have any style information, output nothing.
- * Return zero on failure (memory), non-zero on success.
+ * If there's an active style in "s" or s is NULL), then emit an
+ * unstyling escape sequence.  Return zero on failure (memory), non-zero
+ * on success.
+ */
+static int
+rndr_buf_unstyle(const struct term *term,
+	struct lowdown_buf *out, const struct sty *s)
+{
+
+	if (term->opts & LOWDOWN_TERM_NOANSI)
+		return 1;
+	if (s != NULL && !STY_NONEMPTY(s))
+		return 1;
+	return HBUF_PUTSL(out, "\033[0m");
+}
+
+/*
+ * Output style "s" into "out" as an ANSI escape.  If "s" does not have
+ * any style information or is NULL, output nothing.  Return zero on
+ * failure (memory), non-zero on success.
  */
 static int
 rndr_buf_style(const struct term *term,
@@ -223,11 +240,13 @@ rndr_buf_style(const struct term *term,
 {
 	int	has = 0;
 
-	if (!STY_NONEMPTY(s))
+	if (term->opts & LOWDOWN_TERM_NOANSI)
 		return 1;
-
+	if (s == NULL || !STY_NONEMPTY(s))
+		return 1;
 	if (!HBUF_PUTSL(out, "\033["))
 		return 0;
+
 	if (s->bold) {
 		if (!HBUF_PUTSL(out, "1"))
 			return 0;
@@ -368,18 +387,18 @@ rndr_buf_endstyle(const struct lowdown_node *n)
 
 /*
  * Unsets the current style context given "n" and an optional terminal
- * style "osty", if applies.
- * Return zero on failure (memory), non-zero on success.
+ * style "osty", if applies.  Return zero on failure (memory), non-zero
+ * on success.
  */
 static int
 rndr_buf_endwords(struct term *term, struct lowdown_buf *out,
 	const struct lowdown_node *n, const struct sty *osty)
 {
 
-	if (rndr_buf_endstyle(n) ||
-	    (osty != NULL && STY_NONEMPTY(osty)))
-		return HBUF_PUTSL(out, "\033[0m");
-
+	if (rndr_buf_endstyle(n))
+		return rndr_buf_unstyle(term, out, NULL);
+	if (osty != NULL)
+		return rndr_buf_unstyle(term, out, osty);
 	return 1;
 }
 
@@ -634,9 +653,8 @@ rndr_buf_startline_prefixes(struct term *term,
 		break;
 	}
 
-	if (pstyle && STY_NONEMPTY(&sinner))
-		if (!HBUF_PUTSL(out, "\033[0m"))
-			return 0;
+	if (pstyle && !rndr_buf_unstyle(term, out, &sinner))
+		return 0;
 
 	(*depth)++;
 	return 1;
@@ -1058,7 +1076,7 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 
 				if (!rndr_buf_style(p, rowtmp, &sty_table) ||
 				    !hbuf_printf(rowtmp, " %s ", ifx_table_col) ||
-				    !HBUF_PUTSL(rowtmp, "\033[0m"))
+				    !rndr_buf_unstyle(p, rowtmp, &sty_table))
 					goto out;
 			}
 

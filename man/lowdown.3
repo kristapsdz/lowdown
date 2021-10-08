@@ -350,17 +350,27 @@ For
 .Dv LOWDOWN_TERM :
 .Pp
 .Bl -tag -width Ds -compact
-.It Dv LOWDOWN_TERM_SHORTLINK
-Render link URLs in short form.
-Applies to images, autolinks, and regular links.
+.It Dv LOWDOWN_TERM_NOANSI
+Don't apply ANSI style codes at all.
+This implies
+.Dv LOWDOWN_TERM_NOCOLOUR .
 .It Dv LOWDOWN_TERM_NOCOLOUR
-Don't apply colour codes to output.
+Don't apply ANSI colour codes.
 This will still show underline, bold, etc.
 This should not be used in difference mode, as the output will make no
 sense.
 .It Dv LOWDOWN_TERM_NOLINK
 Don't show links at all.
-Applies to images and regular links.
+Applies to images and regular links: autolinks are still shown.
+This may be combined with
+.Dv LOWDOWN_TERM_SHORTLINK
+to also shorten autolinks.
+.It Dv LOWDOWN_TERM_SHORTLINK
+Render link URLs in short form.
+Applies to images, autolinks, and regular links.
+This may be combined with
+.Dv LOWDOWN_TERM_NOLINK
+to only show shortened autolinks.
 .El
 .Pp
 For any mode, you may specify:
