@@ -1184,4 +1184,21 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.9.2</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2021-10-08">2021-10-08</time>
+		</header>
+		<aside>
+			<p>
+				Significantly improve <b>-Tterm</b> output, both in terms of styles
+				and layout.  Terminal output styles are easy to set as compile-time
+				constants by editing
+				<a href="https://github.com/kristapsdz/lowdown/blob/master/term.h">term.h</a>.
+				If you're going to edit this for a downstream installation of
+				lowdown, please let me know and I can stash it in a styles directory!
+			</p>
+		</aside>
+	</article>
 </articles>
