@@ -1123,7 +1123,7 @@ static int
 rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	struct term *p, const struct lowdown_node *n)
 {
-	const struct lowdown_node	*child, *prev, *nn;
+	const struct lowdown_node	*child, *nn;
 	struct lowdown_meta		*m;
 	struct lowdown_buf		*metatmp;
 	int32_t				 entity;
@@ -1136,16 +1136,12 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	if (!rndr_stackpos_init(p, n))
 		return 0;
 
-	prev = n->parent == NULL ? NULL :
-		TAILQ_PREV(n, lowdown_nodeq, entries);
-
 	/*
 	 * Vertical space before content.  Vertical space (>1 space) is
-	 * suppressed for most content when the first item in a list,
-	 * because the list item handles the space.  Furthermore,
-	 * definition list data also has its spaces suppressed because
-	 * this is relegated to the title.  The root gets the vertical
-	 * margin as well.
+	 * suppressed for normal blocks when in a non-block list, as the
+	 * list item handles any spacing.  Furthermore, definition list
+	 * data also has its spaces suppressed because this is relegated
+	 * to the title.  The root gets the vertical margin as well.
 	 */
 
 	vs = 0;
@@ -1167,12 +1163,13 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_LIST:
 	case LOWDOWN_TABLE_BLOCK:
 	case LOWDOWN_PARAGRAPH:
-		nn = NULL;
-		if (prev == NULL)
-			for (nn = n->parent; nn != NULL; nn = nn->parent)
-				if (nn->type == LOWDOWN_LISTITEM)
-					break;
-		vs = nn == NULL ? 2 : 1;
+		vs = 2;
+		for (nn = n->parent; nn != NULL; nn = nn->parent) {
+			if (nn->type != LOWDOWN_LISTITEM)
+				continue;
+			vs = (nn->rndr_listitem.flags & HLIST_FL_BLOCK) ? 2 : 1;
+			break;
+		}
 		break;
 	case LOWDOWN_MATH_BLOCK:
 		vs = n->rndr_math.blockmode ? 1 : 0;
