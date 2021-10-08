@@ -134,9 +134,13 @@ rndr(struct lowdown_buf *, struct lowdown_metaq *,
 	struct term *, const struct lowdown_node *);
 
 /*
- * Get the column width of a multi-byte sequence.
- * If the sequence is bad, return the number of raw bytes to print.
- * Return <0 on failure (memory), >=0 otherwise.
+ * Get the column width of a multi-byte sequence.  The sequence should
+ * be self-contained, i.e., not straddle multi-byte borders, because the
+ * calculation for UTF-8 columns is local to this function: a split
+ * multi-byte sequence will fail to return the correct number of
+ * printable columns.  If the sequence is bad, return the number of raw
+ * bytes to print.  Return <0 on failure (memory), >=0 otherwise with
+ * the number of printable columns.
  */
 static ssize_t
 rndr_mbswidth(struct term *term, const char *buf, size_t sz)
@@ -144,9 +148,11 @@ rndr_mbswidth(struct term *term, const char *buf, size_t sz)
 	size_t	 	 wsz, csz;
 	const char	*cp;
 	void		*pp;
+	mbstate_t	 mbs;
 
+	memset(&mbs, 0, sizeof(mbstate_t));
 	cp = buf;
-	wsz = mbsnrtowcs(NULL, &cp, sz, 0, NULL);
+	wsz = mbsnrtowcs(NULL, &cp, sz, 0, &mbs);
 	if (wsz == (size_t)-1)
 		return sz;
 
@@ -158,8 +164,9 @@ rndr_mbswidth(struct term *term, const char *buf, size_t sz)
 		term->buf = pp;
 	}
 
+	memset(&mbs, 0, sizeof(mbstate_t));
 	cp = buf;
-	mbsnrtowcs(term->buf, &cp, sz, wsz, NULL);
+	mbsnrtowcs(term->buf, &cp, sz, wsz, &mbs);
 	csz = wcswidth(term->buf, wsz);
 	return csz == (size_t)-1 ? sz : csz;
 }
