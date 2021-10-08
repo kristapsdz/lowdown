@@ -1199,6 +1199,10 @@
 				If you're going to edit this for a downstream installation of
 				lowdown, please let me know and I can stash it in a styles directory!
 			</p>
+			<p>
+				Add <b>--term-no-ansi</b> to disable all ANSI escapes in output.
+				This produces a clean, undecorated terminal-formatted document.
+			</p>
 		</aside>
 	</article>
 </articles>
