@@ -410,9 +410,11 @@ rndr_mbswidth(struct gemini *st, const struct lowdown_buf *in)
 	size_t	 	 wsz, csz;
 	const char	*cp;
 	void		*pp;
+	mbstate_t	 mbs;
 
+	memset(&mbs, 0, sizeof(mbstate_t));
 	cp = in->data;
-	wsz = mbsnrtowcs(NULL, &cp, in->size, 0, NULL);
+	wsz = mbsnrtowcs(NULL, &cp, in->size, 0, &mbs);
 	if (wsz == (size_t)-1)
 		return in->size;
 
@@ -424,8 +426,9 @@ rndr_mbswidth(struct gemini *st, const struct lowdown_buf *in)
 		st->buf = pp;
 	}
 
+	memset(&mbs, 0, sizeof(mbstate_t));
 	cp = in->data;
-	mbsnrtowcs(st->buf, &cp, in->size, wsz, NULL);
+	mbsnrtowcs(st->buf, &cp, in->size, wsz, &mbs);
 	csz = wcswidth(st->buf, wsz);
 	return csz == (size_t)-1 ? in->size : csz;
 }
