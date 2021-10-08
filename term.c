@@ -980,6 +980,7 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 				maxcol = p->maxcol;
 				last_blank = p->last_blank;
 				col = p->col;
+
 				p->last_blank = 0;
 				p->maxcol = SIZE_MAX;
 				p->col = 1;
@@ -1006,6 +1007,7 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 				maxcol = p->maxcol;
 				last_blank = p->last_blank;
 				col = p->col;
+
 				p->last_blank = 0;
 				p->maxcol = SIZE_MAX;
 				p->col = 1;
@@ -1121,14 +1123,14 @@ static int
 rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	struct term *p, const struct lowdown_node *n)
 {
-	const struct lowdown_node	*child, *prev;
+	const struct lowdown_node	*child, *prev, *nn;
 	struct lowdown_meta		*m;
 	struct lowdown_buf		*metatmp;
 	int32_t				 entity;
 	size_t				 i, col, vs;
 	ssize_t			 	 last_blank;
 	int				 rc;
-	
+
 	/* Current nodes we're servicing. */
 
 	if (!rndr_stackpos_init(p, n))
@@ -1138,11 +1140,12 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		TAILQ_PREV(n, lowdown_nodeq, entries);
 
 	/*
-	 * Vertical space before content.
-	 * Blocks in a definition list get special treatment because we
-	 * only put one newline between the title and the data
-	 * regardless of its contents.
-	 * The root gets the vertical margin as well.
+	 * Vertical space before content.  Vertical space (>1 space) is
+	 * suppressed for most content when the first item in a list,
+	 * because the list item handles the space.  Furthermore,
+	 * definition list data also has its spaces suppressed because
+	 * this is relegated to the title.  The root gets the vertical
+	 * margin as well.
 	 */
 
 	vs = 0;
@@ -1157,18 +1160,19 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_BLOCKHTML:
 	case LOWDOWN_BLOCKQUOTE:
 	case LOWDOWN_DEFINITION:
+	case LOWDOWN_DEFINITION_TITLE:
 	case LOWDOWN_FOOTNOTES_BLOCK:
 	case LOWDOWN_FOOTNOTE_DEF:
 	case LOWDOWN_HEADER:
 	case LOWDOWN_LIST:
 	case LOWDOWN_TABLE_BLOCK:
 	case LOWDOWN_PARAGRAPH:
-		vs = n->parent != NULL &&
-			n->parent->type == LOWDOWN_LISTITEM &&
-			n->parent->parent != NULL &&
-			n->parent->parent->type ==
-				LOWDOWN_DEFINITION_DATA &&
-			prev == NULL ? 1 : 2;
+		nn = NULL;
+		if (prev == NULL)
+			for (nn = n->parent; nn != NULL; nn = nn->parent)
+				if (nn->type == LOWDOWN_LISTITEM)
+					break;
+		vs = nn == NULL ? 2 : 1;
 		break;
 	case LOWDOWN_MATH_BLOCK:
 		vs = n->rndr_math.blockmode ? 1 : 0;
@@ -1180,17 +1184,14 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		vs = 1;
 		break;
 	case LOWDOWN_LISTITEM:
-		vs = (n->rndr_listitem.flags & HLIST_FL_BLOCK) ? 2 : 1;
-		if (vs == 2 &&
-		    n->parent != NULL &&
-		    n->parent->type == LOWDOWN_DEFINITION_DATA)
-			vs = 1;
-		break;
-	case LOWDOWN_DEFINITION_TITLE:
-		vs = n->parent != NULL &&
-			n->parent->type == LOWDOWN_DEFINITION &&
-			(n->parent->rndr_definition.flags &
-			 HLIST_FL_BLOCK) ? 2 : 1;
+		vs = 1;
+		if (n->rndr_listitem.flags & HLIST_FL_BLOCK) {
+			for (nn = n->parent; nn != NULL; nn = nn->parent)
+				if (nn->type == LOWDOWN_LISTITEM ||
+				    nn->type == LOWDOWN_DEFINITION_DATA)
+					break;
+			vs = nn == NULL ? 2 : 1;
+		}
 		break;
 	default:
 		break;
