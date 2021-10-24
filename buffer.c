@@ -141,11 +141,7 @@ hbuf_grow(struct lowdown_buf *buf, size_t neosz)
 	if (buf->maxsize >= neosz)
 		return 1;
 
-	/* FIXME: don't loop!  Use arithmetic! */
-
-	neoasz = buf->maxsize + buf->unit;
-	while (neoasz < neosz)
-		neoasz += buf->unit;
+	neoasz = (neosz/buf->unit + (neosz%buf->unit > 0)) * buf->unit;
 
 	if ((pp = realloc(buf->data, neoasz)) == NULL)
 		return 0;
