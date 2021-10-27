@@ -46,6 +46,7 @@ enum	lowdown_type {
 	LOWDOWN_LATEX,
 	LOWDOWN_MAN,
 	LOWDOWN_NROFF,
+	LOWDOWN_ODT,
 	LOWDOWN_TERM,
 	LOWDOWN_TREE,
 	LOWDOWN_NULL
@@ -419,6 +420,11 @@ int 	 lowdown_tree_rndr(struct lowdown_buf *,
 void	 lowdown_latex_free(void *);
 void	*lowdown_latex_new(const struct lowdown_opts *);
 int 	 lowdown_latex_rndr(struct lowdown_buf *, void *, 
+		const struct lowdown_node *);
+
+void	 lowdown_odt_free(void *);
+void	*lowdown_odt_new(const struct lowdown_opts *);
+int 	 lowdown_odt_rndr(struct lowdown_buf *, void *, 
 		const struct lowdown_node *);
 
 __END_DECLS

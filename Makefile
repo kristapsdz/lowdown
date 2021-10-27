@@ -16,6 +16,7 @@ OBJS		 = autolink.o \
 		   library.o \
 		   libdiff.o \
 		   nroff.o \
+		   odt.o \
 		   smartypants.o \
 		   term.o \
 		   tree.o \
@@ -75,6 +76,7 @@ SOURCES		 = autolink.c \
 		   library.c \
 		   main.c \
 		   nroff.c \
+		   odt.c \
 		   smartypants.c \
 		   term.c \
 		   tests.c \

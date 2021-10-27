@@ -46,7 +46,7 @@
  * This is only used when diffing, as it makes the diff algorithm hvae a
  * more reasonable view of text in the tree.
  * Otherwise, it's just a waste of time.
- * Returns zero on failure (memory), non-zero on success.
+ * Returns FALSE on failure (memory), TRUE on success.
  */
 static int
 lowdown_merge_adjacent_text(struct lowdown_node *n)
@@ -71,6 +71,65 @@ lowdown_merge_adjacent_text(struct lowdown_node *n)
 	return 1;
 }
 
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
+static int
+lowdown_render(const struct lowdown_opts *opts,
+	struct lowdown_buf *ob, const struct lowdown_node *n)
+{
+	void	*rndr;
+	int	 c = 0;
+
+	switch (opts == NULL ? LOWDOWN_HTML : opts->type) {
+	case LOWDOWN_GEMINI:
+		if ((rndr = lowdown_gemini_new(opts)) == NULL)
+			return 0;
+		c = lowdown_gemini_rndr(ob, rndr, n);
+		lowdown_gemini_free(rndr);
+		break;
+	case LOWDOWN_HTML:
+		if ((rndr = lowdown_html_new(opts)) == NULL)
+			return 0;
+		c = lowdown_html_rndr(ob, rndr, n);
+		lowdown_html_free(rndr);
+		break;
+	case LOWDOWN_LATEX:
+		if ((rndr = lowdown_latex_new(opts)) == NULL)
+			return 0;
+		c = lowdown_latex_rndr(ob, rndr, n);
+		lowdown_latex_free(rndr);
+		break;
+	case LOWDOWN_MAN:
+	case LOWDOWN_NROFF:
+		if ((rndr = lowdown_nroff_new(opts)) == NULL)
+			return 0;
+		c = lowdown_nroff_rndr(ob, rndr, n);
+		lowdown_nroff_free(rndr);
+		break;
+	case LOWDOWN_ODT:
+		if ((rndr = lowdown_odt_new(opts)) == NULL)
+			return 0;
+		c = lowdown_odt_rndr(ob, rndr, n);
+		lowdown_odt_free(rndr);
+		break;
+	case LOWDOWN_TERM:
+		if ((rndr = lowdown_term_new(opts)) == NULL)
+			return 0;
+		c = lowdown_term_rndr(ob, rndr, n);
+		lowdown_term_free(rndr);
+		break;
+	case LOWDOWN_TREE:
+		c = lowdown_tree_rndr(ob, n);
+		break;
+	default:
+		abort();
+		/* NOTREACHED */
+	}
+
+	return c;
+}
+
 int
 lowdown_buf(const struct lowdown_opts *opts,
 	const char *data, size_t datasz,
@@ -78,12 +137,11 @@ lowdown_buf(const struct lowdown_opts *opts,
 	struct lowdown_metaq *metaq)
 {
 	struct lowdown_buf	*ob = NULL;
-	void			*rndr = NULL;
 	struct lowdown_doc	*doc;
 	size_t			 maxn;
 	enum lowdown_type	 t;
 	struct lowdown_node	*n = NULL;
-	int			 rc = 0, c;
+	int			 rc = 0;
 
 	t = opts == NULL ? LOWDOWN_HTML : opts->type;
 
@@ -102,55 +160,8 @@ lowdown_buf(const struct lowdown_opts *opts,
 	if ((ob = lowdown_buf_new(HBUF_START_BIG)) == NULL)
 		goto err;
 
-	switch (t) {
-	case LOWDOWN_GEMINI:
-		if ((rndr = lowdown_gemini_new(opts)) == NULL)
-			goto err;
-		c = lowdown_gemini_rndr(ob, rndr, n);
-		lowdown_gemini_free(rndr);
-		if (!c)
-			goto err;
-		break;
-	case LOWDOWN_HTML:
-		if ((rndr = lowdown_html_new(opts)) == NULL)
-			goto err;
-		c = lowdown_html_rndr(ob, rndr, n);
-		lowdown_html_free(rndr);
-		if (!c)
-			goto err;
-		break;
-	case LOWDOWN_LATEX:
-		if ((rndr = lowdown_latex_new(opts)) == NULL)
-			goto err;
-		c = lowdown_latex_rndr(ob, rndr, n);
-		lowdown_latex_free(rndr);
-		if (!c)
-			goto err;
-		break;
-	case LOWDOWN_MAN:
-	case LOWDOWN_NROFF:
-		if ((rndr = lowdown_nroff_new(opts)) == NULL)
-			goto err;
-		c = lowdown_nroff_rndr(ob, rndr, n);
-		lowdown_nroff_free(rndr);
-		if (!c)
-			goto err;
-		break;
-	case LOWDOWN_TERM:
-		if ((rndr = lowdown_term_new(opts)) == NULL)
-			goto err;
-		c = lowdown_term_rndr(ob, rndr, n);
-		lowdown_term_free(rndr);
-		if (!c)
-			goto err;
-		break;
-	case LOWDOWN_TREE:
-		if (!lowdown_tree_rndr(ob, n))
-			goto err;
-		break;
-	default:
-		break;
-	}
+	if (!lowdown_render(opts, ob, n))
+		goto err;
 
 	*res = ob->data;
 	*rsz = ob->size;
@@ -170,13 +181,12 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	char **res, size_t *rsz)
 {
 	struct lowdown_buf 	*ob = NULL;
-	void 		 	*rndr = NULL;
 	struct lowdown_doc 	*doc = NULL;
 	enum lowdown_type 	 t;
 	struct lowdown_node 	*nnew = NULL, *nold = NULL, 
 				*ndiff = NULL;
 	size_t			 maxn;
-	int			 rc = 0, c;
+	int			 rc = 0;
 
 	t = opts == NULL ? LOWDOWN_HTML : opts->type;
 
@@ -204,55 +214,8 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 	if ((ob = lowdown_buf_new(HBUF_START_BIG)) == NULL)
 		goto err;
 
-	switch (t) {
-	case LOWDOWN_GEMINI:
-		if ((rndr = lowdown_gemini_new(opts)) == NULL)
-			goto err;
-		c = lowdown_gemini_rndr(ob, rndr, ndiff);
-		lowdown_gemini_free(rndr);
-		if (!c)
-			goto err;
-		break;
-	case LOWDOWN_HTML:
-		if ((rndr = lowdown_html_new(opts)) == NULL)
-			goto err;
-		c = lowdown_html_rndr(ob, rndr, ndiff);
-		lowdown_html_free(rndr);
-		if (!c)
-			goto err;
-		break;
-	case LOWDOWN_LATEX:
-		if ((rndr = lowdown_latex_new(opts)) == NULL)
-			goto err;
-		c = lowdown_latex_rndr(ob, rndr, ndiff);
-		lowdown_latex_free(rndr);
-		if (!c)
-			goto err;
-		break;
-	case LOWDOWN_MAN:
-	case LOWDOWN_NROFF:
-		if ((rndr = lowdown_nroff_new(opts)) == NULL)
-			goto err;
-		c = lowdown_nroff_rndr(ob, rndr, ndiff);
-		lowdown_nroff_free(rndr);
-		if (!c)
-			goto err;
-		break;
-	case LOWDOWN_TERM:
-		if ((rndr = lowdown_term_new(opts)) == NULL)
-			goto err;
-		c = lowdown_term_rndr(ob, rndr, ndiff);
-		lowdown_term_free(rndr);
-		if (!c)
-			goto err;
-		break;
-	case LOWDOWN_TREE:
-		if (!lowdown_tree_rndr(ob, ndiff))
-			goto err;
-		break;
-	default:
-		break;
-	}
+	if (!lowdown_render(opts, ob, ndiff))
+		goto err;
 
 	*res = ob->data;
 	*rsz = ob->size;
