@@ -39,16 +39,17 @@
  * can have offsets.
  */
 struct	odt_sty {
+	char			 name[128]; /* name */
+	size_t			 offs; /* offset ("tabs") from zero */
+	size_t			 parent; /* list parent or (size_t)-1*/
+	enum lowdown_rndrt	 type; /* node type of style */
 	int			 span; /* span/block? */
 	int			 autosty; /* automatic-style? */
-	size_t			 offs; /* block offset */
-	enum lowdown_rndrt	 type; /* node type of style */
-	char			 name[128]; /* name */
-	size_t			 parent; /* list parent */
 };
 
 /*
- * Our internal state object.
+ * Our internal state object.  Beyond retaining our flags, this also
+ * keeps output state in terms of the styles that need printing.
  */
 struct 	odt {
 	ssize_t			 headers_offs; /* header offset */
@@ -56,9 +57,13 @@ struct 	odt {
 	struct odt_sty		*stys; /* styles for content */
 	size_t			 stysz; /* number of styles */
 	size_t			 offs; /* offs or (size_t)-1 in list */
-	size_t			 list;
+	size_t			 list; /* root list or (size_t)-1 */
 };
 
+/*
+ * Append a new zeroed style with an unset parent.  Return NULL on
+ * memory failure or the new style.
+ */
 static struct odt_sty *
 odt_style_add(struct odt *st)
 {
@@ -112,13 +117,19 @@ odt_style_add_span(struct odt *st, enum lowdown_rndrt type)
 }
 
 /*
- * Return FALSE on failure, TRUE on success.
+ * Flush out all of the styles and automatic styles.  Return FALSE on
+ * failure, TRUE on success.
  */
 static int
 odt_sty_flush(struct lowdown_buf *ob,
 	const struct odt *st, const struct odt_sty *sty)
 {
 	size_t	 i;
+
+	/* 
+	 * Lists and non-lists have a different XML element name, and
+	 * non-lists designate whether in-line or paragraphs.
+	 */
 
 	switch (sty->type) {
 	case LOWDOWN_LIST:
@@ -135,6 +146,11 @@ odt_sty_flush(struct lowdown_buf *ob,
 
 	if (!hbuf_printf(ob, " style:name=\"%s\"", sty->name))
 		return 0;
+
+	/*
+	 * Paragraphs in lists need to link to the list, then set some
+	 * other crap found in libreoffice output.
+	 */
 
 	switch (sty->type) {
 	case LOWDOWN_PARAGRAPH:
@@ -162,6 +178,11 @@ odt_sty_flush(struct lowdown_buf *ob,
 
 	if (!HBUF_PUTSL(ob, ">\n"))
 		return 0;
+
+	/*
+	 * I'm not sure what in this is necessary and what isn't yet.
+	 * The template followed is from libreoffice output.
+	 */
 
 	switch (sty->type) {
 	case LOWDOWN_PARAGRAPH:
@@ -315,6 +336,11 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 	}
 	if (!HBUF_PUTSL(ob, "</office:automatic-styles>\n"))
 		return 0;
+
+	/*
+	 * This doesn't appear to make a difference if it's specified or
+	 * not, but I'm adding it because libreoffice does.
+	 */
 
 	if (xlink && !HBUF_PUTSL(ob,
 	    "<office:scripts>\n"
@@ -600,6 +626,11 @@ rndr_listitem(struct lowdown_buf *ob,
 	size_t	 	 i, size;
 	struct odt_sty	*sty;
 
+	/*
+	 * Non-definition lists have an initial paragraph that must link
+	 * to the root list of the current tree.
+	 */
+
 	if (!(n->rndr_listitem.flags & HLIST_FL_DEF)) {
 		if (!HBUF_PUTSL(ob, "<text:list-item>"))
 			return 0;
@@ -671,6 +702,11 @@ rndr_paragraph(struct lowdown_buf *ob,
 		i++;
 	if (i == content->size)
 		return 1;
+
+	/*
+	 * Paragraphs need to either set their left margin, if in
+	 * blockquotes, or link to the root list, if applicable.
+	 */
 
 	for (j = 0; j < st->stysz; j++)
 		if (st->stys[j].type == LOWDOWN_PARAGRAPH &&
