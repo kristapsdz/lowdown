@@ -43,7 +43,11 @@ struct	odt_sty {
 	size_t			 offs; /* offset ("tabs") from zero */
 	size_t			 parent; /* list parent or (size_t)-1*/
 	enum lowdown_rndrt	 type; /* node type of style */
-	int			 span; /* span/block? */
+	int			 fmt;
+#define	ODT_STY_TEXT		 0x01 /* text (inline) */
+#define	ODT_STY_PARA		 0x02 /* paragraph */
+#define ODT_STY_UL		 0x03 /* unordered list */
+#define ODT_STY_OL		 0x04 /* ordered list */
 	int			 autosty; /* automatic-style? */
 };
 
@@ -91,14 +95,14 @@ odt_style_add_span(struct odt *st, enum lowdown_rndrt type)
 
 	for (i = 0; i < st->stysz; i++)
 		if (st->stys[i].type == type) {
-			assert(st->stys[i].span);
+			assert(st->stys[i].fmt == ODT_STY_TEXT);
 			return st->stys[i].name;
 		}
 
 	if ((s = odt_style_add(st)) == NULL)
 		return NULL;
 
-	s->span = 1;
+	s->fmt = ODT_STY_TEXT;
 	s->type = type;
 
 	switch (type) {
@@ -131,18 +135,19 @@ odt_sty_flush(struct lowdown_buf *ob,
 	 * non-lists designate whether in-line or paragraphs.
 	 */
 
-	switch (sty->type) {
-	case LOWDOWN_LIST:
-		if (!HBUF_PUTSL(ob, "<text:list-style"))
-			return 0;
-		break;
-	default:
-		if (!hbuf_printf(ob,
-		    "<style:style style:family=\"%s\"",
-		    sty->span ? "text" : "paragraph"))
-			return 0;
-		break;
-	}
+	if (sty->type == LOWDOWN_LIST &&
+	    !HBUF_PUTSL(ob, "<text:list-style"))
+		return 0;
+	if (sty->type != LOWDOWN_LIST &&
+	    !HBUF_PUTSL(ob, "<style:style"))
+		return 0;
+
+	if (sty->fmt == ODT_STY_TEXT &&
+	    !HBUF_PUTSL(ob, " style:family=\"text\""))
+		return 0;
+	if (sty->fmt == ODT_STY_PARA &&
+	    !HBUF_PUTSL(ob, " style:family=\"paragraph\""))
+		return 0;
 
 	if (!hbuf_printf(ob, " style:name=\"%s\"", sty->name))
 		return 0;
@@ -198,8 +203,27 @@ odt_sty_flush(struct lowdown_buf *ob,
 			return 0;
 		break;
 	case LOWDOWN_LIST:
-		for (i = 0; i < 5; i++) 
-			if (!hbuf_printf(ob,
+		for (i = 0; i < 10; i++) {
+			if (sty->fmt == ODT_STY_OL && !hbuf_printf(ob,
+   			    "<text:list-level-style-number"
+			    " text:level=\"%zu\""
+			    " text:style-name=\"Numbering_20_Symbols\""
+			    " style:num-suffix=\".\""
+			    " style:num-format=\"1\">\n"
+			    "<style:list-level-properties"
+			    " text:list-level-position-and-space-mode=\"label-alignment\">\n"
+			    "<style:list-level-label-alignment"
+			    " text:label-followed-by=\"listtab\""
+			    " text:list-tab-stop-position=\"%.3fcm\""
+			    " fo:text-indent=\"-0.635cm\""
+			    " fo:margin-left=\"%.3fcm\"/>\n"
+			    "</style:list-level-properties>\n"
+			    "</text:list-level-style-number>\n",
+			    i + 1, 
+			    (1.25 * sty->offs) + (1.25 * (i + 1)),
+			    (1.25 * sty->offs) + (1.25 * (i + 1))))
+				return 0;
+			if (sty->fmt == ODT_STY_UL && !hbuf_printf(ob,
 			    "<text:list-level-style-bullet"
 			    " text:level=\"%zu\""
 			    " text:style-name=\"Bullet_20_Symbols\""
@@ -217,6 +241,7 @@ odt_sty_flush(struct lowdown_buf *ob,
 			    (1.25 * sty->offs) + (1.25 * (i + 1)),
 			    (1.25 * sty->offs) + (1.25 * (i + 1))))
 				return 0;
+		}
 		break;
 	case LOWDOWN_SUPERSCRIPT:
 		if (!HBUF_PUTSL(ob,
@@ -304,9 +329,14 @@ odt_sty_flush(struct lowdown_buf *ob,
 		/* NOTREACHED */
 	}
 
-	return hbuf_printf(ob, "</%s>\n",
-		sty->type == LOWDOWN_LIST ? 
-		"text:list-style" : "style:style");
+	if (sty->type == LOWDOWN_LIST &&
+	    !HBUF_PUTSL(ob, "</text:list-style>\n"))
+		return 0;
+	if (sty->type != LOWDOWN_LIST &&
+	    !HBUF_PUTSL(ob, "</style:style>\n"))
+		return 0;
+
+	return 1;
 }
 
 static int
@@ -324,6 +354,20 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 		    !odt_sty_flush(ob, st, &st->stys[i]))
 			return 0;
 	}
+  	if (!HBUF_PUTSL(ob,
+  	    "<style:style"
+	    " style:name=\"Standard\""
+	    " style:family=\"paragraph\""
+	    " style:class=\"text\"/>\n"
+	    "<style:style"
+	    " style:name=\"Bullet_20_Symbols\""
+	    " style:display-name=\"Bullet Symbols\""
+	    " style:family=\"text\"/>\n"
+	    "<style:style"
+	    " style:name=\"Numbering_20_Symbols\""
+	    " style:display-name=\"Numbering Symbols\""
+	    " style:family=\"text\"/>\n"))
+		return 0;
 	if (!HBUF_PUTSL(ob, "</office:styles>\n"))
 		return 0;
 
@@ -491,23 +535,6 @@ rndr_definition_data(struct lowdown_buf *ob,
 }
 
 static int
-rndr_definition_title(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
-{
-	size_t	 sz;
-
-	if (!HBUF_PUTSL(ob, "<text:p text:style-name=\"dt\">\n"))
-		return 0;
-	if ((sz = content->size) > 0) {
-		while (sz && content->data[sz - 1] == '\n')
-			sz--;
-		if (!hbuf_put(ob, content->data, sz))
-			return 0;
-	}
-	return HBUF_PUTSL(ob, "</text:p>\n");
-}
-
-static int
 rndr_codespan(struct lowdown_buf *ob,
 	const struct rndr_codespan *param, 
 	struct odt *st)
@@ -626,15 +653,17 @@ rndr_listitem(struct lowdown_buf *ob,
 	size_t	 	 i, size;
 	struct odt_sty	*sty;
 
-	/*
-	 * Non-definition lists have an initial paragraph that must link
-	 * to the root list of the current tree.
-	 */
-
-	if (!(n->rndr_listitem.flags & HLIST_FL_DEF)) {
+	if (!(n->rndr_listitem.flags & HLIST_FL_DEF))
 		if (!HBUF_PUTSL(ob, "<text:list-item>"))
 			return 0;
 
+	/*
+	 * Non-definition, non-block lists have an initial paragraph
+	 * that must link to the root list of the current tree.
+	 */
+
+	if (!(n->rndr_listitem.flags & HLIST_FL_DEF) &&
+	    !(n->rndr_listitem.flags & HLIST_FL_BLOCK)) {
 		assert(st->list != (size_t)-1);
 		for (i = 0; i < st->stysz; i++)
 			if (st->stys[i].type == LOWDOWN_PARAGRAPH &&
@@ -645,6 +674,7 @@ rndr_listitem(struct lowdown_buf *ob,
 				return 0;
 			sty->autosty = 1;
 			sty->parent = st->list;
+			sty->fmt = ODT_STY_PARA;
 			sty->type = LOWDOWN_PARAGRAPH;
 			snprintf(sty->name, sizeof(sty->name),
 				"P%zu", st->stysz);
@@ -654,9 +684,7 @@ rndr_listitem(struct lowdown_buf *ob,
 		if (!hbuf_printf(ob,
 		    "<text:p text:style-name=\"%s\">", sty->name))
 			return 0;
-	} else
-		if (!HBUF_PUTSL(ob, "<text:p>"))
-			return 0;
+	}
 
 #if 0
 	if (n->rndr_listitem.flags &
@@ -678,11 +706,14 @@ rndr_listitem(struct lowdown_buf *ob,
 			return 0;
 	}
 
-	if (!HBUF_PUTSL(ob, "</text:p>"))
-		return 0;
 	if (!(n->rndr_listitem.flags & HLIST_FL_DEF) &&
-	    !HBUF_PUTSL(ob, "</text:list-item>\n"))
-		return 0;
+	    !(n->rndr_listitem.flags & HLIST_FL_BLOCK))
+		if (!HBUF_PUTSL(ob, "</text:p>"))
+			return 0;
+
+	if (!(n->rndr_listitem.flags & HLIST_FL_DEF))
+		if (!HBUF_PUTSL(ob, "</text:list-item>\n"))
+			return 0;
 
 	return 1;
 }
@@ -720,6 +751,7 @@ rndr_paragraph(struct lowdown_buf *ob,
 			return 0;
 		sty->autosty = 1;
 		sty->parent = st->list;
+		sty->fmt = ODT_STY_PARA;
 		sty->type = LOWDOWN_PARAGRAPH;
 		if (st->list == (size_t)-1)
 			sty->offs = st->offs;
@@ -749,6 +781,7 @@ rndr_html(struct lowdown_buf *ob,
 	return escape_htmlb(ob, param, st);
 }
 
+/* TODO */
 static int
 rndr_hrule(struct lowdown_buf *ob)
 {
@@ -1129,14 +1162,27 @@ rndr(struct lowdown_buf *ob,
 	case LOWDOWN_LIST:
 		if (st->list != (size_t)-1)
 			break;
-		for (st->list = 0; st->list < st->stysz; st->list++) 
-			if (st->stys[st->list].type == LOWDOWN_LIST &&
-			    st->stys[st->list].offs == st->offs)
-				break;
+		for (st->list = 0; st->list < st->stysz; st->list++) {
+			if (st->stys[st->list].type != LOWDOWN_LIST)
+				continue;
+			if (st->stys[st->list].offs != st->offs)
+				continue;
+			if ((n->rndr_list.flags & HLIST_FL_UNORDERED) &&
+			    st->stys[st->list].fmt != ODT_STY_UL)
+				continue;
+			if ((n->rndr_list.flags & HLIST_FL_ORDERED) &&
+			    st->stys[st->list].fmt != ODT_STY_OL)
+				continue;
+			break;
+		}
 		if (st->list == st->stysz) {
 			if ((sty = odt_style_add(st)) == NULL)
 				return 0;
 			sty->type = LOWDOWN_LIST;
+			if (n->rndr_list.flags & HLIST_FL_ORDERED)
+				sty->fmt = ODT_STY_OL;
+			if (n->rndr_list.flags & HLIST_FL_UNORDERED)
+				sty->fmt = ODT_STY_UL;
 			sty->offs = st->offs;
 			sty->autosty = 1;
 			snprintf(sty->name, sizeof(sty->name),
@@ -1168,9 +1214,6 @@ rndr(struct lowdown_buf *ob,
 	case LOWDOWN_BLOCKCODE:
 		rc = rndr_blockcode(ob, &n->rndr_blockcode, st);
 		break;
-	case LOWDOWN_DEFINITION_TITLE:
-		rc = rndr_definition_title(ob, tmp);
-		break;
 	case LOWDOWN_DEFINITION_DATA:
 		rc = rndr_definition_data(ob, tmp);
 		break;
@@ -1196,6 +1239,7 @@ rndr(struct lowdown_buf *ob,
 	case LOWDOWN_LISTITEM:
 		rc = rndr_listitem(ob, tmp, n, st);
 		break;
+	case LOWDOWN_DEFINITION_TITLE:
 	case LOWDOWN_PARAGRAPH:
 		rc = rndr_paragraph(ob, tmp, st);
 		break;
