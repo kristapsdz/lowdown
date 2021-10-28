@@ -32,6 +32,18 @@
 #include "extern.h"
 
 /*
+ * Default size for a blockquote (paragraph indent).
+ */
+static const float TAB_LEN = 1.25;
+
+/*
+ * Default size for a list indent.  Lists are first indented by the
+ * number of tabs (starting at zero), then giving a full list indent,
+ * then each sub-list gets half again this.
+ */
+static const float LIST_LEN = 1.27;
+
+/*
  * A style in <office:styles> or <office-automatic-styles>.  The
  * difference between these two, according to section 3.15 of the v1.3,
  * is that automatic styles are ad hoc and regular styles are linked to
@@ -42,8 +54,8 @@ struct	odt_sty {
 	char			 name[128]; /* name */
 	size_t			 offs; /* offset ("tabs") from zero */
 	size_t			 parent; /* list parent or (size_t)-1*/
-	enum lowdown_rndrt	 type; /* node type of style */
-	int			 fmt;
+	enum lowdown_rndrt	 type; /* specific type of style */
+	int			 fmt; /* general type of style */
 #define	ODT_STY_TEXT		 0x01 /* text (inline) */
 #define	ODT_STY_PARA		 0x02 /* paragraph */
 #define ODT_STY_UL		 0x03 /* unordered list */
@@ -211,7 +223,8 @@ odt_sty_flush(struct lowdown_buf *ob,
 			    " style:num-suffix=\".\""
 			    " style:num-format=\"1\">\n"
 			    "<style:list-level-properties"
-			    " text:list-level-position-and-space-mode=\"label-alignment\">\n"
+			    " text:list-level-position-and-space-mode="
+			     "\"label-alignment\">\n"
 			    "<style:list-level-label-alignment"
 			    " text:label-followed-by=\"listtab\""
 			    " text:list-tab-stop-position=\"%.3fcm\""
@@ -220,8 +233,10 @@ odt_sty_flush(struct lowdown_buf *ob,
 			    "</style:list-level-properties>\n"
 			    "</text:list-level-style-number>\n",
 			    i + 1, 
-			    (1.25 * sty->offs) + (1.25 * (i + 1)),
-			    (1.25 * sty->offs) + (1.25 * (i + 1))))
+			    (TAB_LEN * sty->offs) + LIST_LEN +
+			    ((LIST_LEN / 2.0) * i),
+			    (TAB_LEN * sty->offs) + LIST_LEN +
+			    ((LIST_LEN / 2.0) * i)))
 				return 0;
 			if (sty->fmt == ODT_STY_UL && !hbuf_printf(ob,
 			    "<text:list-level-style-bullet"
@@ -229,7 +244,8 @@ odt_sty_flush(struct lowdown_buf *ob,
 			    " text:style-name=\"Bullet_20_Symbols\""
 			    " text:bullet-char=\"•\">\n"
 			    "<style:list-level-properties"
-			    " text:list-level-position-and-space-mode=\"label-alignment\">\n"
+			    " text:list-level-position-and-space-mode="
+			     "\"label-alignment\">\n"
 			    "<style:list-level-label-alignment"
 			    " text:label-followed-by=\"listtab\""
 			    " text:list-tab-stop-position=\"%.3fcm\""
@@ -238,8 +254,10 @@ odt_sty_flush(struct lowdown_buf *ob,
 			    "</style:list-level-properties>\n"
 			    "</text:list-level-style-bullet>\n",
 			    i + 1, 
-			    (1.25 * sty->offs) + (1.25 * (i + 1)),
-			    (1.25 * sty->offs) + (1.25 * (i + 1))))
+			    (TAB_LEN * sty->offs) + LIST_LEN +
+			    ((LIST_LEN / 2.0) * i),
+			    (TAB_LEN * sty->offs) + LIST_LEN +
+			    ((LIST_LEN / 2.0) * i)))
 				return 0;
 		}
 		break;
@@ -257,11 +275,13 @@ odt_sty_flush(struct lowdown_buf *ob,
 		    " style:font-family-generic=\"modern\""
 		    " style:font-pitch=\"fixed\""
 		    " style:font-name-asian=\"Liberation Mono\""
-		    " style:font-family-asian=\"&apos;Liberation Mono&apos;\""
+		    " style:font-family-asian="
+		     "\"&apos;Liberation Mono&apos;\""
 		    " style:font-family-generic-asian=\"modern\""
 		    " style:font-pitch-asian=\"fixed\""
 		    " style:font-name-complex=\"Liberation Mono\""
-		    " style:font-family-complex=\"&apos;Liberation Mono&apos;\""
+		    " style:font-family-complex="
+		     "\"&apos;Liberation Mono&apos;\""
 		    " style:font-family-generic-complex=\"modern\""
 		    " style:font-pitch-complex=\"fixed\"/>\n"))
 			return 0;
