@@ -247,6 +247,8 @@ main(int argc, char *argv[])
 		{ "nroff-no-shortlinks",no_argument, 	&roflag, LOWDOWN_NROFF_SHORTLINK },
 		{ "nroff-nolinks",	no_argument, 	&aoflag, LOWDOWN_NROFF_NOLINK },
 		{ "nroff-no-nolinks",	no_argument, 	&roflag, LOWDOWN_NROFF_NOLINK },
+		{ "odt-skiphtml",	no_argument,	&aoflag, LOWDOWN_ODT_SKIP_HTML },
+		{ "odt-no-skiphtml",	no_argument,	&roflag, LOWDOWN_ODT_SKIP_HTML },
 		{ "term-width",		required_argument, NULL, 1 },
 		{ "term-hmargin",	required_argument, NULL, 2 },
 		{ "term-vmargin",	required_argument, NULL, 3 },
@@ -341,6 +343,7 @@ main(int argc, char *argv[])
 		LOWDOWN_NROFF_GROFF |
 		LOWDOWN_NROFF_NUMBERED |
 		LOWDOWN_NROFF_SKIP_HTML |
+		LOWDOWN_ODT_SKIP_HTML |
 		LOWDOWN_LATEX_SKIP_HTML |
 		LOWDOWN_LATEX_NUMBERED |
 		LOWDOWN_SMARTY;

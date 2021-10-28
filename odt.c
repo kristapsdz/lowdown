@@ -263,9 +263,7 @@ escape_html(struct lowdown_buf *ob, const char *source,
 	size_t length, const struct odt *st)
 {
 
-	return hesc_html(ob, source, length, 
-		st->flags & LOWDOWN_HTML_OWASP, 0,
-		st->flags & LOWDOWN_HTML_NUM_ENT);
+	return hesc_html(ob, source, length, 1, 0, 1);
 }
 
 /*
@@ -288,9 +286,7 @@ escape_literal(struct lowdown_buf *ob,
 	const struct lowdown_buf *in, const struct odt *st)
 {
 
-	return hesc_html(ob, in->data, in->size, 
-		st->flags & LOWDOWN_HTML_OWASP, 1,
-		st->flags & LOWDOWN_HTML_NUM_ENT);
+	return hesc_html(ob, in->data, in->size, 1, 1, 1);
 }
 
 /*
@@ -605,41 +601,15 @@ rndr_paragraph(struct lowdown_buf *ob,
 	return HBUF_PUTSL(ob, "</text:p>\n");
 }
 
-/* TODO */
 static int
-rndr_raw_block(struct lowdown_buf *ob,
-	const struct rndr_blockhtml *param,
+rndr_html(struct lowdown_buf *ob,
+	const struct lowdown_buf *param,
 	const struct odt *st)
 {
-	size_t	org, sz;
 
-	if ((st->flags & LOWDOWN_HTML_SKIP_HTML))
+	if (st->flags & LOWDOWN_ODT_SKIP_HTML)
 		return 1;
-	if ((st->flags & LOWDOWN_HTML_ESCAPE))
-		return escape_htmlb(ob, &param->text, st);
-
-	/* 
-	 * FIXME: Do we *really* need to trim the HTML? How does that
-	 * make a difference? 
-	 */
-
-	sz = param->text.size;
-	while (sz > 0 && param->text.data[sz - 1] == '\n')
-		sz--;
-
-	org = 0;
-	while (org < sz && param->text.data[org] == '\n')
-		org++;
-
-	if (org >= sz)
-		return 1;
-
-	if (ob->size && !hbuf_putc(ob, '\n'))
-		return 0;
-
-	if (!hbuf_put(ob, param->text.data + org, sz - org))
-		return 0;
-	return hbuf_putc(ob, '\n');
+	return escape_htmlb(ob, param, st);
 }
 
 static int
@@ -723,21 +693,6 @@ rndr_image(struct lowdown_buf *ob,
 			return 0;
 
 	return hbuf_puts(ob, " />");
-}
-
-/* TODO */
-static int
-rndr_raw_html(struct lowdown_buf *ob,
-	const struct rndr_raw_html *param,
-	const struct odt *st)
-{
-
-	if (st->flags & LOWDOWN_HTML_SKIP_HTML)
-		return 1;
-
-	return (st->flags & LOWDOWN_HTML_ESCAPE) ?
-		escape_htmlb(ob, &param->text, st) :
-		hbuf_putb(ob, &param->text);
 }
 
 static int
@@ -1108,7 +1063,7 @@ rndr(struct lowdown_buf *ob,
 		rc = rndr_footnote_def(ob, tmp, &n->rndr_footnote_def);
 		break;
 	case LOWDOWN_BLOCKHTML:
-		rc = rndr_raw_block(ob, &n->rndr_blockhtml, st);
+		rc = rndr_html(ob, &n->rndr_blockhtml.text, st);
 		break;
 	case LOWDOWN_LINK_AUTO:
 		rc = rndr_autolink(ob, &n->rndr_autolink, st);
@@ -1140,7 +1095,7 @@ rndr(struct lowdown_buf *ob,
 		rc = rndr_math(ob, &n->rndr_math, st);
 		break;
 	case LOWDOWN_RAW_HTML:
-		rc = rndr_raw_html(ob, &n->rndr_raw_html, st);
+		rc = rndr_html(ob, &n->rndr_raw_html.text, st);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
 		rc = rndr_normal_text(ob, &n->rndr_normal_text, st);

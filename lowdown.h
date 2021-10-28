@@ -320,31 +320,32 @@ struct	lowdown_opts {
 #define LOWDOWN_TASKLIST	  0x40000
 #define LOWDOWN_ATTRS		  0x80000
 	unsigned int		  oflags;
-#define LOWDOWN_HTML_SKIP_HTML	  0x01 /* skip all HTML */
-#define LOWDOWN_HTML_ESCAPE	  0x02 /* escape HTML (if not skip) */
-#define LOWDOWN_HTML_HARD_WRAP	  0x04 /* paragraph line breaks */
-#define LOWDOWN_NROFF_SKIP_HTML	  0x08 /* skip all HTML */
-/* Disable LOWDOWN_NROFF_HARD_WRAP 0x10 */
-#define LOWDOWN_NROFF_GROFF	  0x20 /* use groff extensions */
-#define LOWDOWN_NROFF_SHORTLINK	  0x40000 /* shorten URLs */
-#define LOWDOWN_NROFF_NOLINK	  0x80000 /* don't show URLs */
-#define	LOWDOWN_SMARTY	  	  0x40 /* smart typography */
-#define LOWDOWN_NROFF_NUMBERED	  0x80 /* numbered section headers */
-#define LOWDOWN_HTML_HEAD_IDS	  0x100 /* <hN id="the_name"> */
-#define LOWDOWN_STANDALONE	  0x200 /* emit complete document */
-#define LOWDOWN_TERM_SHORTLINK	  0x400 /* shorten URLs */
-#define LOWDOWN_TERM_NOLINK	  0x20000 /* don't show URLs */
-#define	LOWDOWN_TERM_NOCOLOUR	  0x800000 /* no ANSI colours */
-#define	LOWDOWN_TERM_NOANSI	  0x1000000 /* no ANSI escapes at all */
-#define	LOWDOWN_HTML_OWASP	  0x800 /* use OWASP escaping */
-#define	LOWDOWN_HTML_NUM_ENT	  0x1000 /* use &#nn; if possible */
-#define LOWDOWN_LATEX_SKIP_HTML	  0x2000 /* skip all HTML */
-#define LOWDOWN_LATEX_NUMBERED	  0x4000 /* numbered sections */
 #define	LOWDOWN_GEMINI_LINK_END	  0x8000 /* links at end */
 #define	LOWDOWN_GEMINI_LINK_IN	  0x10000 /* links inline */
-#define LOWDOWN_GEMINI_METADATA	  0x100000 /* show metadata */
 #define	LOWDOWN_GEMINI_LINK_NOREF 0x200000 /* for !inline, no names */
 #define	LOWDOWN_GEMINI_LINK_ROMAN 0x400000 /* roman link names */
+#define	LOWDOWN_HTML_NUM_ENT	  0x1000 /* use &#nn; if possible */
+#define	LOWDOWN_HTML_OWASP	  0x800 /* use OWASP escaping */
+#define	LOWDOWN_ODT_SKIP_HTML	  0x2000000 /* skip all HTML */
+#define	LOWDOWN_SMARTY	  	  0x40 /* smart typography */
+#define	LOWDOWN_TERM_NOANSI	  0x1000000 /* no ANSI escapes at all */
+#define	LOWDOWN_TERM_NOCOLOUR	  0x800000 /* no ANSI colours */
+#define LOWDOWN_GEMINI_METADATA	  0x100000 /* show metadata */
+#define LOWDOWN_HTML_ESCAPE	  0x02 /* escape HTML (if not skip) */
+#define LOWDOWN_HTML_HARD_WRAP	  0x04 /* paragraph line breaks */
+#define LOWDOWN_HTML_HEAD_IDS	  0x100 /* <hN id="the_name"> */
+#define LOWDOWN_HTML_SKIP_HTML	  0x01 /* skip all HTML */
+#define LOWDOWN_LATEX_NUMBERED	  0x4000 /* numbered sections */
+#define LOWDOWN_LATEX_SKIP_HTML	  0x2000 /* skip all HTML */
+#define LOWDOWN_NROFF_GROFF	  0x20 /* use groff extensions */
+/* Disable LOWDOWN_NROFF_HARD_WRAP 0x10 */
+#define LOWDOWN_NROFF_NOLINK	  0x80000 /* don't show URLs */
+#define LOWDOWN_NROFF_NUMBERED	  0x80 /* numbered section headers */
+#define LOWDOWN_NROFF_SHORTLINK	  0x40000 /* shorten URLs */
+#define LOWDOWN_NROFF_SKIP_HTML	  0x08 /* skip all HTML */
+#define LOWDOWN_STANDALONE	  0x200 /* emit complete document */
+#define LOWDOWN_TERM_NOLINK	  0x20000 /* don't show URLs */
+#define LOWDOWN_TERM_SHORTLINK	  0x400 /* shorten URLs */
 	char			**meta;
 	size_t			  metasz;
 	char			**metaovr;
