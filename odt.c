@@ -60,6 +60,9 @@ struct	odt_sty {
 #define	ODT_STY_PARA		 0x02 /* paragraph */
 #define ODT_STY_UL		 0x03 /* unordered list */
 #define ODT_STY_OL		 0x04 /* ordered list */
+#define ODT_STY_H1		 0x05 /* h1 heading */
+#define ODT_STY_H2		 0x06 /* h2 heading */
+#define ODT_STY_H3		 0x07 /* h3 heading */
 	int			 autosty; /* automatic-style? */
 };
 
@@ -157,7 +160,10 @@ odt_sty_flush(struct lowdown_buf *ob,
 	if (sty->fmt == ODT_STY_TEXT &&
 	    !HBUF_PUTSL(ob, " style:family=\"text\""))
 		return 0;
-	if (sty->fmt == ODT_STY_PARA &&
+	if ((sty->fmt == ODT_STY_PARA ||
+	     sty->fmt == ODT_STY_H1 ||
+	     sty->fmt == ODT_STY_H2 ||
+	     sty->fmt == ODT_STY_H3) &&
 	    !HBUF_PUTSL(ob, " style:family=\"paragraph\""))
 		return 0;
 
@@ -169,8 +175,8 @@ odt_sty_flush(struct lowdown_buf *ob,
 	 * other crap found in libreoffice output.
 	 */
 
-	switch (sty->type) {
-	case LOWDOWN_PARAGRAPH:
+	switch (sty->fmt) {
+	case ODT_STY_PARA:
 		if (!HBUF_PUTSL(ob,
 		    " style:parent-style-name=\"Standard\""))
 			return 0;
@@ -179,7 +185,28 @@ odt_sty_flush(struct lowdown_buf *ob,
 		    st->stys[sty->parent].name))
 			return 0;
 		break;
+	case ODT_STY_H1:
+		if (!HBUF_PUTSL(ob,
+		    " style:parent-style-name=\"Heading_20_1\""))
+			return 0;
+		break;
+	case ODT_STY_H2:
+		if (!HBUF_PUTSL(ob,
+		    " style:parent-style-name=\"Heading_20_2\""))
+			return 0;
+		break;
+	case ODT_STY_H3:
+		if (!HBUF_PUTSL(ob,
+		    " style:parent-style-name=\"Heading_20_3\""))
+			return 0;
+		break;
+	default:
+		break;
+	}
+
+	switch (sty->type) {
 	case LOWDOWN_LINK:
+		/* XXX: "link" is lowercase when others aren't. */
 		if (!HBUF_PUTSL(ob,
 		    " style:display-name=\"Internet link\""))
 			return 0;
@@ -202,6 +229,8 @@ odt_sty_flush(struct lowdown_buf *ob,
 	 */
 
 	switch (sty->type) {
+	case LOWDOWN_HEADER:
+
 	case LOWDOWN_PARAGRAPH:
 		if (sty->offs == 0)
 			break;
@@ -242,7 +271,7 @@ odt_sty_flush(struct lowdown_buf *ob,
 			    "<text:list-level-style-bullet"
 			    " text:level=\"%zu\""
 			    " text:style-name=\"Bullet_20_Symbols\""
-			    " text:bullet-char=\"•\">\n"
+			    " text:bullet-char=\"&#x2022;\">\n"
 			    "<style:list-level-properties"
 			    " text:list-level-position-and-space-mode="
 			     "\"label-alignment\">\n"
@@ -363,43 +392,31 @@ static int
 odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 {
 	size_t	 i;
-	int	 xlink = 0;
+	int	 xlink = 0, ulist = 0, olist = 0,
+		 h1 = 0, h2 = 0, h3 = 0;
 
-	if (!HBUF_PUTSL(ob, "<office:styles>\n"))
-		return 0;
-	for (i = 0; i < st->stysz; i++) {
-		if (st->stys[i].type == LOWDOWN_LINK)
+	for (i = 0; i < st->stysz; i++)
+		switch (st->stys[i].type) {
+		case LOWDOWN_LINK:
 			xlink = 1;
-		if (!st->stys[i].autosty &&
-		    !odt_sty_flush(ob, st, &st->stys[i]))
-			return 0;
-	}
-  	if (!HBUF_PUTSL(ob,
-  	    "<style:style"
-	    " style:name=\"Standard\""
-	    " style:family=\"paragraph\""
-	    " style:class=\"text\"/>\n"
-	    "<style:style"
-	    " style:name=\"Bullet_20_Symbols\""
-	    " style:display-name=\"Bullet Symbols\""
-	    " style:family=\"text\"/>\n"
-	    "<style:style"
-	    " style:name=\"Numbering_20_Symbols\""
-	    " style:display-name=\"Numbering Symbols\""
-	    " style:family=\"text\"/>\n"))
-		return 0;
-	if (!HBUF_PUTSL(ob, "</office:styles>\n"))
-		return 0;
-
-	if (!HBUF_PUTSL(ob, "<office:automatic-styles>\n"))
-		return 0;
-	for (i = 0; i < st->stysz; i++) {
-		if (st->stys[i].autosty &&
-		    !odt_sty_flush(ob, st, &st->stys[i]))
-			return 0;
-	}
-	if (!HBUF_PUTSL(ob, "</office:automatic-styles>\n"))
-		return 0;
+			break;
+		case LOWDOWN_HEADER:
+			if (st->stys[i].fmt == ODT_STY_H1)
+				h1 = 1;
+			else if (st->stys[i].fmt == ODT_STY_H2)
+				h2 = 1;
+			else if (st->stys[i].fmt == ODT_STY_H3)
+				h3 = 1;
+			break;
+		case LOWDOWN_LIST:
+			if (st->stys[i].fmt == ODT_STY_UL)
+				ulist = 1;
+			if (st->stys[i].fmt == ODT_STY_OL)
+				olist = 1;
+			break;
+		default:
+			break;
+		}
 
 	/*
 	 * This doesn't appear to make a difference if it's specified or
@@ -415,6 +432,172 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 	    "</office:scripts>\n"))
 		return 0;
 
+	if (!HBUF_PUTSL(ob, "<office:styles>\n"))
+		return 0;
+
+	/* 
+	 * XXX: this can be improved, but works.  Some automatic styles
+	 * reference styles that we haven't represented with odt_style,
+	 * like a list style will represent a style.  Put these here.
+	 */
+
+  	if (!HBUF_PUTSL(ob,
+  	    "<style:style"
+	    " style:name=\"Standard\""
+	    " style:family=\"paragraph\""
+	    " style:class=\"text\"/>\n"))
+		return 0;
+	if ((h1 || h2 || h3) && !HBUF_PUTSL(ob,
+	    "<style:style"
+	    " style:name=\"Text_20_body\""
+	    " style:display-name=\"Text body\""
+	    " style:family=\"paragraph\""
+	    " style:parent-style-name=\"Standard\""
+	    " style:class=\"text\">\n"
+	    "<style:paragraph-properties"
+	    " fo:margin-top=\"0cm\""
+	    " fo:margin-bottom=\"0.247cm\""
+	    " style:contextual-spacing=\"false\""
+	    " fo:line-height=\"115%\"/>\n"
+	    "</style:style>\n"))
+		return 0;
+	if ((h1 || h2 || h3) && !HBUF_PUTSL(ob,
+	    "<style:style"
+	    " style:name=\"Heading\""
+	    " style:family=\"paragraph\""
+	    " style:parent-style-name=\"Standard\""
+	    " style:class=\"text\">\n"
+	    "<style:paragraph-properties"
+	    " fo:margin-top=\"0.423cm\""
+	    " fo:margin-bottom=\"0.212cm\""
+	    " style:contextual-spacing=\"false\""
+	    " fo:keep-with-next=\"always\"/>\n"
+	    "<style:text-properties"
+	    " style:font-name=\"Liberation Sans\""
+	    " fo:font-family=\"&apos;Liberation Sans&apos;\""
+	    " style:font-family-generic=\"swiss\""
+	    " style:font-pitch=\"variable\""
+	    " fo:font-size=\"14pt\""
+	    " style:font-name-asian=\"Liberation Sans\""
+	    " style:font-family-asian=\"&apos;Liberation Sans&apos;\""
+	    " style:font-family-generic-asian=\"system\""
+	    " style:font-pitch-asian=\"variable\""
+	    " style:font-size-asian=\"14pt\""
+	    " style:font-name-complex=\"Liberation Sans\""
+	    " style:font-family-complex=\"&apos;Liberation Sans&apos;\""
+	    " style:font-family-generic-complex=\"system\""
+	    " style:font-pitch-complex=\"variable\""
+	    " style:font-size-complex=\"14pt\"/>\n"
+	    "</style:style>\n"))
+		return 0;
+	if (ulist && !HBUF_PUTSL(ob,
+	    "<style:style"
+	    " style:name=\"Bullet_20_Symbols\""
+	    " style:display-name=\"Bullet Symbols\""
+	    " style:family=\"text\">\n"
+	    "<style:text-properties"
+	    " style:font-name=\"OpenSymbol\""
+	    " fo:font-family=\"OpenSymbol\""
+	    " style:font-charset=\"x-symbol\""
+	    " style:font-name-asian=\"OpenSymbol\""
+	    " style:font-family-asian=\"OpenSymbol\""
+	    " style:font-charset-asian=\"x-symbol\""
+	    " style:font-name-complex=\"OpenSymbol\""
+	    " style:font-family-complex=\"OpenSymbol\""
+	    " style:font-charset-complex=\"x-symbol\"/>\n"
+   	    "</style:style>\n"))
+		return 0;
+	if (olist && !HBUF_PUTSL(ob,
+	    "<style:style"
+	    " style:name=\"Numbering_20_Symbols\""
+	    " style:display-name=\"Numbering Symbols\""
+	    " style:family=\"text\"/>\n"))
+		return 0;
+	if (h1 && !HBUF_PUTSL(ob,
+	    "<style:style"
+	    " style:name=\"Heading_20_1\""
+	    " style:display-name=\"Heading 1\""
+	    " style:family=\"paragraph\""
+	    " style:parent-style-name=\"Heading\""
+	    " style:next-style-name=\"Text_20_body\""
+	    " style:default-outline-level=\"1\""
+	    " style:class=\"text\">\n"
+	    "<style:paragraph-properties"
+	    " fo:margin-top=\"0.423cm\""
+	    " fo:margin-bottom=\"0.212cm\""
+	    " style:contextual-spacing=\"false\"/>\n"
+	    "<style:text-properties"
+	    " fo:font-size=\"130%\""
+	    " fo:font-weight=\"bold\""
+	    " style:font-size-asian=\"130%\""
+	    " style:font-weight-asian=\"bold\""
+	    " style:font-size-complex=\"130%\""
+	    " style:font-weight-complex=\"bold\"/>\n"
+	    "</style:style>\n"))
+	    	return 0;
+	if (h2 && !HBUF_PUTSL(ob,
+	    "<style:style"
+	    " style:name=\"Heading_20_2\""
+	    " style:display-name=\"Heading 2\""
+	    " style:family=\"paragraph\""
+	    " style:parent-style-name=\"Heading\""
+	    " style:next-style-name=\"Text_20_body\""
+	    " style:default-outline-level=\"2\""
+	    " style:class=\"text\">\n"
+	    "<style:paragraph-properties"
+	    " fo:margin-top=\"0.353cm\""
+	    " fo:margin-bottom=\"0.212cm\""
+	    " style:contextual-spacing=\"false\"/>\n"
+	    "<style:text-properties"
+	    " fo:font-size=\"115%\""
+	    " fo:font-weight=\"bold\""
+	    " style:font-size-asian=\"115%\""
+	    " style:font-weight-asian=\"bold\""
+	    " style:font-size-complex=\"115%\""
+	    " style:font-weight-complex=\"bold\"/>\n"
+	    "</style:style>\n"))
+	    	return 0;
+	if (h3 && !HBUF_PUTSL(ob,
+	    "<style:style"
+	    " style:name=\"Heading_20_3\""
+	    " style:display-name=\"Heading 3\""
+	    " style:family=\"paragraph\""
+	    " style:parent-style-name=\"Heading\""
+	    " style:next-style-name=\"Text_20_body\""
+	    " style:default-outline-level=\"3\""
+	    " style:class=\"text\">\n"
+	    "<style:paragraph-properties"
+	    " fo:margin-top=\"0.247cm\""
+	    " fo:margin-bottom=\"0.212cm\""
+	    " style:contextual-spacing=\"false\"/>\n"
+	    "<style:text-properties"
+	    " fo:font-size=\"101%\""
+	    " fo:font-weight=\"bold\""
+	    " style:font-size-asian=\"101%\""
+	    " style:font-weight-asian=\"bold\""
+	    " style:font-size-complex=\"101%\""
+	    " style:font-weight-complex=\"bold\"/>\n"
+	    "</style:style>\n"))
+	    	return 0;
+
+	for (i = 0; i < st->stysz; i++)
+		if (!st->stys[i].autosty &&
+		    !odt_sty_flush(ob, st, &st->stys[i]))
+			return 0;
+
+	if (!HBUF_PUTSL(ob, "</office:styles>\n"))
+		return 0;
+
+	if (!HBUF_PUTSL(ob, "<office:automatic-styles>\n"))
+		return 0;
+
+	for (i = 0; i < st->stysz; i++)
+		if (st->stys[i].autosty &&
+		    !odt_sty_flush(ob, st, &st->stys[i]))
+			return 0;
+
+	if (!HBUF_PUTSL(ob, "</office:automatic-styles>\n"))
+		return 0;
 	return 1;
 }
 
@@ -601,18 +784,44 @@ rndr_header(struct lowdown_buf *ob,
 	const struct rndr_header *param, 
 	struct odt *st)
 {
-	ssize_t	level;
+	struct odt_sty	*sty;
+	ssize_t		 level;
+	size_t		 i;
+	int		 fl;
 
 	level = (ssize_t)param->level + st->headers_offs;
 	if (level < 1)
 		level = 1;
-	else if (level > 6)
-		level = 6;
+	else if (level > 3)
+		level = 3;
+
+	if (level == 1)
+		fl = ODT_STY_H1;
+	else if (level == 2)
+		fl = ODT_STY_H2;
+	else
+		fl = ODT_STY_H3;
+
+	for (i = 0; i < st->stysz; i++)
+		if (st->stys[i].type == LOWDOWN_HEADER &&
+		    st->stys[i].fmt == fl)
+			break;
+	if (i == st->stysz) {
+		if ((sty = odt_style_add(st)) == NULL)
+			return 0;
+		sty->autosty = 1;
+		sty->fmt = fl;
+		sty->type = LOWDOWN_HEADER;
+		snprintf(sty->name, sizeof(sty->name),
+			"P%zu", st->stysz);
+	} else
+		sty = &st->stys[i];
 
 	if (ob->size && !hbuf_putc(ob, '\n'))
 		return 0;
-
-	if (!hbuf_printf(ob, "<text:h text:style-name=\"h%zu\">", level))
+	if (!hbuf_printf(ob,
+	     "<text:h text:style-name=\"%s\""
+	     " text:outline-level=\"%zu\">", sty->name, level))
 		return 0;
 	if (!hbuf_putb(ob, content))
 		return 0;
@@ -647,15 +856,15 @@ static int
 rndr_list(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
 	const struct rndr_list *param,
-	const struct odt_sty *sty)
+	const char *name)
 {
 
 	if (ob->size && !hbuf_putc(ob, '\n'))
 		return 0;
 	if (!HBUF_PUTSL(ob, "<text:list"))
 		return 0;
-	if (sty != NULL && !hbuf_printf(ob,
-	    " text:style-name=\"%s\"", sty->name))
+	if (name != NULL && !hbuf_printf(ob,
+	    " text:style-name=\"%s\"", name))
 		return 0;
 	if (!HBUF_PUTSL(ob, ">\n"))
 		return 0;
@@ -1048,47 +1257,50 @@ rndr_root(struct lowdown_buf *ob,
 	if (!HBUF_PUTSL(ob,
 	    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
 	    "<office:document\n"
+	    " xmlns:calcext=\"urn:org:documentfoundation:names:experimental:calc:xmlns:calcext:1.0\"\n"
+	    " xmlns:chart=\"urn:oasis:names:tc:opendocument:xmlns:chart:1.0\"\n"
+	    " xmlns:config=\"urn:oasis:names:tc:opendocument:xmlns:config:1.0\"\n"
 	    " xmlns:css3t=\"http://www.w3.org/TR/css3-text/\"\n"
-	    " xmlns:grddl=\"http://www.w3.org/2003/g/data-view#\"\n"
-	    " xmlns:xhtml=\"http://www.w3.org/1999/xhtml\"\n"
-	    " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
-	    " xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n"
-	    " xmlns:xforms=\"http://www.w3.org/2002/xforms\"\n"
+	    " xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n"
 	    " xmlns:dom=\"http://www.w3.org/2001/xml-events\"\n"
-	    " xmlns:script=\"urn:oasis:names:tc:opendocument:xmlns:script:1.0\"\n"
+	    " xmlns:dr3d=\"urn:oasis:names:tc:opendocument:xmlns:dr3d:1.0\"\n"
+	    " xmlns:draw=\"urn:oasis:names:tc:opendocument:xmlns:drawing:1.0\"\n"
+	    " xmlns:drawooo=\"http://openoffice.org/2010/draw\"\n"
+	    " xmlns:field=\"urn:openoffice:names:experimental:ooo-ms-interop:xmlns:field:1.0\"\n"
+	    " xmlns:fo=\"urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0\"\n"
 	    " xmlns:form=\"urn:oasis:names:tc:opendocument:xmlns:form:1.0\"\n"
+	    " xmlns:formx=\"urn:openoffice:names:experimental:ooxml-odf-interop:xmlns:form:1.0\"\n"
+	    " xmlns:grddl=\"http://www.w3.org/2003/g/data-view#\"\n"
+	    " xmlns:loext=\"urn:org:documentfoundation:names:experimental:office:xmlns:loext:1.0\"\n"
 	    " xmlns:math=\"http://www.w3.org/1998/Math/MathML\"\n"
 	    " xmlns:meta=\"urn:oasis:names:tc:opendocument:xmlns:meta:1.0\"\n"
-	    " xmlns:loext=\"urn:org:documentfoundation:names:experimental:office:xmlns:loext:1.0\"\n"
-	    " xmlns:field=\"urn:openoffice:names:experimental:ooo-ms-interop:xmlns:field:1.0\"\n"
 	    " xmlns:number=\"urn:oasis:names:tc:opendocument:xmlns:datastyle:1.0\"\n"
-	    " xmlns:officeooo=\"http://openoffice.org/2009/office\"\n"
-	    " xmlns:table=\"urn:oasis:names:tc:opendocument:xmlns:table:1.0\"\n"
-	    " xmlns:chart=\"urn:oasis:names:tc:opendocument:xmlns:chart:1.0\"\n"
-	    " xmlns:formx=\"urn:openoffice:names:experimental:ooxml-odf-interop:xmlns:form:1.0\"\n"
-	    " xmlns:svg=\"urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0\"\n"
-	    " xmlns:tableooo=\"http://openoffice.org/2009/table\"\n"
-	    " xmlns:draw=\"urn:oasis:names:tc:opendocument:xmlns:drawing:1.0\"\n"
-	    " xmlns:rpt=\"http://openoffice.org/2005/report\"\n"
-	    " xmlns:dr3d=\"urn:oasis:names:tc:opendocument:xmlns:dr3d:1.0\"\n"
 	    " xmlns:of=\"urn:oasis:names:tc:opendocument:xmlns:of:1.2\"\n"
-	    " xmlns:text=\"urn:oasis:names:tc:opendocument:xmlns:text:1.0\"\n"
-	    " xmlns:style=\"urn:oasis:names:tc:opendocument:xmlns:style:1.0\"\n"
-	    " xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n"
-	    " xmlns:calcext=\"urn:org:documentfoundation:names:experimental:calc:xmlns:calcext:1.0\"\n"
-	    " xmlns:oooc=\"http://openoffice.org/2004/calc\"\n"
-	    " xmlns:config=\"urn:oasis:names:tc:opendocument:xmlns:config:1.0\"\n"
-	    " xmlns:ooo=\"http://openoffice.org/2004/office\"\n"
-	    " xmlns:xlink=\"http://www.w3.org/1999/xlink\"\n"
-	    " xmlns:drawooo=\"http://openoffice.org/2010/draw\"\n"
-	    " xmlns:ooow=\"http://openoffice.org/2004/writer\"\n"
-	    " xmlns:fo=\"urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0\"\n"
 	    " xmlns:office=\"urn:oasis:names:tc:opendocument:xmlns:office:1.0\"\n"
-	    " office:version=\"1.3\"\n"
-	    " office:mimetype=\"application/vnd.oasis.opendocument.text\">\n"))
+	    " xmlns:officeooo=\"http://openoffice.org/2009/office\"\n"
+	    " xmlns:ooo=\"http://openoffice.org/2004/office\"\n"
+	    " xmlns:oooc=\"http://openoffice.org/2004/calc\"\n"
+	    " xmlns:ooow=\"http://openoffice.org/2004/writer\"\n"
+	    " xmlns:rpt=\"http://openoffice.org/2005/report\"\n"
+	    " xmlns:script=\"urn:oasis:names:tc:opendocument:xmlns:script:1.0\"\n"
+	    " xmlns:style=\"urn:oasis:names:tc:opendocument:xmlns:style:1.0\"\n"
+	    " xmlns:svg=\"urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0\"\n"
+	    " xmlns:table=\"urn:oasis:names:tc:opendocument:xmlns:table:1.0\"\n"
+	    " xmlns:tableooo=\"http://openoffice.org/2009/table\"\n"
+	    " xmlns:text=\"urn:oasis:names:tc:opendocument:xmlns:text:1.0\"\n"
+	    " xmlns:xforms=\"http://www.w3.org/2002/xforms\"\n"
+	    " xmlns:xhtml=\"http://www.w3.org/1999/xhtml\"\n"
+	    " xmlns:xlink=\"http://www.w3.org/1999/xlink\"\n"
+	    " xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n"
+	    " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
+	    " office:mimetype=\"application/vnd.oasis.opendocument.text\"\n"
+	    " office:version=\"1.3\">\n"))
 		return 0;
 	if (!HBUF_PUTSL(ob,
 	    "<office:font-face-decls>\n"
+  	    "<style:font-face style:name=\"OpenSymbol\""
+	    " svg:font-family=\"OpenSymbol\""
+	    " style:font-charset=\"x-symbol\"/>\n"
 	    "<style:font-face style:name=\"Liberation Mono\""
 	    " svg:font-family=\"&apos;Liberation Mono&apos;\""
 	    " style:font-family-generic=\"modern\""
@@ -1169,6 +1381,7 @@ rndr(struct lowdown_buf *ob,
 	int32_t				 ent;
 	struct odt			*st = ref;
 	struct odt_sty			*sty = NULL;
+	size_t				 curid = (size_t)-1;
 	int				 ret = 1, rc = 1;
 
 	if ((tmp = hbuf_new(64)) == NULL)
@@ -1208,7 +1421,7 @@ rndr(struct lowdown_buf *ob,
 			snprintf(sty->name, sizeof(sty->name),
 				"L%zu", st->stysz);
 		}
-		sty = &st->stys[st->list];
+		curid = st->list;
 		break;
 	default:
 		break;
@@ -1254,7 +1467,9 @@ rndr(struct lowdown_buf *ob,
 		rc = rndr_hrule(ob);
 		break;
 	case LOWDOWN_LIST:
-		rc = rndr_list(ob, tmp, &n->rndr_list, sty);
+		rc = rndr_list(ob, tmp, &n->rndr_list,
+			curid == (size_t)-1 ?
+			NULL : st->stys[curid].name);
 		break;
 	case LOWDOWN_LISTITEM:
 		rc = rndr_listitem(ob, tmp, n, st);
