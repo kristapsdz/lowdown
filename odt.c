@@ -206,7 +206,11 @@ odt_sty_flush(struct lowdown_buf *ob,
 
 	switch (sty->type) {
 	case LOWDOWN_LINK:
-		/* XXX: "link" is lowercase when others aren't. */
+		/* 
+		 * XXX: "link" is lowercase when others aren't.
+		 * This is copied over from libreoffice but is probably
+		 * a typo?
+		 */
 		if (!HBUF_PUTSL(ob,
 		    " style:display-name=\"Internet link\""))
 			return 0;
@@ -214,6 +218,13 @@ odt_sty_flush(struct lowdown_buf *ob,
 	case LOWDOWN_CODESPAN:
 		if (!HBUF_PUTSL(ob,
 		    " style:display-name=\"Source Text\""))
+			return 0;
+		break;
+	case LOWDOWN_HRULE:
+		if (!HBUF_PUTSL(ob,
+		    " style:display-name=\"Horizontal Line\""
+		    " style:next-style-name=\"Text_20_body\""
+		    " style:class=\"html\""))
 			return 0;
 		break;
 	default:
@@ -229,8 +240,29 @@ odt_sty_flush(struct lowdown_buf *ob,
 	 */
 
 	switch (sty->type) {
+	case LOWDOWN_HRULE:
+		if (!HBUF_PUTSL(ob,
+		    "<style:paragraph-properties"
+		    " fo:margin-top=\"0cm\""
+		    " fo:margin-bottom=\"0.499cm\""
+		    " style:contextual-spacing=\"false\""
+		    " style:border-line-width-bottom=\"0.002cm 0.004cm 0.002cm\""
+		    " fo:padding=\"0cm\""
+		    " fo:border-left=\"none\""
+		    " fo:border-right=\"none\""
+		    " fo:border-top=\"none\""
+		    " fo:border-bottom=\"0.14pt double #808080\""
+		    " text:number-lines=\"false\""
+		    " text:line-number=\"0\""
+		    " style:join-border=\"false\"/>\n"
+   		    "<style:text-properties"
+		    " fo:font-size=\"6pt\""
+		    " style:font-size-asian=\"6pt\""
+		    " style:font-size-complex=\"6pt\"/>\n"))
+			return 0;
+		break;
 	case LOWDOWN_HEADER:
-
+		break;
 	case LOWDOWN_PARAGRAPH:
 		if (sty->offs == 0)
 			break;
@@ -388,15 +420,25 @@ odt_sty_flush(struct lowdown_buf *ob,
 	return 1;
 }
 
+/*
+ * Flush out the elements for scripts, styles, and automatic-styles.
+ * Some of this is boilerplate, but most of it draws from the elements
+ * used in the file.  XXX: it's possible to put a lot of this into a
+ * separate file, somehow, but that's a matter for the future.  Return
+ * FALSE on failure, TRUE on success.
+ */
 static int
 odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 {
 	size_t	 i;
 	int	 xlink = 0, ulist = 0, olist = 0,
-		 h1 = 0, h2 = 0, h3 = 0;
+		 h1 = 0, h2 = 0, h3 = 0, hr = 0;
 
 	for (i = 0; i < st->stysz; i++)
 		switch (st->stys[i].type) {
+		case LOWDOWN_HRULE:
+			hr = 1;
+			break;
 		case LOWDOWN_LINK:
 			xlink = 1;
 			break;
@@ -447,7 +489,7 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 	    " style:family=\"paragraph\""
 	    " style:class=\"text\"/>\n"))
 		return 0;
-	if ((h1 || h2 || h3) && !HBUF_PUTSL(ob,
+	if ((h1 || h2 || h3 || hr) && !HBUF_PUTSL(ob,
 	    "<style:style"
 	    " style:name=\"Text_20_body\""
 	    " style:display-name=\"Text body\""
@@ -596,7 +638,33 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 		    !odt_sty_flush(ob, st, &st->stys[i]))
 			return 0;
 
-	if (!HBUF_PUTSL(ob, "</office:automatic-styles>\n"))
+	if (!HBUF_PUTSL(ob,
+	    "<style:page-layout style:name=\"pm1\">\n"
+	    "<style:page-layout-properties"
+	    " fo:page-width=\"21.001cm\""
+	    " fo:page-height=\"29.7cm\""
+	    " style:num-format=\"1\""
+	    " style:print-orientation=\"portrait\""
+	    " fo:margin-top=\"2cm\""
+	    " fo:margin-bottom=\"2cm\""
+	    " fo:margin-left=\"2cm\""
+	    " fo:margin-right=\"2cm\""
+	    " style:writing-mode=\"lr-tb\""
+	    " style:footnote-max-height=\"0cm\">\n"
+	    "</style:page-layout-properties>\n"
+	    "</style:page-layout>\n"))
+		return 0;
+
+	if (!HBUF_PUTSL(ob,
+	    "</office:automatic-styles>\n"))
+		return 0;
+
+	if (!HBUF_PUTSL(ob,
+	    "<office:master-styles>\n"
+	    "<style:master-page "
+	    " style:name=\"Standard\""
+	    " style:page-layout-name=\"pm1\"/>\n"
+	    "</office:master-styles>\n"))
 		return 0;
 	return 1;
 }
@@ -725,6 +793,7 @@ rndr_blockcode(struct lowdown_buf *ob,
 	return HBUF_PUTSL(ob, "</code></pre>\n");
 }
 
+/* TODO */
 static int
 rndr_definition_data(struct lowdown_buf *ob,
 	const struct lowdown_buf *content)
@@ -1010,14 +1079,32 @@ rndr_html(struct lowdown_buf *ob,
 	return escape_htmlb(ob, param, st);
 }
 
-/* TODO */
 static int
-rndr_hrule(struct lowdown_buf *ob)
+rndr_hrule(struct lowdown_buf *ob, struct odt *st)
 {
+	size_t	 	 i;
+	struct odt_sty	*s;
+
+	for (i = 0; i < st->stysz; i++)
+		if (st->stys[i].type == LOWDOWN_HRULE) {
+			assert(st->stys[i].fmt == ODT_STY_PARA);
+			break;
+		}
+
+	if (i == st->stysz) {
+		if ((s = odt_style_add(st)) == NULL)
+			return 0;
+		s->type = LOWDOWN_HRULE;
+		s->fmt = ODT_STY_PARA;
+		strlcpy(s->name, "Horizontal_20_Line",
+			sizeof(s->name));
+	} else
+		s = &st->stys[i];
 
 	if (ob->size && !hbuf_putc(ob, '\n'))
 		return 0;
-	return hbuf_puts(ob, "<text:p text:style-name=\"hr\"/>\n");
+	return hbuf_printf(ob,
+		"<text:p text:style-name=\"%s\"/>\n", s->name);
 }
 
 /* TODO */
@@ -1464,7 +1551,7 @@ rndr(struct lowdown_buf *ob,
 		rc = rndr_header(ob, tmp, &n->rndr_header, st);
 		break;
 	case LOWDOWN_HRULE:
-		rc = rndr_hrule(ob);
+		rc = rndr_hrule(ob, st);
 		break;
 	case LOWDOWN_LIST:
 		rc = rndr_list(ob, tmp, &n->rndr_list,
