@@ -105,7 +105,7 @@ odt_style_add(struct odt *st)
  * Return NULL on error or the style name on success.
  */
 static const char *
-odt_style_add_span(struct odt *st, enum lowdown_rndrt type)
+odt_style_add_text(struct odt *st, enum lowdown_rndrt type)
 {
 	size_t		 i;
 	struct odt_sty	*s;
@@ -121,6 +121,8 @@ odt_style_add_span(struct odt *st, enum lowdown_rndrt type)
 
 	s->fmt = ODT_STY_TEXT;
 	s->type = type;
+
+	/* Codespans and links are fixed, the rest are automatic. */
 
 	switch (type) {
 	case LOWDOWN_CODESPAN:
@@ -447,22 +449,33 @@ odt_sty_flush(struct lowdown_buf *ob,
 
 /*
  * Flush out the elements for scripts, styles, and automatic-styles.
- * Some of this is boilerplate, but most of it draws from the elements
- * used in the file.  XXX: it's possible to put a lot of this into a
- * separate file, somehow, but that's a matter for the future.  Return
- * FALSE on failure, TRUE on success.
+ * XXX: it's possible to put a lot of this into a separate file,
+ * somehow, but that's a matter for the future.  Return FALSE on
+ * failure, TRUE on success.
  */
 static int
 odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 {
 	size_t	 i;
 	int	 xlink = 0, ulist = 0, olist = 0,
-		 h1 = 0, h2 = 0, h3 = 0, hr = 0, tab = 0;
+		 h1 = 0, h2 = 0, h3 = 0, hr = 0, tab = 0,
+		 fr = 0;
+	
+	/*
+	 * Many styles and auto-styles depend upon fixed parent styles,
+	 * for example, a paragraph auto-style has a parent style that's
+	 * fixed.  Determine which of these static styles we need by
+	 * looking through what styles we're going to output.
+	 */
 
 	for (i = 0; i < st->stysz; i++)
 		switch (st->stys[i].type) {
 		case LOWDOWN_TABLE_BLOCK:
 			tab = 1;
+			break;
+		case LOWDOWN_PARAGRAPH:
+			if (st->stys[i].parent != (size_t)-1)
+				fr = 1;
 			break;
 		case LOWDOWN_HRULE:
 			hr = 1;
@@ -505,11 +518,7 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 	if (!HBUF_PUTSL(ob, "<office:styles>\n"))
 		return 0;
 
-	/* 
-	 * XXX: this can be improved, but works.  Some automatic styles
-	 * reference styles that we haven't represented with odt_style,
-	 * like a list style will represent a style.  Put these here.
-	 */
+	/* Emit boilerplate parent styles. */
 
   	if (!HBUF_PUTSL(ob,
   	    "<style:style"
@@ -517,6 +526,29 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 	    " style:family=\"paragraph\""
 	    " style:class=\"text\"/>\n"))
 		return 0;
+	if (fr && !HBUF_PUTSL(ob,
+	    "<style:style"
+	    " style:name=\"Frame\""
+	    " style:family=\"graphic\">\n"
+	    "<style:graphic-properties"
+	    " text:anchor-type=\"paragraph\""
+	    " svg:x=\"0cm\""
+	    " svg:y=\"0cm\""
+	    " fo:margin-left=\"0.201cm\""
+	    " fo:margin-right=\"0.201cm\""
+	    " fo:margin-top=\"0.201cm\""
+	    " fo:margin-bottom=\"0.201cm\""
+	    " style:wrap=\"parallel\""
+	    " style:number-wrapped-paragraphs=\"no-limit\""
+	    " style:wrap-contour=\"false\""
+	    " style:vertical-pos=\"top\""
+	    " style:vertical-rel=\"paragraph-content\""
+	    " style:horizontal-pos=\"center\""
+	    " style:horizontal-rel=\"paragraph-content\""
+	    " fo:padding=\"0cm\""
+	    " fo:border=\"0pt solid #000000\"/>\n"
+	    "</style:style>\n"))
+	    	return 0;
 	if (tab && !HBUF_PUTSL(ob,
 	    "<style:style"
 	    " style:name=\"Table_20_Contents\""
@@ -664,21 +696,39 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 	    "</style:style>\n"))
 	    	return 0;
 
+	/* Emit fixed styles. */
+
 	for (i = 0; i < st->stysz; i++)
 		if (!st->stys[i].autosty &&
 		    !odt_sty_flush(ob, st, &st->stys[i]))
 			return 0;
 
-	if (!HBUF_PUTSL(ob, "</office:styles>\n"))
+	if (!HBUF_PUTSL(ob,
+	    "</office:styles>\n"
+	    "<office:automatic-styles>\n"))
 		return 0;
 
-	if (!HBUF_PUTSL(ob, "<office:automatic-styles>\n"))
-		return 0;
+	/* Emit automatic styles. */
 
 	for (i = 0; i < st->stysz; i++)
 		if (st->stys[i].autosty &&
 		    !odt_sty_flush(ob, st, &st->stys[i]))
 			return 0;
+
+	if (fr && !HBUF_PUTSL(ob,
+	    "<style:style style:name=\"fr1\""
+	    " style:family=\"graphic\""
+	    " style:parent-style-name=\"Frame\">\n"
+	    "<style:graphic-properties"
+	    " style:run-through=\"foreground\""
+	    " style:wrap=\"parallel\""
+	    " style:number-wrapped-paragraphs=\"no-limit\""
+	    " style:vertical-pos=\"middle\""
+	    " style:vertical-rel=\"baseline\""
+	    " style:horizontal-pos=\"center\""
+	    " style:horizontal-rel=\"paragraph\"/>\n"
+	    " </style:style>\n"))
+		return 0;
 
 	if (!HBUF_PUTSL(ob,
 	    "<style:page-layout style:name=\"pm1\">\n"
@@ -777,7 +827,7 @@ rndr_autolink(struct lowdown_buf *ob,
 	if (parm->link.size == 0)
 		return 1;
 
-	if ((sty = odt_style_add_span(st, LOWDOWN_LINK)) == NULL)
+	if ((sty = odt_style_add_text(st, LOWDOWN_LINK)) == NULL)
 		return 0;
 	if (!hbuf_printf(ob,
 	    "<text:a xlink:type=\"simple\""
@@ -855,7 +905,7 @@ rndr_codespan(struct lowdown_buf *ob,
 {
 	const char	*sty;
 
-	if ((sty = odt_style_add_span(st, LOWDOWN_CODESPAN)) == NULL)
+	if ((sty = odt_style_add_text(st, LOWDOWN_CODESPAN)) == NULL)
 		return 0;
 	if (!hbuf_printf(ob,
 	    "<text:span text:style-name=\"%s\">", sty))
@@ -872,7 +922,7 @@ rndr_span(struct lowdown_buf *ob,
 {
 	const char	*sty;
 
-	if ((sty = odt_style_add_span(st, n->type)) == NULL)
+	if ((sty = odt_style_add_text(st, n->type)) == NULL)
 		return 0;
 	if (!hbuf_printf(ob,
 	    "<text:span text:style-name=\"%s\">", sty))
@@ -947,7 +997,7 @@ rndr_link(struct lowdown_buf *ob,
 {
 	const char	*sty;
 
-	if ((sty = odt_style_add_span(st, LOWDOWN_LINK)) == NULL)
+	if ((sty = odt_style_add_text(st, LOWDOWN_LINK)) == NULL)
 		return 0;
 	if (!hbuf_printf(ob,
 	    "<text:a xlink:type=\"simple\" "
@@ -1232,9 +1282,40 @@ rndr_table(struct lowdown_buf *ob,
 	size_t		 i;
 	struct odt_sty	*s;
 
+	if (st->list != (size_t)-1) {
+		for (i = 0; i < st->stysz; i++)
+			if (st->stys[i].type == LOWDOWN_PARAGRAPH &&
+			    st->stys[i].parent == st->list)
+				break;
+		if (i == st->stysz) {
+			if ((s = odt_style_add(st)) == NULL)
+				return 0;
+			s->autosty = 1;
+			s->parent = st->list;
+			s->fmt = ODT_STY_PARA;
+			s->type = LOWDOWN_PARAGRAPH;
+			snprintf(s->name, sizeof(s->name),
+				"P%zu", st->stysz);
+		} else
+			s = &st->stys[i];
+
+		if (!hbuf_printf(ob,
+		    "<text:p text:style-name=\"%s\">\n"
+		    "<draw:frame draw:style-name=\"fr1\""
+		    " draw:name=\"Frame\""
+		    " text:anchor-type=\"as-char\""
+		    " draw:z-index=\"0\">\n"
+		    "<draw:text-box"
+		    " fo:min-height=\"0.499cm\""
+		    " fo:min-width=\"0.34cm\">\n",
+		    s->name))
+			return 0;
+	}
+
 	for (i = 0; i < st->stysz; i++)
 		if (st->stys[i].type == LOWDOWN_TABLE_BLOCK &&
-		    st->stys[i].offs == st->offs)
+		    (st->stys[i].parent != (size_t)-1 ||
+		     st->stys[i].offs == st->offs))
 			break;
 
 	if (i == st->stysz) {
@@ -1243,7 +1324,8 @@ rndr_table(struct lowdown_buf *ob,
 		s->autosty = 1;
 		s->type = LOWDOWN_TABLE_BLOCK;
 		s->fmt = ODT_STY_TBL;
-		s->offs = st->offs;
+		if ((s->parent = st->list) == (size_t)-1)
+			s->offs = st->offs;
 		snprintf(s->name, sizeof(s->name),
 			"Table%zu", st->stysz);
 	} else
@@ -1261,7 +1343,12 @@ rndr_table(struct lowdown_buf *ob,
 		return 0;
 	if (!hbuf_putb(ob, content))
 		return 0;
-	return HBUF_PUTSL(ob, "</table:table>\n");
+	if (!HBUF_PUTSL(ob, "</table:table>\n"))
+		return 0;
+	if (st->list != (size_t)-1 && !hbuf_printf(ob,
+	    "</draw:text-box>\n</draw:frame>\n</text:p>\n"))
+		return 0;
+	return 1;
 }
 
 static int
