@@ -53,7 +53,7 @@ static const float LIST_LEN = 1.27;
 struct	odt_sty {
 	char			 name[128]; /* name */
 	size_t			 offs; /* offset ("tabs") from zero */
-	size_t			 parent; /* list parent or (size_t)-1*/
+	size_t			 parent; /* parent or (size_t)-1*/
 	enum lowdown_rndrt	 type; /* specific type of style */
 	int			 fmt; /* general type of style */
 #define	ODT_STY_TEXT		 0x01 /* text (inline) */
@@ -63,6 +63,8 @@ struct	odt_sty {
 #define ODT_STY_H1		 0x05 /* h1 heading */
 #define ODT_STY_H2		 0x06 /* h2 heading */
 #define ODT_STY_H3		 0x07 /* h3 heading */
+#define	ODT_STY_TBL		 0x08 /* table */
+#define ODT_STY_TBL_PARA	 0x09 /* table contents */
 	int			 autosty; /* automatic-style? */
 };
 
@@ -157,15 +159,24 @@ odt_sty_flush(struct lowdown_buf *ob,
 	    !HBUF_PUTSL(ob, "<style:style"))
 		return 0;
 
-	if (sty->fmt == ODT_STY_TEXT &&
-	    !HBUF_PUTSL(ob, " style:family=\"text\""))
-		return 0;
-	if ((sty->fmt == ODT_STY_PARA ||
-	     sty->fmt == ODT_STY_H1 ||
-	     sty->fmt == ODT_STY_H2 ||
-	     sty->fmt == ODT_STY_H3) &&
-	    !HBUF_PUTSL(ob, " style:family=\"paragraph\""))
-		return 0;
+	switch (sty->fmt) {
+	case ODT_STY_TEXT:
+		if (!HBUF_PUTSL(ob, " style:family=\"text\""))
+			return 0;
+		break;
+	case ODT_STY_TBL_PARA:
+	case ODT_STY_PARA:
+	case ODT_STY_H1:
+	case ODT_STY_H2:
+	case ODT_STY_H3:
+		if (!HBUF_PUTSL(ob, " style:family=\"paragraph\""))
+			return 0;
+		break;
+	case ODT_STY_TBL:
+		if (!HBUF_PUTSL(ob, " style:family=\"table\""))
+			return 0;
+		break;
+	}
 
 	if (!hbuf_printf(ob, " style:name=\"%s\"", sty->name))
 		return 0;
@@ -183,6 +194,11 @@ odt_sty_flush(struct lowdown_buf *ob,
 		if (sty->parent != (size_t)-1 && !hbuf_printf(ob,
 		    " style:list-style-name=\"%s\"", 
 		    st->stys[sty->parent].name))
+			return 0;
+		break;
+	case ODT_STY_TBL_PARA:
+		if (!HBUF_PUTSL(ob,
+		    " style:parent-style-name=\"Table_20_Contents\""))
 			return 0;
 		break;
 	case ODT_STY_H1:
@@ -240,6 +256,15 @@ odt_sty_flush(struct lowdown_buf *ob,
 	 */
 
 	switch (sty->type) {
+	case LOWDOWN_TABLE_BLOCK:
+		if (!hbuf_printf(ob,
+		    "<style:table-properties"
+		    " fo:margin-left=\"%.3fcm\""
+		    " fo:margin-right=\"0cm\""
+		    " table:align=\"margins\"/>\n",
+		    sty->offs * TAB_LEN))
+			return 0;
+		break;
 	case LOWDOWN_HRULE:
 		if (!HBUF_PUTSL(ob,
 		    "<style:paragraph-properties"
@@ -272,7 +297,7 @@ odt_sty_flush(struct lowdown_buf *ob,
 		    " fo:margin-right=\"0cm\""
 		    " fo:text-indent=\"0cm\""
 		    " style:auto-text-indent=\"false\"/>\n",
-		    (1.25 * sty->offs)))
+		    sty->offs * TAB_LEN))
 			return 0;
 		break;
 	case LOWDOWN_LIST:
@@ -432,10 +457,13 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 {
 	size_t	 i;
 	int	 xlink = 0, ulist = 0, olist = 0,
-		 h1 = 0, h2 = 0, h3 = 0, hr = 0;
+		 h1 = 0, h2 = 0, h3 = 0, hr = 0, tab = 0;
 
 	for (i = 0; i < st->stysz; i++)
 		switch (st->stys[i].type) {
+		case LOWDOWN_TABLE_BLOCK:
+			tab = 1;
+			break;
 		case LOWDOWN_HRULE:
 			hr = 1;
 			break;
@@ -488,6 +516,20 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 	    " style:name=\"Standard\""
 	    " style:family=\"paragraph\""
 	    " style:class=\"text\"/>\n"))
+		return 0;
+	if (tab && !HBUF_PUTSL(ob,
+	    "<style:style"
+	    " style:name=\"Table_20_Contents\""
+	    " style:display-name=\"Table Contents\""
+	    " style:family=\"paragraph\""
+	    " style:parent-style-name=\"Standard\""
+	    " style:class=\"extra\">\n"
+	    "<style:paragraph-properties"
+	    " fo:orphans=\"0\""
+	    " fo:widows=\"0\""
+	    " text:number-lines=\"false\""
+	    " text:line-number=\"0\"/>\n"
+	    "</style:style>\n"))
 		return 0;
 	if ((h1 || h2 || h3 || hr) && !HBUF_PUTSL(ob,
 	    "<style:style"
@@ -1183,12 +1225,39 @@ rndr_image(struct lowdown_buf *ob,
 
 static int
 rndr_table(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+	const struct lowdown_buf *content,
+	const struct rndr_table *param,
+	struct odt *st)
 {
+	size_t		 i;
+	struct odt_sty	*s;
+
+	for (i = 0; i < st->stysz; i++)
+		if (st->stys[i].type == LOWDOWN_TABLE_BLOCK &&
+		    st->stys[i].offs == st->offs)
+			break;
+
+	if (i == st->stysz) {
+		if ((s = odt_style_add(st)) == NULL)
+			return 0;
+		s->autosty = 1;
+		s->type = LOWDOWN_TABLE_BLOCK;
+		s->fmt = ODT_STY_TBL;
+		s->offs = st->offs;
+		snprintf(s->name, sizeof(s->name),
+			"Table%zu", st->stysz);
+	} else
+		s = &st->stys[i];
 
 	if (ob->size && !hbuf_putc(ob, '\n'))
 		return 0;
-	if (!HBUF_PUTSL(ob, "<table:table>\n"))
+	if (!hbuf_printf(ob,
+	    "<table:table"
+	    " table:style-name=\"%s\""
+	    " table:name=\"%s\">\n"
+	    "<table:table-column"
+	    " table:number-columns-repeated=\"%zu\"/>\n",
+	    s->name, s->name, param->columns))
 		return 0;
 	if (!hbuf_putb(ob, content))
 		return 0;
@@ -1210,10 +1279,31 @@ rndr_tablerow(struct lowdown_buf *ob,
 static int
 rndr_tablecell(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
-	const struct rndr_table_cell *param)
+	const struct rndr_table_cell *param,
+	struct odt *st)
 {
+	size_t		 i;
+	struct odt_sty	*s;
 
-	if (!HBUF_PUTSL(ob, "<table:table-cell><text:p>"))
+	for (i = 0; i < st->stysz; i++)
+		if (st->stys[i].type == LOWDOWN_PARAGRAPH &&
+		    st->stys[i].fmt == ODT_STY_TBL_PARA)
+			break;
+
+	if (i == st->stysz) {
+		if ((s = odt_style_add(st)) == NULL)
+			return 0;
+		s->autosty = 1;
+		s->type = LOWDOWN_PARAGRAPH;
+		s->fmt = ODT_STY_TBL_PARA;
+		snprintf(s->name, sizeof(s->name),
+			"P%zu", st->stysz);
+	} else
+		s = &st->stys[i];
+
+	if (!hbuf_printf(ob,
+	    "<table:table-cell office:value-type=\"string\">"
+	    "<text:p text:style-name=\"%s\">", s->name))
 		return 0;
 
 	if (!hbuf_putb(ob, content))
@@ -1566,13 +1656,13 @@ rndr(struct lowdown_buf *ob,
 		rc = rndr_paragraph(ob, tmp, st);
 		break;
 	case LOWDOWN_TABLE_BLOCK:
-		rc = rndr_table(ob, tmp);
+		rc = rndr_table(ob, tmp, &n->rndr_table, st);
 		break;
 	case LOWDOWN_TABLE_ROW:
 		rc = rndr_tablerow(ob, tmp);
 		break;
 	case LOWDOWN_TABLE_CELL:
-		rc = rndr_tablecell(ob, tmp, &n->rndr_table_cell);
+		rc = rndr_tablecell(ob, tmp, &n->rndr_table_cell, st);
 		break;
 	case LOWDOWN_FOOTNOTES_BLOCK:
 		rc = rndr_footnotes(ob, tmp);
