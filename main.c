@@ -379,8 +379,8 @@ main(int argc, char *argv[])
 				opts.type = LOWDOWN_LATEX;
 			else if (strcasecmp(optarg, "man") == 0)
 				opts.type = LOWDOWN_MAN;
-			else if (strcasecmp(optarg, "odt") == 0)
-				opts.type = LOWDOWN_ODT;
+			else if (strcasecmp(optarg, "fodt") == 0)
+				opts.type = LOWDOWN_FODT;
 			else if (strcasecmp(optarg, "term") == 0)
 				opts.type = LOWDOWN_TERM;
 			else if (strcasecmp(optarg, "tree") == 0)

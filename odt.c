@@ -1696,6 +1696,7 @@ rndr(struct lowdown_buf *ob,
 	}
 
 #if 0
+	/* TODO */
 	if (n->chng == LOWDOWN_CHNG_INSERT && 
 	    !HBUF_PUTSL(ob, "<ins>"))
 		goto out;
@@ -1735,7 +1736,9 @@ rndr(struct lowdown_buf *ob,
 	case LOWDOWN_LISTITEM:
 		rc = rndr_listitem(ob, tmp, n, st);
 		break;
+	/* TODO */
 	case LOWDOWN_DEFINITION_DATA:
+	/* TODO */
 	case LOWDOWN_DEFINITION_TITLE:
 	case LOWDOWN_PARAGRAPH:
 		rc = rndr_paragraph(ob, tmp, st);
@@ -1801,6 +1804,7 @@ rndr(struct lowdown_buf *ob,
 		goto out;
 
 #if 0
+	/* TODO */
 	if (n->chng == LOWDOWN_CHNG_INSERT && 
 	    !HBUF_PUTSL(ob, "</ins>"))
 		goto out;
