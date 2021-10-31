@@ -55,6 +55,7 @@ struct	odt_sty {
 	size_t			 offs; /* offset ("tabs") from zero */
 	size_t			 parent; /* parent or (size_t)-1*/
 	enum lowdown_rndrt	 type; /* specific type of style */
+	int			 foot; /* in a footnote */
 	int			 fmt; /* general type of style */
 #define	ODT_STY_TEXT		 1 /* text (inline) */
 #define	ODT_STY_PARA		 2 /* paragraph */
@@ -79,8 +80,13 @@ struct 	odt {
 	struct odt_sty		*stys; /* styles for content */
 	size_t			 stysz; /* number of styles */
 	size_t			 offs; /* offs or (size_t)-1 in list */
-	size_t			 list; /* root list or (size_t)-1 */
+	size_t			 list; /* root list style or (size_t)-1 */
+	int			 foot; /* in footnote or not */
+	const struct lowdown_node *foots; /* footnotes */
 };
+
+static int rndr(struct lowdown_buf *,
+	struct lowdown_metaq *, void *, const struct lowdown_node *);
 
 /*
  * Append a new zeroed style with an unset parent.  Return NULL on
@@ -197,8 +203,11 @@ odt_sty_flush(struct lowdown_buf *ob,
 			return 0;
 		break;
 	case ODT_STY_PARA:
-		if (!HBUF_PUTSL(ob,
+		if (!sty->foot && !HBUF_PUTSL(ob,
 		    " style:parent-style-name=\"Standard\""))
+			return 0;
+		if (sty->foot && !HBUF_PUTSL(ob,
+		    " style:parent-style-name=\"Footnote\""))
 			return 0;
 		if (sty->parent != (size_t)-1 && !hbuf_printf(ob,
 		    " style:list-style-name=\"%s\"", 
@@ -206,7 +215,10 @@ odt_sty_flush(struct lowdown_buf *ob,
 			return 0;
 		break;
 	case ODT_STY_TBL_PARA:
-		if (!HBUF_PUTSL(ob,
+		if (sty->foot && !HBUF_PUTSL(ob,
+		    " style:parent-style-name=\"Footnote\""))
+			return 0;
+		if (!sty->foot && !HBUF_PUTSL(ob,
 		    " style:parent-style-name=\"Table_20_Contents\""))
 			return 0;
 		break;
@@ -466,7 +478,7 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 	size_t	 i;
 	int	 xlink = 0, ulist = 0, olist = 0,
 		 h1 = 0, h2 = 0, h3 = 0, hr = 0, tab = 0,
-		 fr = 0, lit = 0;
+		 lit = 0;
 	
 	/*
 	 * Many styles and auto-styles depend upon fixed parent styles,
@@ -481,13 +493,6 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 			tab = 1;
 			break;
 		case LOWDOWN_PARAGRAPH:
-			/* 
-			 * FIXME: not a good way to check if we have a
-			 * frame, as this can also occur for paragraphs
-			 * in lists.  It's harmless, however.
-			 */
-			if (st->stys[i].parent != (size_t)-1)
-				fr = 1;
 			if (st->stys[i].fmt == ODT_STY_LIT)
 				lit = 1;
 			break;
@@ -540,16 +545,16 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 	    " style:family=\"paragraph\""
 	    " style:class=\"text\"/>\n"))
 		return 0;
-	if (fr && !HBUF_PUTSL(ob,
+	if (tab && !HBUF_PUTSL(ob,
 	    "<style:style"
 	    " style:name=\"Frame\""
 	    " style:family=\"graphic\">\n"
 	    "<style:graphic-properties"
-	    " text:anchor-type=\"paragraph\""
+	    " text:anchor-type=\"as-char\""
 	    " svg:x=\"0cm\""
 	    " svg:y=\"0cm\""
-	    " fo:margin-left=\"0.201cm\""
-	    " fo:margin-right=\"0.201cm\""
+	    " fo:margin-left=\"0cm\""
+	    " fo:margin-right=\"0cm\""
 	    " fo:margin-top=\"0.201cm\""
 	    " fo:margin-bottom=\"0.201cm\""
 	    " style:wrap=\"parallel\""
@@ -758,7 +763,7 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 		    !odt_sty_flush(ob, st, &st->stys[i]))
 			return 0;
 
-	if (fr && !HBUF_PUTSL(ob,
+	if (tab && !HBUF_PUTSL(ob,
 	    "<style:style style:name=\"fr1\""
 	    " style:family=\"graphic\""
 	    " style:parent-style-name=\"Frame\">\n"
@@ -1101,6 +1106,8 @@ rndr_listitem(struct lowdown_buf *ob,
 	size_t	 	 i, size;
 	struct odt_sty	*sty;
 
+	assert(st->list != (size_t)-1);
+
 	if (!(n->rndr_listitem.flags & HLIST_FL_DEF))
 		if (!HBUF_PUTSL(ob, "<text:list-item>"))
 			return 0;
@@ -1116,6 +1123,7 @@ rndr_listitem(struct lowdown_buf *ob,
 		for (i = 0; i < st->stysz; i++)
 			if (st->stys[i].type == LOWDOWN_PARAGRAPH &&
 			    st->stys[i].fmt == ODT_STY_PARA &&
+			    st->stys[i].foot == st->foot &&
 			    st->stys[i].parent == st->list)
 				break;
 		if (i == st->stysz) {
@@ -1123,6 +1131,7 @@ rndr_listitem(struct lowdown_buf *ob,
 				return 0;
 			sty->autosty = 1;
 			sty->parent = st->list;
+			sty->foot = st->foot;
 			sty->fmt = ODT_STY_PARA;
 			sty->type = LOWDOWN_PARAGRAPH;
 			snprintf(sty->name, sizeof(sty->name),
@@ -1191,6 +1200,7 @@ rndr_paragraph(struct lowdown_buf *ob,
 	for (j = 0; j < st->stysz; j++)
 		if (st->stys[j].type == LOWDOWN_PARAGRAPH &&
 		    st->stys[j].parent == st->list &&
+		    st->stys[j].foot == st->foot &&
 		    st->stys[j].fmt == ODT_STY_PARA &&
 		    (st->stys[j].parent != (size_t)-1 ||
 		     st->stys[j].offs == st->offs))
@@ -1200,6 +1210,7 @@ rndr_paragraph(struct lowdown_buf *ob,
 		if ((sty = odt_style_add(st)) == NULL)
 			return 0;
 		sty->autosty = 1;
+		sty->foot = st->foot;
 		sty->fmt = ODT_STY_PARA;
 		sty->type = LOWDOWN_PARAGRAPH;
 		if ((sty->parent = st->list) == (size_t)-1)
@@ -1237,7 +1248,8 @@ rndr_hrule(struct lowdown_buf *ob, struct odt *st)
 	struct odt_sty	*s;
 
 	for (i = 0; i < st->stysz; i++)
-		if (st->stys[i].type == LOWDOWN_HRULE) {
+		if (st->stys[i].type == LOWDOWN_HRULE &&
+		    st->stys[i].foot == st->foot) {
 			assert(st->stys[i].fmt == ODT_STY_PARA);
 			break;
 		}
@@ -1247,6 +1259,7 @@ rndr_hrule(struct lowdown_buf *ob, struct odt *st)
 			return 0;
 		s->type = LOWDOWN_HRULE;
 		s->fmt = ODT_STY_PARA;
+		s->foot = st->foot;
 		strlcpy(s->name, "Horizontal_20_Line",
 			sizeof(s->name));
 	} else
@@ -1274,73 +1287,86 @@ rndr_table(struct lowdown_buf *ob,
 	struct odt *st)
 {
 	size_t		 i;
-	struct odt_sty	*s;
+	struct odt_sty	*s, *ss;
 
-	if (st->list != (size_t)-1) {
-		for (i = 0; i < st->stysz; i++)
-			if (st->stys[i].type == LOWDOWN_PARAGRAPH &&
-			    st->stys[i].fmt == ODT_STY_PARA &&
-			    st->stys[i].parent == st->list)
-				break;
-		if (i == st->stysz) {
-			if ((s = odt_style_add(st)) == NULL)
-				return 0;
-			s->autosty = 1;
-			s->parent = st->list;
-			s->fmt = ODT_STY_PARA;
-			s->type = LOWDOWN_PARAGRAPH;
-			snprintf(s->name, sizeof(s->name),
-				"P%zu", st->stysz);
-		} else
-			s = &st->stys[i];
-
-		if (!hbuf_printf(ob,
-		    "<text:p text:style-name=\"%s\">\n"
-		    "<draw:frame draw:style-name=\"fr1\""
-		    " draw:name=\"Frame\""
-		    " text:anchor-type=\"as-char\""
-		    " draw:z-index=\"0\">\n"
-		    "<draw:text-box"
-		    " fo:min-height=\"0.499cm\""
-		    " fo:min-width=\"0.34cm\">\n",
-		    s->name))
-			return 0;
-	}
+	/*
+	 * First find the outer paragraph.  If we're in the footer, this
+	 * must be linked to the footer; and if in a list, to the list.
+	 * We don't do offset here: that's part of the table itself.
+	 */
 
 	for (i = 0; i < st->stysz; i++)
-		if (st->stys[i].type == LOWDOWN_TABLE_BLOCK &&
-		    (st->stys[i].parent != (size_t)-1 ||
-		     st->stys[i].offs == st->offs))
+		if (st->stys[i].type == LOWDOWN_PARAGRAPH &&
+		    st->stys[i].fmt == ODT_STY_PARA &&
+		    st->stys[i].offs == 0 &&
+		    st->stys[i].foot == st->foot &&
+		    st->stys[i].parent == st->list)
 			break;
-
 	if (i == st->stysz) {
 		if ((s = odt_style_add(st)) == NULL)
 			return 0;
 		s->autosty = 1;
-		s->type = LOWDOWN_TABLE_BLOCK;
-		s->fmt = ODT_STY_TBL;
-		if ((s->parent = st->list) == (size_t)-1)
-			s->offs = st->offs;
+		s->parent = st->list;
+		s->foot = st->foot;
+		s->fmt = ODT_STY_PARA;
+		s->type = LOWDOWN_PARAGRAPH;
 		snprintf(s->name, sizeof(s->name),
-			"Table%zu", st->stysz);
+			"P%zu", st->stysz);
 	} else
 		s = &st->stys[i];
 
+	/*
+	 * Now the table itself.  Tables are only unique insofar as they
+	 * have different offsets and possible are in lists.
+	 */
+
+	for (i = 0; i < st->stysz; i++)
+		if (st->stys[i].type == LOWDOWN_TABLE_BLOCK &&
+		    st->stys[i].parent == st->list &&
+		    st->stys[i].foot == st->foot &&
+		    st->stys[i].offs == st->offs)
+			break;
+
+	if (i == st->stysz) {
+		if ((ss = odt_style_add(st)) == NULL)
+			return 0;
+		ss->autosty = 1;
+		ss->type = LOWDOWN_TABLE_BLOCK;
+		ss->fmt = ODT_STY_TBL;
+		ss->foot = st->foot;
+		ss->parent = st->list;
+		ss->offs = st->offs;
+		snprintf(ss->name, sizeof(ss->name),
+			"Table%zu", st->stysz);
+	} else
+		ss = &st->stys[i];
+
 	if (ob->size && !hbuf_putc(ob, '\n'))
 		return 0;
+
 	if (!hbuf_printf(ob,
+	    "<text:p text:style-name=\"%s\">\n", s->name))
+		return 0;
+
+	if (!hbuf_printf(ob,
+	    "<draw:frame draw:style-name=\"fr1\""
+	    " draw:name=\"Frame%zu\""
+	    " draw:z-index=\"0\">\n"
+	    "<draw:text-box"
+	    " fo:min-height=\"0.499cm\""
+	    " fo:min-width=\"0.34cm\">\n"
 	    "<table:table"
 	    " table:style-name=\"%s\""
 	    " table:name=\"%s\">\n"
 	    "<table:table-column"
 	    " table:number-columns-repeated=\"%zu\"/>\n",
-	    s->name, s->name, param->columns))
+	    i, ss->name, ss->name, param->columns))
 		return 0;
 	if (!hbuf_putb(ob, content))
 		return 0;
 	if (!HBUF_PUTSL(ob, "</table:table>\n"))
 		return 0;
-	if (st->list != (size_t)-1 && !hbuf_printf(ob,
+	if (!hbuf_printf(ob,
 	    "</draw:text-box>\n</draw:frame>\n</text:p>\n"))
 		return 0;
 	return 1;
@@ -1369,6 +1395,7 @@ rndr_tablecell(struct lowdown_buf *ob,
 
 	for (i = 0; i < st->stysz; i++)
 		if (st->stys[i].type == LOWDOWN_PARAGRAPH &&
+		    st->stys[i].foot == st->foot &&
 		    st->stys[i].fmt == ODT_STY_TBL_PARA)
 			break;
 
@@ -1377,6 +1404,7 @@ rndr_tablecell(struct lowdown_buf *ob,
 			return 0;
 		s->autosty = 1;
 		s->type = LOWDOWN_PARAGRAPH;
+		s->foot = st->foot;
 		s->fmt = ODT_STY_TBL_PARA;
 		snprintf(s->name, sizeof(s->name),
 			"P%zu", st->stysz);
@@ -1403,84 +1431,56 @@ rndr_normal_text(struct lowdown_buf *ob,
 	return escape_htmlb(ob, &param->text, st);
 }
 
-/* TODO */
-static int
-rndr_footnotes(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
-{
-
-	if (ob->size && !hbuf_putc(ob, '\n'))
-		return 0;
-	if (!HBUF_PUTSL(ob, "<div class=\"footnotes\">\n"))
-		return 0;
-	if (!hbuf_puts(ob, "<hr/>\n"))
-		return 0;
-	if (!HBUF_PUTSL(ob, "<ol>\n"))
-		return 0;
-	if (!hbuf_putb(ob, content))
-		return 0;
-	return HBUF_PUTSL(ob, "\n</ol>\n</div>\n");
-}
-
-/* TODO */
-static int
-rndr_footnote_def(struct lowdown_buf *ob,
-	const struct lowdown_buf *content, 
-	const struct rndr_footnote_def *param)
-{
-	size_t	i = 0;
-	int	pfound = 0;
-
-	/* Insert anchor at the end of first paragraph block. */
-
-	while ((i + 3) < content->size) {
-		if (content->data[i++] != '<') 
-			continue;
-		if (content->data[i++] != '/') 
-			continue;
-		if (content->data[i++] != 'p' && 
-		    content->data[i] != 'P') 
-			continue;
-		if (content->data[i] != '>') 
-			continue;
-		i -= 3;
-		pfound = 1;
-		break;
-	}
-
-	if (!hbuf_printf(ob, "\n<li id=\"fn%zu\">\n", param->num))
-		return 0;
-
-	if (pfound) {
-		if (!hbuf_put(ob, content->data, i))
-			return 0;
-		if (!hbuf_printf(ob, "&#160;"
-		    "<a href=\"#fnref%zu\" rev=\"footnote\">"
-		    "&#8617;"
-		    "</a>", param->num))
-			return 0;
-		if (!hbuf_put(ob, 
-		    content->data + i, content->size - i))
-			return 0;
-	} else {
-		if (!hbuf_putb(ob, content))
-			return 0;
-	}
-
-	return HBUF_PUTSL(ob, "</li>\n");
-}
-
-/* TODO */
 static int
 rndr_footnote_ref(struct lowdown_buf *ob,
-	const struct rndr_footnote_ref *param)
+	const struct rndr_footnote_ref *param,
+	struct odt *st)
 {
+	const struct lowdown_node	*n;
+	struct odt			 tmp;
 
-	return hbuf_printf(ob, 
-		"<sup id=\"fnref%zu\">"
-		"<a href=\"#fn%zu\" rel=\"footnote\">"
-		"%zu</a></sup>", 
-		param->num, param->num, param->num);
+	/* Don't allow nested footnotes. */
+
+	if (st->foot)
+		return 1;
+
+	/* Look up footnote definition and exit if not found. */
+
+	if (st->foots == NULL)
+		return 1;
+	TAILQ_FOREACH(n, &st->foots->children, entries)
+		if (n->type != LOWDOWN_FOOTNOTE_DEF)
+			continue;
+		else if (n->rndr_footnote_def.num == param->num)
+			break;
+	if (n == NULL)
+		return 1;
+
+	/* Save state values. */
+
+	tmp = *st;
+	st->offs = 0;
+	st->list = (size_t)-1;
+	st->foot = 1;
+
+	if (!hbuf_printf(ob,
+	    "<text:note text:id=\"ftn%zu\""
+	    " text:note-class=\"footnote\">"
+	    "<text:note-citation>%zu</text:note-citation>"
+	    "<text:note-body>\n", param->num, param->num))
+		return 0;
+	if (!rndr(ob, NULL, st, n))
+		return 0;
+	if (!HBUF_PUTSL(ob,
+	    "</text:note-body></text:note>\n"))
+		return 0;
+
+	/* Restore state values. */
+
+	st->offs = tmp.offs;
+	st->list = tmp.list;
+	st->foot = 0;
+	return 1;
 }
 
 static int
@@ -1686,9 +1686,14 @@ rndr(struct lowdown_buf *ob,
 		break;
 	}
 
-	TAILQ_FOREACH(child, &n->children, entries)
+	/* Skip footnotes. */
+
+	TAILQ_FOREACH(child, &n->children, entries) {
+		if (child->type == LOWDOWN_FOOTNOTES_BLOCK)
+			continue;
 		if (!rndr(tmp, mq, st, child))
 			goto out;
+	}
 
 #if 0
 	if (n->chng == LOWDOWN_CHNG_INSERT && 
@@ -1744,12 +1749,6 @@ rndr(struct lowdown_buf *ob,
 	case LOWDOWN_TABLE_CELL:
 		rc = rndr_tablecell(ob, tmp, &n->rndr_table_cell, st);
 		break;
-	case LOWDOWN_FOOTNOTES_BLOCK:
-		rc = rndr_footnotes(ob, tmp);
-		break;
-	case LOWDOWN_FOOTNOTE_DEF:
-		rc = rndr_footnote_def(ob, tmp, &n->rndr_footnote_def);
-		break;
 	case LOWDOWN_BLOCKHTML:
 		rc = rndr_html(ob, &n->rndr_blockhtml.text, st);
 		break;
@@ -1777,7 +1776,7 @@ rndr(struct lowdown_buf *ob,
 		rc = rndr_link(ob, tmp, &n->rndr_link, st);
 		break;
 	case LOWDOWN_FOOTNOTE_REF:
-		rc = rndr_footnote_ref(ob, &n->rndr_footnote_ref);
+		rc = rndr_footnote_ref(ob, &n->rndr_footnote_ref, st);
 		break;
 	case LOWDOWN_MATH_BLOCK:
 		rc = rndr_math(ob, &n->rndr_math, st);
@@ -1833,15 +1832,23 @@ int
 lowdown_odt_rndr(struct lowdown_buf *ob,
 	void *arg, const struct lowdown_node *n)
 {
-	struct odt		*st = arg;
-	struct lowdown_metaq	 metaq;
-	int			 rc;
+	struct odt			*st = arg;
+	struct lowdown_metaq		 metaq;
+	int				 rc;
 
 	TAILQ_INIT(&metaq);
 	st->headers_offs = 1;
 	st->stys = NULL;
 	st->stysz = 0;
 	st->list = (size_t)-1;
+	st->foot = 0;
+	st->foots = NULL;
+
+	if (n->type == LOWDOWN_ROOT)
+		TAILQ_FOREACH_REVERSE(st->foots,
+		    &n->children, lowdown_nodeq, entries)
+			if (st->foots->type == LOWDOWN_FOOTNOTES_BLOCK)
+				break;
 
 	rc = rndr(ob, &metaq, st, n);
 
