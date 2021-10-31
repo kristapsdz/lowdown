@@ -32,6 +32,12 @@
 #include "extern.h"
 
 /*
+ * Maximum length of any style.  This should account for fixed prefix
+ * text (e.g., "Frame" at longest) then an incrementing size_t.
+ */
+#define STYLE_NAME_LEN	 32
+
+/*
  * Default size for a blockquote (paragraph indent).
  */
 static const float TAB_LEN = 1.25;
@@ -51,7 +57,7 @@ static const float LIST_LEN = 1.27;
  * can have offsets.
  */
 struct	odt_sty {
-	char			 name[128]; /* name */
+	char			 name[STYLE_NAME_LEN]; /* name */
 	size_t			 offs; /* offset ("tabs") from zero */
 	size_t			 parent; /* parent or (size_t)-1*/
 	enum lowdown_rndrt	 type; /* specific type of style */
@@ -79,6 +85,10 @@ struct 	odt {
 	unsigned int 		 flags; /* "oflags" in lowdown_opts */
 	struct odt_sty		*stys; /* styles for content */
 	size_t			 stysz; /* number of styles */
+	size_t			 sty_T; /* "T" styles */
+	size_t			 sty_Table; /* "Table" styles */
+	size_t			 sty_L; /* "L" styles */
+	size_t			 sty_P; /* "P" styles */
 	size_t			 offs; /* offs or (size_t)-1 in list */
 	size_t			 list; /* root list style or (size_t)-1 */
 	int			 foot; /* in footnote or not */
@@ -140,7 +150,7 @@ odt_style_add_text(struct odt *st, enum lowdown_rndrt type)
 		break;
 	default:
 		s->autosty = 1;
-		snprintf(s->name, sizeof(s->name), "T%zu", st->stysz);
+		snprintf(s->name, sizeof(s->name), "T%zu", st->sty_T++);
 		break;
 	}
 	return s->name;
@@ -924,7 +934,7 @@ rndr_blockcode(struct lowdown_buf *ob,
 		s->parent = st->list;
 		s->offs = st->offs;
 		snprintf(s->name, sizeof(s->name),
-			"P%zu", st->stysz);
+			"P%zu", st->sty_P++);
 	} else
 		s = &st->stys[i];
 
@@ -1061,7 +1071,7 @@ rndr_header(struct lowdown_buf *ob,
 		sty->fmt = fl;
 		sty->type = LOWDOWN_HEADER;
 		snprintf(sty->name, sizeof(sty->name),
-			"P%zu", st->stysz);
+			"P%zu", st->sty_P++);
 	} else
 		sty = &st->stys[i];
 
@@ -1168,7 +1178,7 @@ rndr_listitem(struct lowdown_buf *ob,
 			sty->fmt = ODT_STY_PARA;
 			sty->type = LOWDOWN_PARAGRAPH;
 			snprintf(sty->name, sizeof(sty->name),
-				"P%zu", st->stysz);
+				"P%zu", st->sty_P++);
 		} else
 			sty = &st->stys[i];
 
@@ -1254,7 +1264,7 @@ rndr_paragraph(struct lowdown_buf *ob,
 		sty->parent = st->list;
 		sty->offs = st->offs;
 		snprintf(sty->name, sizeof(sty->name),
-			"P%zu", st->stysz);
+			"P%zu", st->sty_P++);
 	} else
 		sty = &st->stys[j];
 
@@ -1360,7 +1370,7 @@ rndr_table(struct lowdown_buf *ob,
 		s->fmt = ODT_STY_PARA;
 		s->type = LOWDOWN_PARAGRAPH;
 		snprintf(s->name, sizeof(s->name),
-			"P%zu", st->stysz);
+			"P%zu", st->sty_P++);
 	} else
 		s = &st->stys[i];
 
@@ -1386,7 +1396,7 @@ rndr_table(struct lowdown_buf *ob,
 		ss->parent = st->list;
 		ss->offs = st->offs;
 		snprintf(ss->name, sizeof(ss->name),
-			"Table%zu", st->stysz);
+			"Table%zu", st->sty_Table++);
 	} else
 		ss = &st->stys[i];
 
@@ -1399,7 +1409,7 @@ rndr_table(struct lowdown_buf *ob,
 
 	if (!hbuf_printf(ob,
 	    "<draw:frame draw:style-name=\"fr1\""
-	    " draw:name=\"Frame%zu\""
+	    " draw:name=\"Frame\""
 	    " draw:z-index=\"0\">\n"
 	    "<draw:text-box"
 	    " fo:min-height=\"0.499cm\""
@@ -1409,7 +1419,7 @@ rndr_table(struct lowdown_buf *ob,
 	    " table:name=\"%s\">\n"
 	    "<table:table-column"
 	    " table:number-columns-repeated=\"%zu\"/>\n",
-	    i, ss->name, ss->name, param->columns))
+	    ss->name, ss->name, param->columns))
 		return 0;
 	if (!hbuf_putb(ob, content))
 		return 0;
@@ -1467,7 +1477,7 @@ rndr_tablecell(struct lowdown_buf *ob,
 		s->foot = st->foot;
 		s->fmt = ODT_STY_TBL_PARA;
 		snprintf(s->name, sizeof(s->name),
-			"P%zu", st->stysz);
+			"P%zu", st->sty_P++);
 	} else
 		s = &st->stys[i];
 
@@ -1769,7 +1779,7 @@ rndr(struct lowdown_buf *ob,
 			sty->offs = st->offs;
 			sty->autosty = 1;
 			snprintf(sty->name, sizeof(sty->name),
-				"L%zu", st->stysz);
+				"L%zu", st->sty_L++);
 		}
 		curoffs = st->offs;
 		st->offs = 0;
@@ -1942,6 +1952,7 @@ lowdown_odt_rndr(struct lowdown_buf *ob,
 	st->list = (size_t)-1;
 	st->foot = 0;
 	st->foots = NULL;
+	st->sty_T = st->sty_L = st->sty_P = st->sty_Table = 1;
 
 	/* 
 	 * Keep tabs of where the footnote block is, if any.  This is
