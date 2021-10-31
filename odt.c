@@ -243,13 +243,8 @@ odt_sty_flush(struct lowdown_buf *ob,
 
 	switch (sty->type) {
 	case LOWDOWN_LINK:
-		/* 
-		 * XXX: "link" is lowercase when others aren't.
-		 * This is copied over from libreoffice but is probably
-		 * a typo?
-		 */
 		if (!HBUF_PUTSL(ob,
-		    " style:display-name=\"Internet link\""))
+		    " style:display-name=\"Internet Link\""))
 			return 0;
 		break;
 	case LOWDOWN_CODESPAN:
@@ -473,7 +468,7 @@ odt_sty_flush(struct lowdown_buf *ob,
  * failure, TRUE on success.
  */
 static int
-odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
+odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 {
 	size_t	 i;
 	int	 xlink = 0, ulist = 0, olist = 0,
@@ -743,41 +738,6 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 	    " style:font-weight-complex=\"bold\"/>\n"
 	    "</style:style>\n"))
 	    	return 0;
-
-	/* Emit fixed styles. */
-
-	for (i = 0; i < st->stysz; i++)
-		if (!st->stys[i].autosty &&
-		    !odt_sty_flush(ob, st, &st->stys[i]))
-			return 0;
-
-	if (!HBUF_PUTSL(ob,
-	    "</office:styles>\n"
-	    "<office:automatic-styles>\n"))
-		return 0;
-
-	/* Emit automatic styles. */
-
-	for (i = 0; i < st->stysz; i++)
-		if (st->stys[i].autosty &&
-		    !odt_sty_flush(ob, st, &st->stys[i]))
-			return 0;
-
-	if (tab && !HBUF_PUTSL(ob,
-	    "<style:style style:name=\"fr1\""
-	    " style:family=\"graphic\""
-	    " style:parent-style-name=\"Frame\">\n"
-	    "<style:graphic-properties"
-	    " style:run-through=\"foreground\""
-	    " style:wrap=\"parallel\""
-	    " style:number-wrapped-paragraphs=\"no-limit\""
-	    " style:vertical-pos=\"middle\""
-	    " style:vertical-rel=\"baseline\""
-	    " style:horizontal-pos=\"center\""
-	    " style:horizontal-rel=\"paragraph\"/>\n"
-	    " </style:style>\n"))
-		return 0;
-
 	if (!HBUF_PUTSL(ob,
 	    "<style:page-layout style:name=\"pm1\">\n"
 	    "<style:page-layout-properties"
@@ -794,9 +754,31 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 	    "</style:page-layout-properties>\n"
 	    "</style:page-layout>\n"))
 		return 0;
+	if (tab && !HBUF_PUTSL(ob,
+	    "<style:style style:name=\"fr1\""
+	    " style:family=\"graphic\""
+	    " style:parent-style-name=\"Frame\">\n"
+	    "<style:graphic-properties"
+	    " style:run-through=\"foreground\""
+	    " style:wrap=\"parallel\""
+	    " style:number-wrapped-paragraphs=\"no-limit\""
+	    " style:vertical-pos=\"middle\""
+	    " style:vertical-rel=\"baseline\""
+	    " style:horizontal-pos=\"center\""
+	    " style:horizontal-rel=\"paragraph\"/>\n"
+	    " </style:style>\n"))
+		return 0;
+
+
+	/* Emit fixed styles. */
+
+	for (i = 0; i < st->stysz; i++)
+		if (!st->stys[i].autosty &&
+		    !odt_sty_flush(ob, st, &st->stys[i]))
+			return 0;
 
 	if (!HBUF_PUTSL(ob,
-	    "</office:automatic-styles>\n"))
+	    "</office:styles>\n"))
 		return 0;
 
 	if (!HBUF_PUTSL(ob,
@@ -807,6 +789,30 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 	    "</office:master-styles>\n"))
 		return 0;
 	return 1;
+}
+
+/*
+ * Flush out the elements for scripts, styles, and automatic-styles.
+ * XXX: it's possible to put a lot of this into a separate file,
+ * somehow, but that's a matter for the future.  Return FALSE on
+ * failure, TRUE on success.
+ */
+static int
+odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
+{
+	size_t	 i;
+
+	if ((st->flags & LOWDOWN_STANDALONE) &&
+	    !odt_styles_flush_fixed(ob, st))
+		return 0;
+
+	if (!HBUF_PUTSL(ob, "<office:automatic-styles>\n"))
+		return 0;
+	for (i = 0; i < st->stysz; i++)
+		if (st->stys[i].autosty &&
+		    !odt_sty_flush(ob, st, &st->stys[i]))
+			return 0;
+	return HBUF_PUTSL(ob, "</office:automatic-styles>\n");
 }
 
 /*
@@ -843,6 +849,9 @@ escape_href(struct lowdown_buf *ob, const struct lowdown_buf *in,
 	return hesc_href(ob, in->data, in->size);
 }
 
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_autolink(struct lowdown_buf *ob, 
 	const struct rndr_autolink *parm,
@@ -885,6 +894,9 @@ rndr_autolink(struct lowdown_buf *ob,
 	return HBUF_PUTSL(ob, "</text:a>");
 }
 
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_blockcode(struct lowdown_buf *ob, 
 	const struct rndr_blockcode *parm,
@@ -899,8 +911,8 @@ rndr_blockcode(struct lowdown_buf *ob,
 	for (i = 0; i < st->stysz; i++)
 		if (st->stys[i].type == LOWDOWN_PARAGRAPH &&
 		    st->stys[i].fmt == ODT_STY_LIT &&
-		    (st->stys[i].parent != (size_t)-1 ||
-		     st->stys[i].offs == st->offs))
+		    st->stys[i].parent == st->list &&
+		    st->stys[i].offs == st->offs)
 			break;
 
 	if (i == st->stysz) {
@@ -909,8 +921,7 @@ rndr_blockcode(struct lowdown_buf *ob,
 		s->autosty = 1;
 		s->type = LOWDOWN_PARAGRAPH;
 		s->fmt = ODT_STY_LIT;
-		if ((s->parent = st->list) == (size_t)-1)
-			s->offs = st->offs;
+		s->parent = st->list;
 		s->offs = st->offs;
 		snprintf(s->name, sizeof(s->name),
 			"P%zu", st->stysz);
@@ -961,6 +972,9 @@ rndr_blockcode(struct lowdown_buf *ob,
 	return 1;
 }
 
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_codespan(struct lowdown_buf *ob,
 	const struct rndr_codespan *param, 
@@ -978,6 +992,10 @@ rndr_codespan(struct lowdown_buf *ob,
 	return HBUF_PUTSL(ob, "</text:span>");
 }
 
+/*
+ * This covers all manner of span types: italic, bold, etc.  Return
+ * FALSE on failure, TRUE on success.
+ */
 static int
 rndr_span(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
@@ -995,6 +1013,9 @@ rndr_span(struct lowdown_buf *ob,
 	return HBUF_PUTSL(ob, "</text:span>");
 }
 
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_linebreak(struct lowdown_buf *ob)
 {
@@ -1002,6 +1023,9 @@ rndr_linebreak(struct lowdown_buf *ob)
 	return HBUF_PUTSL(ob, "<text:line-break/>\n");
 }
 
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_header(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
@@ -1052,6 +1076,9 @@ rndr_header(struct lowdown_buf *ob,
 	return HBUF_PUTSL(ob, "</text:h>\n");
 }
 
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_link(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
@@ -1076,6 +1103,9 @@ rndr_link(struct lowdown_buf *ob,
 	return 1;
 }
 
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_list(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
@@ -1097,6 +1127,9 @@ rndr_list(struct lowdown_buf *ob,
 	return HBUF_PUTSL(ob, "</text:list>\n");
 }
 
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_listitem(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
@@ -1145,6 +1178,7 @@ rndr_listitem(struct lowdown_buf *ob,
 	}
 
 #if 0
+	/* TODO */
 	if (n->rndr_listitem.flags &
 	    (HLIST_FL_CHECKED|HLIST_FL_UNCHECKED))
 		HBUF_PUTSL(ob, "<input type=\"checkbox\" ");
@@ -1176,6 +1210,9 @@ rndr_listitem(struct lowdown_buf *ob,
 	return 1;
 }
 
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_paragraph(struct lowdown_buf *ob,
 	const struct lowdown_buf *content, 
@@ -1194,7 +1231,9 @@ rndr_paragraph(struct lowdown_buf *ob,
 
 	/*
 	 * Paragraphs need to either set their left margin, if in
-	 * blockquotes, or link to the root list, if applicable.
+	 * blockquotes, or link to the root list, if applicable.  The
+	 * foot bits are because footer paragraphs inherit the footnote
+	 * font.
 	 */
 
 	for (j = 0; j < st->stysz; j++)
@@ -1202,8 +1241,7 @@ rndr_paragraph(struct lowdown_buf *ob,
 		    st->stys[j].parent == st->list &&
 		    st->stys[j].foot == st->foot &&
 		    st->stys[j].fmt == ODT_STY_PARA &&
-		    (st->stys[j].parent != (size_t)-1 ||
-		     st->stys[j].offs == st->offs))
+		    st->stys[j].offs == st->offs)
 			break;
 
 	if (j == st->stysz) {
@@ -1213,8 +1251,8 @@ rndr_paragraph(struct lowdown_buf *ob,
 		sty->foot = st->foot;
 		sty->fmt = ODT_STY_PARA;
 		sty->type = LOWDOWN_PARAGRAPH;
-		if ((sty->parent = st->list) == (size_t)-1)
-			sty->offs = st->offs;
+		sty->parent = st->list;
+		sty->offs = st->offs;
 		snprintf(sty->name, sizeof(sty->name),
 			"P%zu", st->stysz);
 	} else
@@ -1230,6 +1268,9 @@ rndr_paragraph(struct lowdown_buf *ob,
 	return HBUF_PUTSL(ob, "</text:p>\n");
 }
 
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_html(struct lowdown_buf *ob,
 	const struct lowdown_buf *param,
@@ -1241,6 +1282,9 @@ rndr_html(struct lowdown_buf *ob,
 	return escape_htmlb(ob, param, st);
 }
 
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_hrule(struct lowdown_buf *ob, struct odt *st)
 {
@@ -1271,15 +1315,20 @@ rndr_hrule(struct lowdown_buf *ob, struct odt *st)
 		"<text:p text:style-name=\"%s\"/>\n", s->name);
 }
 
+/*
+ * TODO: not implemented yet.  Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_image(struct lowdown_buf *ob,
 	const struct rndr_image *param, 
 	const struct odt *st)
 {
-	/* TODO: not implemented yet. */
 	return 1;
 }
 
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_table(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
@@ -1372,6 +1421,9 @@ rndr_table(struct lowdown_buf *ob,
 	return 1;
 }
 
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_tablerow(struct lowdown_buf *ob,
 	const struct lowdown_buf *content)
@@ -1384,6 +1436,9 @@ rndr_tablerow(struct lowdown_buf *ob,
 	return HBUF_PUTSL(ob, "</table:table-row>\n");
 }
 
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_tablecell(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
@@ -1392,6 +1447,11 @@ rndr_tablecell(struct lowdown_buf *ob,
 {
 	size_t		 i;
 	struct odt_sty	*s;
+
+	/*
+	 * Reference if we're in a footnote, as the paragraph will want
+	 * to inherit the Footnote smaller font.
+	 */
 
 	for (i = 0; i < st->stysz; i++)
 		if (st->stys[i].type == LOWDOWN_PARAGRAPH &&
@@ -1415,22 +1475,14 @@ rndr_tablecell(struct lowdown_buf *ob,
 	    "<table:table-cell office:value-type=\"string\">"
 	    "<text:p text:style-name=\"%s\">", s->name))
 		return 0;
-
 	if (!hbuf_putb(ob, content))
 		return 0;
-
 	return HBUF_PUTSL(ob, "</text:p></table:table-cell>\n");
 }
 
-static int
-rndr_normal_text(struct lowdown_buf *ob,
-	const struct rndr_normal_text *param,
-	const struct odt *st)
-{
-
-	return escape_htmlb(ob, &param->text, st);
-}
-
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_footnote_ref(struct lowdown_buf *ob,
 	const struct rndr_footnote_ref *param,
@@ -1483,6 +1535,9 @@ rndr_footnote_ref(struct lowdown_buf *ob,
 	return 1;
 }
 
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_math(struct lowdown_buf *ob,
 	const struct rndr_math *param, 
@@ -1500,6 +1555,9 @@ rndr_math(struct lowdown_buf *ob,
 		HBUF_PUTSL(ob, "\\)");
 }
 
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_doc_footer(struct lowdown_buf *ob, const struct odt *st)
 {
@@ -1507,13 +1565,16 @@ rndr_doc_footer(struct lowdown_buf *ob, const struct odt *st)
 	return HBUF_PUTSL(ob, "</office:text>\n</office:body>\n");
 }
 
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_root(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
 	const struct odt *st)
 {
 
-	if (!HBUF_PUTSL(ob,
+	if ((st->flags & LOWDOWN_STANDALONE) && !HBUF_PUTSL(ob,
 	    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
 	    "<office:document\n"
 	    " xmlns:calcext=\"urn:org:documentfoundation:names:experimental:calc:xmlns:calcext:1.0\"\n"
@@ -1555,7 +1616,13 @@ rndr_root(struct lowdown_buf *ob,
 	    " office:mimetype=\"application/vnd.oasis.opendocument.text\"\n"
 	    " office:version=\"1.3\">\n"))
 		return 0;
-	if (!HBUF_PUTSL(ob,
+
+	/* 
+	 * These fonts are only referenced in the non-automatic styles,
+	 * so don't emit them for non-standalone mode.
+	 */
+
+	if ((st->flags & LOWDOWN_STANDALONE) && !HBUF_PUTSL(ob,
 	    "<office:font-face-decls>\n"
   	    "<style:font-face style:name=\"OpenSymbol\""
 	    " svg:font-family=\"OpenSymbol\""
@@ -1574,16 +1641,22 @@ rndr_root(struct lowdown_buf *ob,
 	    " style:font-pitch=\"variable\"/>\n"
 	    "</office:font-face-decls>\n"))
 		return 0;
+
 	if (!odt_styles_flush(ob, st))
 		return 0;
+
 	if (!hbuf_putb(ob, content))
 		return 0;
-	return HBUF_PUTSL(ob, "</office:document>\n");
+
+	if ((st->flags & LOWDOWN_STANDALONE) && !HBUF_PUTSL(ob,
+	    "</office:document>\n"))
+		return 0;
+	return 1;
 }
 
 /*
- * Allocate a meta-data value on the queue "mq".
- * Return zero on failure, non-zero on success.
+ * Allocate a meta-data value on the queue "mq".  Return FALSE on
+ * failure, TRUE on success.
  */
 static int
 rndr_meta(struct lowdown_buf *ob,
@@ -1623,6 +1696,9 @@ rndr_meta(struct lowdown_buf *ob,
 	return 1;
 }
 
+/*
+ * Return FALSE on failure, TRUE on success.
+ */
 static int
 rndr_doc_header(struct lowdown_buf *ob)
 {
@@ -1640,11 +1716,26 @@ rndr(struct lowdown_buf *ob,
 	int32_t				 ent;
 	struct odt			*st = ref;
 	struct odt_sty			*sty = NULL;
-	size_t				 curid = (size_t)-1;
+	size_t				 curid = (size_t)-1, curoffs;
 	int				 ret = 1, rc = 1;
 
 	if ((tmp = hbuf_new(64)) == NULL)
 		return 0;
+
+	/*
+	 * Manage our position in the output.  If we're in a blockquote
+	 * and not a list, then increment our indent.  If we're in a
+	 * list, we're not allowed to have indents between the list and
+	 * content (OpenDocument limitations), so don't touch the
+	 * indentation.
+	 */
+
+	/*
+	 * TODO: keep a "real offset" if we have an embedded table and
+	 * want to set the width to be the real offset minus page width.
+	 * Without doing so, list-embedded tables run off the right
+	 * margin for OpenDocument reasons.
+	 */
 
 	switch (n->type) {
 	case LOWDOWN_BLOCKQUOTE:
@@ -1680,6 +1771,8 @@ rndr(struct lowdown_buf *ob,
 			snprintf(sty->name, sizeof(sty->name),
 				"L%zu", st->stysz);
 		}
+		curoffs = st->offs;
+		st->offs = 0;
 		curid = st->list;
 		break;
 	default:
@@ -1788,7 +1881,7 @@ rndr(struct lowdown_buf *ob,
 		rc = rndr_html(ob, &n->rndr_raw_html.text, st);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
-		rc = rndr_normal_text(ob, &n->rndr_normal_text, st);
+		rc = escape_htmlb(ob, &n->rndr_normal_text.text, st);
 		break;
 	case LOWDOWN_ENTITY:
 		ent = entity_find_iso(&n->rndr_entity.text);
@@ -1819,8 +1912,10 @@ rndr(struct lowdown_buf *ob,
 			st->offs--;
 		break;
 	case LOWDOWN_LIST:
-		if (sty != NULL)
+		if (curid != (size_t)-1) {
 			st->list = (size_t)-1;
+			st->offs = curoffs;
+		}
 		break;
 	default:
 		break;
@@ -1836,9 +1931,9 @@ int
 lowdown_odt_rndr(struct lowdown_buf *ob,
 	void *arg, const struct lowdown_node *n)
 {
-	struct odt			*st = arg;
-	struct lowdown_metaq		 metaq;
-	int				 rc;
+	struct odt		*st = arg;
+	struct lowdown_metaq	 metaq;
+	int			 rc;
 
 	TAILQ_INIT(&metaq);
 	st->headers_offs = 1;
@@ -1847,6 +1942,12 @@ lowdown_odt_rndr(struct lowdown_buf *ob,
 	st->list = (size_t)-1;
 	st->foot = 0;
 	st->foots = NULL;
+
+	/* 
+	 * Keep tabs of where the footnote block is, if any.  This is
+	 * because we need to inline footnote definitions directly where
+	 * we have the references.
+	 */
 
 	if (n->type == LOWDOWN_ROOT)
 		TAILQ_FOREACH_REVERSE(st->foots,
