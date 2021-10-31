@@ -46,13 +46,14 @@ document metadata.
 See
 .Sx Metadata
 on providing information to the document envelope.
-This only applies to
+This applies to
 .Fl T Ns Ar gemini ,
 .Fl T Ns Ar html ,
 .Fl T Ns Ar latex ,
 .Fl T Ns Ar ms ,
+.Fl T Ns Ar man ,
 and
-.Fl T Ns Ar man .
+.Fl T Ns Ar fodt .
 .It Fl M Ar metadata
 Provide a single metadata key-value pair.
 This may be in the usual
@@ -360,6 +361,16 @@ This usually doesn't make sense because the HTML won't be interpreted by
 the output reader.
 By default, HTML is omitted.
 .El
+The
+.Fl T Ns Ar fodt
+output has the following options:
+.Bl -tag -width Ds
+.It Fl -odt-no-skiphtml
+Output embedded HTML.
+This usually doesn't make sense because the HTML won't be interpreted by
+the output reader.
+By default, HTML is omitted.
+.El
 .Ss Metadata
 If parsed from the document or as given by
 .Fl m
@@ -494,6 +505,10 @@ is used as a variable.
 .Ss Output modes
 A detailed description of the output modes follows.
 .Bl -tag -width Ds
+.It Fl T Ns Ar latex
+.Dq Flat
+OpenDocument output.
+This output mode is still in development.
 .It Fl T Ns Ar gemini
 Gemini protocol output.
 This output mode (and the protocol) are experimental.

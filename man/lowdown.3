@@ -86,6 +86,16 @@ LaTeX:
 .Xr lowdown_latex_rndr 3
 .El
 .It
+OpenDocument:
+.Bl -item -compact
+.It
+.Xr lowdown_odt_free 3
+.It
+.Xr lowdown_odt_new 3
+.It
+.Xr lowdown_odt_rndr 3
+.El
+.It
 roff:
 .Bl -item -compact
 .It
@@ -282,6 +292,15 @@ or
 If both are specified, the latter is unset.
 .Pp
 For
+.Dv LOWDOWN_FODT :
+.Pp
+.Bl -tag -width Ds -compact
+.It Dv LOWDOWN_ODT_SKIP_HTML
+Do not render in-document HTML at all.
+Text within HTML elements remains.
+.El
+.Pp
+For
 .Dv LOWDOWN_LATEX :
 .Pp
 .Bl -tag -width Ds -compact
@@ -415,6 +434,10 @@ for LaTeX,
 for
 .Fl m Ns Ar an
 macros,
+.Dv LOWDOWN_FODT
+for
+.Dq flat
+OpenDocument,
 .Dv LOWDOWN_TERM
 for ANSI-compatible UTF-8 terminal output,
 .Dv LOWDOWN_GEMINI
@@ -978,6 +1001,9 @@ are the same.
 .Xr lowdown_nroff_free 3 ,
 .Xr lowdown_nroff_new 3 ,
 .Xr lowdown_nroff_rndr 3 ,
+.Xr lowdown_odt_free 3 ,
+.Xr lowdown_odt_new 3 ,
+.Xr lowdown_odt_rndr 3 ,
 .Xr lowdown_term_free 3 ,
 .Xr lowdown_term_new 3 ,
 .Xr lowdown_term_rndr 3 ,

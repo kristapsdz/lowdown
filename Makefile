@@ -58,6 +58,9 @@ MANS		 = man/lowdown.1.html \
 		   man/lowdown_nroff_free.3.html \
 		   man/lowdown_nroff_new.3.html \
 		   man/lowdown_nroff_rndr.3.html \
+		   man/lowdown_odt_free.3.html \
+		   man/lowdown_odt_new.3.html \
+		   man/lowdown_odt_rndr.3.html \
 		   man/lowdown_term_free.3.html \
 		   man/lowdown_term_new.3.html \
 		   man/lowdown_term_rndr.3.html \
@@ -286,6 +289,7 @@ regress: lowdown
 		./lowdown -s -Tlatex "$$f" >/dev/null 2>&1 ; \
 		./lowdown -s -Tman "$$f" >/dev/null 2>&1 ; \
 		./lowdown -s -Tms "$$f" >/dev/null 2>&1 ; \
+		./lowdown -s -Tfodt "$$f" >/dev/null 2>&1 ; \
 		./lowdown -s -Tterm "$$f" >/dev/null 2>&1 ; \
 		./lowdown -s -Ttree "$$f" >/dev/null 2>&1 ; \
 	done  ; \
