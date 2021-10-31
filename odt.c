@@ -1149,11 +1149,11 @@ rndr_listitem(struct lowdown_buf *ob,
 	size_t	 	 i, size;
 	struct odt_sty	*sty;
 
-	assert(st->list != (size_t)-1);
-
-	if (!(n->rndr_listitem.flags & HLIST_FL_DEF))
+	if (!(n->rndr_listitem.flags & HLIST_FL_DEF)) {
+		assert(st->list != (size_t)-1);
 		if (!HBUF_PUTSL(ob, "<text:list-item>"))
 			return 0;
+	}
 
 	/*
 	 * Non-definition, non-block lists have an initial paragraph
