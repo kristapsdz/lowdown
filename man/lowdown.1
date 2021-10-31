@@ -575,6 +575,31 @@ Images and equations not supported.
 .It Fl T Ns Ar tree
 Debugging output: not for general use.
 .El
+.Pp
+Without
+.Fl s
+specified, several of these modes will omit parts of the output:
+.Bl -tag -width Ds
+.It Ar fodt
+Omit all but the
+.Li <office:automatic-styles>
+and
+.Li <office:body>
+elements and their children.
+.It Ar html
+Omit all but the
+.Li <body>
+element and its children.
+.It Ar latex
+Omit the
+.Li documentclass ,
+.Li usepackage ,
+and surrounding
+.Li begin{document}
+statements.
+.It Ar man , ms
+Omit the document prologue.
+.El
 .Sh ENVIRONMENT
 The following environment variables affect the execution of
 .Nm :
