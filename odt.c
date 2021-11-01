@@ -482,7 +482,7 @@ odt_sty_flush(struct lowdown_buf *ob,
 }
 
 /*
- * Flush out the elements for scripts, styles, and automatic-styles.
+ * Flush out the "fixed" styles we need for standalone mode.
  * XXX: it's possible to put a lot of this into a separate file,
  * somehow, but that's a matter for the future.  Return FALSE on
  * failure, TRUE on success.
@@ -758,22 +758,6 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	    " style:font-weight-complex=\"bold\"/>\n"
 	    "</style:style>\n"))
 	    	return 0;
-	if (!HBUF_PUTSL(ob,
-	    "<style:page-layout style:name=\"pm1\">\n"
-	    "<style:page-layout-properties"
-	    " fo:page-width=\"21.001cm\""
-	    " fo:page-height=\"29.7cm\""
-	    " style:num-format=\"1\""
-	    " style:print-orientation=\"portrait\""
-	    " fo:margin-top=\"2cm\""
-	    " fo:margin-bottom=\"2cm\""
-	    " fo:margin-left=\"2cm\""
-	    " fo:margin-right=\"2cm\""
-	    " style:writing-mode=\"lr-tb\""
-	    " style:footnote-max-height=\"0cm\">\n"
-	    "</style:page-layout-properties>\n"
-	    "</style:page-layout>\n"))
-		return 0;
 	if (tab && !HBUF_PUTSL(ob,
 	    "<style:style style:name=\"fr1\""
 	    " style:family=\"graphic\""
@@ -800,21 +784,11 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	if (!HBUF_PUTSL(ob,
 	    "</office:styles>\n"))
 		return 0;
-
-	if (!HBUF_PUTSL(ob,
-	    "<office:master-styles>\n"
-	    "<style:master-page "
-	    " style:name=\"Standard\""
-	    " style:page-layout-name=\"pm1\"/>\n"
-	    "</office:master-styles>\n"))
-		return 0;
 	return 1;
 }
 
 /*
- * Flush out the elements for scripts, styles, and automatic-styles.
- * XXX: it's possible to put a lot of this into a separate file,
- * somehow, but that's a matter for the future.  Return FALSE on
+ * Flush out the elements for scripts and styles.  Return FALSE on
  * failure, TRUE on success.
  */
 static int
@@ -832,7 +806,44 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 		if (st->stys[i].autosty &&
 		    !odt_sty_flush(ob, st, &st->stys[i]))
 			return 0;
-	return HBUF_PUTSL(ob, "</office:automatic-styles>\n");
+
+	/*
+	 * I'm not sure why the page layout goes into the automatic
+	 * styles and not the fixed styles, but if placed in fixed
+	 * styles, this isn't processed.
+	 */
+
+	if (!HBUF_PUTSL(ob,
+	    "<style:page-layout style:name=\"pm1\">\n"
+	    "<style:page-layout-properties"
+	    " fo:page-width=\"21.001cm\""
+	    " fo:page-height=\"29.7cm\""
+	    " style:num-format=\"1\""
+	    " style:print-orientation=\"portrait\""
+	    " fo:margin-top=\"2cm\""
+	    " fo:margin-bottom=\"2cm\""
+	    " fo:margin-left=\"2cm\""
+	    " fo:margin-right=\"2cm\""
+	    " style:writing-mode=\"lr-tb\""
+	    " style:footnote-max-height=\"0cm\">\n"
+	    "</style:page-layout-properties>\n"
+	    "</style:page-layout>\n"))
+		return 0;
+
+	if (!HBUF_PUTSL(ob, "</office:automatic-styles>\n"))
+		return 0;
+
+	/*
+	 * Since this references an automatic style (pm1), emit this
+	 * regardless of whether we're in standalone or not.
+	 */
+
+	return HBUF_PUTSL(ob,
+		"<office:master-styles>\n"
+		"<style:master-page "
+		" style:name=\"Standard\""
+		" style:page-layout-name=\"pm1\"/>\n"
+		"</office:master-styles>\n");
 }
 
 /*
