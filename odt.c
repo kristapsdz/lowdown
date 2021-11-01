@@ -881,6 +881,87 @@ odt_changes_flush(struct lowdown_buf *ob, const struct odt *st)
 }
 
 /*
+ * Flush out the <office:meta> element, if applicable.  Return FALSE on
+ * failure, TRUE on success.
+ */
+static int
+odt_metaq_flush(struct lowdown_buf *ob,
+	const struct lowdown_metaq *mq, 
+	const struct odt *st)
+{
+	const struct lowdown_meta	*m;
+	const char			*author = NULL, *title = NULL,
+					*date = NULL, *rcsauthor = NULL, 
+					*rcsdate = NULL;
+
+	if (mq == NULL || TAILQ_EMPTY(mq))
+		return 1;
+
+	TAILQ_FOREACH(m, mq, entries)
+		if (strcasecmp(m->key, "author") == 0)
+			author = m->value;
+		else if (strcasecmp(m->key, "date") == 0)
+			date = m->value;
+		else if (strcasecmp(m->key, "rcsauthor") == 0)
+			rcsauthor = rcsauthor2str(m->value);
+		else if (strcasecmp(m->key, "rcsdate") == 0)
+			rcsdate = rcsdate2str(m->value);
+		else if (strcasecmp(m->key, "title") == 0)
+			title = m->value;
+
+	/* Overrides. */
+
+	if (title == NULL)
+		title = "Untitled article";
+	if (rcsdate != NULL)
+		date = rcsdate;
+	if (rcsauthor != NULL)
+		author = rcsauthor;
+
+	if (!HBUF_PUTSL(ob, "<office:meta>\n"))
+		return 0;
+
+	if (!HBUF_PUTSL(ob, "<dc:title>"))
+		return 0;
+	if (!hesc_html(ob, title, strlen(title), 1, 0, 1))
+		return 0;
+	if (!HBUF_PUTSL(ob, "</dc:title>\n"))
+		return 0;
+
+	if (author != NULL) {
+		if (!HBUF_PUTSL(ob, "<dc:creator>"))
+			return 0;
+		if (!hesc_html(ob, author, strlen(author), 1, 0, 1))
+			return 0;
+		if (!HBUF_PUTSL(ob, "</dc:creator>\n"))
+			return 0;
+		if (!HBUF_PUTSL(ob, "<meta:initial-creator>"))
+			return 0;
+		if (!hesc_html(ob, author, strlen(author), 1, 0, 1))
+			return 0;
+		if (!HBUF_PUTSL(ob, "</meta:initial-creator>\n"))
+			return 0;
+	}
+
+	if (date != NULL) {
+		if (!HBUF_PUTSL(ob, "<dc:date>"))
+			return 0;
+		if (!hesc_html(ob, date, strlen(date), 1, 0, 1))
+			return 0;
+		if (!HBUF_PUTSL(ob, "</dc:date>\n"))
+			return 0;
+		if (!HBUF_PUTSL(ob, "<meta:creation-date>"))
+			return 0;
+		if (!hesc_html(ob, date, strlen(date), 1, 0, 1))
+			return 0;
+		if (!HBUF_PUTSL(ob, "</meta:creation-date>\n"))
+			return 0;
+	}
+
+	return HBUF_PUTSL(ob, "</office:meta>\n");
+}
+
+/*
  * Escape regular text that shouldn't be HTML.  Return FALSE on failure,
  * TRUE on success.
  */
@@ -1621,9 +1702,8 @@ rndr_math(struct lowdown_buf *ob,
  * Return FALSE on failure, TRUE on success.
  */
 static int
-rndr_root(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	const struct odt *st)
+rndr_root(struct lowdown_buf *ob, const struct lowdown_metaq *mq,
+	const struct lowdown_buf *content, const struct odt *st)
 {
 
 	if ((st->flags & LOWDOWN_STANDALONE) && !HBUF_PUTSL(ob,
@@ -1667,6 +1747,10 @@ rndr_root(struct lowdown_buf *ob,
 	    " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
 	    " office:mimetype=\"application/vnd.oasis.opendocument.text\"\n"
 	    " office:version=\"1.3\">\n"))
+		return 0;
+
+	if ((st->flags & LOWDOWN_STANDALONE) &&
+	    !odt_metaq_flush(ob, mq, st))
 		return 0;
 
 	/* 
@@ -1858,7 +1942,7 @@ rndr(struct lowdown_buf *ob,
 
 	switch (n->type) {
 	case LOWDOWN_ROOT:
-		rc = rndr_root(ob, tmp, st);
+		rc = rndr_root(ob, mq, tmp, st);
 		break;
 	case LOWDOWN_BLOCKCODE:
 		rc = rndr_blockcode(ob, &n->rndr_blockcode, st);

@@ -399,6 +399,7 @@ newlines).
 Overridden by
 .Li rcsauthor .
 Used in
+.Fl T Ns Ar fodt ,
 .Fl T Ns Ar html ,
 .Fl T Ns Ar latex ,
 and
@@ -427,6 +428,7 @@ Document date in ISO-8601 YYYY-MM-DD format.
 Overridden by
 .Li rcsdate .
 Used in
+.Fl T Ns Ar fodt ,
 .Fl T Ns Ar html ,
 .Fl T Ns Ar latex ,
 .Fl T Ns Ar man ,
@@ -467,6 +469,7 @@ Takes precedence over
 .Li baseheaderlevel .
 If unset or not a valid number, defaults to zero.
 Used in
+.Fl T Ns Ar fodt ,
 .Fl T Ns Ar html ,
 .Fl T Ns Ar latex ,
 .Fl T Ns Ar man ,
@@ -484,6 +487,7 @@ Only used in
 Document title, defaulting to
 .Dq Untitled article .
 Used in
+.Fl T Ns Ar fodt ,
 .Fl T Ns Ar html ,
 .Fl T Ns Ar latex ,
 .Fl T Ns Ar man ,
@@ -580,25 +584,25 @@ Without
 .Fl s
 specified, several of these modes will omit parts of the output:
 .Bl -tag -width Ds
-.It Ar fodt
+.It Fl T Ns Ar fodt
 Omit all but the
 .Li <office:automatic-styles> ,
 .Li <office:master-styles> ,
 and
 .Li <office:body>
 elements and their children.
-.It Ar html
+.It Fl T Ns Ar html
 Omit all but the
 .Li <body>
 element and its children.
-.It Ar latex
+.It Fl T Ns Ar latex
 Omit the
 .Li documentclass ,
 .Li usepackage ,
 and surrounding
 .Li begin{document}
 statements.
-.It Ar man , ms
+.It Fl T Ns Ar man , Fl T Ns Ar ms
 Omit the document prologue.
 .El
 .Sh ENVIRONMENT
