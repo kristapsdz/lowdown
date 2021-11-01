@@ -847,35 +847,86 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 }
 
 /*
- * Return FALSE on failure, TRUE on success.
+ * Use our metadata to grab change identifiers.  Return FALSE on
+ * failure, TRUE on success.
  */
 static int
-odt_changes_flush(struct lowdown_buf *ob, const struct odt *st)
+odt_changes_flush(struct lowdown_buf *ob,
+	const struct lowdown_metaq *mq,
+	const struct odt *st)
 {
-	size_t	 i;
+	const struct lowdown_meta	*m;
+	const char			*author = NULL, *date = NULL,
+	      				*rcsauthor = NULL, *rcsdate = NULL;
+	char				 buf[64];
+	size_t	 			 i;
+	time_t				 t = time(NULL);
 
 	if (st->chngsz == 0)
 		return 1;
+
+	TAILQ_FOREACH(m, mq, entries)
+		if (strcasecmp(m->key, "author") == 0)
+			author = m->value;
+		else if (strcasecmp(m->key, "date") == 0)
+			date = m->value;
+		else if (strcasecmp(m->key, "rcsauthor") == 0)
+			rcsauthor = rcsauthor2str(m->value);
+		else if (strcasecmp(m->key, "rcsdate") == 0)
+			rcsdate = rcsdate2str(m->value);
+
+	/* Overrides. */
+
+	if (rcsdate != NULL)
+		date = rcsdate;
+	if (rcsauthor != NULL)
+		author = rcsauthor;
+
+	/* We require at least a date. */
+
+	if (date == NULL) {
+		if (strftime(buf, sizeof(buf),
+		    "%Y-%m-%dT%H:%M:%S", localtime(&t)) == 0)
+			date = "1970-01-01";
+		else
+			date = buf;
+	}
 
 	if (!HBUF_PUTSL(ob,
 	    "<text:tracked-changes"
 	    " text:track-changes=\"false\">\n"))
 		return 0;
-	for (i = 0; i < st->chngsz; i++)
+	for (i = 0; i < st->chngsz; i++) {
 		if (!hbuf_printf(ob,
 		    "<text:changed-region"
 		    " xml:id=\"ct%zu\""
 		    " text:id=\"ct%zu\">\n"
 		    "<text:%s>\n"
-		    "<office:change-info>\n"
-		    "<dc:creator>Unknown author</dc:creator>\n"
-		    "<dc:date>2021-11-01T10:33:31</dc:date>\n"
-		    "</office:change-info>\n"
-		    "</text:%s>\n"
-		    "</text:changed-region>\n", i, i,
-		    st->chngs[i].ins ? "insertion" : "deletion",
+		    "<office:change-info>\n", i, i,
 		    st->chngs[i].ins ? "insertion" : "deletion"))
 			return 0;
+		if (author != NULL) {
+			if (!HBUF_PUTSL(ob, "<dc:creator>"))
+				return 0;
+			if (!hesc_html(ob, author,
+			    strlen(author), 1, 0, 1))
+				return 0;
+			if (!HBUF_PUTSL(ob, "</dc:creator>\n"))
+				return 0;
+		}
+		if (!HBUF_PUTSL(ob, "<dc:date>"))
+			return 0;
+		if (!hesc_html(ob, date, strlen(date), 1, 0, 1))
+			return 0;
+		if (!HBUF_PUTSL(ob, "</dc:date>\n"))
+			return 0;
+		if (!hbuf_printf(ob,
+		    "</office:change-info>\n"
+		    "</text:%s>\n"
+		    "</text:changed-region>\n",
+		    st->chngs[i].ins ? "insertion" : "deletion"))
+			return 0;
+	}
 
 	return HBUF_PUTSL(ob, "</text:tracked-changes>\n");
 }
@@ -1783,7 +1834,7 @@ rndr_root(struct lowdown_buf *ob, const struct lowdown_metaq *mq,
 
 	if (!HBUF_PUTSL(ob, "<office:body>\n<office:text>\n"))
 		return 0;
-	if (!odt_changes_flush(ob, st))
+	if (!odt_changes_flush(ob, mq, st))
 		return 0;
 
 	if (!hbuf_putb(ob, content))
