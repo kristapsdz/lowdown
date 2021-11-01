@@ -9,7 +9,7 @@
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" />
 		<link rel="stylesheet" href="https://bsd.lv/css/style.css" />
 		<link rel="stylesheet" href="template.css" />
-		<meta property="og:title" content="lowown: simple markdown translator" />
+		<meta property="og:title" content="lowdown: simple markdown translator" />
 		<meta property="og:description" 
 		 content="Markdown translator producing HTML5 and roff documents in the ms and man formats." />
 	 	<meta property="og:url" content="https://kristaps.bsd.lv/lowdown/index.html" />
