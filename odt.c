@@ -77,6 +77,14 @@ struct	odt_sty {
 };
 
 /*
+ * A change.  I'm not sure we'll need anything but "ins", so this could
+ * just be an array of int, but whatever.
+ */
+struct	odt_chng {
+	int		 	 ins; /* inserted vs deleted */
+};
+
+/*
  * Our internal state object.  Beyond retaining our flags, this also
  * keeps output state in terms of the styles that need printing.
  */
@@ -93,6 +101,8 @@ struct 	odt {
 	size_t			 list; /* root list style or (size_t)-1 */
 	int			 foot; /* in footnote or not */
 	const struct lowdown_node *foots; /* footnotes */
+	struct odt_chng		*chngs; /* changes in content */
+	size_t			 chngsz; /* number of changes */
 };
 
 static int rndr(struct lowdown_buf *,
@@ -826,6 +836,40 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 }
 
 /*
+ * Return FALSE on failure, TRUE on success.
+ */
+static int
+odt_changes_flush(struct lowdown_buf *ob, const struct odt *st)
+{
+	size_t	 i;
+
+	if (st->chngsz == 0)
+		return 1;
+
+	if (!HBUF_PUTSL(ob,
+	    "<text:tracked-changes"
+	    " text:track-changes=\"false\">\n"))
+		return 0;
+	for (i = 0; i < st->chngsz; i++)
+		if (!hbuf_printf(ob,
+		    "<text:changed-region"
+		    " xml:id=\"ct%zu\""
+		    " text:id=\"ct%zu\">\n"
+		    "<text:%s>\n"
+		    "<office:change-info>\n"
+		    "<dc:creator>Unknown author</dc:creator>\n"
+		    "<dc:date>2021-11-01T10:33:31</dc:date>\n"
+		    "</office:change-info>\n"
+		    "</text:%s>\n"
+		    "</text:changed-region>\n", i, i,
+		    st->chngs[i].ins ? "insertion" : "deletion",
+		    st->chngs[i].ins ? "insertion" : "deletion"))
+			return 0;
+
+	return HBUF_PUTSL(ob, "</text:tracked-changes>\n");
+}
+
+/*
  * Escape regular text that shouldn't be HTML.  Return FALSE on failure,
  * TRUE on success.
  */
@@ -1345,8 +1389,8 @@ rndr_table(struct lowdown_buf *ob,
 	const struct rndr_table *param,
 	struct odt *st)
 {
-	size_t		 i;
-	struct odt_sty	*s, *ss;
+	size_t		 i, pid;
+	struct odt_sty	*s;
 
 	/*
 	 * First find the outer paragraph.  If we're in the footer, this
@@ -1354,14 +1398,14 @@ rndr_table(struct lowdown_buf *ob,
 	 * We don't do offset here: that's part of the table itself.
 	 */
 
-	for (i = 0; i < st->stysz; i++)
-		if (st->stys[i].type == LOWDOWN_PARAGRAPH &&
-		    st->stys[i].fmt == ODT_STY_PARA &&
-		    st->stys[i].offs == 0 &&
-		    st->stys[i].foot == st->foot &&
-		    st->stys[i].parent == st->list)
+	for (pid = 0; pid < st->stysz; pid++)
+		if (st->stys[pid].type == LOWDOWN_PARAGRAPH &&
+		    st->stys[pid].fmt == ODT_STY_PARA &&
+		    st->stys[pid].offs == 0 &&
+		    st->stys[pid].foot == st->foot &&
+		    st->stys[pid].parent == st->list)
 			break;
-	if (i == st->stysz) {
+	if (pid == st->stysz) {
 		if ((s = odt_style_add(st)) == NULL)
 			return 0;
 		s->autosty = 1;
@@ -1371,8 +1415,7 @@ rndr_table(struct lowdown_buf *ob,
 		s->type = LOWDOWN_PARAGRAPH;
 		snprintf(s->name, sizeof(s->name),
 			"P%zu", st->sty_P++);
-	} else
-		s = &st->stys[i];
+	}
 
 	/*
 	 * Now the table itself.  Tables are only unique insofar as they
@@ -1387,24 +1430,25 @@ rndr_table(struct lowdown_buf *ob,
 			break;
 
 	if (i == st->stysz) {
-		if ((ss = odt_style_add(st)) == NULL)
+		if ((s = odt_style_add(st)) == NULL)
 			return 0;
-		ss->autosty = 1;
-		ss->type = LOWDOWN_TABLE_BLOCK;
-		ss->fmt = ODT_STY_TBL;
-		ss->foot = st->foot;
-		ss->parent = st->list;
-		ss->offs = st->offs;
-		snprintf(ss->name, sizeof(ss->name),
+		s->autosty = 1;
+		s->type = LOWDOWN_TABLE_BLOCK;
+		s->fmt = ODT_STY_TBL;
+		s->foot = st->foot;
+		s->parent = st->list;
+		s->offs = st->offs;
+		snprintf(s->name, sizeof(s->name),
 			"Table%zu", st->sty_Table++);
 	} else
-		ss = &st->stys[i];
+		s = &st->stys[i];
 
 	if (ob->size && !hbuf_putc(ob, '\n'))
 		return 0;
 
 	if (!hbuf_printf(ob,
-	    "<text:p text:style-name=\"%s\">\n", s->name))
+	    "<text:p text:style-name=\"%s\">\n",
+	    st->stys[pid].name))
 		return 0;
 
 	if (!hbuf_printf(ob,
@@ -1419,7 +1463,7 @@ rndr_table(struct lowdown_buf *ob,
 	    " table:name=\"%s\">\n"
 	    "<table:table-column"
 	    " table:number-columns-repeated=\"%zu\"/>\n",
-	    ss->name, ss->name, param->columns))
+	    s->name, s->name, param->columns))
 		return 0;
 	if (!hbuf_putb(ob, content))
 		return 0;
@@ -1569,16 +1613,6 @@ rndr_math(struct lowdown_buf *ob,
  * Return FALSE on failure, TRUE on success.
  */
 static int
-rndr_doc_footer(struct lowdown_buf *ob, const struct odt *st)
-{
-
-	return HBUF_PUTSL(ob, "</office:text>\n</office:body>\n");
-}
-
-/*
- * Return FALSE on failure, TRUE on success.
- */
-static int
 rndr_root(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
 	const struct odt *st)
@@ -1655,7 +1689,15 @@ rndr_root(struct lowdown_buf *ob,
 	if (!odt_styles_flush(ob, st))
 		return 0;
 
+	if (!HBUF_PUTSL(ob, "<office:body>\n<office:text>\n"))
+		return 0;
+	if (!odt_changes_flush(ob, st))
+		return 0;
+
 	if (!hbuf_putb(ob, content))
+		return 0;
+
+	if (!HBUF_PUTSL(ob, "</office:text>\n</office:body>\n"))
 		return 0;
 
 	if ((st->flags & LOWDOWN_STANDALONE) && !HBUF_PUTSL(ob,
@@ -1706,16 +1748,6 @@ rndr_meta(struct lowdown_buf *ob,
 	return 1;
 }
 
-/*
- * Return FALSE on failure, TRUE on success.
- */
-static int
-rndr_doc_header(struct lowdown_buf *ob)
-{
-
-	return HBUF_PUTSL(ob, "<office:body>\n<office:text>\n");
-}
-
 static int
 rndr(struct lowdown_buf *ob,
 	struct lowdown_metaq *mq, void *ref, 
@@ -1726,8 +1758,10 @@ rndr(struct lowdown_buf *ob,
 	int32_t				 ent;
 	struct odt			*st = ref;
 	struct odt_sty			*sty = NULL;
-	size_t				 curid = (size_t)-1, curoffs;
+	size_t				 curid = (size_t)-1, curoffs,
+					 chngid = (size_t)-1;
 	int				 ret = 1, rc = 1;
+	void				*pp;
 
 	if ((tmp = hbuf_new(64)) == NULL)
 		return 0;
@@ -1798,15 +1832,21 @@ rndr(struct lowdown_buf *ob,
 			goto out;
 	}
 
-#if 0
-	/* TODO */
-	if (n->chng == LOWDOWN_CHNG_INSERT && 
-	    !HBUF_PUTSL(ob, "<ins>"))
-		goto out;
-	if (n->chng == LOWDOWN_CHNG_DELETE && 
-	   !HBUF_PUTSL(ob, "<del>"))
-		goto out;
-#endif
+	if (n->chng == LOWDOWN_CHNG_INSERT ||
+	    n->chng == LOWDOWN_CHNG_DELETE) {
+		pp = reallocarray(st->chngs,
+			st->chngsz + 1, sizeof(struct odt_chng));
+		if (pp == NULL)
+			goto out;
+		st->chngs = pp;
+		st->chngs[st->chngsz].ins =
+			n->chng == LOWDOWN_CHNG_INSERT;
+		chngid = st->chngsz++;
+		if (!hbuf_printf(ob,
+		    "<text:change-start"
+		    " text:change-id=\"ct%zu\"/>", chngid))
+			return 0;
+	}
 
 	switch (n->type) {
 	case LOWDOWN_ROOT:
@@ -1815,15 +1855,9 @@ rndr(struct lowdown_buf *ob,
 	case LOWDOWN_BLOCKCODE:
 		rc = rndr_blockcode(ob, &n->rndr_blockcode, st);
 		break;
-	case LOWDOWN_DOC_HEADER:
-		rc = rndr_doc_header(ob);
-		break;
 	case LOWDOWN_META:
 		if (n->chng != LOWDOWN_CHNG_DELETE)
 			rc = rndr_meta(ob, tmp, mq, n, st);
-		break;
-	case LOWDOWN_DOC_FOOTER:
-		rc = rndr_doc_footer(ob, st);
 		break;
 	case LOWDOWN_HEADER:
 		rc = rndr_header(ob, tmp, &n->rndr_header, st);
@@ -1906,15 +1940,14 @@ rndr(struct lowdown_buf *ob,
 	if (!rc)
 		goto out;
 
-#if 0
-	/* TODO */
-	if (n->chng == LOWDOWN_CHNG_INSERT && 
-	    !HBUF_PUTSL(ob, "</ins>"))
-		goto out;
-	if (n->chng == LOWDOWN_CHNG_DELETE &&
-	    !HBUF_PUTSL(ob, "</del>"))
-		goto out;
-#endif
+	if (n->chng == LOWDOWN_CHNG_INSERT ||
+	    n->chng == LOWDOWN_CHNG_DELETE) {
+		assert(chngid != (size_t)-1);
+		if (!hbuf_printf(ob,
+		    "<text:change-end"
+		    " text:change-id=\"ct%zu\"/>", chngid))
+			return 0;
+	}
 
 	switch (n->type) {
 	case LOWDOWN_BLOCKQUOTE:
@@ -1953,6 +1986,8 @@ lowdown_odt_rndr(struct lowdown_buf *ob,
 	st->foot = 0;
 	st->foots = NULL;
 	st->sty_T = st->sty_L = st->sty_P = st->sty_Table = 1;
+	st->chngs = NULL;
+	st->chngsz = 0;
 
 	/* 
 	 * Keep tabs of where the footnote block is, if any.  This is
@@ -1969,6 +2004,7 @@ lowdown_odt_rndr(struct lowdown_buf *ob,
 	rc = rndr(ob, &metaq, st, n);
 
 	free(st->stys);
+	free(st->chngs);
 	lowdown_metaq_free(&metaq);
 	return rc;
 }
