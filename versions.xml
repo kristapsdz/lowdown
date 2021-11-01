@@ -1205,4 +1205,23 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.10.0</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2021-10-08">2021-10-08</time>
+		</header>
+		<aside>
+			<p>
+				Add <q>flat</q> OpenDocument output with <b>-Tfodt</b>.
+				This implements the 
+				<a href="https://docs.oasis-open.org/office/OpenDocument/v1.3/os/part1-introduction/OpenDocument-v1.3-os-part1-introduction.html">OpenDocument v1.3</a>
+				standard, and is readable at least on
+				<a href="https://www.libreoffice.org/">LibreOffice</a>.
+				This further implements <b>-Tfodt</b> change tracking in
+				<a href="lowdown-diff.1.html">lowdown-diff(1)</a>.
+				It does not support images or definition lists yet.
+			</p>
+		</aside>
+	</article>
 </articles>

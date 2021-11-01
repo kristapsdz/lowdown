@@ -5,7 +5,7 @@ author: Kristaps Dzonsons
 # [%title]
 
 *lowdown* is a Markdown translator producing HTML5, *roff* documents
-in the **ms** and **man** formats, LaTeX, gemini, and terminal output.
+in the **ms** and **man** formats, LaTeX, gemini, OpenDocument, and terminal output.
 The [open source](http://opensource.org/licenses/ISC) C source code has
 no dependencies.
 
@@ -50,6 +50,10 @@ either a fragment or standalone HTML5 document with **-s**.
 
 It also produces simple LaTeX documents with **-Tlatex**.  It uses the most
 basic packages possible.
+
+For word processing, it can produce a "flat"
+[OpenDocument](https://docs.oasis-open.org/office/OpenDocument/v1.3/os/part1-introduction/OpenDocument-v1.3-os-part1-introduction.html)
+XML document with the latest OpenDocument version 1.3.
 
 The **-Tgemini** outputs into the
 [Gemini](https://gemini.circumlunar.space/docs/specification.html) format.
@@ -245,6 +249,8 @@ HTML5 output,
 LaTeX,
 [gemini.c](https://github.com/kristapsdz/lowdown/blob/master/gemini.c) for
 Gemini,
+[odt.c](https://github.com/kristapsdz/lowdown/blob/master/odt.c) for
+OpenDocument,
 [term.c](https://github.com/kristapsdz/lowdown/blob/master/term.c)
 for terminal output, and a debugging renderer
 [tree.c](https://github.com/kristapsdz/lowdown/blob/master/tree.c).
