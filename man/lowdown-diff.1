@@ -46,13 +46,14 @@ document metadata.
 See
 .Sx Metadata
 on providing information to the document envelope.
-This only applies to
+This applies to
 .Fl T Ns Ar gemini ,
 .Fl T Ns Ar html ,
 .Fl T Ns Ar latex ,
 .Fl T Ns Ar ms ,
+.Fl T Ns Ar man ,
 and
-.Fl T Ns Ar man .
+.Fl T Ns Ar fodt .
 .It Fl M Ar metadata
 Provide a single metadata key-value pair.
 This may be in the usual
@@ -144,7 +145,9 @@ Do not parse GFM fenced (language-specific) code blocks.
 .It Fl -parse-no-footnotes
 Do not parse MMD footnotes.
 .It Fl -parse-no-img-ext
-Do not parse PHP extra image extended attributes.
+Deprecated.
+See
+.Fl -parse-no-ext-attrs .
 .It Fl -parse-no-intraemph
 Do not parse emphasis within words and links.
 .It Fl -parse-no-metadata
@@ -161,6 +164,8 @@ Do not parse strikethroughs.
 Do not parse super-scripts.
 .It Fl -parse-no-tables
 Do not parse GFM tables.
+.It Fl -parse-no-tasklists
+Do not parse GFM task lists.
 .El
 .Pp
 There are many output options.
@@ -273,8 +278,12 @@ Defaults to what the terminal reports or 72 if in a pipe.
 The number of left margin spaces.
 Truncated to the number of columns.
 Defaults to zero.
-.It Fl -term-nocolour
-Don't show colours.
+.It Fl -term-no-ansi
+Don't show ANSI styles at all.
+This implies
+.Fl -term-no-colour .
+.It Fl -term-no-colour
+Don't show ANSI colours.
 This will still decorate text with underlines, bolds, and italics, but
 not emit any colour codes.
 .It Fl -term-nolinks
@@ -338,6 +347,16 @@ output has the following options:
 .It Fl -latex-no-numbered
 Don't number sections (and subsections, etc.).
 .It Fl -latex-no-skiphtml
+Output embedded HTML.
+This usually doesn't make sense because the HTML won't be interpreted by
+the output reader.
+By default, HTML is omitted.
+.El
+The
+.Fl T Ns Ar fodt
+output has the following options:
+.Bl -tag -width Ds
+.It Fl -odt-no-skiphtml
 Output embedded HTML.
 This usually doesn't make sense because the HTML won't be interpreted by
 the output reader.
@@ -477,6 +496,10 @@ is used as a variable.
 .Ss Output modes
 A detailed description of the output modes follows.
 .Bl -tag -width Ds
+.It Fl T Ns Ar latex
+.Dq Flat
+OpenDocument output.
+This output mode is still in development.
 .It Fl T Ns Ar gemini
 Gemini protocol output.
 This output mode (and the protocol) are experimental.
@@ -487,8 +510,11 @@ All features of
 are supported.
 .It Fl T Ns Ar latex
 Simple LaTeX output.
-The following packages are used by
-.Nm :
+The following packages are required:
+.Li amsmath
+and
+.Li amssymb
+for maths,
 .Li graphicx
 for images,
 .Li inputenc Pq utf8
@@ -541,9 +567,37 @@ Images and equations not supported.
 Debugging output: not for general use.
 .El
 .Pp
+Without
+.Fl s
+specified, several of these modes will omit parts of the output:
+.Bl -tag -width Ds
+.It Ar fodt
+Omit all but the
+.Li <office:automatic-styles> ,
+.Li <office:master-styles> ,
+and
+.Li <office:body>
+elements and their children.
+.It Ar html
+Omit all but the
+.Li <body>
+element and its children.
+.It Ar latex
+Omit the
+.Li documentclass ,
+.Li usepackage ,
+and surrounding
+.Li begin{document}
+statements.
+.It Ar man , ms
+Omit the document prologue.
+.El
+.Pp
 Output is augmented with features for viewing file differences.
 These depend upon the output mode.
 .Bl -tag -width Ds
+.It Fl T Ns Ar fodt
+Uses the change-tracking feature to display insertions and deletions.
 .It Fl T Ns Ar man , Fl T Ns Ar ms
 When data has been removed, it is coloured red.
 When data has been inserted, it is coloured in green.
