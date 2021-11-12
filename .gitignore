@@ -4,6 +4,7 @@ config.h
 config.log
 # object files
 *.[oa]
+*.so
 # vi swap files
 *.swp
 # generated files
