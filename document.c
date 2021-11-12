@@ -1323,7 +1323,9 @@ char_image(struct lowdown_doc *doc,
 }
 
 /*
- * Return 0 on failure or position of *next* word.
+ * Parse extended attributes from the buffer "data".  The buffer should
+ * not have any enclosing characters, e.g., { foo }.  Return 0 on
+ * failure or position of *next* word.
  */
 static size_t
 parse_ext_attrs(const char *data, size_t size,
@@ -1393,6 +1395,55 @@ parse_ext_attrs(const char *data, size_t size,
 	}
 
 	return word_b;
+}
+
+/*
+ * Parse a header's extended attributes.  Return FALSE on failure, TRUE
+ * on success.
+ */
+static int
+parse_header_ext_attrs(struct lowdown_node *n)
+{
+	struct lowdown_node	*nn;
+	struct lowdown_buf	*b, *attrid = NULL, *attrcls = NULL;
+	size_t			 i;
+	int			 rc = 0;
+
+	if ((nn = TAILQ_LAST(&n->children, lowdown_nodeq)) == NULL ||
+	    nn->type != LOWDOWN_NORMAL_TEXT)
+		return 1;
+
+	b = &nn->rndr_normal_text.text;
+	if (b->size == 0 ||
+	    b->data[b->size - 1] != '}')
+		return 1;
+
+	for (i = b->size - 1; i > 0; i--)
+		if (b->data[i] == '{')
+			break;
+	if (b->data[i] != '{')
+		return 1;
+
+	if (!parse_ext_attrs(&b->data[i + 1], b->size - i - 2,
+	    &attrid, &attrcls, NULL, NULL))
+		goto out;
+
+	if (attrid != NULL &&
+	    !pushlbuf(&n->rndr_header.attr_id, attrid))
+		goto out;
+	if (attrcls != NULL &&
+	    !pushlbuf(&n->rndr_header.attr_cls, attrcls))
+		goto out;
+
+	b->size = i;
+	while (b->size && b->data[b->size - 1] == ' ')
+		b->size--;
+
+	rc = 1;
+out:
+	hbuf_free(attrid);
+	hbuf_free(attrcls);
+	return rc;
 }
 
 /*
@@ -2455,6 +2506,11 @@ parse_paragraph(struct lowdown_doc *doc, char *data, size_t size)
 	if (!parse_inline(doc, work.data, work.size))
 		return -1;
 	popnode(doc, n);
+
+	if ((doc->ext_flags & LOWDOWN_ATTRS) &&
+	    !parse_header_ext_attrs(n))
+		return -1;
+
 	return end;
 }
 
@@ -2955,6 +3011,9 @@ parse_atxheader(struct lowdown_doc *doc, char *data, size_t size)
 		if (!parse_inline(doc, data + i, end - i))
 			return -1;
 		popnode(doc, n);
+		if ((doc->ext_flags & LOWDOWN_ATTRS) &&
+		    !parse_header_ext_attrs(n))
+			return -1;
 	}
 
 	return skip;
@@ -4597,30 +4656,6 @@ lowdown_node_free(struct lowdown_node *p)
 		return;
 
 	switch (p->type) {
-	case LOWDOWN_META:
-		hbuf_free(&p->rndr_meta.key);
-		break;
-	case LOWDOWN_NORMAL_TEXT:
-		hbuf_free(&p->rndr_normal_text.text);
-		break;
-	case LOWDOWN_CODESPAN:
-		hbuf_free(&p->rndr_codespan.text);
-		break;
-	case LOWDOWN_ENTITY:
-		hbuf_free(&p->rndr_entity.text);
-		break;
-	case LOWDOWN_LINK_AUTO:
-		hbuf_free(&p->rndr_autolink.link);
-		break;
-	case LOWDOWN_RAW_HTML:
-		hbuf_free(&p->rndr_raw_html.text);
-		break;
-	case LOWDOWN_LINK:
-		hbuf_free(&p->rndr_link.link);
-		hbuf_free(&p->rndr_link.title);
-		hbuf_free(&p->rndr_link.attr_cls);
-		hbuf_free(&p->rndr_link.attr_id);
-		break;
 	case LOWDOWN_BLOCKCODE:
 		hbuf_free(&p->rndr_blockcode.text);
 		hbuf_free(&p->rndr_blockcode.lang);
@@ -4628,8 +4663,22 @@ lowdown_node_free(struct lowdown_node *p)
 	case LOWDOWN_BLOCKHTML:
 		hbuf_free(&p->rndr_blockhtml.text);
 		break;
-	case LOWDOWN_TABLE_HEADER:
-		free(p->rndr_table_header.flags);
+	case LOWDOWN_CODESPAN:
+		hbuf_free(&p->rndr_codespan.text);
+		break;
+	case LOWDOWN_ENTITY:
+		hbuf_free(&p->rndr_entity.text);
+		break;
+	case LOWDOWN_FOOTNOTE_DEF:
+		hbuf_free(&p->rndr_footnote_def.key);
+		break;
+	case LOWDOWN_FOOTNOTE_REF:
+		hbuf_free(&p->rndr_footnote_ref.def);
+		hbuf_free(&p->rndr_footnote_ref.key);
+		break;
+	case LOWDOWN_HEADER:
+		hbuf_free(&p->rndr_header.attr_cls);
+		hbuf_free(&p->rndr_header.attr_id);
 		break;
 	case LOWDOWN_IMAGE:
 		hbuf_free(&p->rndr_image.link);
@@ -4641,15 +4690,29 @@ lowdown_node_free(struct lowdown_node *p)
 		hbuf_free(&p->rndr_image.attr_cls);
 		hbuf_free(&p->rndr_image.attr_id);
 		break;
+	case LOWDOWN_LINK:
+		hbuf_free(&p->rndr_link.link);
+		hbuf_free(&p->rndr_link.title);
+		hbuf_free(&p->rndr_link.attr_cls);
+		hbuf_free(&p->rndr_link.attr_id);
+		break;
+	case LOWDOWN_LINK_AUTO:
+		hbuf_free(&p->rndr_autolink.link);
+		break;
 	case LOWDOWN_MATH_BLOCK:
 		hbuf_free(&p->rndr_math.text);
 		break;
-	case LOWDOWN_FOOTNOTE_DEF:
-		hbuf_free(&p->rndr_footnote_def.key);
+	case LOWDOWN_META:
+		hbuf_free(&p->rndr_meta.key);
 		break;
-	case LOWDOWN_FOOTNOTE_REF:
-		hbuf_free(&p->rndr_footnote_ref.def);
-		hbuf_free(&p->rndr_footnote_ref.key);
+	case LOWDOWN_NORMAL_TEXT:
+		hbuf_free(&p->rndr_normal_text.text);
+		break;
+	case LOWDOWN_RAW_HTML:
+		hbuf_free(&p->rndr_raw_html.text);
+		break;
+	case LOWDOWN_TABLE_HEADER:
+		free(p->rndr_table_header.flags);
 		break;
 	default:
 		break;

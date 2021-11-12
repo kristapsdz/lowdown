@@ -235,7 +235,9 @@ struct	rndr_listitem {
 };
 
 struct	rndr_header{
-	size_t level; /* hN level */
+	size_t level;
+	struct lowdown_buf attr_cls;
+	struct lowdown_buf attr_id;
 };
 
 struct	rndr_image {

@@ -379,17 +379,37 @@ rndr_header(struct lowdown_buf *ob,
 	if (ob->size && !hbuf_putc(ob, '\n'))
 		return 0;
 
-	if (content->size && (st->flags & LOWDOWN_HTML_HEAD_IDS)) {
-		if (!hbuf_printf(ob, "<h%zu id=\"", level))
+	if (!hbuf_printf(ob, "<h%zu", level))
+		return 0;
+
+	if (param->attr_id.size) {
+		if (!HBUF_PUTSL(ob, " id=\""))
+			return 0;
+		if (!escape_href(ob, &param->attr_id, st))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\""))
+			return 0;
+	} else if (content->size &&
+	    (st->flags & LOWDOWN_HTML_HEAD_IDS)) {
+		if (!HBUF_PUTSL(ob, " id=\""))
 			return 0;
 		if (!rndr_header_id(ob, content, st))
 			return 0;
-		if (!HBUF_PUTSL(ob, "\">"))
-			return 0;
-	} else {
-		if (!hbuf_printf(ob, "<h%zu>", level))
+		if (!HBUF_PUTSL(ob, "\""))
 			return 0;
 	}
+
+	if (param->attr_cls.size) {
+		if (!HBUF_PUTSL(ob, " class=\""))
+			return 0;
+	    	if (!escape_attr(ob, &param->attr_cls))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\""))
+			return 0;
+	}
+
+	if (!HBUF_PUTSL(ob, ">"))
+		return 0;
 
 	if (!hbuf_putb(ob, content))
 		return 0;
