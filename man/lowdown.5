@@ -109,7 +109,19 @@ the line separated by one space followed by the header.
 .Pp
 If commonmark input parsing is enabled, the space is required after the
 hash-marks in any hash-marked header.
-.
+.Pp
+Both types support PHP Extra attributes enclosed in curly braces.
+These may begin at any point and must end at the end of the line.
+.Bd -literal -offset indent
+## Star Trek: Enterprise { #stent }
+
+Star Trek: Enterprise { .reboots }
+---------------------
+.Ed
+.Pp
+Non-empty values with a leading period are interpreted as HTML (CSS)
+classes, and values with a leading pound symbol are interpreted as HTML
+identifiers.
 .Ss Block Quotes
 Block quoted sections are invoked with a single right-angle bracket
 .Pq Dq >

@@ -160,7 +160,7 @@ This bit-field may have the following bits OR'd:
 .Pp
 .Bl -tag -width Ds -compact
 .It Dv LOWDOWN_ATTRS
-Parse PHP extra link and image attributes.
+Parse PHP extra link, header, and image attributes.
 .It Dv LOWDOWN_AUTOLINK
 Parse
 .Li http ,
@@ -808,9 +808,12 @@ For
 .Dv LOWDOWN_HEADER ,
 the
 .Va level
-of the header starting at zero
-This value is relative to the metadata base header level, defaulting to
-one (the top-level header).
+of the header starting at zero (this value is relative to the metadata
+base header level, defaulting to one), optional space-separated class
+list
+.Va attr_cls ,
+and optional single identifier
+.Va attr_id .
 .It Va rndr_image
 For
 .Dv LOWDOWN_IMAGE ,
