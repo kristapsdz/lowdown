@@ -349,7 +349,7 @@ rndr_header_id(struct lowdown_buf *ob,
 	 */
 
 	if (hentry != NULL)
-		return hbuf_printf(ob, "-%zu", ++hentry->count);
+		return hbuf_printf(ob, "-%zu", hentry->count++);
 
 	/* Create new header entry. */
 
