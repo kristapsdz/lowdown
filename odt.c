@@ -393,45 +393,6 @@ odt_sty_flush(struct lowdown_buf *ob,
 static int
 odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 {
-	size_t	 i;
-	int	 ulist = 0, olist = 0,
-		 h1 = 0, h2 = 0, h3 = 0, tab = 0,
-		 lit = 0;
-	
-	/*
-	 * Many styles and auto-styles depend upon fixed parent styles,
-	 * for example, a paragraph auto-style has a parent style that's
-	 * fixed.  Determine which of these static styles we need by
-	 * looking through what styles we're going to output.
-	 */
-
-	for (i = 0; i < st->stysz; i++)
-		switch (st->stys[i].type) {
-		case LOWDOWN_TABLE_BLOCK:
-			tab = 1;
-			break;
-		case LOWDOWN_PARAGRAPH:
-			if (st->stys[i].fmt == ODT_STY_LIT)
-				lit = 1;
-			break;
-		case LOWDOWN_HEADER:
-			if (st->stys[i].fmt == ODT_STY_H1)
-				h1 = 1;
-			else if (st->stys[i].fmt == ODT_STY_H2)
-				h2 = 1;
-			else if (st->stys[i].fmt == ODT_STY_H3)
-				h3 = 1;
-			break;
-		case LOWDOWN_LIST:
-			if (st->stys[i].fmt == ODT_STY_UL)
-				ulist = 1;
-			if (st->stys[i].fmt == ODT_STY_OL)
-				olist = 1;
-			break;
-		default:
-			break;
-		}
-
 	/*
 	 * This doesn't appear to make a difference if it's specified or
 	 * not, but I'm adding it because libreoffice does.
@@ -449,7 +410,7 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	if (!HBUF_PUTSL(ob, "<office:styles>\n"))
 		return 0;
 
-	/* Emit boilerplate parent styles. */
+	/* Baseline. */
 
   	if (!HBUF_PUTSL(ob,
   	    "<style:style"
@@ -457,6 +418,9 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	    " style:family=\"paragraph\""
 	    " style:class=\"text\"/>\n"))
 		return 0;
+
+	/* Text within block. */
+
 	if (!HBUF_PUTSL(ob,
 	    "<style:style"
 	    " style:name=\"Text_20_body\""
@@ -471,6 +435,9 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	    " fo:line-height=\"115%\"/>\n"
 	    "</style:style>\n"))
 		return 0;
+
+	/* Horizontal line. */
+
 	if (!HBUF_PUTSL(ob,
   	    "<style:style"
 	    " style:family=\"paragraph\""
@@ -498,6 +465,9 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	    " style:font-size-complex=\"6pt\"/>\n"
 	    "</style:style>\n"))
 		return 0;
+
+	/* Internet link. */
+
 	if (!HBUF_PUTSL(ob, 
 	    "<style:style"
 	    " style:family=\"text\""
@@ -517,6 +487,9 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	    " style:text-underline-width=\"auto\"/>\n"
 	    "</style:style>\n"))
 		return 0;
+
+	/* Source (preformatted) code. */
+
 	if (!HBUF_PUTSL(ob,
 	    "<style:style"
 	    " style:family=\"text\""
@@ -539,7 +512,10 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	    " style:font-pitch-complex=\"fixed\"/>\n"
 	    "</style:style>\n"))
 		return 0;
-	if (tab && !HBUF_PUTSL(ob,
+
+	/* Frame (tables). */
+
+	if (!HBUF_PUTSL(ob,
 	    "<style:style"
 	    " style:name=\"Frame\""
 	    " style:family=\"graphic\">\n"
@@ -562,7 +538,10 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	    " fo:border=\"0pt solid #000000\"/>\n"
 	    "</style:style>\n"))
 	    	return 0;
-	if (lit && !HBUF_PUTSL(ob,
+
+	/* Preformatted text. */
+
+	if (!HBUF_PUTSL(ob,
 	    "<style:style"
 	    " style:name=\"Preformatted_20_Text\""
 	    " style:display-name=\"Preformatted Text\""
@@ -591,7 +570,10 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	    " style:font-size-complex=\"10pt\"/>\n"
 	    "</style:style>\n"))
 		return 0;
-	if (tab && !HBUF_PUTSL(ob,
+
+	/* Table contents. */
+
+	if (!HBUF_PUTSL(ob,
 	    "<style:style"
 	    " style:name=\"Table_20_Contents\""
 	    " style:display-name=\"Table Contents\""
@@ -605,7 +587,10 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	    " text:line-number=\"0\"/>\n"
 	    "</style:style>\n"))
 		return 0;
-	if ((h1 || h2 || h3) && !HBUF_PUTSL(ob,
+
+	/* Headings. */
+
+	if (!HBUF_PUTSL(ob,
 	    "<style:style"
 	    " style:name=\"Heading\""
 	    " style:family=\"paragraph\""
@@ -634,7 +619,10 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	    " style:font-size-complex=\"14pt\"/>\n"
 	    "</style:style>\n"))
 		return 0;
-	if (ulist && !HBUF_PUTSL(ob,
+
+	/* Unordered list. */
+
+	if (!HBUF_PUTSL(ob,
 	    "<style:style"
 	    " style:name=\"Bullet_20_Symbols\""
 	    " style:display-name=\"Bullet Symbols\""
@@ -651,13 +639,19 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	    " style:font-charset-complex=\"x-symbol\"/>\n"
    	    "</style:style>\n"))
 		return 0;
-	if (olist && !HBUF_PUTSL(ob,
+
+	/* Ordered list. */
+
+	if (!HBUF_PUTSL(ob,
 	    "<style:style"
 	    " style:name=\"Numbering_20_Symbols\""
 	    " style:display-name=\"Numbering Symbols\""
 	    " style:family=\"text\"/>\n"))
 		return 0;
-	if (h1 && !HBUF_PUTSL(ob,
+
+	/* Headers. */
+
+	if (!HBUF_PUTSL(ob,
 	    "<style:style"
 	    " style:name=\"Heading_20_1\""
 	    " style:display-name=\"Heading 1\""
@@ -679,7 +673,7 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	    " style:font-weight-complex=\"bold\"/>\n"
 	    "</style:style>\n"))
 	    	return 0;
-	if (h2 && !HBUF_PUTSL(ob,
+	if (!HBUF_PUTSL(ob,
 	    "<style:style"
 	    " style:name=\"Heading_20_2\""
 	    " style:display-name=\"Heading 2\""
@@ -701,7 +695,7 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	    " style:font-weight-complex=\"bold\"/>\n"
 	    "</style:style>\n"))
 	    	return 0;
-	if (h3 && !HBUF_PUTSL(ob,
+	if (!HBUF_PUTSL(ob,
 	    "<style:style"
 	    " style:name=\"Heading_20_3\""
 	    " style:display-name=\"Heading 3\""
@@ -723,7 +717,10 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	    " style:font-weight-complex=\"bold\"/>\n"
 	    "</style:style>\n"))
 	    	return 0;
-	if (tab && !HBUF_PUTSL(ob,
+
+	/* Table frames. */
+
+	if (!HBUF_PUTSL(ob,
 	    "<style:style style:name=\"fr1\""
 	    " style:family=\"graphic\""
 	    " style:parent-style-name=\"Frame\">\n"
@@ -738,10 +735,7 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	    " </style:style>\n"))
 		return 0;
 
-	if (!HBUF_PUTSL(ob,
-	    "</office:styles>\n"))
-		return 0;
-	return 1;
+	return HBUF_PUTSL(ob, "</office:styles>\n");
 }
 
 /*
