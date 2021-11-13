@@ -50,11 +50,7 @@ static const float TAB_LEN = 1.25;
 static const float LIST_LEN = 1.27;
 
 /*
- * A style in <office:styles> or <office-automatic-styles>.  The
- * difference between these two, according to section 3.15 of the v1.3,
- * is that automatic styles are ad hoc and regular styles are linked to
- * a central style that may be changed.  Span styles are in-line, blocks
- * can have offsets.
+ * A style in <office-automatic-styles>.
  */
 struct	odt_sty {
 	char			 name[STYLE_NAME_LEN]; /* name */
@@ -73,7 +69,6 @@ struct	odt_sty {
 #define	ODT_STY_TBL		 8 /* table */
 #define ODT_STY_TBL_PARA	 9 /* table contents */
 #define	ODT_STY_LIT		 10 /* literal */
-	int			 autosty; /* automatic-style? */
 };
 
 /*
@@ -148,21 +143,7 @@ odt_style_add_text(struct odt *st, enum lowdown_rndrt type)
 
 	s->fmt = ODT_STY_TEXT;
 	s->type = type;
-
-	/* Codespans and links are fixed, the rest are automatic. */
-
-	switch (type) {
-	case LOWDOWN_CODESPAN:
-		strlcpy(s->name, "Source_20_Text", sizeof(s->name));
-		break;
-	case LOWDOWN_LINK:
-		strlcpy(s->name, "Internet_20_link", sizeof(s->name));
-		break;
-	default:
-		s->autosty = 1;
-		snprintf(s->name, sizeof(s->name), "T%zu", st->sty_T++);
-		break;
-	}
+	snprintf(s->name, sizeof(s->name), "T%zu", st->sty_T++);
 	return s->name;
 }
 
@@ -261,28 +242,6 @@ odt_sty_flush(struct lowdown_buf *ob,
 		break;
 	}
 
-	switch (sty->type) {
-	case LOWDOWN_LINK:
-		if (!HBUF_PUTSL(ob,
-		    " style:display-name=\"Internet Link\""))
-			return 0;
-		break;
-	case LOWDOWN_CODESPAN:
-		if (!HBUF_PUTSL(ob,
-		    " style:display-name=\"Source Text\""))
-			return 0;
-		break;
-	case LOWDOWN_HRULE:
-		if (!HBUF_PUTSL(ob,
-		    " style:display-name=\"Horizontal Line\""
-		    " style:next-style-name=\"Text_20_body\""
-		    " style:class=\"html\""))
-			return 0;
-		break;
-	default:
-		break;
-	}
-
 	if (!HBUF_PUTSL(ob, ">\n"))
 		return 0;
 
@@ -299,27 +258,6 @@ odt_sty_flush(struct lowdown_buf *ob,
 		    " fo:margin-right=\"0cm\""
 		    " table:align=\"margins\"/>\n",
 		    sty->offs * TAB_LEN))
-			return 0;
-		break;
-	case LOWDOWN_HRULE:
-		if (!HBUF_PUTSL(ob,
-		    "<style:paragraph-properties"
-		    " fo:margin-top=\"0cm\""
-		    " fo:margin-bottom=\"0.499cm\""
-		    " style:contextual-spacing=\"false\""
-		    " style:border-line-width-bottom=\"0.002cm 0.004cm 0.002cm\""
-		    " fo:padding=\"0cm\""
-		    " fo:border-left=\"none\""
-		    " fo:border-right=\"none\""
-		    " fo:border-top=\"none\""
-		    " fo:border-bottom=\"0.14pt double #808080\""
-		    " text:number-lines=\"false\""
-		    " text:line-number=\"0\""
-		    " style:join-border=\"false\"/>\n"
-   		    "<style:text-properties"
-		    " fo:font-size=\"6pt\""
-		    " style:font-size-asian=\"6pt\""
-		    " style:font-size-complex=\"6pt\"/>\n"))
 			return 0;
 		break;
 	case LOWDOWN_HEADER:
@@ -389,41 +327,6 @@ odt_sty_flush(struct lowdown_buf *ob,
 		    " style:text-position=\"super 58%\"/>\n"))
 			return 0;
 		break;
-	case LOWDOWN_CODESPAN:
-		if (!HBUF_PUTSL(ob,
-		    "<style:text-properties"
-		    " style:font-name=\"Liberation Mono\""
-		    " fo:font-family=\"&apos;Liberation Mono&apos;\""
-		    " style:font-family-generic=\"modern\""
-		    " style:font-pitch=\"fixed\""
-		    " style:font-name-asian=\"Liberation Mono\""
-		    " style:font-family-asian="
-		     "\"&apos;Liberation Mono&apos;\""
-		    " style:font-family-generic-asian=\"modern\""
-		    " style:font-pitch-asian=\"fixed\""
-		    " style:font-name-complex=\"Liberation Mono\""
-		    " style:font-family-complex="
-		     "\"&apos;Liberation Mono&apos;\""
-		    " style:font-family-generic-complex=\"modern\""
-		    " style:font-pitch-complex=\"fixed\"/>\n"))
-			return 0;
-		break;
-	case LOWDOWN_LINK:
-		if (!HBUF_PUTSL(ob,
-		    "<style:text-properties"
-   		    " fo:color=\"#000080\""
-		    " loext:opacity=\"100%\""
-		    " fo:language=\"zxx\""
-		    " fo:country=\"none\""
-		    " style:language-asian=\"zxx\""
-		    " style:country-asian=\"none\""
-		    " style:language-complex=\"zxx\""
-		    " style:country-complex=\"none\""
-   		    " style:text-underline-style=\"solid\""
-   		    " style:text-underline-color=\"font-color\""
-		    " style:text-underline-width=\"auto\"/>\n"))
-			return 0;
-		break;
 	case LOWDOWN_TRIPLE_EMPHASIS:
 		if (!HBUF_PUTSL(ob,
 		    "<style:text-properties"
@@ -491,8 +394,8 @@ static int
 odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 {
 	size_t	 i;
-	int	 xlink = 0, ulist = 0, olist = 0,
-		 h1 = 0, h2 = 0, h3 = 0, hr = 0, tab = 0,
+	int	 ulist = 0, olist = 0,
+		 h1 = 0, h2 = 0, h3 = 0, tab = 0,
 		 lit = 0;
 	
 	/*
@@ -510,12 +413,6 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 		case LOWDOWN_PARAGRAPH:
 			if (st->stys[i].fmt == ODT_STY_LIT)
 				lit = 1;
-			break;
-		case LOWDOWN_HRULE:
-			hr = 1;
-			break;
-		case LOWDOWN_LINK:
-			xlink = 1;
 			break;
 		case LOWDOWN_HEADER:
 			if (st->stys[i].fmt == ODT_STY_H1)
@@ -540,7 +437,7 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	 * not, but I'm adding it because libreoffice does.
 	 */
 
-	if (xlink && !HBUF_PUTSL(ob,
+	if (!HBUF_PUTSL(ob,
 	    "<office:scripts>\n"
 	    " <office:script script:language=\"ooo:Basic\">\n"
 	    "  <ooo:libraries xmlns:ooo=\"http://openoffice.org/2004/office\""
@@ -559,6 +456,88 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	    " style:name=\"Standard\""
 	    " style:family=\"paragraph\""
 	    " style:class=\"text\"/>\n"))
+		return 0;
+	if (!HBUF_PUTSL(ob,
+	    "<style:style"
+	    " style:name=\"Text_20_body\""
+	    " style:display-name=\"Text body\""
+	    " style:family=\"paragraph\""
+	    " style:parent-style-name=\"Standard\""
+	    " style:class=\"text\">\n"
+	    "<style:paragraph-properties"
+	    " fo:margin-top=\"0cm\""
+	    " fo:margin-bottom=\"0.247cm\""
+	    " style:contextual-spacing=\"false\""
+	    " fo:line-height=\"115%\"/>\n"
+	    "</style:style>\n"))
+		return 0;
+	if (!HBUF_PUTSL(ob,
+  	    "<style:style"
+	    " style:family=\"paragraph\""
+	    " style:name=\"Horizontal_20_Line\""
+	    " style:parent-style-name=\"Standard\""
+	    " style:display-name=\"Horizontal Line\""
+	    " style:next-style-name=\"Text_20_body\""
+	    " style:class=\"html\">\n"
+	    "<style:paragraph-properties"
+	    " fo:margin-top=\"0cm\""
+	    " fo:margin-bottom=\"0.499cm\""
+	    " style:contextual-spacing=\"false\""
+	    " style:border-line-width-bottom=\"0.002cm 0.004cm 0.002cm\""
+	    " fo:padding=\"0cm\""
+	    " fo:border-left=\"none\""
+	    " fo:border-right=\"none\""
+	    " fo:border-top=\"none\""
+	    " fo:border-bottom=\"0.14pt double #808080\""
+	    " text:number-lines=\"false\""
+	    " text:line-number=\"0\""
+	    " style:join-border=\"false\"/>\n"
+   	    "<style:text-properties"
+	    " fo:font-size=\"6pt\""
+	    " style:font-size-asian=\"6pt\""
+	    " style:font-size-complex=\"6pt\"/>\n"
+	    "</style:style>\n"))
+		return 0;
+	if (!HBUF_PUTSL(ob, 
+	    "<style:style"
+	    " style:family=\"text\""
+	    " style:name=\"Internet_20_Link\""
+	    " style:display-name=\"Internet Link\">\n"
+	    "<style:text-properties"
+   	    " fo:color=\"#000080\""
+	    " loext:opacity=\"100%\""
+	    " fo:language=\"zxx\""
+	    " fo:country=\"none\""
+	    " style:language-asian=\"zxx\""
+	    " style:country-asian=\"none\""
+	    " style:language-complex=\"zxx\""
+	    " style:country-complex=\"none\""
+   	    " style:text-underline-style=\"solid\""
+   	    " style:text-underline-color=\"font-color\""
+	    " style:text-underline-width=\"auto\"/>\n"
+	    "</style:style>\n"))
+		return 0;
+	if (!HBUF_PUTSL(ob,
+	    "<style:style"
+	    " style:family=\"text\""
+	    " style:name=\"Source_20_Text\""
+	    " style:display-name=\"Source Text\">\n"
+	    "<style:text-properties"
+	    " style:font-name=\"Liberation Mono\""
+	    " fo:font-family=\"&apos;Liberation Mono&apos;\""
+	    " style:font-family-generic=\"modern\""
+	    " style:font-pitch=\"fixed\""
+	    " style:font-name-asian=\"Liberation Mono\""
+	    " style:font-family-asian="
+	     "\"&apos;Liberation Mono&apos;\""
+	    " style:font-family-generic-asian=\"modern\""
+	    " style:font-pitch-asian=\"fixed\""
+	    " style:font-name-complex=\"Liberation Mono\""
+	    " style:font-family-complex="
+	     "\"&apos;Liberation Mono&apos;\""
+	    " style:font-family-generic-complex=\"modern\""
+	    " style:font-pitch-complex=\"fixed\"/>\n"
+	    "</style:style>\n"))
 		return 0;
 	if (tab && !HBUF_PUTSL(ob,
 	    "<style:style"
@@ -624,20 +603,6 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	    " fo:widows=\"0\""
 	    " text:number-lines=\"false\""
 	    " text:line-number=\"0\"/>\n"
-	    "</style:style>\n"))
-		return 0;
-	if ((h1 || h2 || h3 || hr) && !HBUF_PUTSL(ob,
-	    "<style:style"
-	    " style:name=\"Text_20_body\""
-	    " style:display-name=\"Text body\""
-	    " style:family=\"paragraph\""
-	    " style:parent-style-name=\"Standard\""
-	    " style:class=\"text\">\n"
-	    "<style:paragraph-properties"
-	    " fo:margin-top=\"0cm\""
-	    " fo:margin-bottom=\"0.247cm\""
-	    " style:contextual-spacing=\"false\""
-	    " fo:line-height=\"115%\"/>\n"
 	    "</style:style>\n"))
 		return 0;
 	if ((h1 || h2 || h3) && !HBUF_PUTSL(ob,
@@ -773,14 +738,6 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	    " </style:style>\n"))
 		return 0;
 
-
-	/* Emit fixed styles. */
-
-	for (i = 0; i < st->stysz; i++)
-		if (!st->stys[i].autosty &&
-		    !odt_sty_flush(ob, st, &st->stys[i]))
-			return 0;
-
 	if (!HBUF_PUTSL(ob,
 	    "</office:styles>\n"))
 		return 0;
@@ -803,8 +760,7 @@ odt_styles_flush(struct lowdown_buf *ob, const struct odt *st)
 	if (!HBUF_PUTSL(ob, "<office:automatic-styles>\n"))
 		return 0;
 	for (i = 0; i < st->stysz; i++)
-		if (st->stys[i].autosty &&
-		    !odt_sty_flush(ob, st, &st->stys[i]))
+		if (!odt_sty_flush(ob, st, &st->stys[i]))
 			return 0;
 
 	/*
@@ -1054,16 +1010,13 @@ rndr_autolink(struct lowdown_buf *ob,
 	const struct rndr_autolink *parm,
 	struct odt *st)
 {
-	const char	*sty;
 
 	if (parm->link.size == 0)
 		return 1;
 
-	if ((sty = odt_style_add_text(st, LOWDOWN_LINK)) == NULL)
-		return 0;
-	if (!hbuf_printf(ob,
+	if (!HBUF_PUTSL(ob,
 	    "<text:a xlink:type=\"simple\""
-	    " text:style-name=\"%s\" xlink:href=\"", sty))
+	    " text:style-name=\"Internet_20_Link\" xlink:href=\""))
 		return 0;
 	if (parm->type == HALINK_EMAIL && !HBUF_PUTSL(ob, "mailto:"))
 		return 0;
@@ -1115,7 +1068,6 @@ rndr_blockcode(struct lowdown_buf *ob,
 	if (i == st->stysz) {
 		if ((s = odt_style_add(st)) == NULL)
 			return 0;
-		s->autosty = 1;
 		s->type = LOWDOWN_PARAGRAPH;
 		s->fmt = ODT_STY_LIT;
 		s->parent = st->list;
@@ -1177,12 +1129,9 @@ rndr_codespan(struct lowdown_buf *ob,
 	const struct rndr_codespan *param, 
 	struct odt *st)
 {
-	const char	*sty;
 
-	if ((sty = odt_style_add_text(st, LOWDOWN_CODESPAN)) == NULL)
-		return 0;
-	if (!hbuf_printf(ob,
-	    "<text:span text:style-name=\"%s\">", sty))
+	if (!HBUF_PUTSL(ob,
+	    "<text:span text:style-name=\"Source_20_Text\">"))
 		return 0;
 	if (!escape_htmlb(ob, &param->text, st))
 		return 0;
@@ -1254,7 +1203,6 @@ rndr_header(struct lowdown_buf *ob,
 	if (i == st->stysz) {
 		if ((sty = odt_style_add(st)) == NULL)
 			return 0;
-		sty->autosty = 1;
 		sty->fmt = fl;
 		sty->type = LOWDOWN_HEADER;
 		snprintf(sty->name, sizeof(sty->name),
@@ -1282,13 +1230,10 @@ rndr_link(struct lowdown_buf *ob,
 	const struct rndr_link *param,
 	struct odt *st)
 {
-	const char	*sty;
 
-	if ((sty = odt_style_add_text(st, LOWDOWN_LINK)) == NULL)
-		return 0;
-	if (!hbuf_printf(ob,
+	if (!HBUF_PUTSL(ob,
 	    "<text:a xlink:type=\"simple\" "
-	    "text:style-name=\"%s\" xlink:href=\"", sty))
+	    "text:style-name=\"Internet_20_Link\" xlink:href=\""))
 		return 0;
 	if (!escape_href(ob, &param->link, st))
 		return 0;
@@ -1359,7 +1304,6 @@ rndr_listitem(struct lowdown_buf *ob,
 		if (i == st->stysz) {
 			if ((sty = odt_style_add(st)) == NULL)
 				return 0;
-			sty->autosty = 1;
 			sty->parent = st->list;
 			sty->foot = st->foot;
 			sty->fmt = ODT_STY_PARA;
@@ -1441,7 +1385,6 @@ rndr_paragraph(struct lowdown_buf *ob,
 	if (j == st->stysz) {
 		if ((sty = odt_style_add(st)) == NULL)
 			return 0;
-		sty->autosty = 1;
 		sty->foot = st->foot;
 		sty->fmt = ODT_STY_PARA;
 		sty->type = LOWDOWN_PARAGRAPH;
@@ -1482,31 +1425,11 @@ rndr_html(struct lowdown_buf *ob,
 static int
 rndr_hrule(struct lowdown_buf *ob, struct odt *st)
 {
-	size_t	 	 i;
-	struct odt_sty	*s;
-
-	for (i = 0; i < st->stysz; i++)
-		if (st->stys[i].type == LOWDOWN_HRULE &&
-		    st->stys[i].foot == st->foot) {
-			assert(st->stys[i].fmt == ODT_STY_PARA);
-			break;
-		}
-
-	if (i == st->stysz) {
-		if ((s = odt_style_add(st)) == NULL)
-			return 0;
-		s->type = LOWDOWN_HRULE;
-		s->fmt = ODT_STY_PARA;
-		s->foot = st->foot;
-		strlcpy(s->name, "Horizontal_20_Line",
-			sizeof(s->name));
-	} else
-		s = &st->stys[i];
 
 	if (ob->size && !hbuf_putc(ob, '\n'))
 		return 0;
-	return hbuf_printf(ob,
-		"<text:p text:style-name=\"%s\"/>\n", s->name);
+	return HBUF_PUTSL(ob,
+		"<text:p text:style-name=\"Horizontal_20_Line\"/>\n");
 }
 
 /*
@@ -1548,7 +1471,6 @@ rndr_table(struct lowdown_buf *ob,
 	if (pid == st->stysz) {
 		if ((s = odt_style_add(st)) == NULL)
 			return 0;
-		s->autosty = 1;
 		s->parent = st->list;
 		s->foot = st->foot;
 		s->fmt = ODT_STY_PARA;
@@ -1572,7 +1494,6 @@ rndr_table(struct lowdown_buf *ob,
 	if (i == st->stysz) {
 		if ((s = odt_style_add(st)) == NULL)
 			return 0;
-		s->autosty = 1;
 		s->type = LOWDOWN_TABLE_BLOCK;
 		s->fmt = ODT_STY_TBL;
 		s->foot = st->foot;
@@ -1656,7 +1577,6 @@ rndr_tablecell(struct lowdown_buf *ob,
 	if (i == st->stysz) {
 		if ((s = odt_style_add(st)) == NULL)
 			return 0;
-		s->autosty = 1;
 		s->type = LOWDOWN_PARAGRAPH;
 		s->foot = st->foot;
 		s->fmt = ODT_STY_TBL_PARA;
@@ -1954,7 +1874,6 @@ rndr(struct lowdown_buf *ob,
 			if (n->rndr_list.flags & HLIST_FL_UNORDERED)
 				sty->fmt = ODT_STY_UL;
 			sty->offs = st->offs;
-			sty->autosty = 1;
 			snprintf(sty->name, sizeof(sty->name),
 				"L%zu", st->sty_L++);
 		}
