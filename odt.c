@@ -98,6 +98,7 @@ struct 	odt {
 	const struct lowdown_node *foots; /* footnotes */
 	struct odt_chng		*chngs; /* changes in content */
 	size_t			 chngsz; /* number of changes */
+	char			*sty; /* external styles or NULL */
 };
 
 static int rndr(struct lowdown_buf *,
@@ -393,6 +394,30 @@ odt_sty_flush(struct lowdown_buf *ob,
 static int
 odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 {
+
+	if (st->sty != NULL)
+		return hbuf_puts(ob, st->sty);
+
+	if (!HBUF_PUTSL(ob,
+	    "<office:font-face-decls>\n"
+  	    "<style:font-face style:name=\"OpenSymbol\""
+	    " svg:font-family=\"OpenSymbol\""
+	    " style:font-charset=\"x-symbol\"/>\n"
+	    "<style:font-face style:name=\"Liberation Mono\""
+	    " svg:font-family=\"&apos;Liberation Mono&apos;\""
+	    " style:font-family-generic=\"modern\""
+	    " style:font-pitch=\"fixed\"/>\n"
+	    "<style:font-face style:name=\"Liberation Serif\""
+	    " svg:font-family=\"&apos;Liberation Serif&apos;\""
+	    " style:font-family-generic=\"roman\""
+	    " style:font-pitch=\"variable\"/>\n"
+	    "<style:font-face style:name=\"Liberation Sans\""
+	    " svg:font-family=\"&apos;Liberation Sans&apos;\""
+	    " style:font-family-generic=\"swiss\""
+	    " style:font-pitch=\"variable\"/>\n"
+	    "</office:font-face-decls>\n"))
+		return 0;
+
 	/*
 	 * This doesn't appear to make a difference if it's specified or
 	 * not, but I'm adding it because libreoffice does.
@@ -1718,31 +1743,6 @@ rndr_root(struct lowdown_buf *ob, const struct lowdown_metaq *mq,
 	    !odt_metaq_flush(ob, mq, st))
 		return 0;
 
-	/* 
-	 * These fonts are only referenced in the non-automatic styles,
-	 * so don't emit them for non-standalone mode.
-	 */
-
-	if ((st->flags & LOWDOWN_STANDALONE) && !HBUF_PUTSL(ob,
-	    "<office:font-face-decls>\n"
-  	    "<style:font-face style:name=\"OpenSymbol\""
-	    " svg:font-family=\"OpenSymbol\""
-	    " style:font-charset=\"x-symbol\"/>\n"
-	    "<style:font-face style:name=\"Liberation Mono\""
-	    " svg:font-family=\"&apos;Liberation Mono&apos;\""
-	    " style:font-family-generic=\"modern\""
-	    " style:font-pitch=\"fixed\"/>\n"
-	    "<style:font-face style:name=\"Liberation Serif\""
-	    " svg:font-family=\"&apos;Liberation Serif&apos;\""
-	    " style:font-family-generic=\"roman\""
-	    " style:font-pitch=\"variable\"/>\n"
-	    "<style:font-face style:name=\"Liberation Sans\""
-	    " svg:font-family=\"&apos;Liberation Sans&apos;\""
-	    " style:font-family-generic=\"swiss\""
-	    " style:font-pitch=\"variable\"/>\n"
-	    "</office:font-face-decls>\n"))
-		return 0;
-
 	if (!odt_styles_flush(ob, st))
 		return 0;
 
@@ -2074,12 +2074,22 @@ lowdown_odt_new(const struct lowdown_opts *opts)
 		return NULL;
 
 	p->flags = opts == NULL ? 0 : opts->oflags;
+	if (opts->odt.sty != NULL &&
+	    (p->sty = strdup(opts->odt.sty)) == NULL) {
+		free(p);
+		p = NULL;
+	}
+
 	return p;
 }
 
 void
 lowdown_odt_free(void *arg)
 {
+	struct odt	*p = arg;
 
-	free(arg);
+	if (p != NULL)
+		free(p->sty);
+
+	free(p);
 }

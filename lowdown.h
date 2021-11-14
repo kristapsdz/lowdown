@@ -292,11 +292,18 @@ struct	lowdown_node {
 	TAILQ_ENTRY(lowdown_node) entries;
 };
 
+struct	lowdown_opts_odt {
+	const char		*sty;
+};
+
 /*
  * These options contain everything needed to parse and render content.
  */
 struct	lowdown_opts {
 	enum lowdown_type	  type;
+	union {
+		struct lowdown_opts_odt odt;
+	};
 	size_t			  maxdepth; /* max parse tree depth */
 	size_t			  cols; /* -Tterm width */
 	size_t			  hmargin; /* -Tterm left margin */

@@ -25,12 +25,14 @@
 # include <sys/capsicum.h>
 #endif
 #include <sys/ioctl.h>
+#include <sys/stat.h>
 
 #include <assert.h>
 #if HAVE_ERR
 # include <err.h>
 #endif
 #include <errno.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <limits.h> /* INT_MAX */
 #include <locale.h> /* set_locale() */
@@ -211,13 +213,15 @@ main(int argc, char *argv[])
 	const char		*fnin = "<stdin>", *fnout = NULL,
 	      	 		*fndin = NULL, *extract = NULL, *er,
 				*mainopts = "M:m:sT:o:X:",
-	      			*diffopts = "M:m:sT:o:";
+	      			*diffopts = "M:m:sT:o:", *odtstyfn = NULL;
 	struct lowdown_opts 	 opts;
-	int			 c, diff = 0,
+	struct stat		 st;
+	int			 c, diff = 0, fd,
 				 status = 0, aoflag = 0, roflag = 0,
 				 aiflag = 0, riflag = 0, centre = 0;
-	char			*ret = NULL;
-	size_t		 	 i, retsz = 0, rcols;
+	char			*ret = NULL, *cp, *odtsty = NULL;
+	size_t		 	 i, retsz = 0, rcols, sz;
+	ssize_t			 ssz;
 	struct lowdown_meta 	*m;
 	struct lowdown_metaq	 mq;
 	struct option 		 lo[] = {
@@ -249,6 +253,7 @@ main(int argc, char *argv[])
 		{ "nroff-no-nolinks",	no_argument, 	&roflag, LOWDOWN_NROFF_NOLINK },
 		{ "odt-skiphtml",	no_argument,	&aoflag, LOWDOWN_ODT_SKIP_HTML },
 		{ "odt-no-skiphtml",	no_argument,	&roflag, LOWDOWN_ODT_SKIP_HTML },
+		{ "odt-style",		required_argument, NULL, 6 },
 		{ "term-width",		required_argument, NULL, 1 },
 		{ "term-hmargin",	required_argument, NULL, 2 },
 		{ "term-vmargin",	required_argument, NULL, 3 },
@@ -434,6 +439,9 @@ main(int argc, char *argv[])
 			if (er == NULL)
 				break;
 			errx(1, "--parse-maxdepth: %s", er);
+		case 6:
+			odtstyfn = optarg;
+			break;
 		default:
 			goto usage;
 		}
@@ -487,6 +495,34 @@ main(int argc, char *argv[])
 		}
 	}
 
+	/*
+	 * If we have a style sheet specified for -Tfodt, load it now
+	 * before we drop privileges.
+	 */
+
+	if (opts.type == LOWDOWN_FODT && odtstyfn != NULL) {
+		if ((fd = open(odtstyfn, O_RDONLY)) == -1)
+			err(1, "%s", odtstyfn);
+		if (fstat(fd, &st) == -1)
+			err(1, "%s", odtstyfn);
+		if ((uint64_t)st.st_size > SIZE_MAX - 1)
+			errx(1, "%s: file too long", odtstyfn);
+		sz = (size_t)st.st_size;
+		if ((odtsty = cp = malloc(sz + 1)) == NULL)
+			err(1, NULL);
+		while (sz > 0) {
+			if ((ssz = read(fd, cp, sz)) == -1)
+				err(1, "%s", odtstyfn);
+			if (ssz == 0)
+				errx(1, "%s: short file", odtstyfn);
+			sz -= (size_t)ssz;
+			cp += ssz;
+		}
+		*cp = '\0';
+		close(fd);
+		opts.odt.sty = odtsty;
+	}
+
 	/* Configure the output file. */
 
 	if (fnout != NULL && strcmp(fnout, "-") &&
@@ -537,6 +573,7 @@ main(int argc, char *argv[])
 		fwrite(ret, 1, retsz, fout);
 
 	free(ret);
+	free(odtsty);
 
 	if (fout != stdout)
 		fclose(fout);
