@@ -48,6 +48,17 @@ are
 .Dv LOWDOWN_ODT_SKIP_HTML
 and
 .Dv LOWDOWN_STANDALONE .
+.Pp
+The
+.Fa opts->odt.sty
+field, if not
+.Dv NULL ,
+overrides the default
+.Li <office:font-face-decls> ,
+.Li <office:scripts> ,
+and
+.Li <office:styles>
+elements of the document styles.
 .Sh RETURN VALUES
 Returns a pointer to the renderer or
 .Dv NULL

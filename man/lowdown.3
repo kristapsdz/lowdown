@@ -449,14 +449,19 @@ macros.
 The
 .Dv LOWDOWN_TREE
 type causes a debug tree to be written.
-.Pp
-Both
-.Dv LOWDOWN_MAN
-and
-.Dv LOWDOWN_NROFF
-will use troff tables, which usually require the
-.Xr tbl 1
-preprocessor.
+.It Va struct lowdown_opts_odt odt
+If
+.Va type
+is
+.Dv LOWDOWN_FODT ,
+this contains
+.Vt "const char *sty" ,
+which is either
+.Dv NULL
+or the OpenDocument styles used when creating standalone documents.
+If
+.Dv NULL ,
+the default styles are used.
 .It Va char **meta
 An array of metadata key-value pairs or
 .Dv NULL .

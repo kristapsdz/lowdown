@@ -361,6 +361,7 @@ This usually doesn't make sense because the HTML won't be interpreted by
 the output reader.
 By default, HTML is omitted.
 .El
+.Pp
 The
 .Fl T Ns Ar fodt
 output has the following options:
@@ -370,6 +371,14 @@ Output embedded HTML.
 This usually doesn't make sense because the HTML won't be interpreted by
 the output reader.
 By default, HTML is omitted.
+.It Fl -odt-style Ns = Ns Ar file
+Specify an OpenDocument style file, which must consist of at least
+.Li <office:font-face-decls> ,
+.Li <office:scripts> ,
+and
+.Li <office:styles>
+XML elements in the root of the document.
+This is not syntax-checked in any way.
 .El
 .Ss Metadata
 If parsed from the document or as given by
@@ -606,8 +615,6 @@ statements.
 Omit the document prologue.
 .El
 .Sh ENVIRONMENT
-The following environment variables affect the execution of
-.Nm :
 .Bl -tag -width Ds
 .It Ev NO_COLOR
 Do not emit colours when in
@@ -617,6 +624,16 @@ Synonym for
 .Ev NO_COLOUR .
 Same as
 .Fl -term-nocolour .
+.El
+.Sh FILES
+.Bl -tag -width Ds
+.It Pa share/odt/styles.xml
+Default styles used when generating standalone
+.Fl T Ns Ar fodt
+documents.
+Template for
+.Fl -odt-style
+styles.
 .El
 .Sh EXIT STATUS
 .Ex -std

@@ -296,18 +296,15 @@ struct	lowdown_opts_odt {
 	const char		*sty;
 };
 
-/*
- * These options contain everything needed to parse and render content.
- */
 struct	lowdown_opts {
 	enum lowdown_type	  type;
 	union {
 		struct lowdown_opts_odt odt;
 	};
-	size_t			  maxdepth; /* max parse tree depth */
-	size_t			  cols; /* -Tterm width */
-	size_t			  hmargin; /* -Tterm left margin */
-	size_t			  vmargin; /* -Tterm top/bot margin */
+	size_t			  maxdepth;
+	size_t			  cols;
+	size_t			  hmargin;
+	size_t			  vmargin;
 	unsigned int		  feat;
 #define LOWDOWN_TABLES		  0x01
 #define LOWDOWN_FENCED		  0x02
