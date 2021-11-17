@@ -163,7 +163,8 @@ Table: Shoes, their sizes, and what they\[u2019]re made of
 .PP
 A horizontal rule follows.
 .LP
-.PP
+\l'2i'
+.LP
 Here\[u2019]s a definition list:
 .IP "apples"
 Good for making applesauce.

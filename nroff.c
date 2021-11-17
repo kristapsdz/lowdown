@@ -997,18 +997,28 @@ rndr_raw_block(const struct nroff *st,
 static int
 rndr_hrule(struct nroff *st, struct bnodeq *obq)
 {
+
 	/* The LP is to reset the margins. */
 
 	if (bqueue_block(obq, ".LP") == NULL)
-		return 0;
-	if (!st->man && 
-	    bqueue_block(obq, ".ie d HR \\{\\\n.HR\n\\}\n.el \\{\\\n.sp 1v\n\\l'\\n(.liu'\n.sp 1v\n.\\}") == NULL)
 		return 0;
 
 	/* Set post_para so we get a following LP not PP. */
 
 	st->post_para = 1;
-	return 1;
+
+	if (st->man)
+		return bqueue_block(obq, "\\l\'2i'") != NULL;
+
+	return bqueue_block(obq,
+	    ".ie d HR \\{\\\n"
+	    ".HR\n"
+	    "\\}\n"
+	    ".el \\{\\\n"
+	    ".sp 1v\n"
+	    "\\l'\\n(.lu'\n"
+	    ".sp 1v\n"
+	    ".\\}") != NULL;
 }
 
 static int

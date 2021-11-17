@@ -182,8 +182,15 @@ Table: Shoes, their sizes, and what they\[u2019]re made of
 .PP
 A horizontal rule follows.
 .LP
-\l'\n(.lu-\n(\n[.in]u'
-.PP
+.ie d HR \{\
+.HR
+\}
+.el \{\
+.sp 1v
+\l'\n(.lu'
+.sp 1v
+.\}
+.LP
 Here\[u2019]s a definition list:
 .IP "apples"
 Good for making applesauce.
