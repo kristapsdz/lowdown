@@ -139,9 +139,8 @@ lowdown-diff: lowdown
 liblowdown.a: $(OBJS) $(COMPAT_OBJS)
 	$(AR) rs $@ $(OBJS) $(COMPAT_OBJS)
 
-
 liblowdown.so: $(OBJS) $(COMPAT_OBJS)
-	$(CC) -shared -o $@ $(OBJS) $(COMPAT_OBJS) $(LDFLAGS)
+	$(CC) -shared -o $@ $(OBJS) $(COMPAT_OBJS) $(LDFLAGS) $(LDADD_MD5)
 
 install: all
 	mkdir -p $(DESTDIR)$(BINDIR)
