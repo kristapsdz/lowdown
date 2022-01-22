@@ -1534,19 +1534,6 @@ char_link(struct lowdown_doc *doc,
 			fr->num = ++doc->foots;
 			fr->is_used = 1;
 			n->rndr_footnote_ref.num = fr->num;
-			if (!pushlbuf
-			    (&n->rndr_footnote_ref.key, &fr->name))
-				goto err;
-			if (!pushlbuf
-			    (&n->rndr_footnote_ref.def, &fr->contents))
-				goto err;
-		} else if (fr != NULL && fr->is_used) {
-			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
-			if (n == NULL)
-				goto err;
-			if (!pushbuf(&n->rndr_normal_text.text,
-			    data, txt_e + 1))
-				goto err;
 		} else {
 			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 			if (n == NULL)
@@ -4671,10 +4658,6 @@ lowdown_node_free(struct lowdown_node *p)
 		break;
 	case LOWDOWN_FOOTNOTE_DEF:
 		hbuf_free(&p->rndr_footnote_def.key);
-		break;
-	case LOWDOWN_FOOTNOTE_REF:
-		hbuf_free(&p->rndr_footnote_ref.def);
-		hbuf_free(&p->rndr_footnote_ref.key);
 		break;
 	case LOWDOWN_HEADER:
 		hbuf_free(&p->rndr_header.attr_cls);
