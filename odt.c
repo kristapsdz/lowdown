@@ -95,7 +95,7 @@ struct 	odt {
 	size_t			 offs; /* offs or (size_t)-1 in list */
 	size_t			 list; /* root list style or (size_t)-1 */
 	int			 foot; /* in footnote or not */
-	const struct lowdown_node *foots; /* footnotes */
+	size_t			 footcount; /* footnote */
 	struct odt_chng		*chngs; /* changes in content */
 	size_t			 chngsz; /* number of changes */
 	char			*sty; /* external styles or NULL */
@@ -1618,27 +1618,13 @@ rndr_tablecell(struct lowdown_buf *ob,
  */
 static int
 rndr_footnote_ref(struct lowdown_buf *ob,
-	const struct rndr_footnote_ref *param,
-	struct odt *st)
+	const struct lowdown_buf *content, struct odt *st)
 {
-	const struct lowdown_node	*n;
-	struct odt			 tmp;
+	struct odt	 tmp;
 
 	/* Don't allow nested footnotes. */
 
 	if (st->foot)
-		return 1;
-
-	/* Look up footnote definition and exit if not found. */
-
-	if (st->foots == NULL)
-		return 1;
-	TAILQ_FOREACH(n, &st->foots->children, entries)
-		if (n->type != LOWDOWN_FOOTNOTE_DEF)
-			continue;
-		else if (n->rndr_footnote_def.num == param->num)
-			break;
-	if (n == NULL)
 		return 1;
 
 	/* Save state values. */
@@ -1647,14 +1633,15 @@ rndr_footnote_ref(struct lowdown_buf *ob,
 	st->offs = 0;
 	st->list = (size_t)-1;
 	st->foot = 1;
+	st->footcount++;
 
 	if (!hbuf_printf(ob,
 	    "<text:note text:id=\"ftn%zu\""
 	    " text:note-class=\"footnote\">"
 	    "<text:note-citation>%zu</text:note-citation>"
-	    "<text:note-body>\n", param->num, param->num))
+	    "<text:note-body>\n", st->footcount, st->footcount))
 		return 0;
-	if (!rndr(ob, NULL, st, n))
+	if (!hbuf_putb(ob, content))
 		return 0;
 	if (!HBUF_PUTSL(ob,
 	    "</text:note-body></text:note>\n"))
@@ -1879,14 +1866,9 @@ rndr(struct lowdown_buf *ob,
 		break;
 	}
 
-	/* Skip footnotes. */
-
-	TAILQ_FOREACH(child, &n->children, entries) {
-		if (child->type == LOWDOWN_FOOTNOTES_BLOCK)
-			continue;
+	TAILQ_FOREACH(child, &n->children, entries)
 		if (!rndr(tmp, mq, st, child))
 			goto out;
-	}
 
 	if (n->chng == LOWDOWN_CHNG_INSERT ||
 	    n->chng == LOWDOWN_CHNG_DELETE) {
@@ -1972,7 +1954,7 @@ rndr(struct lowdown_buf *ob,
 		rc = rndr_link(ob, tmp, &n->rndr_link, st);
 		break;
 	case LOWDOWN_FOOTNOTE_REF:
-		rc = rndr_footnote_ref(ob, &n->rndr_footnote_ref, st);
+		rc = rndr_footnote_ref(ob, tmp, st);
 		break;
 	case LOWDOWN_MATH_BLOCK:
 		rc = rndr_math(ob, &n->rndr_math, st);
@@ -2040,22 +2022,10 @@ lowdown_odt_rndr(struct lowdown_buf *ob,
 	st->stysz = 0;
 	st->list = (size_t)-1;
 	st->foot = 0;
-	st->foots = NULL;
+	st->footcount = 0;
 	st->sty_T = st->sty_L = st->sty_P = st->sty_Table = 1;
 	st->chngs = NULL;
 	st->chngsz = 0;
-
-	/* 
-	 * Keep tabs of where the footnote block is, if any.  This is
-	 * because we need to inline footnote definitions directly where
-	 * we have the references.
-	 */
-
-	if (n->type == LOWDOWN_ROOT)
-		TAILQ_FOREACH_REVERSE(st->foots,
-		    &n->children, lowdown_nodeq, entries)
-			if (st->foots->type == LOWDOWN_FOOTNOTES_BLOCK)
-				break;
 
 	rc = rndr(ob, &metaq, st, n);
 
