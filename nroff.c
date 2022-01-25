@@ -41,11 +41,13 @@ enum	nfont {
 };
 
 struct 	nroff {
-	int 		 man; /* whether man(7) */
-	int		 post_para; /* for choosing PP/LP */
-	unsigned int 	 flags; /* output flags */
-	ssize_t		 headers_offs; /* header offset */
-	enum nfont	 fonts[NFONT__MAX]; /* see bqueue_font() */
+	int			  man; /* whether man(7) */
+	int			  post_para; /* for choosing PP/LP */
+	unsigned int		  flags; /* output flags */
+	ssize_t			  headers_offs; /* header offset */
+	enum nfont		  fonts[NFONT__MAX]; /* see bqueue_font() */
+	struct bnodeq		**foots; /* footnotes */
+	size_t			  footsz; /* footnote size */
 };
 
 enum	bscope {
@@ -1236,29 +1238,8 @@ rndr_superscript(struct bnodeq *obq, struct bnodeq *bq)
 }
 
 static int
-rndr_footnotes(const struct nroff *st,
-	struct bnodeq *obq, struct bnodeq *bq)
-{
-
-	/* Put a horizontal line in the case of man(7). */
-
-	if (st->man) {
-		if (bqueue_block(obq, ".LP") == NULL)
-			return 0;
-		if (bqueue_block(obq, ".sp 3") == NULL)
-			return 0;
-		if (bqueue_block(obq, "\\l\'2i'") == NULL)
-			return 0;
-	}
-
-	TAILQ_CONCAT(obq, bq, entries);
-	return 1;
-}
-
-static int
 rndr_footnote_def(const struct nroff *st, struct bnodeq *obq,
-	struct bnodeq *bq, const struct lowdown_node *n,
-	const struct rndr_footnote_def *param)
+	struct bnodeq *bq, size_t num)
 {
 	struct bnode	*bn;
 
@@ -1272,16 +1253,8 @@ rndr_footnote_def(const struct nroff *st, struct bnodeq *obq,
 	if (!st->man) {
 		if (bqueue_block(obq, ".FS") == NULL)
 			return 0;
-		if ((n->chng == LOWDOWN_CHNG_INSERT ||
-		     n->chng == LOWDOWN_CHNG_DELETE) &&
-		    !bqueue_colour(obq, n->chng, 0))
-			return 0;
 		bqueue_strip_paras(bq);
 		TAILQ_CONCAT(obq, bq, entries);
-		if ((n->chng == LOWDOWN_CHNG_INSERT ||
-		     n->chng == LOWDOWN_CHNG_DELETE) &&
-		    !bqueue_colour(obq, n->chng, 1))
-			return 0;
 		return bqueue_block(obq, ".FE") != NULL;
 	}
 
@@ -1292,33 +1265,81 @@ rndr_footnote_def(const struct nroff *st, struct bnodeq *obq,
 
 	if (bqueue_block(obq, ".LP") == NULL)
 		return 0;
-	if ((n->chng == LOWDOWN_CHNG_INSERT ||
-	     n->chng == LOWDOWN_CHNG_DELETE) &&
-	    !bqueue_colour(obq, n->chng, 0))
-		return 0;
-
 	if ((bn = bqueue_span(obq, NULL)) == NULL)
 		return 0;
 	if (asprintf(&bn->nbuf, 
-	    "\\0\\fI\\u\\s-3%zu\\s+3\\d\\fP\\0", param->num) == -1) {
+	    "\\0\\fI\\u\\s-3%zu\\s+3\\d\\fP\\0", num) == -1) {
 		bn->nbuf = NULL;
 		return 0;
 	}
-
 	bqueue_strip_paras(bq);
 	TAILQ_CONCAT(obq, bq, entries);
-	if ((n->chng == LOWDOWN_CHNG_INSERT ||
-	     n->chng == LOWDOWN_CHNG_DELETE) &&
-	    !bqueue_colour(obq, n->chng, 1))
-		return 0;
+	return 1;
+}
+
+
+static int
+rndr_footnotes(struct nroff *st, struct bnodeq *obq)
+{
+	size_t	 i;
+
+	if (st->footsz == 0)
+		return 1;
+
+	/* Put a horizontal line in the case of man(7). */
+
+	if (st->man) {
+		if (bqueue_block(obq, ".LP") == NULL)
+			return 0;
+		if (bqueue_block(obq, ".sp 3") == NULL)
+			return 0;
+		if (bqueue_block(obq, "\\l\'2i'") == NULL)
+			return 0;
+	}
+
+	for (i = 0; i < st->footsz; i++) {
+		if (!rndr_footnote_def(st, obq, st->foots[i], i + 1))
+			return 0;
+		bqueue_free(st->foots[i]);
+	}
+
+	free(st->foots);
+	st->footsz = 0;
 	return 1;
 }
 
 static int
-rndr_footnote_ref(const struct nroff *st,
-	struct bnodeq *obq, const struct rndr_footnote_ref *param)
+rndr_footnote_ref(struct nroff *st, struct bnodeq *obq,
+	struct bnodeq *bq)
 {
-	struct bnode	*bn;
+	struct bnode		*bn;
+	void			*pp;
+	size_t			 num = st->footsz;
+	struct lowdown_buf	*ob;
+
+	/*
+	 * Keep a reference to this footnote definition, as we're either
+	 * going to print it out at the end of the document or at the
+	 * next block with FS/FE.
+	 */
+
+	if ((ob = hbuf_new(32)) == NULL)
+		return 0;
+	if (!bqueue_flush(ob, obq, 0)) {
+		hbuf_free(ob);
+		return 0;
+	}
+
+	pp = recallocarray(st->foots, st->footsz,
+		st->footsz + 1, sizeof(struct bnodeq *));
+	if (pp == NULL)
+		return 0;
+	st->foots = pp;
+	st->foots[st->footsz++] = malloc(sizeof(struct bnodeq));
+	if (st->foots[num] == NULL)
+		return 0;
+	TAILQ_INIT(st->foots[num]);
+	TAILQ_CONCAT(st->foots[num], bq, entries);
 
 	/* 
 	 * Use groff_ms(7)-style automatic footnoting, else just put a
@@ -1330,7 +1351,7 @@ rndr_footnote_ref(const struct nroff *st,
 
 	if (st->man) {
 		if (asprintf(&bn->nbuf, 
-		    "\\u\\s-3%zu\\s+3\\d", param->num) == -1)
+		    "\\u\\s-3%zu\\s+3\\d", num + 1) == -1)
 			bn->nbuf = NULL;
 	} else
 		bn->nbuf = strdup("\\**");
@@ -1620,7 +1641,6 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 
 	if ((n->chng == LOWDOWN_CHNG_INSERT ||
 	     n->chng == LOWDOWN_CHNG_DELETE) &&
-	    n->type != LOWDOWN_FOOTNOTE_DEF &&
 	    !bqueue_colour(obq, n->chng, 0))
 		goto out;
 
@@ -1718,12 +1738,8 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	case LOWDOWN_TABLE_CELL:
 		rc = rndr_table_cell(obq, &tmpbq, &n->rndr_table_cell);
 		break;
-	case LOWDOWN_FOOTNOTES_BLOCK:
-		rc = rndr_footnotes(st, obq, &tmpbq);
-		break;
-	case LOWDOWN_FOOTNOTE_DEF:
-		rc = rndr_footnote_def(st, obq, 
-			&tmpbq, n, &n->rndr_footnote_def);
+	case LOWDOWN_DOC_FOOTER:
+		rc = rndr_footnotes(st, obq);
 		break;
 	case LOWDOWN_BLOCKHTML:
 		rc = rndr_raw_block(st, obq, &n->rndr_blockhtml);
@@ -1749,7 +1765,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_superscript(obq, &tmpbq);
 		break;
 	case LOWDOWN_FOOTNOTE_REF:
-		rc = rndr_footnote_ref(st, obq, &n->rndr_footnote_ref);
+		rc = rndr_footnote_ref(st, obq, &tmpbq);
 		break;
 	case LOWDOWN_RAW_HTML:
 		rc = rndr_raw_html(st, obq, &n->rndr_raw_html);
@@ -1799,7 +1815,6 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 
 	if ((n->chng == LOWDOWN_CHNG_INSERT ||
 	     n->chng == LOWDOWN_CHNG_DELETE) &&
-	    n->type != LOWDOWN_FOOTNOTE_DEF &&
 	    !bqueue_colour(obq, n->chng, 1)) {
 		ret = -1;
 		goto out;

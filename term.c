@@ -33,23 +33,25 @@
 #include "extern.h"
 
 struct tstack {
-	const struct lowdown_node 	*n; /* node in question */
-	size_t				 lines; /* times emitted */
+	const struct lowdown_node *n; /* node in question */
+	size_t			   lines; /* times emitted */
 };
 
 struct term {
-	unsigned int		 opts; /* oflags from lowdown_cfg */
-	size_t			 col; /* output column from zero */
-	ssize_t			 last_blank; /* line breaks or -1 (start) */
-	struct tstack		*stack; /* stack of nodes */
-	size_t			 stackmax; /* size of stack */
-	size_t			 stackpos; /* position in stack */
-	size_t			 maxcol; /* soft limit */
-	size_t			 hmargin; /* left of content */
-	size_t			 vmargin; /* before/after content */
-	struct lowdown_buf	*tmp; /* for temporary allocations */
-	wchar_t			*buf; /* buffer for counting wchar */
-	size_t			 bufsz; /* size of buf */
+	unsigned int		  opts; /* oflags from lowdown_cfg */
+	size_t			  col; /* output column from zero */
+	ssize_t			  last_blank; /* line breaks or -1 (start) */
+	struct tstack		 *stack; /* stack of nodes */
+	size_t			  stackmax; /* size of stack */
+	size_t			  stackpos; /* position in stack */
+	size_t			  maxcol; /* soft limit */
+	size_t			  hmargin; /* left of content */
+	size_t			  vmargin; /* before/after content */
+	struct lowdown_buf	 *tmp; /* for temporary allocations */
+	wchar_t			 *buf; /* buffer for counting wchar */
+	size_t			  bufsz; /* size of buf */
+	struct lowdown_buf	**foots; /* footnotes */
+	size_t			  footsz; /* footnotes size  */
 };
 
 /*
@@ -109,7 +111,7 @@ static const struct sty *stys[LOWDOWN__MAX] = {
 	&sty_t_emph, /* LOWDOWN_TRIPLE_EMPHASIS */
 	&sty_strike, /* LOWDOWN_STRIKETHROUGH */
 	NULL, /* LOWDOWN_SUPERSCRIPT */
-	&sty_fref, /* LOWDOWN_FOOTNOTE_REF */
+	NULL, /* LOWDOWN_FOOTNOTE_REF */
 	NULL, /* LOWDOWN_MATH_BLOCK */
 	&sty_rawhtml, /* LOWDOWN_RAW_HTML */
 	NULL, /* LOWDOWN_ENTITY */
@@ -561,16 +563,16 @@ rndr_buf_startline_prefixes(struct term *term,
 			rndr_buf_advance(term, pfx_dli_n.cols);
 		}
 		break;
-	case LOWDOWN_FOOTNOTE_DEF:
+	case LOWDOWN_FOOTNOTE_REF:
 		rndr_node_style_apply(&sinner, &sty_fdef_pfx);
 		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
 		pstyle = 1;
 		if (emit == 0) {
 			if (!hbuf_printf(out, "%2zu. ",
-			     n->rndr_footnote_def.num))
+			    term->footsz + 1))
 				return 0;
-			len = rndr_numlen(n->rndr_footnote_def.num);
+			len = rndr_numlen(term->footsz + 1);
 			if (len + 2 > pfx_fdef_1.cols)
 				len += 2;
 			else
@@ -1144,6 +1146,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	const struct lowdown_node	*child, *nn;
 	struct lowdown_meta		*m;
 	struct lowdown_buf		*metatmp;
+	void				*pp;
 	int32_t				 entity;
 	size_t				 i, col, vs;
 	ssize_t			 	 last_blank;
@@ -1175,8 +1178,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_BLOCKQUOTE:
 	case LOWDOWN_DEFINITION:
 	case LOWDOWN_DEFINITION_TITLE:
-	case LOWDOWN_FOOTNOTES_BLOCK:
-	case LOWDOWN_FOOTNOTE_DEF:
+	case LOWDOWN_DOC_FOOTER:
 	case LOWDOWN_HEADER:
 	case LOWDOWN_LIST:
 	case LOWDOWN_TABLE_BLOCK:
@@ -1218,11 +1220,21 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	/* Output leading content. */
 
 	switch (n->type) {
-	case LOWDOWN_FOOTNOTES_BLOCK:
+	case LOWDOWN_DOC_FOOTER:
+		if (p->footsz == 0)
+			break;
 		hbuf_truncate(p->tmp);
 		if (!hbuf_puts(p->tmp, ifx_foot) ||
 		    !rndr_buf(p, ob, n, p->tmp, &sty_foot))
 			return 0;
+		if (!rndr_buf_vspace(p, ob, n, 1))
+			return 0;
+		for (i = 0; i < p->footsz; i++) {
+			if (!hbuf_putb(ob, p->foots[i]))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\n"))
+				return 0;
+		}
 		break;
 	case LOWDOWN_SUPERSCRIPT:
 		hbuf_truncate(p->tmp);
@@ -1283,15 +1295,42 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 
 	/* Descend into children. */
 
-	if (n->type != LOWDOWN_TABLE_BLOCK) {
+	switch (n->type) {
+	case LOWDOWN_FOOTNOTE_REF:
+		last_blank = p->last_blank;
+		p->last_blank = -1;
+		col = p->col;
+		p->col = 0;
+		if ((metatmp = hbuf_new(128)) == NULL)
+			return 0;
+		TAILQ_FOREACH(child, &n->children, entries) {
+			p->stackpos++;
+			if (!rndr(metatmp, mq, p, child))
+				return 0;
+			p->stackpos--;
+		}
+		p->last_blank = last_blank;
+		p->col = col;
+		pp = recallocarray(p->foots, p->footsz,
+			p->footsz + 1, sizeof(struct lowdown_buf *));
+		if (pp == NULL)
+			return 0;
+		p->foots = pp;
+		p->foots[p->footsz++] = metatmp;
+		break;
+	case LOWDOWN_TABLE_BLOCK:
+		if (!rndr_table(ob, mq, p, n))
+			return 0;
+		break;
+	default:
 		TAILQ_FOREACH(child, &n->children, entries) {
 			p->stackpos++;
 			if (!rndr(ob, mq, p, child))
 				return 0;
 			p->stackpos--;
 		}
-	} else if (!rndr_table(ob, mq, p, n))
-		return 0;
+		break;
+	}
 
 	/* Output content. */
 
@@ -1306,9 +1345,9 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_FOOTNOTE_REF:
 		hbuf_truncate(p->tmp);
 		if (!hbuf_printf(p->tmp, "%s%zu%s", ifx_fref_left,
-		    n->rndr_footnote_ref.num, ifx_fref_right))
+		    p->footsz, ifx_fref_right))
 			return 0;
-		rc = rndr_buf(p, ob, n, p->tmp, NULL);
+		rc = rndr_buf(p, ob, n, p->tmp, &sty_fref);
 		break;
 	case LOWDOWN_RAW_HTML:
 		rc = rndr_buf(p, ob, n, &n->rndr_raw_html.text, NULL);

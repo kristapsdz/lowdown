@@ -106,7 +106,10 @@ that last line which continues item 3 above).
 
 Here's a link to \href{http://foo.bar}{a website}, to a \href{local-doc.html}{local
 doc}, and to a \href{\#an-h2-header}{section heading in the current
-doc}. Here's a footnote \footnotemark[1].
+doc}. Here's a footnote \footnote[1]{
+Footnote text goes here.
+}
+.
 
 Tables can look like this:
 
@@ -142,6 +145,3 @@ Images can be specified like so:
 
 And note that you can backslash-escape any punctuation characters
 which you wish to be displayed literally, ex.: `foo`, *bar*, etc.
-\footnotetext[1]{
-Footnote text goes here.
-}

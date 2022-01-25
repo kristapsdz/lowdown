@@ -50,10 +50,12 @@ struct	hentry {
  * Our internal state object.
  */
 struct 	html {
-	TAILQ_HEAD(, hentry) 	 headers_used;
-	ssize_t			 headers_offs; /* header offset */
-	unsigned int 		 flags; /* "oflags" in lowdown_opts */
-	int			 noescape; /* don't escape text */
+	TAILQ_HEAD(, hentry) 	  headers_used;
+	ssize_t			  headers_offs; /* header offset */
+	unsigned int 		  flags; /* "oflags" in lowdown_opts */
+	int			  noescape; /* don't escape text */
+	struct lowdown_buf	**foots; /* footnotes */
+	size_t			  footsz; /* footnotes size  */
 };
 
 /*
@@ -859,27 +861,8 @@ rndr_normal_text(struct lowdown_buf *ob,
 }
 
 static int
-rndr_footnotes(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
-{
-
-	if (ob->size && !hbuf_putc(ob, '\n'))
-		return 0;
-	if (!HBUF_PUTSL(ob, "<div class=\"footnotes\">\n"))
-		return 0;
-	if (!hbuf_puts(ob, "<hr/>\n"))
-		return 0;
-	if (!HBUF_PUTSL(ob, "<ol>\n"))
-		return 0;
-	if (!hbuf_putb(ob, content))
-		return 0;
-	return HBUF_PUTSL(ob, "\n</ol>\n</div>\n");
-}
-
-static int
 rndr_footnote_def(struct lowdown_buf *ob,
-	const struct lowdown_buf *content, 
-	const struct rndr_footnote_def *param)
+	const struct lowdown_buf *content, size_t num)
 {
 	size_t	i = 0;
 	int	pfound = 0;
@@ -901,7 +884,7 @@ rndr_footnote_def(struct lowdown_buf *ob,
 		break;
 	}
 
-	if (!hbuf_printf(ob, "\n<li id=\"fn%zu\">\n", param->num))
+	if (!hbuf_printf(ob, "\n<li id=\"fn%zu\">\n", num))
 		return 0;
 
 	if (pfound) {
@@ -910,7 +893,7 @@ rndr_footnote_def(struct lowdown_buf *ob,
 		if (!hbuf_printf(ob, "&#160;"
 		    "<a href=\"#fnref%zu\" rev=\"footnote\">"
 		    "&#8617;"
-		    "</a>", param->num))
+		    "</a>", num))
 			return 0;
 		if (!hbuf_put(ob, 
 		    content->data + i, content->size - i))
@@ -925,14 +908,29 @@ rndr_footnote_def(struct lowdown_buf *ob,
 
 static int
 rndr_footnote_ref(struct lowdown_buf *ob,
-	const struct rndr_footnote_ref *param)
+	const struct lowdown_buf *content, struct html *st)
 {
+	void	*pp;
+	size_t	 num = st->footsz + 1;
+
+	/*
+	 * Keep a reference to this footnote definition, as we're going
+	 * to print it out at the end of the document.  For now,
+	 * suppress printing of the content.
+	 */
+
+	pp = recallocarray(st->foots, st->footsz,
+		st->footsz + 1, sizeof(struct lowdown_buf *));
+	if (pp == NULL)
+		return 0;
+	st->foots = pp;
+	if ((st->foots[st->footsz++] = hbuf_dup(content)) == NULL)
+		return 0;
 
 	return hbuf_printf(ob, 
 		"<sup id=\"fnref%zu\">"
 		"<a href=\"#fn%zu\" rel=\"footnote\">"
-		"%zu</a></sup>", 
-		param->num, param->num, param->num);
+		"%zu</a></sup>", num, num, num);
 }
 
 static int
@@ -957,10 +955,28 @@ rndr_math(struct lowdown_buf *ob,
 static int
 rndr_doc_footer(struct lowdown_buf *ob, const struct html *st)
 {
+	size_t	 i;
 
-	if (st->flags & LOWDOWN_STANDALONE)
-		return HBUF_PUTSL(ob, "</body>\n");
-	return 1;
+	/*
+	 * Start by flushing out our footnotes.  Footnotes are "sparse"
+	 * in that we may not have them all defined (?).
+	 */
+
+	if (st->footsz > 0) {
+		if (ob->size && !hbuf_putc(ob, '\n'))
+			return 0;
+		if (!HBUF_PUTSL(ob,
+		    "<div class=\"footnotes\">\n<hr/>\n<ol>\n"))
+			return 0;
+		for (i = 0; i < st->footsz; i++)
+			if (!rndr_footnote_def(ob, st->foots[i], i + 1))
+				return 0;
+		if (!HBUF_PUTSL(ob, "\n</ol>\n</div>\n"))
+			return 0;
+	}
+
+	return (st->flags & LOWDOWN_STANDALONE) ?
+		HBUF_PUTSL(ob, "</body>\n") : 1;
 }
 
 static int
@@ -1271,12 +1287,6 @@ rndr(struct lowdown_buf *ob,
 	case LOWDOWN_TABLE_CELL:
 		rc = rndr_tablecell(ob, tmp, &n->rndr_table_cell);
 		break;
-	case LOWDOWN_FOOTNOTES_BLOCK:
-		rc = rndr_footnotes(ob, tmp);
-		break;
-	case LOWDOWN_FOOTNOTE_DEF:
-		rc = rndr_footnote_def(ob, tmp, &n->rndr_footnote_def);
-		break;
 	case LOWDOWN_BLOCKHTML:
 		rc = rndr_raw_block(ob, &n->rndr_blockhtml, st);
 		break;
@@ -1314,7 +1324,7 @@ rndr(struct lowdown_buf *ob,
 		rc = rndr_superscript(ob, tmp);
 		break;
 	case LOWDOWN_FOOTNOTE_REF:
-		rc = rndr_footnote_ref(ob, &n->rndr_footnote_ref);
+		rc = rndr_footnote_ref(ob, tmp, st);
 		break;
 	case LOWDOWN_MATH_BLOCK:
 		rc = rndr_math(ob, &n->rndr_math, st);
@@ -1370,11 +1380,17 @@ lowdown_html_rndr(struct lowdown_buf *ob,
 	struct html		*st = arg;
 	struct lowdown_metaq	 metaq;
 	int			 rc;
+	size_t			 i;
 
 	TAILQ_INIT(&metaq);
 	st->headers_offs = 1;
 
 	rc = rndr(ob, &metaq, st, n);
+
+	for (i = 0; i < st->footsz; i++) {
+		hbuf_free(st->foots[i]);
+		st->foots[i] = NULL;
+	}
 
 	lowdown_metaq_free(&metaq);
 	return rc;
@@ -1408,5 +1424,6 @@ lowdown_html_free(void *arg)
 		free(hentry);
 	}
 
+	free(st->foots);
 	free(st);
 }

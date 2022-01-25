@@ -56,15 +56,18 @@ struct link {
 TAILQ_HEAD(linkq, link);
 
 struct gemini {
-	unsigned int		 flags; /* output flags */
-	ssize_t			 last_blank; /* line breaks or -1 (start) */
-	struct lowdown_buf	*tmp; /* for temporary allocations */
-	size_t			 nolinkqsz; /* if >0, don't record links */
-	struct linkq		 linkq; /* link queue */
-	size_t			 linkqsz; /* position in link queue */
-	wchar_t			*buf; /* buffer for counting wchar */
-	size_t			 bufsz; /* size of buf */
-	ssize_t			 headers_offs; /* header offset */
+	unsigned int		  flags; /* output flags */
+	ssize_t			  last_blank; /* line breaks or -1 (start) */
+	struct lowdown_buf	 *tmp; /* for temporary allocations */
+	size_t			  nolinkqsz; /* if >0, don't record links */
+	int			  nolinkflush; /* if TRUE, don't flush links */
+	struct linkq		  linkq; /* link queue */
+	size_t			  linkqsz; /* position in link queue */
+	wchar_t			 *buf; /* buffer for counting wchar */
+	size_t			  bufsz; /* size of buf */
+	ssize_t			  headers_offs; /* header offset */
+	struct lowdown_buf	**foots; /* footnotes */
+	size_t			  footsz; /* footnotes size  */
 };
 
 /*
@@ -607,6 +610,8 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 {
 	const struct lowdown_node	*child, *prev;
 	struct link			*l;
+	void				*pp;
+	struct lowdown_buf		*tmpbuf;
 	size_t				 i;
 	ssize_t				 level;
 	int32_t				 entity;
@@ -625,8 +630,6 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_BLOCKHTML:
 	case LOWDOWN_BLOCKQUOTE:
 	case LOWDOWN_DEFINITION:
-	case LOWDOWN_FOOTNOTES_BLOCK:
-	case LOWDOWN_FOOTNOTE_DEF:
 	case LOWDOWN_HEADER:
 	case LOWDOWN_LIST:
 	case LOWDOWN_PARAGRAPH:
@@ -717,15 +720,17 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			rndr_buf(st, ob, n, st->tmp);
 		st->last_blank = -1;
 		break;
-	case LOWDOWN_FOOTNOTES_BLOCK:
-		rc = HBUF_PUTSL(st->tmp, "~~~~~~~~") &&
-			rndr_buf(st, ob, n, st->tmp);
-		break;
-	case LOWDOWN_FOOTNOTE_DEF:
-		rc = hbuf_printf(st->tmp, "[%zu] ", 
-			n->rndr_footnote_def.num) &&
-			rndr_buf(st, ob, n, st->tmp);
-		st->last_blank = -1;
+	case LOWDOWN_DOC_FOOTER:
+		if (st->footsz == 0)
+			break;
+		if (!HBUF_PUTSL(ob, "~~~~~~~~\n\n"))
+			return 0;
+		for (i = 0; i < st->footsz; i++) {
+			if (!hbuf_putb(ob, st->foots[i]))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\n"))
+				return 0;
+		}
 		break;
 	case LOWDOWN_IMAGE:
 	case LOWDOWN_LINK:
@@ -787,6 +792,25 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		    !rndr_meta(st, n, mq))
 			return 0;
 		break;
+	case LOWDOWN_FOOTNOTE_REF:
+		if ((tmpbuf = hbuf_new(32)) == NULL)
+			return 0;
+		if (!hbuf_printf(tmpbuf, "[%zu] ", st->footsz + 1))
+			return 0;
+		st->last_blank = -1;
+		st->nolinkflush = 1;
+		TAILQ_FOREACH(child, &n->children, entries)
+			if (!rndr(tmpbuf, mq, st, child))
+				return 0;
+		st->nolinkflush = 0;
+		pp = reallocarray(st->foots,
+			st->footsz + 1,
+			sizeof(struct lowdown_buf *));
+		if (pp == NULL)
+			return 0;
+		st->foots = pp;
+		st->foots[st->footsz++] = tmpbuf;
+		break;
 	default:
 		TAILQ_FOREACH(child, &n->children, entries)
 			if (!rndr(ob, mq, st, child))
@@ -805,9 +829,10 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			rndr_buf(st, ob, n, st->tmp);
 		break;
 	case LOWDOWN_FOOTNOTE_REF:
-		rc = hbuf_printf(st->tmp, "[%zu]", 
-			n->rndr_footnote_ref.num) &&
-			rndr_buf(st, ob, n, st->tmp);
+		if (!hbuf_printf(st->tmp, "[%zu]", st->footsz))
+			return 0;
+		if (!rndr_buf(st, ob, n, st->tmp))
+			return 0;
 		break;
 	case LOWDOWN_RAW_HTML:
 		rc = rndr_buf(st, ob, n, &n->rndr_raw_html.text);
@@ -893,8 +918,6 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		break;
 	case LOWDOWN_BLOCKQUOTE:
 	case LOWDOWN_DEFINITION:
-	case LOWDOWN_FOOTNOTES_BLOCK:
-	case LOWDOWN_FOOTNOTE_DEF:
 	case LOWDOWN_HEADER:
 	case LOWDOWN_LIST:
 	case LOWDOWN_PARAGRAPH:
@@ -938,7 +961,8 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	if (!rc)
 		return 0;
 
-	if (st->nolinkqsz == 0 && st->last_blank > 1 && 
+	if (!st->nolinkflush &&
+	    st->nolinkqsz == 0 && st->last_blank > 1 && 
 	    !TAILQ_EMPTY(&st->linkq) && 
 	    !(st->flags & LOWDOWN_GEMINI_LINK_END)) {
 		if (!rndr_flush_linkq(st, ob))

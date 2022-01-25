@@ -30,6 +30,7 @@ int		 hbuf_strprefix(const struct lowdown_buf *, const char *);
 void		 hbuf_free(struct lowdown_buf *);
 int		 hbuf_grow(struct lowdown_buf *, size_t);
 int		 hbuf_clone(const struct lowdown_buf *, struct lowdown_buf *);
+struct lowdown_buf *hbuf_dup(const struct lowdown_buf *);
 struct lowdown_buf *hbuf_new(size_t) __attribute__((malloc));
 int		 hbuf_printf(struct lowdown_buf *, const char *, ...) 
 			__attribute__((format (printf, 2, 3)));
