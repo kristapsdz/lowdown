@@ -1474,16 +1474,23 @@ int
 lowdown_term_rndr(struct lowdown_buf *ob,
 	void *arg, const struct lowdown_node *n)
 {
-	struct term		*p = arg;
+	struct term		*st = arg;
 	struct lowdown_metaq	 metaq;
 	int			 rc;
+	size_t			 i;
 
 	TAILQ_INIT(&metaq);
 
-	p->stackpos = 0;
+	st->stackpos = 0;
 
-	rc = rndr(ob, &metaq, p, n);
+	rc = rndr(ob, &metaq, st, n);
 
+	for (i = 0; i < st->footsz; i++)
+		hbuf_free(st->foots[i]);
+
+	free(st->foots);
+	st->footsz = 0;
+	st->foots = NULL;
 	lowdown_metaq_free(&metaq);
 	return rc;
 }

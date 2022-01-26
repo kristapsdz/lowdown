@@ -1277,16 +1277,13 @@ rndr_footnote_def(const struct nroff *st, struct bnodeq *obq,
 	return 1;
 }
 
-
 static int
-rndr_footnotes(struct nroff *st, struct bnodeq *obq)
+rndr_footnotes(const struct nroff *st, struct bnodeq *obq)
 {
 	size_t	 i;
 
 	if (st->footsz == 0)
 		return 1;
-
-	/* Put a horizontal line in the case of man(7). */
 
 	if (st->man) {
 		if (bqueue_block(obq, ".LP") == NULL)
@@ -1297,14 +1294,10 @@ rndr_footnotes(struct nroff *st, struct bnodeq *obq)
 			return 0;
 	}
 
-	for (i = 0; i < st->footsz; i++) {
+	for (i = 0; i < st->footsz; i++)
 		if (!rndr_footnote_def(st, obq, st->foots[i], i + 1))
 			return 0;
-		bqueue_free(st->foots[i]);
-	}
 
-	free(st->foots);
-	st->footsz = 0;
 	return 1;
 }
 
@@ -1833,6 +1826,7 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 	struct lowdown_metaq	 metaq;
 	int			 rc = 0;
 	struct bnodeq		 bq;
+	size_t			 i;
 
 	TAILQ_INIT(&metaq);
 	TAILQ_INIT(&bq);
@@ -1849,7 +1843,14 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 			goto out;
 		rc = 1;
 	}
+
 out:
+	for (i = 0; i < st->footsz; i++)
+		bqueue_free(st->foots[i]);
+
+	free(st->foots);
+	st->footsz = 0;
+	st->foots = NULL;
 	lowdown_metaq_free(&metaq);
 	bqueue_free(&bq);
 	return rc;

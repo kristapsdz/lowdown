@@ -1387,11 +1387,12 @@ lowdown_html_rndr(struct lowdown_buf *ob,
 
 	rc = rndr(ob, &metaq, st, n);
 
-	for (i = 0; i < st->footsz; i++) {
+	for (i = 0; i < st->footsz; i++)
 		hbuf_free(st->foots[i]);
-		st->foots[i] = NULL;
-	}
 
+	free(st->foots);
+	st->footsz = 0;
+	st->foots = NULL;
 	lowdown_metaq_free(&metaq);
 	return rc;
 }
@@ -1424,6 +1425,5 @@ lowdown_html_free(void *arg)
 		free(hentry);
 	}
 
-	free(st->foots);
 	free(st);
 }
