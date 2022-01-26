@@ -1622,11 +1622,6 @@ rndr_footnote_ref(struct lowdown_buf *ob,
 {
 	struct odt	 tmp;
 
-	/* Don't allow nested footnotes. */
-
-	if (st->foot)
-		return 1;
-
 	/* Save state values. */
 
 	tmp = *st;
