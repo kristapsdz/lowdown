@@ -81,6 +81,7 @@ struct 	lowdown_doc {
 	unsigned int		  ext_flags; /* options */
 	size_t			  cur_par; /* XXX: not used */
 	int			  in_link_body; /* parsing link body */
+	int			  in_footnote; /* prevent nested */
 	size_t			  nodes; /* number of nodes */
 	struct lowdown_node	 *current; /* current node */
 	struct lowdown_metaq	 *metaq; /* raw metadata key/values */
@@ -1505,7 +1506,7 @@ char_link(struct lowdown_doc *doc,
 	 * Footnote (in footer): look up footnote by its key in our
 	 * queue of footnotes.  This queue was created in the first pass
 	 * of the compiler.  If we've already listed the footnote, don't
-	 * render it twice.
+	 * render it twice.  Don't allow embedded footnotes as well.
 	 */
 
 	if (is_footnote) {
@@ -1518,6 +1519,11 @@ char_link(struct lowdown_doc *doc,
 		TAILQ_FOREACH(fr, &doc->footq, entries)
 			if (hbuf_eq(&fr->name, &id))
 				break;
+
+		/* Override. */
+
+		if (doc->in_footnote)
+			fr = NULL;
 
 		/*
 		 * Mark footnote used.  If it's NULL, then there was no
@@ -1534,9 +1540,13 @@ char_link(struct lowdown_doc *doc,
 			fr->num = ++doc->foots;
 			fr->ref = n;
 			n->rndr_footnote_ref.num = fr->num;
+			assert(doc->in_footnote == 0);
+			doc->in_footnote = 1;
 			if (!parse_block(doc,
 			    fr->contents.data, fr->contents.size))
 				goto err;
+			assert(doc->in_footnote);
+			doc->in_footnote = 0;
 		} else {
 			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 			if (n == NULL)
