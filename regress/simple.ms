@@ -138,7 +138,11 @@ to a
 .pdfhref W -A "," -D local-doc.html local doc
 and to a 
 .pdfhref W -A "." -D #an-h2-header section heading in the current doc
-Here\[u2019]s a footnote \**.
+Here\[u2019]s a footnote \**
+.FS
+Footnote text goes here.
+.FE
+\&.
 .PP
 Tables can look like this:
 .TS H
@@ -215,6 +219,3 @@ Images can be specified like so:
 .PP
 And note that you can backslash-escape any punctuation characters
 which you wish to be displayed literally, ex.: \(gafoo\(ga, *bar*, etc.
-.FS
-Footnote text goes here.
-.FE

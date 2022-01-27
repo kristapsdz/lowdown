@@ -1310,30 +1310,6 @@ rndr_footnote_ref(struct nroff *st, struct bnodeq *obq,
 	size_t			 num = st->footsz;
 	struct lowdown_buf	*ob;
 
-	/*
-	 * Keep a reference to this footnote definition, as we're either
-	 * going to print it out at the end of the document or at the
-	 * next block with FS/FE.
-	 */
-
-	if ((ob = hbuf_new(32)) == NULL)
-		return 0;
-	if (!bqueue_flush(ob, obq, 0)) {
-		hbuf_free(ob);
-		return 0;
-	}
-
-	pp = recallocarray(st->foots, st->footsz,
-		st->footsz + 1, sizeof(struct bnodeq *));
-	if (pp == NULL)
-		return 0;
-	st->foots = pp;
-	st->foots[st->footsz++] = malloc(sizeof(struct bnodeq));
-	if (st->foots[num] == NULL)
-		return 0;
-	TAILQ_INIT(st->foots[num]);
-	TAILQ_CONCAT(st->foots[num], bq, entries);
-
 	/* 
 	 * Use groff_ms(7)-style automatic footnoting, else just put a
 	 * reference number in small superscripts.
@@ -1342,14 +1318,46 @@ rndr_footnote_ref(struct nroff *st, struct bnodeq *obq,
 	if ((bn = bqueue_span(obq, NULL)) == NULL)
 		return 0;
 
-	if (st->man) {
-		if (asprintf(&bn->nbuf, 
-		    "\\u\\s-3%zu\\s+3\\d", num + 1) == -1)
-			bn->nbuf = NULL;
-	} else
+	if (!st->man)
 		bn->nbuf = strdup("\\**");
+	else if (asprintf(&bn->nbuf, 
+		 "\\u\\s-3%zu\\s+3\\d", num + 1) == -1)
+		bn->nbuf = NULL;
 
-	return bn->nbuf != NULL;
+	if (bn->nbuf == NULL)
+		return 0;
+
+	/*
+	 * For -Tman, queue the footnote for printing at the end of the
+	 * document.  For -Tms, emit it now in a FS/FE block.
+	 */
+
+	if (st->man) {
+		if ((ob = hbuf_new(32)) == NULL)
+			return 0;
+		if (!bqueue_flush(ob, obq, 0)) {
+			hbuf_free(ob);
+			return 0;
+		}
+
+		pp = recallocarray(st->foots, st->footsz,
+			st->footsz + 1, sizeof(struct bnodeq *));
+		if (pp == NULL)
+			return 0;
+		st->foots = pp;
+		st->foots[st->footsz++] = malloc(sizeof(struct bnodeq));
+		if (st->foots[num] == NULL)
+			return 0;
+		TAILQ_INIT(st->foots[num]);
+		TAILQ_CONCAT(st->foots[num], bq, entries);
+		return 1;
+	} else {
+		if (bqueue_block(obq, ".FS") == NULL)
+			return 0;
+		bqueue_strip_paras(bq);
+		TAILQ_CONCAT(obq, bq, entries);
+		return bqueue_block(obq, ".FE") != NULL;
+	}
 }
 
 static int
