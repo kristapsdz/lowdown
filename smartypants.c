@@ -399,7 +399,11 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn,
 }
 
 static int
-smarty_span(struct lowdown_node *root, size_t *maxn, struct smarty *s)
+smarty_block(struct lowdown_node *, size_t *, enum lowdown_type);
+
+static int
+smarty_span(struct lowdown_node *root, size_t *maxn,
+	struct smarty *s, enum lowdown_type type)
 {
 	struct lowdown_node	*n;
 	int			 c;
@@ -416,16 +420,18 @@ smarty_span(struct lowdown_node *root, size_t *maxn, struct smarty *s)
 				n = TAILQ_NEXT(n, entries);
 			break;
 		case TYPE_SPAN:
-			if (!smarty_span(n, maxn, s))
+			if (!smarty_span(n, maxn, s, type))
 				return 0;
 			break;
 		case TYPE_OPAQUE:
 			s->left_wb = 0;
 			break;
-		case TYPE_ROOT:
 		case TYPE_BLOCK:
-			abort();
+			if (!smarty_block(n, maxn, type))
+				return 0;
 			break;
+		case TYPE_ROOT:
+			abort();
 		}
 
 	return 1;
@@ -445,7 +451,6 @@ smarty_block(struct lowdown_node *root,
 		switch (types[n->type]) {
 		case TYPE_ROOT:
 		case TYPE_BLOCK:
-			s.left_wb = 1;
 			if (!smarty_block(n, maxn, type))
 				return 0;
 			break;
@@ -459,7 +464,7 @@ smarty_block(struct lowdown_node *root,
 				n = TAILQ_NEXT(n, entries);
 			break;
 		case TYPE_SPAN:
-			if (!smarty_span(n, maxn, &s))
+			if (!smarty_span(n, maxn, &s, type))
 				return 0;
 			break;
 		case TYPE_OPAQUE:
