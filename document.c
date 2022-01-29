@@ -1534,7 +1534,7 @@ char_link(struct lowdown_doc *doc,
 		 */
 
 		if (fr != NULL && fr->ref == NULL) {
-			n = pushnode(doc, LOWDOWN_FOOTNOTE_REF);
+			n = pushnode(doc, LOWDOWN_FOOTNOTE);
 			if (n == NULL)
 				goto err;
 			fr->num = ++doc->foots;
@@ -4603,9 +4603,6 @@ lowdown_node_free(struct lowdown_node *p)
 		break;
 	case LOWDOWN_ENTITY:
 		hbuf_free(&p->rndr_entity.text);
-		break;
-	case LOWDOWN_FOOTNOTE_DEF:
-		hbuf_free(&p->rndr_footnote_def.key);
 		break;
 	case LOWDOWN_HEADER:
 		hbuf_free(&p->rndr_header.attr_cls);

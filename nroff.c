@@ -1715,7 +1715,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	case LOWDOWN_SUPERSCRIPT:
 		rc = rndr_superscript(obq, &tmpbq);
 		break;
-	case LOWDOWN_FOOTNOTE_REF:
+	case LOWDOWN_FOOTNOTE:
 		rc = rndr_footnote_ref(st, obq, &tmpbq);
 		break;
 	case LOWDOWN_RAW_HTML:

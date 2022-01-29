@@ -72,8 +72,6 @@ enum	lowdown_rndrt {
 	LOWDOWN_TABLE_BODY,
 	LOWDOWN_TABLE_ROW,
 	LOWDOWN_TABLE_CELL,
-	LOWDOWN_FOOTNOTES_BLOCK,
-	LOWDOWN_FOOTNOTE_DEF,
 	LOWDOWN_BLOCKHTML,
 	LOWDOWN_LINK_AUTO,
 	LOWDOWN_CODESPAN,
@@ -86,7 +84,7 @@ enum	lowdown_rndrt {
 	LOWDOWN_TRIPLE_EMPHASIS,
 	LOWDOWN_STRIKETHROUGH,
 	LOWDOWN_SUPERSCRIPT,
-	LOWDOWN_FOOTNOTE_REF,
+	LOWDOWN_FOOTNOTE,
 	LOWDOWN_MATH_BLOCK,
 	LOWDOWN_RAW_HTML,
 	LOWDOWN_ENTITY,
@@ -209,11 +207,6 @@ struct	rndr_table_cell {
 	size_t columns;
 };
 
-struct	rndr_footnote_def {
-	size_t num;
-	struct lowdown_buf key;
-};
-
 struct	rndr_footnote_ref {
 	size_t num;
 };
@@ -279,7 +272,6 @@ struct	lowdown_node {
 		struct rndr_table rndr_table; 
 		struct rndr_table_header rndr_table_header; 
 		struct rndr_table_cell rndr_table_cell; 
-		struct rndr_footnote_def rndr_footnote_def;
 		struct rndr_footnote_ref rndr_footnote_ref;
 		struct rndr_image rndr_image;
 		struct rndr_math rndr_math;

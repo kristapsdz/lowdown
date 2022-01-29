@@ -313,9 +313,6 @@ assign_sigs(MD5_CTX *parent, struct xmap *map,
 	case LOWDOWN_BLOCKHTML:
 		MD5Updatebuf(&ctx, &n->rndr_blockhtml.text);
 		break;
-	case LOWDOWN_FOOTNOTE_DEF:
-		MD5Updatebuf(&ctx, &n->rndr_footnote_def.key);
-		break;
 	default:
 		break;
 	}

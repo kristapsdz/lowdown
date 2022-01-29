@@ -97,8 +97,6 @@ static const struct sty *stys[LOWDOWN__MAX] = {
 	NULL, /* LOWDOWN_TABLE_BODY */
 	NULL, /* LOWDOWN_TABLE_ROW */
 	NULL, /* LOWDOWN_TABLE_CELL */
-	NULL, /* LOWDOWN_FOOTNOTES_BLOCK */
-	NULL, /* LOWDOWN_FOOTNOTE_DEF */
 	&sty_blockhtml, /* LOWDOWN_BLOCKHTML */
 	&sty_autolink, /* LOWDOWN_LINK_AUTO */
 	&sty_codespan, /* LOWDOWN_CODESPAN */
@@ -111,7 +109,7 @@ static const struct sty *stys[LOWDOWN__MAX] = {
 	&sty_t_emph, /* LOWDOWN_TRIPLE_EMPHASIS */
 	&sty_strike, /* LOWDOWN_STRIKETHROUGH */
 	NULL, /* LOWDOWN_SUPERSCRIPT */
-	NULL, /* LOWDOWN_FOOTNOTE_REF */
+	NULL, /* LOWDOWN_FOOTNOTE */
 	NULL, /* LOWDOWN_MATH_BLOCK */
 	&sty_rawhtml, /* LOWDOWN_RAW_HTML */
 	NULL, /* LOWDOWN_ENTITY */
@@ -563,7 +561,7 @@ rndr_buf_startline_prefixes(struct term *term,
 			rndr_buf_advance(term, pfx_dli_n.cols);
 		}
 		break;
-	case LOWDOWN_FOOTNOTE_REF:
+	case LOWDOWN_FOOTNOTE:
 		rndr_node_style_apply(&sinner, &sty_fdef_pfx);
 		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
@@ -1296,7 +1294,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	/* Descend into children. */
 
 	switch (n->type) {
-	case LOWDOWN_FOOTNOTE_REF:
+	case LOWDOWN_FOOTNOTE:
 		last_blank = p->last_blank;
 		p->last_blank = -1;
 		col = p->col;
@@ -1342,7 +1340,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			return 0;
 		rc = rndr_buf(p, ob, n, p->tmp, NULL);
 		break;
-	case LOWDOWN_FOOTNOTE_REF:
+	case LOWDOWN_FOOTNOTE:
 		hbuf_truncate(p->tmp);
 		if (!hbuf_printf(p->tmp, "%s%zu%s", ifx_fref_left,
 		    p->footsz, ifx_fref_right))

@@ -857,7 +857,7 @@ rndr(struct lowdown_buf *ob,
 	case LOWDOWN_SUPERSCRIPT:
 		rc = rndr_superscript(ob, tmp);
 		break;
-	case LOWDOWN_FOOTNOTE_REF:
+	case LOWDOWN_FOOTNOTE:
 		rc = rndr_footnote_ref(ob, tmp,
 			n->rndr_footnote_ref.num);
 		break;

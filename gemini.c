@@ -792,7 +792,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		    !rndr_meta(st, n, mq))
 			return 0;
 		break;
-	case LOWDOWN_FOOTNOTE_REF:
+	case LOWDOWN_FOOTNOTE:
 		if ((tmpbuf = hbuf_new(32)) == NULL)
 			return 0;
 		if (!hbuf_printf(tmpbuf, "[%zu] ", st->footsz + 1))
@@ -828,7 +828,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		rc = HBUF_PUTSL(st->tmp, "~~~~~~~~") &&
 			rndr_buf(st, ob, n, st->tmp);
 		break;
-	case LOWDOWN_FOOTNOTE_REF:
+	case LOWDOWN_FOOTNOTE:
 		if (!hbuf_printf(st->tmp, "[%zu]", st->footsz))
 			return 0;
 		if (!rndr_buf(st, ob, n, st->tmp))

@@ -1948,7 +1948,7 @@ rndr(struct lowdown_buf *ob,
 	case LOWDOWN_LINK:
 		rc = rndr_link(ob, tmp, &n->rndr_link, st);
 		break;
-	case LOWDOWN_FOOTNOTE_REF:
+	case LOWDOWN_FOOTNOTE:
 		rc = rndr_footnote_ref(ob, tmp, st);
 		break;
 	case LOWDOWN_MATH_BLOCK:

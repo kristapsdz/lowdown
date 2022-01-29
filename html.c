@@ -1323,7 +1323,7 @@ rndr(struct lowdown_buf *ob,
 	case LOWDOWN_SUPERSCRIPT:
 		rc = rndr_superscript(ob, tmp);
 		break;
-	case LOWDOWN_FOOTNOTE_REF:
+	case LOWDOWN_FOOTNOTE:
 		rc = rndr_footnote_ref(ob, tmp, st);
 		break;
 	case LOWDOWN_MATH_BLOCK:
