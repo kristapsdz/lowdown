@@ -11,4 +11,5 @@ config.log
 lowdown
 lowdown-diff
 lowdown.pc
-afl/
+lowdown.tar.gz
+lowdown.tar.gz.sha512
