@@ -209,13 +209,6 @@ rndr(struct lowdown_buf *ob,
 		    root->rndr_header.level))
 			return 0;
 		break;
-	case LOWDOWN_FOOTNOTE:
-		if (!rndr_indent(ob, indent + 1))
-			return 0;
-		if (!hbuf_printf(ob, "number: %zu\n",
-		    root->rndr_footnote_ref.num))
-			return 0;
-		break;
 	case LOWDOWN_RAW_HTML:
 		if (!rndr_indent(ob, indent + 1))
 			return 0;

@@ -1539,7 +1539,6 @@ char_link(struct lowdown_doc *doc,
 				goto err;
 			fr->num = ++doc->foots;
 			fr->ref = n;
-			n->rndr_footnote_ref.num = fr->num;
 			assert(doc->in_footnote == 0);
 			doc->in_footnote = 1;
 			if (!parse_block(doc,

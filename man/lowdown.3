@@ -576,26 +576,8 @@ Described by the
 element.
 .It Dv LOWDOWN_ENTITY
 An HTML entity, which may either be named or numeric.
-.It Dv LOWDOWN_FOOTNOTE_DEF
-A footnote within a
-.Dv LOWDOWN_FOOTNOTES_BLOCK
-node.
-Described by the
-.Li <li id="fnXX">
-element.
-(Only if configured during parse.)
-.It Dv LOWDOWN_FOOTNOTE_REF
-A reference to a
-.Dv LOWDOWN_FOOTNOTE_DEF .
-Described by the
-.Li <sup><a>
-elements.
-(Only if configured during parse.)
-.It Dv LOWDOWN_FOOTNOTES_BLOCK
-A block of footnotes.
-Described by the
-.Li <div class="footnotes"><hr /><ol>
-elements.
+.It Dv LOWDOWN_FOOTNOTE
+A footnote.
 (Only if configured during parse.)
 .It Dv LOWDOWN_HEADER
 A block-level header.
@@ -781,26 +763,6 @@ For
 .Dv LOWDOWN_ENTITY ,
 the entity
 .Va text .
-.It Va rndr_footnote_def
-For
-.Dv LOWDOWN_FOOTNOTE_DEF ,
-the footnote number
-.Va  num
-(starting at one).
-This matches a single
-.Dv LOWDOWN_FOOTNOTE_DEF
-similarly numbered.
-The
-.Va key
-is its original in-document reference key.
-.It Va rndr_footnote_ref
-For a
-.Dv LOWDOWN_FOOTNOTE_REF
-reference to a
-.Dv LOWDOWN_FOOTNOTE_DEF ,
-the footnote number
-.Va num
-(starting at one).
 .It Va rndr_header
 For
 .Dv LOWDOWN_HEADER ,

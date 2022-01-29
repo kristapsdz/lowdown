@@ -34,6 +34,7 @@
 struct latex {
 	unsigned int	oflags; /* same as in lowdown_opts */
 	ssize_t		headers_offs; /* header offset */
+	size_t		footsz; /* current footnote */
 };
 
 /*
@@ -604,11 +605,10 @@ rndr_normal_text(struct lowdown_buf *ob,
 
 static int
 rndr_footnote_ref(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	size_t num)
+	const struct lowdown_buf *content, struct latex *st)
 {
 
-	if (!hbuf_printf(ob, "\\footnote[%zu]{", num))
+	if (!hbuf_printf(ob, "\\footnote[%zu]{", ++st->footsz))
 		return 0;
 	if (!hbuf_putb(ob, content))
 		return 0;
@@ -858,8 +858,7 @@ rndr(struct lowdown_buf *ob,
 		rc = rndr_superscript(ob, tmp);
 		break;
 	case LOWDOWN_FOOTNOTE:
-		rc = rndr_footnote_ref(ob, tmp,
-			n->rndr_footnote_ref.num);
+		rc = rndr_footnote_ref(ob, tmp, st);
 		break;
 	case LOWDOWN_MATH_BLOCK:
 		rc = rndr_math(ob, &n->rndr_math);
@@ -900,6 +899,7 @@ lowdown_latex_rndr(struct lowdown_buf *ob,
 
 	TAILQ_INIT(&metaq);
 	st->headers_offs = 1;
+	st->footsz = 0;
 
 	rc = rndr(ob, &metaq, st, n);
 

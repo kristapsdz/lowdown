@@ -207,10 +207,6 @@ struct	rndr_table_cell {
 	size_t columns;
 };
 
-struct	rndr_footnote_ref {
-	size_t num;
-};
-
 struct	rndr_blockhtml {
 	struct lowdown_buf text;
 };
@@ -272,7 +268,6 @@ struct	lowdown_node {
 		struct rndr_table rndr_table; 
 		struct rndr_table_header rndr_table_header; 
 		struct rndr_table_cell rndr_table_cell; 
-		struct rndr_footnote_ref rndr_footnote_ref;
 		struct rndr_image rndr_image;
 		struct rndr_math rndr_math;
 		struct rndr_blockhtml rndr_blockhtml;
@@ -324,7 +319,6 @@ struct	lowdown_opts {
 #define	LOWDOWN_HTML_OWASP	  0x800 /* use OWASP escaping */
 #define	LOWDOWN_ODT_SKIP_HTML	  0x2000000 /* skip all HTML */
 #define	LOWDOWN_SMARTY	  	  0x40 /* smart typography */
-#define	LOWDOWN_NOTES_FOOT	  0x4000000 /* notes at foot, not end */
 #define	LOWDOWN_TERM_NOANSI	  0x1000000 /* no ANSI escapes at all */
 #define	LOWDOWN_TERM_NOCOLOUR	  0x800000 /* no ANSI colours */
 #define LOWDOWN_GEMINI_METADATA	  0x100000 /* show metadata */
