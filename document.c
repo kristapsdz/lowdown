@@ -1348,7 +1348,8 @@ parse_ext_attrs(const char *data, size_t size,
 
 		/* Classes. */
 
-		if (word_e > word_b + 1 &&
+		if (attrid != NULL &&
+		    word_e > word_b + 1 &&
 		    data[word_b] == '#') {
 			if (*attrid == NULL &&
 			    (*attrid = hbuf_new(64)) == NULL)
@@ -1359,7 +1360,8 @@ parse_ext_attrs(const char *data, size_t size,
 				return 0;
 		}
 
-		if (word_e > word_b + 7 &&
+		if (attrwidth != NULL &&
+		    word_e > word_b + 7 &&
 	  	    strncasecmp(&data[word_b], "width=", 6) == 0) {
 			if (*attrwidth == NULL &&
 			    (*attrwidth = hbuf_new(64)) == NULL)
@@ -1369,7 +1371,8 @@ parse_ext_attrs(const char *data, size_t size,
 			     data + word_b + 6, word_e - word_b - 6))
 				return 0;
 		}
-		if (word_e > word_b + 8 &&
+		if (attrheight != NULL &&
+		    word_e > word_b + 8 &&
 	  	    strncasecmp(&data[word_b], "height=", 7) == 0) {
 			if (*attrheight == NULL &&
 			    (*attrheight = hbuf_new(64)) == NULL)
@@ -1380,7 +1383,8 @@ parse_ext_attrs(const char *data, size_t size,
 				return 0;
 		}
 
-		if (word_e > word_b + 1 &&
+		if (attrcls != NULL &&
+		    word_e > word_b + 1 &&
 		    data[word_b] == '.') {
 			if (*attrcls != NULL &&
 			    !hbuf_putc(*attrcls, ' '))
