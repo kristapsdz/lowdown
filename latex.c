@@ -34,6 +34,7 @@
 struct latex {
 	unsigned int	oflags; /* same as in lowdown_opts */
 	ssize_t		headers_offs; /* header offset */
+	size_t		footsz; /* current footnote */
 };
 
 /*
@@ -603,35 +604,15 @@ rndr_normal_text(struct lowdown_buf *ob,
 }
 
 static int
-rndr_footnote_def(struct lowdown_buf *ob,
-	const struct lowdown_buf *content, 
-	const struct lowdown_node *n,
-	const struct rndr_footnote_def *param)
+rndr_footnote_ref(struct lowdown_buf *ob,
+	const struct lowdown_buf *content, struct latex *st)
 {
 
-	if (!hbuf_printf(ob, "\\footnotetext[%zu]{", param->num))
-		return 0;
-	if (n->chng == LOWDOWN_CHNG_INSERT &&
-	    !HBUF_PUTSL(ob, "\\textcolor{blue}{"))
-		return 0;
-	if (n->chng == LOWDOWN_CHNG_DELETE &&
-	    !HBUF_PUTSL(ob, "\\textcolor{red}{"))
+	if (!hbuf_printf(ob, "\\footnote[%zu]{", ++st->footsz))
 		return 0;
 	if (!hbuf_putb(ob, content))
 		return 0;
-	if ((n->chng == LOWDOWN_CHNG_INSERT ||
-	     n->chng == LOWDOWN_CHNG_DELETE) &&
-	    !HBUF_PUTSL(ob, "}"))
-		return 0;
 	return HBUF_PUTSL(ob, "}\n");
-}
-
-static int
-rndr_footnote_ref(struct lowdown_buf *ob,
-	const struct rndr_footnote_ref *param)
-{
-
-	return hbuf_printf(ob, "\\footnotemark[%zu]", param->num);
 }
 
 static int
@@ -790,11 +771,9 @@ rndr(struct lowdown_buf *ob,
 	 */
 
 	if (n->chng == LOWDOWN_CHNG_INSERT && 
-	    n->type != LOWDOWN_FOOTNOTE_DEF &&
 	    !HBUF_PUTSL(ob, "{\\color{blue} "))
 		goto out;
 	if (n->chng == LOWDOWN_CHNG_DELETE &&
-	    n->type != LOWDOWN_FOOTNOTE_DEF &&
 	    !HBUF_PUTSL(ob, "{\\color{red} "))
 		goto out;
 
@@ -845,10 +824,6 @@ rndr(struct lowdown_buf *ob,
 	case LOWDOWN_TABLE_CELL:
 		rc = rndr_tablecell(ob, tmp, &n->rndr_table_cell);
 		break;
-	case LOWDOWN_FOOTNOTE_DEF:
-		rc = rndr_footnote_def
-			(ob, tmp, n, &n->rndr_footnote_def);
-		break;
 	case LOWDOWN_BLOCKHTML:
 		rc = rndr_raw_block(ob, &n->rndr_blockhtml, st);
 		break;
@@ -882,8 +857,8 @@ rndr(struct lowdown_buf *ob,
 	case LOWDOWN_SUPERSCRIPT:
 		rc = rndr_superscript(ob, tmp);
 		break;
-	case LOWDOWN_FOOTNOTE_REF:
-		rc = rndr_footnote_ref(ob, &n->rndr_footnote_ref);
+	case LOWDOWN_FOOTNOTE:
+		rc = rndr_footnote_ref(ob, tmp, st);
 		break;
 	case LOWDOWN_MATH_BLOCK:
 		rc = rndr_math(ob, &n->rndr_math);
@@ -905,9 +880,7 @@ rndr(struct lowdown_buf *ob,
 		goto out;
 
 	if ((n->chng == LOWDOWN_CHNG_INSERT ||
-	     n->chng == LOWDOWN_CHNG_DELETE) &&
-	    n->type != LOWDOWN_FOOTNOTE_DEF &&
-	    !HBUF_PUTSL(ob, "}"))
+	     n->chng == LOWDOWN_CHNG_DELETE) && !HBUF_PUTSL(ob, "}"))
 		goto out;
 
 	ret = 1;
@@ -926,6 +899,7 @@ lowdown_latex_rndr(struct lowdown_buf *ob,
 
 	TAILQ_INIT(&metaq);
 	st->headers_offs = 1;
+	st->footsz = 0;
 
 	rc = rndr(ob, &metaq, st, n);
 

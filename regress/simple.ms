@@ -133,12 +133,16 @@ Notice again how text always lines up on 4-space indents (including
 that last line which continues item 3 above).
 .PP
 Here\[u2019]s a link to 
-.pdfhref W -A "," -D http://foo.bar a website
-to a 
-.pdfhref W -A "," -D local-doc.html local doc
-and to a 
-.pdfhref W -A "." -D #an-h2-header section heading in the current doc
-Here\[u2019]s a footnote \**.
+.pdfhref W -A "\c" -D http://foo.bar a website
+, to a 
+.pdfhref W -A "\c" -D local-doc.html local doc
+, and to a 
+.pdfhref W -A "\c" -D #an-h2-header section heading in the current doc
+\&. Here\[u2019]s a footnote \**
+.FS
+Footnote text goes here.
+.FE
+\&.
 .PP
 Tables can look like this:
 .TS H
@@ -215,6 +219,3 @@ Images can be specified like so:
 .PP
 And note that you can backslash-escape any punctuation characters
 which you wish to be displayed literally, ex.: \(gafoo\(ga, *bar*, etc.
-.FS
-Footnote text goes here.
-.FE

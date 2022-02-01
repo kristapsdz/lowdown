@@ -64,8 +64,8 @@ TAILQ_HEAD(link_refq, link_ref);
  * definitions and whether there's both a definition and reference.
  */
 struct	foot_ref {
-	int			 is_used; /* if referenced */
-	size_t			 num; /* if is_used, the order */
+	size_t			 num; /* if used, the order */
+	struct lowdown_node	*ref; /* if used, the reference */
 	struct lowdown_buf	 name; /* identifier */
 	struct lowdown_buf	 contents; /* definition */
 	TAILQ_ENTRY(foot_ref)	 entries;
@@ -81,6 +81,7 @@ struct 	lowdown_doc {
 	unsigned int		  ext_flags; /* options */
 	size_t			  cur_par; /* XXX: not used */
 	int			  in_link_body; /* parsing link body */
+	int			  in_footnote; /* prevent nested */
 	size_t			  nodes; /* number of nodes */
 	struct lowdown_node	 *current; /* current node */
 	struct lowdown_metaq	 *metaq; /* raw metadata key/values */
@@ -1507,8 +1508,9 @@ char_link(struct lowdown_doc *doc,
 
 	/*
 	 * Footnote (in footer): look up footnote by its key in our
-	 * array of footnotes.  If we've already listed the footnote,
-	 * don't render it twice.
+	 * queue of footnotes.  This queue was created in the first pass
+	 * of the compiler.  If we've already listed the footnote, don't
+	 * render it twice.  Don't allow embedded footnotes as well.
 	 */
 
 	if (is_footnote) {
@@ -1522,35 +1524,32 @@ char_link(struct lowdown_doc *doc,
 			if (hbuf_eq(&fr->name, &id))
 				break;
 
+		/* Override. */
+
+		if (doc->in_footnote)
+			fr = NULL;
+
 		/*
-		 * Mark footnote used.
-		 * If it's NULL, then there was no footnote found.
-		 * If it is NULL and is_used is defined, then we've
-		 * already registered the footnote.
+		 * Mark footnote used.  If it's NULL, then there was no
+		 * footnote found.  If it is NULL and the reference is
+		 * defined, then we've already registered the footnote.
 		 * XXX: Markdown, as is, can only use one footnote
 		 * reference per definition.  This is stupid.
 		 */
 
-		if (fr != NULL && !fr->is_used) {
-			n = pushnode(doc, LOWDOWN_FOOTNOTE_REF);
+		if (fr != NULL && fr->ref == NULL) {
+			n = pushnode(doc, LOWDOWN_FOOTNOTE);
 			if (n == NULL)
 				goto err;
 			fr->num = ++doc->foots;
-			fr->is_used = 1;
-			n->rndr_footnote_ref.num = fr->num;
-			if (!pushlbuf
-			    (&n->rndr_footnote_ref.key, &fr->name))
+			fr->ref = n;
+			assert(doc->in_footnote == 0);
+			doc->in_footnote = 1;
+			if (!parse_block(doc,
+			    fr->contents.data, fr->contents.size))
 				goto err;
-			if (!pushlbuf
-			    (&n->rndr_footnote_ref.def, &fr->contents))
-				goto err;
-		} else if (fr != NULL && fr->is_used) {
-			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
-			if (n == NULL)
-				goto err;
-			if (!pushbuf(&n->rndr_normal_text.text,
-			    data, txt_e + 1))
-				goto err;
+			assert(doc->in_footnote);
+			doc->in_footnote = 0;
 		} else {
 			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 			if (n == NULL)
@@ -3024,66 +3023,6 @@ parse_atxheader(struct lowdown_doc *doc, char *data, size_t size)
 }
 
 /*
- * Parse a single footnote definition.
- * Return zero on failure, non-zero on success.
- */
-static int
-parse_footnote_def(struct lowdown_doc *doc, struct foot_ref *ref)
-{
-	struct lowdown_node	*n;
-
-	if ((n = pushnode(doc, LOWDOWN_FOOTNOTE_DEF)) == NULL)
-		return 0;
-	n->rndr_footnote_def.num = ref->num;
-	if (!pushlbuf(&n->rndr_footnote_def.key, &ref->name))
-		return 0;
-	if (!parse_block(doc,
-	    ref->contents.data, ref->contents.size))
-		return 0;
-	popnode(doc, n);
-	return 1;
-}
-
-/*
- * Render the contents of the footnotes.
- * Return zero on failure, non-zero on success.
- */
-static int
-parse_footnote_list(struct lowdown_doc *doc)
-{
-	struct foot_ref		*ref;
-	struct lowdown_node	*n = NULL;
-	size_t			 i, first = 1;
-
-	if (TAILQ_EMPTY(&doc->footq))
-		return 1;
-
-	/*
-	 * Print out our footnotes in order.
-	 * Only emit the footnote block if we have some.
-	 */
-
-	for (i = 0; i <= doc->foots; i++)
-		TAILQ_FOREACH(ref, &doc->footq, entries) {
-			if (ref->num != i || !ref->is_used)
-				continue;
-			if (first) {
-				n = pushnode(doc,
-					LOWDOWN_FOOTNOTES_BLOCK);
-				if (n == NULL)
-					return 0;
-				first = 0;
-			}
-			if (!parse_footnote_def(doc, ref))
-				return 0;
-		}
-
-	if (n != NULL)
-		popnode(doc, n);
-	return 1;
-}
-
-/*
  * Check for end of HTML block : </tag>( *)\n
  * Returns tag length on match, 0 otherwise.
  * Assumes data starts with "<".
@@ -3770,7 +3709,8 @@ parse_block(struct lowdown_doc *doc, char *data, size_t size)
 
 /*
  * Returns >0 if a line is a footnote definition, 0 if not, <0 on
- * failure.
+ * failure.  This gathers any footnote content into the footq footnote
+ * queue.
  */
 static int
 is_footnote(struct lowdown_doc *doc, const char *data,
@@ -4622,12 +4562,6 @@ lowdown_doc_parse(struct lowdown_doc *doc, size_t *maxn,
 			goto out;
 	}
 
-	if (doc->ext_flags & LOWDOWN_FOOTNOTES)
-		if (!parse_footnote_list(doc))
-			goto out;
-
-	/* FIXME: this node isn't necessary. */
-
 	if ((n = pushnode(doc, LOWDOWN_DOC_FOOTER)) == NULL)
 		goto out;
 	popnode(doc, n);
@@ -4672,13 +4606,6 @@ lowdown_node_free(struct lowdown_node *p)
 		break;
 	case LOWDOWN_ENTITY:
 		hbuf_free(&p->rndr_entity.text);
-		break;
-	case LOWDOWN_FOOTNOTE_DEF:
-		hbuf_free(&p->rndr_footnote_def.key);
-		break;
-	case LOWDOWN_FOOTNOTE_REF:
-		hbuf_free(&p->rndr_footnote_ref.def);
-		hbuf_free(&p->rndr_footnote_ref.key);
 		break;
 	case LOWDOWN_HEADER:
 		hbuf_free(&p->rndr_header.attr_cls);

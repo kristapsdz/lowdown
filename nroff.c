@@ -41,16 +41,19 @@ enum	nfont {
 };
 
 struct 	nroff {
-	int 		 man; /* whether man(7) */
-	int		 post_para; /* for choosing PP/LP */
-	unsigned int 	 flags; /* output flags */
-	ssize_t		 headers_offs; /* header offset */
-	enum nfont	 fonts[NFONT__MAX]; /* see bqueue_font() */
+	int			  man; /* whether man(7) */
+	int			  post_para; /* for choosing PP/LP */
+	unsigned int		  flags; /* output flags */
+	ssize_t			  headers_offs; /* header offset */
+	enum nfont		  fonts[NFONT__MAX]; /* see bqueue_font() */
+	struct bnodeq		**foots; /* footnotes */
+	size_t			  footsz; /* footnote size */
 };
 
 enum	bscope {
 	BSCOPE_BLOCK = 0,
-	BSCOPE_SPAN = 1,
+	BSCOPE_SPAN,
+	BSCOPE_PDFHREF,
 	BSCOPE_LITERAL,
 	BSCOPE_FONT,
 	BSCOPE_COLOUR
@@ -59,14 +62,11 @@ enum	bscope {
 /*
  * Instead of writing directly into the output buffer, we write
  * temporarily into bnodes, which are converted into output.  These
- * nodes are aware of whether they need surrounding newlines.  This way,
- * we have much more control over where to put newlines, which before
- * was haphazard at best.
+ * nodes are aware of whether they need surrounding newlines.
  */
 struct	bnode {
 	char				*nbuf; /* (safe) 1st data */
 	char				*buf; /* (unsafe) 2nd data */
-	size_t				 bufchop; /* strip from buf */
 	char				*nargs; /* (safe) 1st args */
 	char				*args; /* (unsafe) 2nd args */
 	int				 close; /* BNODE_COLOUR/FONT */
@@ -261,13 +261,13 @@ bqueue_font(const struct nroff *st, struct bnodeq *bq, int close)
 }
 
 static struct bnode *
-bqueue_span(struct bnodeq *bq, const char *text)
+bqueue_node(struct bnodeq *bq, enum bscope scope, const char *text)
 {
 	struct bnode	*bn;
 
 	if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
 		return NULL;
-	bn->scope = BSCOPE_SPAN;
+	bn->scope = scope;
 	if (text != NULL && (bn->nbuf = strdup(text)) == NULL) {
 		free(bn);
 		return NULL;
@@ -277,19 +277,24 @@ bqueue_span(struct bnodeq *bq, const char *text)
 }
 
 static struct bnode *
-bqueue_block(struct bnodeq *bq, const char *macro)
+bqueue_span(struct bnodeq *bq, const char *text)
 {
-	struct bnode	*bn;
 
-	if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
-		return NULL;
-	bn->scope = BSCOPE_BLOCK;
-	if (macro != NULL && (bn->nbuf = strdup(macro)) == NULL) {
-		free(bn);
-		return NULL;
-	}
-	TAILQ_INSERT_TAIL(bq, bn, entries);
-	return bn;
+	return bqueue_node(bq, BSCOPE_SPAN, text);
+}
+
+static struct bnode *
+bqueue_block(struct bnodeq *bq, const char *text)
+{
+
+	return bqueue_node(bq, BSCOPE_BLOCK, text);
+}
+
+static struct bnode *
+bqueue_semiblock(struct bnodeq *bq, const char *text)
+{
+
+	return bqueue_node(bq, BSCOPE_PDFHREF, text);
 }
 
 static void
@@ -334,12 +339,19 @@ bqueue_strip_paras(struct bnodeq *bq)
 static int
 bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq, int esc)
 {
-	const struct bnode	*bn, *chk;
+	const struct bnode	*bn, *chk, *next;
 	const char		*cp;
 	int		 	 nextblk;
 
 	TAILQ_FOREACH(bn, bq, entries) {
 		nextblk = 0;
+
+		if (bn->scope == BSCOPE_PDFHREF &&
+		    ob->size > 0 && 
+		    ob->data[ob->size - 1] != ' ' &&
+		    ob->data[ob->size - 1] != '\n' &&
+		    !hbuf_puts(ob, "\\c"))
+			return 0;
 
 		/* 
 		 * Block scopes start with a newline.
@@ -351,6 +363,7 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq, int esc)
 		 */
 
 		if (bn->scope == BSCOPE_BLOCK ||
+		    bn->scope == BSCOPE_PDFHREF ||
 		    bn->scope == BSCOPE_COLOUR) {
 			if (ob->size > 0 && 
 			    ob->data[ob->size - 1] != '\n' &&
@@ -369,7 +382,8 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq, int esc)
 				TAILQ_PREV(bn, bnodeq, entries) :
 				TAILQ_NEXT(bn, entries);
 			if (chk != NULL && 
-			    chk->scope == BSCOPE_BLOCK) {
+			    (chk->scope == BSCOPE_PDFHREF ||
+			     chk->scope == BSCOPE_BLOCK)) {
 				if (ob->size > 0 && 
 				    ob->data[ob->size - 1] != '\n' &&
 				    !hbuf_putc(ob, '\n'))
@@ -420,9 +434,18 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq, int esc)
 			    strlen(bn->buf), 0, 1, esc))
 				return 0;
 		} else if (bn->buf != NULL)
-			if (!hesc_nroff(ob, bn->buf + bn->bufchop, 
-			    strlen(bn->buf) - bn->bufchop, 0, 0, esc))
+			if (!hesc_nroff(ob, bn->buf,
+			    strlen(bn->buf), 0, 0, esc))
 				return 0;
+
+		if (bn->scope == BSCOPE_PDFHREF &&
+		    (next = TAILQ_NEXT(bn, entries)) != NULL &&
+		    next->scope == BSCOPE_SPAN &&
+		    next->buf != NULL &&
+		    next->buf[0] != ' ' &&
+		    next->buf[0] != '\n' &&
+		    !HBUF_PUTSL(ob, " -A \"\\c\""))
+			return 0;
 
 		/* 
 		 * Macro arguments follow after space.
@@ -431,7 +454,8 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq, int esc)
 
 		if (bn->nargs != NULL) {
 			assert(nextblk);
-			assert(bn->scope == BSCOPE_BLOCK);
+			assert(bn->scope == BSCOPE_BLOCK ||
+				bn->scope == BSCOPE_PDFHREF);
 			if (!hbuf_putc(ob, ' '))
 				return 0;
 			for (cp = bn->nargs; *cp != '\0'; cp++)
@@ -442,7 +466,8 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq, int esc)
 
 		if (bn->args != NULL) {
 			assert(nextblk);
-			assert(bn->scope == BSCOPE_BLOCK);
+			assert(bn->scope == BSCOPE_BLOCK ||
+				bn->scope == BSCOPE_PDFHREF);
 			if (!hbuf_putc(ob, ' '))
 				return 0;
 			if (!hesc_nroff(ob, bn->args,
@@ -517,20 +542,17 @@ out:
  * un-spaced content, so "[foo](https://foo.com)" wouldn't work.
  * Until a solution is found, let's just italicise the link text (or
  * link, if no text is found).
- * Return <0 on error (memory), 0 if we've snipped the next node, >0
- * otherwise.
+ * Return FALSE on error (memory), TRUE on success.
  */
-static ssize_t
+static int
 putlink(struct bnodeq *obq, struct nroff *st, 
 	const struct lowdown_buf *link, struct bnodeq *bq,
-	enum halink_type type, const struct lowdown_node *next)
+	enum halink_type type)
 {
-	struct lowdown_buf		*ob = NULL, *tmp = NULL;
-	const struct lowdown_buf	*nbuf;
-	struct bnode			*bn, *prev;
-	size_t				 sz, i;
+	struct lowdown_buf		*ob = NULL;
+	struct bnode			*bn;
+	size_t				 i;
 	int				 rc = 0;
-	ssize_t				 ret = 0;
 
 	/*
 	 * For -Tman or without .pdfhref, format the link as-is, with
@@ -600,66 +622,6 @@ putlink(struct bnodeq *obq, struct nroff *st,
 	if ((ob = hbuf_new(32)) == NULL)
 		goto out;
 
-	/*
-	 * If we're preceded by normal text that doesn't end with space,
-	 * then put that text into the "-P" (prefix) argument.
-	 */
-
-	prev = TAILQ_LAST(obq, bnodeq);
-	if (prev != NULL &&
-	    prev->scope == BSCOPE_SPAN &&
-	    prev->buf != NULL &&
-	    strlen(prev->buf) > 0 && !isspace
-	    ((unsigned char)prev->buf[strlen(prev->buf) - 1])) {
-		sz = strlen(prev->buf);
-		while (sz && !isspace
-		       ((unsigned char)prev->buf[sz - 1]))
-			sz--;
-		assert(sz != strlen(prev->buf));
-
-		if (!HBUF_PUTSL(ob, "-P \""))
-			goto out;
-		if (!hesc_nroff(ob, &prev->buf[sz],
-		    strlen(prev->buf) - sz, 1, 0, 1))
-			goto out;
-		if (!HBUF_PUTSL(ob, "\" "))
-			goto out;
-
-		if ((tmp = hbuf_new(32)) == NULL)
-			goto out;
-		if (!hesc_nroff(tmp, prev->buf, sz, 1, 0, 1))
-			goto out;
-		assert(prev->nbuf == NULL);
-		prev->nbuf = strndup(tmp->data, tmp->size);
-		if (prev->nbuf == NULL)
-			goto out;
-		free(prev->buf);
-		prev->buf = NULL;
-	}
-
-	/* 
-	 * If we're followed by text flush against the node, "chop" the
-	 * node until the next white-space.  This will be handed to the
-	 * next rndr() invocation.
-	 */
-
-	if (next != NULL && 
-	    next->type == LOWDOWN_NORMAL_TEXT) {
-		nbuf = &next->rndr_normal_text.text;
-		for (sz = 0; sz < nbuf->size; sz++)
-			if (isspace((unsigned char)nbuf->data[sz]))
-				break;
-		if (sz > 0) {
-			if (!HBUF_PUTSL(ob, "-A \""))
-				goto out;
-			if (!hesc_nroff(ob, nbuf->data, sz, 1, 0, 1))
-				goto out;
-			if (!HBUF_PUTSL(ob, "\" "))
-				goto out;
-			ret = sz;
-		}
-	}
-
 	/* Encode the URL. */
 
 	if (!HBUF_PUTSL(ob, "-D "))
@@ -681,28 +643,26 @@ putlink(struct bnodeq *obq, struct nroff *st,
 		goto out;
 	else if (bq != NULL && !bqueue_flush(ob, bq, 1))
 		goto out;
-	if ((bn = bqueue_block(obq, ".pdfhref W")) == NULL)
+	if ((bn = bqueue_semiblock(obq, ".pdfhref W")) == NULL)
 		goto out;
 	if ((bn->nargs = strndup(ob->data, ob->size)) == NULL)
 		goto out;
 
 	rc = 1;
 out:
-	hbuf_free(tmp);
 	hbuf_free(ob);
-	return rc ? ret : -1;
+	return rc;
 }
 
 /*
  * Return <0 on failure, 0 to remove next, >0 otherwise.
  */
-static ssize_t
+static int
 rndr_autolink(struct nroff *st, struct bnodeq *obq,
-	const struct rndr_autolink *param, 
-	const struct lowdown_node *next)
+	const struct rndr_autolink *param)
 {
 
-	return putlink(obq, st, &param->link, NULL, param->type, next);
+	return putlink(obq, st, &param->link, NULL, param->type);
 }
 
 static int
@@ -887,11 +847,10 @@ rndr_header(struct nroff *st, struct bnodeq *obq,
  */
 static ssize_t
 rndr_link(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
-	const struct rndr_link *param, 
-	const struct lowdown_node *next)
+	const struct rndr_link *param)
 {
 
-	return putlink(obq, st, &param->link, bq, HALINK_NORMAL, next);
+	return putlink(obq, st, &param->link, bq, HALINK_NORMAL);
 }
 
 static int
@@ -1236,29 +1195,8 @@ rndr_superscript(struct bnodeq *obq, struct bnodeq *bq)
 }
 
 static int
-rndr_footnotes(const struct nroff *st,
-	struct bnodeq *obq, struct bnodeq *bq)
-{
-
-	/* Put a horizontal line in the case of man(7). */
-
-	if (st->man) {
-		if (bqueue_block(obq, ".LP") == NULL)
-			return 0;
-		if (bqueue_block(obq, ".sp 3") == NULL)
-			return 0;
-		if (bqueue_block(obq, "\\l\'2i'") == NULL)
-			return 0;
-	}
-
-	TAILQ_CONCAT(obq, bq, entries);
-	return 1;
-}
-
-static int
 rndr_footnote_def(const struct nroff *st, struct bnodeq *obq,
-	struct bnodeq *bq, const struct lowdown_node *n,
-	const struct rndr_footnote_def *param)
+	struct bnodeq *bq, size_t num)
 {
 	struct bnode	*bn;
 
@@ -1272,16 +1210,8 @@ rndr_footnote_def(const struct nroff *st, struct bnodeq *obq,
 	if (!st->man) {
 		if (bqueue_block(obq, ".FS") == NULL)
 			return 0;
-		if ((n->chng == LOWDOWN_CHNG_INSERT ||
-		     n->chng == LOWDOWN_CHNG_DELETE) &&
-		    !bqueue_colour(obq, n->chng, 0))
-			return 0;
 		bqueue_strip_paras(bq);
 		TAILQ_CONCAT(obq, bq, entries);
-		if ((n->chng == LOWDOWN_CHNG_INSERT ||
-		     n->chng == LOWDOWN_CHNG_DELETE) &&
-		    !bqueue_colour(obq, n->chng, 1))
-			return 0;
 		return bqueue_block(obq, ".FE") != NULL;
 	}
 
@@ -1292,33 +1222,50 @@ rndr_footnote_def(const struct nroff *st, struct bnodeq *obq,
 
 	if (bqueue_block(obq, ".LP") == NULL)
 		return 0;
-	if ((n->chng == LOWDOWN_CHNG_INSERT ||
-	     n->chng == LOWDOWN_CHNG_DELETE) &&
-	    !bqueue_colour(obq, n->chng, 0))
-		return 0;
-
 	if ((bn = bqueue_span(obq, NULL)) == NULL)
 		return 0;
 	if (asprintf(&bn->nbuf, 
-	    "\\0\\fI\\u\\s-3%zu\\s+3\\d\\fP\\0", param->num) == -1) {
+	    "\\0\\fI\\u\\s-3%zu\\s+3\\d\\fP\\0", num) == -1) {
 		bn->nbuf = NULL;
 		return 0;
 	}
-
 	bqueue_strip_paras(bq);
 	TAILQ_CONCAT(obq, bq, entries);
-	if ((n->chng == LOWDOWN_CHNG_INSERT ||
-	     n->chng == LOWDOWN_CHNG_DELETE) &&
-	    !bqueue_colour(obq, n->chng, 1))
-		return 0;
 	return 1;
 }
 
 static int
-rndr_footnote_ref(const struct nroff *st,
-	struct bnodeq *obq, const struct rndr_footnote_ref *param)
+rndr_footnotes(const struct nroff *st, struct bnodeq *obq)
 {
-	struct bnode	*bn;
+	size_t	 i;
+
+	if (st->footsz == 0)
+		return 1;
+
+	if (st->man) {
+		if (bqueue_block(obq, ".LP") == NULL)
+			return 0;
+		if (bqueue_block(obq, ".sp 3") == NULL)
+			return 0;
+		if (bqueue_block(obq, "\\l\'2i'") == NULL)
+			return 0;
+	}
+
+	for (i = 0; i < st->footsz; i++)
+		if (!rndr_footnote_def(st, obq, st->foots[i], i + 1))
+			return 0;
+
+	return 1;
+}
+
+static int
+rndr_footnote_ref(struct nroff *st, struct bnodeq *obq,
+	struct bnodeq *bq)
+{
+	struct bnode		*bn;
+	void			*pp;
+	size_t			 num = st->footsz;
+	struct lowdown_buf	*ob;
 
 	/* 
 	 * Use groff_ms(7)-style automatic footnoting, else just put a
@@ -1328,14 +1275,46 @@ rndr_footnote_ref(const struct nroff *st,
 	if ((bn = bqueue_span(obq, NULL)) == NULL)
 		return 0;
 
-	if (st->man) {
-		if (asprintf(&bn->nbuf, 
-		    "\\u\\s-3%zu\\s+3\\d", param->num) == -1)
-			bn->nbuf = NULL;
-	} else
+	if (!st->man)
 		bn->nbuf = strdup("\\**");
+	else if (asprintf(&bn->nbuf, 
+		 "\\u\\s-3%zu\\s+3\\d", num + 1) == -1)
+		bn->nbuf = NULL;
 
-	return bn->nbuf != NULL;
+	if (bn->nbuf == NULL)
+		return 0;
+
+	/*
+	 * For -Tman, queue the footnote for printing at the end of the
+	 * document.  For -Tms, emit it now in a FS/FE block.
+	 */
+
+	if (st->man) {
+		if ((ob = hbuf_new(32)) == NULL)
+			return 0;
+		if (!bqueue_flush(ob, obq, 0)) {
+			hbuf_free(ob);
+			return 0;
+		}
+
+		pp = recallocarray(st->foots, st->footsz,
+			st->footsz + 1, sizeof(struct bnodeq *));
+		if (pp == NULL)
+			return 0;
+		st->foots = pp;
+		st->foots[st->footsz++] = malloc(sizeof(struct bnodeq));
+		if (st->foots[num] == NULL)
+			return 0;
+		TAILQ_INIT(st->foots[num]);
+		TAILQ_CONCAT(st->foots[num], bq, entries);
+		return 1;
+	} else {
+		if (bqueue_block(obq, ".FS") == NULL)
+			return 0;
+		bqueue_strip_paras(bq);
+		TAILQ_CONCAT(obq, bq, entries);
+		return bqueue_block(obq, ".FE") != NULL;
+	}
 }
 
 static int
@@ -1605,13 +1584,12 @@ out:
  * Return what (if anything) we should chop from the next node or <0 on
  * failure.
  */
-static ssize_t
+static int
 rndr(struct lowdown_metaq *mq, struct nroff *st,
-	const struct lowdown_node *n, struct bnodeq *obq, size_t chop)
+	const struct lowdown_node *n, struct bnodeq *obq)
 {
 	const struct lowdown_node	*child;
 	int				 rc = 1;
-	ssize_t				 keepnext, ret = -1;
 	enum nfont			 fonts[NFONT__MAX];
 	struct bnodeq			 tmpbq;
 	struct bnode			*bn;
@@ -1620,7 +1598,6 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 
 	if ((n->chng == LOWDOWN_CHNG_INSERT ||
 	     n->chng == LOWDOWN_CHNG_DELETE) &&
-	    n->type != LOWDOWN_FOOTNOTE_DEF &&
 	    !bqueue_colour(obq, n->chng, 0))
 		goto out;
 
@@ -1659,14 +1636,10 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		break;
 	}
 
-	keepnext = 0;
-	TAILQ_FOREACH(child, &n->children, entries) {
-		keepnext = rndr(mq, st, child, &tmpbq, keepnext);
-		if (keepnext < 0)
+	TAILQ_FOREACH(child, &n->children, entries)
+		if (!rndr(mq, st, child, &tmpbq))
 			goto out;
-	}
 
-	ret = 0;
 	switch (n->type) {
 	case LOWDOWN_BLOCKCODE:
 		rc = rndr_blockcode(st, obq, &n->rndr_blockcode);
@@ -1718,19 +1691,14 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	case LOWDOWN_TABLE_CELL:
 		rc = rndr_table_cell(obq, &tmpbq, &n->rndr_table_cell);
 		break;
-	case LOWDOWN_FOOTNOTES_BLOCK:
-		rc = rndr_footnotes(st, obq, &tmpbq);
-		break;
-	case LOWDOWN_FOOTNOTE_DEF:
-		rc = rndr_footnote_def(st, obq, 
-			&tmpbq, n, &n->rndr_footnote_def);
+	case LOWDOWN_DOC_FOOTER:
+		rc = rndr_footnotes(st, obq);
 		break;
 	case LOWDOWN_BLOCKHTML:
 		rc = rndr_raw_block(st, obq, &n->rndr_blockhtml);
 		break;
 	case LOWDOWN_LINK_AUTO:
-		ret = rndr_autolink(st, obq, 
-			&n->rndr_autolink, TAILQ_NEXT(n, entries));
+		rc = rndr_autolink(st, obq, &n->rndr_autolink);
 		break;
 	case LOWDOWN_CODESPAN:
 		rc = rndr_codespan(obq, &n->rndr_codespan);
@@ -1742,21 +1710,18 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_linebreak(obq);
 		break;
 	case LOWDOWN_LINK:
-		ret = rndr_link(st, obq, &tmpbq, 
-			&n->rndr_link, TAILQ_NEXT(n, entries));
+		rc = rndr_link(st, obq, &tmpbq, &n->rndr_link);
 		break;
 	case LOWDOWN_SUPERSCRIPT:
 		rc = rndr_superscript(obq, &tmpbq);
 		break;
-	case LOWDOWN_FOOTNOTE_REF:
-		rc = rndr_footnote_ref(st, obq, &n->rndr_footnote_ref);
+	case LOWDOWN_FOOTNOTE:
+		rc = rndr_footnote_ref(st, obq, &tmpbq);
 		break;
 	case LOWDOWN_RAW_HTML:
 		rc = rndr_raw_html(st, obq, &n->rndr_raw_html);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
-		if (chop == n->rndr_normal_text.text.size)
-			break;
 		if ((bn = bqueue_span(obq, NULL)) == NULL)
 			goto out;
 		bn->buf = strndup
@@ -1764,7 +1729,6 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 			 n->rndr_normal_text.text.size);
 		if (bn->buf == NULL)
 			goto out;
-		bn->bufchop = chop;
 		break;
 	case LOWDOWN_ENTITY:
 		rc = rndr_entity(st, obq, &n->rndr_entity);
@@ -1775,8 +1739,6 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	}
 
 	if (!rc)
-		ret = -1;
-	if (ret < 0)
 		goto out;
 
 	/* Restore the font stack. */
@@ -1789,7 +1751,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	case LOWDOWN_TRIPLE_EMPHASIS:
 		memcpy(st->fonts, fonts, sizeof(fonts));
 		if (!bqueue_font(st, obq, 1)) {
-			ret = -1;
+			rc = 0;
 			goto out;
 		}
 		break;
@@ -1799,15 +1761,15 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 
 	if ((n->chng == LOWDOWN_CHNG_INSERT ||
 	     n->chng == LOWDOWN_CHNG_DELETE) &&
-	    n->type != LOWDOWN_FOOTNOTE_DEF &&
 	    !bqueue_colour(obq, n->chng, 1)) {
-		ret = -1;
+		rc = 0;
 		goto out;
 	}
 
+	rc = 1;
 out:
 	bqueue_free(&tmpbq);
-	return ret;
+	return rc;
 }
 
 int
@@ -1818,6 +1780,7 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 	struct lowdown_metaq	 metaq;
 	int			 rc = 0;
 	struct bnodeq		 bq;
+	size_t			 i;
 
 	TAILQ_INIT(&metaq);
 	TAILQ_INIT(&bq);
@@ -1826,7 +1789,7 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 	st->headers_offs = 1;
 	st->post_para = 0;
 
-	if (rndr(&metaq, st, n, &bq, 0) >= 0) {
+	if (rndr(&metaq, st, n, &bq)) {
 		if (!bqueue_flush(ob, &bq, 1))
 			goto out;
 		if (ob->size && ob->data[ob->size - 1] != '\n' &&
@@ -1834,7 +1797,14 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 			goto out;
 		rc = 1;
 	}
+
 out:
+	for (i = 0; i < st->footsz; i++)
+		bqueue_free(st->foots[i]);
+
+	free(st->foots);
+	st->footsz = 0;
+	st->foots = NULL;
 	lowdown_metaq_free(&metaq);
 	bqueue_free(&bq);
 	return rc;

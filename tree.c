@@ -47,8 +47,6 @@ static	const char *const names[LOWDOWN__MAX] = {
 	"LOWDOWN_TABLE_BODY",           /* LOWDOWN_TABLE_BODY */
 	"LOWDOWN_TABLE_ROW",            /* LOWDOWN_TABLE_ROW */
 	"LOWDOWN_TABLE_CELL",           /* LOWDOWN_TABLE_CELL */
-	"LOWDOWN_FOOTNOTES_BLOCK",      /* LOWDOWN_FOOTNOTES_BLOCK */
-	"LOWDOWN_FOOTNOTE_DEF",         /* LOWDOWN_FOOTNOTE_DEF */
 	"LOWDOWN_BLOCKHTML",            /* LOWDOWN_BLOCKHTML */
 	"LOWDOWN_LINK_AUTO",            /* LOWDOWN_LINK_AUTO */
 	"LOWDOWN_CODESPAN",             /* LOWDOWN_CODESPAN */
@@ -61,7 +59,7 @@ static	const char *const names[LOWDOWN__MAX] = {
 	"LOWDOWN_TRIPLE_EMPHASIS",      /* LOWDOWN_TRIPLE_EMPHASIS */
 	"LOWDOWN_STRIKETHROUGH",        /* LOWDOWN_STRIKETHROUGH */
 	"LOWDOWN_SUPERSCRIPT",          /* LOWDOWN_SUPERSCRIPT */
-	"LOWDOWN_FOOTNOTE_REF",         /* LOWDOWN_FOOTNOTE_REF */
+	"LOWDOWN_FOOTNOTE",		/* LOWDOWN_FOOTNOTE */
 	"LOWDOWN_MATH_BLOCK",           /* LOWDOWN_MATH_BLOCK */
 	"LOWDOWN_RAW_HTML",             /* LOWDOWN_RAW_HTML */
 	"LOWDOWN_ENTITY",               /* LOWDOWN_ENTITY */
@@ -209,36 +207,6 @@ rndr(struct lowdown_buf *ob,
 			return 0;
 		if (!hbuf_printf(ob, "level: %zu\n",
 		    root->rndr_header.level))
-			return 0;
-		break;
-	case LOWDOWN_FOOTNOTE_REF:
-		if (!rndr_indent(ob, indent + 1))
-			return 0;
-		if (!hbuf_printf(ob, "number: %zu\n",
-		    root->rndr_footnote_ref.num))
-			return 0;
-		if (!rndr_indent(ob, indent + 1))
-			return 0;
-		if (!hbuf_printf(ob, "name: "))
-			return 0;
-		if (!rndr_short(ob, &root->rndr_footnote_ref.key))
-			return 0;
-		if (!HBUF_PUTSL(ob, "\n"))
-			return 0;
-		break;
-	case LOWDOWN_FOOTNOTE_DEF:
-		if (!rndr_indent(ob, indent + 1))
-			return 0;
-		if (!hbuf_printf(ob, "number: %zu\n",
-		    root->rndr_footnote_def.num))
-			return 0;
-		if (!rndr_indent(ob, indent + 1))
-			return 0;
-		if (!hbuf_printf(ob, "name: "))
-			return 0;
-		if (!rndr_short(ob, &root->rndr_footnote_def.key))
-			return 0;
-		if (!HBUF_PUTSL(ob, "\n"))
 			return 0;
 		break;
 	case LOWDOWN_RAW_HTML:

@@ -44,20 +44,36 @@ hbuf_init(struct lowdown_buf *buf, size_t unit, int buffer_free)
 	buf->buffer_free = buffer_free;
 }
 
+/*
+ * Return a buffer that deep-copies "buf".  Returns the pointer of NULL
+ * on memory allocation failure.
+ */
+struct lowdown_buf *
+hbuf_dup(const struct lowdown_buf *buf)
+{
+	struct lowdown_buf	*v;
+
+	v = calloc(1, sizeof(struct lowdown_buf));
+	if (v != NULL && hbuf_clone(buf, v))
+		return v;
+	free(v);
+	return NULL;
+}
+
+/*
+ * Deep-copies "buf" into "v", wiping its contents.  Returns TRUE on
+ * success or FALSE on memory allocation failure.
+ */
 int
 hbuf_clone(const struct lowdown_buf *buf, struct lowdown_buf *v)
 {
 
-	v->data = NULL;
+	*v = *buf;
 	if (buf->size) {
 		if ((v->data = malloc(buf->size)) == NULL)
 			return 0;
 		memcpy(v->data, buf->data, buf->size);
 	} 
-	v->size = buf->size;
-	v->maxsize = buf->maxsize;
-	v->unit = buf->unit;
-	v->buffer_free = buf->buffer_free;
 	return 1;
 }
 

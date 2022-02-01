@@ -788,7 +788,10 @@ P'tahk[^pt], tell me who you are, or I will kill you right here!
 .Pp
 The footnote name is rendered as a number.
 There may only be one footnote reference per definition.
-If a footnote refers to an unknown definition, it is printed as-is.
+If a footnote reference refers to an unknown definition, or if it has
+already been used in referring to a definition, it is printed as-is.
+Footnote definitions without references are not printed.
+Nested footnotes are not allowed.
 .
 .Ss Superscripts
 Uses the caret
