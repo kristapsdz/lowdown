@@ -211,6 +211,19 @@ rndr_escape(struct term *term, struct lowdown_buf *out,
 	return cols;
 }
 
+static void
+rndr_free_footnotes(struct term *st)
+{
+	size_t	 i;
+
+	for (i = 0; i < st->footsz; i++)
+		hbuf_free(st->foots[i]);
+
+	free(st->foots);
+	st->foots = NULL;
+	st->footsz = 0;
+}
+
 /*
  * If there's an active style in "s" or s is NULL), then emit an
  * unstyling escape sequence.  Return zero on failure (memory), non-zero
@@ -485,16 +498,23 @@ rndr_buf_startline_prefixes(struct term *term,
 	/*
 	 * Look up the current node in the list of node's we're
 	 * servicing so we can get how many times we've output the
-	 * prefix.
-	 * This is used for (e.g.) lists, where we only output the list
-	 * prefix once.
-	 * FIXME: read backwards for faster perf.
+	 * prefix.  This is used for (e.g.) lists, where we only output
+	 * the list prefix once.  XXX: read backwards for faster perf?
 	 */
 
 	for (i = 0; i <= term->stackpos; i++)
 		if (term->stack[i].n == n)
 			break;
-	assert(i <= term->stackpos);
+
+	/*
+	 * If we can't find the node, then we're in a "faked" context
+	 * like footnotes within a table.  Ignore this.  XXX: is there a
+	 * non-hacky way for this?
+	 */
+
+	if (i > term->stackpos)
+		return 1;
+
 	emit = term->stack[i].lines++;
 
 	/*
@@ -956,8 +976,8 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	size_t				*widths = NULL;
 	const struct lowdown_node	*row, *top, *cell;
 	struct lowdown_buf		*celltmp = NULL,
-					*rowtmp = NULL;
-	size_t				 col, i, j, maxcol, sz;
+					*rowtmp = NULL, **foots;
+	size_t				 col, i, j, maxcol, sz, footsz;
 	ssize_t			 	 last_blank;
 	unsigned int			 flags;
 	int				 rc = 0;
@@ -974,8 +994,15 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 
 	/*
 	 * Begin by counting the number of printable columns in each
-	 * column in each row.
+	 * column in each row.  Clear out any existing footnotes because
+	 * this doesn't actually print anything, and we don't want to
+	 * advance any footnotes.
 	 */
+
+	foots = p->foots;
+	footsz = p->footsz;
+	p->footsz = 0;
+	p->foots = NULL;
 
 	TAILQ_FOREACH(top, &n->children, entries) {
 		assert(top->type == LOWDOWN_TABLE_HEADER ||
@@ -1010,6 +1037,12 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 				p->maxcol = maxcol;
 			}
 	}
+
+	/* Restore footnotes. */
+
+	rndr_free_footnotes(p);
+	p->foots = foots;
+	p->footsz = footsz;
 
 	/* Now actually print, row-by-row into the output. */
 
@@ -1497,20 +1530,13 @@ lowdown_term_rndr(struct lowdown_buf *ob,
 	struct term		*st = arg;
 	struct lowdown_metaq	 metaq;
 	int			 rc;
-	size_t			 i;
 
 	TAILQ_INIT(&metaq);
 
 	st->stackpos = 0;
 
 	rc = rndr(ob, &metaq, st, n);
-
-	for (i = 0; i < st->footsz; i++)
-		hbuf_free(st->foots[i]);
-
-	free(st->foots);
-	st->footsz = 0;
-	st->foots = NULL;
+	rndr_free_footnotes(st);
 	lowdown_metaq_free(&metaq);
 	return rc;
 }
