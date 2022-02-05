@@ -152,7 +152,6 @@ static const enum type types[LOWDOWN__MAX] = {
 	TYPE_TEXT, /* LOWDOWN_NORMAL_TEXT */
 	TYPE_BLOCK, /* LOWDOWN_DOC_HEADER */
 	TYPE_BLOCK, /* LOWDOWN_META */
-	TYPE_BLOCK, /* LOWDOWN_DOC_FOOTER */
 };
 
 /*

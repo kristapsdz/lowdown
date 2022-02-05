@@ -990,6 +990,8 @@ rndr_root(struct lowdown_buf *ob,
 		    return 0;
 	if (!hbuf_putb(ob, content))
 		return 0;
+	if (!rndr_doc_footer(ob, st))
+		return 0;
 	if (st->flags & LOWDOWN_STANDALONE)
 		return HBUF_PUTSL(ob, "</html>\n");
 	return 1;
@@ -1253,9 +1255,6 @@ rndr(struct lowdown_buf *ob,
 		st->noescape = 0;
 		if (n->chng != LOWDOWN_CHNG_DELETE)
 			rc = rndr_meta(ob, tmp, mq, n, st);
-		break;
-	case LOWDOWN_DOC_FOOTER:
-		rc = rndr_doc_footer(ob, st);
 		break;
 	case LOWDOWN_HEADER:
 		rc = rndr_header(ob, tmp, &n->rndr_header, st);

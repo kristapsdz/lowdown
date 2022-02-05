@@ -1,0 +1,122 @@
+[1;91m[0m[1;91mAn h1 header[0m
+
+    Paragraphs are separated by a blank line.
+
+    2nd paragraph. [3mItalic[0m, [1mbold[0m, and [1;94mmonospace[0m. Itemized lists look like:
+
+    [93m  · [0mthis one 
+    [93m  · [0mthat one 
+    [93m  · [0mthe other one 
+
+    Note that — not considering the asterisk — the actual text content
+    starts at 4-columns in.
+
+    [93m  | [0mBlock quotes are written like so.
+    [93m  | [0m
+    [93m  | [0mThey can span multiple paragraphs, if you like.
+
+    Use 3 dashes for an em-dash. Use 2 dashes for ranges (ex., “it’s all
+    in chapters 12–14”). Three dots … will be converted to an ellipsis.
+    Unicode is supported. ☺
+
+[1;36m## [0m[1;36mAn h2 header[0m
+
+    Here’s a numbered list:
+
+    [93m 1. [0mfirst item 
+    [93m 2. [0msecond item 
+    [93m 3. [0mthird item 
+
+    Note again how the actual text starts at 4 columns in (4 characters
+    from the left side). Here’s a code sample:
+
+    [1;94m  | [0m[1m# Let me re-iterate ...[0m
+    [1;94m  | [0m[1mfor i in 1 .. 10 { do-something(i) }[0m
+
+    As you probably guessed, indented 4 spaces. By the way, instead of
+    indenting the block, you can use delimited blocks, if you like:
+
+    [1;94m  | [0m[1mdefine foobar() {[0m
+    [1;94m  | [0m[1m    print "Welcome to flavor country!";[0m
+    [1;94m  | [0m[1m}[0m
+
+    (which makes copying & pasting easier). You can optionally mark the
+    delimited block for Pandoc to syntax highlight it:
+
+    [1;94m  | [0m[1mimport time[0m
+    [1;94m  | [0m[1m# Quick, count to ten![0m
+    [1;94m  | [0m[1mfor i in range(10):[0m
+    [1;94m  | [0m[1m    # (but not *too* quick)[0m
+    [1;94m  | [0m[1m    time.sleep(0.5)[0m
+    [1;94m  | [0m[1m    print i[0m
+
+[1;36m### [0m[1;36mAn h3 header[0m
+
+    Now a nested list:
+
+    [93m 1. [0mFirst, get these ingredients:
+        
+        [93m  · [0mcarrots 
+        [93m  · [0mcelery 
+        [93m  · [0mlentils 
+    
+    [93m 2. [0mBoil some water.
+    
+    [93m 3. [0mDump everything in the pot and follow this algorithm:
+        
+        [1;94m  | [0m[1mfind wooden spoon[0m
+        [1;94m  | [0m[1muncover pot[0m
+        [1;94m  | [0m[1mstir[0m
+        [1;94m  | [0m[1mcover pot[0m
+        [1;94m  | [0m[1mbalance wooden spoon precariously on pot handle[0m
+        [1;94m  | [0m[1mwait 10 minutes[0m
+        [1;94m  | [0m[1mgoto first step (or shut off burner when done)[0m
+        
+        Do not bump wooden spoon or it will fall.
+
+    Notice again how text always lines up on 4-space indents (including
+    that last line which continues item 3 above).
+
+    Here’s a link to [1;93ma [0m[1;93mwebsite[0m [4;32mhttp://foo.bar[0m, to a [1;93mlocal[0m[1;93m doc[0m [0m
+    [4;32mlocal-doc.html[0m, and to a [1;93msection heading in the current[0m[1;93m doc[0m [0m
+    [4;32m#an-h2-header[0m. Here’s a footnote [1;93m[1][0m.
+
+    Tables can look like this:
+
+    size[93m | [0mmaterial   [93m | [0mcolor      
+    [93m-----|-------------|-------------[0m
+    9   [93m | [0mleather    [93m | [0mbrown      
+    10  [93m | [0mhemp canvas[93m | [0mnatural    
+    11  [93m | [0mglass      [93m | [0mtransparent
+
+    Table: Shoes, their sizes, and what they’re made of
+
+    (The above is the caption for the table.)
+
+    A horizontal rule follows.
+    [37m~~~~~~~~[0m
+
+    Here’s a definition list:
+
+    apples
+    [93m  : [0mGood for making applesauce. 
+    
+    oranges
+    [93m  : [0mCitrus! 
+    
+    tomatoes
+    [93m  : [0mThere’s no “e” in tomatoe. 
+
+    Again, text is indented 4 spaces. (Put a blank line between each
+    term/definition pair to spread things out more.)
+
+    Images can be specified like so:
+
+    [1;93mexample image[0m [37m[Image: [0m[4;32mexample-image.jpg[0m[37m][0m
+
+    And note that you can backslash-escape any punctuation characters 
+    which you wish to be displayed literally, ex.: `foo`, *bar*, etc.
+
+    [37m~~~~~~~~[0m
+
+    [92m 1. [0mFootnote text goes here.

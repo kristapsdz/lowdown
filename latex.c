@@ -756,7 +756,7 @@ rndr(struct lowdown_buf *ob,
 	struct lowdown_buf		*tmp;
 	struct latex			*st = arg;
 	const struct lowdown_node	*child;
-	int				 ret = 0, rc = 1;
+	int				 ret = 0;
 
 	if ((tmp = hbuf_new(64)) == NULL)
 		return 0;
@@ -779,105 +779,137 @@ rndr(struct lowdown_buf *ob,
 
 	switch (n->type) {
 	case LOWDOWN_BLOCKCODE:
-		rc = rndr_blockcode(ob, &n->rndr_blockcode);
+		if (!rndr_blockcode(ob, &n->rndr_blockcode))
+			return 0;
 		break;
 	case LOWDOWN_BLOCKQUOTE:
-		rc = rndr_blockquote(ob, tmp);
+		if (!rndr_blockquote(ob, tmp))
+			return 0;
 		break;
 	case LOWDOWN_DEFINITION:
-		rc = rndr_definition(ob, tmp);
+		if (!rndr_definition(ob, tmp))
+			return 0;
 		break;
 	case LOWDOWN_DEFINITION_TITLE:
-		rc = rndr_definition_title(ob, tmp);
+		if (!rndr_definition_title(ob, tmp))
+			return 0;
 		break;
 	case LOWDOWN_DOC_HEADER:
-		rc = rndr_doc_header(ob, mq, st);
+		if (!rndr_doc_header(ob, mq, st))
+			return 0;
 		break;
 	case LOWDOWN_META:
-		if (n->chng != LOWDOWN_CHNG_DELETE)
-			rc = rndr_meta(ob, tmp, mq, n, st);
-		break;
-	case LOWDOWN_DOC_FOOTER:
-		rc = rndr_doc_footer(ob, st);
+		if (n->chng != LOWDOWN_CHNG_DELETE &&
+		    !rndr_meta(ob, tmp, mq, n, st))
+			return 0;
 		break;
 	case LOWDOWN_HEADER:
-		rc = rndr_header(ob, tmp, &n->rndr_header, st);
+		if (!rndr_header(ob, tmp, &n->rndr_header, st))
+			return 0;
 		break;
 	case LOWDOWN_HRULE:
-		rc = rndr_hrule(ob);
+		if (!rndr_hrule(ob))
+			return 0;
 		break;
 	case LOWDOWN_LIST:
-		rc = rndr_list(ob, tmp, &n->rndr_list);
+		if (!rndr_list(ob, tmp, &n->rndr_list))
+			return 0;
 		break;
 	case LOWDOWN_LISTITEM:
-		rc = rndr_listitem(ob, tmp, &n->rndr_listitem);
+		if (!rndr_listitem(ob, tmp, &n->rndr_listitem))
+			return 0;
 		break;
 	case LOWDOWN_PARAGRAPH:
-		rc = rndr_paragraph(ob, tmp);
+		if (!rndr_paragraph(ob, tmp))
+			return 0;
 		break;
 	case LOWDOWN_TABLE_BLOCK:
-		rc = rndr_table(ob, tmp);
+		if (!rndr_table(ob, tmp))
+			return 0;
 		break;
 	case LOWDOWN_TABLE_HEADER:
-		rc = rndr_table_header(ob, tmp, &n->rndr_table_header);
+		if (!rndr_table_header(ob, tmp, &n->rndr_table_header))
+			return 0;
 		break;
 	case LOWDOWN_TABLE_CELL:
-		rc = rndr_tablecell(ob, tmp, &n->rndr_table_cell);
+		if (!rndr_tablecell(ob, tmp, &n->rndr_table_cell))
+			return 0;
 		break;
 	case LOWDOWN_BLOCKHTML:
-		rc = rndr_raw_block(ob, &n->rndr_blockhtml, st);
+		if (!rndr_raw_block(ob, &n->rndr_blockhtml, st))
+			return 0;
 		break;
 	case LOWDOWN_LINK_AUTO:
-		rc = rndr_autolink(ob, &n->rndr_autolink);
+		if (!rndr_autolink(ob, &n->rndr_autolink))
+			return 0;
 		break;
 	case LOWDOWN_CODESPAN:
-		rc = rndr_codespan(ob, &n->rndr_codespan);
+		if (!rndr_codespan(ob, &n->rndr_codespan))
+			return 0;
 		break;
 	case LOWDOWN_DOUBLE_EMPHASIS:
-		rc = rndr_double_emphasis(ob, tmp);
+		if (!rndr_double_emphasis(ob, tmp))
+			return 0;
 		break;
 	case LOWDOWN_EMPHASIS:
-		rc = rndr_emphasis(ob, tmp);
+		if (!rndr_emphasis(ob, tmp))
+			return 0;
 		break;
 	case LOWDOWN_HIGHLIGHT:
-		rc = rndr_highlight(ob, tmp);
+		if (!rndr_highlight(ob, tmp))
+			return 0;
 		break;
 	case LOWDOWN_IMAGE:
-		rc = rndr_image(ob, &n->rndr_image);
+		if (!rndr_image(ob, &n->rndr_image))
+			return 0;
 		break;
 	case LOWDOWN_LINEBREAK:
-		rc = rndr_linebreak(ob);
+		if (!rndr_linebreak(ob))
+			return 0;
 		break;
 	case LOWDOWN_LINK:
-		rc = rndr_link(ob, tmp, &n->rndr_link);
+		if (!rndr_link(ob, tmp, &n->rndr_link))
+			return 0;
 		break;
 	case LOWDOWN_TRIPLE_EMPHASIS:
-		rc = rndr_triple_emphasis(ob, tmp);
+		if (!rndr_triple_emphasis(ob, tmp))
+			return 0;
 		break;
 	case LOWDOWN_SUPERSCRIPT:
-		rc = rndr_superscript(ob, tmp);
+		if (!rndr_superscript(ob, tmp))
+			return 0;
 		break;
 	case LOWDOWN_FOOTNOTE:
-		rc = rndr_footnote_ref(ob, tmp, st);
+		if (!rndr_footnote_ref(ob, tmp, st))
+			return 0;
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		rc = rndr_math(ob, &n->rndr_math);
+		if (!rndr_math(ob, &n->rndr_math))
+			return 0;
 		break;
 	case LOWDOWN_RAW_HTML:
-		rc = rndr_raw_html(ob, &n->rndr_raw_html, st);
+		if (!rndr_raw_html(ob, &n->rndr_raw_html, st))
+			return 0;
 		break;
 	case LOWDOWN_NORMAL_TEXT:
-		rc = rndr_normal_text(ob, &n->rndr_normal_text);
+		if (!rndr_normal_text(ob, &n->rndr_normal_text))
+			return 0;
 		break;
 	case LOWDOWN_ENTITY:
-		rc = rndr_entity(ob, &n->rndr_entity);
+		if (!rndr_entity(ob, &n->rndr_entity))
+			return 0;
+		break;
+	case LOWDOWN_ROOT:
+		if (!hbuf_putb(ob, tmp))
+			return 0;
+		if (!rndr_doc_footer(ob, st))
+			return 0;
 		break;
 	default:
-		rc = hbuf_putb(ob, tmp);
+		if (!hbuf_putb(ob, tmp))
+			return 0;
 		break;
 	}
-	if (!rc)
-		goto out;
 
 	if ((n->chng == LOWDOWN_CHNG_INSERT ||
 	     n->chng == LOWDOWN_CHNG_DELETE) && !HBUF_PUTSL(ob, "}"))

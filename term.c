@@ -116,7 +116,6 @@ static const struct sty *stys[LOWDOWN__MAX] = {
 	NULL, /* LOWDOWN_NORMAL_TEXT */
 	NULL, /* LOWDOWN_DOC_HEADER */
 	NULL, /* LOWDOWN_META */
-	NULL /* LOWDOWN_DOC_FOOTER */
 };
 
 /*
@@ -1148,7 +1147,6 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	int32_t				 entity;
 	size_t				 i, col, vs;
 	ssize_t			 	 last_blank;
-	int				 rc;
 
 	/* Current nodes we're servicing. */
 
@@ -1176,7 +1174,6 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_BLOCKQUOTE:
 	case LOWDOWN_DEFINITION:
 	case LOWDOWN_DEFINITION_TITLE:
-	case LOWDOWN_DOC_FOOTER:
 	case LOWDOWN_HEADER:
 	case LOWDOWN_LIST:
 	case LOWDOWN_TABLE_BLOCK:
@@ -1218,22 +1215,6 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	/* Output leading content. */
 
 	switch (n->type) {
-	case LOWDOWN_DOC_FOOTER:
-		if (p->footsz == 0)
-			break;
-		hbuf_truncate(p->tmp);
-		if (!hbuf_puts(p->tmp, ifx_foot) ||
-		    !rndr_buf(p, ob, n, p->tmp, &sty_foot))
-			return 0;
-		if (!rndr_buf_vspace(p, ob, n, 1))
-			return 0;
-		for (i = 0; i < p->footsz; i++) {
-			if (!hbuf_putb(ob, p->foots[i]))
-				return 0;
-			if (!HBUF_PUTSL(ob, "\n"))
-				return 0;
-		}
-		break;
 	case LOWDOWN_SUPERSCRIPT:
 		hbuf_truncate(p->tmp);
 		if (!hbuf_puts(p->tmp, ifx_super) ||
@@ -1332,26 +1313,29 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 
 	/* Output content. */
 
-	rc = 1;
 	switch (n->type) {
 	case LOWDOWN_HRULE:
 		hbuf_truncate(p->tmp);
 		if (!hbuf_puts(p->tmp, ifx_hrule))
 			return 0;
-		rc = rndr_buf(p, ob, n, p->tmp, NULL);
+		if (!rndr_buf(p, ob, n, p->tmp, NULL))
+			return 0;
 		break;
 	case LOWDOWN_FOOTNOTE:
 		hbuf_truncate(p->tmp);
 		if (!hbuf_printf(p->tmp, "%s%zu%s", ifx_fref_left,
 		    p->footsz, ifx_fref_right))
 			return 0;
-		rc = rndr_buf(p, ob, n, p->tmp, &sty_fref);
+		if (!rndr_buf(p, ob, n, p->tmp, &sty_fref))
+			return 0;
 		break;
 	case LOWDOWN_RAW_HTML:
-		rc = rndr_buf(p, ob, n, &n->rndr_raw_html.text, NULL);
+		if (!rndr_buf(p, ob, n, &n->rndr_raw_html.text, NULL))
+			return 0;
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		rc = rndr_buf(p, ob, n, &n->rndr_math.text, NULL);
+		if (!rndr_buf(p, ob, n, &n->rndr_math.text, NULL))
+			return 0;
 		break;
 	case LOWDOWN_ENTITY:
 		entity = entity_find_iso(&n->rndr_entity.text);
@@ -1359,19 +1343,25 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			hbuf_truncate(p->tmp);
 			if (!rndr_entity(p->tmp, entity))
 				return 0;
-			rc = rndr_buf(p, ob, n, p->tmp, NULL);
-		} else
-			rc = rndr_buf(p, ob, n, &n->rndr_entity.text,
-				&sty_bad_ent);
+			if (!rndr_buf(p, ob, n, p->tmp, NULL))
+				return 0;
+		} else {
+			if (!rndr_buf(p, ob, n, 
+			     &n->rndr_entity.text, &sty_bad_ent))
+				return 0;
+		}
 		break;
 	case LOWDOWN_BLOCKCODE:
-		rc = rndr_buf(p, ob, n, &n->rndr_blockcode.text, NULL);
+		if (!rndr_buf(p, ob, n, &n->rndr_blockcode.text, NULL))
+			return 0;
 		break;
 	case LOWDOWN_BLOCKHTML:
-		rc = rndr_buf(p, ob, n, &n->rndr_blockhtml.text, NULL);
+		if (!rndr_buf(p, ob, n, &n->rndr_blockhtml.text, NULL))
+			return 0;
 		break;
 	case LOWDOWN_CODESPAN:
-		rc = rndr_buf(p, ob, n, &n->rndr_codespan.text, NULL);
+		if (!rndr_buf(p, ob, n, &n->rndr_codespan.text, NULL))
+			return 0;
 		break;
 	case LOWDOWN_LINK_AUTO:
 		if (p->opts & LOWDOWN_TERM_SHORTLINK) {
@@ -1379,9 +1369,13 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			if (!hbuf_shortlink
 			    (p->tmp, &n->rndr_autolink.link))
 				return 0;
-			rc = rndr_buf(p, ob, n, p->tmp, NULL);
-		} else
-			rc = rndr_buf(p, ob, n, &n->rndr_autolink.link, NULL);
+			if (!rndr_buf(p, ob, n, p->tmp, NULL))
+				return 0;
+		} else {
+			if (!rndr_buf(p, ob, n,
+			     &n->rndr_autolink.link, NULL))
+				return 0;
+		}
 		break;
 	case LOWDOWN_LINK:
 		if (p->opts & LOWDOWN_TERM_NOLINK)
@@ -1396,9 +1390,13 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			if (!hbuf_shortlink
 			    (p->tmp, &n->rndr_link.link))
 				return 0;
-			rc = rndr_buf(p, ob, n, p->tmp, NULL);
-		} else
-			rc = rndr_buf(p, ob, n, &n->rndr_link.link, NULL);
+			if (!rndr_buf(p, ob, n, p->tmp, NULL))
+				return 0;
+		} else {
+			if (!rndr_buf(p, ob, n,
+			     &n->rndr_link.link, NULL))
+				return 0;
+		}
 		break;
 	case LOWDOWN_IMAGE:
 		if (!rndr_buf(p, ob, n, &n->rndr_image.alt, NULL))
@@ -1412,16 +1410,20 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		}
 		if (p->opts & LOWDOWN_TERM_NOLINK) {
 			hbuf_truncate(p->tmp);
-			if (!hbuf_puts(p->tmp, ifx_imgbox_left) ||
-			    !hbuf_puts(p->tmp, ifx_imgbox_right))
+			if (!hbuf_puts(p->tmp, ifx_imgbox_left))
 				return 0;
-			rc = rndr_buf(p, ob, n, p->tmp, &sty_imgbox);
+			if (!hbuf_puts(p->tmp, ifx_imgbox_right))
+				return 0;
+			if (!rndr_buf(p, ob, n, p->tmp, &sty_imgbox))
+				return 0;
 			break;
 		}
 		hbuf_truncate(p->tmp);
-		if (!hbuf_puts(p->tmp, ifx_imgbox_left) ||
-		    !hbuf_puts(p->tmp, ifx_imgbox_sep) ||
-		    !rndr_buf(p, ob, n, p->tmp, &sty_imgbox))
+		if (!hbuf_puts(p->tmp, ifx_imgbox_left))
+			return 0;
+		if (!hbuf_puts(p->tmp, ifx_imgbox_sep))
+			return 0;
+		if (!rndr_buf(p, ob, n, p->tmp, &sty_imgbox))
 			return 0;
 		if (p->opts & LOWDOWN_TERM_SHORTLINK) {
 			hbuf_truncate(p->tmp);
@@ -1437,20 +1439,40 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		hbuf_truncate(p->tmp);
 		if (!hbuf_puts(p->tmp, ifx_imgbox_right))
 			return 0;
-		rc = rndr_buf(p, ob, n, p->tmp, &sty_imgbox);
+		if (!rndr_buf(p, ob, n, p->tmp, &sty_imgbox))
+			return 0;
 		break;
 	case LOWDOWN_NORMAL_TEXT:
-		rc = rndr_buf(p, ob, n, &n->rndr_normal_text.text, NULL);
+		if (!rndr_buf(p, ob, n,
+		     &n->rndr_normal_text.text, NULL))
+			return 0;
 		break;
 	default:
 		break;
 	}
-	if (!rc)
-		return 0;
 
 	/* Trailing block spaces. */
 
 	if (n->type == LOWDOWN_ROOT) {
+		if (p->footsz) {
+			if (!rndr_buf_vspace(p, ob, n, 2))
+				return 0;
+			hbuf_truncate(p->tmp);
+			if (!hbuf_puts(p->tmp, pfx_body.text))
+				return 0;
+			if (!hbuf_puts(p->tmp, ifx_foot))
+				return 0;
+			if (!rndr_buf_literal(p, ob, n, p->tmp, &sty_foot))
+				return 0;
+			if (!rndr_buf_vspace(p, ob, n, 2))
+				return 0;
+			for (i = 0; i < p->footsz; i++) {
+				if (!hbuf_putb(ob, p->foots[i]))
+					return 0;
+				if (!HBUF_PUTSL(ob, "\n"))
+					return 0;
+			}
+		}
 		if (!rndr_buf_vspace(p, ob, n, 1))
 			return 0;
 		while (ob->size && ob->data[ob->size - 1] == '\n')

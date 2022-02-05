@@ -66,7 +66,6 @@ static	const char *const names[LOWDOWN__MAX] = {
 	"LOWDOWN_NORMAL_TEXT",          /* LOWDOWN_NORMAL_TEXT */
 	"LOWDOWN_DOC_HEADER",           /* LOWDOWN_DOC_HEADER */
 	"LOWDOWN_META",			/* LOWDOWN_META */
-	"LOWDOWN_DOC_FOOTER",           /* LOWDOWN_DOC_FOOTER */
 };
 
 static int

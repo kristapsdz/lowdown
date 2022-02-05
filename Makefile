@@ -307,6 +307,10 @@ regress: lowdown
 			./lowdown -Thtml $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/`basename $$f .md`.html $$tmp1 ; \
 		fi ; \
+		if [ -f regress/`basename $$f .md`.term ]; then \
+			./lowdown -Tterm $$f >$$tmp1 2>&1 ; \
+			diff -uw regress/`basename $$f .md`.term $$tmp1 ; \
+		fi ; \
 		if [ -f regress/`basename $$f .md`.latex ]; then \
 			./lowdown -Tlatex $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/`basename $$f .md`.latex $$tmp1 ; \

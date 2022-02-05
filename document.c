@@ -4562,10 +4562,6 @@ lowdown_doc_parse(struct lowdown_doc *doc, size_t *maxn,
 			goto out;
 	}
 
-	if ((n = pushnode(doc, LOWDOWN_DOC_FOOTER)) == NULL)
-		goto out;
-	popnode(doc, n);
-
 	rc = 1;
 out:
 	hbuf_free(text);

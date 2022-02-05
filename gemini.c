@@ -615,7 +615,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	size_t				 i;
 	ssize_t				 level;
 	int32_t				 entity;
-	int				 rc = 1;
+	int				 rc;
 	
 	prev = n->parent == NULL ? NULL :
 		TAILQ_PREV(n, lowdown_nodeq, entries);
@@ -645,14 +645,18 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		    n->parent->parent != NULL &&
 		    n->parent->parent->type == 
 		      LOWDOWN_DEFINITION_DATA &&
-		    prev == NULL)
-			rc = rndr_buf_vspace(st, ob, 1);
-		else
-			rc = rndr_buf_vspace(st, ob, 2);
+		    prev == NULL) {
+			if (!rndr_buf_vspace(st, ob, 1))
+				return 0;
+		} else {
+			if (!rndr_buf_vspace(st, ob, 2))
+				return 0;
+		}
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		if (n->rndr_math.blockmode)
-			rc = rndr_buf_vspace(st, ob, 1);
+		if (n->rndr_math.blockmode &&
+		    !rndr_buf_vspace(st, ob, 1))
+			return 0;
 		break;
 	case LOWDOWN_DEFINITION_DATA:
 		/* 
@@ -664,10 +668,13 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		    (n->parent->rndr_definition.flags &
 		     HLIST_FL_BLOCK) &&
 		    prev != NULL &&
-		    prev->type == LOWDOWN_DEFINITION_DATA)
-			rc = rndr_buf_vspace(st, ob, 2);
-		else
-			rc = rndr_buf_vspace(st, ob, 1);
+		    prev->type == LOWDOWN_DEFINITION_DATA) {
+			if (!rndr_buf_vspace(st, ob, 2))
+				return 0;
+		} else {
+			if (!rndr_buf_vspace(st, ob, 1))
+				return 0;
+		}
 		break;
 	case LOWDOWN_DEFINITION_TITLE:
 	case LOWDOWN_HRULE:
@@ -675,37 +682,40 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_LISTITEM:
 	case LOWDOWN_META:
 	case LOWDOWN_TABLE_ROW:
-		rc = rndr_buf_vspace(st, ob, 1);
+		if (!rndr_buf_vspace(st, ob, 1))
+			return 0;
 		break;
 	case LOWDOWN_IMAGE:
 	case LOWDOWN_LINK:
 	case LOWDOWN_LINK_AUTO:
-		if (st->flags & LOWDOWN_GEMINI_LINK_IN)
-			rc = rndr_buf_vspace(st, ob, 1);
+		if ((st->flags & LOWDOWN_GEMINI_LINK_IN) &&
+		    !rndr_buf_vspace(st, ob, 1))
+			return 0;
 		break;
 	default:
 		break;
 	}
 
-	if (!rc)
-		return 0;
-
 	/* Output leading content. */
 
-	rc = 1;
 	hbuf_truncate(st->tmp);
 
 	switch (n->type) {
 	case LOWDOWN_TABLE_BLOCK:
 	case LOWDOWN_BLOCKCODE:
 	case LOWDOWN_BLOCKHTML:
-		rc = HBUF_PUTSL(st->tmp, "```") &&
-			rndr_buf(st, ob, n, st->tmp) &&
-			rndr_buf_vspace(st, ob, 1);
+		if (!HBUF_PUTSL(st->tmp, "```"))
+			return 0;
+		if (!rndr_buf(st, ob, n, st->tmp))
+			return 0;
+		if (!rndr_buf_vspace(st, ob, 1))
+			return 0;
 		break;
 	case LOWDOWN_BLOCKQUOTE:
-		rc = HBUF_PUTSL(st->tmp, "> ") &&
-			rndr_buf(st, ob, n, st->tmp);
+		if (!HBUF_PUTSL(st->tmp, "> "))
+			return 0;
+		if (!rndr_buf(st, ob, n, st->tmp))
+			return 0;
 		st->last_blank = -1;
 		break;
 	case LOWDOWN_HEADER:
@@ -716,21 +726,11 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		for (i = 0; i < (size_t)level; i++)
 			if (!HBUF_PUTSL(st->tmp, "#"))
 				return 0;
-		rc = HBUF_PUTSL(st->tmp, " ") &&
-			rndr_buf(st, ob, n, st->tmp);
-		st->last_blank = -1;
-		break;
-	case LOWDOWN_DOC_FOOTER:
-		if (st->footsz == 0)
-			break;
-		if (!HBUF_PUTSL(ob, "~~~~~~~~\n\n"))
+		if (!HBUF_PUTSL(st->tmp, " "))
 			return 0;
-		for (i = 0; i < st->footsz; i++) {
-			if (!hbuf_putb(ob, st->foots[i]))
-				return 0;
-			if (!HBUF_PUTSL(ob, "\n"))
-				return 0;
-		}
+		if (!rndr_buf(st, ob, n, st->tmp))
+			return 0;
+		st->last_blank = -1;
 		break;
 	case LOWDOWN_IMAGE:
 	case LOWDOWN_LINK:
@@ -740,6 +740,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			break;
 		if (!HBUF_PUTSL(st->tmp, "=> "))
 			return 0;
+		rc = 1;
 		if (n->type == LOWDOWN_LINK_AUTO)
 			rc = hbuf_putb(st->tmp, &n->rndr_autolink.link);
 		else if (n->type == LOWDOWN_LINK)
@@ -748,11 +749,14 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			rc = hbuf_putb(st->tmp, &n->rndr_image.link);
 		if (!rc)
 			return 0;
-		rc = HBUF_PUTSL(st->tmp, " ") &&
-			rndr_buf(st, ob, n, st->tmp);
+		if (!HBUF_PUTSL(st->tmp, " "))
+			return 0;
+		if (!rndr_buf(st, ob, n, st->tmp))
+			return 0;
 		st->last_blank = -1;
 		break;
 	case LOWDOWN_LISTITEM:
+		rc = 1;
 		if (n->rndr_listitem.flags & HLIST_FL_DEF)
 			rc = HBUF_PUTSL(st->tmp, ": ");
 		else if (n->rndr_listitem.flags & HLIST_FL_CHECKED)
@@ -766,19 +770,19 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 				n->rndr_listitem.num);
 		if (!rc)
 			return 0;
-		rc = rndr_buf(st, ob, n, st->tmp);
+		if (!rndr_buf(st, ob, n, st->tmp))
+			return 0;
 		st->last_blank = -1;
 		break;
 	case LOWDOWN_SUPERSCRIPT:
-		rc = HBUF_PUTSL(st->tmp, "^") &&
-			rndr_buf(st, ob, n, st->tmp);
+		if (!HBUF_PUTSL(st->tmp, "^"))
+			return 0;
+		if (!rndr_buf(st, ob, n, st->tmp))
+			return 0;
 		break;
 	default:
 		break;
 	}
-
-	if (!rc)
-		return 0;
 
 	/* Descend into children. */
 
@@ -820,13 +824,14 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 
 	/* Output non-child or trailing content. */
 
-	rc = 1;
 	hbuf_truncate(st->tmp);
 
 	switch (n->type) {
 	case LOWDOWN_HRULE:
-		rc = HBUF_PUTSL(st->tmp, "~~~~~~~~") &&
-			rndr_buf(st, ob, n, st->tmp);
+		if (!HBUF_PUTSL(st->tmp, "~~~~~~~~"))
+			return 0;
+		if (!rndr_buf(st, ob, n, st->tmp))
+			return 0;
 		break;
 	case LOWDOWN_FOOTNOTE:
 		if (!hbuf_printf(st->tmp, "[%zu]", st->footsz))
@@ -835,30 +840,40 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			return 0;
 		break;
 	case LOWDOWN_RAW_HTML:
-		rc = rndr_buf(st, ob, n, &n->rndr_raw_html.text);
+		if (!rndr_buf(st, ob, n, &n->rndr_raw_html.text))
+			return 0;
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		rc = rndr_buf(st, ob, n, &n->rndr_math.text);
+		if (!rndr_buf(st, ob, n, &n->rndr_math.text))
+			return 0;
 		break;
 	case LOWDOWN_ENTITY:
 		entity = entity_find_iso(&n->rndr_entity.text);
-		if (entity > 0)
-			rc = rndr_entity(st->tmp, entity) &&
-				rndr_buf(st, ob, n, st->tmp);
-		else
-			rc = rndr_buf(st, ob, n, &n->rndr_entity.text);
+		if (entity > 0) {
+			if (!rndr_entity(st->tmp, entity))
+				return 0;
+			if (!rndr_buf(st, ob, n, st->tmp))
+				return 0;
+		} else {
+			if (!rndr_buf(st, ob, n, &n->rndr_entity.text))
+				return 0;
+		}
 		break;
 	case LOWDOWN_BLOCKCODE:
-		rc = rndr_buf(st, ob, n, &n->rndr_blockcode.text);
+		if (!rndr_buf(st, ob, n, &n->rndr_blockcode.text))
+			return 0;
 		break;
 	case LOWDOWN_BLOCKHTML:
-		rc = rndr_buf(st, ob, n, &n->rndr_blockhtml.text);
+		if (!rndr_buf(st, ob, n, &n->rndr_blockhtml.text))
+			return 0;
 		break;
 	case LOWDOWN_CODESPAN:
-		rc = rndr_buf(st, ob, n, &n->rndr_codespan.text);
+		if (!rndr_buf(st, ob, n, &n->rndr_codespan.text))
+			return 0;
 		break;
 	case LOWDOWN_IMAGE:
-		rc = rndr_buf(st, ob, n, &n->rndr_image.alt);
+		if (!rndr_buf(st, ob, n, &n->rndr_image.alt))
+			return 0;
 		/* FALLTHROUGH */
 	case LOWDOWN_LINK:
 	case LOWDOWN_LINK_AUTO:
@@ -874,31 +889,44 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			i = l->id;
 		} else
 			i = st->nolinkqsz++;
-		rc = rndr_link_ref(st, st->tmp, i, 0) &&
-			rndr_buf(st, ob, n, st->tmp);
+		if (!rndr_link_ref(st, st->tmp, i, 0))
+			return 0;
+		if (!rndr_buf(st, ob, n, st->tmp))
+			return 0;
 		break;
 	case LOWDOWN_NORMAL_TEXT:
-		rc = rndr_buf(st, ob, n, &n->rndr_normal_text.text);
+		if (!rndr_buf(st, ob, n, &n->rndr_normal_text.text))
+			return 0;
 		break;
 	case LOWDOWN_ROOT:
-		if (TAILQ_EMPTY(&st->linkq) || 
-		    !(st->flags & LOWDOWN_GEMINI_LINK_END))
+		if (!TAILQ_EMPTY(&st->linkq) &&
+		    (st->flags & LOWDOWN_GEMINI_LINK_END)) {
+			if (!rndr_buf_vspace(st, ob, 2))
+				return 0;
+			if (!rndr_flush_linkq(st, ob))
+				return 0;
+		}
+		if (st->footsz == 0)
 			break;
-		rc = rndr_buf_vspace(st, ob, 2) &&
-			rndr_flush_linkq(st, ob);
+		if (!HBUF_PUTSL(ob, "~~~~~~~~\n\n"))
+			return 0;
+		for (i = 0; i < st->footsz; i++) {
+			if (!hbuf_putb(ob, st->foots[i]))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\n"))
+				return 0;
+		}
 		break;
 	case LOWDOWN_DOC_HEADER:
-		rc = rndr_doc_header(st, ob, mq);
+		if (!rndr_doc_header(st, ob, mq))
+			return 0;
 		break;
 	default:
 		break;
 	}
-	if (!rc)
-		return 0;
 
 	/* Trailing block spaces. */
 
-	rc = 1;
 	hbuf_truncate(st->tmp);
 
 	switch (n->type) {
@@ -910,22 +938,26 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		if (!rndr_buf(st, ob, n, st->tmp))
 			return 0;
 		st->last_blank = 0;
-		rc = rndr_buf_vspace(st, ob, 2);
+		if (!rndr_buf_vspace(st, ob, 2))
+			return 0;
 		break;
 	case LOWDOWN_DOC_HEADER:
-		if (st->flags & LOWDOWN_STANDALONE)
-			rc = rndr_buf_vspace(st, ob, 2);
+		if ((st->flags & LOWDOWN_STANDALONE) &&
+		    !rndr_buf_vspace(st, ob, 2))
+			return 0;
 		break;
 	case LOWDOWN_BLOCKQUOTE:
 	case LOWDOWN_DEFINITION:
 	case LOWDOWN_HEADER:
 	case LOWDOWN_LIST:
 	case LOWDOWN_PARAGRAPH:
-		rc = rndr_buf_vspace(st, ob, 2);
+		if (!rndr_buf_vspace(st, ob, 2))
+			return 0;
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		if (n->rndr_math.blockmode)
-			rc = rndr_buf_vspace(st, ob, 1);
+		if (n->rndr_math.blockmode &&
+		    !rndr_buf_vspace(st, ob, 1))
+			return 0;
 		break;
 	case LOWDOWN_DEFINITION_DATA:
 	case LOWDOWN_DEFINITION_TITLE:
@@ -933,14 +965,16 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_LISTITEM:
 	case LOWDOWN_META:
 	case LOWDOWN_TABLE_ROW:
-		rc = rndr_buf_vspace(st, ob, 1);
+		if (!rndr_buf_vspace(st, ob, 1))
+			return 0;
 		break;
 	case LOWDOWN_IMAGE:
 	case LOWDOWN_LINK:
 	case LOWDOWN_LINK_AUTO:
 		if (IS_STANDALONE_LINK(n, prev) ||
 		    (st->flags & LOWDOWN_GEMINI_LINK_IN))
-			rc = rndr_buf_vspace(st, ob, 1);
+			if (!rndr_buf_vspace(st, ob, 1))
+				return 0;
 		break;
 	case LOWDOWN_ROOT:
 		/*
@@ -953,13 +987,12 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			return 0;
 		while (ob->size && ob->data[ob->size - 1] == '\n')
 			ob->size--;
-		rc = HBUF_PUTSL(ob, "\n");
+		if (!HBUF_PUTSL(ob, "\n"))
+			return 0;
 		break;
 	default:
 		break;
 	}
-	if (!rc)
-		return 0;
 
 	if (!st->nolinkflush &&
 	    st->nolinkqsz == 0 && st->last_blank > 1 && 

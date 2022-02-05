@@ -1799,7 +1799,7 @@ rndr(struct lowdown_buf *ob,
 	struct odt_sty			*sty = NULL;
 	size_t				 curid = (size_t)-1, curoffs,
 					 chngid = (size_t)-1;
-	int				 ret = 1, rc = 1;
+	int				 ret = 1;
 	void				*pp;
 
 	if ((tmp = hbuf_new(64)) == NULL)
@@ -1878,58 +1878,71 @@ rndr(struct lowdown_buf *ob,
 		if (!hbuf_printf(ob,
 		    "<text:change-start"
 		    " text:change-id=\"ct%zu\"/>", chngid))
-			return 0;
+			goto out;
 	}
 
 	switch (n->type) {
 	case LOWDOWN_ROOT:
-		rc = rndr_root(ob, mq, tmp, st);
+		if (!rndr_root(ob, mq, tmp, st))
+			goto out;
 		break;
 	case LOWDOWN_BLOCKCODE:
-		rc = rndr_blockcode(ob, &n->rndr_blockcode, st);
+		if (!rndr_blockcode(ob, &n->rndr_blockcode, st))
+			goto out;
 		break;
 	case LOWDOWN_META:
-		if (n->chng != LOWDOWN_CHNG_DELETE)
-			rc = rndr_meta(ob, tmp, mq, n, st);
+		if (n->chng != LOWDOWN_CHNG_DELETE &&
+		    !rndr_meta(ob, tmp, mq, n, st))
+			goto out;
 		break;
 	case LOWDOWN_HEADER:
-		rc = rndr_header(ob, tmp, &n->rndr_header, st);
+		if (!rndr_header(ob, tmp, &n->rndr_header, st))
+			goto out;
 		break;
 	case LOWDOWN_HRULE:
-		rc = rndr_hrule(ob, st);
+		if (!rndr_hrule(ob, st))
+			goto out;
 		break;
 	case LOWDOWN_LIST:
-		rc = rndr_list(ob, tmp, &n->rndr_list,
-			curid == (size_t)-1 ?
-			NULL : st->stys[curid].name);
+		if (!rndr_list(ob, tmp, &n->rndr_list,
+		     curid == (size_t)-1 ? NULL : st->stys[curid].name))
+			goto out;
 		break;
 	case LOWDOWN_LISTITEM:
-		rc = rndr_listitem(ob, tmp, n, st);
+		if (!rndr_listitem(ob, tmp, n, st))
+			goto out;
 		break;
 	/* TODO */
 	case LOWDOWN_DEFINITION_DATA:
 	/* TODO */
 	case LOWDOWN_DEFINITION_TITLE:
 	case LOWDOWN_PARAGRAPH:
-		rc = rndr_paragraph(ob, tmp, st);
+		if (!rndr_paragraph(ob, tmp, st))
+			goto out;
 		break;
 	case LOWDOWN_TABLE_BLOCK:
-		rc = rndr_table(ob, tmp, &n->rndr_table, st);
+		if (!rndr_table(ob, tmp, &n->rndr_table, st))
+			goto out;
 		break;
 	case LOWDOWN_TABLE_ROW:
-		rc = rndr_tablerow(ob, tmp);
+		if (!rndr_tablerow(ob, tmp))
+			goto out;
 		break;
 	case LOWDOWN_TABLE_CELL:
-		rc = rndr_tablecell(ob, tmp, &n->rndr_table_cell, st);
+		if (!rndr_tablecell(ob, tmp, &n->rndr_table_cell, st))
+			goto out;
 		break;
 	case LOWDOWN_BLOCKHTML:
-		rc = rndr_html(ob, &n->rndr_blockhtml.text, st);
+		if (!rndr_html(ob, &n->rndr_blockhtml.text, st))
+			goto out;
 		break;
 	case LOWDOWN_LINK_AUTO:
-		rc = rndr_autolink(ob, &n->rndr_autolink, st);
+		if (!rndr_autolink(ob, &n->rndr_autolink, st))
+			goto out;
 		break;
 	case LOWDOWN_CODESPAN:
-		rc = rndr_codespan(ob, &n->rndr_codespan, st);
+		if (!rndr_codespan(ob, &n->rndr_codespan, st))
+			goto out;
 		break;
 	case LOWDOWN_TRIPLE_EMPHASIS:
 	case LOWDOWN_DOUBLE_EMPHASIS:
@@ -1937,41 +1950,49 @@ rndr(struct lowdown_buf *ob,
 	case LOWDOWN_STRIKETHROUGH:
 	case LOWDOWN_HIGHLIGHT:
 	case LOWDOWN_SUPERSCRIPT:
-		rc = rndr_span(ob, tmp, n, st);
+		if (!rndr_span(ob, tmp, n, st))
+			goto out;
 		break;
 	case LOWDOWN_IMAGE:
-		rc = rndr_image(ob, &n->rndr_image, st);
+		if (!rndr_image(ob, &n->rndr_image, st))
+			goto out;
 		break;
 	case LOWDOWN_LINEBREAK:
-		rc = rndr_linebreak(ob);
+		if (!rndr_linebreak(ob))
+			goto out;
 		break;
 	case LOWDOWN_LINK:
-		rc = rndr_link(ob, tmp, &n->rndr_link, st);
+		if (!rndr_link(ob, tmp, &n->rndr_link, st))
+			goto out;
 		break;
 	case LOWDOWN_FOOTNOTE:
-		rc = rndr_footnote_ref(ob, tmp, st);
+		if (!rndr_footnote_ref(ob, tmp, st))
+			goto out;
 		break;
 	case LOWDOWN_MATH_BLOCK:
-		rc = rndr_math(ob, &n->rndr_math, st);
+		if (!rndr_math(ob, &n->rndr_math, st))
+			goto out;
 		break;
 	case LOWDOWN_RAW_HTML:
-		rc = rndr_html(ob, &n->rndr_raw_html.text, st);
+		if (!rndr_html(ob, &n->rndr_raw_html.text, st))
+			goto out;
 		break;
 	case LOWDOWN_NORMAL_TEXT:
-		rc = escape_htmlb(ob, &n->rndr_normal_text.text, st);
+		if (!escape_htmlb(ob, &n->rndr_normal_text.text, st))
+			goto out;
 		break;
 	case LOWDOWN_ENTITY:
 		ent = entity_find_iso(&n->rndr_entity.text);
-		rc = ent > 0 ?
-			hbuf_printf(ob, "&#%" PRId32 ";", ent) :
-			hbuf_putb(ob, &n->rndr_entity.text);
+		if (ent > 0 && !hbuf_printf(ob, "&#%" PRId32 ";", ent))
+			goto out;
+		if (ent <= 0 && !hbuf_putb(ob, &n->rndr_entity.text))
+			goto out;
 		break;
 	default:
-		rc = hbuf_putb(ob, tmp);
+		if (!hbuf_putb(ob, tmp))
+			goto out;
 		break;
 	}
-	if (!rc)
-		goto out;
 
 	if (n->chng == LOWDOWN_CHNG_INSERT ||
 	    n->chng == LOWDOWN_CHNG_DELETE) {
@@ -1979,7 +2000,7 @@ rndr(struct lowdown_buf *ob,
 		if (!hbuf_printf(ob,
 		    "<text:change-end"
 		    " text:change-id=\"ct%zu\"/>", chngid))
-			return 0;
+			goto out;
 	}
 
 	switch (n->type) {

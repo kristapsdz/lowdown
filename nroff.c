@@ -1691,7 +1691,8 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	case LOWDOWN_TABLE_CELL:
 		rc = rndr_table_cell(obq, &tmpbq, &n->rndr_table_cell);
 		break;
-	case LOWDOWN_DOC_FOOTER:
+	case LOWDOWN_ROOT:
+		TAILQ_CONCAT(obq, &tmpbq, entries);
 		rc = rndr_footnotes(st, obq);
 		break;
 	case LOWDOWN_BLOCKHTML:
