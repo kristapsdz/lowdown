@@ -280,7 +280,6 @@ LOWDOWN_ROOT
     LOWDOWN_DOUBLE_EMPHASIS
       LOWDOWN_NORMAL_TEXT
         data: 5 Bytes: world
-  LOWDOWN_DOC_FOOTER
 ```
 
 This tree would then be passed into a front-end, such as the HTML5
