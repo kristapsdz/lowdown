@@ -4,6 +4,7 @@
 include Makefile.configure
 
 VERSION		 = 0.10.0
+LIBVER		= 1
 OBJS		 = autolink.o \
 		   buffer.o \
 		   diff.o \
@@ -140,7 +141,8 @@ liblowdown.a: $(OBJS) $(COMPAT_OBJS)
 	$(AR) rs $@ $(OBJS) $(COMPAT_OBJS)
 
 liblowdown.so: $(OBJS) $(COMPAT_OBJS)
-	$(CC) -shared -o $@ $(OBJS) $(COMPAT_OBJS) $(LDFLAGS) $(LDADD_MD5)
+	$(CC) -shared -o $@.$(LIBVER) $(OBJS) $(COMPAT_OBJS) $(LDFLAGS) $(LDADD_MD5) -Wl,-soname,$@.$(LIBVER)
+	ln -s $@.$(LIBVER) $@
 
 install: all
 	mkdir -p $(DESTDIR)$(BINDIR)
@@ -155,7 +157,7 @@ install: all
 	$(INSTALL_PROGRAM) lowdown $(DESTDIR)$(BINDIR)
 	$(INSTALL_PROGRAM) lowdown-diff $(DESTDIR)$(BINDIR)
 	$(INSTALL_LIB) liblowdown.a $(DESTDIR)$(LIBDIR)
-	$(INSTALL_LIB) liblowdown.so $(DESTDIR)$(LIBDIR)
+	$(INSTALL_LIB) liblowdown.so.$(LIBVER) $(DESTDIR)$(LIBDIR)
 	$(INSTALL_DATA) lowdown.h $(DESTDIR)$(INCLUDEDIR)
 	for f in $(MANS) ; do \
 		name=`basename $$f .html` ; \
@@ -275,7 +277,7 @@ main.o: lowdown.h
 
 clean:
 	rm -f $(OBJS) $(COMPAT_OBJS) main.o
-	rm -f lowdown lowdown-diff liblowdown.a liblowdown.so lowdown.pc
+	rm -f lowdown lowdown-diff liblowdown.a liblowdown.so liblowdown.so.$(LIBVER) lowdown.pc
 	rm -f index.xml diff.xml diff.diff.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
 	rm -f $(PDFS) $(HTMLS) $(THUMBS)
 	rm -f index.latex.aux index.latex.latex index.latex.log index.latex.out
