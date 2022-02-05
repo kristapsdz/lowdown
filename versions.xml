@@ -1224,4 +1224,34 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.11.0</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2022-02-05">2022-02-05</time>
+		</header>
+		<aside>
+			<p>
+				Add class and identifier extended attributes to headers.
+				These are stipulated in PHP Markdown Extra.
+			</p>
+			<p>
+				When using header identifiers (the default) and the names collide,
+				start the suffixed count from one, just like pandoc.
+			</p>
+			<p>
+				Fix footnotes to be actual footnotes in <b>-Tlatex</b> and
+				<b>-Tms</b> instead of endnotes.  The other formats (<b>-Tman</b>,
+				etc.) all continue to use endnotes.
+				The note system has internally been cleaned up and now allows for
+				more flexible note placement, e.g., side-notes.
+			</p>
+			<p>
+				Bump the minor number as the ABI has been tidied up with respect to
+				footnotes: they're now all within a single block instead of being
+				put here and there.
+				The footer element, which was not used, has also been removed.
+			</p>
+		</aside>
+	</article>
 </articles>
