@@ -466,7 +466,8 @@ rndr_image(struct lowdown_buf *ob,
 	if (!HBUF_PUTSL(ob, "\\includegraphics["))
 		return 0;
 	if (param->attr_width.size || param->attr_height.size) {
-		if (param->attr_width.size) {
+		if (param->attr_width.size &&
+		    param->attr_width.size < sizeof(dimbuf) - 1) {
 			memset(dimbuf, 0, sizeof(dimbuf));
 			memcpy(dimbuf, param->attr_width.data, 
 				param->attr_width.size);
@@ -484,7 +485,8 @@ rndr_image(struct lowdown_buf *ob,
 					return 0;
 			}
 		}
-		if (param->attr_height.size) {
+		if (param->attr_height.size &&
+		    param->attr_height.size < sizeof(dimbuf) - 1) {
 			if (param->attr_width.size && 
 			    !HBUF_PUTSL(ob, ", "))
 				return 0;
