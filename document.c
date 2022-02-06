@@ -3832,6 +3832,7 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 		return -1;
 	if (!pushbuf(&ref->name, data + id_offs, id_end - id_offs))
 		return -1;
+	hbuf_free(contents);
 	return 1;
 err:
 	hbuf_free(contents);
