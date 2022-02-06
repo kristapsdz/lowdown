@@ -142,7 +142,7 @@ liblowdown.a: $(OBJS) $(COMPAT_OBJS)
 
 liblowdown.so: $(OBJS) $(COMPAT_OBJS)
 	$(CC) -shared -o $@.$(LIBVER) $(OBJS) $(COMPAT_OBJS) $(LDFLAGS) $(LDADD_MD5) -Wl,-soname,$@.$(LIBVER)
-	ln -s $@.$(LIBVER) $@
+	ln -sf $@.$(LIBVER) $@
 
 install: all
 	mkdir -p $(DESTDIR)$(BINDIR)
