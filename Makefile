@@ -1,5 +1,5 @@
 .PHONY: regress
-.SUFFIXES: .xml .md .html .pdf .1 .1.html .3 .3.html .5 .5.html .thumb.jpg .png .in.pc .pc
+.SUFFIXES: .xml .md .html .pdf .1 .1.html .3 .3.html .5 .5.html .thumb.jpg .png .in.pc .pc .valgrind
 
 include Makefile.configure
 
@@ -104,6 +104,7 @@ IMAGES		 = screen-mandoc.png \
 THUMBS		 = screen-mandoc.thumb.jpg \
 		   screen-groff.thumb.jpg \
 		   screen-term.thumb.jpg
+VALGRINDS	!= for f in `find regress -name \*.md` ; do echo `dirname $$f`/`basename $$f .md`.valgrind ; done
 
 # Only for MarkdownTestv1.0.3.
 
@@ -119,7 +120,28 @@ REGRESS_ARGS	+= "--parse-no-autolink"
 REGRESS_ARGS	+= "--parse-no-cmark"
 REGRESS_ARGS	+= "--parse-no-deflists"
 
+VALGRIND_ARGS	 = -q --leak-check=full --leak-resolution=high --show-reachable=yes
+
 all: lowdown lowdown-diff liblowdown.so lowdown.pc
+
+valgrind: $(VALGRINDS)
+	@for f in $(VALGRINDS) ; do \
+		if [ -s $$f ]; then \
+			echo `dirname $$f`/`basename $$f .valgrind`.md ; \
+			cat $$f ; \
+		fi ; \
+	done
+
+$(VALGRINDS): lowdown
+
+.md.valgrind:
+	@rm -f $@
+	valgrind $(VALGRIND_ARGS) ./lowdown -s -Thtml $< >/dev/null 2>>$@
+	valgrind $(VALGRIND_ARGS) ./lowdown -s -Tms $< >/dev/null 2>>$@
+	valgrind $(VALGRIND_ARGS) ./lowdown -s -Tman $< >/dev/null 2>>$@
+	valgrind $(VALGRIND_ARGS) ./lowdown -s -Tterm $< >/dev/null 2>>$@
+	valgrind $(VALGRIND_ARGS) ./lowdown -s -Tgemini $< >/dev/null 2>>$@
+	valgrind $(VALGRIND_ARGS) ./lowdown -s -Tlatex $< >/dev/null 2>>$@
 
 www: $(HTMLS) $(PDFS) $(THUMBS) lowdown.tar.gz lowdown.tar.gz.sha512
 
@@ -221,9 +243,9 @@ diff.diff.pdf: diff.md diff.old.md lowdown-diff
 	./lowdown-diff --nroff-no-numbered -s -Tms diff.old.md diff.md | \
 		pdfroff -i -mspdf -t -k > $@
 
-$(HTMLS): versions.xml
+$(HTMLS): versions.xml lowdown
 
-.md.xml: lowdown
+.md.xml:
 	( echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" ; \
 	  echo "<article data-sblg-article=\"1\">" ; \
 	  ./lowdown $< ; \
@@ -279,7 +301,7 @@ clean:
 	rm -f $(OBJS) $(COMPAT_OBJS) main.o
 	rm -f lowdown lowdown-diff liblowdown.a liblowdown.so liblowdown.so.$(LIBVER) lowdown.pc
 	rm -f index.xml diff.xml diff.diff.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
-	rm -f $(PDFS) $(HTMLS) $(THUMBS)
+	rm -f $(PDFS) $(HTMLS) $(THUMBS) $(VALGRINDS)
 	rm -f index.latex.aux index.latex.latex index.latex.log index.latex.out
 
 distclean: clean

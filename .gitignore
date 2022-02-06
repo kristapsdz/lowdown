@@ -14,3 +14,4 @@ lowdown-diff
 lowdown.pc
 lowdown.tar.gz
 lowdown.tar.gz.sha512
+*.valgrind
