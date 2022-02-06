@@ -114,8 +114,8 @@ enum 	htbl_flags {
 
 enum 	halink_type {
 	HALINK_NONE, /* used internally when it is not an autolink */
-	HALINK_NORMAL, /* normal http/http/ftp/mailto/etc link */
-	HALINK_EMAIL /* e-mail link without explit mailto: */
+	HALINK_NORMAL,
+	HALINK_EMAIL
 };
 
 enum	hlist_fl {
@@ -150,25 +150,25 @@ struct	rndr_meta {
 };
 
 struct	rndr_paragraph {
-	size_t lines; /* input lines */
-	int beoln; /* ends on blank line */
+	size_t lines;
+	int beoln;
 };
 
 struct	rndr_normal_text {
-	struct lowdown_buf text; /* basic text */
+	struct lowdown_buf text;
 };
 
 struct	rndr_entity {
-	struct lowdown_buf text; /* entity text */
+	struct lowdown_buf text;
 };
 
 struct	rndr_autolink {
-	struct lowdown_buf link; /* link address */
-	enum halink_type type; /* type of link */
+	struct lowdown_buf link;
+	enum halink_type type;
 };
 
 struct	rndr_raw_html {
-	struct lowdown_buf text; /* raw html buffer */
+	struct lowdown_buf text;
 };
 
 struct	rndr_link {
@@ -179,8 +179,8 @@ struct	rndr_link {
 };
 
 struct	rndr_blockcode {
-	struct lowdown_buf text; /* raw code buffer */
-	struct lowdown_buf lang; /* fence language */
+	struct lowdown_buf text;
+	struct lowdown_buf lang;
 };
 
 struct	rndr_definition {
@@ -188,7 +188,7 @@ struct	rndr_definition {
 };
 
 struct	rndr_codespan {
-	struct lowdown_buf text; /* raw code buffer */
+	struct lowdown_buf text;
 };
 
 struct	rndr_table{
@@ -238,7 +238,7 @@ struct	rndr_image {
 };
 
 struct rndr_math {
-	struct lowdown_buf text; /* equation (opaque) */
+	struct lowdown_buf text;
 	int blockmode;
 };
 

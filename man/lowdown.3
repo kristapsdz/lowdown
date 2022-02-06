@@ -855,9 +855,12 @@ variable given in
 .It Va rndr_math
 For
 .Dv LOWDOWN_MATH ,
-the mode of display
-.Va displaymode :
+the mode of display in
+.Va blockmode :
 if 1, in-line math; if 2, multi-line.
+The opaque equation, which is assumed to be in LaTeX format, is in the
+opaque
+.Va text .
 .It Va rndr_meta
 Each
 .Dv LOWDOWN_META
@@ -922,15 +925,17 @@ the number of
 .Va columns
 in each row and the per-column
 .Va flags ,
-which may be bits of
+which may tested for equality against
 .Dv HTBL_FL_ALIGN_LEFT ,
 .Dv HTBL_FL_ALIGN_RIGHT ,
 or
 .Dv HTBL_FL_ALIGN_CENTER
-when masked with
+after being masked with
 .Dv HTBL_FL_ALIGNMASK ;
 or
 .Dv HTBL_FL_HEADER .
+If no alignment is specified after the mask, the default should be
+left-aligned.
 The number of columns in
 .Va rndr_table ,
 .Va rndr_table_header ,
