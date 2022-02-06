@@ -660,17 +660,27 @@ rndr_doc_header(struct lowdown_buf *ob,
 		return 1;
 
 	if (!HBUF_PUTSL(ob, 
+	    "% Options for packages loaded elsewhere\n"
+	    "\\PassOptionsToPackage{unicode}{hyperref}\n"
+	    "\\PassOptionsToPackage{hyphens}{url}\n"
+	    "%\n"
 	    "\\documentclass[11pt,a4paper]{article}\n"
+	    "\\usepackage{amsmath,amssymb}\n"
+	    "\\usepackage{lmodern}\n"
+	    "\\usepackage{iftex}\n"
+	    "\\ifPDFTeX\n"
+	    "  \\usepackage[T1]{fontenc}\n"
+	    "  \\usepackage[utf8]{inputenc}\n"
+	    "  \\usepackage{textcomp} % provide euro and other symbols\n"
+	    "\\else % if luatex or xetex\n"
+	    "  \\usepackage{unicode-math}\n"
+	    "  \\defaultfontfeatures{Scale=MatchLowercase}\n"
+	    "  \\defaultfontfeatures[\\rmfamily]{Ligatures=TeX,Scale=1}\n"
+	    "\\fi\n"
 	    "\\usepackage{xcolor}\n"
 	    "\\usepackage{graphicx}\n"
 	    "\\usepackage{longtable}\n"
-	    "\\usepackage[utf8]{inputenc}\n"
-	    "\\usepackage[T1]{fontenc}\n"
-	    "\\usepackage{textcomp}\n"
-	    "\\usepackage{lmodern}\n"
 	    "\\usepackage{hyperref}\n"
-	    "\\usepackage{amsmath}\n"
-	    "\\usepackage{amssymb}\n"
 	    "\\begin{document}\n"))
 		return 0;
 
