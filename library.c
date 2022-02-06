@@ -123,8 +123,8 @@ lowdown_render(const struct lowdown_opts *opts,
 		c = lowdown_tree_rndr(ob, n);
 		break;
 	default:
-		abort();
-		/* NOTREACHED */
+		c = 1;
+		break;
 	}
 
 	return c;
