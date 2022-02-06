@@ -1262,10 +1262,9 @@ static int
 rndr_footnote_ref(struct nroff *st, struct bnodeq *obq,
 	struct bnodeq *bq)
 {
-	struct bnode		*bn;
-	void			*pp;
-	size_t			 num = st->footsz;
-	struct lowdown_buf	*ob;
+	struct bnode	*bn;
+	void		*pp;
+	size_t		 num = st->footsz;
 
 	/* 
 	 * Use groff_ms(7)-style automatic footnoting, else just put a
@@ -1290,13 +1289,6 @@ rndr_footnote_ref(struct nroff *st, struct bnodeq *obq,
 	 */
 
 	if (st->man) {
-		if ((ob = hbuf_new(32)) == NULL)
-			return 0;
-		if (!bqueue_flush(ob, obq, 0)) {
-			hbuf_free(ob);
-			return 0;
-		}
-
 		pp = recallocarray(st->foots, st->footsz,
 			st->footsz + 1, sizeof(struct bnodeq *));
 		if (pp == NULL)
@@ -1800,8 +1792,10 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 	}
 
 out:
-	for (i = 0; i < st->footsz; i++)
+	for (i = 0; i < st->footsz; i++) {
 		bqueue_free(st->foots[i]);
+		free(st->foots[i]);
+	}
 
 	free(st->foots);
 	st->footsz = 0;
