@@ -543,9 +543,7 @@ rndr_table(struct lowdown_buf *ob,
 		return 0;
 	if (!hbuf_putb(ob, content))
 		return 0;
-	if (!HBUF_PUTSL(ob, "\\end{tabular}\n"))
-		return 0;
-	return HBUF_PUTSL(ob, "\\end{center}\n");
+	return HBUF_PUTSL(ob, "\\end{longtable}\n");
 }
 
 static int
@@ -554,17 +552,23 @@ rndr_table_header(struct lowdown_buf *ob,
 	const struct rndr_table_header *param)
 {
 	size_t	 i;
+	char	 align;
+	int	 fl;
 
-	if (!HBUF_PUTSL(ob, "\\begin{center}"))
+	if (!HBUF_PUTSL(ob, "\\begin{longtable}[]{"))
 		return 0;
-	if (!HBUF_PUTSL(ob, "\\begin{tabular}{ "))
-		return 0;
 
-	/* FIXME: alignment */
-
-	for (i = 0; i < param->columns; i++)
-		if (!HBUF_PUTSL(ob, "c "))
+	for (i = 0; i < param->columns; i++) {
+		fl = param->flags[i] & HTBL_FL_ALIGNMASK;
+		if (fl == HTBL_FL_ALIGN_CENTER)
+			align = 'c';
+		else if (fl == HTBL_FL_ALIGN_RIGHT)
+			align = 'r';
+		else
+			align = 'l';
+		if (!hbuf_putc(ob, align))
 			return 0;
+	}
 	if (!HBUF_PUTSL(ob, "}\n"))
 		return 0;
 	return hbuf_putb(ob, content);
@@ -659,6 +663,7 @@ rndr_doc_header(struct lowdown_buf *ob,
 	    "\\documentclass[11pt,a4paper]{article}\n"
 	    "\\usepackage{xcolor}\n"
 	    "\\usepackage{graphicx}\n"
+	    "\\usepackage{longtable}\n"
 	    "\\usepackage[utf8]{inputenc}\n"
 	    "\\usepackage[T1]{fontenc}\n"
 	    "\\usepackage{textcomp}\n"

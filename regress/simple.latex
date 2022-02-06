@@ -113,13 +113,12 @@ Footnote text goes here.
 
 Tables can look like this:
 
-\begin{center}\begin{tabular}{ c c c }
+\begin{longtable}[]{lll}
 size & material & color  \\
 9 & leather & brown  \\
 10 & hemp canvas & natural  \\
 11 & glass & transparent  \\
-\end{tabular}
-\end{center}
+\end{longtable}
 
 Table: Shoes, their sizes, and what they're made of
 

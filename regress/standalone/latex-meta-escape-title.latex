@@ -1,6 +1,7 @@
 \documentclass[11pt,a4paper]{article}
 \usepackage{xcolor}
 \usepackage{graphicx}
+\usepackage{longtable}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{textcomp}
