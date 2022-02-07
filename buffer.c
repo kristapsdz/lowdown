@@ -24,6 +24,7 @@
 #endif
 
 #include <assert.h>
+#include <ctype.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -331,4 +332,42 @@ hbuf_shortlink(struct lowdown_buf *out, const struct lowdown_buf *link)
 
 	return HBUF_PUTSL(out, "/...") &&
 		hbuf_put(out, rcp, sz - (rcp - link->data));
+}
+
+/**
+ * Convert the buffer into an identifier.  These are used in various
+ * front-ends for linking to a section identifier.  Use pandoc's format
+ * for these identifiers: lowercase, no specials except some, and
+ * collapsing whitespace into a dash.
+ */
+struct lowdown_buf *
+hbuf_dupname(const struct lowdown_buf *buf)
+{
+	struct lowdown_buf	*nbuf;
+	size_t			 i;
+	int			 last_space = 0;
+	char			 c;
+
+	if ((nbuf = hbuf_new(32)) == NULL)
+		return NULL;
+
+	for (i = 0; i < buf->size; i++) {
+		if (isalnum((unsigned char)buf->data[i]) ||
+		    buf->data[i] == '-' ||
+		    buf->data[i] == '.' ||
+		    buf->data[i] == '_') {
+			c = tolower((unsigned char)buf->data[i]);
+			if (!hbuf_putc(nbuf, c))
+				return 0;
+			last_space = 0;
+		} else if (isspace((unsigned char)buf->data[i])) {
+			if (!last_space) {
+				if (!HBUF_PUTSL(nbuf, "-"))
+					return 0;
+				last_space = 1;
+			}
+		}
+	}
+
+	return nbuf;
 }

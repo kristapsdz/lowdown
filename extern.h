@@ -32,6 +32,7 @@ int		 hbuf_grow(struct lowdown_buf *, size_t);
 int		 hbuf_clone(const struct lowdown_buf *, struct lowdown_buf *);
 struct lowdown_buf *hbuf_dup(const struct lowdown_buf *);
 struct lowdown_buf *hbuf_new(size_t) __attribute__((malloc));
+struct lowdown_buf *hbuf_dupname(const struct lowdown_buf *);
 int		 hbuf_printf(struct lowdown_buf *, const char *, ...) 
 			__attribute__((format (printf, 2, 3)));
 int		 hbuf_put(struct lowdown_buf *, const char *, size_t);
