@@ -17,6 +17,13 @@
 #ifndef EXTERN_H
 #define EXTERN_H
 
+struct	hentry {
+	struct lowdown_buf	*buf;
+	TAILQ_ENTRY(hentry) 	 entries;
+};
+
+TAILQ_HEAD(hentryq, hentry);
+
 int	 	 smarty(struct lowdown_node *, size_t, enum lowdown_type);
 
 int32_t	 	 entity_find_iso(const struct lowdown_buf *);
@@ -31,6 +38,7 @@ void		 hbuf_free(struct lowdown_buf *);
 int		 hbuf_grow(struct lowdown_buf *, size_t);
 int		 hbuf_clone(const struct lowdown_buf *, struct lowdown_buf *);
 struct lowdown_buf *hbuf_dup(const struct lowdown_buf *);
+struct lowdown_buf *hbuf_id(const struct lowdown_buf *, struct hentryq *);
 struct lowdown_buf *hbuf_new(size_t) __attribute__((malloc));
 struct lowdown_buf *hbuf_dupname(const struct lowdown_buf *);
 int		 hbuf_printf(struct lowdown_buf *, const char *, ...) 
@@ -42,6 +50,7 @@ int		 hbuf_putf(struct lowdown_buf *, FILE *);
 int		 hbuf_puts(struct lowdown_buf *, const char *);
 void		 hbuf_truncate(struct lowdown_buf *);
 int		 hbuf_shortlink(struct lowdown_buf *, const struct lowdown_buf *);
+void		 hentryq_clear(struct hentryq *);
 
 #define 	 HBUF_PUTSL(output, literal) \
 		 hbuf_put(output, literal, sizeof(literal) - 1)

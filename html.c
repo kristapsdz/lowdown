@@ -36,20 +36,10 @@
 #include "extern.h"
 
 /*
- * Queue entry for header names.  Keep these so we can make sure that
- * headers have a unique "id" for themselves.
- */
-struct	hentry {
-	struct lowdown_buf	*buf; /* header name */
-	size_t	 	 	 count; /* references */
-	TAILQ_ENTRY(hentry) 	 entries;
-};
-
-/*
  * Our internal state object.
  */
 struct 	html {
-	TAILQ_HEAD(, hentry) 	  headers_used; /* headers we've seen */
+	struct hentryq	 	  headers_used; /* headers we've seen */
 	ssize_t			  headers_offs; /* header offset */
 	unsigned int 		  flags; /* "oflags" in lowdown_opts */
 	int			  noescape; /* don't escape text */
@@ -312,55 +302,14 @@ rndr_linebreak(struct lowdown_buf *ob)
 	return HBUF_PUTSL(ob, "<br/>\n");
 }
 
-/*
- * Given the header with non-empty content "header", fill "ob" with the
- * identifier used for the header.
- * This will reference-count the header so we don't have duplicates.
- * Return zero on failure (memory), non-zero on success.
- */
-static int
-rndr_header_id(struct lowdown_buf *ob,
-	const struct lowdown_buf *header, struct html *st)
-{
-	struct hentry		*hentry;
-	struct lowdown_buf	*buf;
-
-	if ((buf = hbuf_dupname(header)) == NULL)
-		return 0;
-	if (!hbuf_putb(ob, buf))
-		return 0;
-
-	TAILQ_FOREACH(hentry, &st->headers_used, entries)
-		if (hbuf_eq(hentry->buf, buf))
-			break;
-
-	/*
-	 * FIXME: if we have a header named "foo-2", then two headers
-	 * named "foo", we'll inadvertently have a collision.
-	 */
-
-	if (hentry != NULL) {
-		hbuf_free(buf);
-		return hbuf_printf(ob, "-%zu", hentry->count++);
-	}
-
-	/* Create new header entry. */
-
-	if ((hentry = calloc(1, sizeof(struct hentry))) == NULL)
-		return 0;
-	TAILQ_INSERT_TAIL(&st->headers_used, hentry, entries);
-	hentry->count = 1;
-	hentry->buf = buf;
-	return 1;
-}
-
 static int
 rndr_header(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
 	const struct rndr_header *param, 
 	struct html *st)
 {
-	ssize_t	level;
+	ssize_t			 level;
+	struct lowdown_buf	*buf;
 
 	level = (ssize_t)param->level + st->headers_offs;
 	if (level < 1)
@@ -385,7 +334,10 @@ rndr_header(struct lowdown_buf *ob,
 	    (st->flags & LOWDOWN_HTML_HEAD_IDS)) {
 		if (!HBUF_PUTSL(ob, " id=\""))
 			return 0;
-		if (!rndr_header_id(ob, content, st))
+		buf = hbuf_id(content, &st->headers_used);
+		if (buf == NULL)
+			return 0;
+		if (!hbuf_putb(ob, buf))
 			return 0;
 		if (!HBUF_PUTSL(ob, "\""))
 			return 0;
@@ -1371,6 +1323,7 @@ lowdown_html_rndr(struct lowdown_buf *ob,
 	int			 rc;
 	size_t			 i;
 
+	TAILQ_INIT(&st->headers_used);
 	TAILQ_INIT(&metaq);
 	st->headers_offs = 1;
 
@@ -1383,6 +1336,7 @@ lowdown_html_rndr(struct lowdown_buf *ob,
 	st->footsz = 0;
 	st->foots = NULL;
 	lowdown_metaq_free(&metaq);
+	hentryq_clear(&st->headers_used);
 	return rc;
 }
 
@@ -1394,7 +1348,6 @@ lowdown_html_new(const struct lowdown_opts *opts)
 	if ((p = calloc(1, sizeof(struct html))) == NULL)
 		return NULL;
 
-	TAILQ_INIT(&p->headers_used);
 	p->flags = opts == NULL ? 0 : opts->oflags;
 	return p;
 }
@@ -1402,17 +1355,6 @@ lowdown_html_new(const struct lowdown_opts *opts)
 void
 lowdown_html_free(void *arg)
 {
-	struct html	*st = arg;
-	struct hentry	*hentry;
 
-	if (st == NULL)
-		return;
-
-	while ((hentry = TAILQ_FIRST(&st->headers_used)) != NULL) {
-		TAILQ_REMOVE(&st->headers_used, hentry, entries);
-		hbuf_free(hentry->buf);
-		free(hentry);
-	}
-
-	free(st);
+	free(arg);
 }

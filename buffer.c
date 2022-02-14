@@ -371,3 +371,76 @@ hbuf_dupname(const struct lowdown_buf *buf)
 
 	return nbuf;
 }
+
+/*
+ * Return a unique header identifier for "header".  Return zero on
+ * failure (memory), non-zero on success.  The new value is appended to
+ * the queue, which must be freed with hentryq_clear at some point.
+ */
+struct lowdown_buf *
+hbuf_id(const struct lowdown_buf *header, struct hentryq *q)
+{
+	struct lowdown_buf	*buf = NULL, *nbuf = NULL;
+	size_t			 count;
+	struct hentry		*he = NULL, *entry;
+
+	if ((buf = hbuf_dupname(header)) == NULL)
+		goto out;
+
+	TAILQ_FOREACH(entry, q, entries)
+		if (hbuf_eq(entry->buf, buf))
+			break;
+
+	if (entry == NULL) {
+		he = calloc(1, sizeof(struct hentry));
+		if (he == NULL)
+			goto out;
+		TAILQ_INSERT_TAIL(q, he, entries);
+		he->buf = buf;
+		return buf;
+	}
+
+	if ((nbuf = hbuf_new(32)) == NULL)
+		goto out;
+
+	for (count = 1;; count++) {
+		hbuf_truncate(nbuf);
+		if (!hbuf_putb(nbuf, buf))
+			goto out;
+		if (!hbuf_printf(nbuf, "-%zu", count))
+			goto out;
+		TAILQ_FOREACH(entry, q, entries)
+			if (hbuf_eq(entry->buf, nbuf))
+				break;
+		if (entry == NULL) {
+			he = calloc(1, sizeof(struct hentry));
+			if (he == NULL)
+				goto out;
+			TAILQ_INSERT_TAIL(q, he, entries);
+			he->buf = nbuf;
+			hbuf_free(buf);
+			return nbuf;
+		}
+	}
+out:
+	hbuf_free(buf);
+	hbuf_free(nbuf);
+	free(he);
+	return NULL;
+}
+
+void
+hentryq_clear(struct hentryq *q)
+{
+	struct hentry	*he;
+
+	if (q == NULL)
+		return;
+
+	while ((he = TAILQ_FIRST(q)) != NULL) {
+		TAILQ_REMOVE(q, he, entries);
+		hbuf_free(he->buf);
+		free(he);
+	}
+}
+
