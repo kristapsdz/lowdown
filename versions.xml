@@ -1228,29 +1228,38 @@
 		<header>
 			<h1>0.11.0</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2022-02-05">2022-02-05</time>
+			<time datetime="2022-02-13">2022-02-13</time>
 		</header>
 		<aside>
 			<p>
-				Add class and identifier extended attributes to headers.
-				These are stipulated in PHP Markdown Extra.
+				Add class and identifier extended attributes to headers.  These are
+				stipulated in PHP Markdown Extra.
 			</p>
 			<p>
 				When using header identifiers (the default) and the names collide,
-				start the suffixed count from one, just like pandoc.
+				use pandoc's method of creating unique header names.
 			</p>
 			<p>
 				Fix footnotes to be actual footnotes in <b>-Tlatex</b> and
 				<b>-Tms</b> instead of endnotes.  The other formats (<b>-Tman</b>,
-				etc.) all continue to use endnotes.
-				The note system has internally been cleaned up and now allows for
-				more flexible note placement, e.g., side-notes.
+				etc.) all continue to use endnotes.  The note system has internally
+				been cleaned up and now allows for more flexible note placement,
+				e.g., side-notes.
+			</p>
+			<p>
+				Allow footnotes to properly exist in <b>-Tlatex</b> tables.  Also
+				allow for table alignment.
 			</p>
 			<p>
 				Bump the minor number as the ABI has been tidied up with respect to
 				footnotes: they're now all within a single block instead of being
 				put here and there.
 				The footer element, which was not used, has also been removed.
+			</p>
+			<p>
+				The system in general has spent many, many computer-hours being
+				fuzzed with <a href="https://lcamtuf.coredump.cx/afl/">AFL</a>
+				thanks to hardware donated by Michael Dexter. Thank you!
 			</p>
 		</aside>
 	</article>
