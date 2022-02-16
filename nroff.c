@@ -348,7 +348,6 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq, int esc)
 
 		if (bn->scope == BSCOPE_PDFHREF &&
 		    ob->size > 0 && 
-		    ob->data[ob->size - 1] != ' ' &&
 		    ob->data[ob->size - 1] != '\n' &&
 		    !hbuf_puts(ob, "\\c"))
 			return 0;
@@ -448,14 +447,22 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq, int esc)
 			return 0;
 
 		/* 
-		 * Macro arguments follow after space.
-		 * These must all be printed on the same line.
+		 * Macro arguments follow after space.  For links, these
+		 * must all be printed on the same line.
 		 */
 
-		if (bn->nargs != NULL) {
+		if (bn->nargs != NULL &&
+		    bn->scope == BSCOPE_BLOCK) {
 			assert(nextblk);
-			assert(bn->scope == BSCOPE_BLOCK ||
-				bn->scope == BSCOPE_PDFHREF);
+			if (!hbuf_putc(ob, ' '))
+				return 0;
+			if (!hbuf_puts(ob, bn->nargs))
+				return 0;
+		}
+
+		if (bn->nargs != NULL &&
+		    bn->scope == BSCOPE_PDFHREF) {
+			assert(nextblk);
 			if (!hbuf_putc(ob, ' '))
 				return 0;
 			for (cp = bn->nargs; *cp != '\0'; cp++)
