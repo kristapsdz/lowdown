@@ -345,7 +345,7 @@ hbuf_dupname(const struct lowdown_buf *buf)
 {
 	struct lowdown_buf	*nbuf;
 	size_t			 i;
-	int			 last_space = 0;
+	int			 last_space = 1;
 	char			 c;
 
 	if ((nbuf = hbuf_new(32)) == NULL)
