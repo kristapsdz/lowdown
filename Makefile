@@ -105,6 +105,7 @@ THUMBS		 = screen-mandoc.thumb.jpg \
 		   screen-groff.thumb.jpg \
 		   screen-term.thumb.jpg
 VALGRINDS	!= for f in `find regress -name \*.md` ; do echo `dirname $$f`/`basename $$f .md`.valgrind ; done
+CFLAGS		+= -fPIC
 
 # Only for MarkdownTestv1.0.3.
 
