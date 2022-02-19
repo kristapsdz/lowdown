@@ -349,7 +349,7 @@ hbuf_dupname(const struct lowdown_buf *buf)
 	char			 c;
 
 	if ((nbuf = hbuf_new(32)) == NULL)
-		return NULL;
+		goto err;
 
 	for (i = 0; i < buf->size; i++) {
 		if (isalnum((unsigned char)buf->data[i]) ||
@@ -358,18 +358,24 @@ hbuf_dupname(const struct lowdown_buf *buf)
 		    buf->data[i] == '_') {
 			c = tolower((unsigned char)buf->data[i]);
 			if (!hbuf_putc(nbuf, c))
-				return 0;
+				goto err;
 			last_space = 0;
 		} else if (isspace((unsigned char)buf->data[i])) {
 			if (!last_space) {
 				if (!HBUF_PUTSL(nbuf, "-"))
-					return 0;
+					goto err;
 				last_space = 1;
 			}
 		}
 	}
 
+	if (nbuf->size == 0 && !HBUF_PUTSL(nbuf, "section"))
+		goto err;
+
 	return nbuf;
+err:
+	hbuf_free(nbuf);
+	return NULL;
 }
 
 /*
