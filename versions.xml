@@ -1237,7 +1237,15 @@
 			</p>
 			<p>
 				When using header identifiers (the default) and the names collide,
-				use pandoc's method of creating unique header names.
+                                use pandoc's method of creating unique header names. Also handle
+                                the case of markup in headers and the identifier created from those
+				to also be like pandoc.  This isn't a fix, but does make output
+				consistent with other tools.
+			</p>
+			<p>
+				Fix output of how links are handled in <b>-Tms</b> when part of
+				headers.  The same applies to other block-level macros with link
+				children such as in definition lists.
 			</p>
 			<p>
 				Fix footnotes to be actual footnotes in <b>-Tlatex</b> and
@@ -1251,10 +1259,10 @@
 				allow for table alignment.
 			</p>
 			<p>
-				Bump the minor number as the ABI has been tidied up with respect to
-				footnotes: they're now all within a single block instead of being
-				put here and there.
-				The footer element, which was not used, has also been removed.
+                                Bump the minor number as the ABI has been tidied up with respect to
+                                footnotes: they're now all within a single block instead of being
+                                put here and there. The footer element, which was not used, has
+                                also been removed.
 			</p>
 			<p>
 				The system in general has spent many, many computer-hours being
