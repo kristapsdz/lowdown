@@ -302,14 +302,66 @@ rndr_linebreak(struct lowdown_buf *ob)
 	return HBUF_PUTSL(ob, "<br/>\n");
 }
 
+/*
+ * Output a header identifier, e.g., the one in <h1 id="a-b-c">a b
+ * c</h1>.  Do so by stripping all HTML content out of "content" and
+ * passing the result to hbuf_id() for registering as an identifier.
+ * This ensures that our identifiers are consistent with pandoc for
+ * nested content in headers.  Returns TRUE on success, FALSE on failure
+ * (memory).
+ */
 static int
-rndr_header(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	const struct rndr_header *param, 
+rndr_id(struct lowdown_buf *ob, const struct lowdown_buf *content,
 	struct html *st)
 {
-	ssize_t			 level;
-	struct lowdown_buf	*buf;
+	struct lowdown_buf		*nbuf;
+	const struct lowdown_buf	*buf;
+	size_t			 	 i, depth;
+
+	if ((nbuf = hbuf_new(32)) == NULL)
+		return 0;
+
+	/* Strip elements, which may be nested, and entities. */
+
+	for (depth = i = 0; i < content->size; i++) {
+		if (content->data[i] == '<') {
+			depth++;
+			for (i++; depth > 0 && i < content->size; i++)
+				if (content->data[i] == '>')
+					depth--;
+			i--;
+			continue;
+		} else if (content->data[i] == '&') {
+			for (i++; i < content->size; i++)
+				if (content->data[i] == ';')
+					break;
+			continue;
+		}
+		if (!hbuf_putc(nbuf, content->data[i])) {
+			hbuf_free(nbuf);
+			return 0;
+		}
+	}
+
+	/* Push stripped text into header formatter. */
+
+	buf = hbuf_id(nbuf, &st->headers_used);
+	hbuf_free(nbuf);
+	if (buf == NULL)
+		return 0;
+	return hbuf_putb(ob, buf);
+}
+
+static int
+rndr_header(struct lowdown_buf *ob, const struct lowdown_buf *content,
+	const struct rndr_header *param, struct html *st)
+{
+	ssize_t	 level;
+
+	/*
+	 * The <hN> level take into account shifteheadinglevelby
+	 * metadata, so offset it here.  Bound us below <h6>.
+	 */
 
 	level = (ssize_t)param->level + st->headers_offs;
 	if (level < 1)
@@ -319,9 +371,13 @@ rndr_header(struct lowdown_buf *ob,
 
 	if (ob->size && !hbuf_putc(ob, '\n'))
 		return 0;
-
 	if (!hbuf_printf(ob, "<h%zu", level))
 		return 0;
+
+	/*
+	 * Identifiers can either come from header attributes or as
+	 * computed from the content of the header.
+	 */
 
 	if (param->attr_id.size) {
 		if (!HBUF_PUTSL(ob, " id=\""))
@@ -330,18 +386,16 @@ rndr_header(struct lowdown_buf *ob,
 			return 0;
 		if (!HBUF_PUTSL(ob, "\""))
 			return 0;
-	} else if (content->size &&
-	    (st->flags & LOWDOWN_HTML_HEAD_IDS)) {
+	} else if (st->flags & LOWDOWN_HTML_HEAD_IDS) {
 		if (!HBUF_PUTSL(ob, " id=\""))
 			return 0;
-		buf = hbuf_id(content, &st->headers_used);
-		if (buf == NULL)
-			return 0;
-		if (!hbuf_putb(ob, buf))
+		if (!rndr_id(ob, content, st))
 			return 0;
 		if (!HBUF_PUTSL(ob, "\""))
 			return 0;
 	}
+
+	/* Optional header class. */
 
 	if (param->attr_cls.size) {
 		if (!HBUF_PUTSL(ob, " class=\""))
@@ -354,7 +408,6 @@ rndr_header(struct lowdown_buf *ob,
 
 	if (!HBUF_PUTSL(ob, ">"))
 		return 0;
-
 	if (!hbuf_putb(ob, content))
 		return 0;
 	return hbuf_printf(ob, "</h%zu>\n", level);

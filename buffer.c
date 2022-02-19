@@ -383,7 +383,7 @@ err:
  * failure (memory), non-zero on success.  The new value is appended to
  * the queue, which must be freed with hentryq_clear at some point.
  */
-struct lowdown_buf *
+const struct lowdown_buf *
 hbuf_id(const struct lowdown_buf *header, struct hentryq *q)
 {
 	struct lowdown_buf	*buf = NULL, *nbuf = NULL;
