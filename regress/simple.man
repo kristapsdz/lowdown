@@ -166,19 +166,29 @@ A horizontal rule follows.
 \l'2i'
 .LP
 Here\[u2019]s a definition list:
-.IP "apples"
+.LP
+apples
+.if n \
+.sp -1v
+.if t \
+.sp -0.25v
+.IP "" \*(PI
 Good for making applesauce.
+.LP
+oranges
 .if n \
-.sp -1
+.sp -1v
 .if t \
 .sp -0.25v
-.IP "oranges"
+.IP "" \*(PI
 Citrus!
+.LP
+tomatoes
 .if n \
-.sp -1
+.sp -1v
 .if t \
 .sp -0.25v
-.IP "tomatoes"
+.IP "" \*(PI
 There\[u2019]s no \[u201C]e\[u201D] in tomatoe.
 .LP
 Again, text is indented 4 spaces. (Put a blank line between each

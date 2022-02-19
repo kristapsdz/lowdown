@@ -716,20 +716,35 @@ rndr_blockcode(const struct nroff *st, struct bnodeq *obq,
 static int
 rndr_definition_title(struct bnodeq *obq, struct bnodeq *bq)
 {
-	struct bnode	*bn;
 
-	if ((bn = bqueue_block(obq, ".IP")) == NULL)
+	if (bqueue_block(obq, ".LP") == NULL)
 		return 0;
-	return bqueue_to_nargs(bn, bq, 1);
+	TAILQ_CONCAT(obq, bq, entries);
+	return 1;
 }
 
 static int
 rndr_definition_data(struct bnodeq *obq, struct bnodeq *bq)
 {
-	/* 
-	 * Strip out leading paragraphs.
-	 * XXX: shouldn't these all be handled by the child list item?
+	/*
+	 * The IP creates an empty vertical space til I figure out a
+	 * better way to do hanging lists, so account for it by backing
+	 * up first.
+	 *
+	 * XXX: this produces different results on mandoc and groff as
+	 * of 2022-02-19: mandoc backs up one space, while groff backs
+	 * up two.  The groff behaviour is what we want, so that the
+	 * text is flush on the next line, but this is good enough.
 	 */
+
+	if (bqueue_block(obq, ".if n \\\n.sp -1v") == NULL)
+		return 0;
+	if (bqueue_block(obq, ".if t \\\n.sp -0.25v\n") == NULL)
+		return 0;
+	if (bqueue_block(obq, ".IP \"\" \\*(PI") == NULL)
+		return 0;
+
+	/* Strip out leading paragraphs. */
 
 	bqueue_strip_paras(bq);
 	TAILQ_CONCAT(obq, bq, entries);
@@ -896,10 +911,10 @@ rndr_listitem(struct bnodeq *obq, const struct lowdown_node *n,
 	 * list item that comes after us (i.e., anything after us).
 	 */
 
-	if (n->rndr_listitem.flags & HLIST_FL_BLOCK)
+	if ((n->rndr_listitem.flags & HLIST_FL_BLOCK) ||
+	    (n->rndr_listitem.flags & HLIST_FL_DEF))
 		return 1;
-	if (n->rndr_listitem.flags & HLIST_FL_DEF)
-		n = n->parent;
+
 	if (TAILQ_NEXT(n, entries) != NULL) {
 		if (bqueue_block(obq, ".if n \\\n.sp -1") == NULL)
 			return 0;
