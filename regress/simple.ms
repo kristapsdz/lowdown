@@ -133,11 +133,11 @@ Notice again how text always lines up on 4-space indents (including
 that last line which continues item 3 above).
 .PP
 Here\[u2019]s a link to \c
-.pdfhref W -A "\c" -D http://foo.bar a website
+.pdfhref W -A "\c" -D http://foo.bar -- a website
 , to a \c
-.pdfhref W -A "\c" -D local-doc.html local doc
+.pdfhref W -A "\c" -D local-doc.html -- local doc
 , and to a \c
-.pdfhref W -A "\c" -D #an-h2-header section heading in the current doc
+.pdfhref W -A "\c" -D #an-h2-header -- section heading in the current doc
 \&. Here\[u2019]s a footnote \**
 .FS
 Footnote text goes here.

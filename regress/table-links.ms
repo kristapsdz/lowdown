@@ -13,225 +13,225 @@ T}
 T{
 9
 T}|T{
-.pdfhref W -D http://www.foo.com http://www.foo.com
+.pdfhref W -D http://www.foo.com -- http://www.foo.com
 T}|T{
-.pdfhref W -D https://foo.com foo
+.pdfhref W -D https://foo.com -- foo
 T}
 T{
 10
 T}|T{
-.pdfhref W -D http://www.bar.com http://www.bar.com
+.pdfhref W -D http://www.bar.com -- http://www.bar.com
 T}|T{
-.pdfhref W -D https://baz.com https://baz.com
+.pdfhref W -D https://baz.com -- https://baz.com
 T}
 T{
 9
 T}|T{
-.pdfhref W -D http://www.foo.com http://www.foo.com
+.pdfhref W -D http://www.foo.com -- http://www.foo.com
 T}|T{
-.pdfhref W -D https://foo.com foo
+.pdfhref W -D https://foo.com -- foo
 T}
 T{
 10
 T}|T{
-.pdfhref W -D http://www.bar.com http://www.bar.com
+.pdfhref W -D http://www.bar.com -- http://www.bar.com
 T}|T{
-.pdfhref W -D https://baz.com https://baz.com
+.pdfhref W -D https://baz.com -- https://baz.com
 T}
 T{
 9
 T}|T{
-.pdfhref W -D http://www.foo.com http://www.foo.com
+.pdfhref W -D http://www.foo.com -- http://www.foo.com
 T}|T{
-.pdfhref W -D https://foo.com foo
+.pdfhref W -D https://foo.com -- foo
 T}
 T{
 10
 T}|T{
-.pdfhref W -D http://www.bar.com http://www.bar.com
+.pdfhref W -D http://www.bar.com -- http://www.bar.com
 T}|T{
-.pdfhref W -D https://baz.com https://baz.com
+.pdfhref W -D https://baz.com -- https://baz.com
 T}
 T{
 9
 T}|T{
-.pdfhref W -D http://www.foo.com http://www.foo.com
+.pdfhref W -D http://www.foo.com -- http://www.foo.com
 T}|T{
-.pdfhref W -D https://foo.com foo
+.pdfhref W -D https://foo.com -- foo
 T}
 T{
 10
 T}|T{
-.pdfhref W -D http://www.bar.com http://www.bar.com
+.pdfhref W -D http://www.bar.com -- http://www.bar.com
 T}|T{
-.pdfhref W -D https://baz.com https://baz.com
+.pdfhref W -D https://baz.com -- https://baz.com
 T}
 T{
 9
 T}|T{
-.pdfhref W -D http://www.foo.com http://www.foo.com
+.pdfhref W -D http://www.foo.com -- http://www.foo.com
 T}|T{
-.pdfhref W -D https://foo.com foo
+.pdfhref W -D https://foo.com -- foo
 T}
 T{
 10
 T}|T{
-.pdfhref W -D http://www.bar.com http://www.bar.com
+.pdfhref W -D http://www.bar.com -- http://www.bar.com
 T}|T{
-.pdfhref W -D https://baz.com https://baz.com
+.pdfhref W -D https://baz.com -- https://baz.com
 T}
 T{
 9
 T}|T{
-.pdfhref W -D http://www.foo.com http://www.foo.com
+.pdfhref W -D http://www.foo.com -- http://www.foo.com
 T}|T{
-.pdfhref W -D https://foo.com foo
+.pdfhref W -D https://foo.com -- foo
 T}
 T{
 10
 T}|T{
-.pdfhref W -D http://www.bar.com http://www.bar.com
+.pdfhref W -D http://www.bar.com -- http://www.bar.com
 T}|T{
-.pdfhref W -D https://baz.com https://baz.com
+.pdfhref W -D https://baz.com -- https://baz.com
 T}
 T{
 9
 T}|T{
-.pdfhref W -D http://www.foo.com http://www.foo.com
+.pdfhref W -D http://www.foo.com -- http://www.foo.com
 T}|T{
-.pdfhref W -D https://foo.com foo
+.pdfhref W -D https://foo.com -- foo
 T}
 T{
 10
 T}|T{
-.pdfhref W -D http://www.bar.com http://www.bar.com
+.pdfhref W -D http://www.bar.com -- http://www.bar.com
 T}|T{
-.pdfhref W -D https://baz.com https://baz.com
+.pdfhref W -D https://baz.com -- https://baz.com
 T}
 T{
 9
 T}|T{
-.pdfhref W -D http://www.foo.com http://www.foo.com
+.pdfhref W -D http://www.foo.com -- http://www.foo.com
 T}|T{
-.pdfhref W -D https://foo.com foo
+.pdfhref W -D https://foo.com -- foo
 T}
 T{
 10
 T}|T{
-.pdfhref W -D http://www.bar.com http://www.bar.com
+.pdfhref W -D http://www.bar.com -- http://www.bar.com
 T}|T{
-.pdfhref W -D https://baz.com https://baz.com
+.pdfhref W -D https://baz.com -- https://baz.com
 T}
 T{
 9
 T}|T{
-.pdfhref W -D http://www.foo.com http://www.foo.com
+.pdfhref W -D http://www.foo.com -- http://www.foo.com
 T}|T{
-.pdfhref W -D https://foo.com foo
+.pdfhref W -D https://foo.com -- foo
 T}
 T{
 10
 T}|T{
-.pdfhref W -D http://www.bar.com http://www.bar.com
+.pdfhref W -D http://www.bar.com -- http://www.bar.com
 T}|T{
-.pdfhref W -D https://baz.com https://baz.com
+.pdfhref W -D https://baz.com -- https://baz.com
 T}
 T{
 9
 T}|T{
-.pdfhref W -D http://www.foo.com http://www.foo.com
+.pdfhref W -D http://www.foo.com -- http://www.foo.com
 T}|T{
-.pdfhref W -D https://foo.com foo
+.pdfhref W -D https://foo.com -- foo
 T}
 T{
 10
 T}|T{
-.pdfhref W -D http://www.bar.com http://www.bar.com
+.pdfhref W -D http://www.bar.com -- http://www.bar.com
 T}|T{
-.pdfhref W -D https://baz.com https://baz.com
+.pdfhref W -D https://baz.com -- https://baz.com
 T}
 T{
 9
 T}|T{
-.pdfhref W -D http://www.foo.com http://www.foo.com
+.pdfhref W -D http://www.foo.com -- http://www.foo.com
 T}|T{
-.pdfhref W -D https://foo.com foo
+.pdfhref W -D https://foo.com -- foo
 T}
 T{
 10
 T}|T{
-.pdfhref W -D http://www.bar.com http://www.bar.com
+.pdfhref W -D http://www.bar.com -- http://www.bar.com
 T}|T{
-.pdfhref W -D https://baz.com https://baz.com
+.pdfhref W -D https://baz.com -- https://baz.com
 T}
 T{
 9
 T}|T{
-.pdfhref W -D http://www.foo.com http://www.foo.com
+.pdfhref W -D http://www.foo.com -- http://www.foo.com
 T}|T{
-.pdfhref W -D https://foo.com foo
+.pdfhref W -D https://foo.com -- foo
 T}
 T{
 10
 T}|T{
-.pdfhref W -D http://www.bar.com http://www.bar.com
+.pdfhref W -D http://www.bar.com -- http://www.bar.com
 T}|T{
-.pdfhref W -D https://baz.com https://baz.com
+.pdfhref W -D https://baz.com -- https://baz.com
 T}
 T{
 9
 T}|T{
-.pdfhref W -D http://www.foo.com http://www.foo.com
+.pdfhref W -D http://www.foo.com -- http://www.foo.com
 T}|T{
-.pdfhref W -D https://foo.com foo
+.pdfhref W -D https://foo.com -- foo
 T}
 T{
 10
 T}|T{
-.pdfhref W -D http://www.bar.com http://www.bar.com
+.pdfhref W -D http://www.bar.com -- http://www.bar.com
 T}|T{
-.pdfhref W -D https://baz.com https://baz.com
+.pdfhref W -D https://baz.com -- https://baz.com
 T}
 T{
 9
 T}|T{
-.pdfhref W -D http://www.foo.com http://www.foo.com
+.pdfhref W -D http://www.foo.com -- http://www.foo.com
 T}|T{
-.pdfhref W -D https://foo.com foo
+.pdfhref W -D https://foo.com -- foo
 T}
 T{
 10
 T}|T{
-.pdfhref W -D http://www.bar.com http://www.bar.com
+.pdfhref W -D http://www.bar.com -- http://www.bar.com
 T}|T{
-.pdfhref W -D https://baz.com https://baz.com
+.pdfhref W -D https://baz.com -- https://baz.com
 T}
 T{
 9
 T}|T{
-.pdfhref W -D http://www.foo.com http://www.foo.com
+.pdfhref W -D http://www.foo.com -- http://www.foo.com
 T}|T{
-.pdfhref W -D https://foo.com foo
+.pdfhref W -D https://foo.com -- foo
 T}
 T{
 10
 T}|T{
-.pdfhref W -D http://www.bar.com http://www.bar.com
+.pdfhref W -D http://www.bar.com -- http://www.bar.com
 T}|T{
-.pdfhref W -D https://baz.com https://baz.com
+.pdfhref W -D https://baz.com -- https://baz.com
 T}
 T{
 9
 T}|T{
-.pdfhref W -D http://www.foo.com http://www.foo.com
+.pdfhref W -D http://www.foo.com -- http://www.foo.com
 T}|T{
-.pdfhref W -D https://foo.com foo
+.pdfhref W -D https://foo.com -- foo
 T}
 T{
 10
 T}|T{
-.pdfhref W -D http://www.bar.com http://www.bar.com
+.pdfhref W -D http://www.bar.com -- http://www.bar.com
 T}|T{
-.pdfhref W -D https://baz.com https://baz.com
+.pdfhref W -D https://baz.com -- https://baz.com
 T}
 .TE

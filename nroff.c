@@ -644,7 +644,7 @@ putlink(struct bnodeq *obq, struct nroff *st,
 			goto out;
 	}
 
-	if (!HBUF_PUTSL(ob, " "))
+	if (!HBUF_PUTSL(ob, " -- "))
 		goto out;
 	if (bq == NULL && !hbuf_putb(ob, link))
 		goto out;
