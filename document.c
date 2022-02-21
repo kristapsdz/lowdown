@@ -1409,25 +1409,54 @@ parse_ext_attrs(const char *data, size_t size,
 static int
 parse_header_ext_attrs(struct lowdown_node *n)
 {
-	struct lowdown_node	*nn;
+	struct lowdown_node	*nn, *prev;
 	struct lowdown_buf	*b, *attrid = NULL, *attrcls = NULL;
 	size_t			 i;
 	int			 rc = 0;
 
-	if ((nn = TAILQ_LAST(&n->children, lowdown_nodeq)) == NULL ||
-	    nn->type != LOWDOWN_NORMAL_TEXT)
+	/*
+	 * The last node on the line must be non-empty normal text and
+	 * must end with a '}'.
+	 */
+
+	nn = TAILQ_LAST(&n->children, lowdown_nodeq);
+	if (nn == NULL ||
+	    nn->type != LOWDOWN_NORMAL_TEXT ||
+	    nn->rndr_normal_text.text.size == 0 ||
+	    nn->rndr_normal_text.text.data
+	     [nn->rndr_normal_text.text.size - 1] != '}')
 		return 1;
+
+	/*
+	 * Consolidate trailing text nodes so that we can study them.
+	 * Otherwise, having an "w" in the text, for instance, would
+	 * produce its own text node.
+	 */
+
+	for (;;) {
+		prev = TAILQ_PREV(nn, lowdown_nodeq, entries);
+		if (prev == NULL || prev->type != LOWDOWN_NORMAL_TEXT)
+			break;
+		if (!hbuf_putb
+		    (&prev->rndr_normal_text.text,
+		     &nn->rndr_normal_text.text))
+			return 0;
+		TAILQ_REMOVE(&n->children, nn, entries);
+		lowdown_node_free(nn);
+		nn = prev;
+	}
+
+	/* Scan from the trailing '}' to the opening '{'. */
 
 	b = &nn->rndr_normal_text.text;
-	if (b->size == 0 ||
-	    b->data[b->size - 1] != '}')
-		return 1;
-
+	assert(b->size && b->data[b->size - 1] == '}');
 	for (i = b->size - 1; i > 0; i--)
 		if (b->data[i] == '{')
 			break;
 	if (b->data[i] != '{')
 		return 1;
+
+	/* Parse the extended attributes. */
 
 	if (!parse_ext_attrs(&b->data[i + 1], b->size - i - 2,
 	    &attrid, &attrcls, NULL, NULL))
