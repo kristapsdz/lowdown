@@ -1228,18 +1228,19 @@
 		<header>
 			<h1>0.11.0</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2022-02-13">2022-02-13</time>
+			<time datetime="2022-02-21">2022-02-21</time>
 		</header>
 		<aside>
 			<p>
 				Add class and identifier extended attributes to headers.  These are
-				stipulated in PHP Markdown Extra.
+				stipulated in PHP Markdown Extra.  Documentation in
+				<a href="lowdown.5.html">lowdown(5)</a>.
 			</p>
 			<p>
 				When using header identifiers (the default) and the names collide,
                                 use pandoc's method of creating unique header names. Also handle
                                 the case of markup in headers and the identifier created from those
-				to also be like pandoc.  This isn't a fix, but does make output
+				to also be like pandoc.  This isn't a fix, but rather make output
 				consistent with other tools.
 			</p>
 			<p>
@@ -1264,14 +1265,19 @@
 			</p>
 			<p>
                                 Bump the minor number as the ABI has been tidied up with respect to
-                                footnotes: they're now all within a single block instead of being
-                                put here and there. The footer element, which was not used, has
+				footnotes: they're now all in their <code>LOWDOWN_FOOTNOTE</code>
+				blocks instead of split into definitions and references.
+				The <code>LOWDOWN_DOC_FOOTER</code> element, which was not used, has
                                 also been removed.
 			</p>
 			<p>
 				The system in general has spent many, many computer-hours being
 				fuzzed with <a href="https://lcamtuf.coredump.cx/afl/">AFL</a>
 				thanks to hardware donated by Michael Dexter. Thank you!
+			</p>
+			<p>
+				Finally, make <b>-T</b> be a synonym for the new <b>-t</b>, which is
+				used by pandoc.
 			</p>
 		</aside>
 	</article>

@@ -137,14 +137,14 @@ $(VALGRINDS): lowdown
 
 .md.valgrind:
 	@rm -f $@
-	valgrind $(VALGRIND_ARGS) ./lowdown -s -Thtml $< >/dev/null 2>>$@
-	valgrind $(VALGRIND_ARGS) ./lowdown -s -Tms $< >/dev/null 2>>$@
-	valgrind $(VALGRIND_ARGS) ./lowdown -s -Tman $< >/dev/null 2>>$@
-	valgrind $(VALGRIND_ARGS) ./lowdown -s -Tterm $< >/dev/null 2>>$@
-	valgrind $(VALGRIND_ARGS) ./lowdown -s -Tgemini $< >/dev/null 2>>$@
-	valgrind $(VALGRIND_ARGS) ./lowdown -s -Tlatex $< >/dev/null 2>>$@
+	valgrind $(VALGRIND_ARGS) ./lowdown -s -thtml $< >/dev/null 2>>$@
+	valgrind $(VALGRIND_ARGS) ./lowdown -s -tms $< >/dev/null 2>>$@
+	valgrind $(VALGRIND_ARGS) ./lowdown -s -tman $< >/dev/null 2>>$@
+	valgrind $(VALGRIND_ARGS) ./lowdown -s -tterm $< >/dev/null 2>>$@
+	valgrind $(VALGRIND_ARGS) ./lowdown -s -tgemini $< >/dev/null 2>>$@
+	valgrind $(VALGRIND_ARGS) ./lowdown -s -tlatex $< >/dev/null 2>>$@
 
-www: $(HTMLS) $(PDFS) $(THUMBS) lowdown.tar.gz lowdown.tar.gz.sha512
+www: all $(HTMLS) $(PDFS) $(THUMBS) lowdown.tar.gz lowdown.tar.gz.sha512
 
 installwww: www
 	mkdir -p $(WWWDIR)/snapshots
@@ -209,20 +209,20 @@ $(PDFS) index.xml README.xml: lowdown
 index.html README.html: template.xml
 
 .md.pdf:
-	./lowdown --nroff-no-numbered -s -Tms $< | \
+	./lowdown --nroff-no-numbered -s -tms $< | \
 		pdfroff -i -mspdf -t -k > $@
 
 index.latex.pdf: index.md $(THUMBS)
-	./lowdown -s -Tlatex index.md >index.latex.latex
+	./lowdown -s -tlatex index.md >index.latex.latex
 	pdflatex index.latex.latex
 	pdflatex index.latex.latex
 
 index.mandoc.pdf: index.md
-	./lowdown --nroff-no-numbered -s -Tman index.md | \
+	./lowdown --nroff-no-numbered -s -tman index.md | \
 		mandoc -Tpdf > $@
 
 index.nroff.pdf: index.md
-	./lowdown --nroff-no-numbered -s -Tms index.md | \
+	./lowdown --nroff-no-numbered -s -tms index.md | \
 		pdfroff -i -mspdf -t -k > $@
 
 .xml.html:
@@ -241,7 +241,7 @@ diff.diff.html: diff.md diff.old.md lowdown-diff
 	./lowdown-diff -s diff.old.md diff.md >$@
 
 diff.diff.pdf: diff.md diff.old.md lowdown-diff
-	./lowdown-diff --nroff-no-numbered -s -Tms diff.old.md diff.md | \
+	./lowdown-diff --nroff-no-numbered -s -tms diff.old.md diff.md | \
 		pdfroff -i -mspdf -t -k > $@
 
 $(HTMLS): versions.xml lowdown
@@ -318,61 +318,61 @@ regress: lowdown
 		./lowdown $(REGRESS_ARGS) "$$f" | \
 			sed -e 's!	! !g' | sed -e '/^[ ]*$$/d' > $$tmp2 ; \
 		diff -uw $$tmp1 $$tmp2 ; \
-		./lowdown -s -Thtml "$$f" >/dev/null 2>&1 ; \
-		./lowdown -s -Tlatex "$$f" >/dev/null 2>&1 ; \
-		./lowdown -s -Tman "$$f" >/dev/null 2>&1 ; \
-		./lowdown -s -Tms "$$f" >/dev/null 2>&1 ; \
-		./lowdown -s -Tfodt "$$f" >/dev/null 2>&1 ; \
-		./lowdown -s -Tterm "$$f" >/dev/null 2>&1 ; \
-		./lowdown -s -Ttree "$$f" >/dev/null 2>&1 ; \
+		./lowdown -s -thtml "$$f" >/dev/null 2>&1 ; \
+		./lowdown -s -tlatex "$$f" >/dev/null 2>&1 ; \
+		./lowdown -s -tman "$$f" >/dev/null 2>&1 ; \
+		./lowdown -s -tms "$$f" >/dev/null 2>&1 ; \
+		./lowdown -s -tfodt "$$f" >/dev/null 2>&1 ; \
+		./lowdown -s -tterm "$$f" >/dev/null 2>&1 ; \
+		./lowdown -s -ttree "$$f" >/dev/null 2>&1 ; \
 	done  ; \
 	for f in regress/*.md ; do \
 		echo "$$f" ; \
 		if [ -f regress/`basename $$f .md`.html ]; then \
-			./lowdown -Thtml $$f >$$tmp1 2>&1 ; \
+			./lowdown -thtml $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/`basename $$f .md`.html $$tmp1 ; \
 		fi ; \
 		if [ -f regress/`basename $$f .md`.term ]; then \
-			./lowdown -Tterm $$f >$$tmp1 2>&1 ; \
+			./lowdown -tterm $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/`basename $$f .md`.term $$tmp1 ; \
 		fi ; \
 		if [ -f regress/`basename $$f .md`.latex ]; then \
-			./lowdown -Tlatex $$f >$$tmp1 2>&1 ; \
+			./lowdown -tlatex $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/`basename $$f .md`.latex $$tmp1 ; \
 		fi ; \
 		if [ -f regress/`basename $$f .md`.ms ]; then \
-			./lowdown -Tms $$f >$$tmp1 2>&1 ; \
+			./lowdown -tms $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/`basename $$f .md`.ms $$tmp1 ; \
 		fi ; \
 		if [ -f regress/`basename $$f .md`.man ]; then \
-			./lowdown -Tman $$f >$$tmp1 2>&1 ; \
+			./lowdown -tman $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/`basename $$f .md`.man $$tmp1 ; \
 		fi ; \
 		if [ -f regress/`basename $$f .md`.gemini ]; then \
-			./lowdown -Tgemini $$f >$$tmp1 2>&1 ; \
+			./lowdown -tgemini $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/`basename $$f .md`.gemini $$tmp1 ; \
 		fi ; \
 	done ; \
 	for f in regress/standalone/*.md ; do \
 		echo "$$f" ; \
 		if [ -f regress/standalone/`basename $$f .md`.html ]; then \
-			./lowdown -s -Thtml $$f >$$tmp1 2>&1 ; \
+			./lowdown -s -thtml $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/standalone/`basename $$f .md`.html $$tmp1 ; \
 		fi ; \
 		if [ -f regress/standalone/`basename $$f .md`.latex ]; then \
-			./lowdown -s -Tlatex $$f >$$tmp1 2>&1 ; \
+			./lowdown -s -tlatex $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/standalone/`basename $$f .md`.latex $$tmp1 ; \
 		fi ; \
 		if [ -f regress/standalone/`basename $$f .md`.ms ]; then \
-			./lowdown -s -Tms $$f >$$tmp1 2>&1 ; \
+			./lowdown -s -tms $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/standalone/`basename $$f .md`.ms $$tmp1 ; \
 		fi ; \
 		if [ -f regress/standalone/`basename $$f .md`.man ]; then \
-			./lowdown -s -Tman $$f >$$tmp1 2>&1 ; \
+			./lowdown -s -tman $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/standalone/`basename $$f .md`.man $$tmp1 ; \
 		fi ; \
 		if [ -f regress/standalone/`basename $$f .md`.gemini ]; then \
-			./lowdown -s -Tgemini $$f >$$tmp1 2>&1 ; \
+			./lowdown -s -tgemini $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/standalone/`basename $$f .md`.gemini $$tmp1 ; \
 		fi ; \
 	done ; \

@@ -28,7 +28,7 @@
 .Op Fl M Ar metadata
 .Op Fl m Ar metadata
 .Op Fl o Ar file
-.Op Fl T Ar mode
+.Op Fl t Ar mode
 .Ar oldfile
 .Op Ar newfile
 .Sh DESCRIPTION
@@ -47,13 +47,13 @@ See
 .Sx Metadata
 on providing information to the document envelope.
 This applies to
-.Fl T Ns Ar gemini ,
-.Fl T Ns Ar html ,
-.Fl T Ns Ar latex ,
-.Fl T Ns Ar ms ,
-.Fl T Ns Ar man ,
+.Fl t Ns Ar gemini ,
+.Fl t Ns Ar html ,
+.Fl t Ns Ar latex ,
+.Fl t Ns Ar ms ,
+.Fl t Ns Ar man ,
 and
-.Fl T Ns Ar fodt .
+.Fl t Ns Ar fodt .
 .It Fl M Ar metadata
 Provide a single metadata key-value pair.
 This may be in the usual
@@ -76,7 +76,7 @@ Send output to
 unless it's
 .Dq - ,
 in which case fall back to the default of standard output.
-.It Fl T Ar mode
+.It Fl t Ar mode , Fl T Ar mode
 The output mode.
 This may be
 .Ar html
@@ -101,6 +101,9 @@ to show the parse tree of the input document, and
 to parse the document but do no rendering.
 See
 .Sx Output modes .
+The
+.Fl T Ar mode
+form is retained for backward compatibility.
 .It Ar oldfile , newfile
 Markdown documents used for comparison.
 If
@@ -182,7 +185,7 @@ output-specific glyphs.
 .Pp
 What follows are per-output options.
 For HTML with
-.Fl T Ns Ar html ,
+.Fl t Ns Ar html ,
 these are as follows:
 .Bl -tag -width Ds
 .It Fl -html-hardwrap
@@ -214,9 +217,9 @@ See
 .El
 .Pp
 For both
-.Fl T Ns Ar man
+.Fl t Ns Ar man
 and
-.Fl T Ns Ar ms ,
+.Fl t Ns Ar ms ,
 the following apply:
 .Bl -tag -width Ds
 .It Fl -nroff-no-groff
@@ -224,7 +227,7 @@ Don't use
 .Xr groff 1
 style section headings, PDF hyperlinks and multi-page tables (these further
 require
-.Fl T Ns Ar ms
+.Fl t Ns Ar ms
 mode and
 .Fl m Ns Ar spdf
 passed to
@@ -233,13 +236,13 @@ or Unicode sequence syntax.
 The output is compatible with traditional
 .Xr troff 1 .
 Applies to
-.Fl T Ns Ar man
+.Fl t Ns Ar man
 and
-.Fl T Ns Ar ms .
+.Fl t Ns Ar ms .
 .It Fl -nroff-no-numbered
 Don't output numbered headings.
 Only applies to
-.Fl T Ns Ar ms .
+.Fl t Ns Ar ms .
 .It Fl -nroff-no-skiphtml
 Output embedded HTML.
 This usually doesn't make sense because the HTML won't be interpreted by
@@ -252,7 +255,7 @@ Overrides
 .Fl -nroff-shortlinks
 for images and links.
 Applies to
-.Fl T Ns Ar man
+.Fl t Ns Ar man
 or when
 .Fl nroff-no-groff
 is specified.
@@ -260,14 +263,14 @@ is specified.
 Shorten URLs for images, links, and autolinks to only the domain name
 and final path.
 Applies to
-.Fl T Ns Ar man
+.Fl t Ns Ar man
 or when
 .Fl nroff-no-groff
 is specified.
 .El
 .Pp
 The
-.Fl T Ns Ar term
+.Fl t Ns Ar term
 output has the following:
 .Bl -tag -width Ds
 .It Fl -term-columns=columns
@@ -306,7 +309,7 @@ most.
 .El
 .Pp
 The
-.Fl T Ns Ar gemini
+.Fl t Ns Ar gemini
 output has several flags that control the placement of links.
 By default, links (images, autolinks, and links) are queued when
 specified in-line then emitted in a block sequence after the nearest
@@ -341,7 +344,7 @@ If there is no metadata, this does nothing.
 .El
 .Pp
 The
-.Fl T Ns Ar latex
+.Fl t Ns Ar latex
 output has the following options:
 .Bl -tag -width Ds
 .It Fl -latex-no-numbered
@@ -353,7 +356,7 @@ the output reader.
 By default, HTML is omitted.
 .El
 The
-.Fl T Ns Ar fodt
+.Fl t Ns Ar fodt
 output has the following options:
 .Bl -tag -width Ds
 .It Fl -odt-no-skiphtml
@@ -379,10 +382,10 @@ Author affiliation (organisation or institution).
 Multiple affiliations may be separated by two or more spaces (including
 newlines).
 Used in
-.Fl T Ns Ar html ,
-.Fl T Ns Ar latex ,
+.Fl t Ns Ar html ,
+.Fl t Ns Ar latex ,
 and
-.Fl T Ns Ar ms .
+.Fl t Ns Ar ms .
 .It Li author
 Document author.
 Multiple authors may be separated by two or more spaces (including
@@ -390,11 +393,11 @@ newlines).
 Overridden by
 .Li rcsauthor .
 Used in
-.Fl T Ns Ar fodt ,
-.Fl T Ns Ar html ,
-.Fl T Ns Ar latex ,
+.Fl t Ns Ar fodt ,
+.Fl t Ns Ar html ,
+.Fl t Ns Ar latex ,
 and
-.Fl T Ns Ar ms .
+.Fl t Ns Ar ms .
 .It Li baseheaderlevel
 Added to each header level.
 Deprecated in favour of
@@ -405,32 +408,32 @@ A document copyright (without the word
 for example,
 .Dq 2017, Kristaps Dzonsons .
 Used in
-.Fl T Ns Ar ms
+.Fl t Ns Ar ms
 and
-.Fl T Ns Ar html .
+.Fl t Ns Ar html .
 .It Li css
 A CSS file included in the HTML5 document head.
 Multiple CSS files (in order) may be separated by two or more spaces
 (including newlines).
 Only used in
-.Fl T Ns Ar html .
+.Fl t Ns Ar html .
 .It Li date
 Document date in ISO-8601 YYYY-MM-DD format.
 Overridden by
 .Li rcsdate .
 Used in
-.Fl T Ns Ar fodt ,
-.Fl T Ns Ar html ,
-.Fl T Ns Ar latex ,
-.Fl T Ns Ar man ,
+.Fl t Ns Ar fodt ,
+.Fl t Ns Ar html ,
+.Fl t Ns Ar latex ,
+.Fl t Ns Ar man ,
 and
-.Fl T Ns Ar ms .
+.Fl t Ns Ar ms .
 .It Li javascript
 A JavaScript file included in the HTML5 document head.
 Multiple script files (in order) may be separated by two or more spaces
 (including newlines).
 Only used in
-.Fl T Ns Ar html .
+.Fl t Ns Ar html .
 .It Li rcsauthor
 Like
 .Li author ,
@@ -447,7 +450,7 @@ Overrides
 Man page section, defaulting to
 .Dq 7 .
 Only used in
-.Fl T Ns Ar man .
+.Fl t Ns Ar man .
 .It Li shiftheadinglevelby
 Shift all headers by the given number.
 For example, a value of 1 causes headers originally at level 1
@@ -460,30 +463,30 @@ Takes precedence over
 .Li baseheaderlevel .
 If unset or not a valid number, defaults to zero.
 Used in
-.Fl T Ns Ar fodt ,
-.Fl T Ns Ar html ,
-.Fl T Ns Ar latex ,
-.Fl T Ns Ar man ,
+.Fl t Ns Ar fodt ,
+.Fl t Ns Ar html ,
+.Fl t Ns Ar latex ,
+.Fl t Ns Ar man ,
 and
-.Fl T Ns Ar ms .
+.Fl t Ns Ar ms .
 .It Li source
 Man page source (organisation providing the manual).
 Only used in
-.Fl T Ns Ar man .
+.Fl t Ns Ar man .
 .It Li volume
 Man page volume (describes the manual page section).
 Only used in
-.Fl T Ns Ar man .
+.Fl t Ns Ar man .
 .It Li title
 Document title, defaulting to
 .Dq Untitled article .
 Used in
-.Fl T Ns Ar fodt ,
-.Fl T Ns Ar html ,
-.Fl T Ns Ar latex ,
-.Fl T Ns Ar man ,
+.Fl t Ns Ar fodt ,
+.Fl t Ns Ar html ,
+.Fl t Ns Ar latex ,
+.Fl t Ns Ar man ,
 and
-.Fl T Ns Ar ms .
+.Fl t Ns Ar ms .
 .El
 .Pp
 Metadata values are parsed and may be used as variables in markdown
@@ -500,19 +503,19 @@ is used as a variable.
 .Ss Output modes
 A detailed description of the output modes follows.
 .Bl -tag -width Ds
-.It Fl T Ns Ar latex
+.It Fl t Ns Ar latex
 .Dq Flat
 OpenDocument output.
 This output mode is still in development.
-.It Fl T Ns Ar gemini
+.It Fl t Ns Ar gemini
 Gemini protocol output.
 This output mode (and the protocol) are experimental.
-.It Fl T Ns Ar html
+.It Fl t Ns Ar html
 HTML5 output with UTF-8 encoding.
 All features of
 .Xr lowdown 5
 are supported.
-.It Fl T Ns Ar latex
+.It Fl t Ns Ar latex
 Simple LaTeX output.
 The following packages are required:
 .Li amsmath
@@ -533,7 +536,7 @@ for Latin modern font,
 for the difference engine output, and
 .Li hyperref
 for links.
-.It Fl T Ns Ar man
+.It Fl t Ns Ar man
 The
 .Ar man
 macro package suitable for reading by
@@ -547,7 +550,7 @@ Table support is provided by
 Since UTF-8 may be passed as input values,
 .Xr preconv 1
 may need to be used.
-.It Fl T Ns Ar ms
+.It Fl t Ns Ar ms
 The
 .Ar ms
 macro package suitable for reading by
@@ -564,10 +567,10 @@ Table support is provided by
 Since UTF-8 may be passed as input values,
 .Xr preconv 1
 may need to be used.
-.It Fl T Ns Ar term
+.It Fl t Ns Ar term
 ANSI-escaped UTF-8 output suitable for reading on the terminal.
 Images and equations not supported.
-.It Fl T Ns Ar tree
+.It Fl t Ns Ar tree
 Debugging output: not for general use.
 .El
 .Pp
@@ -575,49 +578,49 @@ Without
 .Fl s
 specified, several of these modes will omit parts of the output:
 .Bl -tag -width Ds
-.It Fl T Ns Ar fodt
+.It Fl t Ns Ar fodt
 Omit all but the
 .Li <office:automatic-styles> ,
 .Li <office:master-styles> ,
 and
 .Li <office:body>
 elements and their children.
-.It Fl T Ns Ar html
+.It Fl t Ns Ar html
 Omit all but the
 .Li <body>
 element and its children.
-.It Fl T Ns Ar latex
+.It Fl t Ns Ar latex
 Omit the
 .Li documentclass ,
 .Li usepackage ,
 and surrounding
 .Li begin{document}
 statements.
-.It Fl T Ns Ar man , Fl T Ns Ar ms
+.It Fl t Ns Ar man , Fl t Ns Ar ms
 Omit the document prologue.
 .El
 .Pp
 Output is augmented with features for viewing file differences.
 These depend upon the output mode.
 .Bl -tag -width Ds
-.It Fl T Ns Ar fodt
+.It Fl t Ns Ar fodt
 Uses the change-tracking feature to display insertions and deletions.
-.It Fl T Ns Ar man , Fl T Ns Ar ms
+.It Fl t Ns Ar man , Fl t Ns Ar ms
 When data has been removed, it is coloured red.
 When data has been inserted, it is coloured in green.
 In either case, your formatter must support colours or the texts will be
 freely intermingled.
-.It Fl T Ns Ar html
+.It Fl t Ns Ar html
 When data has been removed from the old document, it is marked up with the
 .Li <del>
 element.
 When data has been inserted into the new document,
 .Li <ins>
 is used instead.
-.It Fl T Ns Ar latex
+.It Fl t Ns Ar latex
 When data has been removed, it is coloured red.
 When data has been inserted, it is coloured in green.
-.It Fl T Ns Ar term
+.It Fl t Ns Ar term
 Removed and inserted data have different background colours.
 .El
 .Sh ENVIRONMENT
@@ -626,7 +629,7 @@ The following environment variables affect the execution of
 .Bl -tag -width Ds
 .It Ev NO_COLOR
 Do not emit colours when in
-.Fl T Ns Ar term
+.Fl t Ns Ar term
 mode.
 Synonym for
 .Ev NO_COLOUR .
@@ -638,15 +641,15 @@ Same as
 .Sh EXAMPLES
 To view Markdown differences on an ANSI-compatible, UTF-8 terminal:
 .Pp
-.Dl lowdown-diff -Tterm old.md new.md | less -R
+.Dl lowdown-diff -tterm old.md new.md | less -R
 .Pp
 The terminal may also be used with
 .Xr groff 1
 rendering:
 .Bd -literal -offset indent
-lowdown-diff -sTms old.md new.md | \e
+lowdown-diff -stms old.md new.md | \e
   groff -itk -mspdf -Tutf8 | less -R
-lowdown-diff -sTman old.md new.md | \e
+lowdown-diff -stman old.md new.md | \e
   groff -itk -man -Tutf8 | less -R
 .Ed
 .Pp
@@ -658,21 +661,21 @@ To use
 .Xr groff 1
 to format as a PS file:
 .Bd -literal -offset indent
-lowdown-diff -sTms old.md new.md | \e
+lowdown-diff -stms old.md new.md | \e
   groff -itk -mspdf > foo.ps
 .Ed
 .Pp
 Or with LaTeX:
 .Bd -literal -offset indent
-lowdown-diff -sTlatex old.md new.md > foo.latex
+lowdown-diff -stlatex old.md new.md > foo.latex
 pslatex foo.latex
 .Ed
 .Pp
 PDF generation follows similar logic:
 .Bd -literal -offset indent
-lowdown-diff -sTms old.md new.md | \e
+lowdown-diff -stms old.md new.md | \e
   pdfroff -itk -mspdf > foo.pdf
-lowdown-diff -sTlatex old.md new.md > foo.latex
+lowdown-diff -stlatex old.md new.md > foo.latex
 pdflatex foo.latex
 .Ed
 .Pp
@@ -688,7 +691,7 @@ set of the
 font directory and are prefixed with
 .Sq U .
 .Bd -literal -offset indent
-lowdown-diff -sTms old.md new.md | \e
+lowdown-diff -stms old.md new.md | \e
   pdfroff -itk -mspdf -FU-T > foo.pdf
 .Ed
 .Sh SEE ALSO
@@ -702,8 +705,8 @@ was written by
 .Mt kristaps@bsd.lv .
 .Sh CAVEATS
 When viewing
-.Fl T Ns Ar man
+.Fl t Ns Ar man
 differences with mandoc, the marker colours are not rendered.
 The
-.Fl T Ns Ar gemini
+.Fl t Ns Ar gemini
 output also currently has no way of encoding differences.

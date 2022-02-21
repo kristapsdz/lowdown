@@ -212,8 +212,8 @@ main(int argc, char *argv[])
 				*din = NULL;
 	const char		*fnin = "<stdin>", *fnout = NULL,
 	      	 		*fndin = NULL, *extract = NULL, *er,
-				*mainopts = "M:m:sT:o:X:",
-	      			*diffopts = "M:m:sT:o:", *odtstyfn = NULL;
+				*mainopts = "M:m:sT:t:o:X:",
+	      			*diffopts = "M:m:sT:t:o:", *odtstyfn = NULL;
 	struct lowdown_opts 	 opts;
 	struct stat		 st;
 	int			 c, diff = 0, fd,
@@ -373,6 +373,7 @@ main(int argc, char *argv[])
 		case 's':
 			opts.oflags |= LOWDOWN_STANDALONE;
 			break;
+		case 't':
 		case 'T':
 			if (strcasecmp(optarg, "ms") == 0)
 				opts.type = LOWDOWN_NROFF;
@@ -596,10 +597,10 @@ usage:
 	if (!diff) {
 		fprintf(stderr, 
 			"usage: lowdown [-s] [input_options] [output_options] [-M metadata]\n"
-			"               [-m metadata] [-o output] [-T mode] [-X keyword] [file]\n");
+			"               [-m metadata] [-o output] [-t mode] [-X keyword] [file]\n");
 	} else
 		fprintf(stderr, 
 			"usage: lowdown-diff [-s] [input_options] [output_options] [-M metadata]\n"
-			"                    [-m metadata] [-o output] [-T mode] oldfile [newfile]\n");
+			"                    [-m metadata] [-o output] [-t mode] oldfile [newfile]\n");
 	return 1;
 }

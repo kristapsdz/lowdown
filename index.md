@@ -45,32 +45,32 @@ which shows the difference between two markdown trees in markdown.
 
 ## Output
 
-*lowdown* produces HTML5 output in XML mode with **-Thtml**.  It may produce
+*lowdown* produces HTML5 output in XML mode with **-thtml**.  It may produce
 either a fragment or standalone HTML5 document with **-s**.
 
-It also produces simple LaTeX documents with **-Tlatex**.  It uses the most
+It also produces simple LaTeX documents with **-tlatex**.  It uses the most
 basic packages possible.
 
 For word processing, it can produce a "flat"
 [OpenDocument](https://docs.oasis-open.org/office/OpenDocument/v1.3/os/part1-introduction/OpenDocument-v1.3-os-part1-introduction.html)
 XML document with the latest OpenDocument version 1.3.
 
-The **-Tgemini** outputs into the
+The **-tgemini** outputs into the
 [Gemini](https://gemini.circumlunar.space/docs/specification.html) format.
 
-PDFs may also be produced from *roff* documents via the **-Tms** and
-**-Tman**[^nomanpages] outputs.  These may be processed with *troff*
-system such as [groff](https://www.gnu.org/s/groff) or (for **-Tman**
+PDFs may also be produced from *roff* documents via the **-tms** and
+**-tman**[^nomanpages] outputs.  These may be processed with *troff*
+system such as [groff](https://www.gnu.org/s/groff) or (for **-tman**
 only) [mandoc](https://mdocml.bsd.lv).
 
 By way of example: this page,
 [index.md](https://kristaps.bsd.lv/lowdown/index.md), renders as
 [index.latex.pdf](https://kristaps.bsd.lv/lowdown/index.latex.pdf)
-with LaTeX (via **-Tms**),
+with LaTeX (via **-tlatex**),
 [index.mandoc.pdf](https://kristaps.bsd.lv/lowdown/index.mandoc.pdf)
-with mandoc (via **-Tman**), or
+with mandoc (via **-tman**), or
 [index.nroff.pdf](https://kristaps.bsd.lv/lowdown/index.nroff.pdf)
-with groff (via **-Tms**).
+with groff (via **-tms**).
 
 [^nomanpages]:
     You may be tempted to write [manpages](https://man.openbsd.org)
@@ -80,7 +80,7 @@ with groff (via **-Tms**).
     documentation only (section 7).
 
 *lowdown* can output to ANSI-compatible UTF-8 terminals with
-**-Tterm**.  This [glow](https://github.com/charmbracelet/glow)-inspired 
+**-tterm**.  This [glow](https://github.com/charmbracelet/glow)-inspired 
 mode renders stylised Markdown-looking output for easy reading.  (The
 traditional text output facilities of [groff](https://www.gnu.org/s/groff) and
 [mandoc](https://mdocml.bsd.lv) may also be used for this.)
@@ -89,12 +89,12 @@ traditional text output facilities of [groff](https://www.gnu.org/s/groff) and
 > [![term](screen-term.thumb.jpg)](screen-term.png)
 > [![groff](screen-groff.thumb.jpg)](screen-groff.png)
 
-> **-Tman**
-> **-Tterm**
-> **-Tms**
+> **-tman**
+> **-tterm**
+> **-tms**
 
-Only **-Thtml** and **-Tlatex** allow images and equations, though
-**-Tms** has limited image support with encapsulated postscript.
+Only **-thtml** and **-tlatex** allow images and equations, though
+**-tms** has limited image support with encapsulated postscript.
 
 ## Input
 
@@ -119,7 +119,7 @@ following Markdown features and extensions:
 Want to quickly review your Markdown in a terminal window?
 
 ```sh
-lowdown -Tterm README.md | less -R
+lowdown -tterm README.md | less -R
 ```
 
 I usually use *lowdown* when writing
@@ -160,7 +160,7 @@ This can use the document's meta-data to populate the title, CSS file,
 and so on.
 
 The troff output modes work well to make PS or PDF files, although they
-will omit equations and only use local PS/EPS images in **-Tms** mode.
+will omit equations and only use local PS/EPS images in **-tms** mode.
 The extra groff arguments in the following invocation are for UTF-8
 processing (**-k**), tables (**-t**), and clickable links
 and a table of contents (**-mspdf**).
@@ -170,23 +170,23 @@ This allows image generation to work properly.  If not, a blank square
 will be output in places of your images.
 
 ```sh
-lowdown -sTms README.md | groff -itk -mspdf > README.ps
-lowdown -sTms README.md | pdfroff -itk -mspdf > README.pdf
+lowdown -stms README.md | groff -itk -mspdf > README.ps
+lowdown -stms README.md | pdfroff -itk -mspdf > README.pdf
 ```
 
 The same can be effected with systems using
 [mandoc](https://mdocml.bsd.lv):
 
 ```sh
-lowdown -sTman README.md | mandoc -Tps > README.ps
-lowdown -sTman README.md | mandoc -Tpdf > README.pdf
+lowdown -stman README.md | mandoc -Tps > README.ps
+lowdown -stman README.md | mandoc -Tpdf > README.pdf
 ```
 
 More support for PDF (and other print formats) is available with the
-**-Tlatex** output.
+**-tlatex** output.
 
 ```sh
-lowdown -sTlatex README.md | pdflatex
+lowdown -stlatex README.md | pdflatex
 ```
 
 For terminal output, troff or mandoc may be used in their respective
@@ -194,7 +194,7 @@ For terminal output, troff or mandoc may be used in their respective
 directly to ANSI terminals with UTF-8 support:
 
 ```sh
-lowdown -Tterm README.md | less -R
+lowdown -tterm README.md | less -R
 ```
 
 Read [lowdown(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) for
@@ -283,7 +283,7 @@ LOWDOWN_ROOT
 ```
 
 This tree would then be passed into a front-end, such as the HTML5
-front-end with **-Thtml**.  The nodes would be appended into a buffer,
+front-end with **-thtml**.  The nodes would be appended into a buffer,
 which would then be passed back into the subsection parser.  It would
 paste the buffer into `<h2>` blocks (in HTML5) or a `.SH` block (troff
 outputs).
@@ -307,10 +307,10 @@ Want to hack on *lowdown*?  Of course you do.
 You can always just search for `TODO`, `XXX`, or `FIXME` in the source
 code.  This is your best bet.
 
-- Footnotes in **-Tms** with groff extensions should use pdfmark to link
+- Footnotes in **-tms** with groff extensions should use pdfmark to link
 to and from the definition.
 
-- If you want a larger project, a **-Tpdf** seems most interesting (and
+- If you want a larger project, a **-tpdf** seems most interesting (and
 quite difficult given that UTF-8 need be present).  Another project that
 has been implemented elsewhere is a parser for mathematics such that
 `eqn` or similar may be output.

@@ -28,7 +28,7 @@
 .Op Fl M Ar metadata
 .Op Fl m Ar metadata
 .Op Fl o Ar file
-.Op Fl T Ar mode
+.Op Fl t Ar mode
 .Op Fl X Ar keyword
 .Op Ar file
 .Sh DESCRIPTION
@@ -47,13 +47,13 @@ See
 .Sx Metadata
 on providing information to the document envelope.
 This applies to
-.Fl T Ns Ar gemini ,
-.Fl T Ns Ar html ,
-.Fl T Ns Ar latex ,
-.Fl T Ns Ar ms ,
-.Fl T Ns Ar man ,
+.Fl t Ns Ar gemini ,
+.Fl t Ns Ar html ,
+.Fl t Ns Ar latex ,
+.Fl t Ns Ar ms ,
+.Fl t Ns Ar man ,
 and
-.Fl T Ns Ar fodt .
+.Fl t Ns Ar fodt .
 .It Fl M Ar metadata
 Provide a single metadata key-value pair.
 This may be in the usual
@@ -76,7 +76,7 @@ Send output to
 unless it's
 .Dq - ,
 in which case fall back to the default of standard output.
-.It Fl T Ar mode
+.It Fl t Ar mode , Fl T Ar mode
 The output mode.
 This may be
 .Ar html
@@ -101,12 +101,15 @@ to show the parse tree of the input document, and
 to parse the document but do no rendering.
 See
 .Sx Output modes .
+The
+.Fl T Ar mode
+form is retained for backward compatibility.
 .It Fl X Ar keyword
 Output the metadata value of
 .Ar keyword
 or an empty string if not found.
 The
-.Fl T
+.Fl t
 mode is ignored.
 .It Ar file
 Input Markdown document.
@@ -191,7 +194,7 @@ output-specific glyphs.
 .Pp
 What follows are per-output options.
 For HTML with
-.Fl T Ns Ar html ,
+.Fl t Ns Ar html ,
 these are as follows:
 .Bl -tag -width Ds
 .It Fl -html-hardwrap
@@ -223,9 +226,9 @@ See
 .El
 .Pp
 For both
-.Fl T Ns Ar man
+.Fl t Ns Ar man
 and
-.Fl T Ns Ar ms ,
+.Fl t Ns Ar ms ,
 the following apply:
 .Bl -tag -width Ds
 .It Fl -nroff-no-groff
@@ -233,7 +236,7 @@ Don't use
 .Xr groff 1
 style section headings, PDF hyperlinks and multi-page tables (these further
 require
-.Fl T Ns Ar ms
+.Fl t Ns Ar ms
 mode and
 .Fl m Ns Ar spdf
 passed to
@@ -242,13 +245,13 @@ or Unicode sequence syntax.
 The output is compatible with traditional
 .Xr troff 1 .
 Applies to
-.Fl T Ns Ar man
+.Fl t Ns Ar man
 and
-.Fl T Ns Ar ms .
+.Fl t Ns Ar ms .
 .It Fl -nroff-no-numbered
 Don't output numbered headings.
 Only applies to
-.Fl T Ns Ar ms .
+.Fl t Ns Ar ms .
 .It Fl -nroff-no-skiphtml
 Output embedded HTML.
 This usually doesn't make sense because the HTML won't be interpreted by
@@ -261,7 +264,7 @@ Overrides
 .Fl -nroff-shortlinks
 for images and links.
 Applies to
-.Fl T Ns Ar man
+.Fl t Ns Ar man
 or when
 .Fl nroff-no-groff
 is specified.
@@ -269,14 +272,14 @@ is specified.
 Shorten URLs for images, links, and autolinks to only the domain name
 and final path.
 Applies to
-.Fl T Ns Ar man
+.Fl t Ns Ar man
 or when
 .Fl nroff-no-groff
 is specified.
 .El
 .Pp
 The
-.Fl T Ns Ar term
+.Fl t Ns Ar term
 output has the following:
 .Bl -tag -width Ds
 .It Fl -term-columns=columns
@@ -315,7 +318,7 @@ most.
 .El
 .Pp
 The
-.Fl T Ns Ar gemini
+.Fl t Ns Ar gemini
 output has several flags that control the placement of links.
 By default, links (images, autolinks, and links) are queued when
 specified in-line then emitted in a block sequence after the nearest
@@ -350,7 +353,7 @@ If there is no metadata, this does nothing.
 .El
 .Pp
 The
-.Fl T Ns Ar latex
+.Fl t Ns Ar latex
 output has the following options:
 .Bl -tag -width Ds
 .It Fl -latex-no-numbered
@@ -363,7 +366,7 @@ By default, HTML is omitted.
 .El
 .Pp
 The
-.Fl T Ns Ar fodt
+.Fl t Ns Ar fodt
 output has the following options:
 .Bl -tag -width Ds
 .It Fl -odt-no-skiphtml
@@ -382,19 +385,19 @@ This is not syntax-checked in any way.
 .El
 .Ss Output modes
 The output media is specified by
-.Fl T ,
+.Fl t ,
 which defaults to
-.Fl T Ns Ar html .
+.Fl t Ns Ar html .
 .Bl -tag -width Ds
-.It Fl T Ns Ar fodt
+.It Fl t Ns Ar fodt
 .Dq Flat
 OpenDocument output.
-.It Fl T Ns Ar gemini
+.It Fl t Ns Ar gemini
 Gemini protocol output.
 This output mode is experimental.
-.It Fl T Ns Ar html
+.It Fl t Ns Ar html
 HTML5 output with UTF-8 encoding.
-.It Fl T Ns Ar latex
+.It Fl t Ns Ar latex
 Simple LaTeX output.
 The following packages are required:
 .Li amsmath
@@ -415,7 +418,7 @@ for Latin modern font,
 for the difference engine output, and
 .Li hyperref
 for links.
-.It Fl T Ns Ar man
+.It Fl t Ns Ar man
 The
 .Ar man
 macro package suitable for reading by
@@ -429,7 +432,7 @@ Table support is provided by
 Since UTF-8 may be passed as input values,
 .Xr preconv 1
 may need to be used.
-.It Fl T Ns Ar ms
+.It Fl t Ns Ar ms
 The
 .Ar ms
 macro package suitable for reading by
@@ -446,10 +449,10 @@ Table support is provided by
 Since UTF-8 may be passed as input values,
 .Xr preconv 1
 may need to be used.
-.It Fl T Ns Ar term
+.It Fl t Ns Ar term
 ANSI-escaped UTF-8 output suitable for reading on the terminal.
 Images and equations not supported.
-.It Fl T Ns Ar tree
+.It Fl t Ns Ar tree
 Debugging output: not for general use.
 .El
 .Pp
@@ -480,19 +483,19 @@ Takes precedence over
 .Li baseheaderlevel .
 If unset or not a valid number, defaults to zero.
 Used in
-.Fl T Ns Ar fodt ,
-.Fl T Ns Ar html ,
-.Fl T Ns Ar latex ,
-.Fl T Ns Ar man ,
+.Fl t Ns Ar fodt ,
+.Fl t Ns Ar html ,
+.Fl t Ns Ar latex ,
+.Fl t Ns Ar man ,
 and
-.Fl T Ns Ar ms .
+.Fl t Ns Ar ms .
 .El
 .Ss Standalone documents
 When
 .Fl s
 is specified, additional content may be added to output:
 .Bl -tag -width Ds
-.It Fl T Ns Ar fodt
+.It Fl t Ns Ar fodt
 Envelope
 .Li <office:document>
 and prologue
@@ -500,12 +503,12 @@ and prologue
 .Li <office:master-styles> ,
 and
 .Li <office:body> .
-.It Fl T Ns Ar html
+.It Fl t Ns Ar html
 Envelope
 .Li <html>
 and prologue
 .Li <head> .
-.It Fl T Ns Ar latex
+.It Fl t Ns Ar latex
 Prologue
 .Li documentclass
 and
@@ -513,7 +516,7 @@ and
 statements, and surrounding
 .Li begin{document}
 statements.
-.It Fl T Ns Ar man , Fl T Ns Ar ms
+.It Fl t Ns Ar man , Fl t Ns Ar ms
 Prologue macros.
 .El
 .Pp
@@ -533,10 +536,10 @@ Author affiliation (organisation or institution).
 Multiple affiliations may be separated by two or more spaces (including
 newlines).
 Used in
-.Fl T Ns Ar html ,
-.Fl T Ns Ar latex ,
+.Fl t Ns Ar html ,
+.Fl t Ns Ar latex ,
 and
-.Fl T Ns Ar ms .
+.Fl t Ns Ar ms .
 .It Li author
 Document author.
 Multiple authors may be separated by two or more spaces (including
@@ -544,43 +547,43 @@ newlines).
 Overridden by
 .Li rcsauthor .
 Used in
-.Fl T Ns Ar fodt ,
-.Fl T Ns Ar html ,
-.Fl T Ns Ar latex ,
+.Fl t Ns Ar fodt ,
+.Fl t Ns Ar html ,
+.Fl t Ns Ar latex ,
 and
-.Fl T Ns Ar ms .
+.Fl t Ns Ar ms .
 .It Li copyright
 A document copyright (without the word
 .Dq Copyright ) ,
 for example,
 .Dq 2017, Kristaps Dzonsons .
 Used in
-.Fl T Ns Ar ms
+.Fl t Ns Ar ms
 and
-.Fl T Ns Ar html .
+.Fl t Ns Ar html .
 .It Li css
 A CSS file included in the HTML5 document head.
 Multiple CSS files (in order) may be separated by two or more spaces
 (including newlines).
 Only used in
-.Fl T Ns Ar html .
+.Fl t Ns Ar html .
 .It Li date
 Document date in ISO-8601 YYYY-MM-DD format.
 Overridden by
 .Li rcsdate .
 Used in
-.Fl T Ns Ar fodt ,
-.Fl T Ns Ar html ,
-.Fl T Ns Ar latex ,
-.Fl T Ns Ar man ,
+.Fl t Ns Ar fodt ,
+.Fl t Ns Ar html ,
+.Fl t Ns Ar latex ,
+.Fl t Ns Ar man ,
 and
-.Fl T Ns Ar ms .
+.Fl t Ns Ar ms .
 .It Li javascript
 A JavaScript file included in the HTML5 document head.
 Multiple script files (in order) may be separated by two or more spaces
 (including newlines).
 Only used in
-.Fl T Ns Ar html .
+.Fl t Ns Ar html .
 .It Li rcsauthor
 Like
 .Li author ,
@@ -597,25 +600,25 @@ Overrides
 Man page section, defaulting to
 .Dq 7 .
 Only used in
-.Fl T Ns Ar man .
+.Fl t Ns Ar man .
 .It Li source
 Man page source (organisation providing the manual).
 Only used in
-.Fl T Ns Ar man .
+.Fl t Ns Ar man .
 .It Li volume
 Man page volume (describes the manual page section).
 Only used in
-.Fl T Ns Ar man .
+.Fl t Ns Ar man .
 .It Li title
 Document title, defaulting to
 .Dq Untitled article .
 Used in
-.Fl T Ns Ar fodt ,
-.Fl T Ns Ar html ,
-.Fl T Ns Ar latex ,
-.Fl T Ns Ar man ,
+.Fl t Ns Ar fodt ,
+.Fl t Ns Ar html ,
+.Fl t Ns Ar latex ,
+.Fl t Ns Ar man ,
 and
-.Fl T Ns Ar ms .
+.Fl t Ns Ar ms .
 .El
 .Pp
 Metadata values are parsed and may be used as variables in markdown
@@ -633,7 +636,7 @@ is used as a variable.
 .Bl -tag -width Ds
 .It Ev NO_COLOR
 Do not emit colours when in
-.Fl T Ns Ar term
+.Fl t Ns Ar term
 mode.
 Synonym for
 .Ev NO_COLOUR .
@@ -644,7 +647,7 @@ Same as
 .Bl -tag -width Ds
 .It Pa share/odt/styles.xml
 Default styles used when generating standalone
-.Fl T Ns Ar fodt
+.Fl t Ns Ar fodt
 documents.
 Template for
 .Fl -odt-style
@@ -661,7 +664,7 @@ exits with an error if the given keyword is not found.
 .Sh EXAMPLES
 To view a Markdown file on an ANSI-compatible, UTF-8 terminal:
 .Pp
-.Dl lowdown -Tterm foo.md | less -R
+.Dl lowdown -tterm foo.md | less -R
 .Pp
 The terminal may also be used with
 .Xr groff 1
@@ -669,9 +672,9 @@ or
 .Xr mandoc 1
 rendering:
 .Bd -literal -offset indent
-lowdown -sTms foo.md | groff -itk -mspdf -Tutf8 | less -R
-lowdown -sTman foo.md | groff -itk -man -Tutf8 | less -R
-lowdown -sTman foo.md | mandoc | less
+lowdown -stms foo.md | groff -itk -mspdf -Tutf8 | less -R
+lowdown -stman foo.md | groff -itk -man -Tutf8 | less -R
+lowdown -stman foo.md | mandoc | less
 .Ed
 .Pp
 To emit a standalone HTML5 document:
@@ -684,21 +687,21 @@ or
 .Xr mandoc 1
 to format as a PS file:
 .Bd -literal -offset indent
-lowdown -sTms foo.md | groff -itk -mspdf > foo.ps
-lowdown -sTman foo.md | mandoc -Tps > foo.ps
+lowdown -stms foo.md | groff -itk -mspdf > foo.ps
+lowdown -stman foo.md | mandoc -Tps > foo.ps
 .Ed
 .Pp
 Or with LaTeX:
 .Bd -literal -offset indent
-lowdown -sTlatex foo.md > foo.latex
+lowdown -stlatex foo.md > foo.latex
 pslatex foo.latex
 .Ed
 .Pp
 PDF generation follows similar logic:
 .Bd -literal -offset indent
-lowdown -sTms foo.md | pdfroff -itk -mspdf > foo.pdf
-lowdown -sTman foo.md | mandoc -Tpdf > foo.pdf
-lowdown -sTlatex foo.md > foo.latex
+lowdown -stms foo.md | pdfroff -itk -mspdf > foo.pdf
+lowdown -stman foo.md | mandoc -Tpdf > foo.pdf
+lowdown -stlatex foo.md > foo.latex
 pdflatex foo.latex
 .Ed
 .Pp
@@ -714,7 +717,7 @@ set of the
 font directory and are prefixed with
 .Sq U .
 .Bd -literal -offset indent
-lowdown -sTms foo.md | pdfroff -itk -mspdf -FU-T > foo.pdf
+lowdown -stms foo.md | pdfroff -itk -mspdf -FU-T > foo.pdf
 .Ed
 .Pp
 To extract the HTML-escaped title from a file's metadata:
