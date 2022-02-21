@@ -1,4 +1,6 @@
-.SH An h1 header
+.SH
+An h1 header
+.LP
 Paragraphs are separated by a blank line.
 .PP
 2nd paragraph. \fIItalic\fR, \fBbold\fR, and \fCmonospace\fR. Itemized lists
@@ -32,7 +34,9 @@ if you like.
 Use 3 dashes for an em-dash. Use 2 dashes for ranges (ex., \[u201C]it\[u2019]s all
 in chapters 12\[u2013]14\[u201D]). Three dots \[u2026] will be converted to an ellipsis.
 Unicode is supported. ☺
-.SS An h2 header
+.SS
+An h2 header
+.LP
 Here\[u2019]s a numbered list:
 .IP "1.  "
 first item
@@ -77,7 +81,9 @@ for i in range(10):
     time.sleep(0.5)
     print i
 .EE
-.SS An h3 header
+.SS
+An h3 header
+.LP
 Now a nested list:
 .IP "1.  "
 First, get these ingredients:

@@ -41,6 +41,7 @@ enum	nfont {
 };
 
 struct 	nroff {
+	struct hentryq	 	  headers_used; /* headers we've seen */
 	int			  man; /* whether man(7) */
 	int			  post_para; /* for choosing PP/LP */
 	unsigned int		  flags; /* output flags */
@@ -493,29 +494,6 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq, int esc)
 	return 1;
 }
 
-static int
-bqueue_to_nargs(struct bnode *bn, const struct bnodeq *bq, int quoted)
-{
-	struct lowdown_buf	*ob;
-	int			 rc = 0;
-
-	if ((ob = hbuf_new(32)) == NULL)
-		goto out;
-	if (quoted && !hbuf_putc(ob, '"'))
-		goto out;
-	if (!bqueue_flush(ob, bq, 1))
-		goto out;
-	if (quoted && !hbuf_putc(ob, '"'))
-		goto out;
-	assert(bn->nargs == NULL);
-	if ((bn->nargs = strndup(ob->data, ob->size)) == NULL)
-		goto out;
-	rc = 1;
-out:
-	hbuf_free(ob);
-	return rc;
-}
-
 /*
  * Convert a link into a short-link and place the escaped output into a
  * returned string.
@@ -757,7 +735,7 @@ rndr_list(struct nroff *st, struct bnodeq *obq,
 {
 	/* 
 	 * If we have a nested list, we need to use RS/RE to indent the
-	 * nested component.  Otherwise the `IP` used for the titles and
+	 * nested component.  Otherwise the "IP" used for the titles and
 	 * contained paragraphs won't indent properly.
 	 */
 
@@ -809,8 +787,11 @@ static int
 rndr_header(struct nroff *st, struct bnodeq *obq,
 	struct bnodeq *bq, const struct rndr_header *param)
 {
-	ssize_t			 level;
-	struct bnode		*bn;
+	ssize_t				 level;
+	struct bnode			*bn;
+	struct lowdown_buf		*buf = NULL;
+	const struct lowdown_buf	*nbuf;
+	int			 	 rc = 0;
 
 	level = (ssize_t)param->level + st->headers_offs;
 	if (level < 1)
@@ -818,13 +799,8 @@ rndr_header(struct nroff *st, struct bnodeq *obq,
 
 	/*
 	 * For man(7), we use SH for the first-level section, SS for
-	 * other sections.
-	 * FIXME: use PP then italics or something for third-level etc.
-	 * For ms(7), just use SH.
-	 * If we're using ms(7) w/groff extensions and w/o numbering,
-	 * used the numbered version of the SH macro.
-	 * If we're numbered ms(7), use NH.
-	 * With groff extensions, use XN (-mspdf).
+	 * other sections.  TODO: use PP then italics or something for
+	 * third-level etc.
 	 */
 
 	if (st->man) {
@@ -833,35 +809,92 @@ rndr_header(struct nroff *st, struct bnodeq *obq,
 			bqueue_block(obq, ".SS");
 		if (bn == NULL)
 			return 0;
-		return bqueue_to_nargs(bn, bq, 0);
+		TAILQ_CONCAT(obq, bq, entries);
+		st->post_para = 1;
+		return 1;
 	} 
 
-	if (st->flags & LOWDOWN_NROFF_NUMBERED)
-		bn = bqueue_block(obq, ".NH");
-	else
-		bn = bqueue_block(obq, ".SH");
+	/*
+	 * Extract all text from the section.  Use this to make the
+	 * header identifiers and PDF references.
+	 */
+
+	if (st->flags & LOWDOWN_NROFF_GROFF) {
+		if ((buf = hbuf_new(32)) == NULL)
+			return 0;
+		TAILQ_FOREACH(bn, bq, entries) {
+			if (bn->buf != NULL &&
+			    !hbuf_puts(buf, bn->buf))
+				goto out;
+			if (bn->nargs != NULL &&
+			    strstr(bn->nargs, " -- ") != NULL &&
+			    !hbuf_puts(buf, strstr
+			     (bn->nargs, " -- ") + 4))
+				goto out;
+		}
+	}
+
+	/*
+	 * If we're using ms(7) w/groff extensions and w/o numbering,
+	 * used the numbered version of the SH macro.
+	 * If we're numbered ms(7), use NH.
+	 */
+
+	bn = (st->flags & LOWDOWN_NROFF_NUMBERED) ?
+		bqueue_block(obq, ".NH") : bqueue_block(obq, ".SH");
 	if (bn == NULL)
-		return 0;
+		goto out;
 
 	if ((st->flags & LOWDOWN_NROFF_NUMBERED) ||
 	    (st->flags & LOWDOWN_NROFF_GROFF)) 
 		if (asprintf(&bn->nargs, "%zd", level) == -1) {
 			bn->nargs = NULL;
-			return 0;
+			goto out;
 		}
 
-	/* Used in -mspdf output for creating a TOC. */
+	TAILQ_CONCAT(obq, bq, entries);
+	st->post_para = 1;
+
+	/*
+	 * Used in -mspdf output for creating a TOC and intra-document
+	 * linking.
+	 */
 
 	if (st->flags & LOWDOWN_NROFF_GROFF) {
-		if ((bn = bqueue_block(obq, ".XN")) == NULL)
-			return 0;
-		if (!bqueue_to_nargs(bn, bq, 0))
-			return 0;
-	} else
-		TAILQ_CONCAT(obq, bq, entries);
+		assert(buf != NULL);
+		if ((bn = bqueue_block(obq, ".pdfhref")) == NULL)
+			goto out;
+		if (asprintf(&bn->nargs, "O %zd", level) == -1) {
+			bn->nargs = NULL;
+			goto out;
+		}
 
-	st->post_para = 1;
-	return 1;
+		/*
+		 * No need to quote: quotes will be converted by
+		 * escaping into roff.
+		 */
+
+		bn->args = strndup(buf->data, buf->size);
+		if (bn->args == NULL)
+			goto out;
+
+		nbuf = hbuf_id(buf, &st->headers_used);
+		if (nbuf == NULL)
+			goto out;
+		if ((bn = bqueue_block(obq, ".pdfhref M")) == NULL)
+			goto out;
+
+		/* No need to quote: string is clean ascii. */
+
+		bn->nargs = strndup(nbuf->data, nbuf->size);
+		if (bn->nargs == NULL)
+			goto out;
+	}
+
+	rc = 1;
+out:
+	hbuf_free(buf);
+	return rc;
 }
 
 /*
@@ -929,30 +962,25 @@ static int
 rndr_paragraph(struct nroff *st, const struct lowdown_node *n,
 	struct bnodeq *obq, struct bnodeq *nbq)
 {
-	const struct lowdown_node	*prev;
-	struct bnode			*bn;
+	struct bnode	*bn;
 
 	/* 
-	 * We don't just blindly print a paragraph macro: it depends
-	 * upon what came before.  If we're following a HEADER, don't do
-	 * anything at all.  If we're in a list item, make sure that we
-	 * don't reset our text indent by using an `IP`.
+	 * Subsequent paragraphs get a PP for the indentation; otherwise, use
+	 * LP and forego the indentation.  If we're in a list item, make sure
+	 * that we don't reset our text indent by using an "IP".
 	 */
 
-	prev = TAILQ_PREV(n, lowdown_nodeq, entries);
-	if (!st->man || prev == NULL || prev->type != LOWDOWN_HEADER) {
-		for ( ; n != NULL; n = n->parent)
-			if (n->type == LOWDOWN_LISTITEM)
-				break;
-		if (n != NULL)
-			bn = bqueue_block(obq, ".IP");
-		else if (st->post_para)
-			bn = bqueue_block(obq, ".LP");
-		else
-			bn = bqueue_block(obq, ".PP");
-		if (bn == NULL)
-			return 0;
-	}
+	for ( ; n != NULL; n = n->parent)
+		if (n->type == LOWDOWN_LISTITEM)
+			break;
+	if (n != NULL)
+		bn = bqueue_block(obq, ".IP");
+	else if (st->post_para)
+		bn = bqueue_block(obq, ".LP");
+	else
+		bn = bqueue_block(obq, ".PP");
+	if (bn == NULL)
+		return 0;
 
 	TAILQ_CONCAT(obq, nbq, entries);
 	st->post_para = 0;
@@ -1799,6 +1827,7 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 
 	TAILQ_INIT(&metaq);
 	TAILQ_INIT(&bq);
+	TAILQ_INIT(&st->headers_used);
 
 	memset(st->fonts, 0, sizeof(st->fonts));
 	st->headers_offs = 1;
@@ -1824,6 +1853,7 @@ out:
 	st->foots = NULL;
 	lowdown_metaq_free(&metaq);
 	bqueue_free(&bq);
+	hentryq_clear(&st->headers_used);
 	return rc;
 }
 

@@ -1,5 +1,7 @@
 .NH 1
-.XN An h1 header
+An h1 header
+.pdfhref O 1 An h1 header
+.pdfhref M an-h1-header
 .LP
 Paragraphs are separated by a blank line.
 .PP
@@ -35,7 +37,9 @@ Use 3 dashes for an em-dash. Use 2 dashes for ranges (ex., \[u201C]it\[u2019]s a
 in chapters 12\[u2013]14\[u201D]). Three dots \[u2026] will be converted to an ellipsis.
 Unicode is supported. ☺
 .NH 2
-.XN An h2 header
+An h2 header
+.pdfhref O 2 An h2 header
+.pdfhref M an-h2-header
 .LP
 Here\[u2019]s a numbered list:
 .IP "1.  "
@@ -88,7 +92,9 @@ for i in range(10):
 .ft
 .fi
 .NH 3
-.XN An h3 header
+An h3 header
+.pdfhref O 3 An h3 header
+.pdfhref M an-h3-header
 .LP
 Now a nested list:
 .IP "1.  "
