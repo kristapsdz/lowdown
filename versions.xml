@@ -1245,7 +1245,11 @@
 			<p>
 				Fix output of how links are handled in <b>-Tms</b> when part of
 				headers.  The same applies to other block-level macros with link
-				children such as in definition lists.
+				children such as in definition lists.  This also cleans up how
+				headers are shown in the PDF TOC.  While here, make header identifiers
+				the same as in <b>-Thtml</b> so that intra-document links are 
+				consistent, and enable linking within a document using the PDF
+				markers.
 			</p>
 			<p>
 				Fix footnotes to be actual footnotes in <b>-Tlatex</b> and
