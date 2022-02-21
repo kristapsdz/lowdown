@@ -120,8 +120,12 @@ Star Trek: Enterprise { .reboots }
 .Ed
 .Pp
 Non-empty values with a leading period are interpreted as HTML (CSS)
-classes, and values with a leading pound symbol are interpreted as HTML
-identifiers.
+classes, and values with a leading pound symbol are interpreted as
+identifiers that may be used when linking within the document.
+.Pp
+Extra attribute identifiers override the default mechanism for creating
+header identifiers.
+They should contain only ASCII alphanumeric characters.
 .Ss Block Quotes
 Block quoted sections are invoked with a single right-angle bracket
 .Pq Dq >

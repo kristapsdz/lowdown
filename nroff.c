@@ -884,17 +884,30 @@ rndr_header(struct nroff *st, struct bnodeq *obq,
 		if (bn->args == NULL)
 			goto out;
 
-		nbuf = hbuf_id(buf, &st->headers_used);
-		if (nbuf == NULL)
-			goto out;
 		if ((bn = bqueue_block(obq, ".pdfhref M")) == NULL)
 			goto out;
 
-		/* No need to quote: string is clean ascii. */
+		/*
+		 * If the identifier comes from the user, we need to
+		 * escape it accordingly; otherwise, use it directly as
+		 * the hbuf_id() function will take care of it.
+		 */
 
-		bn->nargs = strndup(nbuf->data, nbuf->size);
-		if (bn->nargs == NULL)
-			goto out;
+		if (param->attr_id.size) {
+			bn->args = strndup
+				(param->attr_id.data,
+				 param->attr_id.size);
+			if (bn->args == NULL)
+				goto out;
+		} else {
+			nbuf = hbuf_id(buf, &st->headers_used);
+			if (nbuf == NULL)
+				goto out;
+			bn->nargs = strndup
+				(nbuf->data, nbuf->size);
+			if (bn->nargs == NULL)
+				goto out;
+		}
 	}
 
 	rc = 1;
