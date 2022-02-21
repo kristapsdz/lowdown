@@ -143,7 +143,7 @@ Here\[u2019]s a link to \c
 , to a \c
 .pdfhref W -A "\c" -D local-doc.html -- local doc
 , and to a \c
-.pdfhref W -A "\c" -D #an-h2-header -- section heading in the current doc
+.pdfhref L -A "\c" -D an-h2-header -- section heading in the current doc
 \&. Here\[u2019]s a footnote \**
 .FS
 Footnote text goes here.

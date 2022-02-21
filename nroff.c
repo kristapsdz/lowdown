@@ -534,10 +534,10 @@ putlink(struct bnodeq *obq, struct nroff *st,
 	const struct lowdown_buf *link, struct bnodeq *bq,
 	enum halink_type type)
 {
-	struct lowdown_buf		*ob = NULL;
-	struct bnode			*bn;
-	size_t				 i;
-	int				 rc = 0;
+	struct lowdown_buf	*ob = NULL;
+	struct bnode		*bn;
+	size_t			 i;
+	int			 rc = 0, local = 0;
 
 	/*
 	 * For -Tman or without .pdfhref, format the link as-is, with
@@ -609,11 +609,14 @@ putlink(struct bnodeq *obq, struct nroff *st,
 
 	/* Encode the URL. */
 
+	local = type != HALINK_EMAIL &&
+		link->size && link->data[0] == '#';
+
 	if (!HBUF_PUTSL(ob, "-D "))
 		goto out;
 	if (type == HALINK_EMAIL && !HBUF_PUTSL(ob, "mailto:"))
 		goto out;
-	for (i = 0; i < link->size; i++) {
+	for (i = local ? 1 : 0; i < link->size; i++) {
 		if (!isprint((unsigned char)link->data[i]) ||
 		    strchr("<>\\^`{|}\"", link->data[i]) != NULL) {
 			if (!hbuf_printf(ob, "%%%.2X", link->data[i]))
@@ -628,7 +631,10 @@ putlink(struct bnodeq *obq, struct nroff *st,
 		goto out;
 	else if (bq != NULL && !bqueue_flush(ob, bq, 1))
 		goto out;
-	if ((bn = bqueue_semiblock(obq, ".pdfhref W")) == NULL)
+	bn = local ? 
+		bqueue_semiblock(obq, ".pdfhref L") :
+		bqueue_semiblock(obq, ".pdfhref W");
+	if (bn == NULL)
 		goto out;
 	if ((bn->nargs = strndup(ob->data, ob->size)) == NULL)
 		goto out;
