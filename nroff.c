@@ -791,7 +791,7 @@ rndr_linebreak(struct bnodeq *obq)
 
 static int
 rndr_header(struct nroff *st, struct bnodeq *obq,
-	struct bnodeq *bq, const struct rndr_header *param)
+	struct bnodeq *bq, const struct lowdown_node *n)
 {
 	ssize_t				 level;
 	struct bnode			*bn;
@@ -799,7 +799,7 @@ rndr_header(struct nroff *st, struct bnodeq *obq,
 	const struct lowdown_buf	*nbuf;
 	int			 	 rc = 0;
 
-	level = (ssize_t)param->level + st->headers_offs;
+	level = (ssize_t)n->rndr_header.level + st->headers_offs;
 	if (level < 1)
 		level = 1;
 
@@ -819,26 +819,6 @@ rndr_header(struct nroff *st, struct bnodeq *obq,
 		st->post_para = 1;
 		return 1;
 	} 
-
-	/*
-	 * Extract all text from the section.  Use this to make the
-	 * header identifiers and PDF references.
-	 */
-
-	if (st->flags & LOWDOWN_NROFF_GROFF) {
-		if ((buf = hbuf_new(32)) == NULL)
-			return 0;
-		TAILQ_FOREACH(bn, bq, entries) {
-			if (bn->buf != NULL &&
-			    !hbuf_puts(buf, bn->buf))
-				goto out;
-			if (bn->nargs != NULL &&
-			    strstr(bn->nargs, " -- ") != NULL &&
-			    !hbuf_puts(buf, strstr
-			     (bn->nargs, " -- ") + 4))
-				goto out;
-		}
-	}
 
 	/*
 	 * If we're using ms(7) w/groff extensions and w/o numbering,
@@ -867,7 +847,11 @@ rndr_header(struct nroff *st, struct bnodeq *obq,
 	 */
 
 	if (st->flags & LOWDOWN_NROFF_GROFF) {
-		assert(buf != NULL);
+		if ((buf = hbuf_new(32)) == NULL)
+			goto out;
+		if (!hbuf_extract_text(buf, n))
+			goto out;
+
 		if ((bn = bqueue_block(obq, ".pdfhref")) == NULL)
 			goto out;
 		if (asprintf(&bn->nargs, "O %zd", level) == -1) {
@@ -893,14 +877,14 @@ rndr_header(struct nroff *st, struct bnodeq *obq,
 		 * the hbuf_id() function will take care of it.
 		 */
 
-		if (param->attr_id.size) {
+		if (n->rndr_header.attr_id.size) {
 			bn->args = strndup
-				(param->attr_id.data,
-				 param->attr_id.size);
+				(n->rndr_header.attr_id.data,
+				 n->rndr_header.attr_id.size);
 			if (bn->args == NULL)
 				goto out;
 		} else {
-			nbuf = hbuf_id(buf, &st->headers_used);
+			nbuf = hbuf_id(buf, NULL, &st->headers_used);
 			if (nbuf == NULL)
 				goto out;
 			bn->nargs = strndup
@@ -1720,7 +1704,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 			rc = rndr_meta(st, &tmpbq, mq, &n->rndr_meta);
 		break;
 	case LOWDOWN_HEADER:
-		rc = rndr_header(st, obq, &tmpbq, &n->rndr_header);
+		rc = rndr_header(st, obq, &tmpbq, n);
 		break;
 	case LOWDOWN_HRULE:
 		rc = rndr_hrule(st, obq);

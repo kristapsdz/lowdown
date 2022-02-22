@@ -379,19 +379,58 @@ err:
 }
 
 /*
+ * Format the raw string used for creating header identifiers.  This
+ * recursively drops through the header contents extracting text along
+ * the way.
+ */
+int
+hbuf_extract_text(struct lowdown_buf *ob, const struct lowdown_node *n)
+{
+	const struct lowdown_node	*child;
+
+	if (n->type == LOWDOWN_NORMAL_TEXT)
+		if (!hbuf_putb(ob, &n->rndr_normal_text.text))
+			return 0;
+	if (n->type == LOWDOWN_IMAGE)
+		if (!hbuf_putb(ob, &n->rndr_image.alt))
+			return 0;
+	if (n->type == LOWDOWN_LINK_AUTO)
+		if (!hbuf_putb(ob, &n->rndr_autolink.link))
+			return 0;
+	TAILQ_FOREACH(child, &n->children, entries)
+		if (!hbuf_extract_text(ob, child))
+			return 0;
+
+	return 1;
+}
+
+/*
  * Return a unique header identifier for "header".  Return zero on
  * failure (memory), non-zero on success.  The new value is appended to
  * the queue, which must be freed with hentryq_clear at some point.
  */
 const struct lowdown_buf *
-hbuf_id(const struct lowdown_buf *header, struct hentryq *q)
+hbuf_id(const struct lowdown_buf *header, const struct lowdown_node *n,
+	struct hentryq *q)
 {
-	struct lowdown_buf	*buf = NULL, *nbuf = NULL;
-	size_t			 count;
-	struct hentry		*he = NULL, *entry;
+	struct lowdown_buf		*buf = NULL, *nbuf = NULL;
+	const struct lowdown_node	*child;
+	size_t				 count;
+	struct hentry			*he = NULL, *entry;
 
-	if ((buf = hbuf_dupname(header)) == NULL)
-		goto out;
+	if (header == NULL) {
+		if ((nbuf = hbuf_new(32)) == NULL)
+			goto out;
+		TAILQ_FOREACH(child, &n->children, entries)
+			if (!hbuf_extract_text(nbuf, child))
+				goto out;
+		if ((buf = hbuf_dupname(nbuf)) == NULL)
+			goto out;
+		hbuf_free(nbuf);
+		nbuf = NULL;
+	} else
+		if ((buf = hbuf_dupname(header)) == NULL)
+			goto out;
 
 	TAILQ_FOREACH(entry, q, entries)
 		if (hbuf_eq(entry->buf, buf))

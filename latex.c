@@ -92,74 +92,6 @@ rndr_escape(struct lowdown_buf *ob, const struct lowdown_buf *dat)
 	return rndr_escape_text(ob, dat->data, dat->size);
 }
 
-/*
- * Remove the span-level LaTeX from a buffer.  This ONLY works with
- * in-line content, and is designed for use in the header to strip away
- * child content for formatting hypertext targets.
- */
-static int
-rndr_delatex(struct lowdown_buf *ob,
-	const struct lowdown_buf *buf, size_t *pos)
-{
-	size_t	 start;
-	int	 ishref;
-
-	for (; *pos < buf->size; (*pos)++) {
-		if (buf->data[*pos] == '}')
-			return 1;
-		if (buf->data[*pos] != '\\') {
-			if (!hbuf_putc(ob, buf->data[*pos]))
-				return 0;
-			continue;
-		}
-		(*pos)++;
-		assert(*pos < buf->size);
-		switch (buf->data[*pos]) {
-		case '&':
-		case '%':
-		case '$':
-		case '#':
-		case '_':
-		case '{':
-		case '}':
-			continue;
-		default:
-			break;
-		}
-		start = *pos;
-		for ( ; *pos < buf->size; (*pos)++)
-			if (buf->data[*pos] == '{' ||
-			    buf->data[*pos] == '\n' ||
-			    buf->data[*pos] == ' ')
-				break;
-		assert(*pos < buf->size);
-
-		if (buf->data[*pos] == '{') {
-			ishref = 0;
-			if ((*pos - start == 4 && memcmp
-			     (&buf->data[start], "href", 4) == 0) ||
-			    (*pos - start == 9 && memcmp
-			     (&buf->data[start], "hyperlink", 9) == 0))
-				ishref = 1;
-			(*pos)++;
-			if (ishref) {
-				for ( ; *pos < buf->size; (*pos)++)
-					if (buf->data[*pos] == '}')
-						break;
-				assert(*pos < buf->size);
-				(*pos)++;
-				assert(buf->data[*pos] == '{');
-				(*pos)++;
-			}
-			if (!rndr_delatex(ob, buf, pos))
-				return 0;
-			assert(buf->data[*pos] == '}');
-		}
-	}
-	
-	return 1;
-}
-
 static int
 rndr_autolink(struct lowdown_buf *ob,
 	const struct rndr_autolink *param)
@@ -333,30 +265,22 @@ rndr_linebreak(struct lowdown_buf *ob)
 
 static int
 rndr_header(struct lowdown_buf *ob, const struct lowdown_buf *content,
-	const struct rndr_header *param, struct latex *st)
+	const struct lowdown_node *n, struct latex *st)
 {
 	const char			*type;
 	ssize_t				 level;
-	struct lowdown_buf		*buf;
+	struct lowdown_buf		*buf = NULL;
 	const struct lowdown_buf	*id;
-	size_t			 	 i = 0;
 	int				 rc = 0;
 
-	/* Strip out latex for hypertext identifier and label. */
-
-	if ((buf = hbuf_new(32)) == NULL)
-		return 0;
-
-	if (param->attr_id.size) {
-		if (!rndr_escape(buf, &param->attr_id))
+	if (n->rndr_header.attr_id.size) {
+		if ((buf = hbuf_new(32)) == NULL)
+			goto out;
+		if (!rndr_escape(buf, &n->rndr_header.attr_id))
 			goto out;
 		id = buf;
 	} else {
-		if (!rndr_delatex(buf, content, &i))
-			goto out;
-		id = hbuf_id(buf, &st->headers_used);
-		hbuf_free(buf);
-		buf = NULL;
+		id = hbuf_id(NULL, n, &st->headers_used);
 		if (id == NULL)
 			goto out;
 	}
@@ -371,7 +295,7 @@ rndr_header(struct lowdown_buf *ob, const struct lowdown_buf *content,
 	if (!HBUF_PUTSL(ob, "}{%\n"))
 		goto out;
 
-	level = (ssize_t)param->level + st->headers_offs;
+	level = (ssize_t)n->rndr_header.level + st->headers_offs;
 	if (level < 1)
 		level = 1;
 
@@ -938,7 +862,7 @@ rndr(struct lowdown_buf *ob,
 			return 0;
 		break;
 	case LOWDOWN_HEADER:
-		if (!rndr_header(ob, tmp, &n->rndr_header, st))
+		if (!rndr_header(ob, tmp, n, st))
 			return 0;
 		break;
 	case LOWDOWN_HRULE:
