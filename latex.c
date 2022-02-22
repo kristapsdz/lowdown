@@ -135,8 +135,12 @@ rndr_delatex(struct lowdown_buf *ob,
 		assert(*pos < buf->size);
 
 		if (buf->data[*pos] == '{') {
-			ishref = *pos - start == 4 &&
-				memcmp(&buf->data[start], "href", 4) == 0;
+			ishref = 0;
+			if ((*pos - start == 4 && memcmp
+			     (&buf->data[start], "href", 4) == 0) ||
+			    (*pos - start == 9 && memcmp
+			     (&buf->data[start], "hyperlink", 9) == 0))
+				ishref = 1;
 			(*pos)++;
 			if (ishref) {
 				for ( ; *pos < buf->size; (*pos)++)
@@ -403,10 +407,20 @@ rndr_link(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
 	const struct rndr_link *param)
 {
+	int	loc;
 
-	if (!HBUF_PUTSL(ob, "\\href{"))
+	loc = param->link.size > 0 &&
+		param->link.data[0] == '#';
+
+	if (loc && !HBUF_PUTSL(ob, "\\hyperlink{"))
 		return 0;
-	if (!rndr_escape(ob, &param->link))
+	else if (!loc && !HBUF_PUTSL(ob, "\\href{"))
+		return 0;
+
+	if (loc && !rndr_escape_text
+	    (ob, &param->link.data[1], param->link.size - 1))
+		return 0;
+	else if (!loc && !rndr_escape(ob, &param->link))
 		return 0;
 	if (!HBUF_PUTSL(ob, "}{"))
 		return 0;

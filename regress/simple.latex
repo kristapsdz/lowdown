@@ -108,7 +108,7 @@ Notice again how text always lines up on 4-space indents (including
 that last line which continues item 3 above).
 
 Here's a link to \href{http://foo.bar}{a website}, to a \href{local-doc.html}{local
-doc}, and to a \href{\#an-h2-header}{section heading in the current
+doc}, and to a \hyperlink{an-h2-header}{section heading in the current
 doc}. Here's a footnote \footnote[1]{
 Footnote text goes here.
 }
