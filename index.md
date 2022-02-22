@@ -211,13 +211,19 @@ is what's used internally by
 ## Testing
 
 The canonical Markdown tests are available as part of a regression framework
-within the system.  Just use `make regress` to run these tests.
+within the system.  Just use `make regress` to run these and many other tests.
+
+If you have [valgrind](https://valgrind.org) installed, `make valgrind` will
+run all regression tests with all output modes and store any leaks or bad
+behaviour.  These are output to the screen at the conclusion of all tests.
 
 I've extensively run [AFL](http://lcamtuf.coredump.cx/afl/) against the
 compiled sources with no failures---definitely a credit to the
 [hoedown](https://github.com/hoedown/hoedown) authors (and those from whom they
 forked their own sources).  I'll also regularly run the system through
-[valgrind](http://valgrind.org/), also without issue.
+[valgrind](http://valgrind.org/), also without issue.  The
+[afl/in](afl/in) directory contains a series of small input files that
+may be used in longer AFL runs.
 
 ## Code layout
 

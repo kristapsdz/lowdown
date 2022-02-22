@@ -137,6 +137,7 @@ $(VALGRINDS): lowdown
 
 .md.valgrind:
 	@rm -f $@
+	valgrind $(VALGRIND_ARGS) ./lowdown -s -tfodt $< >/dev/null 2>>$@
 	valgrind $(VALGRIND_ARGS) ./lowdown -s -thtml $< >/dev/null 2>>$@
 	valgrind $(VALGRIND_ARGS) ./lowdown -s -tms $< >/dev/null 2>>$@
 	valgrind $(VALGRIND_ARGS) ./lowdown -s -tman $< >/dev/null 2>>$@
@@ -279,6 +280,8 @@ lowdown.tar.gz:
 		.dist/lowdown-$(VERSION)/regress
 	$(INSTALL) -m 644 regress/*.html \
 		.dist/lowdown-$(VERSION)/regress
+	$(INSTALL) -m 644 regress/*.fodt \
+		.dist/lowdown-$(VERSION)/regress
 	$(INSTALL) -m 644 regress/*.ms \
 		.dist/lowdown-$(VERSION)/regress
 	$(INSTALL) -m 644 regress/*.man \
@@ -332,6 +335,10 @@ regress: lowdown
 			./lowdown -thtml $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/`basename $$f .md`.html $$tmp1 ; \
 		fi ; \
+		if [ -f regress/`basename $$f .md`.fodt ]; then \
+			./lowdown -tfodt $$f >$$tmp1 2>&1 ; \
+			diff -uw regress/`basename $$f .md`.fodt $$tmp1 ; \
+		fi ; \
 		if [ -f regress/`basename $$f .md`.term ]; then \
 			./lowdown -tterm $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/`basename $$f .md`.term $$tmp1 ; \
@@ -358,6 +365,10 @@ regress: lowdown
 		if [ -f regress/standalone/`basename $$f .md`.html ]; then \
 			./lowdown -s -thtml $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/standalone/`basename $$f .md`.html $$tmp1 ; \
+		fi ; \
+		if [ -f regress/standalone/`basename $$f .md`.fodt ]; then \
+			./lowdown -s -tfodt $$f >$$tmp1 2>&1 ; \
+			diff -uw regress/standalone/`basename $$f .md`.fodt $$tmp1 ; \
 		fi ; \
 		if [ -f regress/standalone/`basename $$f .md`.latex ]; then \
 			./lowdown -s -tlatex $$f >$$tmp1 2>&1 ; \
