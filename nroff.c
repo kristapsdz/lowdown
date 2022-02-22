@@ -1057,63 +1057,58 @@ rndr_image(struct nroff *st, struct bnodeq *obq,
 	size_t		 sz;
 	struct bnode	*bn;
 
-	/* In -Tman, we have no images: treat as a link. */
-
-	if (st->man) {
-		st->fonts[NFONT_BOLD]++;
-		if (!bqueue_font(st, obq, 0))
-			return 0;
-		if ((bn = bqueue_span(obq, NULL)) == NULL)
-			return 0;
-		bn->buf = strndup(param->alt.data, param->alt.size);
-		if (bn->buf == NULL)
-			return 0;
-		st->fonts[NFONT_BOLD]--;
-		if (!bqueue_font(st, obq, 1))
-			return 0;
-		if (st->flags & LOWDOWN_NROFF_NOLINK)
-			return bqueue_span(obq, " (Image)") != NULL;
-		if (bqueue_span(obq, " (Image: ") == NULL)
-			return 0;
-		st->fonts[NFONT_ITALIC]++;
-		if (!bqueue_font(st, obq, 0))
-			return 0;
-		if ((bn = bqueue_span(obq, NULL)) == NULL)
-			return 0;
-		if (st->flags & LOWDOWN_NROFF_SHORTLINK) {
-			bn->nbuf = hbuf2shortlink(&param->link);
-			if (bn->nbuf == NULL)
-				return 0;
-		} else {
-			bn->buf = strndup(param->link.data, param->link.size);
-			if (bn->buf == NULL)
-				return 0;
+	if (!st->man) {
+		cp = memrchr(param->link.data, '.', param->link.size);
+		if (cp != NULL) {
+			cp++;
+			sz = param->link.size - (cp - param->link.data);
+			if ((sz == 2 && memcmp(cp, "ps", 2) == 0) ||
+			    (sz == 3 && memcmp(cp, "eps", 3) == 0)) {
+				bn = bqueue_block(obq, ".PSPIC");
+				if (bn == NULL)
+					return 0;
+				bn->args = strndup(param->link.data,
+					param->link.size);
+				return bn->args != NULL;
+			}
 		}
-		st->fonts[NFONT_ITALIC]--;
-		if (!bqueue_font(st, obq, 1))
-			return 0;
-		return bqueue_span(obq, ")") != NULL;
 	}
 
-	/* Are we suffixed with ps or eps? */
+	/* In -Tman, we have no images: treat as a link. */
 
-	cp = memrchr(param->link.data, '.', param->link.size);
-	if (cp == NULL)
-		return 1;
-	cp++;
-	sz = param->link.size - (cp - param->link.data);
-	if (sz == 0)
-		return 1;
-	if (!(sz == 2 && memcmp(cp, "ps", 2) == 0) &&
-	    !(sz == 3 && memcmp(cp, "eps", 3) == 0))
-		return 1;
-
-	/* If so, use a PSPIC. */
-
-	if ((bn = bqueue_block(obq, ".PSPIC")) == NULL)
+	st->fonts[NFONT_BOLD]++;
+	if (!bqueue_font(st, obq, 0))
 		return 0;
-	bn->args = strndup(param->link.data, param->link.size);
-	return bn->args != NULL;
+	if ((bn = bqueue_span(obq, NULL)) == NULL)
+		return 0;
+	bn->buf = strndup(param->alt.data, param->alt.size);
+	if (bn->buf == NULL)
+		return 0;
+	st->fonts[NFONT_BOLD]--;
+	if (!bqueue_font(st, obq, 1))
+		return 0;
+	if (st->flags & LOWDOWN_NROFF_NOLINK)
+		return bqueue_span(obq, " (Image)") != NULL;
+	if (bqueue_span(obq, " (Image: ") == NULL)
+		return 0;
+	st->fonts[NFONT_ITALIC]++;
+	if (!bqueue_font(st, obq, 0))
+		return 0;
+	if ((bn = bqueue_span(obq, NULL)) == NULL)
+		return 0;
+	if (st->flags & LOWDOWN_NROFF_SHORTLINK) {
+		bn->nbuf = hbuf2shortlink(&param->link);
+		if (bn->nbuf == NULL)
+			return 0;
+	} else {
+		bn->buf = strndup(param->link.data, param->link.size);
+		if (bn->buf == NULL)
+			return 0;
+	}
+	st->fonts[NFONT_ITALIC]--;
+	if (!bqueue_font(st, obq, 1))
+		return 0;
+	return bqueue_span(obq, ")") != NULL;
 }
 
 static int

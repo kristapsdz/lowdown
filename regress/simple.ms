@@ -232,6 +232,7 @@ term/definition pair to spread things out more.)
 .PP
 Images can be specified like so:
 .PP
+\fBexample image\fR (Image: \fIexample-image.jpg\fR)
 .PP
 And note that you can backslash-escape any punctuation characters
 which you wish to be displayed literally, ex.: \(gafoo\(ga, *bar*, etc.
