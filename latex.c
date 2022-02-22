@@ -20,6 +20,7 @@
 # include <sys/queue.h>
 #endif
 
+#include <assert.h>
 #include <ctype.h>
 #include <inttypes.h>
 #include <stdint.h>
@@ -33,6 +34,7 @@
 
 struct latex {
 	unsigned int	oflags; /* same as in lowdown_opts */
+	struct hentryq	headers_used; /* headers we've seen */
 	ssize_t		headers_offs; /* header offset */
 	size_t		footsz; /* current footnote */
 };
@@ -88,6 +90,70 @@ rndr_escape(struct lowdown_buf *ob, const struct lowdown_buf *dat)
 {
 	
 	return rndr_escape_text(ob, dat->data, dat->size);
+}
+
+/*
+ * Remove the span-level LaTeX from a buffer.  This ONLY works with
+ * in-line content, and is designed for use in the header to strip away
+ * child content for formatting hypertext targets.
+ */
+static int
+rndr_delatex(struct lowdown_buf *ob,
+	const struct lowdown_buf *buf, size_t *pos)
+{
+	size_t	 start;
+	int	 ishref;
+
+	for (; *pos < buf->size; (*pos)++) {
+		if (buf->data[*pos] == '}')
+			return 1;
+		if (buf->data[*pos] != '\\') {
+			if (!hbuf_putc(ob, buf->data[*pos]))
+				return 0;
+			continue;
+		}
+		(*pos)++;
+		assert(*pos < buf->size);
+		switch (buf->data[*pos]) {
+		case '&':
+		case '%':
+		case '$':
+		case '#':
+		case '_':
+		case '{':
+		case '}':
+			continue;
+		default:
+			break;
+		}
+		start = *pos;
+		for ( ; *pos < buf->size; (*pos)++)
+			if (buf->data[*pos] == '{' ||
+			    buf->data[*pos] == '\n' ||
+			    buf->data[*pos] == ' ')
+				break;
+		assert(*pos < buf->size);
+
+		if (buf->data[*pos] == '{') {
+			ishref = *pos - start == 4 &&
+				memcmp(&buf->data[start], "href", 4) == 0;
+			(*pos)++;
+			if (ishref) {
+				for ( ; *pos < buf->size; (*pos)++)
+					if (buf->data[*pos] == '}')
+						break;
+				assert(*pos < buf->size);
+				(*pos)++;
+				assert(buf->data[*pos] == '{');
+				(*pos)++;
+			}
+			if (!rndr_delatex(ob, buf, pos))
+				return 0;
+			assert(buf->data[*pos] == '}');
+		}
+	}
+	
+	return 1;
 }
 
 static int
@@ -262,15 +328,36 @@ rndr_linebreak(struct lowdown_buf *ob)
 }
 
 static int
-rndr_header(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	const struct rndr_header *param,
-	const struct latex *st)
+rndr_header(struct lowdown_buf *ob, const struct lowdown_buf *content,
+	const struct rndr_header *param, struct latex *st)
 {
-	const char	*type;
-	ssize_t		 level;
+	const char			*type;
+	ssize_t				 level;
+	struct lowdown_buf		*buf;
+	const struct lowdown_buf	*id;
+	size_t			 	 i = 0;
+
+	/* Strip out latex for hypertext identifier and label. */
+
+	if ((buf = hbuf_new(32)) == NULL)
+		return 0;
+	if (!rndr_delatex(buf, content, &i)) {
+		hbuf_free(buf);
+		return 0;
+	}
+	id = hbuf_id(buf, &st->headers_used);
+	hbuf_free(buf);
+	if (id == NULL)
+		return 0;
 
 	if (ob->size && !HBUF_PUTSL(ob, "\n"))
+		return 0;
+
+	if (!HBUF_PUTSL(ob, "\\hypertarget{"))
+		return 0;
+	if (!hbuf_putb(ob, id))
+		return 0;
+	if (!HBUF_PUTSL(ob, "}{%\n"))
 		return 0;
 
 	level = (ssize_t)param->level + st->headers_offs;
@@ -304,7 +391,11 @@ rndr_header(struct lowdown_buf *ob,
 		return 0;
 	if (!hbuf_putb(ob, content))
 		return 0;
-	return HBUF_PUTSL(ob, "}\n");
+	if (!HBUF_PUTSL(ob, "}\\label{"))
+		return 0;
+	if (!hbuf_putb(ob, id))
+		return 0;
+	return HBUF_PUTSL(ob, "}}\n");
 }
 
 static int
@@ -946,6 +1037,7 @@ lowdown_latex_rndr(struct lowdown_buf *ob,
 	struct lowdown_metaq	 metaq;
 	int			 rc;
 
+	TAILQ_INIT(&st->headers_used);
 	TAILQ_INIT(&metaq);
 	st->headers_offs = 1;
 	st->footsz = 0;
@@ -953,6 +1045,7 @@ lowdown_latex_rndr(struct lowdown_buf *ob,
 	rc = rndr(ob, &metaq, st, n);
 
 	lowdown_metaq_free(&metaq);
+	hentryq_clear(&st->headers_used);
 	return rc;
 }
 

@@ -1,4 +1,5 @@
-\section{An h1 header}
+\hypertarget{an-h1-header}{%
+\section{An h1 header}\label{an-h1-header}}
 
 Paragraphs are separated by a blank line.
 
@@ -28,7 +29,8 @@ Use 3 dashes for an em-dash. Use 2 dashes for ranges (ex., ``it's all
 in chapters 12--14''). Three dots \ldots{} will be converted to an ellipsis.
 Unicode is supported. ☺
 
-\subsection{An h2 header}
+\hypertarget{an-h2-header}{%
+\subsection{An h2 header}\label{an-h2-header}}
 
 Here's a numbered list:
 
@@ -68,7 +70,8 @@ for i in range(10):
     print i
 \end{verbatim}
 
-\subsubsection{An h3 header}
+\hypertarget{an-h3-header}{%
+\subsubsection{An h3 header}\label{an-h3-header}}
 
 Now a nested list:
 
