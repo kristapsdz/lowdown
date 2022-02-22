@@ -340,29 +340,36 @@ rndr_header(struct lowdown_buf *ob, const struct lowdown_buf *content,
 	struct lowdown_buf		*buf;
 	const struct lowdown_buf	*id;
 	size_t			 	 i = 0;
+	int				 rc = 0;
 
 	/* Strip out latex for hypertext identifier and label. */
 
 	if ((buf = hbuf_new(32)) == NULL)
 		return 0;
-	if (!rndr_delatex(buf, content, &i)) {
+
+	if (param->attr_id.size) {
+		if (!rndr_escape(buf, &param->attr_id))
+			goto out;
+		id = buf;
+	} else {
+		if (!rndr_delatex(buf, content, &i))
+			goto out;
+		id = hbuf_id(buf, &st->headers_used);
 		hbuf_free(buf);
-		return 0;
+		buf = NULL;
+		if (id == NULL)
+			goto out;
 	}
-	id = hbuf_id(buf, &st->headers_used);
-	hbuf_free(buf);
-	if (id == NULL)
-		return 0;
 
 	if (ob->size && !HBUF_PUTSL(ob, "\n"))
-		return 0;
+		goto out;
 
 	if (!HBUF_PUTSL(ob, "\\hypertarget{"))
-		return 0;
+		goto out;
 	if (!hbuf_putb(ob, id))
-		return 0;
+		goto out;
 	if (!HBUF_PUTSL(ob, "}{%\n"))
-		return 0;
+		goto out;
 
 	level = (ssize_t)param->level + st->headers_offs;
 	if (level < 1)
@@ -387,19 +394,24 @@ rndr_header(struct lowdown_buf *ob, const struct lowdown_buf *content,
 	}
 
 	if (!hbuf_puts(ob, type))
-		return 0;
+		goto out;
 	if (!(st->oflags & LOWDOWN_LATEX_NUMBERED) &&
   	    !HBUF_PUTSL(ob, "*"))
-		return 0;
+		goto out;
 	if (!HBUF_PUTSL(ob, "{"))
-		return 0;
+		goto out;
 	if (!hbuf_putb(ob, content))
-		return 0;
+		goto out;
 	if (!HBUF_PUTSL(ob, "}\\label{"))
-		return 0;
+		goto out;
 	if (!hbuf_putb(ob, id))
-		return 0;
-	return HBUF_PUTSL(ob, "}}\n");
+		goto out;
+	if (!HBUF_PUTSL(ob, "}}\n"))
+		goto out;
+	rc = 1;
+out:
+	hbuf_free(buf);
+	return rc;
 }
 
 static int
