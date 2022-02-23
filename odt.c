@@ -84,6 +84,7 @@ struct	odt_chng {
  * keeps output state in terms of the styles that need printing.
  */
 struct 	odt {
+	struct hentryq	 	 headers_used; /* headers we've seen */
 	ssize_t			 headers_offs; /* header offset */
 	unsigned int 		 flags; /* "oflags" in lowdown_opts */
 	struct odt_sty		*stys; /* styles for content */
@@ -1194,15 +1195,16 @@ rndr_linebreak(struct lowdown_buf *ob)
 static int
 rndr_header(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
-	const struct rndr_header *param, 
+	const struct lowdown_node *n, 
 	struct odt *st)
 {
-	struct odt_sty	*sty;
-	ssize_t		 level;
-	size_t		 i;
-	int		 fl;
+	struct odt_sty			*sty;
+	ssize_t				 level;
+	size_t				 i;
+	int				 fl;
+	const struct lowdown_buf	*buf;
 
-	level = (ssize_t)param->level + st->headers_offs;
+	level = (ssize_t)n->rndr_header.level + st->headers_offs;
 	if (level < 1)
 		level = 1;
 	else if (level > 3)
@@ -1235,7 +1237,23 @@ rndr_header(struct lowdown_buf *ob,
 	     "<text:h text:style-name=\"%s\""
 	     " text:outline-level=\"%zu\">", sty->name, level))
 		return 0;
+
+	buf = hbuf_id(NULL, n, &st->headers_used);
+	if (buf == NULL)
+		return 0;
+	if (!HBUF_PUTSL(ob, "<text:bookmark-start text:name=\""))
+		return 0;
+	if (!hbuf_putb(ob, buf))
+		return 0;
+	if (!HBUF_PUTSL(ob, "\" />"))
+		return 0;
 	if (!hbuf_putb(ob, content))
+		return 0;
+	if (!HBUF_PUTSL(ob, "<text:bookmark-end text:name=\""))
+		return 0;
+	if (!hbuf_putb(ob, buf))
+		return 0;
+	if (!HBUF_PUTSL(ob, "\" />"))
 		return 0;
 	return HBUF_PUTSL(ob, "</text:h>\n");
 }
@@ -1896,7 +1914,7 @@ rndr(struct lowdown_buf *ob,
 			goto out;
 		break;
 	case LOWDOWN_HEADER:
-		if (!rndr_header(ob, tmp, &n->rndr_header, st))
+		if (!rndr_header(ob, tmp, n, st))
 			goto out;
 		break;
 	case LOWDOWN_HRULE:
@@ -2032,6 +2050,7 @@ lowdown_odt_rndr(struct lowdown_buf *ob,
 	struct lowdown_metaq	 metaq;
 	int			 rc;
 
+	TAILQ_INIT(&st->headers_used);
 	TAILQ_INIT(&metaq);
 	st->headers_offs = 1;
 	st->stys = NULL;
@@ -2048,6 +2067,7 @@ lowdown_odt_rndr(struct lowdown_buf *ob,
 	free(st->stys);
 	free(st->chngs);
 	lowdown_metaq_free(&metaq);
+	hentryq_clear(&st->headers_used);
 	return rc;
 }
 
