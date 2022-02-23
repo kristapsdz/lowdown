@@ -492,6 +492,25 @@ odt_styles_flush_fixed(struct lowdown_buf *ob, const struct odt *st)
 	    "</style:style>\n"))
 		return 0;
 
+	/* Images. */
+
+	if (!HBUF_PUTSL(ob,
+	    "<style:style style:name=\"Graphics\" style:family=\"graphic\">\n"
+	    "<style:graphic-properties"
+	    " text:anchor-type=\"paragraph\""
+	    " svg:x=\"0cm\" svg:y=\"0cm\""
+	    " style:wrap=\"dynamic\""
+	    " style:number-wrapped-paragraphs=\"no-limit\""
+	    " style:wrap-contour=\"false\""
+	    " draw:auto-grow-height=\"true\""
+	    " draw:auto-grow-width=\"true\""
+	    " style:vertical-pos=\"top\""
+	    " style:vertical-rel=\"paragraph\""
+	    " style:horizontal-pos=\"center\""
+	    " style:horizontal-rel=\"paragraph\"/>"
+	    "</style:style>"))
+		return 0;
+
 	/* Internet link. */
 
 	if (!HBUF_PUTSL(ob, 
@@ -1022,6 +1041,13 @@ escape_href(struct lowdown_buf *ob, const struct lowdown_buf *in,
 	return hesc_href(ob, in->data, in->size);
 }
 
+static int
+escape_attr(struct lowdown_buf *ob, const struct lowdown_buf *in)
+{
+
+	return hesc_attr(ob, in->data, in->size);
+}
+
 /*
  * Return FALSE on failure, TRUE on success.
  */
@@ -1483,15 +1509,67 @@ rndr_hrule(struct lowdown_buf *ob, struct odt *st)
 		"<text:p text:style-name=\"Horizontal_20_Line\"/>\n");
 }
 
-/*
- * TODO: not implemented yet.  Return FALSE on failure, TRUE on success.
- */
 static int
 rndr_image(struct lowdown_buf *ob,
 	const struct rndr_image *param, 
 	const struct odt *st)
 {
-	return 1;
+	unsigned int	 x = 0, y = 0;
+	char		 dimbuf[32];
+
+	/*
+	 * Scan in our dimensions, if applicable.
+	 * It's unreasonable for them to be over 32 characters, so use
+	 * that as a cap to the size.
+	 */
+
+	if (param->dims.size && 
+	    param->dims.size < sizeof(dimbuf) - 1) {
+		memset(dimbuf, 0, sizeof(dimbuf));
+		memcpy(dimbuf, param->dims.data, param->dims.size);
+		if (sscanf(dimbuf, "%ux%u", &x, &y) != 2)
+			x = y = 0;
+	}
+
+	if (!HBUF_PUTSL(ob,
+	    "<draw:frame draw:style-name=\"Graphics\""
+	    " draw:name=\"Image1\""
+	    " text:anchor-type=\"as-char\""
+	    " draw:z-index=\"0\""))
+		return 0;
+
+	if (param->attr_width.size || param->attr_height.size) {
+		if (param->attr_width.size)
+			if (!HBUF_PUTSL(ob, " svg:width=\"") ||
+			    !escape_attr(ob, &param->attr_width) ||
+			    !HBUF_PUTSL(ob, "\""))
+				return 0;
+		if (param->attr_height.size)
+			if (!HBUF_PUTSL(ob, " svg:height=\"") ||
+			    !escape_attr(ob, &param->attr_height) ||
+			    !HBUF_PUTSL(ob, "\""))
+				return 0;
+	} else if (x > 0 && y > 0) {
+		if (!hbuf_printf(ob,
+		    " svg:width=\"%u px\" svg:height=\"%u px\"", x, y))
+			return 0;
+	}
+
+	if (!HBUF_PUTSL(ob, "><draw:image xlink:href=\""))
+		return 0;
+	if (!hbuf_putb(ob, &param->link))
+		return 0;
+	if (!HBUF_PUTSL(ob, "\""
+	    " xlink:type=\"simple\""
+	    " xlink:show=\"embed\""
+	    " xlink:actuate=\"onLoad\""
+	    " draw:filter-name=\"&lt;All images&gt;\" />"))
+		return 0;
+	if (!HBUF_PUTSL(ob, "<svg:title>"))
+		return 0;
+	if (!hbuf_putb(ob, &param->alt))
+		return 0;
+	return HBUF_PUTSL(ob, "</svg:title></draw:frame>");
 }
 
 /*
@@ -1853,6 +1931,7 @@ rndr(struct lowdown_buf *ob,
 	 */
 
 	switch (n->type) {
+	case LOWDOWN_DEFINITION_DATA:
 	case LOWDOWN_BLOCKQUOTE:
 		if (st->list == (size_t)-1)
 			st->offs++;
@@ -1944,10 +2023,8 @@ rndr(struct lowdown_buf *ob,
 		if (!rndr_listitem(ob, tmp, n, st))
 			goto out;
 		break;
-	/* TODO */
-	case LOWDOWN_DEFINITION_DATA:
-	/* TODO */
 	case LOWDOWN_DEFINITION_TITLE:
+	case LOWDOWN_DEFINITION_DATA:
 	case LOWDOWN_PARAGRAPH:
 		if (!rndr_paragraph(ob, tmp, st))
 			goto out;
@@ -2036,6 +2113,7 @@ rndr(struct lowdown_buf *ob,
 	}
 
 	switch (n->type) {
+	case LOWDOWN_DEFINITION_DATA:
 	case LOWDOWN_BLOCKQUOTE:
 		if (st->list == (size_t)-1)
 			st->offs--;
