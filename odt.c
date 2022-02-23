@@ -1201,8 +1201,9 @@ rndr_header(struct lowdown_buf *ob,
 	struct odt_sty			*sty;
 	ssize_t				 level;
 	size_t				 i;
-	int				 fl;
+	int				 fl, rc = 0;
 	const struct lowdown_buf	*buf;
+	struct lowdown_buf		*nbuf = NULL;
 
 	level = (ssize_t)n->rndr_header.level + st->headers_offs;
 	if (level < 1)
@@ -1238,24 +1239,37 @@ rndr_header(struct lowdown_buf *ob,
 	     " text:outline-level=\"%zu\">", sty->name, level))
 		return 0;
 
-	buf = hbuf_id(NULL, n, &st->headers_used);
+	if (n->rndr_header.attr_id.size) {
+		if ((nbuf = hbuf_new(32)) == NULL)
+			goto out;
+		if (!escape_href(nbuf, &n->rndr_header.attr_id, st))
+			goto out;
+		buf = nbuf;
+	} else
+		buf = hbuf_id(NULL, n, &st->headers_used);
+
 	if (buf == NULL)
-		return 0;
+		goto out;
 	if (!HBUF_PUTSL(ob, "<text:bookmark-start text:name=\""))
-		return 0;
+		goto out;
 	if (!hbuf_putb(ob, buf))
-		return 0;
+		goto out;
 	if (!HBUF_PUTSL(ob, "\" />"))
-		return 0;
+		goto out;
 	if (!hbuf_putb(ob, content))
-		return 0;
+		goto out;
 	if (!HBUF_PUTSL(ob, "<text:bookmark-end text:name=\""))
-		return 0;
+		goto out;
 	if (!hbuf_putb(ob, buf))
-		return 0;
+		goto out;
 	if (!HBUF_PUTSL(ob, "\" />"))
-		return 0;
-	return HBUF_PUTSL(ob, "</text:h>\n");
+		goto out;
+	if (!HBUF_PUTSL(ob, "</text:h>\n"))
+		goto out;
+	rc = 1;
+out:
+	hbuf_free(nbuf);
+	return rc;
 }
 
 /*
