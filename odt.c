@@ -1318,8 +1318,15 @@ rndr_link(struct lowdown_buf *ob,
 	}
 
 	if (!HBUF_PUTSL(ob,
-	    "<text:a xlink:type=\"simple\" "
-	    "text:style-name=\"Internet_20_Link\" xlink:href=\""))
+	    "<text:a xlink:type=\"simple\" text:style-name=\""))
+		return 0;
+	if (param->attr_cls.size > 0 &&
+	    !hbuf_putb(ob, &param->attr_cls))
+		return 0;
+	else if (param->attr_cls.size == 0 &&
+	    !HBUF_PUTSL(ob, "Internet_20_Link"))
+		return 0;
+	if (!HBUF_PUTSL(ob, "\" xlink:href=\""))
 		return 0;
 	if (!escape_href(ob, &param->link, st))
 		return 0;

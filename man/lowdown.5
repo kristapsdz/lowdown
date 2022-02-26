@@ -620,6 +620,7 @@ followed by the corresponding URL or path, then an optional title.
 .Pp
 The title may be delimited with single quotes, double quotes, or
 parenthesis.
+It is only rendered in HTML output.
 It encompasses all text until the last delimiter before the end of line,
 so it may contain delimiters.
 The title may be on its own line.
@@ -649,8 +650,8 @@ Attributes are separated by spaces.
 .Pp
 Values with a leading period
 .Pq Qq \&.class
-are interpreted as HTML (CSS) classes, and values with a leading pound
-symbol
+are interpreted as HTML classses or OpenDocument style names, and values
+with a leading pound symbol
 .Pq Qq \&#id
 are interpreted as in-document link identifiers.
 .
