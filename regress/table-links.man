@@ -14,7 +14,7 @@ T{
 T}|T{
 \fIhttp://www.foo.com\fR
 T}|T{
-\fBfoo\fR (\fIhttps://foo.com\fR)
+\fBfoo\fR <\fIhttps://foo.com\fR>
 T}
 T{
 10
@@ -28,7 +28,7 @@ T{
 T}|T{
 \fIhttp://www.foo.com\fR
 T}|T{
-\fBfoo\fR (\fIhttps://foo.com\fR)
+\fBfoo\fR <\fIhttps://foo.com\fR>
 T}
 T{
 10
@@ -42,7 +42,7 @@ T{
 T}|T{
 \fIhttp://www.foo.com\fR
 T}|T{
-\fBfoo\fR (\fIhttps://foo.com\fR)
+\fBfoo\fR <\fIhttps://foo.com\fR>
 T}
 T{
 10
@@ -56,7 +56,7 @@ T{
 T}|T{
 \fIhttp://www.foo.com\fR
 T}|T{
-\fBfoo\fR (\fIhttps://foo.com\fR)
+\fBfoo\fR <\fIhttps://foo.com\fR>
 T}
 T{
 10
@@ -70,7 +70,7 @@ T{
 T}|T{
 \fIhttp://www.foo.com\fR
 T}|T{
-\fBfoo\fR (\fIhttps://foo.com\fR)
+\fBfoo\fR <\fIhttps://foo.com\fR>
 T}
 T{
 10
@@ -84,7 +84,7 @@ T{
 T}|T{
 \fIhttp://www.foo.com\fR
 T}|T{
-\fBfoo\fR (\fIhttps://foo.com\fR)
+\fBfoo\fR <\fIhttps://foo.com\fR>
 T}
 T{
 10
@@ -98,7 +98,7 @@ T{
 T}|T{
 \fIhttp://www.foo.com\fR
 T}|T{
-\fBfoo\fR (\fIhttps://foo.com\fR)
+\fBfoo\fR <\fIhttps://foo.com\fR>
 T}
 T{
 10
@@ -112,7 +112,7 @@ T{
 T}|T{
 \fIhttp://www.foo.com\fR
 T}|T{
-\fBfoo\fR (\fIhttps://foo.com\fR)
+\fBfoo\fR <\fIhttps://foo.com\fR>
 T}
 T{
 10
@@ -126,7 +126,7 @@ T{
 T}|T{
 \fIhttp://www.foo.com\fR
 T}|T{
-\fBfoo\fR (\fIhttps://foo.com\fR)
+\fBfoo\fR <\fIhttps://foo.com\fR>
 T}
 T{
 10
@@ -140,7 +140,7 @@ T{
 T}|T{
 \fIhttp://www.foo.com\fR
 T}|T{
-\fBfoo\fR (\fIhttps://foo.com\fR)
+\fBfoo\fR <\fIhttps://foo.com\fR>
 T}
 T{
 10
@@ -154,7 +154,7 @@ T{
 T}|T{
 \fIhttp://www.foo.com\fR
 T}|T{
-\fBfoo\fR (\fIhttps://foo.com\fR)
+\fBfoo\fR <\fIhttps://foo.com\fR>
 T}
 T{
 10
@@ -168,7 +168,7 @@ T{
 T}|T{
 \fIhttp://www.foo.com\fR
 T}|T{
-\fBfoo\fR (\fIhttps://foo.com\fR)
+\fBfoo\fR <\fIhttps://foo.com\fR>
 T}
 T{
 10
@@ -182,7 +182,7 @@ T{
 T}|T{
 \fIhttp://www.foo.com\fR
 T}|T{
-\fBfoo\fR (\fIhttps://foo.com\fR)
+\fBfoo\fR <\fIhttps://foo.com\fR>
 T}
 T{
 10
@@ -196,7 +196,7 @@ T{
 T}|T{
 \fIhttp://www.foo.com\fR
 T}|T{
-\fBfoo\fR (\fIhttps://foo.com\fR)
+\fBfoo\fR <\fIhttps://foo.com\fR>
 T}
 T{
 10
@@ -210,7 +210,7 @@ T{
 T}|T{
 \fIhttp://www.foo.com\fR
 T}|T{
-\fBfoo\fR (\fIhttps://foo.com\fR)
+\fBfoo\fR <\fIhttps://foo.com\fR>
 T}
 T{
 10
@@ -224,7 +224,7 @@ T{
 T}|T{
 \fIhttp://www.foo.com\fR
 T}|T{
-\fBfoo\fR (\fIhttps://foo.com\fR)
+\fBfoo\fR <\fIhttps://foo.com\fR>
 T}
 T{
 10

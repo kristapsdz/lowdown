@@ -1,4 +1,4 @@
 .SH
-a \fIhttps://foo.com\fR now\fBworld\fR (\fIhttps://bar.com\fR)bc
+a \fIhttps://foo.com\fR now\fBworld\fR <\fIhttps://bar.com\fR>bc
 .LP
 c

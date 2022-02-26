@@ -577,7 +577,7 @@ putlink(struct bnodeq *obq, struct nroff *st,
 			rc = 1;
 			goto out;
 		}
-		if (bqueue_span(obq, " (") == NULL)
+		if (bqueue_span(obq, " <") == NULL)
 			goto out;
 		st->fonts[NFONT_ITALIC]++;
 		if (!bqueue_font(st, obq, 0))
@@ -596,7 +596,7 @@ putlink(struct bnodeq *obq, struct nroff *st,
 		st->fonts[NFONT_ITALIC]--;
 		if (!bqueue_font(st, obq, 1))
 			goto out;
-		if (bqueue_span(obq, ")") == NULL)
+		if (bqueue_span(obq, ">") == NULL)
 			goto out;
 		rc = 1;
 		goto out;
