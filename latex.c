@@ -348,6 +348,15 @@ rndr_link(struct lowdown_buf *ob,
 	loc = param->link.size > 0 &&
 		param->link.data[0] == '#';
 
+	if (param->attr_id.size > 0) {
+		if (!HBUF_PUTSL(ob, "\\hypertarget{"))
+			return 0;
+		if (!hbuf_putb(ob, &param->attr_id))
+			return 0;
+		if (!HBUF_PUTSL(ob, "}{%\n"))
+			return 0;
+	}
+
 	if (loc && !HBUF_PUTSL(ob, "\\hyperlink{"))
 		return 0;
 	else if (!loc && !HBUF_PUTSL(ob, "\\href{"))
@@ -361,6 +370,8 @@ rndr_link(struct lowdown_buf *ob,
 	if (!HBUF_PUTSL(ob, "}{"))
 		return 0;
 	if (!hbuf_putb(ob, content))
+		return 0;
+	if (param->attr_id.size > 0 && !HBUF_PUTSL(ob, "}"))
 		return 0;
 	return HBUF_PUTSL(ob, "}");
 }

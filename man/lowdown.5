@@ -121,7 +121,7 @@ Star Trek: Enterprise { .reboots }
 .Pp
 Non-empty values with a leading period are interpreted as HTML (CSS)
 classes, and values with a leading pound symbol are interpreted as
-identifiers that may be used when linking within the document.
+in-document link identifiers.
 .Pp
 Extra attribute identifiers override the default mechanism for creating
 header identifiers.
@@ -652,7 +652,7 @@ Values with a leading period
 are interpreted as HTML (CSS) classes, and values with a leading pound
 symbol
 .Pq Qq \&#id
-are interpreted as HTML identifiers.
+are interpreted as in-document link identifiers.
 .
 .Ss Automatic Links
 Automatic links are links to URLs or emails addresses that do not require text
@@ -743,17 +743,17 @@ Value pairs
 .Qq width=xx
 and
 .Qq height=xx
-are interpreted as HTML (CSS) or LaTeX dimensions.
+are interpreted as HTML (CSS), OpenOffice, or LaTeX dimensions.
 These override set pixel dimensions.
-Percentages are understood by both media; otherwise, dimension units are
-interpreted according to the medium.
+Percentages are understood by all three media; otherwise, dimension
+units are interpreted according to the medium.
 .Pp
 Values with a leading period
 .Pq Qq \&.class
 are interpreted as HTML (CSS) classes, and values with a leading pound
 symbol
 .Pq Qq \&#id
-are interpreted as HTML identifiers.
+are interpreted as in-document link identifiers.
 .
 .Ss Code
 In addition to code blocks, inline code spans may be specified within

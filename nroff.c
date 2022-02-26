@@ -522,17 +522,17 @@ out:
 
 /*
  * Manage hypertext linking with the groff "pdfhref" macro or simply
- * using italics.
- * We use italics because the UR/UE macro doesn't support leading
- * un-spaced content, so "[foo](https://foo.com)" wouldn't work.
- * Until a solution is found, let's just italicise the link text (or
- * link, if no text is found).
- * Return FALSE on error (memory), TRUE on success.
+ * using italics.  XXX: use italics because the UR/UE macro doesn't
+ * support leading un-spaced content, so "x[foo](https://foo.com)y"
+ * wouldn't work.  Until a solution is found, let's just italicise the
+ * link text (or link, if no text is found).  Return FALSE on error
+ * (memory), TRUE on success.
  */
 static int
 putlink(struct bnodeq *obq, struct nroff *st, 
-	const struct lowdown_buf *link, struct bnodeq *bq,
-	enum halink_type type)
+	const struct lowdown_buf *link, 
+	const struct lowdown_buf *id, 
+	struct bnodeq *bq, enum halink_type type)
 {
 	struct lowdown_buf	*ob = NULL;
 	struct bnode		*bn;
@@ -631,6 +631,24 @@ putlink(struct bnodeq *obq, struct nroff *st,
 		goto out;
 	else if (bq != NULL && !bqueue_flush(ob, bq, 1))
 		goto out;
+
+	/*
+	 * If we have an ID, emit it before the link part.  This is
+	 * important because this isn't printed, so using "-A \c" will
+	 * have no effect, so that's used on the subsequent link.
+	 */
+
+	if (id != NULL && id->size > 0) {
+		bn = bqueue_semiblock(obq, ".pdfhref M");
+		if (bn == NULL)
+			goto out;
+		bn->args = strndup(id->data, id->size);
+		if (bn->args == NULL)
+			goto out;
+	}
+
+	/* Finally, emit the link contents. */
+
 	bn = local ? 
 		bqueue_semiblock(obq, ".pdfhref L") :
 		bqueue_semiblock(obq, ".pdfhref W");
@@ -646,14 +664,14 @@ out:
 }
 
 /*
- * Return <0 on failure, 0 to remove next, >0 otherwise.
+ * Return FALSE on failure, TRUE on success.
  */
 static int
 rndr_autolink(struct nroff *st, struct bnodeq *obq,
 	const struct rndr_autolink *param)
 {
 
-	return putlink(obq, st, &param->link, NULL, param->type);
+	return putlink(obq, st, &param->link, NULL, NULL, param->type);
 }
 
 static int
@@ -901,14 +919,15 @@ out:
 }
 
 /*
- * Return <0 on failure, 0 to remove next, >0 otherwise.
+ * Return FALSE on failure, TRUE on success.
  */
 static ssize_t
 rndr_link(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 	const struct rndr_link *param)
 {
 
-	return putlink(obq, st, &param->link, bq, HALINK_NORMAL);
+	return putlink(obq, st, &param->link,
+		&param->attr_id, bq, HALINK_NORMAL);
 }
 
 static int

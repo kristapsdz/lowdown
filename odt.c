@@ -1308,6 +1308,15 @@ rndr_link(struct lowdown_buf *ob,
 	struct odt *st)
 {
 
+	if (param->attr_id.size > 0) {
+		if (!HBUF_PUTSL(ob, "<text:bookmark-start text:name=\""))
+			return 0;
+		if (!hbuf_putb(ob, &param->attr_id))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\" />"))
+			return 0;
+	}
+
 	if (!HBUF_PUTSL(ob,
 	    "<text:a xlink:type=\"simple\" "
 	    "text:style-name=\"Internet_20_Link\" xlink:href=\""))
@@ -1319,6 +1328,14 @@ rndr_link(struct lowdown_buf *ob,
 	    !HBUF_PUTSL(ob, "</text:a>"))
 		return 0;
 
+	if (param->attr_id.size > 0) {
+		if (!HBUF_PUTSL(ob, "<text:bookmark-end text:name=\""))
+			return 0;
+		if (!hbuf_putb(ob, &param->attr_id))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\" />"))
+			return 0;
+	}
 	return 1;
 }
 

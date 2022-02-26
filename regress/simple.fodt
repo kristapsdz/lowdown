@@ -143,7 +143,7 @@
 </office:master-styles>
 <office:body>
 <office:text>
-<text:h text:style-name="P1" text:outline-level="1">An h1 header</text:h>
+<text:h text:style-name="P1" text:outline-level="1"><text:bookmark-start text:name="an-h1-header" />An h1 header<text:bookmark-end text:name="an-h1-header" /></text:h>
 
 <text:p text:style-name="P2">Paragraphs are separated by a blank line.</text:p>
 
@@ -168,7 +168,7 @@ if you like.</text:p>
 in chapters 12&#8211;14&#8221;). Three dots &#8230; will be converted to an ellipsis.
 Unicode is supported. ☺</text:p>
 
-<text:h text:style-name="P5" text:outline-level="2">An h2 header</text:h>
+<text:h text:style-name="P5" text:outline-level="2"><text:bookmark-start text:name="an-h2-header" />An h2 header<text:bookmark-end text:name="an-h2-header" /></text:h>
 
 <text:p text:style-name="P2">Here&#8217;s a numbered list:</text:p>
 
@@ -201,7 +201,7 @@ delimited block for Pandoc to syntax highlight it:</text:p>
 <text:p text:style-name="P7"><text:s text:c="4"/>time.sleep(0.5)</text:p>
 <text:p text:style-name="P7"><text:s text:c="4"/>print i</text:p>
 
-<text:h text:style-name="P8" text:outline-level="3">An h3 header</text:h>
+<text:h text:style-name="P8" text:outline-level="3"><text:bookmark-start text:name="an-h3-header" />An h3 header<text:bookmark-end text:name="an-h3-header" /></text:h>
 
 <text:p text:style-name="P2">Now a nested list:</text:p>
 
@@ -281,20 +281,22 @@ doc</text:a>. Here&#8217;s a footnote <text:note text:id="ftn1" text:note-class=
 <text:p text:style-name="P2">Here&#8217;s a definition list:</text:p>
 <text:p text:style-name="P2">apples</text:p>
 
-<text:p text:style-name="P2">Good for making applesauce.</text:p>
+<text:p text:style-name="P4">Good for making applesauce.</text:p>
 
 <text:p text:style-name="P2">oranges</text:p>
 
-<text:p text:style-name="P2">Citrus!</text:p>
+<text:p text:style-name="P4">Citrus!</text:p>
 
 <text:p text:style-name="P2">tomatoes</text:p>
 
-<text:p text:style-name="P2">There&#8217;s no &#8220;e&#8221; in tomatoe.</text:p>
+<text:p text:style-name="P4">There&#8217;s no &#8220;e&#8221; in tomatoe.</text:p>
 
 <text:p text:style-name="P2">Again, text is indented 4 spaces. (Put a blank line between each
 term&#47;definition pair to spread things out more.)</text:p>
 
 <text:p text:style-name="P2">Images can be specified like so:</text:p>
+
+<text:p text:style-name="P2"><draw:frame draw:style-name="Graphics" draw:name="Image1" text:anchor-type="as-char" draw:z-index="0"><draw:image xlink:href="example-image.jpg" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad" draw:filter-name="&lt;All images&gt;" /><svg:title>example image</svg:title></draw:frame></text:p>
 
 <text:p text:style-name="P2">And note that you can backslash-escape any punctuation characters
 which you wish to be displayed literally, ex.: `foo`, *bar*, etc.</text:p>
