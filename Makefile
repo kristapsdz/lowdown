@@ -31,10 +31,11 @@ HTMLS		 = archive.html \
 		   index.html \
 		   README.html \
 		   $(MANS)
-MANS		 = man/lowdown.1.html \
-		   man/lowdown.3.html \
-		   man/lowdown.5.html \
-		   man/lowdown-diff.1.html \
+MANS		 = $(MAN1S) $(MAN3S) $(MAN5S)
+MAN1S		 = man/lowdown.1.html \
+		   man/lowdown-diff.1.html
+MAN5S =  	   man/lowdown.5.html
+MAN3S = 	   man/lowdown.3.html \
 		   man/lowdown_buf.3.html \
 		   man/lowdown_buf_diff.3.html \
 		   man/lowdown_buf_free.3.html \
@@ -172,23 +173,28 @@ liblowdown.so: $(OBJS) $(COMPAT_OBJS)
 install: bins
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
-	mkdir -p $(DESTDIR)$(MANDIR)/man3
 	mkdir -p $(DESTDIR)$(MANDIR)/man5
 	mkdir -p $(DESTDIR)$(SHAREDIR)/lowdown/odt
 	$(INSTALL_DATA) share/odt/styles.xml $(DESTDIR)$(SHAREDIR)/lowdown/odt
 	$(INSTALL_PROGRAM) lowdown $(DESTDIR)$(BINDIR)
 	$(INSTALL_PROGRAM) lowdown-diff $(DESTDIR)$(BINDIR)
-	for f in $(MANS) ; do \
+	for f in $(MAN1S) $(MAN5S) ; do \
 		name=`basename $$f .html` ; \
 		section=$${name##*.} ; \
 		$(INSTALL_MAN) man/$$name $(DESTDIR)$(MANDIR)/man$$section ; \
 	done
 
 install_lib_common: lowdown.pc
+	mkdir -p $(DESTDIR)$(MANDIR)/man3
 	mkdir -p $(DESTDIR)$(LIBDIR)/pkgconfig
 	mkdir -p $(DESTDIR)$(INCLUDEDIR)
 	$(INSTALL_DATA) lowdown.pc $(DESTDIR)$(LIBDIR)/pkgconfig
 	$(INSTALL_DATA) lowdown.h $(DESTDIR)$(INCLUDEDIR)
+	for f in $(MAN3S) ; do \
+		name=`basename $$f .html` ; \
+		section=$${name##*.} ; \
+		$(INSTALL_MAN) man/$$name $(DESTDIR)$(MANDIR)/man$$section ; \
+	done
 
 install_shared: liblowdown.so install_lib_common
 	$(INSTALL_LIB) liblowdown.so.$(LIBVER) $(DESTDIR)$(LIBDIR)
