@@ -123,7 +123,8 @@ REGRESS_ARGS	+= "--parse-no-deflists"
 
 VALGRIND_ARGS	 = -q --leak-check=full --leak-resolution=high --show-reachable=yes
 
-all: lowdown lowdown-diff liblowdown.so lowdown.pc
+all: bins lowdown.pc liblowdown.so
+bins: lowdown lowdown-diff
 
 valgrind: $(VALGRINDS)
 	@for f in $(VALGRINDS) ; do \
@@ -168,26 +169,32 @@ liblowdown.so: $(OBJS) $(COMPAT_OBJS)
 	$(CC) -shared -o $@.$(LIBVER) $(OBJS) $(COMPAT_OBJS) $(LDFLAGS) $(LDADD_MD5) -Wl,-soname,$@.$(LIBVER)
 	ln -sf $@.$(LIBVER) $@
 
-install: all
+install: bins
 	mkdir -p $(DESTDIR)$(BINDIR)
-	mkdir -p $(DESTDIR)$(LIBDIR)/pkgconfig
-	mkdir -p $(DESTDIR)$(INCLUDEDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
 	mkdir -p $(DESTDIR)$(MANDIR)/man3
 	mkdir -p $(DESTDIR)$(MANDIR)/man5
 	mkdir -p $(DESTDIR)$(SHAREDIR)/lowdown/odt
-	$(INSTALL_DATA) lowdown.pc $(DESTDIR)$(LIBDIR)/pkgconfig
 	$(INSTALL_DATA) share/odt/styles.xml $(DESTDIR)$(SHAREDIR)/lowdown/odt
 	$(INSTALL_PROGRAM) lowdown $(DESTDIR)$(BINDIR)
 	$(INSTALL_PROGRAM) lowdown-diff $(DESTDIR)$(BINDIR)
-	$(INSTALL_LIB) liblowdown.a $(DESTDIR)$(LIBDIR)
-	$(INSTALL_LIB) liblowdown.so.$(LIBVER) $(DESTDIR)$(LIBDIR)
-	$(INSTALL_DATA) lowdown.h $(DESTDIR)$(INCLUDEDIR)
 	for f in $(MANS) ; do \
 		name=`basename $$f .html` ; \
 		section=$${name##*.} ; \
 		$(INSTALL_MAN) man/$$name $(DESTDIR)$(MANDIR)/man$$section ; \
 	done
+
+install_lib_common: lowdown.pc
+	mkdir -p $(DESTDIR)$(LIBDIR)/pkgconfig
+	mkdir -p $(DESTDIR)$(INCLUDEDIR)
+	$(INSTALL_DATA) lowdown.pc $(DESTDIR)$(LIBDIR)/pkgconfig
+	$(INSTALL_DATA) lowdown.h $(DESTDIR)$(INCLUDEDIR)
+
+install_shared: liblowdown.so install_lib_common
+	$(INSTALL_LIB) liblowdown.so.$(LIBVER) $(DESTDIR)$(LIBDIR)
+
+install_static: liblowdown.a install_lib_common
+	$(INSTALL_LIB) liblowdown.a $(DESTDIR)$(LIBDIR)
 
 distcheck: lowdown.tar.gz.sha512
 	mandoc -Tlint -Werror man/*.[135]
@@ -195,7 +202,7 @@ distcheck: lowdown.tar.gz.sha512
 	       [ "$$newest" = "<h1>$(VERSION)</h1>" ] || \
 		{ echo "Version $(VERSION) not newest in versions.xml" 1>&2 ; exit 1 ; }
 	[ "`openssl dgst -sha512 -hex lowdown.tar.gz`" = "`cat lowdown.tar.gz.sha512`" ] || \
- 		{ echo "Checksum does not match." 1>&2 ; exit 1 ; }
+		{ echo "Checksum does not match." 1>&2 ; exit 1 ; }
 	rm -rf .distcheck
 	mkdir -p .distcheck
 	( cd .distcheck && tar -zvxpf ../lowdown.tar.gz )
