@@ -41,37 +41,6 @@
 #define HBUF_START_SMALL 128
 
 /*
- * Merge adjacent text nodes into single text nodes, freeing the
- * duplicates along the way.
- * This is only used when diffing, as it makes the diff algorithm hvae a
- * more reasonable view of text in the tree.
- * Otherwise, it's just a waste of time.
- * Returns FALSE on failure (memory), TRUE on success.
- */
-static int
-lowdown_merge_adjacent_text(struct lowdown_node *n)
-{
-	struct lowdown_node 	*nn, *prev, *tmp;
-
-	TAILQ_FOREACH_SAFE(nn, &n->children, entries, tmp) {
-		if (nn->type != LOWDOWN_NORMAL_TEXT) {
-			if (!lowdown_merge_adjacent_text(nn))
-				return 0;
-			continue;
-		}
-		prev = TAILQ_PREV(nn, lowdown_nodeq, entries);
-		if (prev == NULL ||
-		    prev->type != LOWDOWN_NORMAL_TEXT)
-			continue;
-		hbuf_putb(&prev->rndr_normal_text.text, 
-			&nn->rndr_normal_text.text);
-		TAILQ_REMOVE(&n->children, nn, entries);
-		lowdown_node_free(nn);
-	}
-	return 1;
-}
-
-/*
  * Return FALSE on failure, TRUE on success.
  */
 static int
@@ -198,11 +167,6 @@ lowdown_buf_diff(const struct lowdown_opts *opts,
 		goto err;
 	nold = lowdown_doc_parse(doc, NULL, old, oldsz, NULL);
 	if (nold == NULL)
-		goto err;
-
-	if (!lowdown_merge_adjacent_text(nnew))
-		goto err;
-	if (!lowdown_merge_adjacent_text(nold))
 		goto err;
 
 	ndiff = lowdown_diff(nold, nnew, &maxn);
