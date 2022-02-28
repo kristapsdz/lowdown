@@ -1,5 +1,5 @@
 .PHONY: regress
-.SUFFIXES: .xml .md .html .pdf .1 .1.html .3 .3.html .5 .5.html .thumb.jpg .png .in.pc .pc .valgrind
+.SUFFIXES: .xml .md .html .pdf .1 .1.html .3 .3.html .5 .5.html .thumb.jpg .png .in.pc .pc .valgrind .old.md .diff-valgrind
 
 include Makefile.configure
 
@@ -106,6 +106,7 @@ THUMBS		 = screen-mandoc.thumb.jpg \
 		   screen-groff.thumb.jpg \
 		   screen-term.thumb.jpg
 VALGRINDS	!= for f in `find regress -name \*.md` ; do echo `dirname $$f`/`basename $$f .md`.valgrind ; done
+VALGRINDDIFFS	!= for f in `find regress/diff -name \*.old.md` ; do echo `dirname $$f`/`basename $$f .md`-valgrind ; done
 CFLAGS		+= -fPIC
 
 # Only for MarkdownTestv1.0.3 in regress/original.
@@ -127,15 +128,30 @@ VALGRIND_ARGS	 = -q --leak-check=full --leak-resolution=high --show-reachable=ye
 all: bins lowdown.pc liblowdown.so
 bins: lowdown lowdown-diff
 
-valgrind: $(VALGRINDS)
+valgrind: $(VALGRINDS) $(VALGRINDDIFFS)
 	@for f in $(VALGRINDS) ; do \
 		if [ -s $$f ]; then \
 			echo `dirname $$f`/`basename $$f .valgrind`.md ; \
 			cat $$f ; \
 		fi ; \
 	done
+	@for f in $(VALGRINDDIFFS) ; do \
+		if [ -s $$f ]; then \
+			echo `dirname $$f`/`basename $$f .diff-valgrind`.old.md ; \
+			cat $$f ; \
+		fi ; \
+	done
 
 $(VALGRINDS): lowdown
+
+.old.md.diff-valgrind:
+	@rm -f $@
+	valgrind $(VALGRIND_ARGS) ./lowdown-diff -s -tfodt $< `dirname $<`/`basename $< .old.md`.new.md >/dev/null 2>>$@
+	valgrind $(VALGRIND_ARGS) ./lowdown-diff -s -thtml $< `dirname $<`/`basename $< .old.md`.new.md >/dev/null 2>>$@
+	valgrind $(VALGRIND_ARGS) ./lowdown-diff -s -tms $< `dirname $<`/`basename $< .old.md`.new.md >/dev/null 2>>$@
+	valgrind $(VALGRIND_ARGS) ./lowdown-diff -s -tman $< `dirname $<`/`basename $< .old.md`.new.md >/dev/null 2>>$@
+	valgrind $(VALGRIND_ARGS) ./lowdown-diff -s -tterm $< `dirname $<`/`basename $< .old.md`.new.md >/dev/null 2>>$@
+	valgrind $(VALGRIND_ARGS) ./lowdown-diff -s -tgemini $< `dirname $<`/`basename $< .old.md`.new.md >/dev/null 2>>$@
 
 .md.valgrind:
 	@rm -f $@
@@ -308,7 +324,7 @@ clean:
 	rm -f $(OBJS) $(COMPAT_OBJS) main.o
 	rm -f lowdown lowdown-diff liblowdown.a liblowdown.so liblowdown.so.$(LIBVER) lowdown.pc
 	rm -f index.xml diff.xml diff.diff.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
-	rm -f $(PDFS) $(HTMLS) $(THUMBS) $(VALGRINDS)
+	rm -f $(PDFS) $(HTMLS) $(THUMBS) $(VALGRINDS) $(VALGRINDDIFFS)
 	rm -f index.latex.aux index.latex.latex index.latex.log index.latex.out
 
 distclean: clean
