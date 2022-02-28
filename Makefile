@@ -330,7 +330,7 @@ clean:
 distclean: clean
 	rm -f Makefile.configure config.h config.log config.h.old config.log.old
 
-regress: lowdown
+regress: bins
 	tmp1=`mktemp` ; \
 	tmp2=`mktemp` ; \
 	for f in regress/original/*.text ; do \
