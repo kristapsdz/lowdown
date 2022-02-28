@@ -108,7 +108,7 @@ THUMBS		 = screen-mandoc.thumb.jpg \
 VALGRINDS	!= for f in `find regress -name \*.md` ; do echo `dirname $$f`/`basename $$f .md`.valgrind ; done
 CFLAGS		+= -fPIC
 
-# Only for MarkdownTestv1.0.3.
+# Only for MarkdownTestv1.0.3 in regress/original.
 
 REGRESS_ARGS	 = "--out-no-smarty"
 REGRESS_ARGS	+= "--parse-no-img-ext"
@@ -278,33 +278,21 @@ lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/
 	mkdir -p .dist/lowdown-$(VERSION)/man
 	mkdir -p .dist/lowdown-$(VERSION)/share/odt
-	mkdir -p .dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
+	mkdir -p .dist/lowdown-$(VERSION)/regress/original
+	mkdir -p .dist/lowdown-$(VERSION)/regress/standalone
+	mkdir -p .dist/lowdown-$(VERSION)/regress/metadata
+	mkdir -p .dist/lowdown-$(VERSION)/regress/diff
 	$(INSTALL) -m 0644 $(HEADERS) .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 0644 $(SOURCES) .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 0644 share/odt/* .dist/lowdown-$(VERSION)/share/odt
 	$(INSTALL) -m 0644 lowdown.in.pc Makefile LICENSE.md .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 0644 man/*.1 man/*.3 man/*.5 .dist/lowdown-$(VERSION)/man
 	$(INSTALL) -m 0755 configure .dist/lowdown-$(VERSION)
-	$(INSTALL) -m 644 regress/MarkdownTest_1.0.3/*.text \
-		.dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
-	$(INSTALL) -m 644 regress/MarkdownTest_1.0.3/*.md \
-		.dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
-	$(INSTALL) -m 644 regress/MarkdownTest_1.0.3/*.html \
-		.dist/lowdown-$(VERSION)/regress/MarkdownTest_1.0.3
-	$(INSTALL) -m 644 regress/*.md \
-		.dist/lowdown-$(VERSION)/regress
-	$(INSTALL) -m 644 regress/*.html \
-		.dist/lowdown-$(VERSION)/regress
-	$(INSTALL) -m 644 regress/*.fodt \
-		.dist/lowdown-$(VERSION)/regress
-	$(INSTALL) -m 644 regress/*.ms \
-		.dist/lowdown-$(VERSION)/regress
-	$(INSTALL) -m 644 regress/*.man \
-		.dist/lowdown-$(VERSION)/regress
-	$(INSTALL) -m 644 regress/*.latex \
-		.dist/lowdown-$(VERSION)/regress
-	$(INSTALL) -m 644 regress/*.gemini \
-		.dist/lowdown-$(VERSION)/regress
+	$(INSTALL) -m 644 regress/original/* .dist/lowdown-$(VERSION)/regress/original
+	$(INSTALL) -m 644 regress/*.* .dist/lowdown-$(VERSION)/regress
+	$(INSTALL) -m 644 regress/standalone/* .dist/lowdown-$(VERSION)/regress/standalone
+	$(INSTALL) -m 644 regress/metadata/* .dist/lowdown-$(VERSION)/regress/metadata
+	$(INSTALL) -m 644 regress/diff/* .dist/lowdown-$(VERSION)/regress/diff
 	( cd .dist/ && tar zcf ../$@ lowdown-$(VERSION) )
 	rm -rf .dist/
 
@@ -329,7 +317,7 @@ distclean: clean
 regress: lowdown
 	tmp1=`mktemp` ; \
 	tmp2=`mktemp` ; \
-	for f in regress/MarkdownTest_1.0.3/*.text ; do \
+	for f in regress/original/*.text ; do \
 		echo "$$f" ; \
 		want="`dirname \"$$f\"`/`basename \"$$f\" .text`.html" ; \
 		sed -e '/^[ ]*$$/d' "$$want" > $$tmp1 ; \
@@ -407,6 +395,14 @@ regress: lowdown
 		if [ -f regress/metadata/`basename $$f .md`.txt ]; then \
 			./lowdown -X test $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/metadata/`basename $$f .md`.txt $$tmp1 ; \
+		fi ; \
+	done ; \
+	for f in regress/diff/*.old.md ; do \
+		bf=`dirname $$f`/`basename $$f .old.md` ; \
+		echo "$$f -> $$bf.new.md" ; \
+		if [ -f $$bf.html ]; then \
+			./lowdown-diff -s $$f $$bf.new.md >$$tmp1 2>&1 ; \
+			diff -uw $$bf.html $$tmp1 ; \
 		fi ; \
 	done ; \
 	rm -f $$tmp1 ; \
