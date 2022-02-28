@@ -106,7 +106,7 @@ THUMBS		 = screen-mandoc.thumb.jpg \
 		   screen-groff.thumb.jpg \
 		   screen-term.thumb.jpg
 VALGRINDS	!= for f in `find regress -name \*.md` ; do echo `dirname $$f`/`basename $$f .md`.valgrind ; done
-VALGRINDDIFFS	!= for f in `find regress/diff -name \*.old.md` ; do echo `dirname $$f`/`basename $$f .md`-valgrind ; done
+VALGRINDDIFFS	!= for f in `find regress/diff -name \*.old.md` ; do echo `dirname $$f`/`basename $$f .old.md`.diff-valgrind ; done
 CFLAGS		+= -fPIC
 
 # Only for MarkdownTestv1.0.3 in regress/original.
@@ -142,7 +142,7 @@ valgrind: $(VALGRINDS) $(VALGRINDDIFFS)
 		fi ; \
 	done
 
-$(VALGRINDS): lowdown
+$(VALGRINDS) $(VALGRINDDIFFS): bins
 
 .old.md.diff-valgrind:
 	@rm -f $@
