@@ -159,15 +159,33 @@ parse_listitem(struct lowdown_buf *, struct lowdown_doc *,
 	char *, size_t, enum hlist_fl *, size_t);
 
 /*
- * Add a node to the parse stack.
- * Returns the new node, initialised to the given type, after adjusting
- * the parse position.
- * Returns NULL on memory allocation failure.
+ * Add a node to the parse stack, or retrieve a current node if
+ * requesting multiple LOWDOWN_NORMAL_TEXTs in sequence.  Returns the
+ * node, initialised to the given type, after adjusting the parse
+ * position.  Returns NULL on memory allocation failure.
  */
 static struct lowdown_node *
 pushnode(struct lowdown_doc *doc, enum lowdown_rndrt t)
 {
 	struct lowdown_node	*n;
+
+	/*
+	 * Special case: if we're pushing a NORMAL_TEXT node, see if one
+	 * already exists and return that.  This means that each push
+	 * for text nodes should be careful to use hbuf_push() instead
+	 * of hbuf_create() when adding text content.
+	 */
+
+	if (t == LOWDOWN_NORMAL_TEXT && doc->current != NULL) {
+		n = TAILQ_LAST(&doc->current->children, lowdown_nodeq);
+		if (n != NULL && n->type == t) {
+			doc->depth++;
+			doc->current = n;
+			return n;
+		}
+	}
+
+	/* New node. */
 
 	if ((doc->depth++ > doc->maxdepth) && doc->maxdepth)
 		return NULL;
@@ -185,12 +203,11 @@ pushnode(struct lowdown_doc *doc, enum lowdown_rndrt t)
 }
 
 /*
- * Pushes the contents of "data" of size "datasz" into the buffer.
- * Any existing data in the buffer is lost.
- * Return zero on failure (memory), non-zero on success.
+ * Sets a buffer with the contents of "data" of size "datasz".  The
+ * buffer must be empty.  Return FALSE on failure, TRUE on success.
  */
 static int
-pushbuf(struct lowdown_buf *buf, const char *data, size_t datasz)
+hbuf_create(struct lowdown_buf *buf, const char *data, size_t datasz)
 {
 
 	assert(buf->size == 0);
@@ -206,12 +223,29 @@ pushbuf(struct lowdown_buf *buf, const char *data, size_t datasz)
 	return 1;
 }
 
+/*
+ * See hbuf_create().
+ */
 static int
-pushlbuf(struct lowdown_buf *buf, const struct lowdown_buf *nbuf)
+hbuf_createb(struct lowdown_buf *buf, const struct lowdown_buf *nbuf)
 {
 
-	return pushbuf(buf, nbuf->data, nbuf->size);
+	return hbuf_create(buf, nbuf->data, nbuf->size);
 }
+
+/*
+ * Pushes data into the buffer, which is initialised if empty.  Return
+ * FALSE on failure, TRUE on success.
+ */
+static int
+hbuf_push(struct lowdown_buf *buf, const char *data, size_t datasz)
+{
+
+	if (buf->size == 0 || buf->data == NULL)
+		return hbuf_create(buf, data, datasz);
+	return hbuf_put(buf, data, datasz);
+}
+
 
 /*
  * See pushnode().
@@ -522,7 +556,7 @@ parse_inline(struct lowdown_doc *doc, char *data, size_t size)
 			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 			if (n == NULL)
 				return 0;
-			if (!pushbuf(&n->rndr_normal_text.text,
+			if (!hbuf_push(&n->rndr_normal_text.text,
 			    data + i, end - i))
 				return 0;
 			popnode(doc, n);
@@ -852,7 +886,7 @@ parse_math(struct lowdown_doc *doc, char *data, size_t offset,
 		n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 		if (n == NULL)
 			return -1;
-		if (!pushbuf(&n->rndr_normal_text.text, data, i))
+		if (!hbuf_push(&n->rndr_normal_text.text, data, i))
 			return -1;
 		popnode(doc, n);
 		return i;
@@ -861,7 +895,7 @@ parse_math(struct lowdown_doc *doc, char *data, size_t offset,
 	n = pushnode(doc, LOWDOWN_MATH_BLOCK);
 	if (n == NULL)
 		return -1;
-  	if (!pushbuf(&n->rndr_math.text,
+  	if (!hbuf_create(&n->rndr_math.text,
 	    data + delimsz, i - 2 * delimsz))
 		return -1;
 	n->rndr_math.blockmode = blockmode;
@@ -1004,7 +1038,7 @@ char_codespan(struct lowdown_doc *doc,
 	if (f_begin < f_end) {
 		work.data = data + f_begin;
 		work.size = f_end - f_begin;
-		if (!pushlbuf(&n->rndr_codespan.text, &work))
+		if (!hbuf_createb(&n->rndr_codespan.text, &work))
 			return -1;
 	}
 
@@ -1060,13 +1094,13 @@ char_escape(struct lowdown_doc *doc,
 			return 0;
 		if ((n = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
 			return -1;
-		if (!pushbuf(&n->rndr_normal_text.text, data + 1, 1))
+		if (!hbuf_push(&n->rndr_normal_text.text, data + 1, 1))
 			return -1;
 		popnode(doc, n);
 	} else if (size == 1) {
 		if ((n = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
 			return -1;
-		if (!pushbuf(&n->rndr_normal_text.text, data, 1))
+		if (!hbuf_push(&n->rndr_normal_text.text, data, 1))
 			return -1;
 		popnode(doc, n);
 	}
@@ -1098,7 +1132,7 @@ char_entity(struct lowdown_doc *doc,
 
 	if ((n = pushnode(doc, LOWDOWN_ENTITY)) == NULL)
 		return -1;
-	if (!pushbuf(&n->rndr_entity.text, data, end))
+	if (!hbuf_create(&n->rndr_entity.text, data, end))
 		return -1;
 	popnode(doc, n);
 	return end;
@@ -1136,14 +1170,15 @@ char_langle_tag(struct lowdown_doc *doc,
 			if (n == NULL)
 				goto err;
 			n->rndr_autolink.type = altype;
-			if (!pushlbuf(&n->rndr_autolink.link, u_link))
+			if (!hbuf_createb(&n->rndr_autolink.link, u_link))
 				goto err;
 			popnode(doc, n);
 		} else {
 			n = pushnode(doc, LOWDOWN_RAW_HTML);
 			if (n == NULL)
 				goto err;
-			if (!pushbuf(&n->rndr_raw_html.text, data, end))
+			if (!hbuf_create
+			    (&n->rndr_raw_html.text, data, end))
 				goto err;
 			popnode(doc, n);
 		}
@@ -1199,7 +1234,7 @@ char_autolink_www(struct lowdown_doc *doc,
 		if ((n = pushnode(doc, LOWDOWN_LINK_AUTO)) == NULL)
 			goto err;
 		n->rndr_autolink.type = HALINK_NORMAL;
-		if (!pushlbuf(&n->rndr_autolink.link, link_url))
+		if (!hbuf_createb(&n->rndr_autolink.link, link_url))
 			goto err;
 		popnode(doc, n);
 	}
@@ -1248,7 +1283,7 @@ char_autolink_email(struct lowdown_doc *doc,
 		if ((n = pushnode(doc, LOWDOWN_LINK_AUTO)) == NULL)
 			goto err;
 		n->rndr_autolink.type = HALINK_EMAIL;
-		if (!pushlbuf(&n->rndr_autolink.link, link))
+		if (!hbuf_createb(&n->rndr_autolink.link, link))
 			goto err;
 		popnode(doc, n);
 	}
@@ -1295,7 +1330,7 @@ char_autolink_url(struct lowdown_doc *doc,
 		if ((n = pushnode(doc, LOWDOWN_LINK_AUTO)) == NULL)
 			goto err;
 		n->rndr_autolink.type = HALINK_NORMAL;
-		if (!pushlbuf(&n->rndr_autolink.link, link))
+		if (!hbuf_createb(&n->rndr_autolink.link, link))
 			goto err;
 		popnode(doc, n);
 	}
@@ -1463,10 +1498,10 @@ parse_header_ext_attrs(struct lowdown_node *n)
 		goto out;
 
 	if (attrid != NULL &&
-	    !pushlbuf(&n->rndr_header.attr_id, attrid))
+	    !hbuf_createb(&n->rndr_header.attr_id, attrid))
 		goto out;
 	if (attrcls != NULL &&
-	    !pushlbuf(&n->rndr_header.attr_cls, attrcls))
+	    !hbuf_createb(&n->rndr_header.attr_cls, attrcls))
 		goto out;
 
 	b->size = i;
@@ -1530,7 +1565,7 @@ char_link(struct lowdown_doc *doc,
 		n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 		if (n == NULL)
 			goto err;
-		if (!pushbuf(&n->rndr_normal_text.text, &data[-1], 1))
+		if (!hbuf_push(&n->rndr_normal_text.text, &data[-1], 1))
 			goto err;
 		popnode(doc, n);
 	}
@@ -1583,7 +1618,7 @@ char_link(struct lowdown_doc *doc,
 			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 			if (n == NULL)
 				goto err;
-			if (!pushbuf(&n->rndr_normal_text.text,
+			if (!hbuf_push(&n->rndr_normal_text.text,
 			    data, txt_e + 1))
 				goto err;
 		}
@@ -1615,7 +1650,7 @@ char_link(struct lowdown_doc *doc,
 			n = pushnode(doc, LOWDOWN_NORMAL_TEXT);
 			if (n == NULL)
 				goto err;
-			if (!pushbuf(&n->rndr_normal_text.text,
+			if (!hbuf_push(&n->rndr_normal_text.text,
 			    m->value, strlen(m->value)))
 				goto err;
 			popnode(doc, n);
@@ -1924,42 +1959,42 @@ again:
 
 	if (is_img) {
 		if (u_link != NULL &&
-		    !pushlbuf(&n->rndr_image.link, u_link))
+		    !hbuf_createb(&n->rndr_image.link, u_link))
 			goto err;
 		if (title != NULL &&
-		    !pushlbuf(&n->rndr_image.title, title))
+		    !hbuf_createb(&n->rndr_image.title, title))
 			goto err;
 		if (dims != NULL &&
-		    !pushlbuf(&n->rndr_image.dims, dims))
+		    !hbuf_createb(&n->rndr_image.dims, dims))
 			goto err;
 		if (content != NULL &&
-		    !pushlbuf(&n->rndr_image.alt, content))
+		    !hbuf_createb(&n->rndr_image.alt, content))
 			goto err;
 		if (attrcls != NULL &&
-		    !pushlbuf(&n->rndr_image.attr_cls, attrcls))
+		    !hbuf_createb(&n->rndr_image.attr_cls, attrcls))
 			goto err;
 		if (attrid != NULL &&
-		    !pushlbuf(&n->rndr_image.attr_id, attrid))
+		    !hbuf_createb(&n->rndr_image.attr_id, attrid))
 			goto err;
 		if (attrwidth != NULL &&
-		    !pushlbuf(&n->rndr_image.attr_width, attrwidth))
+		    !hbuf_createb(&n->rndr_image.attr_width, attrwidth))
 			goto err;
 		if (attrheight != NULL &&
-		    !pushlbuf(&n->rndr_image.attr_height, attrheight))
+		    !hbuf_createb(&n->rndr_image.attr_height, attrheight))
 			goto err;
 		ret = 1;
 	} else {
 		if (u_link != NULL &&
-		    !pushlbuf(&n->rndr_link.link, u_link))
+		    !hbuf_createb(&n->rndr_link.link, u_link))
 			goto err;
 		if (title != NULL &&
-		    !pushlbuf(&n->rndr_link.title, title))
+		    !hbuf_createb(&n->rndr_link.title, title))
 			goto err;
 		if (attrcls != NULL &&
-		    !pushlbuf(&n->rndr_link.attr_cls, attrcls))
+		    !hbuf_createb(&n->rndr_link.attr_cls, attrcls))
 			goto err;
 		if (attrid != NULL &&
-		    !pushlbuf(&n->rndr_link.attr_id, attrid))
+		    !hbuf_createb(&n->rndr_link.attr_id, attrid))
 			goto err;
 		ret = 1;
 	}
@@ -2593,10 +2628,10 @@ parse_fencedcode(struct lowdown_doc *doc, char *data, size_t size)
 	if ((n = pushnode(doc, LOWDOWN_BLOCKCODE)) == NULL)
 		return -1;
 
-	if (!pushbuf(&n->rndr_blockcode.text,
+	if (!hbuf_create(&n->rndr_blockcode.text,
 	    data + text_start, line_start - text_start))
 		return -1;
-	if (!pushlbuf(&n->rndr_blockcode.lang, &lang))
+	if (!hbuf_createb(&n->rndr_blockcode.lang, &lang))
 		return -1;
 	popnode(doc, n);
 	return i;
@@ -2656,7 +2691,7 @@ parse_blockcode(struct lowdown_doc *doc, char *data, size_t size)
 
 	if ((n = pushnode(doc, LOWDOWN_BLOCKCODE)) == NULL)
 		goto err;
-	if (!pushlbuf(&n->rndr_blockcode.text, work))
+	if (!hbuf_createb(&n->rndr_blockcode.text, work))
 		goto err;
 	popnode(doc, n);
 	hbuf_free(work);
@@ -3245,7 +3280,7 @@ parse_htmlblock(struct lowdown_doc *doc, char *data, size_t size)
 				if (n == NULL)
 					return -1;
 				work.size = i + j;
-				if (!pushlbuf
+				if (!hbuf_createb
 				    (&n->rndr_blockhtml.text, &work))
 					return -1;
 				popnode(doc, n);
@@ -3274,7 +3309,7 @@ parse_htmlblock(struct lowdown_doc *doc, char *data, size_t size)
 					if (n == NULL)
 						return -1;
 					work.size = i + j;
-					if (!pushlbuf
+					if (!hbuf_createb
 					    (&n->rndr_blockhtml.text,
 					     &work))
 						return -1;
@@ -3317,7 +3352,7 @@ parse_htmlblock(struct lowdown_doc *doc, char *data, size_t size)
 		return -1;
 
 	work.size = tag_end;
-	if (!pushlbuf(&n->rndr_blockhtml.text, &work))
+	if (!hbuf_createb(&n->rndr_blockhtml.text, &work))
 		return -1;
 	popnode(doc, n);
 	return tag_end;
@@ -3857,9 +3892,9 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 		goto err;
 
 	TAILQ_INSERT_TAIL(&doc->footq, ref, entries);
-	if (!pushlbuf(&ref->contents, contents))
+	if (!hbuf_createb(&ref->contents, contents))
 		return -1;
-	if (!pushbuf(&ref->name, data + id_offs, id_end - id_offs))
+	if (!hbuf_create(&ref->name, data + id_offs, id_end - id_offs))
 		return -1;
 	hbuf_free(contents);
 	return 1;
@@ -4375,7 +4410,7 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 			free(buf);
 			return -1;
 		}
-		if (!pushbuf(&n->rndr_meta.key, buf, cp - buf)) {
+		if (!hbuf_create(&n->rndr_meta.key, buf, cp - buf)) {
 			free(buf);
 			return -1;
 		}
@@ -4422,7 +4457,7 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 			return -1;
 		if ((nn = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
 			return -1;
-		if (!pushbuf(&nn->rndr_normal_text.text, val, vsz))
+		if (!hbuf_push(&nn->rndr_normal_text.text, val, vsz))
 			return -1;
 
 		popnode(doc, nn);

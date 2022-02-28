@@ -77,8 +77,8 @@
     Notice again how text always lines up on 4-space indents (including
     that last line which continues item 3 above).
 
-    Here’s a link to [1;93ma [0m[1;93mwebsite[0m [4;32mhttp://foo.bar[0m, to a [1;93mlocal[0m[1;93m doc[0m [0m
-    [4;32mlocal-doc.html[0m, and to a [1;93msection heading in the current[0m[1;93m doc[0m [0m
+    Here’s a link to [1;93ma website[0m [4;32mhttp://foo.bar[0m, to a [1;93mlocal doc[0m [0m
+    [4;32mlocal-doc.html[0m, and to a [1;93msection heading in the current doc[0m [0m
     [4;32m#an-h2-header[0m. Here’s a footnote [1;93m[1][0m.
 
     Tables can look like this:
@@ -114,9 +114,9 @@
 
     [1;93mexample image[0m [37m[Image: [0m[4;32mexample-image.jpg[0m[37m][0m
 
-    And note that you can backslash-escape any punctuation characters 
+    And note that you can backslash-escape any punctuation characters
     which you wish to be displayed literally, ex.: `foo`, *bar*, etc.
 
-    [37m~~~~~~~~[0m
+[37m    ~~~~~~~~[0m
 
     [92m 1. [0mFootnote text goes here.
