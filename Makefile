@@ -202,6 +202,8 @@ install_shared: liblowdown.so install_lib_common
 install_static: liblowdown.a install_lib_common
 	$(INSTALL_LIB) liblowdown.a $(DESTDIR)$(LIBDIR)
 
+install_libs: install_shared install_static
+
 distcheck: lowdown.tar.gz.sha512
 	mandoc -Tlint -Werror man/*.[135]
 	newest=`grep "<h1>" versions.xml | tail -1 | sed 's![ 	]*!!g'` ; \

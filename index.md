@@ -27,7 +27,7 @@ and unpack the source.  Then build:
 % ./configure
 % make
 % make regress
-# make install
+# make install install_libs
 ```
 
 *lowdown* is a [BSD.lv](https://bsd.lv) project.  Its portability to
@@ -45,23 +45,21 @@ which shows the difference between two markdown trees in markdown.
 
 ## Output
 
-*lowdown* produces HTML5 output in XML mode with **-thtml**.  It may produce
-either a fragment or standalone HTML5 document with **-s**.
-
-It also produces simple LaTeX documents with **-tlatex**.  It uses the most
-basic packages possible.
-
-For word processing, it can produce a "flat"
+*lowdown* produces HTML5 output in XML mode with **-thtml**,
+[LaTeX](https://www.latex-project.org/) documents with **-tlatex**,
+"flat"
 [OpenDocument](https://docs.oasis-open.org/office/OpenDocument/v1.3/os/part1-introduction/OpenDocument-v1.3-os-part1-introduction.html)
-XML document with the latest OpenDocument version 1.3.
+XML documentx (OpenDocument version 1.3) with **-tfodt**, 
+[Gemini](https://gemini.circumlunar.space/docs/specification.html) with
+**-tgemini**, *roff* documents with **-tms** and **-tman**[^nomanpages]
+outputs (via
+[groff](https://www.gnu.org/s/groff) or 
+[mandoc](https://mdocml.bsd.lv), or directly on ANSI terminals with
+**-tterm**.
 
-The **-tgemini** outputs into the
-[Gemini](https://gemini.circumlunar.space/docs/specification.html) format.
-
-PDFs may also be produced from *roff* documents via the **-tms** and
-**-tman**[^nomanpages] outputs.  These may be processed with *troff*
-system such as [groff](https://www.gnu.org/s/groff) or (for **-tman**
-only) [mandoc](https://mdocml.bsd.lv).
+The **-tlatex** and **-tms** are commonly used for PDF documents,
+**-tman** for manpages, **-thtml** or **-tgemini** for web, and
+**-tterm** for the command line.
 
 By way of example: this page,
 [index.md](https://kristaps.bsd.lv/lowdown/index.md), renders as
@@ -78,12 +76,6 @@ with groff (via **-tms**).
     [mdoc(7)](https://man.openbsd.org/mdoc), instead --- it's built
     for that purpose!  The **man** output is for technical
     documentation only (section 7).
-
-*lowdown* can output to ANSI-compatible UTF-8 terminals with
-**-tterm**.  This [glow](https://github.com/charmbracelet/glow)-inspired 
-mode renders stylised Markdown-looking output for easy reading.  (The
-traditional text output facilities of [groff](https://www.gnu.org/s/groff) and
-[mandoc](https://mdocml.bsd.lv) may also be used for this.)
 
 > [![mandoc](screen-mandoc.thumb.jpg)](screen-mandoc.png)
 > [![term](screen-term.thumb.jpg)](screen-term.png)
@@ -260,6 +252,31 @@ OpenDocument,
 [term.c](https://github.com/kristapsdz/lowdown/blob/master/term.c)
 for terminal output, and a debugging renderer
 [tree.c](https://github.com/kristapsdz/lowdown/blob/master/tree.c).
+
+## Installing
+
+You'll need a C compiler with essential build tools
+([make](https://man.openbsd.org/make), [cc](https://man.openbsd.org/cc), etc.).
+First, configure the system:
+
+```
+./configure
+```
+
+You can pass variables like `PREFIX` and such here.  To install the binaries, run:
+
+```
+make install
+```
+
+For libraries, you can additionally run:
+
+```
+make install_libs
+```
+
+This may be split into `install_shared` and `install_static` for shared
+and static libraries, respectively.
 
 ## Example
 
