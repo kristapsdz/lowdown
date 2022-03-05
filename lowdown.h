@@ -317,6 +317,7 @@ struct	lowdown_opts {
 #define	LOWDOWN_HTML_NUM_ENT	  0x1000 /* use &#nn; if possible */
 #define	LOWDOWN_HTML_OWASP	  0x800 /* use OWASP escaping */
 #define	LOWDOWN_ODT_SKIP_HTML	  0x2000000 /* skip all HTML */
+#define	LOWDOWN_ODT_EXT_STYLES	  0x4000000 /* style from ext attr */
 #define	LOWDOWN_SMARTY	  	  0x40 /* smart typography */
 #define	LOWDOWN_TERM_NOANSI	  0x1000000 /* no ANSI escapes at all */
 #define	LOWDOWN_TERM_NOCOLOUR	  0x800000 /* no ANSI colours */

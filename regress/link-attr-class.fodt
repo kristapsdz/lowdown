@@ -11,6 +11,6 @@
 </office:master-styles>
 <office:body>
 <office:text>
-<text:p text:style-name="P1">link <text:a xlink:type="simple" text:style-name="cls" xlink:href="address">text</text:a></text:p>
+<text:p text:style-name="P1">link <text:a xlink:type="simple" text:style-name="Internet_20_Link" xlink:href="address">text</text:a></text:p>
 </office:text>
 </office:body>
