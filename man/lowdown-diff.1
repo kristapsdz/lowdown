@@ -143,6 +143,8 @@ starting all lists at one.
 Do not parse indented content as code blocks.
 .It Fl -parse-no-deflists
 Do not parse PHP extra definition lists.
+.It Fl -parse-no-ext-attrs
+Do not parse PHP extra extended attributes.
 .It Fl -parse-no-fenced
 Do not parse GFM fenced (language-specific) code blocks.
 .It Fl -parse-no-footnotes
@@ -355,6 +357,7 @@ This usually doesn't make sense because the HTML won't be interpreted by
 the output reader.
 By default, HTML is omitted.
 .El
+.Pp
 The
 .Fl t Ns Ar fodt
 output has the following options:
@@ -364,13 +367,126 @@ Output embedded HTML.
 This usually doesn't make sense because the HTML won't be interpreted by
 the output reader.
 By default, HTML is omitted.
+.It Fl -odt-ext-styles
+Allow the extended class attributes to override the ODT style.
+This is normally be used with
+.Fl -odt-style .
+.It Fl -odt-style Ns = Ns Ar file
+Specify an OpenDocument style file, which must consist of at least
+.Li <office:font-face-decls> ,
+.Li <office:scripts> ,
+and
+.Li <office:styles>
+XML elements in the root of the document.
+This is not syntax-checked in any way.
 .El
-.Ss Metadata
+.Ss Output modes
+The output media is specified by
+.Fl t ,
+which defaults to
+.Fl t Ns Ar html .
+.Bl -tag -width Ds
+.It Fl t Ns Ar fodt
+.Dq Flat
+OpenDocument output.
+.It Fl t Ns Ar gemini
+Gemini protocol output.
+This output mode is experimental.
+.It Fl t Ns Ar html
+HTML5 output with UTF-8 encoding.
+.It Fl t Ns Ar latex
+Simple LaTeX output.
+The following packages are required:
+.Li amsmath
+and
+.Li amssymb
+for maths,
+.Li graphicx
+for images,
+.Li inputenc Pq utf8
+for UTF-8 input,
+.Li fontend Pq T1
+and
+.Li textcomp
+for output glyphs,
+.Li lmodern
+for Latin modern font,
+.Li xcolor
+for the difference engine output, and
+.Li hyperref
+for links.
+.It Fl t Ns Ar man
+The
+.Ar man
+macro package suitable for reading by
+.Xr groff 1 ,
+.Xr mandoc 1 ,
+or traditional
+.Xr troff 1 .
+Does not support equations and images.
+Table support is provided by
+.Xr tbl 1 .
+Since UTF-8 may be passed as input values,
+.Xr preconv 1
+may need to be used.
+.It Fl t Ns Ar ms
+The
+.Ar ms
+macro package suitable for reading by
+.Xr groff 1
+or traditional
+.Xr troff 1 .
+Does not support equations and limited image support for encapsulated
+postscript (PS and EPS suffix) images.
+Images are always block-formatted.
+Image dimensions and extended attributes are ignored, though images are
+downsized if larger than the current text width.
+Table support is provided by
+.Xr tbl 1 .
+Since UTF-8 may be passed as input values,
+.Xr preconv 1
+may need to be used.
+.It Fl t Ns Ar term
+ANSI-escaped UTF-8 output suitable for reading on the terminal.
+Images and equations not supported.
+.It Fl t Ns Ar tree
+Debugging output: not for general use.
+.El
+.Ss Standalone documents
+When
+.Fl s
+is specified, additional content may be added to output:
+.Bl -tag -width Ds
+.It Fl t Ns Ar fodt
+Envelope
+.Li <office:document>
+and prologue
+.Li <office:automatic-styles> ,
+.Li <office:master-styles> ,
+and
+.Li <office:body> .
+.It Fl t Ns Ar html
+Envelope
+.Li <html>
+and prologue
+.Li <head> .
+.It Fl t Ns Ar latex
+Prologue
+.Li documentclass
+and
+.Li usepackage
+statements, and surrounding
+.Li begin{document}
+statements.
+.It Fl t Ns Ar man , Fl t Ns Ar ms
+Prologue macros.
+.El
+.Pp
 If parsed from the document or as given by
 .Fl m
 or
 .Fl M ,
-the following metadata keys are recognised by output front-ends.
+the following metadata keys are used by additional content.
 The metadata keys are canonicalised in lowercase and without spaces.
 .Pp
 Metadata values should not be encoded in their output format, e.g.,
@@ -500,132 +616,7 @@ for the
 .Li title ,
 are not set as metadata values, and will not appear if the metadata key
 is used as a variable.
-.Ss Output modes
-A detailed description of the output modes follows.
-.Bl -tag -width Ds
-.It Fl t Ns Ar latex
-.Dq Flat
-OpenDocument output.
-This output mode is still in development.
-.It Fl t Ns Ar gemini
-Gemini protocol output.
-This output mode (and the protocol) are experimental.
-.It Fl t Ns Ar html
-HTML5 output with UTF-8 encoding.
-All features of
-.Xr lowdown 5
-are supported.
-.It Fl t Ns Ar latex
-Simple LaTeX output.
-The following packages are required:
-.Li amsmath
-and
-.Li amssymb
-for maths,
-.Li graphicx
-for images,
-.Li inputenc Pq utf8
-for UTF-8 input,
-.Li fontend Pq T1
-and
-.Li textcomp
-for output glyphs,
-.Li lmodern
-for Latin modern font,
-.Li xcolor
-for the difference engine output, and
-.Li hyperref
-for links.
-.It Fl t Ns Ar man
-The
-.Ar man
-macro package suitable for reading by
-.Xr groff 1 ,
-.Xr mandoc 1 ,
-or traditional
-.Xr troff 1 .
-Does not support equations and images.
-Table support is provided by
-.Xr tbl 1 .
-Since UTF-8 may be passed as input values,
-.Xr preconv 1
-may need to be used.
-.It Fl t Ns Ar ms
-The
-.Ar ms
-macro package suitable for reading by
-.Xr groff 1
-or traditional
-.Xr troff 1 .
-Does not support equations and limited image support for encapsulated
-postscript (PS and EPS suffix) images.
-Images are always block-formatted.
-Image dimensions and extended attributes are ignored, though images are
-downsized if larger than the current text width.
-Table support is provided by
-.Xr tbl 1 .
-Since UTF-8 may be passed as input values,
-.Xr preconv 1
-may need to be used.
-.It Fl t Ns Ar term
-ANSI-escaped UTF-8 output suitable for reading on the terminal.
-Images and equations not supported.
-.It Fl t Ns Ar tree
-Debugging output: not for general use.
-.El
-.Pp
-Without
-.Fl s
-specified, several of these modes will omit parts of the output:
-.Bl -tag -width Ds
-.It Fl t Ns Ar fodt
-Omit all but the
-.Li <office:automatic-styles> ,
-.Li <office:master-styles> ,
-and
-.Li <office:body>
-elements and their children.
-.It Fl t Ns Ar html
-Omit all but the
-.Li <body>
-element and its children.
-.It Fl t Ns Ar latex
-Omit the
-.Li documentclass ,
-.Li usepackage ,
-and surrounding
-.Li begin{document}
-statements.
-.It Fl t Ns Ar man , Fl t Ns Ar ms
-Omit the document prologue.
-.El
-.Pp
-Output is augmented with features for viewing file differences.
-These depend upon the output mode.
-.Bl -tag -width Ds
-.It Fl t Ns Ar fodt
-Uses the change-tracking feature to display insertions and deletions.
-.It Fl t Ns Ar man , Fl t Ns Ar ms
-When data has been removed, it is coloured red.
-When data has been inserted, it is coloured in green.
-In either case, your formatter must support colours or the texts will be
-freely intermingled.
-.It Fl t Ns Ar html
-When data has been removed from the old document, it is marked up with the
-.Li <del>
-element.
-When data has been inserted into the new document,
-.Li <ins>
-is used instead.
-.It Fl t Ns Ar latex
-When data has been removed, it is coloured red.
-When data has been inserted, it is coloured in green.
-.It Fl t Ns Ar term
-Removed and inserted data have different background colours.
-.El
 .Sh ENVIRONMENT
-The following environment variables affect the execution of
-.Nm :
 .Bl -tag -width Ds
 .It Ev NO_COLOR
 Do not emit colours when in
@@ -635,6 +626,16 @@ Synonym for
 .Ev NO_COLOUR .
 Same as
 .Fl -term-nocolour .
+.El
+.Sh FILES
+.Bl -tag -width Ds
+.It Pa share/odt/styles.xml
+Default styles used when generating standalone
+.Fl t Ns Ar fodt
+documents.
+Template for
+.Fl -odt-style
+styles.
 .El
 .Sh EXIT STATUS
 .Ex -std
