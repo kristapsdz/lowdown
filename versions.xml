@@ -1283,9 +1283,9 @@
 	</article>
 	<article data-sblg-article="1" data-sblg-tags="version">
 		<header>
-			<h1>0.11.0</h1>
+			<h1>0.11.1</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2022-02-22">2022-02-22</time>
+			<time datetime="2022-03-05">2022-03-05</time>
 		</header>
 		<aside>
 			<p>
@@ -1302,8 +1302,8 @@
 				conditions.
 			</p>
 			<p>
-				Have extended attribute classes apply as OpenDocument classes,
-				but only if <b>--odt-ext-styles</b> is specified.
+				Have extended attribute classes apply as OpenDocument classes in
+				<b>-tfodt</b>.
 			</p>
 		</aside>
 	</article>
