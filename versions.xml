@@ -1281,4 +1281,30 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.11.0</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2022-02-22">2022-02-22</time>
+		</header>
+		<aside>
+			<p>
+				Have <b>-tlatex</b> process header identifiers, both automatically
+				generated and from PHP extra attributes.  Allow linking to these
+				within the document body.
+			</p>
+			<p>
+				Have <b>-tms</b> print that an image happened instead of just omitting
+				it entirely.  It now behaves like <b>-tman</b> in this regard.
+			</p>
+			<p>
+				Fix where <b>-tterm</b> would print double-spaces in certain
+				conditions.
+			</p>
+			<p>
+				Have extended attribute classes apply as OpenDocument classes,
+				but only if <b>--odt-ext-styles</b> is specified.
+			</p>
+		</aside>
+	</article>
 </articles>
