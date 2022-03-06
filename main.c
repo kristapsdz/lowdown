@@ -253,8 +253,6 @@ main(int argc, char *argv[])
 		{ "nroff-no-nolinks",	no_argument, 	&roflag, LOWDOWN_NROFF_NOLINK },
 		{ "odt-skiphtml",	no_argument,	&aoflag, LOWDOWN_ODT_SKIP_HTML },
 		{ "odt-no-skiphtml",	no_argument,	&roflag, LOWDOWN_ODT_SKIP_HTML },
-		{ "odt-ext-styles",	no_argument,	&aoflag, LOWDOWN_ODT_EXT_STYLES },
-		{ "odt-no-ext-styles",	no_argument,	&roflag, LOWDOWN_ODT_EXT_STYLES },
 		{ "odt-style",		required_argument, NULL, 6 },
 		{ "term-width",		required_argument, NULL, 1 },
 		{ "term-hmargin",	required_argument, NULL, 2 },

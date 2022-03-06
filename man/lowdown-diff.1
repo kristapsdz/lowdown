@@ -367,10 +367,6 @@ Output embedded HTML.
 This usually doesn't make sense because the HTML won't be interpreted by
 the output reader.
 By default, HTML is omitted.
-.It Fl -odt-ext-styles
-Allow the extended class attributes to override the ODT style.
-This is normally be used with
-.Fl -odt-style .
 .It Fl -odt-style Ns = Ns Ar file
 Specify an OpenDocument style file, which must consist of at least
 .Li <office:font-face-decls> ,
@@ -389,6 +385,10 @@ which defaults to
 .It Fl t Ns Ar fodt
 .Dq Flat
 OpenDocument output.
+Automatic styles (those conditional upon document state) are generated
+with output.
+Classes specified by PHP extended attributes are not checked for
+existence.
 .It Fl t Ns Ar gemini
 Gemini protocol output.
 This output mode is experimental.

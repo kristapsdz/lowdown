@@ -1243,7 +1243,6 @@ rndr_header(struct lowdown_buf *ob,
 		fl = ODT_STY_H2;
 	else
 		fl = ODT_STY_H3;
-
 	for (i = 0; i < st->stysz; i++)
 		if (st->stys[i].type == LOWDOWN_HEADER &&
 		    st->stys[i].fmt == fl)
@@ -1261,8 +1260,22 @@ rndr_header(struct lowdown_buf *ob,
 	if (ob->size && !hbuf_putc(ob, '\n'))
 		return 0;
 	if (!hbuf_printf(ob,
-	     "<text:h text:style-name=\"%s\""
-	     " text:outline-level=\"%zu\">", sty->name, level))
+	     "<text:h"
+	     " text:outline-level=\"%zu\""
+	     " text:style-name=\"%s\"",
+	     level, sty->name))
+		return 0;
+
+	if (n->rndr_header.attr_cls.size > 0) {
+		if (!HBUF_PUTSL(ob, " text:class-names=\""))
+			return 0;
+		if (!hbuf_putb(ob, &n->rndr_header.attr_cls))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\""))
+			return 0;
+	}
+
+	if (!HBUF_PUTSL(ob, ">"))
 		return 0;
 
 	if (n->rndr_header.attr_id.size) {
@@ -1318,17 +1331,20 @@ rndr_link(struct lowdown_buf *ob,
 	}
 
 	if (!HBUF_PUTSL(ob,
-	    "<text:a xlink:type=\"simple\" text:style-name=\""))
+	    "<text:a"
+	    " xlink:type=\"simple\""
+	    " text:style-name=\"Internet_20_Link\""))
 		return 0;
-	if ((st->flags & LOWDOWN_ODT_EXT_STYLES) &&
-	    param->attr_cls.size > 0) {
+
+	if (param->attr_cls.size > 0) {
+		if (!HBUF_PUTSL(ob, " text:class-names=\""))
+			return 0;
 		if (!hbuf_putb(ob, &param->attr_cls))
 			return 0;
-	} else {
-		if (!HBUF_PUTSL(ob, "Internet_20_Link"))
+		if (!HBUF_PUTSL(ob, "\""))
 			return 0;
 	}
-	if (!HBUF_PUTSL(ob, "\" xlink:href=\""))
+	if (!HBUF_PUTSL(ob, " xlink:href=\""))
 		return 0;
 	if (!escape_href(ob, &param->link, st))
 		return 0;
@@ -1558,11 +1574,21 @@ rndr_image(struct lowdown_buf *ob,
 	}
 
 	if (!HBUF_PUTSL(ob,
-	    "<draw:frame draw:style-name=\"Graphics\""
+	    "<draw:frame"
 	    " draw:name=\"Image1\""
 	    " text:anchor-type=\"as-char\""
-	    " draw:z-index=\"0\""))
+	    " draw:z-index=\"0\""
+	    " draw:style-name=\"Graphics\""))
 		return 0;
+
+	if (param->attr_cls.size > 0) {
+		if (!HBUF_PUTSL(ob, " draw:class-names=\""))
+			return 0;
+		if (!hbuf_putb(ob, &param->attr_cls))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\""))
+			return 0;
+	}
 
 	if (param->attr_width.size || param->attr_height.size) {
 		if (param->attr_width.size)
@@ -1577,7 +1603,8 @@ rndr_image(struct lowdown_buf *ob,
 				return 0;
 	} else if (x > 0 && y > 0) {
 		if (!hbuf_printf(ob,
-		    " svg:width=\"%u px\" svg:height=\"%u px\"", x, y))
+		    " svg:width=\"%u px\""
+		    " svg:height=\"%u px\"", x, y))
 			return 0;
 	}
 

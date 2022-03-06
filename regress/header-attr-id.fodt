@@ -13,11 +13,11 @@
 </office:master-styles>
 <office:body>
 <office:text>
-<text:h text:style-name="P1" text:outline-level="1"><text:bookmark-start text:name="b" />a<text:bookmark-end text:name="b" /></text:h>
+<text:h text:outline-level="1" text:style-name="P1"><text:bookmark-start text:name="b" />a<text:bookmark-end text:name="b" /></text:h>
 
 <text:p text:style-name="P2">c</text:p>
 
-<text:h text:style-name="P1" text:outline-level="1"><text:bookmark-start text:name="b" />a<text:bookmark-end text:name="b" /></text:h>
+<text:h text:outline-level="1" text:style-name="P1"><text:bookmark-start text:name="b" />a<text:bookmark-end text:name="b" /></text:h>
 
 <text:p text:style-name="P2">c</text:p>
 </office:text>
