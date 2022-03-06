@@ -22,7 +22,7 @@ that one
 .IP "\(bu" 2
 the other one
 .LP
-Note that \[u2014] not considering the asterisk \[u2014] the actual text
+Note that \(em not considering the asterisk \(em the actual text
 content starts at 4-columns in.
 .RS
 .PP

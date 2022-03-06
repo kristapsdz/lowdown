@@ -96,11 +96,26 @@ static int
 hesc_nroff(struct lowdown_buf *ob, const char *data, 
 	size_t size, int oneline, int literal, int esc)
 {
-	size_t	 i = 0;
+	size_t	 	i = 0;
+	unsigned char	ch;
 
 	if (size == 0)
 		return 1;
-	if (!esc)
+
+	if (!esc && oneline) {
+		assert(!literal);
+		for (i = 0; i < size; i++) {
+			ch = data[i] == '\n' ? ' ' : data[i];
+			if (!hbuf_putc(ob, ch))
+				return 0;
+			if (ch != ' ')
+				continue;
+			while (i < size && isspace((unsigned char)data[i]))
+				i++;
+			i--;
+		}
+		return 1;
+	} else if (!esc)
 		return hbuf_put(ob, data, size);
 
 	/* Strip leading whitespace. */
@@ -421,6 +436,18 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq, int esc)
 			if (!hbuf_putc(ob, '\n'))
 				return 0;
 
+		/*
+		 * If we're a span, double-check to see whether we
+		 * should introduce a line with an escape.
+		 */
+
+		if (bn->scope == BSCOPE_SPAN &&
+		    bn->nbuf != NULL && ob->size > 0 &&
+		    ob->data[ob->size - 1] == '\n' &&
+		    (bn->nbuf[0] == '.' || bn->nbuf[0] == '\'') &&
+		    !HBUF_PUTSL(ob, "\\&"))
+			return 0;
+
 		/* Safe data need not be escaped. */
 
 		if (bn->nbuf != NULL && !hbuf_puts(ob, bn->nbuf))
@@ -453,16 +480,8 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq, int esc)
 		 */
 
 		if (bn->nargs != NULL &&
-		    bn->scope == BSCOPE_BLOCK) {
-			assert(nextblk);
-			if (!hbuf_putc(ob, ' '))
-				return 0;
-			if (!hbuf_puts(ob, bn->nargs))
-				return 0;
-		}
-
-		if (bn->nargs != NULL &&
-		    bn->scope == BSCOPE_PDFHREF) {
+		    (bn->scope == BSCOPE_BLOCK ||
+		     bn->scope == BSCOPE_PDFHREF)) {
 			assert(nextblk);
 			if (!hbuf_putc(ob, ' '))
 				return 0;
@@ -905,8 +924,7 @@ rndr_header(struct nroff *st, struct bnodeq *obq,
 			nbuf = hbuf_id(buf, NULL, &st->headers_used);
 			if (nbuf == NULL)
 				goto out;
-			bn->nargs = strndup
-				(nbuf->data, nbuf->size);
+			bn->nargs = strndup(nbuf->data, nbuf->size);
 			if (bn->nargs == NULL)
 				goto out;
 		}
@@ -1380,19 +1398,31 @@ static int
 rndr_entity(const struct nroff *st,
 	struct bnodeq *obq, const struct rndr_entity *param)
 {
-	int32_t		 ent;
-	struct bnode	*bn;
 	char		 buf[32];
+	const char	*ent;
+	struct bnode	*bn;
+	int32_t		 iso;
+	size_t		 sz;
 
-	if ((ent = entity_find_iso(&param->text)) > 0) {
+	if ((ent = entity_find_nroff(&param->text, &iso)) != NULL) {
+		sz = strlen(ent);
+		if (sz == 1)
+			snprintf(buf, sizeof(buf), "\\%s", ent);
+		else if (sz == 2)
+			snprintf(buf, sizeof(buf), "\\(%s", ent);
+		else
+			snprintf(buf, sizeof(buf), "\\[%s]", ent);
+		return bqueue_span(obq, buf) != NULL;
+	} else if (iso > 0) {
 		if (st->flags & LOWDOWN_NROFF_GROFF)
 			snprintf(buf, sizeof(buf), "\\[u%.4llX]", 
-				(unsigned long long)ent);
+				(unsigned long long)iso);
 		else
 			snprintf(buf, sizeof(buf), "\\U\'%.4llX\'", 
-				(unsigned long long)ent);
+				(unsigned long long)iso);
 		return bqueue_span(obq, buf) != NULL;
-	} 
+	}
+
 	if ((bn = bqueue_span(obq, NULL)) == NULL)
 		return 0;
 	bn->buf = strndup(param->text.data, param->text.size);
@@ -1401,9 +1431,7 @@ rndr_entity(const struct nroff *st,
 
 /*
  * Split "b" at sequential white-space, outputting the results in the
- * line-based "env" macro.
- * The content in "b" has already been escaped, so there's no need to do
- * anything but manage white-space.
+ * line-based "env" macro.  The content in "b" has already been escaped.
  */
 static int
 rndr_meta_multi(struct bnodeq *obq, const char *b, const char *env)
@@ -1440,13 +1468,17 @@ rndr_meta_multi(struct bnodeq *obq, const char *b, const char *env)
 			return 0;
 		if ((bn = bqueue_span(obq, NULL)) == NULL)
 			return 0;
-		if ((bn->buf = strndup(start, sz)) == NULL)
+		if ((bn->nbuf = strndup(start, sz)) == NULL)
 			return 0;
 	}
 
 	return 1;
 }
 
+/*
+ * Fill "mq" by serialising child nodes into strings.  The serialised
+ * strings are escaped.
+ */
 static int
 rndr_meta(struct nroff *st, const struct bnodeq *bq, 
 	struct lowdown_metaq *mq, const struct rndr_meta *params)
@@ -1466,7 +1498,7 @@ rndr_meta(struct nroff *st, const struct bnodeq *bq,
 
 	if ((ob = hbuf_new(32)) == NULL)
 		return 0;
-	if (!bqueue_flush(ob, bq, 0)) {
+	if (!bqueue_flush(ob, bq, 1)) {
 		hbuf_free(ob);
 		return 0;
 	}
@@ -1551,7 +1583,7 @@ rndr_doc_header(const struct nroff *st,
 				".ds LF Copyright \\(co");
 			if (bn == NULL)
 				goto out;
-			if ((bn->args = strdup(copy)) == NULL)
+			if ((bn->nargs = strdup(copy)) == NULL)
 				goto out;
 		}
 		if (date != NULL) {
@@ -1561,14 +1593,15 @@ rndr_doc_header(const struct nroff *st,
 				bn = bqueue_block(obq, ".DA");
 			if (bn == NULL)
 				goto out;
-			if ((bn->args = strdup(date)) == NULL)
+			if ((bn->nargs = strdup(date)) == NULL)
 				goto out;
 		}
+
 		if (bqueue_block(obq, ".TL") == NULL)
 			goto out;
 		if ((bn = bqueue_span(obq, NULL)) == NULL)
 			goto out;
-		if ((bn->buf = strdup(title)) == NULL)
+		if ((bn->nbuf = strdup(title)) == NULL)
 			goto out;
 		if (!rndr_meta_multi(obq, author, "AU"))
 			goto out;
@@ -1585,10 +1618,11 @@ rndr_doc_header(const struct nroff *st,
 
 		if ((bn = bqueue_block(obq, ".TH")) == NULL)
 			goto out;
+
 		if (!hbuf_putc(ob, '"') ||
-		    !hesc_nroff(ob, title, strlen(title), 1, 0, 1) ||
+		    !hesc_nroff(ob, title, strlen(title), 1, 0, 0) ||
 		    !HBUF_PUTSL(ob, "\" \"") ||
-		    !hesc_nroff(ob, sec, strlen(sec), 1, 0, 1) ||
+		    !hesc_nroff(ob, sec, strlen(sec), 1, 0, 0) ||
 		    !hbuf_putc(ob, '"'))
 			goto out;
 
@@ -1600,7 +1634,7 @@ rndr_doc_header(const struct nroff *st,
 		if (!HBUF_PUTSL(ob, " \""))
 			goto out;
 		if (date != NULL &&
-		    !hesc_nroff(ob, date, strlen(date), 1, 0, 1))
+		    !hesc_nroff(ob, date, strlen(date), 1, 0, 0))
 			goto out;
 		if (!HBUF_PUTSL(ob, "\""))
 			goto out;
@@ -1615,14 +1649,14 @@ rndr_doc_header(const struct nroff *st,
 			if (!HBUF_PUTSL(ob, " \""))
 				goto out;
 			if (source != NULL && !hesc_nroff
-			    (ob, source, strlen(source), 1, 0, 1))
+			    (ob, source, strlen(source), 1, 0, 0))
 				goto out;
 			if (!HBUF_PUTSL(ob, "\""))
 				goto out;
 			if (!HBUF_PUTSL(ob, " \""))
 				goto out;
 			if (volume != NULL && !hesc_nroff
-			    (ob, volume, strlen(volume), 1, 0, 1))
+			    (ob, volume, strlen(volume), 1, 0, 0))
 				goto out;
 			if (!HBUF_PUTSL(ob, "\""))
 				goto out;

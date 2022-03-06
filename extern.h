@@ -26,6 +26,7 @@ TAILQ_HEAD(hentryq, hentry);
 
 int	 	 smarty(struct lowdown_node *, size_t, enum lowdown_type);
 
+const char	*entity_find_nroff(const struct lowdown_buf *, int32_t *);
 int32_t	 	 entity_find_iso(const struct lowdown_buf *);
 const char	*entity_find_tex(const struct lowdown_buf *, unsigned char *);
 #define		 TEX_ENT_MATH	 0x01

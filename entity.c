@@ -34,7 +34,7 @@
 struct ent {
 	const char 	*iso;
 	uint32_t	 unicode;
-	const char	*roff;
+	const char	*nroff;
 	const char	*tex;
 	unsigned char	 texflags;
 };
@@ -404,25 +404,30 @@ entity_find_iso(const struct lowdown_buf *buf)
 	return e->unicode;
 }
 
-#if 0
+/**
+ * Look for the roff entity corresponding to "buf".  If will either
+ * return a special character (which must be escaped using the usual
+ * \(xx or whatever) or NULL.  If NULL and "iso" is -1, the character
+ * couldn't be found.  If NULL and "iso" is >= 0, "iso" is a unicode
+ * character number that must be further escaped.
+ */
 const char *
-entity_find_roff(const struct lowdown_buf *buf, int *iso)
+entity_find_nroff(const struct lowdown_buf *buf, int32_t *iso)
 {
 	const struct ent	*e;
-	int32_t			 unicode;
 	size_t			 i;
+
+	*iso = -1;
 
 	if (!entity_sane(buf))
 		return NULL;
 
 	if (buf->data[1] == '#') {
-		if ((unicode = entity_find_num(buf)) == -1)
+		if ((*iso = entity_find_num(buf)) == -1)
 			return NULL;
 		for (i = 0; ents[i].iso != NULL; i++)
-			if ((int32_t)ents[i].unicode == unicode) {
-				*fl = ents[i].texflags;
-				return ents[i].tex;
-			}
+			if ((int32_t)ents[i].unicode == *iso)
+				return ents[i].nroff;
 		return NULL;
 	}
 
@@ -430,10 +435,9 @@ entity_find_roff(const struct lowdown_buf *buf, int *iso)
 		return NULL;
 
 	assert(e->unicode < INT32_MAX);
-	*fl = e->texflags;
-	return e->tex;
+	*iso = e->unicode;
+	return e->nroff;
 }
-#endif
 
 /*
  * Looks for the TeX entity corresponding to "buf".
