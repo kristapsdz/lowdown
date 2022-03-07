@@ -33,15 +33,15 @@ They can span multiple paragraphs,
 if you like.
 .RE
 .LP
-Use 3 dashes for an em-dash. Use 2 dashes for ranges (ex., \[u201C]it\[u2019]s all
-in chapters 12\[u2013]14\[u201D]). Three dots \[u2026] will be converted to an ellipsis.
+Use 3 dashes for an em-dash. Use 2 dashes for ranges (ex., \(lqit\(cqs all
+in chapters 12\(en14\(rq). Three dots \[u2026] will be converted to an ellipsis.
 Unicode is supported. ☺
 .NH 2
 An h2 header
 .pdfhref O 2 An h2 header
 .pdfhref M an-h2-header
 .LP
-Here\[u2019]s a numbered list:
+Here\(cqs a numbered list:
 .IP "1.  "
 first item
 .if n \
@@ -58,7 +58,7 @@ second item
 third item
 .LP
 Note again how the actual text starts at 4 columns in (4 characters
-from the left side). Here\[u2019]s a code sample:
+from the left side). Here\(cqs a code sample:
 .LP
 .nf
 .ft CR
@@ -138,13 +138,13 @@ Do not bump wooden spoon or it will fall.
 Notice again how text always lines up on 4-space indents (including
 that last line which continues item 3 above).
 .PP
-Here\[u2019]s a link to \c
+Here\(cqs a link to \c
 .pdfhref W -A "\c" -D http://foo.bar -- a website
 , to a \c
 .pdfhref W -A "\c" -D local-doc.html -- local doc
 , and to a \c
 .pdfhref L -A "\c" -D an-h2-header -- section heading in the current doc
-\&. Here\[u2019]s a footnote \**
+\&. Here\(cqs a footnote \**
 .FS
 Footnote text goes here.
 .FE
@@ -186,7 +186,7 @@ transparent
 T}
 .TE
 .LP
-Table: Shoes, their sizes, and what they\[u2019]re made of
+Table: Shoes, their sizes, and what they\(cqre made of
 .PP
 (The above is the caption for the table.)
 .PP
@@ -201,7 +201,7 @@ A horizontal rule follows.
 .sp 1v
 .\}
 .LP
-Here\[u2019]s a definition list:
+Here\(cqs a definition list:
 .LP
 apples
 .if n \
@@ -225,7 +225,7 @@ tomatoes
 .if t \
 .sp -0.25v
 .IP "" \*(PI
-There\[u2019]s no \[u201C]e\[u201D] in tomatoe.
+There\(cqs no \(lqe\(rq in tomatoe.
 .LP
 Again, text is indented 4 spaces. (Put a blank line between each
 term/definition pair to spread things out more.)
