@@ -1404,6 +1404,12 @@ rndr_entity(const struct nroff *st,
 	int32_t		 iso;
 	size_t		 sz;
 
+	/*
+	 * Handle named entities if "ent" is non-NULL, use unicode
+	 * escapes for values above 126, and just the regular character
+	 * if within the ASCII set.
+	 */
+
 	if ((ent = entity_find_nroff(&param->text, &iso)) != NULL) {
 		sz = strlen(ent);
 		if (sz == 1)
@@ -1413,13 +1419,16 @@ rndr_entity(const struct nroff *st,
 		else
 			snprintf(buf, sizeof(buf), "\\[%s]", ent);
 		return bqueue_span(obq, buf) != NULL;
-	} else if (iso > 0) {
+	} else if (iso > 0 && iso > 126) {
 		if (st->flags & LOWDOWN_NROFF_GROFF)
 			snprintf(buf, sizeof(buf), "\\[u%.4llX]", 
 				(unsigned long long)iso);
 		else
 			snprintf(buf, sizeof(buf), "\\U\'%.4llX\'", 
 				(unsigned long long)iso);
+		return bqueue_span(obq, buf) != NULL;
+	} else if (iso > 0) {
+		snprintf(buf, sizeof(buf), "%c", iso);
 		return bqueue_span(obq, buf) != NULL;
 	}
 
