@@ -55,7 +55,7 @@ blockquote > p > *		{ flex: 1;
 				  display: inline-block;
 				  text-align: center;
 				  padding: 0.2rem; }
-blockquote > p img		{ width: 100%; }
+blockquote > p img		{ width: 100% !important; }
 blockquote + blockquote		{ margin-top: 0; }
 
 @media only screen and (max-width: 768px), only screen and (max-device-width: 768px) {

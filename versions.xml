@@ -1307,4 +1307,18 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>0.11.2</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2022-03-06">2022-03-06</time>
+		</header>
+		<aside>
+			<p>
+				Support native roff escapes instead of using Unicode escapes.
+				(This is a work in progress, as there are many.)
+				This makes special characters usable in sections and so on.
+			</p>
+		</aside>
+	</article>
 </articles>

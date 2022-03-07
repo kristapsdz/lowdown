@@ -77,9 +77,9 @@ with groff (via **-tms**).
     for that purpose!  The **man** output is for technical
     documentation only (section 7).
 
-> [![mandoc](screen-mandoc.thumb.jpg)](screen-mandoc.png)
-> [![term](screen-term.thumb.jpg)](screen-term.png)
-> [![groff](screen-groff.thumb.jpg)](screen-groff.png)
+> [![mandoc](screen-mandoc.thumb.jpg){width=30%}](screen-mandoc.png)
+> [![term](screen-term.thumb.jpg){width=30%}](screen-term.png)
+> [![groff](screen-groff.thumb.jpg){width=30%}](screen-groff.png)
 
 > **-tman**
 > **-tterm**
