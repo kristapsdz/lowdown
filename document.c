@@ -1444,7 +1444,7 @@ parse_ext_attrs(const char *data, size_t size,
 static int
 parse_header_ext_attrs(struct lowdown_node *n)
 {
-	struct lowdown_node	*nn, *prev;
+	struct lowdown_node	*nn;
 	struct lowdown_buf	*b, *attrid = NULL, *attrcls = NULL;
 	size_t			 i;
 	int			 rc = 0;
@@ -1461,25 +1461,6 @@ parse_header_ext_attrs(struct lowdown_node *n)
 	    nn->rndr_normal_text.text.data
 	     [nn->rndr_normal_text.text.size - 1] != '}')
 		return 1;
-
-	/*
-	 * Consolidate trailing text nodes so that we can study them.
-	 * Otherwise, having an "w" in the text, for instance, would
-	 * produce its own text node.
-	 */
-
-	for (;;) {
-		prev = TAILQ_PREV(nn, lowdown_nodeq, entries);
-		if (prev == NULL || prev->type != LOWDOWN_NORMAL_TEXT)
-			break;
-		if (!hbuf_putb
-		    (&prev->rndr_normal_text.text,
-		     &nn->rndr_normal_text.text))
-			return 0;
-		TAILQ_REMOVE(&n->children, nn, entries);
-		lowdown_node_free(nn);
-		nn = prev;
-	}
 
 	/* Scan from the trailing '}' to the opening '{'. */
 
@@ -1507,6 +1488,13 @@ parse_header_ext_attrs(struct lowdown_node *n)
 	b->size = i;
 	while (b->size && b->data[b->size - 1] == ' ')
 		b->size--;
+
+	/* Is there nothing left? */
+
+	if (b->size == 0) {
+		TAILQ_REMOVE(&n->children, nn, entries);
+		lowdown_node_free(nn);
+	}
 
 	rc = 1;
 out:
