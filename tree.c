@@ -119,7 +119,7 @@ rndr(struct lowdown_buf *ob,
 	if (root->chng == LOWDOWN_CHNG_DELETE && 
 	    !HBUF_PUTSL(ob, "DELETE: "))
 		return 0;
-	if (!hbuf_puts(ob, names[root->type]))
+	if (!hbuf_printf(ob, "%s (%zu)", names[root->type], root->id))
 		return 0;
 	if (!hbuf_putc(ob, '\n'))
 		return 0;
@@ -200,6 +200,26 @@ rndr(struct lowdown_buf *ob,
 			if (!HBUF_PUTSL(ob, "\n"))
 				return 0;
 		}
+		if (root->rndr_image.attr_cls.size > 0) {
+			if (!rndr_indent(ob, indent + 1))
+				return 0;
+			if (!HBUF_PUTSL(ob, "class: "))
+				return 0;
+			if (!hbuf_putb(ob, &root->rndr_image.attr_cls))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\n"))
+				return 0;
+		}
+		if (root->rndr_image.attr_id.size > 0) {
+			if (!rndr_indent(ob, indent + 1))
+				return 0;
+			if (!HBUF_PUTSL(ob, "id: "))
+				return 0;
+			if (!hbuf_putb(ob, &root->rndr_image.attr_id))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\n"))
+				return 0;
+		}
 		break;
 	case LOWDOWN_HEADER:
 		if (!rndr_indent(ob, indent + 1))
@@ -207,6 +227,26 @@ rndr(struct lowdown_buf *ob,
 		if (!hbuf_printf(ob, "level: %zu\n",
 		    root->rndr_header.level))
 			return 0;
+		if (root->rndr_header.attr_cls.size > 0) {
+			if (!rndr_indent(ob, indent + 1))
+				return 0;
+			if (!HBUF_PUTSL(ob, "class: "))
+				return 0;
+			if (!hbuf_putb(ob, &root->rndr_header.attr_cls))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\n"))
+				return 0;
+		}
+		if (root->rndr_header.attr_id.size > 0) {
+			if (!rndr_indent(ob, indent + 1))
+				return 0;
+			if (!HBUF_PUTSL(ob, "id: "))
+				return 0;
+			if (!hbuf_putb(ob, &root->rndr_header.attr_id))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\n"))
+				return 0;
+		}
 		break;
 	case LOWDOWN_RAW_HTML:
 		if (!rndr_indent(ob, indent + 1))
@@ -354,6 +394,26 @@ rndr(struct lowdown_buf *ob,
 			if (!HBUF_PUTSL(ob, "link: "))
 				return 0;
 			if (!rndr_short(ob, &root->rndr_link.link))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\n"))
+				return 0;
+		}
+		if (root->rndr_link.attr_cls.size > 0) {
+			if (!rndr_indent(ob, indent + 1))
+				return 0;
+			if (!HBUF_PUTSL(ob, "class: "))
+				return 0;
+			if (!hbuf_putb(ob, &root->rndr_link.attr_cls))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\n"))
+				return 0;
+		}
+		if (root->rndr_link.attr_id.size > 0) {
+			if (!rndr_indent(ob, indent + 1))
+				return 0;
+			if (!HBUF_PUTSL(ob, "id: "))
+				return 0;
+			if (!hbuf_putb(ob, &root->rndr_link.attr_id))
 				return 0;
 			if (!HBUF_PUTSL(ob, "\n"))
 				return 0;
