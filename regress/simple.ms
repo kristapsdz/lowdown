@@ -33,8 +33,13 @@ They can span multiple paragraphs,
 if you like.
 .RE
 .LP
+<<<<<<< HEAD
 Use 3 dashes for an em-dash. Use 2 dashes for ranges (ex., \(lqit\(cqs all
 in chapters 12\(en14\(rq). Three dots \[u2026] will be converted to an ellipsis.
+=======
+Use 3 dashes for an em-dash. Use 2 dashes for ranges (ex., \[u201C]it\[u2019]s all
+in chapters 12\(en14\[u201D]). Three dots \[u2026] will be converted to an ellipsis.
+>>>>>>> 4786a45 (Update regress.)
 Unicode is supported. ☺
 .NH 2
 An h2 header
