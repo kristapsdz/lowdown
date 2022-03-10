@@ -52,6 +52,7 @@ struct term {
 	size_t			  bufsz; /* size of buf */
 	struct lowdown_buf	**foots; /* footnotes */
 	size_t			  footsz; /* footnotes size  */
+	int			  footoff; /* don't collect (tables) */
 };
 
 /*
@@ -222,6 +223,7 @@ rndr_free_footnotes(struct term *st)
 	free(st->foots);
 	st->foots = NULL;
 	st->footsz = 0;
+	st->footoff = 0;
 }
 
 /*
@@ -975,8 +977,7 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 {
 	size_t				*widths = NULL;
 	const struct lowdown_node	*row, *top, *cell;
-	struct lowdown_buf		*celltmp = NULL,
-					*rowtmp = NULL, **foots;
+	struct lowdown_buf		*celltmp = NULL, *rowtmp = NULL;
 	size_t				 col, i, j, maxcol, sz, footsz;
 	ssize_t			 	 last_blank;
 	unsigned int			 flags;
@@ -994,15 +995,14 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 
 	/*
 	 * Begin by counting the number of printable columns in each
-	 * column in each row.  Clear out any existing footnotes because
-	 * this doesn't actually print anything, and we don't want to
-	 * advance any footnotes.
+	 * column in each row.  We don't want to collect additional
+	 * footnotes, as we're going to do so in the next iteration, and
+	 * keep the current size (which will otherwise advance).
 	 */
 
-	foots = p->foots;
+	assert(!p->footoff);
+	p->footoff = 1;
 	footsz = p->footsz;
-	p->footsz = 0;
-	p->foots = NULL;
 
 	TAILQ_FOREACH(top, &n->children, entries) {
 		assert(top->type == LOWDOWN_TABLE_HEADER ||
@@ -1040,9 +1040,9 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 
 	/* Restore footnotes. */
 
-	rndr_free_footnotes(p);
-	p->foots = foots;
 	p->footsz = footsz;
+	assert(p->footoff);
+	p->footoff = 0;
 
 	/* Now actually print, row-by-row into the output. */
 
@@ -1309,6 +1309,10 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 
 	switch (n->type) {
 	case LOWDOWN_FOOTNOTE:
+		if (p->footoff) {
+			p->footsz++;
+			break;
+		}
 		last_blank = p->last_blank;
 		p->last_blank = -1;
 		col = p->col;
