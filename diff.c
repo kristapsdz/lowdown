@@ -1484,6 +1484,41 @@ lowdown_diff(const struct lowdown_node *nold,
 	}
 
 	/*
+	 * If our trees are *totally* different, we may end up in the
+	 * situation where our root nodes are never matched.  This will
+	 * violate an invariant in node_merge() where the entry nodes
+	 * are assumed to be matched.
+	 */
+
+	if (xnewmap.nodes[nnew->id].match == NULL) {
+		assert(nnew->type == LOWDOWN_ROOT);
+		assert(nold->type == LOWDOWN_ROOT);
+		xnew = &xnewmap.nodes[nnew->id];
+		xold = &xoldmap.nodes[nold->id];
+		assert(xold->match == NULL);
+		xnew->match = xold->node;
+		xold->match = xnew->node;
+	}
+
+	/*
+	 * Following the above, make sure that our LOWDOWN_DOC_HEADER
+	 * nodes are also matched, because they are fixed in the tree.
+	 */
+
+	n = TAILQ_FIRST(&nnew->children);
+	nn = TAILQ_FIRST(&nold->children);
+	if (n != NULL && nn != NULL &&
+	    n->type == LOWDOWN_DOC_HEADER &&
+	    nn->type == LOWDOWN_DOC_HEADER) {
+		xnew = &xnewmap.nodes[n->id];
+		xold = &xoldmap.nodes[nn->id];
+		if (xnew->match == NULL) {
+			xnew->match = xold->node;
+			xold->match = xnew->node;
+		}
+	}
+
+	/*
 	 * All nodes have been processed.
 	 * Now we need to optimise, so run a "Phase 4", sec. 5.2.
 	 * Our optimisation is nothing like the paper's.
