@@ -91,6 +91,7 @@ LDADD_LIB_SOCKET=
 LDADD_STATIC=
 CPPFLAGS=
 LDFLAGS=
+LINKER_SONAME_OPTION="-soname"
 DESTDIR=
 PREFIX="/usr/local"
 BINDIR=
@@ -113,10 +114,12 @@ command -v ${CC} 2>/dev/null 1>&2 || {
 	echo "${CC} not found: trying clang" 1>&2
 	echo "${CC} not found: trying clang" 1>&3
 	CC=clang
+	LINKER_SONAME_OPTION="-install_name"
 	command -v ${CC} 2>/dev/null 1>&2 || {
 		echo "${CC} not found: trying gcc" 1>&2
 		echo "${CC} not found: trying gcc" 1>&3
 		CC=gcc
+		LINKER_SONAME_OPTION="-soname"
 		command -v ${CC} 2>/dev/null 1>&2 || {
 			echo "gcc not found: giving up" 1>&2
 			echo "gcc not found: giving up" 1>&3
@@ -143,6 +146,8 @@ do
 		LDADD="$val" ;;
 	LDFLAGS)
 		LDFLAGS="$val" ;;
+	LINKER_SONAME_OPTION)
+		LINKER_SONAME_OPTION="$val" ;;
 	CPPFLAGS)
 		CPPFLAGS="$val" ;;
 	DESTDIR)
@@ -2428,6 +2433,7 @@ LDADD_MD5	 = ${LDADD_MD5}
 LDADD_SHA2	 = ${LDADD_SHA2}
 LDADD_STATIC	 = ${LDADD_STATIC}
 LDFLAGS		 = ${LDFLAGS}
+LINKER_SONAME_OPTION = ${LINKER_SONAME_OPTION}
 STATIC		 = ${STATIC}
 PREFIX		 = ${PREFIX}
 BINDIR		 = ${BINDIR}
