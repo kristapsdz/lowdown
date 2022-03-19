@@ -1053,20 +1053,20 @@ escape_attr(struct lowdown_buf *ob, const struct lowdown_buf *in)
  */
 static int
 rndr_autolink(struct lowdown_buf *ob, 
-	const struct rndr_autolink *parm,
+	const struct rndr_autolink *param,
 	struct odt *st)
 {
 
-	if (parm->link.size == 0)
+	if (param->link.size == 0)
 		return 1;
 
 	if (!HBUF_PUTSL(ob,
 	    "<text:a xlink:type=\"simple\""
 	    " text:style-name=\"Internet_20_Link\" xlink:href=\""))
 		return 0;
-	if (parm->type == HALINK_EMAIL && !HBUF_PUTSL(ob, "mailto:"))
+	if (param->type == HALINK_EMAIL && !HBUF_PUTSL(ob, "mailto:"))
 		return 0;
-	if (!escape_href(ob, &parm->link, st))
+	if (!escape_href(ob, &param->link, st))
 		return 0;
 	if (!HBUF_PUTSL(ob, "\">"))
 		return 0;
@@ -1077,13 +1077,13 @@ rndr_autolink(struct lowdown_buf *ob,
 	 * want to print the `mailto:` prefix
 	 */
 
-	if (hbuf_strprefix(&parm->link, "mailto:")) {
+	if (hbuf_strprefix(&param->link, "mailto:")) {
 		if (!escape_html(ob, 
-		    parm->link.data + 7, 
-		    parm->link.size - 7, st))
+		    param->link.data + 7, 
+		    param->link.size - 7, st))
 			return 0;
 	} else {
-		if (!escape_htmlb(ob, &parm->link, st))
+		if (!escape_htmlb(ob, &param->link, st))
 			return 0;
 	}
 
@@ -1095,7 +1095,7 @@ rndr_autolink(struct lowdown_buf *ob,
  */
 static int
 rndr_blockcode(struct lowdown_buf *ob, 
-	const struct rndr_blockcode *parm,
+	const struct rndr_blockcode *param,
 	struct odt *st)
 {
 	size_t		 i, j, sz, ssz;
@@ -1123,7 +1123,7 @@ rndr_blockcode(struct lowdown_buf *ob,
 	} else
 		s = &st->stys[i];
 
-	for (i = 0; i < parm->text.size; ) {
+	for (i = 0; i < param->text.size; ) {
 		if (!hbuf_printf(ob,
 		    "<text:p text:style-name=\"%s\">", s->name))
 			return 0;
@@ -1135,32 +1135,32 @@ rndr_blockcode(struct lowdown_buf *ob,
 		 * literal spaces.
 		 */
 
-		for (sz = 0, j = i; i < parm->text.size; i++, sz++) {
-			if (parm->text.data[i] == ' ' &&
-			    i < parm->text.size - 1 &&
-			    parm->text.data[i + 1] == ' ') {
+		for (sz = 0, j = i; i < param->text.size; i++, sz++) {
+			if (param->text.data[i] == ' ' &&
+			    i < param->text.size - 1 &&
+			    param->text.data[i + 1] == ' ') {
 				if (!hesc_html(ob,
-				    &parm->text.data[j], sz, 1, 1, 1))
+				    &param->text.data[j], sz, 1, 1, 1))
 					return 0;
 				sz = 0;
-				for (ssz = 0; i < parm->text.size;
+				for (ssz = 0; i < param->text.size;
 				     i++, ssz++)
-					if (parm->text.data[i] != ' ')
+					if (param->text.data[i] != ' ')
 						break;
 				j = i;
 				if (!hbuf_printf(ob,
 				    "<text:s text:c=\"%zu\"/>", ssz))
 					return 0;
 			}
-			if (i < parm->text.size &&
-			    parm->text.data[i] == '\n')
+			if (i < param->text.size &&
+			    param->text.data[i] == '\n')
 				break;
 		}
-		if (!hesc_html(ob, &parm->text.data[j], sz, 1, 1, 1))
+		if (!hesc_html(ob, &param->text.data[j], sz, 1, 1, 1))
 			return 0;
 		if (!HBUF_PUTSL(ob, "</text:p>\n"))
 			return 0;
-		if (i < parm->text.size)
+		if (i < param->text.size)
 			i++;
 	}
 
