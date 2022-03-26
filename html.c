@@ -1171,10 +1171,15 @@ rndr(struct lowdown_buf *ob,
 		if (!rndr(tmp, mq, st, child))
 			goto out;
 
-	if (n->chng == LOWDOWN_CHNG_INSERT && 
+	/*
+	 * If we're in the doc header, don't emit any insert or delete,
+	 * as HTML doesn't allow them.
+	 */
+
+	if (n->chng == LOWDOWN_CHNG_INSERT && n->type != LOWDOWN_META &&
 	    !HBUF_PUTSL(ob, "<ins>"))
 		goto out;
-	if (n->chng == LOWDOWN_CHNG_DELETE && 
+	if (n->chng == LOWDOWN_CHNG_DELETE && n->type != LOWDOWN_META &&
 	   !HBUF_PUTSL(ob, "<del>"))
 		goto out;
 
@@ -1308,10 +1313,17 @@ rndr(struct lowdown_buf *ob,
 	if (!rc)
 		goto out;
 
-	if (n->chng == LOWDOWN_CHNG_INSERT && 
+	/*
+	 * If we're in the doc header, don't emit any insert or delete,
+	 * as HTML doesn't allow them.
+	 */
+
+	if (n->chng == LOWDOWN_CHNG_INSERT && n->type != LOWDOWN_META &&
+	    n->parent != NULL &&
+	    n->parent->type != LOWDOWN_DOC_HEADER &&
 	    !HBUF_PUTSL(ob, "</ins>"))
 		goto out;
-	if (n->chng == LOWDOWN_CHNG_DELETE &&
+	if (n->chng == LOWDOWN_CHNG_DELETE && n->type != LOWDOWN_META &&
 	    !HBUF_PUTSL(ob, "</del>"))
 		goto out;
 
