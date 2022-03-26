@@ -74,7 +74,9 @@ hbuf_clone(const struct lowdown_buf *buf, struct lowdown_buf *v)
 		if ((v->data = malloc(buf->size)) == NULL)
 			return 0;
 		memcpy(v->data, buf->data, buf->size);
-	} 
+	} else
+		v->data = NULL;
+
 	return 1;
 }
 
