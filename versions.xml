@@ -1311,13 +1311,29 @@
 		<header>
 			<h1>0.11.2</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2022-03-06">2022-03-06</time>
+			<time datetime="2022-03-26">2022-03-26</time>
 		</header>
 		<aside>
 			<p>
 				Support native roff escapes instead of using Unicode escapes.
 				(This is a work in progress, as there are many.)
 				This makes special characters usable in sections and so on.
+			</p>
+			<p>
+				Fix a bogus free when running 
+				<a href="lowdown-diff.1.html">lowdown-diff(1)</a>.
+				While here, handle differences between totally-different
+				files, where before we would error out.
+			</p>
+			<p>
+				Fix a sneaky <b>-tterm</b> bug found by AFL where having
+				the number of footnotes change digit length (e.g., 9 to 10)
+				within a table would cause an assertion.
+			</p>
+			<p>
+				Another big thanks to Michael Dexter in providing hardware
+				for continuously running AFL and finding some of these
+				corner case bugs!
 			</p>
 		</aside>
 	</article>
