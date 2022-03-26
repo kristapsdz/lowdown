@@ -119,6 +119,8 @@ rndr_entity(struct lowdown_buf *ob,
 	if (tex == NULL)
 		return rndr_escape(ob, &param->text);
 
+	if ((texflags & TEX_ENT_MATH) && (texflags & TEX_ENT_ASCII))
+		return hbuf_printf(ob, "$\\mathrm{%s}$", tex);
 	if (texflags & TEX_ENT_ASCII)
 		return hbuf_puts(ob, tex);
 	if (texflags & TEX_ENT_MATH)

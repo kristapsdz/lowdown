@@ -32,10 +32,16 @@
 #include "extern.h"
 
 struct ent {
-	const char 	*iso;
-	uint32_t	 unicode;
-	const char	*nroff;
-	const char	*tex;
+	const char 	*iso; /* html entity */
+	uint32_t	 unicode; /* decimal unicode */
+	const char	*nroff; /* -ms/-man */
+	const char	*tex; /* latex */
+	/**
+	 * For latex: if zero, escape as-is.  If just TEX_ENT_ASCII,
+	 * don't escape at all.  If just TEX_ENT_MATH, pass as math mode
+	 * escaped.  If both TEX_ENT_ASCII and TEX_ENT_MATH, pass as
+	 * math mode and don't escape.
+	 */
 	unsigned char	 texflags;
 };
 
@@ -82,7 +88,7 @@ static const struct ent ents[] = {
 	{ "Ouml", 	214,	":O",	"\"{O}",	0 },
 	{ "Phi",	934,	"*F",	"Phi",		TEX_ENT_MATH },
 	{ "Pi",		928,	"*P",	"Pi",		TEX_ENT_MATH },
-	{ "Prime",	8243,	NULL,	"{``}",		TEX_ENT_ASCII },
+	{ "Prime",	8243,	NULL,	"^{\\prime\\prime}", TEX_ENT_MATH | TEX_ENT_ASCII },
 	{ "Psi",	936,	"*Q",	"Psi",		TEX_ENT_MATH },
 	{ "Rho",	929,	"*R",	"R",		TEX_ENT_ASCII },
 	{ "Scaron",	352,	"vS",	"v{S}",		0 },
@@ -225,7 +231,7 @@ static const struct ent ents[] = {
 	{ "piv",	982,	"+p",	"varpi",	TEX_ENT_MATH },
 	{ "plusmn", 	177,	"+-",	"pm",		TEX_ENT_MATH },
 	{ "pound", 	163,	NULL,	"pounds{}",	0 },
-	{ "prime",	8242,	NULL,	"^\\prime{}",	TEX_ENT_ASCII },
+	{ "prime",	8242,	NULL,	"^\\prime{}",	TEX_ENT_MATH | TEX_ENT_ASCII },
 	{ "prod",	8719,	"poduct", "prod",	TEX_ENT_MATH },
 	{ "prop",	8733,	NULL,	"propto",	TEX_ENT_MATH },
 	{ "psi",	968,	"*q",	"psi",		TEX_ENT_MATH },
