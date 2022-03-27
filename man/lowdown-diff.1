@@ -389,11 +389,18 @@ Automatic styles (those conditional upon document state) are generated
 with output.
 Classes specified by PHP extended attributes are not checked for
 existence.
+Differences are rendered using document tracking.
 .It Fl t Ns Ar gemini
 Gemini protocol output.
 This output mode is experimental.
+Differences are not currently rendered.
 .It Fl t Ns Ar html
 HTML5 output with UTF-8 encoding.
+Differences are rendered using the
+.Li <ins>
+and
+.Li <del>
+elements.
 .It Fl t Ns Ar latex
 Simple LaTeX output.
 The following packages are required:
@@ -415,6 +422,8 @@ for Latin modern font,
 for the difference engine output, and
 .Li hyperref
 for links.
+Differences are rendered by colouring in blue (insert) and red (delete)
+(this format is not fixed).
 .It Fl t Ns Ar man
 The
 .Ar man
@@ -429,6 +438,8 @@ Table support is provided by
 Since UTF-8 may be passed as input values,
 .Xr preconv 1
 may need to be used.
+Differences are rendered by colouring in blue (insert) and red (delete)
+(this format is not fixed).
 .It Fl t Ns Ar ms
 The
 .Ar ms
@@ -446,9 +457,13 @@ Table support is provided by
 Since UTF-8 may be passed as input values,
 .Xr preconv 1
 may need to be used.
+Differences are rendered by colouring in blue (insert) and red (delete)
+(this format is not fixed).
 .It Fl t Ns Ar term
 ANSI-escaped UTF-8 output suitable for reading on the terminal.
 Images and equations not supported.
+Differences are rendered by background-colouring in blue (insert) and
+red (delete) (this format is not fixed).
 .It Fl t Ns Ar tree
 Debugging output: not for general use.
 .El
