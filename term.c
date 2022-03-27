@@ -130,8 +130,7 @@ static const struct sty *stys[LOWDOWN__MAX] = {
 /* Forward declaration. */
 
 static int
-rndr(struct lowdown_buf *, struct lowdown_metaq *,
-	struct term *, const struct lowdown_node *);
+rndr(struct lowdown_buf *, struct term *, const struct lowdown_node *);
 
 /*
  * Get the column width of a multi-byte sequence.  The sequence should
@@ -972,8 +971,8 @@ rndr_stackpos_init(struct term *p, const struct lowdown_node *n)
  * Return zero on failure (memory), non-zero on success.
  */
 static int
-rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
-	struct term *p, const struct lowdown_node *n)
+rndr_table(struct lowdown_buf *ob, struct term *p,
+	const struct lowdown_node *n)
 {
 	size_t				*widths = NULL;
 	const struct lowdown_node	*row, *top, *cell;
@@ -1028,7 +1027,7 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 				p->last_blank = 0;
 				p->maxcol = SIZE_MAX;
 				p->col = 1;
-				if (!rndr(celltmp, mq, p, cell))
+				if (!rndr(celltmp, p, cell))
 					goto out;
 				if (widths[i] < p->col)
 					widths[i] = p->col;
@@ -1061,7 +1060,7 @@ rndr_table(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 				p->last_blank = 0;
 				p->maxcol = SIZE_MAX;
 				p->col = 1;
-				if (!rndr(celltmp, mq, p, cell))
+				if (!rndr(celltmp, p, cell))
 					goto out;
 				assert(widths[i] >= p->col);
 				sz = widths[i] - p->col;
@@ -1170,16 +1169,19 @@ out:
 }
 
 static int
-rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
-	struct term *p, const struct lowdown_node *n)
+rndr(struct lowdown_buf *ob, struct term *p,
+	const struct lowdown_node *n)
 {
 	const struct lowdown_node	*child, *nn;
-	struct lowdown_meta		*m;
 	struct lowdown_buf		*metatmp;
 	void				*pp;
 	int32_t				 entity;
 	size_t				 i, col, vs;
 	ssize_t			 	 last_blank;
+
+	if (n->chng == LOWDOWN_CHNG_DELETE &&
+	    n->type == LOWDOWN_META)
+		return 1;
 
 	/* Current nodes we're servicing. */
 
@@ -1262,44 +1264,6 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		if (!hbuf_puts(p->tmp, ifx_meta_key) ||
 		    !rndr_buf(p, ob, n, p->tmp, &sty_meta_key))
 			return 0;
-		if (mq == NULL)
-			break;
-
-		/*
-		 * Manually render the children of the meta into a
-		 * buffer and use that as our value.  Start by zeroing
-		 * our terminal position and using another output buffer
-		 * (p->tmp would be clobbered by children).
-		 */
-
-		last_blank = p->last_blank;
-		p->last_blank = -1;
-		col = p->col;
-		p->col = 0;
-		m = calloc(1, sizeof(struct lowdown_meta));
-		if (m == NULL)
-			return 0;
-		TAILQ_INSERT_TAIL(mq, m, entries);
-		m->key = strndup(n->rndr_meta.key.data,
-			n->rndr_meta.key.size);
-		if (m->key == NULL)
-			return 0;
-		if ((metatmp = hbuf_new(128)) == NULL)
-			return 0;
-		TAILQ_FOREACH(child, &n->children, entries) {
-			p->stackpos++;
-			if (!rndr(metatmp, mq, p, child)) {
-				hbuf_free(metatmp);
-				return 0;
-			}
-			p->stackpos--;
-		}
-		m->value = strndup(metatmp->data, metatmp->size);
-		hbuf_free(metatmp);
-		if (m->value == NULL)
-			return 0;
-		p->last_blank = last_blank;
-		p->col = col;
 		break;
 	default:
 		break;
@@ -1321,7 +1285,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			return 0;
 		TAILQ_FOREACH(child, &n->children, entries) {
 			p->stackpos++;
-			if (!rndr(metatmp, mq, p, child))
+			if (!rndr(metatmp, p, child))
 				return 0;
 			p->stackpos--;
 		}
@@ -1335,13 +1299,13 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		p->foots[p->footsz++] = metatmp;
 		break;
 	case LOWDOWN_TABLE_BLOCK:
-		if (!rndr_table(ob, mq, p, n))
+		if (!rndr_table(ob, p, n))
 			return 0;
 		break;
 	default:
 		TAILQ_FOREACH(child, &n->children, entries) {
 			p->stackpos++;
-			if (!rndr(ob, mq, p, child))
+			if (!rndr(ob, p, child))
 				return 0;
 			p->stackpos--;
 		}
@@ -1531,17 +1495,13 @@ int
 lowdown_term_rndr(struct lowdown_buf *ob,
 	void *arg, const struct lowdown_node *n)
 {
-	struct term		*st = arg;
-	struct lowdown_metaq	 metaq;
-	int			 rc;
-
-	TAILQ_INIT(&metaq);
+	struct term	*st = arg;
+	int		 rc;
 
 	st->stackpos = 0;
 
-	rc = rndr(ob, &metaq, st, n);
+	rc = rndr(ob, st, n);
 	rndr_free_footnotes(st);
-	lowdown_metaq_free(&metaq);
 	return rc;
 }
 
