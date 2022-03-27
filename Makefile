@@ -417,8 +417,20 @@ regress: bins
 		bf=`dirname $$f`/`basename $$f .old.md` ; \
 		echo "$$f -> $$bf.new.md" ; \
 		if [ -f $$bf.html ]; then \
-			./lowdown-diff -s $$f $$bf.new.md >$$tmp1 2>&1 ; \
+			./lowdown-diff -s -thtml $$f $$bf.new.md >$$tmp1 2>&1 ; \
 			diff -uw $$bf.html $$tmp1 ; \
+		fi ; \
+		if [ -f $$bf.ms ]; then \
+			./lowdown-diff -s -tms $$f $$bf.new.md >$$tmp1 2>&1 ; \
+			diff -uw $$bf.ms $$tmp1 ; \
+		fi ; \
+		if [ -f $$bf.man ]; then \
+			./lowdown-diff -s -tman $$f $$bf.new.md >$$tmp1 2>&1 ; \
+			diff -uw $$bf.man $$tmp1 ; \
+		fi ; \
+		if [ -f $$bf.latex ]; then \
+			./lowdown-diff -s -tlatex $$f $$bf.new.md >$$tmp1 2>&1 ; \
+			diff -uw $$bf.latex $$tmp1 ; \
 		fi ; \
 	done ; \
 	rm -f $$tmp1 ; \
