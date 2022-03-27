@@ -631,6 +631,16 @@ for the
 .Li title ,
 are not set as metadata values, and will not appear if the metadata key
 is used as a variable.
+.Pp
+Differences in additional content metadata are rendered differently than
+in the document body: deleted metadata key-value pairs are not processed
+in the output, so only inserted or retained metadata are processed.
+.Pp
+In formats where metadata are part of the document body, such as
+.Fl t Ns Ar term
+and
+.Fl t Ns Ar tree ,
+all metadata are shown as if in the document body.
 .Sh ENVIRONMENT
 .Bl -tag -width Ds
 .It Ev NO_COLOR
