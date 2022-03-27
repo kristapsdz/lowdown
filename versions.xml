@@ -1311,7 +1311,7 @@
 		<header>
 			<h1>0.11.2</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2022-03-26">2022-03-26</time>
+			<time datetime="2022-03-27">2022-03-27</time>
 		</header>
 		<aside>
 			<p>
@@ -1324,6 +1324,12 @@
 				<a href="lowdown-diff.1.html">lowdown-diff(1)</a>.
 				While here, handle differences between totally-different
 				files, where before we would error out.
+			</p>
+			<p>
+				Document how differences are displayed in each output mode,
+				as well as how metadata is a special case.
+				Fix <b>-tterm</b> ANSI escape filtering for background
+				colour, allowing changes to be viewed again.
 			</p>
 			<p>
 				Fix a sneaky <b>-tterm</b> bug found by AFL where having
