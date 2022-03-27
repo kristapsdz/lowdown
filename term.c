@@ -284,8 +284,8 @@ rndr_buf_style(const struct term *term,
 			return 0;
 	}
 	if (s->bcolour && !(term->opts & LOWDOWN_TERM_NOCOLOUR) &&
-	    ((s->bcolour >= 30 && s->bcolour <= 37) ||
-	     (s->bcolour >= 90 && s->bcolour <= 97))) {
+	    ((s->bcolour >= 40 && s->bcolour <= 47) ||
+	     (s->bcolour >= 100 && s->bcolour <= 107))) {
 		if (has++ && !HBUF_PUTSL(out, ";"))
 			return 0;
 		if (!hbuf_printf(out, "%zu", s->bcolour))
@@ -1178,10 +1178,6 @@ rndr(struct lowdown_buf *ob, struct term *p,
 	int32_t				 entity;
 	size_t				 i, col, vs;
 	ssize_t			 	 last_blank;
-
-	if (n->chng == LOWDOWN_CHNG_DELETE &&
-	    n->type == LOWDOWN_META)
-		return 1;
 
 	/* Current nodes we're servicing. */
 

@@ -48,10 +48,10 @@
  */
 
 /* For inserted content.  Common parent style. */
-static const struct sty sty_chng_ins =	{ 0, 0, 0, 0,  47, 30, 0 };
+static const struct sty sty_chng_ins =	{ 0, 0, 0, 0,  44,  0, 0 };
 
 /* For deleted content.  Common parent style. */
-static const struct sty sty_chng_del =	{ 0, 0, 0, 0, 100,  0, 0 };
+static const struct sty sty_chng_del =	{ 0, 0, 0, 0,  41,  0, 0 };
 
 /* Image: >![alt](link)< */
 static const struct sty sty_img =	{ 0, 0, 1, 0,   0, 93, 1 };
