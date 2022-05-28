@@ -79,7 +79,6 @@ struct 	lowdown_doc {
 	size_t			  foots; /* # of used footnotes */
 	int			  active_char[256]; /* jump table */
 	unsigned int		  ext_flags; /* options */
-	size_t			  cur_par; /* XXX: not used */
 	int			  in_link_body; /* parsing link body */
 	int			  in_footnote; /* prevent nested */
 	size_t			  nodes; /* number of nodes */
@@ -2521,7 +2520,6 @@ parse_paragraph(struct lowdown_doc *doc, char *data, size_t size)
 		if (!parse_inline(doc, work.data, work.size))
 			return -1;
 		popnode(doc, n);
-		doc->cur_par++;
 		return end;
 	}
 
@@ -2545,7 +2543,6 @@ parse_paragraph(struct lowdown_doc *doc, char *data, size_t size)
 			if (!parse_inline(doc, work.data, work.size))
 				return -1;
 			popnode(doc, n);
-			doc->cur_par++;
 			work.data += beg;
 			work.size = i - beg;
 		} else
