@@ -1343,4 +1343,18 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>1.0.0</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2022-05-28">2022-05-28</time>
+		</header>
+		<aside>
+			<p>
+				Very minor repairs.
+				All of the functionality and stability for a v1 release is in place.
+				<q>Make it so, number one!</q>
+			</p>
+		</aside>
+	</article>
 </articles>

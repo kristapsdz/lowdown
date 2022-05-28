@@ -3,7 +3,7 @@
 
 include Makefile.configure
 
-VERSION		 = 0.11.2
+VERSION		 = 1.0.0
 LIBVER		 = 1
 OBJS		 = autolink.o \
 		   buffer.o \
