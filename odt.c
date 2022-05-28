@@ -2225,7 +2225,7 @@ lowdown_odt_new(const struct lowdown_opts *opts)
 		return NULL;
 
 	p->flags = opts == NULL ? 0 : opts->oflags;
-	if (opts->odt.sty != NULL &&
+	if (opts != NULL && opts->odt.sty != NULL &&
 	    (p->sty = strdup(opts->odt.sty)) == NULL) {
 		free(p);
 		p = NULL;
