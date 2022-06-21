@@ -91,7 +91,7 @@ to add extra (unwanted) <code>&lt;p&gt;</code> tags around HTML block-level tags
 
 <p>For example, to add an HTML table to a Markdown article:</p>
 
-<pre><code>This is a regular paragraph.
+<pre tabindex="0"><code>This is a regular paragraph.
 
 &lt;table&gt;
     &lt;tr&gt;
@@ -127,12 +127,12 @@ characters, you must escape them as entities, e.g. <code>&amp;lt;</code>, and
 write about 'AT&amp;T', you need to write '<code>AT&amp;amp;T</code>'. You even need to
 escape ampersands within URLs. Thus, if you want to link to:</p>
 
-<pre><code>http://images.google.com/images?num=30&amp;q=larry+bird
+<pre tabindex="0"><code>http://images.google.com/images?num=30&amp;q=larry+bird
 </code></pre>
 
 <p>you need to encode the URL as:</p>
 
-<pre><code>http://images.google.com/images?num=30&amp;amp;q=larry+bird
+<pre tabindex="0"><code>http://images.google.com/images?num=30&amp;amp;q=larry+bird
 </code></pre>
 
 <p>in your anchor tag <code>href</code> attribute. Needless to say, this is easy to
@@ -146,29 +146,29 @@ into <code>&amp;amp;</code>.</p>
 
 <p>So, if you want to include a copyright symbol in your article, you can write:</p>
 
-<pre><code>&amp;copy;
+<pre tabindex="0"><code>&amp;copy;
 </code></pre>
 
 <p>and Markdown will leave it alone. But if you write:</p>
 
-<pre><code>AT&amp;T
+<pre tabindex="0"><code>AT&amp;T
 </code></pre>
 
 <p>Markdown will translate it to:</p>
 
-<pre><code>AT&amp;amp;T
+<pre tabindex="0"><code>AT&amp;amp;T
 </code></pre>
 
 <p>Similarly, because Markdown supports <a href="#html">inline HTML</a>, if you use
 angle brackets as delimiters for HTML tags, Markdown will treat them as
 such. But if you write:</p>
 
-<pre><code>4 &lt; 5
+<pre tabindex="0"><code>4 &lt; 5
 </code></pre>
 
 <p>Markdown will translate it to:</p>
 
-<pre><code>4 &amp;lt; 5
+<pre tabindex="0"><code>4 &amp;lt; 5
 </code></pre>
 
 <p>However, inside Markdown code spans and blocks, angle brackets and
@@ -209,7 +209,7 @@ work best -- and look better -- when you format them with hard breaks.</p>
 <p>Setext-style headers are "underlined" using equal signs (for first-level
 headers) and dashes (for second-level headers). For example:</p>
 
-<pre><code>This is an H1
+<pre tabindex="0"><code>This is an H1
 =============
 
 This is an H2
@@ -221,7 +221,7 @@ This is an H2
 <p>Atx-style headers use 1-6 hash characters at the start of the line,
 corresponding to header levels 1-6. For example:</p>
 
-<pre><code># This is an H1
+<pre tabindex="0"><code># This is an H1
 
 ## This is an H2
 
@@ -234,7 +234,7 @@ closing hashes don't even need to match the number of hashes
 used to open the header. (The number of opening hashes
 determines the header level.) :</p>
 
-<pre><code># This is an H1 #
+<pre tabindex="0"><code># This is an H1 #
 
 ## This is an H2 ##
 
@@ -248,7 +248,7 @@ familiar with quoting passages of text in an email message, then you
 know how to create a blockquote in Markdown. It looks best if you hard
 wrap the text and put a <code>&gt;</code> before every line:</p>
 
-<pre><code>&gt; This is a blockquote with two paragraphs. Lorem ipsum dolor sit amet,
+<pre tabindex="0"><code>&gt; This is a blockquote with two paragraphs. Lorem ipsum dolor sit amet,
 &gt; consectetuer adipiscing elit. Aliquam hendrerit mi posuere lectus.
 &gt; Vestibulum enim wisi, viverra nec, fringilla in, laoreet vitae, risus.
 &gt; 
@@ -259,7 +259,7 @@ wrap the text and put a <code>&gt;</code> before every line:</p>
 <p>Markdown allows you to be lazy and only put the <code>&gt;</code> before the first
 line of a hard-wrapped paragraph:</p>
 
-<pre><code>&gt; This is a blockquote with two paragraphs. Lorem ipsum dolor sit amet,
+<pre tabindex="0"><code>&gt; This is a blockquote with two paragraphs. Lorem ipsum dolor sit amet,
 consectetuer adipiscing elit. Aliquam hendrerit mi posuere lectus.
 Vestibulum enim wisi, viverra nec, fringilla in, laoreet vitae, risus.
 
@@ -270,7 +270,7 @@ id sem consectetuer libero luctus adipiscing.
 <p>Blockquotes can be nested (i.e. a blockquote-in-a-blockquote) by
 adding additional levels of <code>&gt;</code>:</p>
 
-<pre><code>&gt; This is the first level of quoting.
+<pre tabindex="0"><code>&gt; This is the first level of quoting.
 &gt;
 &gt; &gt; This is nested blockquote.
 &gt;
@@ -280,7 +280,7 @@ adding additional levels of <code>&gt;</code>:</p>
 <p>Blockquotes can contain other Markdown elements, including headers, lists,
 and code blocks:</p>
 
-<pre><code>&gt; ## This is a header.
+<pre tabindex="0"><code>&gt; ## This is a header.
 &gt; 
 &gt; 1.   This is the first list item.
 &gt; 2.   This is the second list item.
@@ -301,28 +301,28 @@ Quote Level from the Text menu.</p>
 <p>Unordered lists use asterisks, pluses, and hyphens -- interchangably
 -- as list markers:</p>
 
-<pre><code>*   Red
+<pre tabindex="0"><code>*   Red
 *   Green
 *   Blue
 </code></pre>
 
 <p>is equivalent to:</p>
 
-<pre><code>+   Red
+<pre tabindex="0"><code>+   Red
 +   Green
 +   Blue
 </code></pre>
 
 <p>and:</p>
 
-<pre><code>-   Red
+<pre tabindex="0"><code>-   Red
 -   Green
 -   Blue
 </code></pre>
 
 <p>Ordered lists use numbers followed by periods:</p>
 
-<pre><code>1.  Bird
+<pre tabindex="0"><code>1.  Bird
 2.  McHale
 3.  Parish
 </code></pre>
@@ -331,7 +331,7 @@ Quote Level from the Text menu.</p>
 list have no effect on the HTML output Markdown produces. The HTML
 Markdown produces from the above list is:</p>
 
-<pre><code>&lt;ol&gt;
+<pre tabindex="0"><code>&lt;ol&gt;
 &lt;li&gt;Bird&lt;/li&gt;
 &lt;li&gt;McHale&lt;/li&gt;
 &lt;li&gt;Parish&lt;/li&gt;
@@ -340,14 +340,14 @@ Markdown produces from the above list is:</p>
 
 <p>If you instead wrote the list in Markdown like this:</p>
 
-<pre><code>1.  Bird
+<pre tabindex="0"><code>1.  Bird
 1.  McHale
 1.  Parish
 </code></pre>
 
 <p>or even:</p>
 
-<pre><code>3. Bird
+<pre tabindex="0"><code>3. Bird
 1. McHale
 8. Parish
 </code></pre>
@@ -367,7 +367,7 @@ or a tab.</p>
 
 <p>To make lists look nice, you can wrap items with hanging indents:</p>
 
-<pre><code>*   Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
+<pre tabindex="0"><code>*   Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
     Aliquam hendrerit mi posuere lectus. Vestibulum enim wisi,
     viverra nec, fringilla in, laoreet vitae, risus.
 *   Donec sit amet nisl. Aliquam semper ipsum sit amet velit.
@@ -376,7 +376,7 @@ or a tab.</p>
 
 <p>But if you want to be lazy, you don't have to:</p>
 
-<pre><code>*   Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
+<pre tabindex="0"><code>*   Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
 Aliquam hendrerit mi posuere lectus. Vestibulum enim wisi,
 viverra nec, fringilla in, laoreet vitae, risus.
 *   Donec sit amet nisl. Aliquam semper ipsum sit amet velit.
@@ -386,13 +386,13 @@ Suspendisse id sem consectetuer libero luctus adipiscing.
 <p>If list items are separated by blank lines, Markdown will wrap the
 items in <code>&lt;p&gt;</code> tags in the HTML output. For example, this input:</p>
 
-<pre><code>*   Bird
+<pre tabindex="0"><code>*   Bird
 *   Magic
 </code></pre>
 
 <p>will turn into:</p>
 
-<pre><code>&lt;ul&gt;
+<pre tabindex="0"><code>&lt;ul&gt;
 &lt;li&gt;Bird&lt;/li&gt;
 &lt;li&gt;Magic&lt;/li&gt;
 &lt;/ul&gt;
@@ -400,14 +400,14 @@ items in <code>&lt;p&gt;</code> tags in the HTML output. For example, this input
 
 <p>But this:</p>
 
-<pre><code>*   Bird
+<pre tabindex="0"><code>*   Bird
 
 *   Magic
 </code></pre>
 
 <p>will turn into:</p>
 
-<pre><code>&lt;ul&gt;
+<pre tabindex="0"><code>&lt;ul&gt;
 &lt;li&gt;&lt;p&gt;Bird&lt;/p&gt;&lt;/li&gt;
 &lt;li&gt;&lt;p&gt;Magic&lt;/p&gt;&lt;/li&gt;
 &lt;/ul&gt;
@@ -417,7 +417,7 @@ items in <code>&lt;p&gt;</code> tags in the HTML output. For example, this input
 paragraph in a list item must be intended by either 4 spaces
 or one tab:</p>
 
-<pre><code>1.  This is a list item with two paragraphs. Lorem ipsum dolor
+<pre tabindex="0"><code>1.  This is a list item with two paragraphs. Lorem ipsum dolor
     sit amet, consectetuer adipiscing elit. Aliquam hendrerit
     mi posuere lectus.
 
@@ -432,7 +432,7 @@ or one tab:</p>
 paragraphs, but here again, Markdown will allow you to be
 lazy:</p>
 
-<pre><code>*   This is a list item with two paragraphs.
+<pre tabindex="0"><code>*   This is a list item with two paragraphs.
 
     This is the second paragraph in the list item. You're
 only required to indent the first line. Lorem ipsum dolor
@@ -444,7 +444,7 @@ sit amet, consectetuer adipiscing elit.
 <p>To put a blockquote within a list item, the blockquote's <code>&gt;</code>
 delimiters need to be indented:</p>
 
-<pre><code>*   A list item with a blockquote:
+<pre tabindex="0"><code>*   A list item with a blockquote:
 
     &gt; This is a blockquote
     &gt; inside a list item.
@@ -453,7 +453,7 @@ delimiters need to be indented:</p>
 <p>To put a code block within a list item, the code block needs
 to be indented <em>twice</em> -- 8 spaces or two tabs:</p>
 
-<pre><code>*   A list item with a code block:
+<pre tabindex="0"><code>*   A list item with a code block:
 
         &lt;code goes here&gt;
 </code></pre>
@@ -461,13 +461,13 @@ to be indented <em>twice</em> -- 8 spaces or two tabs:</p>
 <p>It's worth noting that it's possible to trigger an ordered list by
 accident, by writing something like this:</p>
 
-<pre><code>1986. What a great season.
+<pre tabindex="0"><code>1986. What a great season.
 </code></pre>
 
 <p>In other words, a <em>number-period-space</em> sequence at the beginning of a
 line. To avoid this, you can backslash-escape the period:</p>
 
-<pre><code>1986\. What a great season.
+<pre tabindex="0"><code>1986\. What a great season.
 </code></pre>
 
 <h3 id="precode">Code Blocks</h3>
@@ -480,14 +480,14 @@ in both <code>&lt;pre&gt;</code> and <code>&lt;code&gt;</code> tags.</p>
 <p>To produce a code block in Markdown, simply indent every line of the
 block by at least 4 spaces or 1 tab. For example, given this input:</p>
 
-<pre><code>This is a normal paragraph:
+<pre tabindex="0"><code>This is a normal paragraph:
 
     This is a code block.
 </code></pre>
 
 <p>Markdown will generate:</p>
 
-<pre><code>&lt;p&gt;This is a normal paragraph:&lt;/p&gt;
+<pre tabindex="0"><code>&lt;p&gt;This is a normal paragraph:&lt;/p&gt;
 
 &lt;pre&gt;&lt;code&gt;This is a code block.
 &lt;/code&gt;&lt;/pre&gt;
@@ -496,7 +496,7 @@ block by at least 4 spaces or 1 tab. For example, given this input:</p>
 <p>One level of indentation -- 4 spaces or 1 tab -- is removed from each
 line of the code block. For example, this:</p>
 
-<pre><code>Here is an example of AppleScript:
+<pre tabindex="0"><code>Here is an example of AppleScript:
 
     tell application "Foo"
         beep
@@ -505,7 +505,7 @@ line of the code block. For example, this:</p>
 
 <p>will turn into:</p>
 
-<pre><code>&lt;p&gt;Here is an example of AppleScript:&lt;/p&gt;
+<pre tabindex="0"><code>&lt;p&gt;Here is an example of AppleScript:&lt;/p&gt;
 
 &lt;pre&gt;&lt;code&gt;tell application "Foo"
     beep
@@ -522,14 +522,14 @@ easy to include example HTML source code using Markdown -- just paste
 it and indent it, and Markdown will handle the hassle of encoding the
 ampersands and angle brackets. For example, this:</p>
 
-<pre><code>    &lt;div class="footer"&gt;
+<pre tabindex="0"><code>    &lt;div class="footer"&gt;
         &amp;copy; 2004 Foo Corporation
     &lt;/div&gt;
 </code></pre>
 
 <p>will turn into:</p>
 
-<pre><code>&lt;pre&gt;&lt;code&gt;&amp;lt;div class="footer"&amp;gt;
+<pre tabindex="0"><code>&lt;pre&gt;&lt;code&gt;&amp;lt;div class="footer"&amp;gt;
     &amp;amp;copy; 2004 Foo Corporation
 &amp;lt;/div&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;
@@ -546,7 +546,7 @@ more hyphens, asterisks, or underscores on a line by themselves. If you
 wish, you may use spaces between the hyphens or asterisks. Each of the
 following lines will produce a horizontal rule:</p>
 
-<pre><code>* * *
+<pre tabindex="0"><code>* * *
 
 ***
 
@@ -574,14 +574,14 @@ after the link text's closing square bracket. Inside the parentheses,
 put the URL where you want the link to point, along with an <em>optional</em>
 title for the link, surrounded in quotes. For example:</p>
 
-<pre><code>This is [an example](http://example.com/ "Title") inline link.
+<pre tabindex="0"><code>This is [an example](http://example.com/ "Title") inline link.
 
 [This link](http://example.net/) has no title attribute.
 </code></pre>
 
 <p>Will produce:</p>
 
-<pre><code>&lt;p&gt;This is &lt;a href="http://example.com/" title="Title"&gt;
+<pre tabindex="0"><code>&lt;p&gt;This is &lt;a href="http://example.com/" title="Title"&gt;
 an example&lt;/a&gt; inline link.&lt;/p&gt;
 
 &lt;p&gt;&lt;a href="http://example.net/"&gt;This link&lt;/a&gt; has no
@@ -591,24 +591,24 @@ title attribute.&lt;/p&gt;
 <p>If you're referring to a local resource on the same server, you can
 use relative paths:</p>
 
-<pre><code>See my [About](/about/) page for details.
+<pre tabindex="0"><code>See my [About](/about/) page for details.
 </code></pre>
 
 <p>Reference-style links use a second set of square brackets, inside
 which you place a label of your choosing to identify the link:</p>
 
-<pre><code>This is [an example][id] reference-style link.
+<pre tabindex="0"><code>This is [an example][id] reference-style link.
 </code></pre>
 
 <p>You can optionally use a space to separate the sets of brackets:</p>
 
-<pre><code>This is [an example] [id] reference-style link.
+<pre tabindex="0"><code>This is [an example] [id] reference-style link.
 </code></pre>
 
 <p>Then, anywhere in the document, you define your link label like this,
 on a line by itself:</p>
 
-<pre><code>[id]: http://example.com/  "Optional Title Here"
+<pre tabindex="0"><code>[id]: http://example.com/  "Optional Title Here"
 </code></pre>
 
 <p>That is:</p>
@@ -625,13 +625,13 @@ in double or single quotes.</li>
 
 <p>The link URL may, optionally, be surrounded by angle brackets:</p>
 
-<pre><code>[id]: &lt;http://example.com/&gt;  "Optional Title Here"
+<pre tabindex="0"><code>[id]: &lt;http://example.com/&gt;  "Optional Title Here"
 </code></pre>
 
 <p>You can put the title attribute on the next line and use extra spaces
 or tabs for padding, which tends to look better with longer URLs:</p>
 
-<pre><code>[id]: http://example.com/longish/path/to/resource/here
+<pre tabindex="0"><code>[id]: http://example.com/longish/path/to/resource/here
     "Optional Title Here"
 </code></pre>
 
@@ -640,7 +640,7 @@ processing, and are stripped from your document in the HTML output.</p>
 
 <p>Link definition names may constist of letters, numbers, spaces, and punctuation -- but they are <em>not</em> case sensitive. E.g. these two links:</p>
 
-<pre><code>[link text][a]
+<pre tabindex="0"><code>[link text][a]
 [link text][A]
 </code></pre>
 
@@ -651,23 +651,23 @@ link, in which case the link text itself is used as the name.
 Just use an empty set of square brackets -- e.g., to link the word
 "Google" to the google.com web site, you could simply write:</p>
 
-<pre><code>[Google][]
+<pre tabindex="0"><code>[Google][]
 </code></pre>
 
 <p>And then define the link:</p>
 
-<pre><code>[Google]: http://google.com/
+<pre tabindex="0"><code>[Google]: http://google.com/
 </code></pre>
 
 <p>Because link names may contain spaces, this shortcut even works for
 multiple words in the link text:</p>
 
-<pre><code>Visit [Daring Fireball][] for more information.
+<pre tabindex="0"><code>Visit [Daring Fireball][] for more information.
 </code></pre>
 
 <p>And then define the link:</p>
 
-<pre><code>[Daring Fireball]: http://daringfireball.net/
+<pre tabindex="0"><code>[Daring Fireball]: http://daringfireball.net/
 </code></pre>
 
 <p>Link definitions can be placed anywhere in your Markdown document. I
@@ -677,7 +677,7 @@ document, sort of like footnotes.</p>
 
 <p>Here's an example of reference links in action:</p>
 
-<pre><code>I get 10 times more traffic from [Google] [1] than from
+<pre tabindex="0"><code>I get 10 times more traffic from [Google] [1] than from
 [Yahoo] [2] or [MSN] [3].
 
   [1]: http://google.com/        "Google"
@@ -687,7 +687,7 @@ document, sort of like footnotes.</p>
 
 <p>Using the implicit link name shortcut, you could instead write:</p>
 
-<pre><code>I get 10 times more traffic from [Google][] than from
+<pre tabindex="0"><code>I get 10 times more traffic from [Google][] than from
 [Yahoo][] or [MSN][].
 
   [google]: http://google.com/        "Google"
@@ -697,7 +697,7 @@ document, sort of like footnotes.</p>
 
 <p>Both of the above examples will produce the following HTML output:</p>
 
-<pre><code>&lt;p&gt;I get 10 times more traffic from &lt;a href="http://google.com/"
+<pre tabindex="0"><code>&lt;p&gt;I get 10 times more traffic from &lt;a href="http://google.com/"
 title="Google"&gt;Google&lt;/a&gt; than from
 &lt;a href="http://search.yahoo.com/" title="Yahoo Search"&gt;Yahoo&lt;/a&gt;
 or &lt;a href="http://search.msn.com/" title="MSN Search"&gt;MSN&lt;/a&gt;.&lt;/p&gt;
@@ -706,7 +706,7 @@ or &lt;a href="http://search.msn.com/" title="MSN Search"&gt;MSN&lt;/a&gt;.&lt;/
 <p>For comparison, here is the same paragraph written using
 Markdown's inline link style:</p>
 
-<pre><code>I get 10 times more traffic from [Google](http://google.com/ "Google")
+<pre tabindex="0"><code>I get 10 times more traffic from [Google](http://google.com/ "Google")
 than from [Yahoo](http://search.yahoo.com/ "Yahoo Search") or
 [MSN](http://search.msn.com/ "MSN Search").
 </code></pre>
@@ -732,7 +732,7 @@ emphasis. Text wrapped with one <code>*</code> or <code>_</code> will be wrapped
 HTML <code>&lt;em&gt;</code> tag; double <code>*</code>'s or <code>_</code>'s will be wrapped with an HTML
 <code>&lt;strong&gt;</code> tag. E.g., this input:</p>
 
-<pre><code>*single asterisks*
+<pre tabindex="0"><code>*single asterisks*
 
 _single underscores_
 
@@ -743,7 +743,7 @@ __double underscores__
 
 <p>will produce:</p>
 
-<pre><code>&lt;em&gt;single asterisks&lt;/em&gt;
+<pre tabindex="0"><code>&lt;em&gt;single asterisks&lt;/em&gt;
 
 &lt;em&gt;single underscores&lt;/em&gt;
 
@@ -757,7 +757,7 @@ the same character must be used to open and close an emphasis span.</p>
 
 <p>Emphasis can be used in the middle of a word:</p>
 
-<pre><code>un*fucking*believable
+<pre tabindex="0"><code>un*fucking*believable
 </code></pre>
 
 <p>But if you surround an <code>*</code> or <code>_</code> with spaces, it'll be treated as a
@@ -767,7 +767,7 @@ literal asterisk or underscore.</p>
 would otherwise be used as an emphasis delimiter, you can backslash
 escape it:</p>
 
-<pre><code>\*this text is surrounded by literal asterisks\*
+<pre tabindex="0"><code>\*this text is surrounded by literal asterisks\*
 </code></pre>
 
 <h3 id="code">Code</h3>
@@ -776,37 +776,37 @@ escape it:</p>
 Unlike a pre-formatted code block, a code span indicates code within a
 normal paragraph. For example:</p>
 
-<pre><code>Use the `printf()` function.
+<pre tabindex="0"><code>Use the `printf()` function.
 </code></pre>
 
 <p>will produce:</p>
 
-<pre><code>&lt;p&gt;Use the &lt;code&gt;printf()&lt;/code&gt; function.&lt;/p&gt;
+<pre tabindex="0"><code>&lt;p&gt;Use the &lt;code&gt;printf()&lt;/code&gt; function.&lt;/p&gt;
 </code></pre>
 
 <p>To include a literal backtick character within a code span, you can use
 multiple backticks as the opening and closing delimiters:</p>
 
-<pre><code>``There is a literal backtick (`) here.``
+<pre tabindex="0"><code>``There is a literal backtick (`) here.``
 </code></pre>
 
 <p>which will produce this:</p>
 
-<pre><code>&lt;p&gt;&lt;code&gt;There is a literal backtick (`) here.&lt;/code&gt;&lt;/p&gt;
+<pre tabindex="0"><code>&lt;p&gt;&lt;code&gt;There is a literal backtick (`) here.&lt;/code&gt;&lt;/p&gt;
 </code></pre>
 
 <p>The backtick delimiters surrounding a code span may include spaces --
 one after the opening, one before the closing. This allows you to place
 literal backtick characters at the beginning or end of a code span:</p>
 
-<pre><code>A single backtick in a code span: `` ` ``
+<pre tabindex="0"><code>A single backtick in a code span: `` ` ``
 
 A backtick-delimited string in a code span: `` `foo` ``
 </code></pre>
 
 <p>will produce:</p>
 
-<pre><code>&lt;p&gt;A single backtick in a code span: &lt;code&gt;`&lt;/code&gt;&lt;/p&gt;
+<pre tabindex="0"><code>&lt;p&gt;A single backtick in a code span: &lt;code&gt;`&lt;/code&gt;&lt;/p&gt;
 
 &lt;p&gt;A backtick-delimited string in a code span: &lt;code&gt;`foo`&lt;/code&gt;&lt;/p&gt;
 </code></pre>
@@ -815,22 +815,22 @@ A backtick-delimited string in a code span: `` `foo` ``
 entities automatically, which makes it easy to include example HTML
 tags. Markdown will turn this:</p>
 
-<pre><code>Please don't use any `&lt;blink&gt;` tags.
+<pre tabindex="0"><code>Please don't use any `&lt;blink&gt;` tags.
 </code></pre>
 
 <p>into:</p>
 
-<pre><code>&lt;p&gt;Please don't use any &lt;code&gt;&amp;lt;blink&amp;gt;&lt;/code&gt; tags.&lt;/p&gt;
+<pre tabindex="0"><code>&lt;p&gt;Please don't use any &lt;code&gt;&amp;lt;blink&amp;gt;&lt;/code&gt; tags.&lt;/p&gt;
 </code></pre>
 
 <p>You can write this:</p>
 
-<pre><code>`&amp;#8212;` is the decimal-encoded equivalent of `&amp;mdash;`.
+<pre tabindex="0"><code>`&amp;#8212;` is the decimal-encoded equivalent of `&amp;mdash;`.
 </code></pre>
 
 <p>to produce:</p>
 
-<pre><code>&lt;p&gt;&lt;code&gt;&amp;amp;#8212;&lt;/code&gt; is the decimal-encoded
+<pre tabindex="0"><code>&lt;p&gt;&lt;code&gt;&amp;amp;#8212;&lt;/code&gt; is the decimal-encoded
 equivalent of &lt;code&gt;&amp;amp;mdash;&lt;/code&gt;.&lt;/p&gt;
 </code></pre>
 
@@ -844,7 +844,7 @@ for links, allowing for two styles: <em>inline</em> and <em>reference</em>.</p>
 
 <p>Inline image syntax looks like this:</p>
 
-<pre><code>![Alt text](/path/to/img.jpg)
+<pre tabindex="0"><code>![Alt text](/path/to/img.jpg)
 
 ![Alt text](/path/to/img.jpg "Optional title")
 </code></pre>
@@ -862,13 +862,13 @@ or single quotes.</li>
 
 <p>Reference-style image syntax looks like this:</p>
 
-<pre><code>![Alt text][id]
+<pre tabindex="0"><code>![Alt text][id]
 </code></pre>
 
 <p>Where "id" is the name of a defined image reference. Image references
 are defined using syntax identical to link references:</p>
 
-<pre><code>[id]: url/to/image  "Optional title attribute"
+<pre tabindex="0"><code>[id]: url/to/image  "Optional title attribute"
 </code></pre>
 
 <p>As of this writing, Markdown has no syntax for specifying the
@@ -883,12 +883,12 @@ use regular HTML <code>&lt;img&gt;</code> tags.</p>
 
 <p>Markdown supports a shortcut style for creating "automatic" links for URLs and email addresses: simply surround the URL or email address with angle brackets. What this means is that if you want to show the actual text of a URL or email address, and also have it be a clickable link, you can do this:</p>
 
-<pre><code>&lt;http://example.com/&gt;
+<pre tabindex="0"><code>&lt;http://example.com/&gt;
 </code></pre>
 
 <p>Markdown will turn this into:</p>
 
-<pre><code>&lt;a href="http://example.com/"&gt;http://example.com/&lt;/a&gt;
+<pre tabindex="0"><code>&lt;a href="http://example.com/"&gt;http://example.com/&lt;/a&gt;
 </code></pre>
 
 <p>Automatic links for email addresses work similarly, except that
@@ -896,12 +896,12 @@ Markdown will also perform a bit of randomized decimal and hex
 entity-encoding to help obscure your address from address-harvesting
 spambots. For example, Markdown will turn this:</p>
 
-<pre><code>&lt;address@example.com&gt;
+<pre tabindex="0"><code>&lt;address@example.com&gt;
 </code></pre>
 
 <p>into something like this:</p>
 
-<pre><code>&lt;a href="&amp;#x6D;&amp;#x61;i&amp;#x6C;&amp;#x74;&amp;#x6F;:&amp;#x61;&amp;#x64;&amp;#x64;&amp;#x72;&amp;#x65;
+<pre tabindex="0"><code>&lt;a href="&amp;#x6D;&amp;#x61;i&amp;#x6C;&amp;#x74;&amp;#x6F;:&amp;#x61;&amp;#x64;&amp;#x64;&amp;#x72;&amp;#x65;
 &amp;#115;&amp;#115;&amp;#64;&amp;#101;&amp;#120;&amp;#x61;&amp;#109;&amp;#x70;&amp;#x6C;e&amp;#x2E;&amp;#99;&amp;#111;
 &amp;#109;"&gt;&amp;#x61;&amp;#x64;&amp;#x64;&amp;#x72;&amp;#x65;&amp;#115;&amp;#115;&amp;#64;&amp;#101;&amp;#120;&amp;#x61;
 &amp;#109;&amp;#x70;&amp;#x6C;e&amp;#x2E;&amp;#99;&amp;#111;&amp;#109;&lt;/a&gt;
@@ -922,12 +922,12 @@ formatting syntax. For example, if you wanted to surround a word with
 literal asterisks (instead of an HTML <code>&lt;em&gt;</code> tag), you can backslashes
 before the asterisks, like this:</p>
 
-<pre><code>\*literal asterisks\*
+<pre tabindex="0"><code>\*literal asterisks\*
 </code></pre>
 
 <p>Markdown provides backslash escapes for the following characters:</p>
 
-<pre><code>\   backslash
+<pre tabindex="0"><code>\   backslash
 `   backtick
 *   asterisk
 _   underscore

@@ -160,15 +160,17 @@ rndr_blockcode(struct lowdown_buf *ob,
 	if (ob->size && !hbuf_putc(ob, '\n'))
 		return 0;
 
+	if (!HBUF_PUTSL(ob, "<pre tabindex=\"0\">"))
+		return 0;
 	if (parm->lang.size) {
-		if (!HBUF_PUTSL(ob, "<pre><code class=\"language-"))
+		if (!HBUF_PUTSL(ob, "<code class=\"language-"))
 			return 0;
 		if (!escape_href(ob, &parm->lang, st))
 			return 0;
 		if (!HBUF_PUTSL(ob, "\">"))
 			return 0;
 	} else {
-		if (! HBUF_PUTSL(ob, "<pre><code>"))
+		if (! HBUF_PUTSL(ob, "<code>"))
 			return 0;
 	}
 
