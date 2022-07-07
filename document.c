@@ -3304,6 +3304,41 @@ parse_htmlblock(struct lowdown_doc *doc, char *data, size_t size)
 			}
 		}
 
+		/*
+		 * META and LINK, which are technically not block tags
+		 * but are allowed in HTML5 bodies.
+		 */
+		if (size > 6 &&
+		    (((data[1] == 'm' || data[1] == 'M') &&
+		    (data[2] == 'e' || data[2] == 'E') &&
+		    (data[3] == 't' || data[3] == 'T') &&
+		    (data[4] == 'a' || data[4] == 'A')) ||
+		    ((data[1] == 'l' || data[1] == 'L') &&
+		    (data[2] == 'i' || data[2] == 'I') &&
+		    (data[3] == 'n' || data[3] == 'N') &&
+		    (data[4] == 'k' || data[4] == 'K')))) {
+			i = 5;
+			while (i < size && data[i] != '>')
+				i++;
+			if (i + 1 < size) {
+				i++;
+				j = is_empty(data + i, size - 1);
+				if (j) {
+					n = pushnode(doc,
+						LOWDOWN_BLOCKHTML);
+					if (n == NULL)
+						return -1;
+					work.size = i + j;
+					if (!hbuf_createb
+					    (&n->rndr_blockhtml.text,
+					     &work))
+						return -1;
+					popnode(doc, n);
+					return work.size;
+				}
+			}
+		}
+
 		/* No special case recognised. */
 
 		return 0;
