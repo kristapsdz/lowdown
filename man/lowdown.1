@@ -25,6 +25,7 @@
 .Op input_options
 .Op output_options
 .Op Fl s
+.Op Fl L
 .Op Fl M Ar metadata
 .Op Fl m Ar metadata
 .Op Fl o Ar file
@@ -54,6 +55,11 @@ This applies to
 .Fl t Ns Ar man ,
 and
 .Fl t Ns Ar fodt .
+.It Fl L
+Output a list of metadata keywords, one per line.
+The
+.Fl t
+mode is ignored.
 .It Fl M Ar metadata
 Provide a single metadata key-value pair.
 This may be in the usual

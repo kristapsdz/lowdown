@@ -212,11 +212,11 @@ main(int argc, char *argv[])
 				*din = NULL;
 	const char		*fnin = "<stdin>", *fnout = NULL,
 	      	 		*fndin = NULL, *extract = NULL, *er,
-				*mainopts = "M:m:sT:t:o:X:",
+				*mainopts = "LM:m:sT:t:o:X:",
 	      			*diffopts = "M:m:sT:t:o:", *odtstyfn = NULL;
 	struct lowdown_opts 	 opts;
 	struct stat		 st;
-	int			 c, diff = 0, fd,
+	int			 c, diff = 0, fd, list = 0,
 				 status = 0, aoflag = 0, roflag = 0,
 				 aiflag = 0, riflag = 0, centre = 0;
 	char			*ret = NULL, *cp, *odtsty = NULL;
@@ -359,6 +359,9 @@ main(int argc, char *argv[])
 	while ((c = getopt_long(argc, argv, 
 	       diff ? diffopts : mainopts, lo, NULL)) != -1)
 		switch (c) {
+		case 'L':
+			list = 1;
+			break;
 		case 'M':
 			metadata_parse(c, &opts.metaovr, 
 				&opts.metaovrsz, optarg);
@@ -535,9 +538,9 @@ main(int argc, char *argv[])
 
 	/* We're now completely sandboxed. */
 
-	/* Require metadata when extracting. */
+	/* Require metadata when listing or extracting. */
 
-	if (extract)
+	if (list || extract)
 		opts.feat |= LOWDOWN_METADATA;
 
 	/* 
@@ -559,7 +562,11 @@ main(int argc, char *argv[])
 			errx(1, "%s: failed parse", fnin);
 	}
 
-	if (extract != NULL) {
+	if (list) {
+		assert(!diff);
+		TAILQ_FOREACH(m, &mq, entries) 
+			fprintf(fout, "%s\n", m->key);
+	} else if (extract != NULL) {
 		assert(!diff);
 		TAILQ_FOREACH(m, &mq, entries) 
 			if (strcasecmp(m->key, extract) == 0)
@@ -596,7 +603,7 @@ main(int argc, char *argv[])
 usage:
 	if (!diff) {
 		fprintf(stderr, 
-			"usage: lowdown [-s] [input_options] [output_options] [-M metadata]\n"
+			"usage: lowdown [-s] [input_options] [output_options] [-L] [-M metadata]\n"
 			"               [-m metadata] [-o output] [-t mode] [-X keyword] [file]\n");
 	} else
 		fprintf(stderr, 
