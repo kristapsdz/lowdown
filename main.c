@@ -137,7 +137,9 @@ sandbox_pre(void)
 
 #else /* No sandbox. */
 
+#ifndef __wasi__ /* WebAssembly is always sandboxed */
 #warning Compiling without sandbox support.
+#endif
 
 static void
 sandbox_post(int fdin, int fddin, int fdout)
