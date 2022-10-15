@@ -3,6 +3,12 @@
 
 include Makefile.configure
 
+SONAME =soname
+
+ifeq ($(shell uname), Darwin)
+SONAME =install_name
+endif
+
 VERSION		 = 1.0.0
 LIBVER		 = 1
 OBJS		 = autolink.o \
@@ -183,7 +189,7 @@ liblowdown.a: $(OBJS) $(COMPAT_OBJS)
 	$(AR) rs $@ $(OBJS) $(COMPAT_OBJS)
 
 liblowdown.so: $(OBJS) $(COMPAT_OBJS)
-	$(CC) -shared -o $@.$(LIBVER) $(OBJS) $(COMPAT_OBJS) $(LDFLAGS) $(LDADD_MD5) -Wl,-soname,$@.$(LIBVER)
+	$(CC) -shared -o $@.$(LIBVER) $(OBJS) $(COMPAT_OBJS) $(LDFLAGS) $(LDADD_MD5) -Wl,-$(SONAME),$@.$(LIBVER)
 	ln -sf $@.$(LIBVER) $@
 
 install: bins

@@ -54,7 +54,7 @@
  * while the sandbox_post() happens afterward.
  */
 
-#if HAVE_PLEDGE
+#if USE_SANDBOX && HAVE_PLEDGE
 
 static void
 sandbox_post(int fdin, int fddin, int fdout)
@@ -72,7 +72,7 @@ sandbox_pre(void)
 		err(1, "pledge");
 }
 
-#elif HAVE_SANDBOX_INIT
+#elif USE_SANDBOX && HAVE_SANDBOX_INIT
 
 static void
 sandbox_post(int fdin, int fddin, int fdout)
@@ -94,7 +94,7 @@ sandbox_pre(void)
 	/* Do nothing. */
 }
 
-#elif HAVE_CAPSICUM
+#elif USE_SANDBOX && HAVE_CAPSICUM
 
 static void
 sandbox_post(int fdin, int fddin, int fdout)
@@ -135,7 +135,9 @@ sandbox_pre(void)
 
 #else /* No sandbox. */
 
+#if USE_SANDBOX
 #warning Compiling without sandbox support.
+#endif
 
 static void
 sandbox_post(int fdin, int fddin, int fdout)
