@@ -931,12 +931,29 @@ rndr_doc_footer(struct lowdown_buf *ob, const struct html *st)
 static int
 rndr_root(struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
+	const struct lowdown_metaq *mq,
 	const struct html *st)
 {
+	const struct lowdown_meta	*m;
+	const char			*lang = NULL;
 
-	if ((st->flags & LOWDOWN_STANDALONE) && 
-   	    !HBUF_PUTSL(ob, "<!DOCTYPE html>\n<html>\n"))
-		    return 0;
+	TAILQ_FOREACH(m, mq, entries)
+		if (strcasecmp(m->key, "lang") == 0)
+			lang = m->value;
+
+	if (st->flags & LOWDOWN_STANDALONE) {
+		if (!HBUF_PUTSL(ob, "<!DOCTYPE html>\n"))
+			return 0;
+		if (lang == NULL) {
+			if (!HBUF_PUTSL(ob, "<html>\n"))
+				return 0;
+		} else {
+			if (!HBUF_PUTSL(ob, "<html lang=\"") ||
+			    !hesc_attr(ob, lang, strlen(lang)) ||
+			    !HBUF_PUTSL(ob, "\">\n"))
+				return 0;
+		}
+	}
 	if (!hbuf_putb(ob, content))
 		return 0;
 	if (!rndr_doc_footer(ob, st))
@@ -1185,7 +1202,7 @@ rndr(struct lowdown_buf *ob,
 
 	switch (n->type) {
 	case LOWDOWN_ROOT:
-		rc = rndr_root(ob, tmp, st);
+		rc = rndr_root(ob, tmp, mq, st);
 		break;
 	case LOWDOWN_BLOCKCODE:
 		rc = rndr_blockcode(ob, &n->rndr_blockcode, st);
