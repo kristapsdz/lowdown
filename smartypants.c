@@ -53,7 +53,7 @@ enum type {
 	TYPE_BLOCK, /* block-level */
 	TYPE_SPAN, /* span-level */
 	TYPE_OPAQUE, /* skip */
-	TYPE_TEXT /* text (LOWDOWN_NORMAL_TEXT) */
+	TYPE_TEXT /* text (LOWDOWN_NORMAL_TEXT, LOWDOWN_LINEBREAK) */
 };
 
 struct sym {
@@ -140,7 +140,7 @@ static const enum type types[LOWDOWN__MAX] = {
 	TYPE_SPAN, /* LOWDOWN_EMPHASIS */
 	TYPE_SPAN, /* LOWDOWN_HIGHLIGHT */
 	TYPE_SPAN, /* LOWDOWN_IMAGE */
-	TYPE_SPAN, /* LOWDOWN_LINEBREAK */
+	TYPE_TEXT, /* LOWDOWN_LINEBREAK */
 	TYPE_SPAN, /* LOWDOWN_LINK */
 	TYPE_SPAN, /* LOWDOWN_TRIPLE_EMPHASIS */
 	TYPE_SPAN, /* LOWDOWN_STRIKETHROUGH */
@@ -258,12 +258,18 @@ smarty_right_wb_r(const struct lowdown_node *n, int skip)
 	if (types[n->type] == TYPE_OPAQUE)
 		return 0;
 
-	if (!skip &&
-	    types[n->type] == TYPE_TEXT &&
-	    n->rndr_normal_text.text.size) {
-		assert(n->type == LOWDOWN_NORMAL_TEXT);
-		b = &n->rndr_normal_text.text;
-		return smarty_is_wb_r(b->data[0]);
+	/*
+	 * Right wordbreak always on linebreak, conditionally on text if
+	 * normal text.
+	 */
+
+	if (!skip && types[n->type] == TYPE_TEXT) {
+		if (n->type == LOWDOWN_NORMAL_TEXT &&
+		    n->rndr_normal_text.text.size) {
+			b = &n->rndr_normal_text.text;
+			return smarty_is_wb_r(b->data[0]);
+		} else if (n->type == LOWDOWN_LINEBREAK)
+			return 1;
 	}
 
 	/* First scan down. */
@@ -313,6 +319,13 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn,
 	struct lowdown_buf *b, struct smarty *s)
 {
 	size_t	 i = 0, j, sz;
+
+	/* Linebreak is always a left word boundary. */
+
+	if (n->type == LOWDOWN_LINEBREAK) {
+		s->left_wb = 1;
+		return 0;
+	}
 
 	assert(n->type == LOWDOWN_NORMAL_TEXT);
 
@@ -408,7 +421,6 @@ smarty_span(struct lowdown_node *root, size_t *maxn,
 	TAILQ_FOREACH(n, &root->children, entries)
 		switch (types[n->type]) {
 		case TYPE_TEXT:
-			assert(n->type == LOWDOWN_NORMAL_TEXT);
 			c = smarty_hbuf(n, maxn, 
 				&n->rndr_normal_text.text, s);
 			if (c < 0)
@@ -452,7 +464,6 @@ smarty_block(struct lowdown_node *root,
 				return 0;
 			break;
 		case TYPE_TEXT:
-			assert(n->type == LOWDOWN_NORMAL_TEXT);
 			c = smarty_hbuf(n, maxn, 
 				&n->rndr_normal_text.text, &s);
 			if (c < 0)
