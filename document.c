@@ -3077,7 +3077,7 @@ parse_atxheader(struct lowdown_doc *doc, char *data, size_t size)
  * Assumes data starts with "<".
  */
 static size_t
-htmlblock_is_end(const char *tag, size_t tag_len,
+html_is_end(const char *tag, size_t tag_len,
 	struct lowdown_doc *doc, const char *data, size_t size)
 {
 	size_t i = tag_len + 3, w;
@@ -3107,7 +3107,7 @@ htmlblock_is_end(const char *tag, size_t tag_len,
  * Returns the length on match, 0 otherwise.
  */
 static size_t
-htmlblock_find_end(const char *tag, size_t tag_len,
+html_find_end(const char *tag, size_t tag_len,
 	struct lowdown_doc *doc, const char *data, size_t size)
 {
 	size_t	i, w = 0;
@@ -3117,8 +3117,7 @@ htmlblock_find_end(const char *tag, size_t tag_len,
 			i++;
 		if (i >= size)
 			return 0;
-		w = htmlblock_is_end(tag,
-			tag_len, doc, data + i, size - i);
+		w = html_is_end(tag, tag_len, doc, data + i, size - i);
 		if (w)
 			break;
 	}
@@ -3132,7 +3131,7 @@ htmlblock_find_end(const char *tag, size_t tag_len,
  * Returns the length on match, 0 otherwise.
  */
 static size_t
-htmlblock_find_end_strict(const char *tag, size_t tag_len,
+html_find_end_strict(const char *tag, size_t tag_len,
 	struct lowdown_doc *doc, const char *data, size_t size)
 {
 	size_t i = 0, mark;
@@ -3148,7 +3147,7 @@ htmlblock_find_end_strict(const char *tag, size_t tag_len,
 
 		if (data[mark] == ' ' && mark > 0)
 			continue;
-		mark += htmlblock_find_end(tag, tag_len,
+		mark += html_find_end(tag, tag_len,
 			doc, data + mark, i - mark);
 		if (mark == i &&
 		    (is_empty(data + i, size - i) || i >= size))
@@ -3159,12 +3158,41 @@ htmlblock_find_end_strict(const char *tag, size_t tag_len,
 }
 
 /*
- * Canonicalise a sequence of length "len" bytes in "str".
- * This returns NULL if the sequence is not recognised, or a
- * nil-terminated string of the sequence otherwise.
+ * See if the sequence of length "len" bytes in "str" is a void element.
+ * Return zero if not, else the number of bytes until one after end of
+ * the HTML string.
+ */
+static size_t
+html_is_void_element(const char *str, size_t len)
+{
+	size_t			 i, sz;
+	static const char	*tags[] = {
+		"br",
+		"hr",
+		"link",
+		"meta",
+		NULL
+	};
+
+	for (i = 0; tags[i] != NULL; i++) {
+		sz = strlen(tags[i]);
+		if (len < sz || strncasecmp(tags[i], str, sz) != 0)
+			continue;
+		for ( ; sz < len && str[sz] != '>'; sz++)
+			/* Do nothing. */ ;
+		return sz < len ? sz + 1 : 0;
+	}
+
+	return 0;
+}
+
+/*
+ * Canonicalise a sequence of length "len" bytes in "str".  This returns
+ * NULL if the sequence is not recognised, or a NUL-terminated string of
+ * the sequence otherwise.
  */
 static const char *
-hhtml_find_block(const char *str, size_t len)
+html_find_block(const char *str, size_t len)
 {
 	size_t			 i;
 	static const char	*tags[] = {
@@ -3242,12 +3270,15 @@ parse_htmlblock(struct lowdown_doc *doc, char *data, size_t size)
 	while (i < size && data[i] != '>' && data[i] != ' ')
 		i++;
 	if (i < size)
-		curtag = hhtml_find_block(data + 1, i - 1);
+		curtag = html_find_block(data + 1, i - 1);
 
 	/* Handling of special cases. */
 
-	if (!curtag) {
-		/* HTML comment, laxist form. */
+	if (curtag == NULL) {
+		/*
+		 * HTML comment.
+		 * This is anything between <!-- and -->.
+		 */
 
 		if (size > 5 && data[1] == '!' &&
 		    data[2] == '-' && data[3] == '-') {
@@ -3274,33 +3305,24 @@ parse_htmlblock(struct lowdown_doc *doc, char *data, size_t size)
 		}
 
 		/*
-		 * HR, which is the only self-closing block tag
-		 * considered.
-		 * FIXME: we should also do <br />.
+		 * Void elements.  These can either end directly in ">"
+		 * or "/>".  Push everything between the brackets.
 		 */
 
-		if (size > 4 &&
-		    (data[1] == 'h' || data[1] == 'H') &&
-		    (data[2] == 'r' || data[2] == 'R')) {
-			i = 3;
-			while (i < size && data[i] != '>')
-				i++;
-			if (i + 1 < size) {
-				i++;
-				j = is_empty(data + i, size - i);
-				if (j) {
-					n = pushnode(doc,
-						LOWDOWN_BLOCKHTML);
-					if (n == NULL)
-						return -1;
-					work.size = i + j;
-					if (!hbuf_createb
-					    (&n->rndr_blockhtml.text,
-					     &work))
-						return -1;
-					popnode(doc, n);
-					return work.size;
-				}
+		i = html_is_void_element(data + 1, size - 1);
+		if (i > 0) {
+			i++;
+			j = is_empty(data + i, size - i);
+			if (j) {
+				n = pushnode(doc, LOWDOWN_BLOCKHTML);
+				if (n == NULL)
+					return -1;
+				work.size = i + j;
+				if (!hbuf_createb
+				    (&n->rndr_blockhtml.text, &work))
+					return -1;
+				popnode(doc, n);
+				return work.size;
 			}
 		}
 
@@ -3312,7 +3334,7 @@ parse_htmlblock(struct lowdown_doc *doc, char *data, size_t size)
 	/* Looking for a matching closing tag in strict mode. */
 
 	tag_len = strlen(curtag);
-	tag_end = htmlblock_find_end_strict
+	tag_end = html_find_end_strict
 		(curtag, tag_len, doc, data, size);
 
 	/*
@@ -3322,10 +3344,9 @@ parse_htmlblock(struct lowdown_doc *doc, char *data, size_t size)
 	 */
 
 	if (!tag_end &&
-	    strcmp(curtag, "ins") != 0 &&
-	    strcmp(curtag, "del") != 0)
-		tag_end = htmlblock_find_end(curtag,
-			tag_len, doc, data, size);
+	    strcmp(curtag, "ins") != 0 && strcmp(curtag, "del") != 0)
+		tag_end = html_find_end
+			(curtag, tag_len, doc, data, size);
 
 	if (!tag_end)
 		return 0;
