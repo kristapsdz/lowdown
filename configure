@@ -15,7 +15,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-OCONFIGURE_VERSION="0.3.5"
+OCONFIGURE_VERSION="0.3.10"
 
 #
 # This script outputs two files: config.h and Makefile.configure.
@@ -74,10 +74,12 @@ if [ -n "$MAKE_FLAGS" ]; then
 fi
 
 #----------------------------------------------------------------------
-# Initialize all variables here such that nothing can leak in from the
-# environment except for CC and CFLAGS, which we might have passed in.
+# Initialise all variables here such that nothing can leak in from the
+# environment except for AR, CC and CFLAGS, which we might have passed
+# in.
 #----------------------------------------------------------------------
 
+AR=`printf "all:\\n\\t@echo \\\$(AR)\\n" | make ${MAKE_FLAGS} -sf -`
 CC=`printf "all:\\n\\t@echo \\\$(CC)\\n" | make ${MAKE_FLAGS} -sf -`
 CFLAGS=`printf "all:\\n\\t@echo \\\$(CFLAGS)\\n" | make ${MAKE_FLAGS} -sf -`
 CFLAGS="${CFLAGS} -g -W -Wall -Wextra -Wmissing-prototypes -Wstrict-prototypes"
@@ -88,9 +90,11 @@ LDADD_CRYPT=
 LDADD_MD5=
 LDADD_SHA2=
 LDADD_LIB_SOCKET=
+LDADD_SCAN_SCALED=
 LDADD_STATIC=
 CPPFLAGS=
 LDFLAGS=
+LINKER_SONAME=
 DESTDIR=
 PREFIX="/usr/local"
 BINDIR=
@@ -143,6 +147,8 @@ do
 		LDADD="$val" ;;
 	LDFLAGS)
 		LDFLAGS="$val" ;;
+	LINKER_SONAME)
+		LINKER_SONAME="$val" ;;
 	CPPFLAGS)
 		CPPFLAGS="$val" ;;
 	DESTDIR)
@@ -167,6 +173,38 @@ do
 	esac
 done
 
+#----------------------------------------------------------------------
+# If the user doesn't specify whether we want "-soname" or
+# "-install_name" for the linker option to generate shared libraries,
+# try to figure it out here.  If we can't figure it out, just set it to
+# -soname and let the user figure it out.
+
+if [ -z "$LINKER_SONAME" ]
+then
+	test_soname="`mktemp`" || {
+		echo "mktemp: failed" 1>&2
+		echo "mktemp: failed" 1>&3
+		exit 1
+	}
+	echo "int foo(void) { return 1; }" > "${test_soname}.c"
+	${CC} -fPIC -o ${test_soname}.o -c ${test_soname}.c || {
+		echo "${CC} -fPIC -o ${test_soname}.o -c ${test_soname}.c: failed" 1>&2
+		echo "${CC} -fPIC -o ${test_soname}.o -c ${test_soname}.c: failed" 1>&3
+	}
+	LINKER_SONAME="-soname"
+	echo "LINKER_SONAME: testing -soname" 1>&3
+	${CC} -shared -o ${test_soname}.so.0 ${test_soname}.o -Wl,${LINKER_SONAME},${test_soname}.so.0 || {
+		LINKER_SONAME="-install_name"
+		echo "LINKER_SONAME: testing -install_name" 1>&3
+		${CC} -shared -o ${test_soname}.so.0 ${test_soname}.o -Wl,-install_name,${test_soname}.so.0 || {
+			echo "LINKER_SONAME: cannot determine: default to -soname" 1>&2
+			echo "LINKER_SONAME: cannot determine: default to -soname" 1>&3
+			LINKER_SONAME="-soname"
+		}
+	}
+	echo "LINKER_SONAME: $LINKER_SONAME" 1>&3
+	rm -f "$test_soname" "${test_soname}.*"
+fi
 
 #----------------------------------------------------------------------
 # These are the values that will be pushed into config.h after we test
@@ -180,6 +218,7 @@ HAVE_ARC4RANDOM=
 HAVE_B64_NTOP=
 HAVE_CAPSICUM=
 HAVE_CRYPT=
+HAVE_CRYPT_NEWHASH=
 HAVE_ENDIAN_H=
 HAVE_ERR=
 HAVE_EXPLICIT_BZERO=
@@ -187,6 +226,7 @@ HAVE_FTS=
 HAVE_GETEXECNAME=
 HAVE_GETPROGNAME=
 HAVE_INFTIM=
+HAVE_LANDLOCK=
 HAVE_MD5=
 HAVE_MEMMEM=
 HAVE_MEMRCHR=
@@ -201,6 +241,7 @@ HAVE_READPASSPHRASE=
 HAVE_REALLOCARRAY=
 HAVE_RECALLOCARRAY=
 HAVE_SANDBOX_INIT=
+HAVE_SCAN_SCALED=
 HAVE_SECCOMP_FILTER=
 HAVE_SETRESGID=
 HAVE_SETRESUID=
@@ -346,6 +387,7 @@ runtest arc4random	ARC4RANDOM			  || true
 runtest b64_ntop	B64_NTOP "" "" "-lresolv"	  || true
 runtest capsicum	CAPSICUM			  || true
 runtest crypt		CRYPT "" "" "-lcrypt"	  	  || true
+runtest crypt_newhash	CRYPT_NEWHASH		  	  || true
 runtest endian_h	ENDIAN_H			  || true
 runtest err		ERR				  || true
 runtest explicit_bzero	EXPLICIT_BZERO			  || true
@@ -353,6 +395,7 @@ runtest fts		FTS				  || true
 runtest getexecname	GETEXECNAME			  || true
 runtest getprogname	GETPROGNAME			  || true
 runtest INFTIM		INFTIM				  || true
+runtest landlock	LANDLOCK			  || true
 runtest lib_socket	LIB_SOCKET "" "" "-lsocket -lnsl" || true
 runtest md5		MD5 "" "" "-lmd"		  || true
 runtest memmem		MEMMEM			  	  || true
@@ -368,6 +411,7 @@ runtest readpassphrase	READPASSPHRASE			  || true
 runtest reallocarray	REALLOCARRAY			  || true
 runtest recallocarray	RECALLOCARRAY			  || true
 runtest sandbox_init	SANDBOX_INIT	"-Wno-deprecated" || true
+runtest scan_scaled	SCAN_SCALED "" "" "-lutil"	|| true
 runtest seccomp-filter	SECCOMP_FILTER			  || true
 runtest setresgid	SETRESGID			  || true
 runtest setresuid	SETRESUID			  || true
@@ -506,6 +550,7 @@ cat << __HEREDOC__
 #define HAVE_B64_NTOP ${HAVE_B64_NTOP}
 #define HAVE_CAPSICUM ${HAVE_CAPSICUM}
 #define HAVE_CRYPT ${HAVE_CRYPT}
+#define HAVE_CRYPT_NEWHASH ${HAVE_CRYPT_NEWHASH}
 #define HAVE_ENDIAN_H ${HAVE_ENDIAN_H}
 #define HAVE_ERR ${HAVE_ERR}
 #define HAVE_EXPLICIT_BZERO ${HAVE_EXPLICIT_BZERO}
@@ -513,6 +558,7 @@ cat << __HEREDOC__
 #define HAVE_GETEXECNAME ${HAVE_GETEXECNAME}
 #define HAVE_GETPROGNAME ${HAVE_GETPROGNAME}
 #define HAVE_INFTIM ${HAVE_INFTIM}
+#define HAVE_LANDLOCK ${HAVE_LANDLOCK}
 #define HAVE_MD5 ${HAVE_MD5}
 #define HAVE_MEMMEM ${HAVE_MEMMEM}
 #define HAVE_MEMRCHR ${HAVE_MEMRCHR}
@@ -527,6 +573,7 @@ cat << __HEREDOC__
 #define HAVE_REALLOCARRAY ${HAVE_REALLOCARRAY}
 #define HAVE_RECALLOCARRAY ${HAVE_RECALLOCARRAY}
 #define HAVE_SANDBOX_INIT ${HAVE_SANDBOX_INIT}
+#define HAVE_SCAN_SCALED ${HAVE_SCAN_SCALED}
 #define HAVE_SECCOMP_FILTER ${HAVE_SECCOMP_FILTER}
 #define HAVE_SETRESGID ${HAVE_SETRESGID}
 #define HAVE_SETRESUID ${HAVE_SETRESUID}
@@ -773,6 +820,13 @@ fi
 extern int b64_ntop(unsigned char const *, size_t, char *, size_t);
 extern int b64_pton(char const *, unsigned char *, size_t);
 
+__HEREDOC__
+
+[ ${HAVE_SCAN_SCALED} -eq 0 ] && \
+	cat << __HEREDOC__
+#define	FMT_SCALED_STRSIZE	7 /* minus sign, 4 digits, suffix, null byte */
+int	fmt_scaled(long long, char *);
+int	scan_scaled(char *, long long *);
 __HEREDOC__
 
 [ ${HAVE_EXPLICIT_BZERO} -eq 0 ] && \
@@ -2417,6 +2471,7 @@ exec > Makefile.configure
 [ -z "${INSTALL_DATA}"    ] && INSTALL_DATA="${INSTALL} -m 0444"
 
 cat << __HEREDOC__
+AR		 = ${AR}
 CC		 = ${CC}
 CFLAGS		 = ${CFLAGS}
 CPPFLAGS	 = ${CPPFLAGS}
@@ -2426,8 +2481,10 @@ LDADD_CRYPT	 = ${LDADD_CRYPT}
 LDADD_LIB_SOCKET = ${LDADD_LIB_SOCKET}
 LDADD_MD5	 = ${LDADD_MD5}
 LDADD_SHA2	 = ${LDADD_SHA2}
+LDADD_SCAN_SCALED= ${LDADD_SCAN_SCALED}
 LDADD_STATIC	 = ${LDADD_STATIC}
 LDFLAGS		 = ${LDFLAGS}
+LINKER_SONAME	 = ${LINKER_SONAME}
 STATIC		 = ${STATIC}
 PREFIX		 = ${PREFIX}
 BINDIR		 = ${BINDIR}
