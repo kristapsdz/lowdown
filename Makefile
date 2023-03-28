@@ -174,7 +174,7 @@ installwww: www
 	$(INSTALL) -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots
 
 lowdown: liblowdown.a main.o
-	$(CC) -o $@ main.o liblowdown.a $(LDFLAGS) $(LDADD_MD5) -lm
+	$(CC) $(CFLAGS) -o $@ main.o liblowdown.a $(LDFLAGS) $(LDADD_MD5) -lm
 
 lowdown-diff: lowdown
 	ln -f lowdown lowdown-diff
@@ -183,7 +183,7 @@ liblowdown.a: $(OBJS) $(COMPAT_OBJS)
 	$(AR) rs $@ $(OBJS) $(COMPAT_OBJS)
 
 liblowdown.so: $(OBJS) $(COMPAT_OBJS)
-	$(CC) -shared -o $@.$(LIBVER) $(OBJS) $(COMPAT_OBJS) $(LDFLAGS) $(LDADD_MD5) -Wl,${LINKER_SONAME},$@.$(LIBVER)
+	$(CC) $(CFLAGS) -shared -o $@.$(LIBVER) $(OBJS) $(COMPAT_OBJS) $(LDFLAGS) $(LDADD_MD5) -Wl,${LINKER_SONAME},$@.$(LIBVER)
 	ln -sf $@.$(LIBVER) $@
 
 install: bins
