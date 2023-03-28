@@ -135,9 +135,19 @@ sandbox_pre(void)
 	/* Do nothing. */
 }
 
-#else /* No sandbox. */
+#else /* No compile-time sandbox. */
 
-#warning Compiling without sandbox support.
+/*
+ * WebAssembly (WASI) is a virtual architecture, so it's "sandboxed" by
+ * default.  Since building WASI targets is now fairly common, we can
+ * specifically address this by not issuing the warning.  XXX: this
+ * special-cases this output, which is not something that I like, but
+ * until there are other platforms that are similarly
+ * sandboxed-by-default, will keep as-is.
+ */
+#ifndef __wasi__
+# warning Compiling without sandbox support.
+#endif
 
 static void
 sandbox_post(int fdin, int fddin, int fdout)
