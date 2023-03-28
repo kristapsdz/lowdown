@@ -731,6 +731,22 @@ main(void)
 }
 
 #endif /* TEST_SYS_TREE */
+#if TEST_TERMIOS
+#include <sys/ioctl.h>
+#include <string.h> /* memset */
+#include <termios.h>
+
+int
+main(void)
+{
+	struct winsize	 size;
+
+	memset(&size, 0, sizeof(struct winsize));
+	if (ioctl(1, TIOCGWINSZ, &size) == -1)
+		return 72;
+	return size.ws_col;
+}
+#endif /* TEST_TERMIOS */
 #if TEST_UNVEIL
 #include <unistd.h>
 

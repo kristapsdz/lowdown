@@ -15,7 +15,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-OCONFIGURE_VERSION="0.3.10"
+OCONFIGURE_VERSION="0.3.11"
 
 #
 # This script outputs two files: config.h and Makefile.configure.
@@ -260,6 +260,7 @@ HAVE_SYS_QUEUE=
 HAVE_SYS_SYSMACROS=
 HAVE_SYS_TREE=
 HAVE_SYSTRACE=0
+HAVE_TERMIOS=
 HAVE_UNVEIL=
 HAVE_WAIT_ANY=
 HAVE___PROGNAME=
@@ -429,6 +430,7 @@ runtest sys_mkdev_h	SYS_MKDEV_H			  || true
 runtest sys_sysmacros_h	SYS_SYSMACROS_H			  || true
 runtest sys_queue	SYS_QUEUE			  || true
 runtest sys_tree	SYS_TREE			  || true
+runtest termios		TERMIOS				  || true
 runtest unveil		UNVEIL				  || true
 runtest WAIT_ANY	WAIT_ANY			  || true
 runtest __progname	__PROGNAME			  || true
@@ -593,6 +595,7 @@ cat << __HEREDOC__
 #define HAVE_SYS_TREE ${HAVE_SYS_TREE}
 #define HAVE_SYSTRACE ${HAVE_SYSTRACE}
 #define HAVE_UNVEIL ${HAVE_UNVEIL}
+#define HAVE_TERMIOS ${HAVE_TERMIOS}
 #define HAVE_WAIT_ANY ${HAVE_WAIT_ANY}
 #define HAVE___PROGNAME ${HAVE___PROGNAME}
 

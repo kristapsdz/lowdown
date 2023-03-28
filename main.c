@@ -43,7 +43,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h> /* struct winsize */
+#if HAVE_TERMIOS
+# include <termios.h> /* struct winsize */
+#endif
 #include <unistd.h>
 
 #include "lowdown.h"
@@ -156,12 +158,15 @@ sandbox_pre(void)
 static size_t
 get_columns(void)
 {
+	size_t res = 72;
+#if HAVE_TERMIOS
 	struct winsize	 size;
 
 	memset(&size, 0, sizeof(struct winsize));
-	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &size) == -1)
-		return 72;
-	return size.ws_col;
+	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &size) != -1)
+		res = size.ws_col;
+#endif
+	return res;
 }
 
 /*
