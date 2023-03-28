@@ -178,7 +178,7 @@ apples
 .sp -1v
 .if t \
 .sp -0.25v
-.IP "" \*(PI
+.IP "" 5n
 Good for making applesauce.
 .LP
 oranges
@@ -186,7 +186,7 @@ oranges
 .sp -1v
 .if t \
 .sp -0.25v
-.IP "" \*(PI
+.IP "" 5n
 Citrus!
 .LP
 tomatoes
@@ -194,7 +194,7 @@ tomatoes
 .sp -1v
 .if t \
 .sp -0.25v
-.IP "" \*(PI
+.IP "" 5n
 There\(cqs no \(lqe\(rq in tomatoe.
 .LP
 Again, text is indented 4 spaces. (Put a blank line between each

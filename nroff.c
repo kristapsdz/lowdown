@@ -745,7 +745,8 @@ rndr_definition_title(struct bnodeq *obq, struct bnodeq *bq)
 }
 
 static int
-rndr_definition_data(struct bnodeq *obq, struct bnodeq *bq)
+rndr_definition_data(const struct nroff *st, struct bnodeq *obq,
+    struct bnodeq *bq)
 {
 	/*
 	 * The IP creates an empty vertical space til I figure out a
@@ -760,9 +761,18 @@ rndr_definition_data(struct bnodeq *obq, struct bnodeq *bq)
 
 	if (bqueue_block(obq, ".if n \\\n.sp -1v") == NULL)
 		return 0;
-	if (bqueue_block(obq, ".if t \\\n.sp -0.25v\n") == NULL)
+	if (bqueue_block(obq, ".if t \\\n.sp -0.25v") == NULL)
 		return 0;
-	if (bqueue_block(obq, ".IP \"\" \\*(PI") == NULL)
+
+	/*
+	 * The \(PI register exists in -ms for the paragraph indent.
+	 * Use it for -ms and hard-code 5n (the default for -ms) in
+	 * -man.
+	 */
+
+	if (st->man && bqueue_block(obq, ".IP \"\" 5n") == NULL)
+		return 0;
+	if (!st->man && bqueue_block(obq, ".IP \"\" \\*(PI") == NULL)
 		return 0;
 
 	/* Strip out leading paragraphs. */
@@ -1753,7 +1763,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_list(st, obq, n, &tmpbq);
 		break;
 	case LOWDOWN_DEFINITION_DATA:
-		rc = rndr_definition_data(obq, &tmpbq);
+		rc = rndr_definition_data(st, obq, &tmpbq);
 		break;
 	case LOWDOWN_DEFINITION_TITLE:
 		rc = rndr_definition_title(obq, &tmpbq);
