@@ -183,7 +183,7 @@ liblowdown.a: $(OBJS) $(COMPAT_OBJS)
 	$(AR) rs $@ $(OBJS) $(COMPAT_OBJS)
 
 liblowdown.so: $(OBJS) $(COMPAT_OBJS)
-	$(CC) $(CFLAGS) -shared -o $@.$(LIBVER) $(OBJS) $(COMPAT_OBJS) $(LDFLAGS) $(LDADD_MD5) -Wl,${LINKER_SONAME},$@.$(LIBVER)
+	$(CC) $(CFLAGS) -shared -o $@.$(LIBVER) $(OBJS) $(COMPAT_OBJS) $(LDFLAGS) $(LDADD_MD5) -lm -Wl,${LINKER_SONAME},$@.$(LIBVER)
 	ln -sf $@.$(LIBVER) $@
 
 install: bins
