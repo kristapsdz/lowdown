@@ -24,7 +24,7 @@
 .Nm lowdown
 .Op input_options
 .Op output_options
-.Op Fl s
+.Op Fl Ls
 .Op Fl M Ar metadata
 .Op Fl m Ar metadata
 .Op Fl o Ar file
@@ -39,6 +39,14 @@ Results are written to standard output.
 .Pp
 The arguments are as follows:
 .Bl -tag -width Ds
+.It Fl L
+Lists metadata keys, one key per line.
+The
+.Fl t
+mode is ignored.
+Metadata is automatically enabled.
+Unsets
+.Fl X .
 .It Fl s
 Standalone mode.
 This emits a document envelope surrounding the output by drawing from
@@ -111,6 +119,9 @@ or an empty string if not found.
 The
 .Fl t
 mode is ignored.
+Metadata is automatically enabled.
+Unsets
+.Fl L .
 .It Ar file
 Input Markdown document.
 If not given or if
@@ -715,8 +726,12 @@ font directory and are prefixed with
 lowdown -stms foo.md | pdfroff -itk -mspdf -FU-T > foo.pdf
 .Ed
 .Pp
-To extract the HTML-escaped title from a file's metadata:
+To list all metadata keys, then to extract the
+.Qq title
+metadata value from
+.Pa foo.md :
 .Pp
+.Dl lowdown -L foo.md
 .Dl lowdown -X title foo.md
 .Sh SEE ALSO
 .Xr lowdown-diff 1 ,

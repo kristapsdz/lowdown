@@ -227,13 +227,14 @@ main(int argc, char *argv[])
 				*din = NULL;
 	const char		*fnin = "<stdin>", *fnout = NULL,
 	      	 		*fndin = NULL, *extract = NULL, *er,
-				*mainopts = "M:m:sT:t:o:X:",
+				*mainopts = "LM:m:sT:t:o:X:",
 	      			*diffopts = "M:m:sT:t:o:", *odtstyfn = NULL;
 	struct lowdown_opts 	 opts;
 	struct stat		 st;
 	int			 c, diff = 0, fd,
 				 status = 0, aoflag = 0, roflag = 0,
-				 aiflag = 0, riflag = 0, centre = 0;
+				 aiflag = 0, riflag = 0, centre = 0,
+				 list = 0;
 	char			*ret = NULL, *cp, *odtsty = NULL;
 	size_t		 	 i, retsz = 0, rcols, sz;
 	ssize_t			 ssz;
@@ -389,6 +390,7 @@ main(int argc, char *argv[])
 			opts.oflags |= LOWDOWN_STANDALONE;
 			break;
 		case 't':
+			/* FALLTHROUGH */
 		case 'T':
 			if (strcasecmp(optarg, "ms") == 0)
 				opts.type = LOWDOWN_NROFF;
@@ -413,6 +415,11 @@ main(int argc, char *argv[])
 			break;
 		case 'X':
 			extract = optarg;
+			list = 0;
+			break;
+		case 'L':
+			list = 1;
+			extract = NULL;
 			break;
 		case 0:
 			if (roflag)
@@ -552,7 +559,7 @@ main(int argc, char *argv[])
 
 	/* Require metadata when extracting. */
 
-	if (extract)
+	if (extract || list)
 		opts.feat |= LOWDOWN_METADATA;
 
 	/* 
@@ -585,6 +592,10 @@ main(int argc, char *argv[])
 			status = 1;
 			warnx("%s: unknown keyword", extract);
 		}
+	} else if (list) {
+		assert(!diff);
+		TAILQ_FOREACH(m, &mq, entries)
+			fprintf(fout, "%s\n", m->key);
 	} else
 		fwrite(ret, 1, retsz, fout);
 
@@ -611,11 +622,15 @@ main(int argc, char *argv[])
 usage:
 	if (!diff) {
 		fprintf(stderr, 
-			"usage: lowdown [-s] [input_options] [output_options] [-M metadata]\n"
-			"               [-m metadata] [-o output] [-t mode] [-X keyword] [file]\n");
+			"usage: lowdown [-Ls] [input_options] "
+			"[output_options] [-M metadata]\n"
+			"               [-m metadata] "
+			"[-o output] [-t mode] [-X keyword] [file]\n");
 	} else
 		fprintf(stderr, 
-			"usage: lowdown-diff [-s] [input_options] [output_options] [-M metadata]\n"
-			"                    [-m metadata] [-o output] [-t mode] oldfile [newfile]\n");
+			"usage: lowdown-diff [-s] [input_options] "
+			"[output_options] [-M metadata]\n"
+			"                    [-m metadata] "
+			"[-o output] [-t mode] oldfile [newfile]\n");
 	return 1;
 }
