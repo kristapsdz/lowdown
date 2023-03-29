@@ -214,6 +214,7 @@ install_lib_common: lowdown.pc
 
 install_shared: liblowdown.so install_lib_common
 	$(INSTALL_LIB) liblowdown.so.$(LIBVER) $(DESTDIR)$(LIBDIR)
+	( cd $(DESTDIR)$(LIBDIR) && ln -sf liblowdown.so.$(LIBVER) liblowdown.so )
 
 install_static: liblowdown.a install_lib_common
 	$(INSTALL_LIB) liblowdown.a $(DESTDIR)$(LIBDIR)
