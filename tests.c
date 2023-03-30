@@ -40,7 +40,7 @@ main(void)
 }
 #endif /* TEST_CAPSICUM */
 #if TEST_CRYPT
-#if defined(__linux__)
+#if defined(__linux__) || defined(__wasi__)
 # define _GNU_SOURCE /* old glibc */
 # define _DEFAULT_SOURCE /* new glibc */
 #endif
@@ -82,7 +82,7 @@ main(void)
 }
 #endif /* TEST_CRYPT_NEWHASH */
 #if TEST_ENDIAN_H
-#ifdef __linux__
+#if defined(__linux__) || defined(__wasi__)
 # define _DEFAULT_SOURCE
 #endif
 #include <endian.h>
@@ -292,7 +292,7 @@ main(void)
 }
 #endif /* TEST_MEMMEM */
 #if TEST_MEMRCHR
-#if defined(__linux__) || defined(__MINT__)
+#if defined(__linux__) || defined(__MINT__) || defined(__wasi__)
 #define _GNU_SOURCE	/* See test-*.c what needs this. */
 #endif
 #include <string.h>

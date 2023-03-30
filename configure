@@ -15,7 +15,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-OCONFIGURE_VERSION="0.3.11"
+OCONFIGURE_VERSION="0.3.12"
 
 #
 # This script outputs two files: config.h and Makefile.configure.
@@ -84,6 +84,7 @@ CC=`printf "all:\\n\\t@echo \\\$(CC)\\n" | make ${MAKE_FLAGS} -sf -`
 CFLAGS=`printf "all:\\n\\t@echo \\\$(CFLAGS)\\n" | make ${MAKE_FLAGS} -sf -`
 CFLAGS="${CFLAGS} -g -W -Wall -Wextra -Wmissing-prototypes -Wstrict-prototypes"
 CFLAGS="${CFLAGS} -Wwrite-strings -Wno-unused-parameter"
+LDLIBS=
 LDADD=
 LDADD_B64_NTOP=
 LDADD_CRYPT=
@@ -145,6 +146,8 @@ do
 	case "$key" in
 	LDADD)
 		LDADD="$val" ;;
+	LDLIBS)
+		LDLIBS="$val" ;;
 	LDFLAGS)
 		LDFLAGS="$val" ;;
 	LINKER_SONAME)
@@ -457,7 +460,7 @@ cat << __HEREDOC__
 #if !defined(__GNUC__) || (__GNUC__ < 4)
 # define __attribute__(x)
 #endif
-#if defined(__linux__) || defined(__MINT__)
+#if defined(__linux__) || defined(__MINT__) || defined(__wasi__)
 # define _GNU_SOURCE /* memmem, memrchr, setresuid... */
 # define _DEFAULT_SOURCE /* le32toh, crypt, ... */
 #endif
@@ -2361,10 +2364,6 @@ name##_RB_MINMAX(struct name *head, int val)				\\
 __HEREDOC__
 fi
 
-cat << __HEREDOC__
-#endif /*!OCONFIGURE_CONFIG_H*/
-__HEREDOC__
-
 if [ ${HAVE_FTS} -eq 0 ]; then
 	cat << __HEREDOC__
 /*
@@ -2449,6 +2448,10 @@ int	 fts_set(FTS *, FTSENT *, int);
 __HEREDOC__
 fi
 
+cat << __HEREDOC__
+#endif /*!OCONFIGURE_CONFIG_H*/
+__HEREDOC__
+
 echo "config.h: written" 1>&2
 echo "config.h: written" 1>&3
 
@@ -2478,6 +2481,7 @@ AR		 = ${AR}
 CC		 = ${CC}
 CFLAGS		 = ${CFLAGS}
 CPPFLAGS	 = ${CPPFLAGS}
+LDLIBS		 = ${LDLIBS}
 LDADD		 = ${LDADD}
 LDADD_B64_NTOP	 = ${LDADD_B64_NTOP}
 LDADD_CRYPT	 = ${LDADD_CRYPT}
