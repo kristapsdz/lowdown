@@ -2698,7 +2698,7 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 	size_t			 beg = 0, end, pre, sublist = 0,
 				 orgpre, i, has_next_uli = 0, dli_lines,
 				 has_next_oli = 0, has_next_dli = 0;
-	int			 in_empty = 0, has_inside_empty = 0,
+	int			 in_empty = 0, has_block = 0,
 				 in_fence = 0, ff, checked = -1;
 	struct lowdown_node	*n;
 
@@ -2759,6 +2759,27 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 
 		/* Calculating the indentation. */
 
+		/*
+		 * FIXME: by passing "4" to countspaces(), nested lists
+		 * that are indented by less than this aren't properly
+		 * parsed.  E.g.,
+		 *
+		 * - list
+		 *
+		 *   with paragraph
+		 *
+		 *   - inner list
+		 *
+		 *     inner para
+		 *
+		 * If we reduce this to "3", then these lists are
+		 * handled properly.  However, this breaks existing
+		 * functionality with respect to tabbed lists, as tabs
+		 * are expanded before this function into 4 tabsteps.
+		 *
+		 * It's not clear to me why this is the case.
+		 */
+
 		pre = i = countspaces(data, beg, end, 4) - beg;
 
 		if (doc->ext_flags & LOWDOWN_FENCED)
@@ -2790,7 +2811,7 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 		     !is_hrule(data + beg + i, end - beg - i)) ||
 		    has_next_oli || has_next_dli) {
 			if (in_empty)
-				has_inside_empty = 1;
+				has_block = 1;
 
 			/*
 			 * The following item must have the same (or
@@ -2808,14 +2829,14 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 				       ff == HLIST_FL_UNORDERED ||
 				       ff == HLIST_FL_DEF);
 
-				if (in_empty &&
-				    (((ff == HLIST_FL_ORDERED) &&
-				      (has_next_uli || has_next_dli)) ||
-				     ((ff == HLIST_FL_UNORDERED) &&
-				      (has_next_oli || has_next_dli)) ||
-				     ((ff == HLIST_FL_DEF) &&
-				      (has_next_oli || has_next_uli)))) {
+				if (((ff == HLIST_FL_ORDERED) &&
+				     (has_next_uli || has_next_dli)) ||
+				    ((ff == HLIST_FL_UNORDERED) &&
+				     (has_next_oli || has_next_dli)) ||
+				    ((ff == HLIST_FL_DEF) &&
+				     (has_next_oli || has_next_uli))) {
 					*flags |= HLIST_LI_END;
+					has_block = 0;
 				}
 
 				break;
@@ -2837,7 +2858,8 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 		if (in_empty) {
 			if (!hbuf_putc(work, '\n'))
 				goto err;
-			has_inside_empty = 1;
+			if (sublist == 0)
+				has_block = 1;
 			in_empty = 0;
 		}
 
@@ -2853,7 +2875,7 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 
 	/* Render of li contents. */
 
-	if (has_inside_empty)
+	if (has_block)
 		*flags |= HLIST_FL_BLOCK;
 
 	if ((n = pushnode(doc, LOWDOWN_LISTITEM)) == NULL)
