@@ -2873,13 +2873,19 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 		beg = end;
 	}
 
-	/* Render of li contents. */
+	/* Increment number of items in parent. */
+
+	if (doc->current != NULL && doc->current->type == LOWDOWN_LIST)
+		doc->current->rndr_list.items++;
+
+	/* Render of list item contents. */
 
 	if (has_block)
 		*flags |= HLIST_FL_BLOCK;
 
 	if ((n = pushnode(doc, LOWDOWN_LISTITEM)) == NULL)
 		goto err;
+
 	n->rndr_listitem.flags = *flags;
 	n->rndr_listitem.num = num;
 
@@ -2889,8 +2895,6 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 		n->rndr_listitem.flags |= HLIST_FL_UNCHECKED;
 
 	if (*flags & HLIST_FL_BLOCK) {
-		/* Intermediate render of block li. */
-
 		if (sublist && sublist < work->size) {
 			if (!parse_block(doc,
 			    work->data, sublist))
@@ -2905,8 +2909,6 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 				goto err;
 		}
 	} else {
-		/* Intermediate render of inline li. */
-
 		if (sublist && sublist < work->size) {
 			if (!parse_inline(doc,
 			    work->data, sublist))

@@ -213,6 +213,7 @@ struct	rndr_blockhtml {
 struct	rndr_list {
 	enum hlist_fl flags;
 	size_t start;
+	size_t items;
 };
 
 struct	rndr_listitem {

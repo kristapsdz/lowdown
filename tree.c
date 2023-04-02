@@ -327,6 +327,11 @@ rndr(struct lowdown_buf *ob,
 		    HLIST_FL_ORDERED & root->rndr_list.flags ? 
 		    "ordered" : "unordered"))
 			return 0;
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "list items: %zu\n",
+		    root->rndr_list.items))
+			return 0;
 		break;
 	case LOWDOWN_META:
 		if (!rndr_indent(ob, indent + 1))
