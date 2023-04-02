@@ -28,7 +28,7 @@ Now\u\s-34\s+3\d
 \0\fI\u\s-33\s+3\d\fP\0three
 .PP
 hello
-.IP "\(bu" 2
+.IP "\(bu" 3
 world
 .LP
 \0\fI\u\s-34\s+3\d\fP\0four

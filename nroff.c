@@ -83,6 +83,13 @@ struct	bnode {
 	TAILQ_ENTRY(bnode)		 entries;
 };
 
+/*
+ * When creating space for list markers (e.g., "1."), what is the
+ * minimum space used.  This is what's used for bullets and as a
+ * starting width for lists under 10 items.
+ */
+static const size_t NROFF_MIN_LI_MARK_WIDTH = 3;
+
 TAILQ_HEAD(bnodeq, bnode);
 
 /*
@@ -964,12 +971,37 @@ rndr_listitem(struct bnodeq *obq, const struct lowdown_node *n,
 {
 	struct bnode	*bn;
 	const char	*box;
+	size_t		 total = 0, numsize;
+
+	/*
+	 * When indenting for the number of bullet preceding the line of
+	 * text, use 3 spaces as the default, which fits bullets and any
+	 * list numbering up to 10.  For ordered lists beyond 10 in
+	 * total count, increase the spacing accordingly, capping at 10.
+	 */
 
 	if (param->flags & HLIST_FL_ORDERED) {
+		if (n->parent != NULL &&
+		    n->parent->type == LOWDOWN_LIST)
+			total = n->parent->rndr_list.items +
+				(n->parent->rndr_list.start - 1);
+
+		/* Yes, a little ridiculous, but doesn't hurt. */
+
+		numsize = total < 10 ? 0 :
+			total < 100 ? 1 :
+			total < 1000 ? 2 :
+			total < 10000 ? 3 :
+			total < 100000 ? 4 :
+			total < 1000000 ? 5 :
+			total < 10000000 ? 6 :
+			7;
+
+		numsize += NROFF_MIN_LI_MARK_WIDTH;
 		if ((bn = bqueue_block(obq, ".IP")) == NULL)
 			return 0;
 		if (asprintf(&bn->nargs, 
-		    "\"%zu.  \"", param->num) == -1)
+		    "\"%zu.\" %zu", param->num, numsize) == -1)
 			return 0;
 	} else if (param->flags & HLIST_FL_UNORDERED) {
 		if (param->flags & HLIST_FL_CHECKED)
@@ -980,7 +1012,8 @@ rndr_listitem(struct bnodeq *obq, const struct lowdown_node *n,
 			box = "(bu";
 		if ((bn = bqueue_block(obq, ".IP")) == NULL)
 			return 0;
-		if (asprintf(&bn->nargs, "\"\\%s\" 2", box) == -1)
+		if (asprintf(&bn->nargs, "\"\\%s\" %zu",
+		    box, NROFF_MIN_LI_MARK_WIDTH) == -1)
 			return 0;
 	}
 

@@ -25,7 +25,7 @@ two
 three
 .PP
 hello
-.IP "\(bu" 2
+.IP "\(bu" 3
 world
 .FE
 T}
