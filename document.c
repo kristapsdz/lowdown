@@ -2727,7 +2727,8 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 				 orgpre, i, has_next_uli = 0, dli_lines,
 				 has_next_oli = 0, has_next_dli = 0;
 	int			 in_empty = 0, has_block = 0,
-				 in_fence = 0, ff, checked = -1;
+				 in_fence = 0, ff, checked = -1,
+				 has_initial_newline = -1;
 	struct lowdown_node	*n;
 
 	/* Keeping track of the first indentation prefix. */
@@ -2774,9 +2775,15 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 		while (end < size && data[end - 1] != '\n')
 			end++;
 
-		/* Process an empty line. */
+		/*
+		 * Process an empty line.  If this has followed text on
+		 * its own, set has_initial_newline to 1, meaning that
+		 * we've had an empty line following regular text.
+		 */
 
 		if (is_empty(data + beg, end - beg)) {
+			if (has_initial_newline <= 0)
+				has_initial_newline = 1;
 			in_empty = 1;
 			beg = end;
 			dli_lines = 0;
@@ -2838,7 +2845,13 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 		if ((has_next_uli &&
 		     !is_hrule(data + beg + i, end - beg - i)) ||
 		    has_next_oli || has_next_dli) {
-			if (in_empty)
+			/*
+			 * If there's space before the ruler, mark us as
+			 * a block---but only at the top level of
+			 * the list.
+			 */
+
+			if (in_empty && sublist == 0)
 				has_block = 1;
 
 			/*
@@ -2850,6 +2863,8 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 				/*
 				 * If the following item has different
 				 * list type, we end this list.
+				 * If we haven't had a paragraph break,
+				 * mark this as not having a block.
 				 */
 
 				ff = *flags & HLIST_FL_MASK;
@@ -2864,13 +2879,23 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 				    ((ff == HLIST_FL_DEF) &&
 				     (has_next_oli || has_next_uli))) {
 					*flags |= HLIST_LI_END;
-					has_block = 0;
+					if (has_initial_newline < 2)
+						has_block = 0;
 				}
 
 				break;
+			} else if (sublist == 0) {
+				/*
+				 * If we've had an empty line and we're
+				 * at a new list type, mark it as if
+				 * we've seen a paragraph break.
+				 */
+
+				if (has_initial_newline == 1)
+					has_initial_newline = 2;
 			}
 
-			if (!sublist)
+			if (sublist == 0)
 				sublist = work->size;
 		} else if (in_empty && pre == 0) {
 			/*
@@ -2881,7 +2906,20 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 
 			*flags |= HLIST_LI_END;
 			break;
+		} else {
+			/*
+			 * If we haven't had an initial empty line, mark
+			 * that we're still receiving text prior to an
+			 * empty line; otherwise, if we've had an empty
+			 * line, mark that we've had a paragraph break.
+			 */
+
+			if (has_initial_newline == -1)
+				has_initial_newline = 0;
+			if (has_initial_newline == 1)
+				has_initial_newline = 2;
 		}
+
 
 		if (in_empty) {
 			if (!hbuf_putc(work, '\n'))
