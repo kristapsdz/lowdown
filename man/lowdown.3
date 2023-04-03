@@ -878,6 +878,12 @@ The basic
 .Va text
 content for
 .Dv LOWDOWN_NORMAL_TEXT .
+If
+.Va flags
+is set to
+.Dv HTEXT_ESCAPED ,
+the text may be escaped for output, but may not be altered by any smart
+typography or similar (it should be passed as-is).
 .It Va rndr_paragraph
 For
 .Dv LOWDOWN_PARAGRAPH ,

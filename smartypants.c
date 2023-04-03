@@ -315,7 +315,7 @@ smarty_right_wb(const struct lowdown_node *n, size_t pos)
  * of the parse tree, <0 on failure, otherwise return zero.
  */
 static int
-smarty_hbuf(struct lowdown_node *n, size_t *maxn,
+smarty_text(struct lowdown_node *n, size_t *maxn,
 	struct lowdown_buf *b, struct smarty *s)
 {
 	size_t	 i = 0, j, sz;
@@ -328,6 +328,11 @@ smarty_hbuf(struct lowdown_node *n, size_t *maxn,
 	}
 
 	assert(n->type == LOWDOWN_NORMAL_TEXT);
+
+	/* If the text node was escaped, pass it out unchanged. */
+
+	if (n->rndr_normal_text.flags & HTEXT_ESCAPED)
+		return 0;
 
 	for (i = 0; i < b->size; i++) {
 		switch (b->data[i]) {
@@ -421,7 +426,7 @@ smarty_span(struct lowdown_node *root, size_t *maxn,
 	TAILQ_FOREACH(n, &root->children, entries)
 		switch (types[n->type]) {
 		case TYPE_TEXT:
-			c = smarty_hbuf(n, maxn, 
+			c = smarty_text(n, maxn,
 				&n->rndr_normal_text.text, s);
 			if (c < 0)
 				return 0;
@@ -464,7 +469,7 @@ smarty_block(struct lowdown_node *root,
 				return 0;
 			break;
 		case TYPE_TEXT:
-			c = smarty_hbuf(n, maxn, 
+			c = smarty_text(n, maxn,
 				&n->rndr_normal_text.text, &s);
 			if (c < 0)
 				return 0;

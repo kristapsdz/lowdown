@@ -158,26 +158,29 @@ parse_listitem(struct lowdown_buf *, struct lowdown_doc *,
 	char *, size_t, enum hlist_fl *, size_t);
 
 /*
- * Add a node to the parse stack, or retrieve a current node if
- * requesting multiple LOWDOWN_NORMAL_TEXTs in sequence.  Returns the
- * node, initialised to the given type, after adjusting the parse
+ * Add a node to the parse stack or retrieve a current node if
+ * requesting multiple similar LOWDOWN_NORMAL_TEXT in sequence.  Returns
+ * the node, initialised to the given type, after adjusting the parse
  * position.  Returns NULL on memory allocation failure.
  */
 static struct lowdown_node *
-pushnode(struct lowdown_doc *doc, enum lowdown_rndrt t)
+pushnode_full(struct lowdown_doc *doc, enum lowdown_rndrt t, int fl)
 {
 	struct lowdown_node	*n;
 
 	/*
 	 * Special case: if we're pushing a NORMAL_TEXT node, see if one
-	 * already exists and return that.  This means that each push
-	 * for text nodes should be careful to use hbuf_push() instead
-	 * of hbuf_create() when adding text content.
+	 * already exists with the same flags and return that.  This
+	 * means that each push for text nodes should be careful to use
+	 * hbuf_push() instead of hbuf_create() when adding text
+	 * content.
 	 */
 
 	if (t == LOWDOWN_NORMAL_TEXT && doc->current != NULL) {
 		n = TAILQ_LAST(&doc->current->children, lowdown_nodeq);
-		if (n != NULL && n->type == t) {
+		if (n != NULL &&
+		    n->type == LOWDOWN_NORMAL_TEXT &&
+		    n->rndr_normal_text.flags == fl) {
 			doc->depth++;
 			doc->current = n;
 			return n;
@@ -199,6 +202,26 @@ pushnode(struct lowdown_doc *doc, enum lowdown_rndrt t)
 		TAILQ_INSERT_TAIL(&n->parent->children, n, entries);
 	doc->current = n;
 	return n;
+}
+
+/*
+ * Push a new node or, if LOWDOWN_NORMAL_TEXT, retrieve the existing one
+ * if the flags exactly match.
+ */
+static struct lowdown_node *
+pushnode(struct lowdown_doc *doc, enum lowdown_rndrt t)
+{
+	return pushnode_full(doc, t, 0);
+}
+
+/*
+ * Push a new LOWDOWN_NORMAL_TEXT or retrieve the existing one if the
+ * flags exactly match.
+ */
+static struct lowdown_node *
+pushtext(struct lowdown_doc *doc, int flags)
+{
+	return pushnode_full(doc, LOWDOWN_NORMAL_TEXT, flags);
 }
 
 /*
@@ -1047,7 +1070,10 @@ char_codespan(struct lowdown_doc *doc,
 }
 
 /*
- * '\\' backslash escape
+ * '\\' backslash escaped text.
+ * Escaped text isn't handled by smart typography, although it must be
+ * escaped for output.  Mark it as HTEXT_ESCAPED to make sure that we
+ * don't use smart typography on the node.
  */
 static ssize_t
 char_escape(struct lowdown_doc *doc,
@@ -1091,14 +1117,16 @@ char_escape(struct lowdown_doc *doc,
 
 		if (strchr(escape_chars, data[1]) == NULL)
 			return 0;
-		if ((n = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
+		if ((n = pushtext(doc, HTEXT_ESCAPED)) == NULL)
 			return -1;
+		n->rndr_normal_text.flags = HTEXT_ESCAPED;
 		if (!hbuf_push(&n->rndr_normal_text.text, data + 1, 1))
 			return -1;
 		popnode(doc, n);
 	} else if (size == 1) {
-		if ((n = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
+		if ((n = pushtext(doc, HTEXT_ESCAPED)) == NULL)
 			return -1;
+		n->rndr_normal_text.flags = HTEXT_ESCAPED;
 		if (!hbuf_push(&n->rndr_normal_text.text, data, 1))
 			return -1;
 		popnode(doc, n);

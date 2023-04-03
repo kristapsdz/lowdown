@@ -155,6 +155,8 @@ struct	rndr_paragraph {
 };
 
 struct	rndr_normal_text {
+	int		   flags;
+#define	HTEXT_ESCAPED	   0x01
 	struct lowdown_buf text;
 };
 
