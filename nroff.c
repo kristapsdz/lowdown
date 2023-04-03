@@ -742,12 +742,21 @@ rndr_blockcode(const struct nroff *st, struct bnodeq *obq,
 }
 
 static int
-rndr_definition_title(struct bnodeq *obq, struct bnodeq *bq)
+rndr_definition_title(const struct nroff *st, struct bnodeq *obq,
+     struct bnodeq *bq)
 {
+	char	 buf[32];
 
-	if (bqueue_block(obq, ".LP") == NULL)
+	snprintf(buf, sizeof(buf),
+		".TP %zu", NROFF_MIN_LI_MARK_WIDTH);
+
+	if (st->man && bqueue_block(obq, buf) == NULL)
+		return 0;
+	else if (!st->man && bqueue_block(obq, ".LP") == NULL)
 		return 0;
 	TAILQ_CONCAT(obq, bq, entries);
+	if (st->man && bqueue_span(obq, "\n") == NULL)
+		return 0;
 	return 1;
 }
 
@@ -755,32 +764,35 @@ static int
 rndr_definition_data(const struct nroff *st, struct bnodeq *obq,
     struct bnodeq *bq)
 {
-	/*
-	 * The IP creates an empty vertical space til I figure out a
-	 * better way to do hanging lists, so account for it by backing
-	 * up first.
-	 *
-	 * XXX: this produces different results on mandoc and groff as
-	 * of 2022-02-19: mandoc backs up one space, while groff backs
-	 * up two.  The groff behaviour is what we want, so that the
-	 * text is flush on the next line, but this is good enough.
-	 */
 
-	if (bqueue_block(obq, ".if n \\\n.sp -1v") == NULL)
-		return 0;
-	if (bqueue_block(obq, ".if t \\\n.sp -0.25v") == NULL)
-		return 0;
+	if (!st->man) {
+		/*
+		 * The IP creates an empty vertical space til I figure
+		 * out a better way to do hanging lists, so account for
+		 * it by backing up first.
+		 *
+		 * XXX: this produces different results on mandoc and
+		 * groff as of 2022-02-19: mandoc backs up one space,
+		 * while groff backs up two.  The groff behaviour is
+		 * what we want, so that the text is flush on the next
+		 * line, but this is good enough.
+		 */
 
-	/*
-	 * The \(PI register exists in -ms for the paragraph indent.
-	 * Use it for -ms and hard-code 5n (the default for -ms) in
-	 * -man.
-	 */
+		if (bqueue_block(obq, ".if n \\\n.sp -1v") == NULL)
+			return 0;
+		if (bqueue_block(obq, ".if t \\\n.sp -0.25v") == NULL)
+			return 0;
 
-	if (st->man && bqueue_block(obq, ".IP \"\" 5n") == NULL)
-		return 0;
-	if (!st->man && bqueue_block(obq, ".IP \"\" \\*(PI") == NULL)
-		return 0;
+		/*
+		 * The \(PI register exists in -ms for the paragraph
+		 * indent.  Use it for -ms and hard-code 5n (the default
+		 * for -ms) in
+		 * -man.
+		 */
+
+		if (bqueue_block(obq, ".IP \"\" \\*(PI") == NULL)
+			return 0;
+	}
 
 	/* Strip out leading paragraphs. */
 
@@ -1799,7 +1811,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_definition_data(st, obq, &tmpbq);
 		break;
 	case LOWDOWN_DEFINITION_TITLE:
-		rc = rndr_definition_title(obq, &tmpbq);
+		rc = rndr_definition_title(st, obq, &tmpbq);
 		break;
 	case LOWDOWN_DOC_HEADER:
 		rc = rndr_doc_header(st, obq, mq);

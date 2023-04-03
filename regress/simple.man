@@ -172,29 +172,14 @@ A horizontal rule follows.
 \l'2i'
 .LP
 Here\(cqs a definition list:
-.LP
+.TP 3
 apples
-.if n \
-.sp -1v
-.if t \
-.sp -0.25v
-.IP "" 5n
 Good for making applesauce.
-.LP
+.TP 3
 oranges
-.if n \
-.sp -1v
-.if t \
-.sp -0.25v
-.IP "" 5n
 Citrus!
-.LP
+.TP 3
 tomatoes
-.if n \
-.sp -1v
-.if t \
-.sp -0.25v
-.IP "" 5n
 There\(cqs no \(lqe\(rq in tomatoe.
 .LP
 Again, text is indented 4 spaces. (Put a blank line between each
