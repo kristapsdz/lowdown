@@ -7,19 +7,19 @@ Paragraphs are separated by a blank line.
 .PP
 2nd paragraph. \fIItalic\fR, \fBbold\fR, and \fCmonospace\fR. Itemized lists
 look like:
-.IP "\(bu" 3
+.IP "\(bu" 5
 this one
 .if n \
 .sp -1
 .if t \
 .sp -0.25v
-.IP "\(bu" 3
+.IP "\(bu" 5
 that one
 .if n \
 .sp -1
 .if t \
 .sp -0.25v
-.IP "\(bu" 3
+.IP "\(bu" 5
 the other one
 .LP
 Note that \(em not considering the asterisk \(em the actual text
@@ -42,19 +42,19 @@ An h2 header
 .pdfhref M an-h2-header
 .LP
 Here\(cqs a numbered list:
-.IP "1." 3
+.IP "1." 5
 first item
 .if n \
 .sp -1
 .if t \
 .sp -0.25v
-.IP "2." 3
+.IP "2." 5
 second item
 .if n \
 .sp -1
 .if t \
 .sp -0.25v
-.IP "3." 3
+.IP "3." 5
 third item
 .LP
 Note again how the actual text starts at 4 columns in (4 characters
@@ -97,27 +97,27 @@ An h3 header
 .pdfhref M an-h3-header
 .LP
 Now a nested list:
-.IP "1." 3
+.IP "1." 5
 First, get these ingredients:
 .RS
-.IP "\(bu" 3
+.IP "\(bu" 5
 carrots
 .if n \
 .sp -1
 .if t \
 .sp -0.25v
-.IP "\(bu" 3
+.IP "\(bu" 5
 celery
 .if n \
 .sp -1
 .if t \
 .sp -0.25v
-.IP "\(bu" 3
+.IP "\(bu" 5
 lentils
 .RE
-.IP "2." 3
+.IP "2." 5
 Boil some water.
-.IP "3." 3
+.IP "3." 5
 Dump everything in the pot and follow
 this algorithm:
 .LP

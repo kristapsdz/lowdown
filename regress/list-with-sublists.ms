@@ -1,9 +1,9 @@
-.IP "\(bu" 3
+.IP "\(bu" 5
 list
 .IP
 with paragraph
 .RS
-.IP "\(bu" 3
+.IP "\(bu" 5
 inner list
 .IP
 inner para

@@ -49,6 +49,7 @@ struct 	nroff {
 	enum nfont		  fonts[NFONT__MAX]; /* see bqueue_font() */
 	struct bnodeq		**foots; /* footnotes */
 	size_t			  footsz; /* footnote size */
+	size_t			  indent; /* indentation width */
 };
 
 enum	bscope {
@@ -82,13 +83,6 @@ struct	bnode {
 #define	BFONT_RED			 0x02
 	TAILQ_ENTRY(bnode)		 entries;
 };
-
-/*
- * When creating space for list markers (e.g., "1."), what is the
- * minimum space used.  This is what's used for bullets and as a
- * starting width for lists under 10 items.
- */
-static const size_t NROFF_MIN_LI_MARK_WIDTH = 3;
 
 TAILQ_HEAD(bnodeq, bnode);
 
@@ -747,8 +741,7 @@ rndr_definition_title(const struct nroff *st, struct bnodeq *obq,
 {
 	char	 buf[32];
 
-	snprintf(buf, sizeof(buf),
-		".TP %zu", NROFF_MIN_LI_MARK_WIDTH);
+	snprintf(buf, sizeof(buf), ".TP %zu", st->indent);
 
 	if (st->man && bqueue_block(obq, buf) == NULL)
 		return 0;
@@ -950,8 +943,9 @@ rndr_link(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 }
 
 static int
-rndr_listitem(struct bnodeq *obq, const struct lowdown_node *n,
-	struct bnodeq *bq, const struct rndr_listitem *param)
+rndr_listitem(const struct nroff *st, struct bnodeq *obq,
+	const struct lowdown_node *n, struct bnodeq *bq,
+	const struct rndr_listitem *param)
 {
 	struct bnode	*bn;
 	const char	*box;
@@ -959,9 +953,8 @@ rndr_listitem(struct bnodeq *obq, const struct lowdown_node *n,
 
 	/*
 	 * When indenting for the number of bullet preceding the line of
-	 * text, use 3 spaces as the default, which fits bullets and any
-	 * list numbering up to 10.  For ordered lists beyond 10 in
-	 * total count, increase the spacing accordingly, capping at 10.
+	 * text, use "indent" spaces as the default.  For ordered lists
+	 * stretching beyond the indent size, enlarge as necessary.
 	 */
 
 	if (param->flags & HLIST_FL_ORDERED) {
@@ -972,16 +965,18 @@ rndr_listitem(struct bnodeq *obq, const struct lowdown_node *n,
 
 		/* Yes, a little ridiculous, but doesn't hurt. */
 
-		numsize = total < 10 ? 0 :
-			total < 100 ? 1 :
-			total < 1000 ? 2 :
-			total < 10000 ? 3 :
-			total < 100000 ? 4 :
-			total < 1000000 ? 5 :
-			total < 10000000 ? 6 :
-			7;
+		numsize = total < 10 ? 3 :
+			total < 100 ? 4 :
+			total < 1000 ? 5 :
+			total < 10000 ? 6 :
+			total < 100000 ? 7 :
+			total < 1000000 ? 8 :
+			total < 10000000 ? 9 :
+			10;
 
-		numsize += NROFF_MIN_LI_MARK_WIDTH;
+		if (numsize < st->indent)
+			numsize = st->indent;
+
 		if ((bn = bqueue_block(obq, ".IP")) == NULL)
 			return 0;
 		if (asprintf(&bn->nargs, 
@@ -997,7 +992,7 @@ rndr_listitem(struct bnodeq *obq, const struct lowdown_node *n,
 		if ((bn = bqueue_block(obq, ".IP")) == NULL)
 			return 0;
 		if (asprintf(&bn->nargs, "\"\\%s\" %zu",
-		    box, NROFF_MIN_LI_MARK_WIDTH) == -1)
+		    box, st->indent) == -1)
 			return 0;
 	}
 
@@ -1802,7 +1797,8 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_list(st, obq, n, &tmpbq);
 		break;
 	case LOWDOWN_LISTITEM:
-		rc = rndr_listitem(obq, n, &tmpbq, &n->rndr_listitem);
+		rc = rndr_listitem(st,
+			obq, n, &tmpbq, &n->rndr_listitem);
 		break;
 	case LOWDOWN_PARAGRAPH:
 		rc = rndr_paragraph(st, n, obq, &tmpbq);
@@ -1954,6 +1950,14 @@ lowdown_nroff_new(const struct lowdown_opts *opts)
 
 	p->flags = opts != NULL ? opts->oflags : 0;
 	p->man = opts != NULL && opts->type == LOWDOWN_MAN;
+
+	/*
+	 * Set a default indentation.  For -man, we use 3 because we
+	 * want to be efficient with page width.  For -ms, use 5 because
+	 * that'll usually be used for PDF with a variable-width font.
+	 */
+
+	p->indent = p->man ? 3 : 5;
 	return p;
 }
 
