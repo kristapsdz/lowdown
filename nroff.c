@@ -752,10 +752,12 @@ rndr_definition_title(const struct nroff *st, struct bnodeq *obq,
 
 	if (st->man && bqueue_block(obq, buf) == NULL)
 		return 0;
-	else if (!st->man && bqueue_block(obq, ".LP") == NULL)
+	else if (!st->man && bqueue_block(obq, ".XP") == NULL)
 		return 0;
 	TAILQ_CONCAT(obq, bq, entries);
 	if (st->man && bqueue_span(obq, "\n") == NULL)
+		return 0;
+	else if (!st->man && bqueue_block(obq, ".br") == NULL)
 		return 0;
 	return 1;
 }
@@ -764,36 +766,6 @@ static int
 rndr_definition_data(const struct nroff *st, struct bnodeq *obq,
     struct bnodeq *bq)
 {
-
-	if (!st->man) {
-		/*
-		 * The IP creates an empty vertical space til I figure
-		 * out a better way to do hanging lists, so account for
-		 * it by backing up first.
-		 *
-		 * XXX: this produces different results on mandoc and
-		 * groff as of 2022-02-19: mandoc backs up one space,
-		 * while groff backs up two.  The groff behaviour is
-		 * what we want, so that the text is flush on the next
-		 * line, but this is good enough.
-		 */
-
-		if (bqueue_block(obq, ".if n \\\n.sp -1v") == NULL)
-			return 0;
-		if (bqueue_block(obq, ".if t \\\n.sp -0.25v") == NULL)
-			return 0;
-
-		/*
-		 * The \(PI register exists in -ms for the paragraph
-		 * indent.  Use it for -ms and hard-code 5n (the default
-		 * for -ms) in
-		 * -man.
-		 */
-
-		if (bqueue_block(obq, ".IP \"\" \\*(PI") == NULL)
-			return 0;
-	}
-
 	/* Strip out leading paragraphs. */
 
 	bqueue_strip_paras(bq);
