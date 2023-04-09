@@ -176,8 +176,8 @@ popped node&#8217;s hash.
 <li>If the no candidates were found, enqueue the node&#8217;s children into
 the priority queue.</li>
 <li>A a candidate was selected, mark all of its subtree nodes as
-matching the corresponding nodes in the old tree (&#8220;propogate
-down&#8221;), then mark ancestor nodes similarly (&#8220;propogate up&#8221;).
+matching the corresponding nodes in the old tree (&#8220;propagate
+down&#8221;), then mark ancestor nodes similarly (&#8220;propagate up&#8221;).
 (<a href="https://github.com/kristapsdz/lowdown/blob/master/diff.c">diff.c</a>,
 <code>match_up()</code>, <code>match_down()</code>)</li>
 </ol></li>
@@ -235,15 +235,15 @@ weight of the sub-tree as defined in the paper.</p>
 node is chosen.  Proximity is defined by the node identifier, which is
 its prefix order in the parse tree.</p>
 
-<h3 id="propogate-up">&#8220;Propogate up&#8221;</h3>
+<h3 id="propagate-up">&#8220;Propagate up&#8221;</h3>
 
-<p>When propogating a match upward, the distance upward is bound depending
+<p>When propagating a match upward, the distance upward is bound depending
 on the matched sub-tree as defined in the paper.  This makes it so that
 &#8220;small&#8221; similarities (such as text) don&#8217;t erroneously match two larger
 sub-trees that are otherwise different.  Upward matches occur while the
 nodes&#8217; labels are the same, including attributes (e.g., link text).</p>
 
-<p>I did modify the algorithm to propogate upward &#8220;for free&#8221; through
+<p>I did modify the algorithm to propagate upward &#8220;for free&#8221; through
 similar singleton nodes, even if it means going beyond the maximum
 number allowed by the sub-tree weight.</p>
 
@@ -251,7 +251,7 @@ number allowed by the sub-tree weight.</p>
 
 <p>The <a href="https://kristaps.bsd.lv/lowdown/lowdown.1.html">lowdown-diff(1)</a>
 algorithm has two optimisations, both lightly derived from the paper:
-top-down and bottom-up propogation.</p>
+top-down and bottom-up propagation.</p>
 
 <h4 id="top-down">Top-down</h4>
 
@@ -264,8 +264,8 @@ difference downward in the tree.</p>
 
 <h4 id="bottom-up">Bottom-up</h4>
 
-<p>In the bottom-up propogation, the weight of any given sub-tree is used
-to compute how high a match will propogate.  I extend the paper&#8217;s
+<p>In the bottom-up propagation, the weight of any given sub-tree is used
+to compute how high a match will propagate.  I extend the paper&#8217;s
 version optimisation by looking at the cumulative weight of matching
 children.</p>
 
@@ -285,7 +285,7 @@ straightforward.  It uses a recursive merge algorithm starting at the
 root node of the new tree and the root node of the old tree.</p>
 
 <ol>
-<li>The invariant is that the current node is matched by the corresonding
+<li>The invariant is that the current node is matched by the corresponding
 node in the old tree.</li>
 <li>First, step through child nodes in the old tree.  Mark as deleted all
 nodes not being matched to the new tree.</li>
