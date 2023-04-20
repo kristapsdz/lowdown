@@ -32,7 +32,7 @@ written like so.
 They can span multiple paragraphs,
 if you like.
 .RE
-.LP
+.PP
 Use 3 dashes for an em-dash. Use 2 dashes for ranges (ex., \(lqit\(cqs all
 in chapters 12\(en14\(rq). Three dots \[u2026] will be converted to an ellipsis.
 Unicode is supported. ☺
@@ -185,7 +185,7 @@ T}|T{
 transparent
 T}
 .TE
-.LP
+.PP
 Table: Shoes, their sizes, and what they\(cqre made of
 .PP
 (The above is the caption for the table.)

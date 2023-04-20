@@ -111,8 +111,7 @@ Here's a link to \href{http://foo.bar}{a website}, to a \href{local-doc.html}{lo
 doc}, and to a \hyperlink{an-h2-header}{section heading in the current
 doc}. Here's a footnote \footnote[1]{
 Footnote text goes here.
-}
-.
+}.
 
 Tables can look like this:
 

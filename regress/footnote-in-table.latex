@@ -3,13 +3,11 @@ first\footnote[1]{
 one
 }
 
-
 \begin{longtable}[]{ll}
 a & c  \\
 9 & foo\footnote[2]{
 two
-}
-\footnote[3]{
+}\footnote[3]{
 three
 
 hello
@@ -18,11 +16,9 @@ hello
 \itemsep -0.2em
 \item world
 \end{itemize}
-}
-  \\
+}  \\
 \end{longtable}
 
 Now\footnote[4]{
 four
 }
-
