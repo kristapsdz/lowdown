@@ -672,7 +672,7 @@ rndr_footnote_ref(struct lowdown_buf *ob,
 		return 0;
 	if (!hbuf_putb(ob, content))
 		return 0;
-	return HBUF_PUTSL(ob, "}\n");
+	return HBUF_PUTSL(ob, "}");
 }
 
 static int
