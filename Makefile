@@ -3,8 +3,8 @@
 
 include Makefile.configure
 
-VERSION		 = 1.0.0
-LIBVER		 = 1
+VERSION		 = 1.0.1
+LIBVER		 = 2
 OBJS		 = autolink.o \
 		   buffer.o \
 		   diff.o \
@@ -279,7 +279,7 @@ diff.diff.pdf: diff.md diff.old.md lowdown-diff
 
 $(HTMLS): versions.xml lowdown
 
-.md.xml:
+.md.xml: lowdown
 	( echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" ; \
 	  echo "<article data-sblg-article=\"1\">" ; \
 	  ./lowdown $< ; \

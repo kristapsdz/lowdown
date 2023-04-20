@@ -1361,7 +1361,7 @@
 		<header>
 			<h1>1.0.1</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2023-04-02">2023-04-02</time>
+			<time datetime="2023-04-20">2023-04-20</time>
 		</header>
 		<aside>
 			<p>
@@ -1393,6 +1393,8 @@
 				For <b>-tman</b> output, normalise list marker widths (unordered or
 				ordered) to three spaces by default, increasing for ordered lists
 				depending on the number of entries.  For <b>-tms</b>, it's five.
+				Make other small cleanups to <b>-tms</b>, making sure that paragraph
+				indentation looks the same as with <b>-tlatex</b>.
 			</p>
 			<p>
 				Fix that escaped text (e.g., \-\-foo) is not changed by the smart
