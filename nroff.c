@@ -1179,7 +1179,6 @@ rndr_table(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq)
 	if (bqueue_block(obq, "tab(|) expand allbox;") == NULL)
 		return 0;
 	TAILQ_CONCAT(obq, bq, entries);
-	st->post_para = 1;
 	return bqueue_block(obq, ".TE") != NULL;
 }
 
