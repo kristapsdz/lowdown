@@ -1010,12 +1010,10 @@ rndr_listitem(const struct nroff *st, struct bnodeq *obq,
 	    (n->rndr_listitem.flags & HLIST_FL_DEF))
 		return 1;
 
-	if (TAILQ_NEXT(n, entries) != NULL) {
-		if (bqueue_block(obq, ".if n \\\n.sp -1") == NULL)
-			return 0;
-		if (bqueue_block(obq, ".if t \\\n.sp -0.25v\n") == NULL)
-			return 0;
-	}
+	if (TAILQ_NEXT(n, entries) != NULL &&
+	    (bqueue_block(obq, ".if n \\\n.sp -1") == NULL ||
+	     bqueue_block(obq, ".if t \\\n.sp -0.25v\n") == NULL))
+		return 0;
 
 	return 1;
 }
