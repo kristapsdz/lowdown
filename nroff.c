@@ -1710,7 +1710,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	const struct lowdown_node *n, struct bnodeq *obq)
 {
 	const struct lowdown_node	*child;
-	int				 rc = 1;
+	int				 rc = 1, post_para = st->post_para;
 	enum nfont			 fonts[NFONT__MAX];
 	struct bnodeq			 tmpbq;
 	struct bnode			*bn;
@@ -1840,6 +1840,13 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		break;
 	case LOWDOWN_FOOTNOTE:
 		rc = rndr_footnote_ref(st, obq, &tmpbq);
+		/*
+		 * Restore what subsequent paragraphs should do.  This
+		 * macro will create output that's delayed in being
+		 * shown.  It might set post_para, which we don't want
+		 * to propogate to the actual output that will follow.
+		 */
+		st->post_para = post_para;
 		break;
 	case LOWDOWN_RAW_HTML:
 		rc = rndr_raw_html(st, obq, &n->rndr_raw_html);
