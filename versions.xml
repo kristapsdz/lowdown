@@ -1357,4 +1357,52 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>1.0.1</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2023-04-02">2023-04-02</time>
+		</header>
+		<aside>
+			<p>
+				Numerous build and configuration improvements
+				(via <a href="https://github.com/kristapsdz/oconfigure">oconfigure</a>)
+				for building into WASI targets and on Mac OS X.
+			</p>
+			<p>
+				Add <b>-L</b> for listing all metadata keys.
+			</p>
+			<p>
+				Some fixes to smart typography around hard linebreaks.  These aren't
+				likely to affect normal documents.
+			</p>
+			<p>
+				Recognise void HTML elements as block elements.
+			</p>
+			<p>
+				Switch between types (e.g., unordered to ordered) instead of
+				continuing with the current list type.
+				Fix parsing of block versus non-block lists when switching between
+				list types.
+				Fix parsing of block versus non-block lists when sublists contain
+				block elements, but top-level lists don't.
+				The Markdown spec isn't clear on how to accept these instances, so
+				use <a href="https://pandoc.org">pandoc</a> as a guiding tool.
+			</p>
+			<p>
+				For <b>-tman</b> output, normalise list marker widths (unordered or
+				ordered) to three spaces by default, increasing for ordered lists
+				depending on the number of entries.  For <b>-tms</b>, it's five.
+			</p>
+			<p>
+				Fix that escaped text (e.g., \-\-foo) is not changed by the smart
+				typography formatter.
+			</p>
+			<p>
+				Use <code>TP</code> in <b>-tman</b> for definition lists.  To align
+				with existing lists, use a subsequent paragraph offset of three.
+				Similarly, use <code>XP</code> for <b>-tms</b>.
+			</p>
+		</aside>
+	</article>
 </articles>
