@@ -37,7 +37,7 @@
 /*
  * Make sure these are larger than enum hlist_fl.
  */
-#define HLIST_LI_END	(1 << 6) /* End of list item. */
+#define HLIST_LI_END	(1 << 7) /* End of list item. */
 
 /*
  * Mask of all list item types.
@@ -2948,6 +2948,17 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 
 	if (has_block)
 		*flags |= HLIST_FL_BLOCK;
+
+#if 0
+	/*
+	 * If we're in a block but we weren't offset by a newline (e.g.,
+	 * by having a list immediately following the list instead of
+	 * separated by a newline), then mark this as a "semiblock" that
+	 * is a block without whitespace.  TODO: this still needs work.
+	 */
+	if (has_block && has_initial_newline < 2)
+		*flags |= HLIST_FL_SEMIBLOCK;
+#endif
 
 	if ((n = pushnode(doc, LOWDOWN_LISTITEM)) == NULL)
 		goto err;

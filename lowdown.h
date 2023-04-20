@@ -125,6 +125,7 @@ enum	hlist_fl {
 	HLIST_FL_DEF = (1 << 3), /* <dl> list item */
 	HLIST_FL_CHECKED = (1 << 4), /* <li> with checked box */
 	HLIST_FL_UNCHECKED = (1 << 5), /* <li> with unchecked box */
+	HLIST_FL_SEMIBLOCK = (1 << 6), /* TODO */
 };
 
 /*
