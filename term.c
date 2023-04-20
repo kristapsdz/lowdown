@@ -490,7 +490,7 @@ rndr_buf_startline_prefixes(struct term *term,
 	 * The "sinner" value is temporary for only this function.
 	 * This allows us to set a temporary style mask that only
 	 * applies to the prefix data.
-	 * Otherwise "s" propogates to the subsequent line.
+	 * Otherwise "s" propagates to the subsequent line.
 	 */
 
 	rndr_node_style(s, n);

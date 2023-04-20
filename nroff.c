@@ -93,7 +93,7 @@ static const size_t NROFF_MIN_LI_MARK_WIDTH = 3;
 TAILQ_HEAD(bnodeq, bnode);
 
 /*
- * Escape unsafe text into roff output such that no roff fetaures are
+ * Escape unsafe text into roff output such that no roff features are
  * invoked by the text (macros, escapes, etc.).
  * If "oneline" is non-zero, newlines are replaced with spaces.
  * If "literal", doesn't strip leading space.

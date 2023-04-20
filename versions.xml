@@ -116,7 +116,7 @@
 				I've described the problems in the <q>Hacking</q> section of the web site.
 			</p>
 			<p>
-				Disable the <q>semantic quotes</q> (where in HTML mode qoutes would be rendered as
+				Disable the <q>semantic quotes</q> (where in HTML mode quotes would be rendered as
 				<code>&lt;q&gt;</code>) and <q>underline as emphasis</q>, which rendered emphasis as an underline.
 				The underlines aren't easy in <b>-Tms</b> and <b>-Tman</b> and presentationally confusing (is it a link?) in
 				<b>-Thtml</b>.
@@ -545,7 +545,7 @@
 				terminal.  This is inspired by 
 				<a href="https://github.com/charmbracelet/glow">glow</a>.
 				This output is still experimental and the style may currently not be
-				overriden.
+				overridden.
 			</p>
 			<p>
 				Add missing documentation to <a
@@ -1005,7 +1005,7 @@
 			<p>
 				Introduce <b>-m</b> and <b>-M</b>, which allow metadata to be
 				provided on the command line.
-				Metadata keys are first looked for in <b>-m</b>, overriden by what's
+				Metadata keys are first looked for in <b>-m</b>, overridden by what's
 				in the document, and those overridden by what's in <b>-M</b>.
 			</p>
 			<p>

@@ -181,8 +181,8 @@ begins with a short sanitisation pass.
     4. If the no candidates were found, enqueue the node's children into
        the priority queue.
     5. A a candidate was selected, mark all of its subtree nodes as
-       matching the corresponding nodes in the old tree ("propogate
-       down"), then mark ancestor nodes similarly ("propogate up").
+       matching the corresponding nodes in the old tree ("propagate
+       down"), then mark ancestor nodes similarly ("propagate up").
        ([diff.c](https://github.com/kristapsdz/lowdown/blob/master/diff.c),
        `match_up()`, `match_down()`)
 
@@ -240,15 +240,15 @@ In the event of similar optimality, the node "closest" to the current
 node is chosen.  Proximity is defined by the node identifier, which is
 its prefix order in the parse tree.
 
-### "Propogate up"
+### "Propagate up"
 
-When propogating a match upward, the distance upward is bound depending
+When propagating a match upward, the distance upward is bound depending
 on the matched sub-tree as defined in the paper.  This makes it so that
 "small" similarities (such as text) don't erroneously match two larger
 sub-trees that are otherwise different.  Upward matches occur while the
 nodes' labels are the same, including attributes (e.g., link text).
 
-I did modify the algorithm to propogate upward "for free" through
+I did modify the algorithm to propagate upward "for free" through
 similar singleton nodes, even if it means going beyond the maximum
 number allowed by the sub-tree weight.
 
@@ -256,7 +256,7 @@ number allowed by the sub-tree weight.
 
 The [lowdown-diff(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html)
 algorithm has two optimisations, both lightly derived from the paper:
-top-down and bottom-up propogation.
+top-down and bottom-up propagation.
 
 #### Top-down
 
@@ -271,8 +271,8 @@ difference downward in the tree.
 
 #### Bottom-up
 
-In the bottom-up propogation, the weight of any given sub-tree is used
-to compute how high a match will propogate.  I extend the paper's
+In the bottom-up propagation, the weight of any given sub-tree is used
+to compute how high a match will propagate.  I extend the paper's
 version optimisation by looking at the cumulative weight of matching
 children.
 
@@ -291,7 +291,7 @@ The merging phase, which is not described in the paper, is very
 straightforward.  It uses a recursive merge algorithm starting at the
 root node of the new tree and the root node of the old tree.
 
-1. The invariant is that the current node is matched by the corresonding
+1. The invariant is that the current node is matched by the corresponding
    node in the old tree.
 2. First, step through child nodes in the old tree.  Mark as deleted all
    nodes not being matched to the new tree.

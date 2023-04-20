@@ -521,7 +521,7 @@ match_singleton(const struct lowdown_node *n)
 }
 
 /*
- * Algorithm to "propogate up" according to "Phase 3" of sec. 5.2.
+ * Algorithm to "propagate up" according to "Phase 3" of sec. 5.2.
  * This also uses the heuristic described in "Tuning" for how many
  * levels to search upward.
  * I augment this by making singleton children pass upward.
@@ -580,7 +580,7 @@ match_up(struct xnode *xnew, struct xmap *xnewmap,
 }
 
 /*
- * Algorithm that "propogates down" according to "Phase 3" of sec. 5.2.
+ * Algorithm that "propagates down" according to "Phase 3" of sec. 5.2.
  * This (recursively) makes sure that a matched tree has all of the
  * subtree nodes also matched.
  */
