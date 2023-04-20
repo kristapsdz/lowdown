@@ -798,7 +798,6 @@ rndr_blockquote(struct nroff *st,
 	if (bqueue_block(obq, ".RS") == NULL)
 		return 0;
 	TAILQ_CONCAT(obq, bq, entries);
-	st->post_para = 1;
 	return bqueue_block(obq, ".RE") != NULL;
 }
 
