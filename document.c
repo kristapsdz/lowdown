@@ -4361,36 +4361,32 @@ err:
 }
 
 /*
- * Parse a MMD meta-data value.
- * If the value is a single line, both leading and trailing whitespace
- * will be stripped.
- * If the value spans multiple lines, leading whitespace from the first
- * line will be stripped and any following lines will be taken as is.
- * Returns a pointer to the value and the length of the value will be
- * written to "len";
+ * Parse a MMD meta-data value.  If the value spans multiple lines,
+ * leading whitespace from the first line will be stripped and any
+ * following lines will be taken as is.  Returns a pointer to the value
+ * and the length of the value will be written to "len";
  */
 static const char *
 parse_metadata_val(const char *data, size_t sz, size_t *len)
 {
 	const char	*val;
-	size_t		 i, nlines = 0, nspaces = 0, peek = 0;
+	size_t		 i, nlines = 0, peek = 0;
 	int		 startws;
 
 	/* Skip leading whitespace. */
 
 	i = countspaces(data, 0, sz, 0);
-
 	val = data;
 	sz -= i;
 
-	/* Find end of line and count trailing whitespace. */
+	/* Find end of line. */
 
 	for (i = 0; i < sz && data[i] != '\n'; i++)
-		if (data[i] == ' ')
-			nspaces++;
-		else
-			nspaces = 0;
+		continue;
+
 	*len = i;
+	if (i < sz && data[i] == '\n')
+		nlines++;
 
 	/*
 	 * Iterate through zero or more following multilines.
@@ -4442,11 +4438,6 @@ parse_metadata_val(const char *data, size_t sz, size_t *len)
 
 	if (i == sz && peek)
 		*len += peek + 1;
-
-	/* Only remove trailing whitespace from a single line. */
-
-	if (nlines == 0)
-		*len -= nspaces;
 
 	return val;
 }
