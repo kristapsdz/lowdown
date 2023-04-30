@@ -627,6 +627,32 @@ is_escaped(const char *data, size_t loc)
 	return (loc - i) % 2;
 }
 
+static size_t
+is_metadata_block(const char *data, size_t sz)
+{
+	size_t		 i;
+
+	if (sz == 0)
+		return 0;
+	if (!isalnum((unsigned char)data[0]))
+		return 0;
+
+	for (i = 0; i < sz; i++) {
+		if (i < sz + 1 &&
+		    data[i] == '\n' &&
+		    data[i + 1] == '\n')
+			return i + 2;
+		if (i < sz + 3 &&
+		    data[i] == '\r' &&
+		    data[i + 1] == '\n' &&
+		    data[i + 2] == '\r' &&
+		    data[i + 3] == '\n') {
+			return i + 4;
+		}
+	}
+	return 0;
+}
+
 /*
  * Looks for the next emph char, skipping other constructs.
  */
@@ -4347,7 +4373,7 @@ static const char *
 parse_metadata_val(const char *data, size_t sz, size_t *len)
 {
 	const char	*val;
-	size_t		 i, nlines = 0, nspaces, peek = 0;
+	size_t		 i, nlines = 0, nspaces = 0, peek = 0;
 	int		 startws;
 
 	/* Skip leading whitespace. */
@@ -4359,7 +4385,7 @@ parse_metadata_val(const char *data, size_t sz, size_t *len)
 
 	/* Find end of line and count trailing whitespace. */
 
-	for (i = nspaces = 0; i < sz && data[i] != '\n'; i++)
+	for (i = 0; i < sz && data[i] != '\n'; i++)
 		if (data[i] == ' ')
 			nspaces++;
 		else
@@ -4432,7 +4458,7 @@ parse_metadata_val(const char *data, size_t sz, size_t *len)
  * Returns 0 if this is not metadata, >0 of it is, <0 on failure.
  */
 static int
-parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
+parse_metadata_mmd(struct lowdown_doc *doc, const char *data, size_t sz)
 {
 	size_t	 	 	 i, j, pos = 0, vsz, keysz;
 	struct lowdown_meta	*m;
@@ -4440,7 +4466,12 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 	const char		*val, *key;
 	char			*cp, *buf;
 
-	if (sz == 0 || data[sz - 1] != '\n')
+	/* Strip trailing newlines. */
+
+	while (sz && (data[sz - 1] == '\n' || data[sz - 1] == '\r'))
+		sz--;
+
+	if (sz == 0)
 		return 0;
 
 	/*
@@ -4457,17 +4488,13 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 	if (pos == sz || data[pos] == '\n')
 		return 0;
 
-	/*
-	 * Put the metadata into the document's metaq because we might
-	 * set variables.
-	 */
+	/* Extract all keys and values... */
 
 	for (pos = 0; pos < sz; ) {
 		key = &data[pos];
 		for (i = pos; i < sz; i++)
 			if (data[i] == ':')
 				break;
-
 		keysz = i - pos;
 		if ((cp = buf = malloc(keysz + 1)) == NULL)
 			return -1;
@@ -4507,11 +4534,14 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 		TAILQ_FOREACH(n, &doc->current->children, entries) {
 			assert(n->type == LOWDOWN_META);
 			if (hbuf_streq(&n->rndr_meta.key, buf)) {
-				TAILQ_REMOVE(&doc->current->children, n, entries);
+				TAILQ_REMOVE(&doc->current->children,
+				    n, entries);
 				lowdown_node_free(n);
 				break;
 			}
 		}
+
+		/* Create a meta node with the key. */
 
 		if ((n = pushnode(doc, LOWDOWN_META)) == NULL) {
 			free(buf);
@@ -4522,6 +4552,8 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 			return -1;
 		}
 		free(buf);
+
+		/* Queue the meta key/value into metaq. */
 
 		m = calloc(1, sizeof(struct lowdown_meta));
 		if (m == NULL)
@@ -4560,11 +4592,20 @@ parse_metadata(struct lowdown_doc *doc, const char *data, size_t sz)
 
 		val = parse_metadata_val(&data[i], sz - i, &vsz);
 
-		if ((m->value = strndup(val, vsz)) == NULL)
+		if ((m->value = malloc(vsz + 1)) == NULL)
 			return -1;
+		for (j = 0; j < vsz; val++) {
+			if (*val == '\r')
+				continue;
+			m->value[j++] = *val;
+		}
+		while (j > 0 && m->value[j - 1] == '\n')
+			j--;
+		m->value[j] = '\0';
+
 		if ((nn = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
 			return -1;
-		if (!hbuf_push(&nn->rndr_normal_text.text, val, vsz))
+		if (!hbuf_push(&nn->rndr_normal_text.text, m->value, j))
 			return -1;
 
 		popnode(doc, nn);
@@ -4589,7 +4630,6 @@ lowdown_doc_parse(struct lowdown_doc *doc, size_t *maxn,
 	static const char 	 UTF8_BOM[] = { 0xEF, 0xBB, 0xBF };
 	struct lowdown_buf	*text;
 	size_t		 	 beg, end, i;
-	const char		*sv;
 	struct lowdown_node 	*n, *root = NULL;
 	struct lowdown_metaq	 mq;
 	int			 c, rc = 0;
@@ -4643,29 +4683,21 @@ lowdown_doc_parse(struct lowdown_doc *doc, size_t *maxn,
 		goto out;
 
 	for (i = 0; i < doc->metasz; i++)
-		if (parse_metadata(doc,
+		if (parse_metadata_mmd(doc,
 		    doc->meta[i], strlen(doc->meta[i])) < 0)
 			goto out;
 
-	/* FIXME: CRLF EOLNs. */
-
 	if ((doc->ext_flags & LOWDOWN_METADATA) &&
-	    beg < size - 1 &&
-	    isalnum((unsigned char)data[beg])) {
-		sv = &data[beg];
-		for (end = beg + 1; end < size; end++) {
-			if (data[end] == '\n' &&
-			    data[end - 1] == '\n')
-				break;
-		}
-		if ((c = parse_metadata(doc, sv, end - beg)) > 0)
-			beg = end + 1;
+	    (end = is_metadata_block(&data[beg], size - beg)) > 0) {
+		c = parse_metadata_mmd(doc, &data[beg], end - beg);
+		if (c > 0)
+			beg = end;
 		else if (c < 0)
 			goto out;
 	}
 
 	for (i = 0; i < doc->metaovrsz; i++)
-		if (parse_metadata(doc,
+		if (parse_metadata_mmd(doc,
 		    doc->metaovr[i], strlen(doc->metaovr[i])) < 0)
 			goto out;
 
