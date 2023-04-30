@@ -88,6 +88,9 @@ rndr_short(struct lowdown_buf *ob, const struct lowdown_buf *b)
 		if (b->data[i] == '\n') {
 			if (!HBUF_PUTSL(ob, "\\n"))
 				return 0;
+		} else if (b->data[i] == '\r') {
+			if (!HBUF_PUTSL(ob, "\\r"))
+				return 0;
 		} else if (b->data[i] == '\t') {
 			if (!HBUF_PUTSL(ob, "\\t"))
 				return 0;
