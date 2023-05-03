@@ -59,21 +59,33 @@ Here's why everyone wants to be a fan...
 This example consists of a series of block elements: section header,
 sub-section header, paragraph, set of list elements, horizontal rule,
 then another sub-section header.
-Each block element contains span elements: normal text, emphasised text
+Each block element contains inline elements: normal text, emphasised text
 (bold and italised), an image, a link, and a span of code.
 .Pp
 This document describes the Markdown syntax accepted by
 .Xr lowdown 1 .
 .
 .
+.Sh TEXT
+Text within Markdown documents must be UTF-8.
+The document may have the byte-order mark (BOM), although this practice
+is discouraged by the Unicode standard.
+Lines of text may be UNIX terminated
+.Pq Sq \en
+or DOS
+.Pq Sq \er\en .
+In the latter case, carriage returns are stripped from input if detected
+at the first line.
+.
+.
 .Sh BLOCK ELEMENTS
 A block element starts on a new line and extends to the next blank line
 or block element.
-A block element contains span elements.
+A block element contains inline elements.
 .
 .Ss Paragraphs and Line Breaks
 A paragraph is made up of one or more lines of text possibly containing
-span elements.
+inline elements.
 Paragraphs are separated by blank lines.
 .Pp
 To insert a hard line break (i.e., a line-break in the input that is
@@ -454,7 +466,7 @@ Officer | Rank
 Jean-Luc Picard | Captain
 .Ed
 .Pp
-Table columns may contain arbitrary span elements.
+Table columns may contain arbitrary inline elements.
 .
 .Ss Footnote Definition
 Footnotes are a MMD (Multimarkdown) extension of the basic syntax.
@@ -533,11 +545,14 @@ The void elements
 and
 .Li <meta />
 are also recognised, and need not be self-closed.
-.Sh SPAN ELEMENTS
-Span elements are inline elements (including normal text) within block
-elements, for example, a span of emphasised text or a hyperlink.
-A span element cannot contain a block element, but can contain other
-span elements.
+.Sh INLINE ELEMENTS
+Elements within a block element.
+Sometimes called
+.Pq inline
+elements.
+For example, normal text, a span of emphasised text, or a hyperlink.
+An inline element cannot contain a block element, but can contain other
+inline elements.
 .
 .Ss Emphasis
 There are two different styles of emphasis: strong, usually rendered as
@@ -763,7 +778,7 @@ are interpreted as in-document link identifiers.
 .
 .Ss Code
 In addition to code blocks, inline code spans may be specified within
-paragraphs or other block or span elements.
+paragraphs or other block or inline elements.
 To invoke a span of code, surround the code using backtick quotes
 .Pq Dq \&` .
 .Bd -literal -offset indent
@@ -773,7 +788,7 @@ Use the `ifconfig iwm0` command.
 .Pp
 To include literal backticks
 .Pq Dq \&`
-within a code of span,
+within a code span,
 surround the code using multiple backticks
 .Pq Dq \&(`` .
 .Bd -literal -offset indent
@@ -843,7 +858,7 @@ output in escaping leading periods and so forth.
 .
 .Ss Backslash Escapes
 Backslash escapes render literal characters that would otherwise invoke
-a particular block or span element.
+a particular block or inline element.
 For example, surrounding a phrase with single asterisks renders it as an
 emphasis:
 .Bd -literal -offset indent

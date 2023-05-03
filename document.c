@@ -628,28 +628,21 @@ is_escaped(const char *data, size_t loc)
 }
 
 static size_t
-is_metadata_block(const char *data, size_t sz)
+is_metadata_block_mmd(const char *data, size_t sz)
 {
 	size_t		 i;
 
 	if (sz == 0)
 		return 0;
+
 	if (!isalnum((unsigned char)data[0]))
 		return 0;
 
-	for (i = 0; i < sz; i++) {
+	for (i = 0; i < sz; i++)
 		if (i < sz + 1 &&
-		    data[i] == '\n' &&
-		    data[i + 1] == '\n')
+		    data[i] == '\n' && data[i + 1] == '\n')
 			return i + 2;
-		if (i < sz + 3 &&
-		    data[i] == '\r' &&
-		    data[i + 1] == '\n' &&
-		    data[i + 2] == '\r' &&
-		    data[i + 3] == '\n') {
-			return i + 4;
-		}
-	}
+
 	return 0;
 }
 
@@ -3934,8 +3927,7 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 		return 0;
 	i++;
 	id_offs = i;
-	while (i < end && data[i] != '\n' &&
-	       data[i] != '\r' && data[i] != ']')
+	while (i < end && data[i] != '\n' && data[i] != ']')
 		i++;
 	if (i >= end || data[i] != ']')
 		return 0;
@@ -3958,20 +3950,15 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 	/* process lines similar to a list item */
 
 	while (i < end) {
-		while (i < end && data[i] != '\n' && data[i] != '\r')
+		while (i < end && data[i] != '\n')
 			i++;
 
 		/* process an empty line */
 
 		if (is_empty(data + start, i - start)) {
 			in_empty = 1;
-			if (i < end &&
-			    (data[i] == '\n' || data[i] == '\r')) {
+			if (i < end && data[i] == '\n')
 				i++;
-				if (i < end && data[i] == '\n' &&
-				    data[i - 1] == '\r')
-					i++;
-			}
 			start = i;
 			continue;
 		}
@@ -4007,13 +3994,8 @@ is_footnote(struct lowdown_doc *doc, const char *data,
 		if (i < end) {
 			if (!hbuf_putc(contents, '\n'))
 				goto err;
-			if (i < end &&
-			    (data[i] == '\n' || data[i] == '\r')) {
+			if (i < end && data[i] == '\n')
 				i++;
-				if (i < end && data[i] == '\n' &&
-				    data[i - 1] == '\r')
-					i++;
-			}
 		}
 		start = i;
 	}
@@ -4060,8 +4042,7 @@ is_ref(struct lowdown_doc *doc, const char *data,
 		return 0;
 	i++;
 	id_offset = i;
-	while (i < end && data[i] != '\n' &&
-	       data[i] != '\r' && data[i] != ']')
+	while (i < end && data[i] != '\n' && data[i] != ']')
 		i++;
 	if (i >= end || data[i] != ']')
 		return 0;
@@ -4074,11 +4055,8 @@ is_ref(struct lowdown_doc *doc, const char *data,
 		return 0;
 	i++;
 	i = countspaces(data, i, end, 0);
-	if (i < end && (data[i] == '\n' || data[i] == '\r')) {
+	if (i < end && data[i] == '\n')
 		i++;
-		if (i < end && data[i] == '\r' && data[i - 1] == '\n')
-			i++;
-	}
 	i = countspaces(data, i, end, 0);
 	if (i >= end)
 		return 0;
@@ -4093,8 +4071,7 @@ is_ref(struct lowdown_doc *doc, const char *data,
 
 	link_offset = i;
 
-	while (i < end && data[i] != ' ' &&
-	       data[i] != '\n' && data[i] != '\r')
+	while (i < end && data[i] != ' ' && data[i] != '\n')
 		i++;
 
 	if (data[i - 1] == '>')
@@ -4110,12 +4087,12 @@ is_ref(struct lowdown_doc *doc, const char *data,
 	i = countspaces(data, i, end, 0);
 
 	if (doc->ext_flags & LOWDOWN_ATTRS) {
-		if (i < end && data[i] != '\n' && data[i] != '\r' &&
+		if (i < end && data[i] != '\n' &&
 		    data[i] != '\'' && data[i] != '"' &&
 		    data[i] != '(' && data[i] != '{')
 			return 0;
 	} else {
-		if (i < end && data[i] != '\n' && data[i] != '\r' &&
+		if (i < end && data[i] != '\n' &&
 		    data[i] != '\'' && data[i] != '"' &&
 		    data[i] != '(')
 			return 0;
@@ -4125,10 +4102,8 @@ is_ref(struct lowdown_doc *doc, const char *data,
 
 	/* computing end-of-line */
 
-	if (i >= end || data[i] == '\r' || data[i] == '\n')
+	if (i >= end || data[i] == '\n')
 		line_end = i;
-	if (i + 1 < end && data[i] == '\n' && data[i + 1] == '\r')
-		line_end = i + 1;
 
 	/* optional (space|tab)* spacer after a newline */
 
@@ -4159,7 +4134,7 @@ is_ref(struct lowdown_doc *doc, const char *data,
 				garbage = 0;
 				continue;
 			}
-			if (data[i] == '\n' || data[i] == '\r' ||
+			if (data[i] == '\n' ||
 			    ((doc->ext_flags & LOWDOWN_ATTRS) &&
 			     data[i] == '{'))
 				break;
@@ -4186,7 +4161,7 @@ is_ref(struct lowdown_doc *doc, const char *data,
 				garbage = 0;
 				continue;
 			}
-			if (data[i] == '\n' || data[i] == '\r')
+			if (data[i] == '\n')
 				break;
 			if (data[i] != ' ')
 				garbage = 1;
@@ -4195,10 +4170,7 @@ is_ref(struct lowdown_doc *doc, const char *data,
 			return 0;
 	}
 
-	if (i + 1 < end && data[i] == '\n' && data[i + 1] == '\r')
-		line_end = i + 1;
-	else
-		line_end = i;
+	line_end = i;
 
 	/* Garbage after the link or empty link. */
 
@@ -4459,7 +4431,7 @@ parse_metadata_mmd(struct lowdown_doc *doc, const char *data, size_t sz)
 
 	/* Strip trailing newlines. */
 
-	while (sz && (data[sz - 1] == '\n' || data[sz - 1] == '\r'))
+	while (sz && (data[sz - 1] == '\n'))
 		sz--;
 
 	if (sz == 0)
@@ -4583,20 +4555,16 @@ parse_metadata_mmd(struct lowdown_doc *doc, const char *data, size_t sz)
 
 		val = parse_metadata_val(&data[i], sz - i, &vsz);
 
-		if ((m->value = malloc(vsz + 1)) == NULL)
+		if ((m->value = strndup(val, vsz)) == NULL)
 			return -1;
-		for (j = 0; j < vsz; val++) {
-			if (*val == '\r')
-				continue;
-			m->value[j++] = *val;
-		}
-		while (j > 0 && m->value[j - 1] == '\n')
-			j--;
-		m->value[j] = '\0';
+
+		while (vsz > 0 && m->value[vsz - 1] == '\n')
+			vsz--;
+		m->value[vsz] = '\0';
 
 		if ((nn = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
 			return -1;
-		if (!hbuf_push(&nn->rndr_normal_text.text, m->value, j))
+		if (!hbuf_push(&nn->rndr_normal_text.text, m->value, vsz))
 			return -1;
 
 		popnode(doc, nn);
@@ -4619,8 +4587,9 @@ lowdown_doc_parse(struct lowdown_doc *doc, size_t *maxn,
 	const char *data, size_t size, struct lowdown_metaq *metaq)
 {
 	static const char 	 UTF8_BOM[] = { 0xEF, 0xBB, 0xBF };
-	struct lowdown_buf	*text;
-	size_t		 	 beg, end, i;
+	char			*newbuf = NULL;
+	struct lowdown_buf	*text = NULL;
+	size_t		 	 beg, end, i, j;
 	struct lowdown_node 	*n, *root = NULL;
 	struct lowdown_metaq	 mq;
 	int			 c, rc = 0;
@@ -4647,6 +4616,21 @@ lowdown_doc_parse(struct lowdown_doc *doc, size_t *maxn,
 	TAILQ_INIT(doc->metaq);
 	TAILQ_INIT(&doc->refq);
 	TAILQ_INIT(&doc->footq);
+
+	/* Strip out DOS CRLF, if detected at the first line. */
+
+	if ((newbuf = memchr(data, '\n', size)) != NULL &&
+ 	    newbuf > data &&
+	    newbuf[-1] == '\r') {
+		if ((newbuf = malloc(size)) == NULL)
+			goto out;
+		for (i = j = 0; i < size; i++)
+			if (data[i] != '\r')
+				newbuf[j++] = data[i];
+		data = newbuf;
+		size = j;
+	} else
+		newbuf = NULL;
 
 	if ((text = hbuf_new(64)) == NULL)
 		goto out;
@@ -4678,13 +4662,14 @@ lowdown_doc_parse(struct lowdown_doc *doc, size_t *maxn,
 		    doc->meta[i], strlen(doc->meta[i])) < 0)
 			goto out;
 
-	if ((doc->ext_flags & LOWDOWN_METADATA) &&
-	    (end = is_metadata_block(&data[beg], size - beg)) > 0) {
-		c = parse_metadata_mmd(doc, &data[beg], end - beg);
-		if (c > 0)
-			beg = end;
-		else if (c < 0)
-			goto out;
+	if (doc->ext_flags & LOWDOWN_METADATA) {
+		if ((end = is_metadata_block_mmd(&data[beg], size - beg)) > 0) {
+			c = parse_metadata_mmd(doc, &data[beg], end - beg);
+			if (c > 0)
+				beg = end;
+			else if (c < 0)
+				goto out;
+		}
 	}
 
 	for (i = 0; i < doc->metaovrsz; i++)
@@ -4718,8 +4703,7 @@ lowdown_doc_parse(struct lowdown_doc *doc, size_t *maxn,
 		/* Skipping to the next line. */
 
 		end = beg;
-		while (end < size && data[end] != '\n' &&
-		       data[end] != '\r')
+		while (end < size && data[end] != '\n')
 			end++;
 
 		/* Adding the line body if present. */
@@ -4730,8 +4714,7 @@ lowdown_doc_parse(struct lowdown_doc *doc, size_t *maxn,
 
 		/* Add one \n per newline. */
 
-		while (end < size && (data[end] == '\n' ||
-		       data[end] == '\r')) {
+		while (end < size && data[end] == '\n') {
 			if (data[end] == '\n' ||
 			    (end + 1 < size && data[end + 1] != '\n'))
 				if (!hbuf_putc(text, '\n'))
@@ -4749,8 +4732,7 @@ lowdown_doc_parse(struct lowdown_doc *doc, size_t *maxn,
 
 	if (text->size) {
 		/* Adding a final newline if not already present. */
-		if (text->data[text->size - 1] != '\n' &&
-		    text->data[text->size - 1] != '\r')
+		if (text->data[text->size - 1] != '\n')
 			if (!hbuf_putc(text, '\n'))
 				goto out;
 		if (!parse_block(doc, text->data, text->size))
@@ -4763,6 +4745,7 @@ out:
 	free_link_refs(&doc->refq);
 	free_foot_refq(&doc->footq);
 	lowdown_metaq_free(&mq);
+	free(newbuf);
 
 	if (rc) {
 		if (maxn != NULL)
