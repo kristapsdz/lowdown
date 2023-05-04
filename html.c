@@ -1125,15 +1125,30 @@ rndr_doc_header(struct lowdown_buf *ob,
 	    "<meta name=\"copyright\" content=", " />"))
 		return 0;
 
-	/*
-	 * FIXME: don't use "scheme" if the date isn't in the
-	 * appropriate format, or modify it depending upon the position
-	 * of the year?
-	 */
-
 	if (date != NULL) {
-		if (!hbuf_printf(ob, "<meta name="
-		    "\"date\" scheme=\"YYYY-MM-DD\" content=\""))
+		if (!HBUF_PUTSL(ob, "<meta name=\"date\" "))
+			return 0;
+
+		/*
+		 * Don't use "scheme" if the date isn't in the
+		 * appropriate format.
+		 */
+
+		if (strlen(date) == 10 &&
+		    isdigit((unsigned char)date[0]) &&
+		    isdigit((unsigned char)date[1]) &&
+		    isdigit((unsigned char)date[2]) &&
+		    isdigit((unsigned char)date[3]) &&
+		    date[4] == '-' &&
+		    isdigit((unsigned char)date[5]) &&
+		    isdigit((unsigned char)date[6]) &&
+		    date[7] == '-' &&
+		    isdigit((unsigned char)date[8]) &&
+		    isdigit((unsigned char)date[9]) &&
+		    !HBUF_PUTSL(ob, "scheme=\"YYYY-MM-DD\" "))
+			return 0;
+
+		if (!HBUF_PUTSL(ob, "content=\""))
 			return 0;
 		if (!hesc_attr(ob, date, strlen(date)))
 			return 0;
