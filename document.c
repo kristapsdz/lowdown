@@ -4627,7 +4627,7 @@ static char *
 parse_metadata_pandoc_val(const char *data, size_t *pos, size_t sz,
     int strip_semis)
 {
-	size_t	 sv, i;
+	size_t	 sv, i, nsz;
 	char	*val = NULL;
 
 	assert(*pos < sz);
@@ -4650,7 +4650,18 @@ parse_metadata_pandoc_val(const char *data, size_t *pos, size_t sz,
 
 	if (*pos == sz)
 		return NULL;
-	if ((val = malloc(*pos - sv + 1)) == NULL)
+
+	/*
+	 * If we're stripping semicolons, double the amount of space
+	 * because a semicolon is written into two characters.
+	 * (Doubling is easier than counting semicolons, and it's not
+	 * like this is going to break the bank...)
+	 */
+
+	nsz = *pos - sv;
+	if (strip_semis)
+		nsz *= 2;
+	if ((val = malloc(nsz + 1)) == NULL)
 		return NULL;
 
 	/*
@@ -4666,6 +4677,7 @@ parse_metadata_pandoc_val(const char *data, size_t *pos, size_t sz,
 			while (sv + 1 < *pos && data[sv + 1] == ' ')
 				sv++;
 		} else if (strip_semis && data[sv] == ';') {
+			val[i++] = ' ';
 			val[i++] = ' ';
 		} else
 			val[i++] = data[sv];
