@@ -64,10 +64,10 @@ and
 .Fl t Ns Ar fodt .
 .It Fl M Ar metadata
 Provide a single metadata key-value pair.
-This may be in the usual
-.Xr lowdown 5
-colon-separated metadata format or instead separated by an equal sign,
-depending upon which character comes first.
+This may be in the syntax specified by
+.Xr lowdodwn 5
+or as pairs separated by an equal sign, depending upon which character
+(a colon or equal sign) comes first.
 Exits with an error if given neither colon nor equal sign.
 May be invoked multiple times for each pair.
 This overrides
@@ -174,9 +174,7 @@ See
 .It Fl -parse-no-intraemph
 Do not parse emphasis within words and links.
 .It Fl -parse-no-metadata
-Do not parse MMD metadata.
-For the first paragraph to count as metadata, the first line must have
-a colon in it.
+Do not parse metadata.
 This does not affect metadata given on
 .Fl m
 or

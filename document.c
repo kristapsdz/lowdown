@@ -627,6 +627,46 @@ is_escaped(const char *data, size_t loc)
 	return (loc - i) % 2;
 }
 
+/*
+ * Test if the buffer "data" of size "sz" might be a pandoc metadata
+ * block.  This consists of three lines starting with percent marks
+ * followed by a blank line.  It can be more than three lines for lines
+ * starting with whitespace (continuations).
+ * Returns zero if not a metadata block, otherwise the block length if
+ * it may be.
+ */
+static size_t
+is_metadata_block_pandoc(const char *data, size_t sz)
+{
+	size_t		 i = 0, j;
+
+	if (sz == 0 || data[0] != '%')
+		return 0;
+
+	for (i = j = 0; i < sz && j < 3; j++, i++) {
+		if (data[i] == '\n')
+			break;
+		if (data[i] != '%')
+			return 0;
+		for ( ; i < sz; i++)
+			if (data[i] == '\n' &&
+			    (i + 1 >= sz || data[i + 1] != ' '))
+				break;
+	}
+
+	if (i >= sz)
+		return 0;
+
+	return (data[i] == '\n') ? (i + 1) : 0;
+}
+
+/*
+ * Test if the buffer "data" of size "sz" might be a MMD metadata block.
+ * This only sees if the first line starts with an alnum and contains a
+ * colon, and that the block ends in two newlines.
+ * Returns zero if not a metadata block, otherwise the block length if
+ * it may be.
+ */
 static size_t
 is_metadata_block_mmd(const char *data, size_t sz)
 {
@@ -639,6 +679,13 @@ is_metadata_block_mmd(const char *data, size_t sz)
 		return 0;
 
 	for (i = 0; i < sz; i++)
+		if (data[i] == '\n' || data[i] == ':')
+			break;
+
+	if (i == sz || data[i] != ':')
+		return 0;
+
+	for ( ; i < sz; i++)
 		if (i < sz + 1 &&
 		    data[i] == '\n' && data[i + 1] == '\n')
 			return i + 2;
@@ -1784,7 +1831,7 @@ again:
 
 			/* Checking for closing quote presence. */
 
-			if (data[title_e] != '\'' && 
+			if (data[title_e] != '\'' &&
 			    data[title_e] != '"') {
 				title_b = title_e = 0;
 				link_e = i;
@@ -3247,7 +3294,7 @@ html_find_end(const char *tag, size_t tag_len,
 
 /*
  * Try to find end of HTML block in strict mode (it must be an
- * unindented line, and have a blank line afterwards). 
+ * unindented line, and have a blank line afterwards).
  * Returns the length on match, 0 otherwise.
  */
 static size_t
@@ -4339,7 +4386,7 @@ err:
  * and the length of the value will be written to "len";
  */
 static const char *
-parse_metadata_val(const char *data, size_t sz, size_t *len)
+parse_metadata_mmd_val(const char *data, size_t sz, size_t *len)
 {
 	const char	*val;
 	size_t		 i, nlines = 0, peek = 0;
@@ -4415,10 +4462,10 @@ parse_metadata_val(const char *data, size_t sz, size_t *len)
 }
 
 /*
- * Parse MMD key-value meta-data pairs.
- * Store the output in the doc's "metaq", as we might be using the
- * values for variable replacement elsewhere in this document.
- * Returns 0 if this is not metadata, >0 of it is, <0 on failure.
+ * Parse MMD key-value meta-data pairs from "data" of size "sz".  Store
+ * the output in the doc's "metaq", as we might be using the values for
+ * variable replacement elsewhere in this document.
+ * Returns 0 if this is not MMD metadata, >0 of it is, <0 on failure.
  */
 static int
 parse_metadata_mmd(struct lowdown_doc *doc, const char *data, size_t sz)
@@ -4553,7 +4600,7 @@ parse_metadata_mmd(struct lowdown_doc *doc, const char *data, size_t sz)
 			break;
 		}
 
-		val = parse_metadata_val(&data[i], sz - i, &vsz);
+		val = parse_metadata_mmd_val(&data[i], sz - i, &vsz);
 
 		if ((m->value = strndup(val, vsz)) == NULL)
 			return -1;
@@ -4574,6 +4621,140 @@ parse_metadata_mmd(struct lowdown_doc *doc, const char *data, size_t sz)
 	}
 
 	return 1;
+}
+
+static char *
+parse_metadata_pandoc_val(const char *data, size_t *pos, size_t sz,
+    int strip_semis)
+{
+	size_t	 sv, i;
+	char	*val = NULL;
+
+	assert(*pos < sz);
+
+	if (data[*pos] == '\n')
+		return ((val = strdup("")) == NULL) ? NULL : val;
+
+	assert(data[*pos] == '%');
+
+	for ((*pos)++; *pos < sz; (*pos)++)
+		if (data[*pos] != ' ')
+			break;
+
+	/* Read until the next line that doesn't start with space. */
+
+	for (sv = *pos; *pos < sz; (*pos)++)
+		if (data[*pos] == '\n' &&
+		    (*pos + 1 >= sz || data[*pos + 1] != ' '))
+			break;
+
+	if (*pos == sz)
+		return NULL;
+	if ((val = malloc(*pos - sv + 1)) == NULL)
+		return NULL;
+
+	/*
+	 * If we're stripping semicolons, normalise from pandoc into mmd format:
+	 * remove multiple spaces and convert semicolons to two spaces.
+	 */
+
+	for (i = 0; sv < *pos; sv++) {
+		if (data[sv] == '\n') {
+			val[i++] = ' ';
+		} else if (data[sv] == ' ') {
+			val[i++] = data[sv];
+			while (sv + 1 < *pos && data[sv + 1] == ' ')
+				sv++;
+		} else if (strip_semis && data[sv] == ';') {
+			val[i++] = ' ';
+		} else
+			val[i++] = data[sv];
+	}
+	val[i] = '\0';
+	(*pos)++;
+	return val;
+}
+
+static int
+add_metadata(struct lowdown_doc *doc, const char *key, const char *val)
+{
+	struct lowdown_meta	*m;
+	struct lowdown_node	*n, *nn;
+
+	TAILQ_FOREACH(m, doc->metaq, entries)
+		if (strcmp(m->key, key) == 0) {
+			TAILQ_REMOVE(doc->metaq, m, entries);
+			free(m->key);
+			free(m->value);
+			free(m);
+			break;
+		}
+
+	assert(doc->current->type == LOWDOWN_DOC_HEADER);
+
+	TAILQ_FOREACH(n, &doc->current->children, entries) {
+		assert(n->type == LOWDOWN_META);
+		if (!hbuf_streq(&n->rndr_meta.key, key))
+			continue;
+		TAILQ_REMOVE(&doc->current->children, n, entries);
+		lowdown_node_free(n);
+		break;
+	}
+
+	if ((n = pushnode(doc, LOWDOWN_META)) == NULL)
+		return 0;
+	if (!hbuf_create(&n->rndr_meta.key, key, strlen(key)))
+		return 0;
+	if ((m = calloc(1, sizeof(struct lowdown_meta))) == NULL)
+		return 0;
+	TAILQ_INSERT_TAIL(doc->metaq, m, entries);
+	if ((m->key = strdup(key)) == NULL)
+		return 0;
+	if ((m->value = strdup(val)) == NULL)
+		return 0;
+	if ((nn = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
+		return 0;
+	if (!hbuf_push(&nn->rndr_normal_text.text, val, strlen(val)))
+		return 0;
+	popnode(doc, nn);
+	popnode(doc, n);
+	return 1;
+}
+
+static int
+parse_metadata_pandoc(struct lowdown_doc *doc, const char *data,
+    size_t sz)
+{
+	char			*title = NULL, *author = NULL,
+				*date = NULL;
+	size_t			 pos = 0;
+	int			 rc = 0;
+
+	title = parse_metadata_pandoc_val(data, &pos, sz, 0);
+	if (title == NULL)
+		goto err;
+	author = parse_metadata_pandoc_val(data, &pos, sz, 1);
+	if (author == NULL)
+		goto err;
+	date = parse_metadata_pandoc_val(data, &pos, sz, 0);
+	if (date == NULL)
+		goto err;
+	if (data[pos] != '\n')
+		goto err;
+
+	if (title[0] != '\0' && !add_metadata(doc, "title", title))
+		goto err;
+	if (author[0] != '\0' && !add_metadata(doc, "author", author))
+		goto err;
+	if (date[0] != '\0' && !add_metadata(doc, "date", date))
+		goto err;
+
+	rc = (int)pos + 1;
+err:
+	free(title);
+	free(author);
+	free(date);
+	return rc;
 }
 
 /*
@@ -4663,13 +4844,19 @@ lowdown_doc_parse(struct lowdown_doc *doc, size_t *maxn,
 			goto out;
 
 	if (doc->ext_flags & LOWDOWN_METADATA) {
-		if ((end = is_metadata_block_mmd(&data[beg], size - beg)) > 0) {
-			c = parse_metadata_mmd(doc, &data[beg], end - beg);
-			if (c > 0)
-				beg = end;
-			else if (c < 0)
-				goto out;
-		}
+		c = 0;
+		if ((end = is_metadata_block_pandoc
+		    (&data[beg], size - beg)) > 0)
+			c = parse_metadata_pandoc
+				(doc, &data[beg], end - beg);
+		else if ((end = is_metadata_block_mmd
+		    (&data[beg], size - beg)) > 0)
+			c = parse_metadata_mmd
+				(doc, &data[beg], end - beg);
+		if (c > 0)
+			beg = end;
+		else if (c < 0)
+			goto out;
 	}
 
 	for (i = 0; i < doc->metaovrsz; i++)

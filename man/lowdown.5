@@ -363,14 +363,18 @@ ___________________________
 .
 .Ss Metadata
 Documents can include metadata that is not part of the main text.
-The syntax loosely follows the
+The syntax follows the
 .Qq Multimarkdown
-specification.
+and
+.Qq Pandoc
+specifications.
 .Pp
 The metadata block begins on the document's first line and continues
 until the first blank line.
-It consists of one or more key-value pairs, with keys and values
-separated by a colon, and pairs separated by a newline.
+It consists of one or more key-value pairs.
+.Pp
+In the MMD (Multimarkdown) syntax, keys and values are separated by a
+colon, and pairs separated by a newline.
 A key (and following value) must exist on the line beginning the
 metadata pair, but the value may span multiple lines.
 .Bd -literal -offset indent
@@ -409,6 +413,30 @@ If multiple metadata keys resolve to the same name, the last invocation
 is retained.
 This check happens after canonicalising the name by stripping spaces,
 converting to lower-case, and substituting unknown characters.
+.Pp
+In the Pandoc syntax, metadata is limited to at most three keys: title,
+author(s), and date.
+Pandoc metadata consists of one to three lines in the paragraph, each
+starting with a percent sign.
+The first is for title, the second for author(s), the third for date.
+Long values may be broken into multiple lines by having the subsequent
+line begin with a space instead of a percent sign.
+If only one leading-percent line is included, the metadata is only for
+the title; if two, for a title and author(s); if three, all metadata.
+If a leading-percent line is blank, the corresponding metadata is left
+empty (unspecified).
+.Bd -literal
+% A Skin of Evil
+% Tasha Yar
+  Armus
+% 1988-04-2525
+
+Wow what a bad day...
+.Ed
+.Pp
+Dates should be in the YYYY-MM-DD format, but can be in any format.
+Multiple authors may be separated by multiple white-space (including
+newlines), a semicolon, or both.
 .Pp
 Metadata values may be pasted into a document by referencing the
 .Li \&[%key] ,
