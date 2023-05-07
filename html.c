@@ -970,7 +970,7 @@ rndr_root(struct lowdown_buf *ob,
  */
 static int
 rndr_meta_multi(struct lowdown_buf *ob, const char *b, int href,
-	const char *starttag, const char *endtag)
+    const char *starttag, const char *endtag)
 {
 	const char	*start;
 	size_t		 sz, i, bsz;
@@ -999,13 +999,9 @@ rndr_meta_multi(struct lowdown_buf *ob, const char *b, int href,
 
 		if (!hbuf_puts(ob, starttag))
 			return 0;
-		if (!HBUF_PUTSL(ob, "\""))
-			return 0;
 		if (!href && !hesc_attr(ob, start, sz))
 			return 0;
 		else if (href && !hesc_href(ob, start, sz))
-			return 0;
-		if (!HBUF_PUTSL(ob, "\""))
 			return 0;
 		if (!hbuf_puts(ob, endtag))
 			return 0;
@@ -1114,15 +1110,13 @@ rndr_doc_header(struct lowdown_buf *ob,
 		author = rcsauthor;
 
 	if (!rndr_meta_multi(ob, affil, 0,
-	    "<meta name=\"creator\" content=", " />"))
+	    "<meta name=\"creator\" content=\"", "\" />"))
 		return 0;
-
 	if (!rndr_meta_multi(ob, author, 0,
-	    "<meta name=\"author\" content=", " />"))
+	    "<meta name=\"author\" content=\"", "\" />"))
 		return 0;
-
 	if (!rndr_meta_multi(ob, copy, 0,
-	    "<meta name=\"copyright\" content=", " />"))
+	    "<meta name=\"copyright\" content=\"", "\" />"))
 		return 0;
 
 	if (date != NULL) {
@@ -1157,11 +1151,10 @@ rndr_doc_header(struct lowdown_buf *ob,
 	}
 
 	if (!rndr_meta_multi(ob, css, 1,
-	    "<link rel=\"stylesheet\" href=", " />"))
+	    "<link rel=\"stylesheet\" href=\"", "\" />"))
 		return 0;
-
 	if (!rndr_meta_multi(ob, script, 1,
-	     "<script src=", "></script>"))
+	     "<script src=\"", "\"></script>"))
 		return 0;
 
 	if (!HBUF_PUTSL(ob, "<title>"))
@@ -1170,9 +1163,38 @@ rndr_doc_header(struct lowdown_buf *ob,
 	    st->flags & LOWDOWN_HTML_OWASP, 0,
 	    st->flags & LOWDOWN_HTML_NUM_ENT))
 		return 0;
-	if (!HBUF_PUTSL(ob, "</title>\n"))
+	if (!HBUF_PUTSL(ob, "</title>\n</head>\n<body>\n"))
 		return 0;
-	return HBUF_PUTSL(ob, "</head>\n<body>\n");
+
+	if (!(st->flags & LOWDOWN_HTML_TITLEBLOCK))
+		return 1;
+
+	/*
+	 * Output a title block.  This will be empty if we don't have
+	 * any title components to output.
+	 */
+
+	if (!HBUF_PUTSL(ob, "<header id=\"title-block-header\">\n"))
+		return 0;
+	if (title != NULL &&
+	    (!HBUF_PUTSL(ob, "<h1 class=\"title\">") ||
+	     !hesc_html(ob, title, strlen(title), 
+		     st->flags & LOWDOWN_HTML_OWASP, 0,
+		     st->flags & LOWDOWN_HTML_NUM_ENT) ||
+	     !HBUF_PUTSL(ob, "</h1>\n")))
+			return 0;
+	if (author != NULL &&
+	    !rndr_meta_multi(ob, author, 0,
+		    "<p class=\"author\">", "</p>"))
+		return 0;
+	if (date != NULL &&
+	    (!HBUF_PUTSL(ob, "<p class=\"date\">") ||
+	     !hesc_html(ob, date, strlen(date), 
+		     st->flags & LOWDOWN_HTML_OWASP, 0,
+		     st->flags & LOWDOWN_HTML_NUM_ENT) ||
+	     !HBUF_PUTSL(ob, "</p>\n")))
+			return 0;
+	return HBUF_PUTSL(ob, "</header>\n");
 }
 
 static int

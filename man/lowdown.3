@@ -245,6 +245,21 @@ Convert, when possible, HTML entities to their numeric form.
 If not set, the entities are used as given in the input.
 .It Dv LOWDOWN_HTML_SKIP_HTML
 Do not render in-document HTML at all.
+.It Dv LOWDOWN_HTML_TITLEBLOCK
+If used with
+.Dv LOWDOWN_STANDALONE ,
+output a Pandoc-style title block.
+This is a
+.Li <header id="title-block-header">
+element right after the opening
+.Li <body>
+containing elements for specified title, author(s), and date.
+These are
+.Li <h1>
+and
+.Li <p>
+elements, respectively, with classes set to what's being output (title,
+etc.).
 .El
 .Pp
 For

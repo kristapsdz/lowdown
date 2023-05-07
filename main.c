@@ -228,74 +228,84 @@ main(int argc, char *argv[])
 	const char		*fnin = "<stdin>", *fnout = NULL,
 	      	 		*fndin = NULL, *extract = NULL, *er,
 				*mainopts = "LM:m:sT:t:o:X:",
-	      			*diffopts = "M:m:sT:t:o:", *odtstyfn = NULL;
+	      			*diffopts = "M:m:sT:t:o:",
+				*odtstyfn = NULL;
 	struct lowdown_opts 	 opts;
 	struct stat		 st;
-	int			 c, diff = 0, fd,
-				 status = 0, aoflag = 0, roflag = 0,
-				 aiflag = 0, riflag = 0, centre = 0,
-				 list = 0;
+	int			 c, diff = 0, fd, status = 0, afl = 0,
+				 rfl = 0, aiflag = 0, riflag = 0,
+				 centre = 0, list = 0;
 	char			*ret = NULL, *cp, *odtsty = NULL;
 	size_t		 	 i, retsz = 0, rcols, sz;
 	ssize_t			 ssz;
 	struct lowdown_meta 	*m;
 	struct lowdown_metaq	 mq;
 	struct option 		 lo[] = {
-		{ "html-skiphtml",	no_argument,	&aoflag, LOWDOWN_HTML_SKIP_HTML },
-		{ "html-no-skiphtml",	no_argument,	&roflag, LOWDOWN_HTML_SKIP_HTML },
-		{ "html-escapehtml",	no_argument,	&aoflag, LOWDOWN_HTML_ESCAPE },
-		{ "html-no-escapehtml",	no_argument,	&roflag, LOWDOWN_HTML_ESCAPE },
-		{ "html-hardwrap",	no_argument,	&aoflag, LOWDOWN_HTML_HARD_WRAP },
-		{ "html-no-hardwrap",	no_argument,	&roflag, LOWDOWN_HTML_HARD_WRAP },
-		{ "html-head-ids",	no_argument,	&aoflag, LOWDOWN_HTML_HEAD_IDS },
-		{ "html-no-head-ids",	no_argument,	&roflag, LOWDOWN_HTML_HEAD_IDS },
-		{ "html-owasp",		no_argument,	&aoflag, LOWDOWN_HTML_OWASP },
-		{ "html-no-owasp",	no_argument,	&roflag, LOWDOWN_HTML_OWASP },
-		{ "html-num-ent",	no_argument,	&aoflag, LOWDOWN_HTML_NUM_ENT },
-		{ "html-no-num-ent",	no_argument,	&roflag, LOWDOWN_HTML_NUM_ENT },
-		{ "latex-numbered",	no_argument,	&aoflag, LOWDOWN_LATEX_NUMBERED },
-		{ "latex-no-numbered",	no_argument,	&roflag, LOWDOWN_LATEX_NUMBERED },
-		{ "latex-skiphtml",	no_argument,	&aoflag, LOWDOWN_LATEX_SKIP_HTML },
-		{ "latex-no-skiphtml",	no_argument,	&roflag, LOWDOWN_LATEX_SKIP_HTML },
-		{ "nroff-skiphtml",	no_argument,	&aoflag, LOWDOWN_NROFF_SKIP_HTML },
-		{ "nroff-no-skiphtml",	no_argument,	&roflag, LOWDOWN_NROFF_SKIP_HTML },
-		{ "nroff-groff",	no_argument,	&aoflag, LOWDOWN_NROFF_GROFF },
-		{ "nroff-no-groff",	no_argument,	&roflag, LOWDOWN_NROFF_GROFF },
-		{ "nroff-numbered",	no_argument,	&aoflag, LOWDOWN_NROFF_NUMBERED },
-		{ "nroff-no-numbered",	no_argument,	&roflag, LOWDOWN_NROFF_NUMBERED },
-		{ "nroff-shortlinks",	no_argument, 	&aoflag, LOWDOWN_NROFF_SHORTLINK },
-		{ "nroff-no-shortlinks",no_argument, 	&roflag, LOWDOWN_NROFF_SHORTLINK },
-		{ "nroff-nolinks",	no_argument, 	&aoflag, LOWDOWN_NROFF_NOLINK },
-		{ "nroff-no-nolinks",	no_argument, 	&roflag, LOWDOWN_NROFF_NOLINK },
-		{ "odt-skiphtml",	no_argument,	&aoflag, LOWDOWN_ODT_SKIP_HTML },
-		{ "odt-no-skiphtml",	no_argument,	&roflag, LOWDOWN_ODT_SKIP_HTML },
+		{ "html-escapehtml",	no_argument,	&afl, LOWDOWN_HTML_ESCAPE },
+		{ "html-no-escapehtml",	no_argument,	&rfl, LOWDOWN_HTML_ESCAPE },
+		{ "html-hardwrap",	no_argument,	&afl, LOWDOWN_HTML_HARD_WRAP },
+		{ "html-no-hardwrap",	no_argument,	&rfl, LOWDOWN_HTML_HARD_WRAP },
+		{ "html-head-ids",	no_argument,	&afl, LOWDOWN_HTML_HEAD_IDS },
+		{ "html-no-head-ids",	no_argument,	&rfl, LOWDOWN_HTML_HEAD_IDS },
+		{ "html-num-ent",	no_argument,	&afl, LOWDOWN_HTML_NUM_ENT },
+		{ "html-no-num-ent",	no_argument,	&rfl, LOWDOWN_HTML_NUM_ENT },
+		{ "html-owasp",		no_argument,	&afl, LOWDOWN_HTML_OWASP },
+		{ "html-no-owasp",	no_argument,	&rfl, LOWDOWN_HTML_OWASP },
+		{ "html-skiphtml",	no_argument,	&afl, LOWDOWN_HTML_SKIP_HTML },
+		{ "html-no-skiphtml",	no_argument,	&rfl, LOWDOWN_HTML_SKIP_HTML },
+		{ "html-titleblock",	no_argument,	&afl, LOWDOWN_HTML_TITLEBLOCK },
+		{ "html-no-titleblock",	no_argument,	&rfl, LOWDOWN_HTML_TITLEBLOCK },
+
+		{ "latex-numbered",	no_argument,	&afl, LOWDOWN_LATEX_NUMBERED },
+		{ "latex-no-numbered",	no_argument,	&rfl, LOWDOWN_LATEX_NUMBERED },
+		{ "latex-skiphtml",	no_argument,	&afl, LOWDOWN_LATEX_SKIP_HTML },
+		{ "latex-no-skiphtml",	no_argument,	&rfl, LOWDOWN_LATEX_SKIP_HTML },
+
+		{ "nroff-groff",	no_argument,	&afl, LOWDOWN_NROFF_GROFF },
+		{ "nroff-no-groff",	no_argument,	&rfl, LOWDOWN_NROFF_GROFF },
+		{ "nroff-nolinks",	no_argument, 	&afl, LOWDOWN_NROFF_NOLINK },
+		{ "nroff-no-nolinks",	no_argument, 	&rfl, LOWDOWN_NROFF_NOLINK },
+		{ "nroff-numbered",	no_argument,	&afl, LOWDOWN_NROFF_NUMBERED },
+		{ "nroff-no-numbered",	no_argument,	&rfl, LOWDOWN_NROFF_NUMBERED },
+		{ "nroff-shortlinks",	no_argument, 	&afl, LOWDOWN_NROFF_SHORTLINK },
+		{ "nroff-no-shortlinks",no_argument, 	&rfl, LOWDOWN_NROFF_SHORTLINK },
+		{ "nroff-skiphtml",	no_argument,	&afl, LOWDOWN_NROFF_SKIP_HTML },
+		{ "nroff-no-skiphtml",	no_argument,	&rfl, LOWDOWN_NROFF_SKIP_HTML },
+
+		{ "odt-skiphtml",	no_argument,	&afl, LOWDOWN_ODT_SKIP_HTML },
+		{ "odt-no-skiphtml",	no_argument,	&rfl, LOWDOWN_ODT_SKIP_HTML },
 		{ "odt-style",		required_argument, NULL, 6 },
-		{ "term-width",		required_argument, NULL, 1 },
+
+		{ "term-columns",	required_argument, NULL, 4 },
 		{ "term-hmargin",	required_argument, NULL, 2 },
 		{ "term-vmargin",	required_argument, NULL, 3 },
-		{ "term-columns",	required_argument, NULL, 4 },
-		{ "gemini-link-end",	no_argument, 	&aoflag, LOWDOWN_GEMINI_LINK_END },
-		{ "gemini-no-link-end",	no_argument, 	&roflag, LOWDOWN_GEMINI_LINK_END },
-		{ "gemini-link-roman",	no_argument, 	&aoflag, LOWDOWN_GEMINI_LINK_ROMAN },
-		{ "gemini-no-link-roman", no_argument, 	&roflag, LOWDOWN_GEMINI_LINK_ROMAN },
-		{ "gemini-link-noref",	no_argument, 	&aoflag, LOWDOWN_GEMINI_LINK_NOREF },
-		{ "gemini-no-link-noref", no_argument, 	&roflag, LOWDOWN_GEMINI_LINK_NOREF },
-		{ "gemini-link-inline",	no_argument, 	&aoflag, LOWDOWN_GEMINI_LINK_IN },
-		{ "gemini-no-link-inline",no_argument, 	&roflag, LOWDOWN_GEMINI_LINK_IN },
-		{ "gemini-metadata",	no_argument, 	&aoflag, LOWDOWN_GEMINI_METADATA },
-		{ "gemini-no-metadata",	no_argument, 	&roflag, LOWDOWN_GEMINI_METADATA },
-		{ "term-shortlinks",	no_argument, 	&aoflag, LOWDOWN_TERM_SHORTLINK },
-		{ "term-no-shortlinks",	no_argument, 	&roflag, LOWDOWN_TERM_SHORTLINK },
-		{ "term-nolinks",	no_argument, 	&aoflag, LOWDOWN_TERM_NOLINK },
-		{ "term-no-nolinks",	no_argument, 	&roflag, LOWDOWN_TERM_NOLINK },
-		{ "term-no-colour",	no_argument, 	&aoflag, LOWDOWN_TERM_NOCOLOUR },
-		{ "term-colour",	no_argument, 	&roflag, LOWDOWN_TERM_NOCOLOUR },
-		{ "term-no-ansi",	no_argument, 	&aoflag, LOWDOWN_TERM_NOANSI },
-		{ "term-ansi",		no_argument, 	&roflag, LOWDOWN_TERM_NOANSI },
-		{ "out-smarty",		no_argument,	&aoflag, LOWDOWN_SMARTY },
-		{ "out-no-smarty",	no_argument,	&roflag, LOWDOWN_SMARTY },
-		{ "out-standalone",	no_argument,	&aoflag, LOWDOWN_STANDALONE },
-		{ "out-no-standalone",	no_argument,	&roflag, LOWDOWN_STANDALONE },
+		{ "term-width",		required_argument, NULL, 1 },
+
+		{ "gemini-link-end",	no_argument, 	&afl, LOWDOWN_GEMINI_LINK_END },
+		{ "gemini-no-link-end",	no_argument, 	&rfl, LOWDOWN_GEMINI_LINK_END },
+		{ "gemini-link-roman",	no_argument, 	&afl, LOWDOWN_GEMINI_LINK_ROMAN },
+		{ "gemini-no-link-roman", no_argument, 	&rfl, LOWDOWN_GEMINI_LINK_ROMAN },
+		{ "gemini-link-noref",	no_argument, 	&afl, LOWDOWN_GEMINI_LINK_NOREF },
+		{ "gemini-no-link-noref", no_argument, 	&rfl, LOWDOWN_GEMINI_LINK_NOREF },
+		{ "gemini-link-inline",	no_argument, 	&afl, LOWDOWN_GEMINI_LINK_IN },
+		{ "gemini-no-link-inline",no_argument, 	&rfl, LOWDOWN_GEMINI_LINK_IN },
+		{ "gemini-metadata",	no_argument, 	&afl, LOWDOWN_GEMINI_METADATA },
+		{ "gemini-no-metadata",	no_argument, 	&rfl, LOWDOWN_GEMINI_METADATA },
+
+		{ "term-no-ansi",	no_argument, 	&afl, LOWDOWN_TERM_NOANSI },
+		{ "term-ansi",		no_argument, 	&rfl, LOWDOWN_TERM_NOANSI },
+		{ "term-no-colour",	no_argument, 	&afl, LOWDOWN_TERM_NOCOLOUR },
+		{ "term-colour",	no_argument, 	&rfl, LOWDOWN_TERM_NOCOLOUR },
+		{ "term-nolinks",	no_argument, 	&afl, LOWDOWN_TERM_NOLINK },
+		{ "term-no-nolinks",	no_argument, 	&rfl, LOWDOWN_TERM_NOLINK },
+		{ "term-shortlinks",	no_argument, 	&afl, LOWDOWN_TERM_SHORTLINK },
+		{ "term-no-shortlinks",	no_argument, 	&rfl, LOWDOWN_TERM_SHORTLINK },
+
+		{ "out-smarty",		no_argument,	&afl, LOWDOWN_SMARTY },
+		{ "out-no-smarty",	no_argument,	&rfl, LOWDOWN_SMARTY },
+		{ "out-standalone",	no_argument,	&afl, LOWDOWN_STANDALONE },
+		{ "out-no-standalone",	no_argument,	&rfl, LOWDOWN_STANDALONE },
+
 		{ "parse-hilite",	no_argument,	&aiflag, LOWDOWN_HILITE },
 		{ "parse-no-hilite",	no_argument,	&riflag, LOWDOWN_HILITE },
 		{ "parse-tables",	no_argument,	&aiflag, LOWDOWN_TABLES },
@@ -322,13 +332,15 @@ main(int argc, char *argv[])
 		{ "parse-no-cmark",	no_argument,	&riflag, LOWDOWN_COMMONMARK },
 		{ "parse-deflists",	no_argument,	&aiflag, LOWDOWN_DEFLIST },
 		{ "parse-no-deflists",	no_argument,	&riflag, LOWDOWN_DEFLIST },
-		{ "parse-img-ext",	no_argument,	&aiflag, LOWDOWN_IMG_EXT }, /* TODO: remove */
-		{ "parse-no-img-ext",	no_argument,	&riflag, LOWDOWN_IMG_EXT }, /* TODO: remove */
+		/* TODO: remove these... */
+		{ "parse-img-ext",	no_argument,	&aiflag, LOWDOWN_IMG_EXT },
+		{ "parse-no-img-ext",	no_argument,	&riflag, LOWDOWN_IMG_EXT },
 		{ "parse-ext-attrs",	no_argument,	&aiflag, LOWDOWN_ATTRS },
 		{ "parse-no-ext-attrs",	no_argument,	&riflag, LOWDOWN_ATTRS },
 		{ "parse-tasklists",	no_argument,	&aiflag, LOWDOWN_TASKLIST },
 		{ "parse-no-tasklists",	no_argument,	&riflag, LOWDOWN_TASKLIST },
 		{ "parse-maxdepth",	required_argument, NULL, 5 },
+
 		{ NULL,			0,	NULL,	0 }
 	};
 
@@ -422,10 +434,10 @@ main(int argc, char *argv[])
 			extract = NULL;
 			break;
 		case 0:
-			if (roflag)
-				opts.oflags &= ~roflag;
-			if (aoflag)
-				opts.oflags |= aoflag;
+			if (rfl)
+				opts.oflags &= ~rfl;
+			if (afl)
+				opts.oflags |= afl;
 			if (riflag)
 				opts.feat &= ~riflag;
 			if (aiflag)
