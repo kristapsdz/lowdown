@@ -4380,10 +4380,78 @@ err:
 }
 
 /*
- * Parse a MMD meta-data value.  If the value spans multiple lines,
+ * Add a metadata key-value pair.  The value is either length of "vsz"
+ * or, if zero, it's calculated from strlen().  Existing entries by the
+ * same key name are removed both from doc->metaq and the document tree.
+ * If "pandoc" is set, HTEXT_PANDOC is set on the generated tree node.
+ * This returns zero on failure (memory allocation), non-zero on
+ * success.
+ */
+static int
+add_metadata(struct lowdown_doc *doc, const char *key,
+	const char *val, size_t vsz, int pandoc)
+{
+	struct lowdown_meta	*m;
+	struct lowdown_node	*n, *nn;
+	size_t			 nksz, nvsz;
+
+	nksz = strlen(key);
+	nvsz = vsz == 0 ? strlen(val) : vsz;
+
+	TAILQ_FOREACH(m, doc->metaq, entries)
+		if (strcmp(m->key, key) == 0) {
+			TAILQ_REMOVE(doc->metaq, m, entries);
+			free(m->key);
+			free(m->value);
+			free(m);
+			break;
+		}
+
+	assert(doc->current->type == LOWDOWN_DOC_HEADER);
+
+	TAILQ_FOREACH(n, &doc->current->children, entries) {
+		assert(n->type == LOWDOWN_META);
+		if (!hbuf_streq(&n->rndr_meta.key, key))
+			continue;
+		TAILQ_REMOVE(&doc->current->children, n, entries);
+		lowdown_node_free(n);
+		break;
+	}
+
+	if ((n = pushnode(doc, LOWDOWN_META)) == NULL)
+		return 0;
+	n->rndr_meta.flags = pandoc ? HMETA_PANDOC : 0;
+	if (!hbuf_create(&n->rndr_meta.key, key, nksz))
+		return 0;
+	if ((m = calloc(1, sizeof(struct lowdown_meta))) == NULL)
+		return 0;
+	TAILQ_INSERT_TAIL(doc->metaq, m, entries);
+	if ((m->key = strndup(key, nksz)) == NULL)
+		return 0;
+
+	/* Strip trailing newlines. */
+
+	while (vsz > 0 && m->value[vsz - 1] == '\n')
+		vsz--;
+	if ((m->value = strndup(val, nvsz)) == NULL)
+		return 0;
+	if (nvsz > 0) {
+		if ((nn = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
+			return 0;
+		if (!hbuf_push(&nn->rndr_normal_text.text, val, nvsz))
+			return 0;
+		popnode(doc, nn);
+	}
+	popnode(doc, n);
+	return 1;
+}
+
+/*
+ * Parse a MMD metadata value.  If the value spans multiple lines,
  * leading whitespace from the first line will be stripped and any
  * following lines will be taken as is.  Returns a pointer to the value
- * and the length of the value will be written to "len";
+ * within the data * and the length of the value will be written to
+ * "len".  Never returns NULL.
  */
 static const char *
 parse_metadata_mmd_val(const char *data, size_t sz, size_t *len)
@@ -4462,17 +4530,15 @@ parse_metadata_mmd_val(const char *data, size_t sz, size_t *len)
 }
 
 /*
- * Parse MMD key-value meta-data pairs from "data" of size "sz".  Store
- * the output in the doc's "metaq", as we might be using the values for
- * variable replacement elsewhere in this document.
+ * Parse key-value metadata pairs from a MMD metadata block "data" of
+ * size "sz".  Store the output in the doc's "metaq" as well as in the
+ * tree.
  * Returns 0 if this is not MMD metadata, >0 of it is, <0 on failure.
  */
 static int
 parse_metadata_mmd(struct lowdown_doc *doc, const char *data, size_t sz)
 {
 	size_t	 	 	 i, j, pos = 0, vsz, keysz;
-	struct lowdown_meta	*m;
-	struct lowdown_node	*n, *nn;
 	const char		*val, *key;
 	char			*cp, *buf;
 
@@ -4527,95 +4593,39 @@ parse_metadata_mmd(struct lowdown_doc *doc, const char *data, size_t sz)
 		*cp = '\0';
 
 		/*
-		 * If we've already encountered this key, remove it from
-		 * both the local queue and the meta nodes.
+		 * Skip over the colon and subsequent space.  If already
+		 * at the end of line, do nothing.
 		 */
 
-		TAILQ_FOREACH(m, doc->metaq, entries)
-			if (strcmp(m->key, buf) == 0) {
-				TAILQ_REMOVE(doc->metaq, m, entries);
-				free(m->key);
-				free(m->value);
-				free(m);
-				break;
-			}
-
-		assert(doc->current->type == LOWDOWN_DOC_HEADER);
-		TAILQ_FOREACH(n, &doc->current->children, entries) {
-			assert(n->type == LOWDOWN_META);
-			if (hbuf_streq(&n->rndr_meta.key, buf)) {
-				TAILQ_REMOVE(&doc->current->children,
-				    n, entries);
-				lowdown_node_free(n);
-				break;
-			}
-		}
-
-		/* Create a meta node with the key. */
-
-		if ((n = pushnode(doc, LOWDOWN_META)) == NULL) {
-			free(buf);
-			return -1;
-		}
-		if (!hbuf_create(&n->rndr_meta.key, buf, cp - buf)) {
-			free(buf);
-			return -1;
-		}
-		free(buf);
-
-		/* Queue the meta key/value into metaq. */
-
-		m = calloc(1, sizeof(struct lowdown_meta));
-		if (m == NULL)
-			return -1;
-		TAILQ_INSERT_TAIL(doc->metaq, m, entries);
-
-		m->key = strndup
-			(n->rndr_meta.key.data,
-			 n->rndr_meta.key.size);
-		if (m->key == NULL)
-			return -1;
-
-		if (i == sz) {
-			if ((m->value = strdup("")) == NULL)
-				return -1;
-			popnode(doc, n);
-			break;
-		}
-
-		/*
-		 * Parse the value, creating a node if nonempty.  Make
-		 * sure that the metadata has an empty value if there's
-		 * no value to be parsed.
-		 */
-
-		assert(data[i] == ':');
+		assert(i == sz || data[i] == ':');
 		i++;
 		while (i < sz && isspace((unsigned char)data[i]))
 			i++;
-		if (i == sz) {
-			if ((m->value = strdup("")) == NULL)
+
+		/* Add the metadata or a blank value if not given. */
+
+		if (i >= sz) {
+			vsz = 0;
+			if (!add_metadata(doc, buf, "", 0, 0)) {
+				free(buf);
 				return -1;
-			popnode(doc, n);
-			break;
+			}
+		} else {
+			val = parse_metadata_mmd_val
+				(&data[i], sz - i, &vsz);
+			assert(val != NULL);
+			if (!add_metadata(doc, buf, val, vsz, 0)) {
+				free(buf);
+				return -1;
+			}
 		}
 
-		val = parse_metadata_mmd_val(&data[i], sz - i, &vsz);
+		free(buf);
 
-		if ((m->value = strndup(val, vsz)) == NULL)
-			return -1;
-
-		while (vsz > 0 && m->value[vsz - 1] == '\n')
-			vsz--;
-		m->value[vsz] = '\0';
-
-		if ((nn = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
-			return -1;
-		if (!hbuf_push(&nn->rndr_normal_text.text, m->value, vsz))
-			return -1;
-
-		popnode(doc, nn);
-		popnode(doc, n);
+		/*
+		 * This will just tip over the size if we've gone beyond
+		 * our boundaries, ending the loop w/o side effects.
+		 */
 
 		pos = i + vsz + 1;
 	}
@@ -4623,6 +4633,13 @@ parse_metadata_mmd(struct lowdown_doc *doc, const char *data, size_t sz)
 	return 1;
 }
 
+/*
+ * Parse a pandoc metadata value.  Returns an allocated pointer to the
+ * value and the length of the value will be written to "pos".  If
+ * "strip_semis" is set, semicolons are converted to double-spaces.
+ * Returns NULL on allocation failure.  If the entry is empty (just a
+ * percent sign) or omitted, an empty allocated string is returned.
+ */
 static char *
 parse_metadata_pandoc_val(const char *data, size_t *pos, size_t sz,
     int strip_semis)
@@ -4687,52 +4704,13 @@ parse_metadata_pandoc_val(const char *data, size_t *pos, size_t sz,
 	return val;
 }
 
-static int
-add_metadata(struct lowdown_doc *doc, const char *key, const char *val)
-{
-	struct lowdown_meta	*m;
-	struct lowdown_node	*n, *nn;
-
-	TAILQ_FOREACH(m, doc->metaq, entries)
-		if (strcmp(m->key, key) == 0) {
-			TAILQ_REMOVE(doc->metaq, m, entries);
-			free(m->key);
-			free(m->value);
-			free(m);
-			break;
-		}
-
-	assert(doc->current->type == LOWDOWN_DOC_HEADER);
-
-	TAILQ_FOREACH(n, &doc->current->children, entries) {
-		assert(n->type == LOWDOWN_META);
-		if (!hbuf_streq(&n->rndr_meta.key, key))
-			continue;
-		TAILQ_REMOVE(&doc->current->children, n, entries);
-		lowdown_node_free(n);
-		break;
-	}
-
-	if ((n = pushnode(doc, LOWDOWN_META)) == NULL)
-		return 0;
-	if (!hbuf_create(&n->rndr_meta.key, key, strlen(key)))
-		return 0;
-	if ((m = calloc(1, sizeof(struct lowdown_meta))) == NULL)
-		return 0;
-	TAILQ_INSERT_TAIL(doc->metaq, m, entries);
-	if ((m->key = strdup(key)) == NULL)
-		return 0;
-	if ((m->value = strdup(val)) == NULL)
-		return 0;
-	if ((nn = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
-		return 0;
-	if (!hbuf_push(&nn->rndr_normal_text.text, val, strlen(val)))
-		return 0;
-	popnode(doc, nn);
-	popnode(doc, n);
-	return 1;
-}
-
+/*
+ * Parse the title, optional author, and optional date from a pandoc
+ * metadata block "data" of length "sz".  Store the output in the doc's
+ * "metaq" as well as in the tree.
+ * Return <0 on failure (memory failure) or >1 on success.  This never
+ * returns 0.
+ */
 static int
 parse_metadata_pandoc(struct lowdown_doc *doc, const char *data,
     size_t sz)
@@ -4740,7 +4718,7 @@ parse_metadata_pandoc(struct lowdown_doc *doc, const char *data,
 	char			*title = NULL, *author = NULL,
 				*date = NULL;
 	size_t			 pos = 0;
-	int			 rc = 0;
+	int			 rc = -1;
 
 	title = parse_metadata_pandoc_val(data, &pos, sz, 0);
 	if (title == NULL)
@@ -4754,14 +4732,17 @@ parse_metadata_pandoc(struct lowdown_doc *doc, const char *data,
 	if (data[pos] != '\n')
 		goto err;
 
-	if (title[0] != '\0' && !add_metadata(doc, "title", title))
+	if (title[0] != '\0' &&
+	    !add_metadata(doc, "title", title, 0, 1))
 		goto err;
-	if (author[0] != '\0' && !add_metadata(doc, "author", author))
+	if (author[0] != '\0' &&
+	    !add_metadata(doc, "author", author, 0, 1))
 		goto err;
-	if (date[0] != '\0' && !add_metadata(doc, "date", date))
+	if (date[0] != '\0' &&
+	    !add_metadata(doc, "date", date, 0, 1))
 		goto err;
 
-	rc = (int)pos + 1;
+	rc = 1;
 err:
 	free(title);
 	free(author);
