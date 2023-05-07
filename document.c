@@ -4425,12 +4425,13 @@ add_metadata(struct lowdown_doc *doc, const char *key,
 	if ((m->key = strndup(key, nksz)) == NULL)
 		return 0;
 
-	/* Strip trailing newlines. */
-
-	while (vsz > 0 && m->value[vsz - 1] == '\n')
-		vsz--;
 	if ((m->value = strndup(val, nvsz)) == NULL)
 		return 0;
+
+	/* Strip trailing newlines. */
+
+	while (nvsz > 0 && m->value[nvsz - 1] == '\n')
+		nvsz--;
 	if (nvsz > 0) {
 		if ((nn = pushnode(doc, LOWDOWN_NORMAL_TEXT)) == NULL)
 			return 0;
