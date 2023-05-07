@@ -363,18 +363,12 @@ ___________________________
 .
 .Ss Metadata
 Documents can include metadata that is not part of the main text.
-The syntax follows the
-.Qq Multimarkdown
-and
-.Qq Pandoc
-specifications.
+The syntax follows the MMD and Pandoc specifications.
 .Pp
-The metadata block begins on the document's first line and continues
-until the first blank line.
-It consists of one or more key-value pairs.
-.Pp
-In the MMD (Multimarkdown) syntax, keys and values are separated by a
-colon, and pairs separated by a newline.
+In the MMD syntax, the block begins on the document's first line and
+continues until the first blank line.
+Keys and values are separated by a colon, and pairs separated by a
+newline.
 A key (and following value) must exist on the line beginning the
 metadata pair, but the value may span multiple lines.
 .Bd -literal -offset indent
@@ -414,38 +408,47 @@ is retained.
 This check happens after canonicalising the name by stripping spaces,
 converting to lower-case, and substituting unknown characters.
 .Pp
-In the Pandoc syntax, metadata is limited to at most three keys: title,
-author(s), and date.
-Pandoc metadata consists of one to three lines in the paragraph, each
-starting with a percent sign.
-The first is for title, the second for author(s), the third for date.
-Long values may be broken into multiple lines by having the subsequent
-line begin with a space instead of a percent sign.
+In the Pandoc syntax, the block stops at the first line not starting
+with a percent sign or space.
+Metadata is limited to at most three keys: title, author(s), and date.
+The first line is for title, the second (if provided) for author(s), and
+the third (also if provided) for date.
+Lines may continue by having a subsequent line begin with a space.
 If only one leading-percent line is included, the metadata is only for
-the title; if two, for a title and author(s); if three, all metadata.
+the title; if two, for a title and author(s); and so on.
 If a leading-percent line is blank, the corresponding metadata is left
 empty (unspecified).
-.Bd -literal
+.Bd -literal -offset indent
 % A Skin of Evil
 % Tasha Yar
   Armus
 % 1988-04-2525
 
-Wow what a bad day...
+Wow what a day...
 .Ed
 .Pp
-Dates should be in the YYYY-MM-DD format, but can be in any format.
 Multiple authors may be separated by multiple white-space (including
 newlines), a semicolon, or both.
 .Pp
-Metadata values may be pasted into a document by referencing the
+Using either syntax, dates should be in the YYYY-MM-DD format, but can
+be in any format.
+Metadata values may be pasted into a document by
+referencing the
 .Li \&[%key] ,
 such as using the above example, again with the caveat that Markdown
 annotations (italics, etc.) are copied verbatim:
 .Bd -literal -offset indent
-Stardate: 43917.4
+date: 43917.4
 
-It's currently stardate [%stardate].
+It's currently stardate [%date].
+.Ed
+.Pp
+Or using Pandoc:
+.Bd -literal -offset indent
+%
+%
+% 43917.4
+It's currently stardate [%date].
 .Ed
 .
 .
@@ -497,7 +500,7 @@ Jean-Luc Picard | Captain
 Table columns may contain arbitrary inline elements.
 .
 .Ss Footnote Definition
-Footnotes are a MMD (Multimarkdown) extension of the basic syntax.
+Footnotes are a MMD extension of the basic syntax.
 Footnote definitions may occur anywhere in the text (except within
 blocks) and are
 .Dq pointed to
@@ -830,7 +833,7 @@ leave a space between the literal backtick and the delimiting backticks.
 .Ed
 .
 .Ss Footnote Reference
-Footnotes are a MMD (Multimarkdown) extension of the basic syntax.
+Footnotes are a MMD extension of the basic syntax.
 Footnote references point into a block-level
 .Sx Footnote Definition .
 They consist of the footnote name in square brackets, preceded by the
@@ -983,7 +986,8 @@ They include:
 .Bl -tag -width Ds
 .It Lk http://commonmark.org CommonMark
 .It Lk https://github.github.com/gfm GFM
-.It Lk http://fletcherpenney.net/multimarkdown Multimarkdown
+.It Lk http://fletcherpenney.net/multimarkdown Multimarkdown (MMD)
+.It Lk https://pandoc.org/MANUAL.html Pandoc
 .It Lk https://michelf.ca/projects/php-markdown/extra PHP Extra
 .El
 .Sh AUTHORS

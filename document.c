@@ -629,35 +629,34 @@ is_escaped(const char *data, size_t loc)
 
 /*
  * Test if the buffer "data" of size "sz" might be a pandoc metadata
- * block.  This consists of three lines starting with percent marks
- * followed by a blank line.  It can be more than three lines for lines
- * starting with whitespace (continuations).
- * Returns zero if not a metadata block, otherwise the block length if
- * it may be.
+ * block.  This consists of at most three lines starting with percent
+ * marks.  It can be more than three lines if lines start with
+ * whitespace (continuations).  Returns zero if not a metadata block,
+ * otherwise the block length if it may be.
  */
 static size_t
 is_metadata_block_pandoc(const char *data, size_t sz)
 {
-	size_t		 i = 0, j;
+	size_t	 i = 0, j;
 
 	if (sz == 0 || data[0] != '%')
 		return 0;
 
 	for (i = j = 0; i < sz && j < 3; j++, i++) {
-		if (data[i] == '\n')
-			break;
 		if (data[i] != '%')
-			return 0;
+			break;
 		for ( ; i < sz; i++)
 			if (data[i] == '\n' &&
 			    (i + 1 >= sz || data[i + 1] != ' '))
 				break;
 	}
 
-	if (i >= sz)
-		return 0;
+	/* Run past trailing newlines. */
 
-	return (data[i] == '\n') ? (i + 1) : 0;
+	while (i < sz && data[i] == '\n')
+		i++;
+
+	return i;
 }
 
 /*
@@ -4641,15 +4640,13 @@ static char *
 parse_metadata_pandoc_val(const char *data, size_t *pos, size_t sz,
     int strip_semis)
 {
-	size_t	 sv, i, nsz;
+	size_t	 sv, i, nsz, end;
 	char	*val = NULL;
 
-	assert(*pos < sz);
-
-	if (data[*pos] == '\n')
+	if (*pos == sz || data[*pos] != '%')
 		return ((val = strdup("")) == NULL) ? NULL : val;
 
-	assert(data[*pos] == '%');
+	/* Read after initial spaces. */
 
 	for ((*pos)++; *pos < sz; (*pos)++)
 		if (data[*pos] != ' ')
@@ -4662,8 +4659,7 @@ parse_metadata_pandoc_val(const char *data, size_t *pos, size_t sz,
 		    (*pos + 1 >= sz || data[*pos + 1] != ' '))
 			break;
 
-	if (*pos == sz)
-		return NULL;
+	end = (*pos)++;
 
 	/*
 	 * If we're stripping semicolons, double the amount of space
@@ -4672,7 +4668,7 @@ parse_metadata_pandoc_val(const char *data, size_t *pos, size_t sz,
 	 * like this is going to break the bank...)
 	 */
 
-	nsz = *pos - sv;
+	nsz = end - sv;
 	if (strip_semis)
 		nsz *= 2;
 	if ((val = malloc(nsz + 1)) == NULL)
@@ -4683,12 +4679,12 @@ parse_metadata_pandoc_val(const char *data, size_t *pos, size_t sz,
 	 * remove multiple spaces and convert semicolons to two spaces.
 	 */
 
-	for (i = 0; sv < *pos; sv++) {
+	for (i = 0; sv < end; sv++) {
 		if (data[sv] == '\n') {
 			val[i++] = ' ';
 		} else if (data[sv] == ' ') {
 			val[i++] = data[sv];
-			while (sv + 1 < *pos && data[sv + 1] == ' ')
+			while (sv + 1 < end && data[sv + 1] == ' ')
 				sv++;
 		} else if (strip_semis && data[sv] == ';') {
 			val[i++] = ' ';
@@ -4697,7 +4693,6 @@ parse_metadata_pandoc_val(const char *data, size_t *pos, size_t sz,
 			val[i++] = data[sv];
 	}
 	val[i] = '\0';
-	(*pos)++;
 	return val;
 }
 
@@ -4725,8 +4720,6 @@ parse_metadata_pandoc(struct lowdown_doc *doc, const char *data,
 		goto err;
 	date = parse_metadata_pandoc_val(data, &pos, sz, 0);
 	if (date == NULL)
-		goto err;
-	if (data[pos] != '\n')
 		goto err;
 
 	if (title[0] != '\0' &&
