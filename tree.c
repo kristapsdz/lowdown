@@ -343,12 +343,6 @@ rndr(struct lowdown_buf *ob,
 			return 0;
 		if (!rndr_short(ob, &root->rndr_meta.key))
 			return 0;
-		if (root->rndr_meta.flags & HMETA_PANDOC) {
-			if (!hbuf_printf(ob, " (Pandoc)"))
-				return 0;
-		} else
-			if (!hbuf_printf(ob, " (MMD)"))
-				return 0;
 		if (!HBUF_PUTSL(ob, "\n"))
 			return 0;
 		break;

@@ -4383,13 +4383,11 @@ err:
  * Add a metadata key-value pair.  The value is either length of "vsz"
  * or, if zero, it's calculated from strlen().  Existing entries by the
  * same key name are removed both from doc->metaq and the document tree.
- * If "pandoc" is set, HTEXT_PANDOC is set on the generated tree node.
- * This returns zero on failure (memory allocation), non-zero on
- * success.
+ * Returns zero on failure (memory allocation), non-zero on success.
  */
 static int
 add_metadata(struct lowdown_doc *doc, const char *key,
-	const char *val, size_t vsz, int pandoc)
+	const char *val, size_t vsz)
 {
 	struct lowdown_meta	*m;
 	struct lowdown_node	*n, *nn;
@@ -4420,7 +4418,6 @@ add_metadata(struct lowdown_doc *doc, const char *key,
 
 	if ((n = pushnode(doc, LOWDOWN_META)) == NULL)
 		return 0;
-	n->rndr_meta.flags = pandoc ? HMETA_PANDOC : 0;
 	if (!hbuf_create(&n->rndr_meta.key, key, nksz))
 		return 0;
 	if ((m = calloc(1, sizeof(struct lowdown_meta))) == NULL)
@@ -4606,7 +4603,7 @@ parse_metadata_mmd(struct lowdown_doc *doc, const char *data, size_t sz)
 
 		if (i >= sz) {
 			vsz = 0;
-			if (!add_metadata(doc, buf, "", 0, 0)) {
+			if (!add_metadata(doc, buf, "", 0)) {
 				free(buf);
 				return -1;
 			}
@@ -4614,7 +4611,7 @@ parse_metadata_mmd(struct lowdown_doc *doc, const char *data, size_t sz)
 			val = parse_metadata_mmd_val
 				(&data[i], sz - i, &vsz);
 			assert(val != NULL);
-			if (!add_metadata(doc, buf, val, vsz, 0)) {
+			if (!add_metadata(doc, buf, val, vsz)) {
 				free(buf);
 				return -1;
 			}
@@ -4733,13 +4730,13 @@ parse_metadata_pandoc(struct lowdown_doc *doc, const char *data,
 		goto err;
 
 	if (title[0] != '\0' &&
-	    !add_metadata(doc, "title", title, 0, 1))
+	    !add_metadata(doc, "title", title, 0))
 		goto err;
 	if (author[0] != '\0' &&
-	    !add_metadata(doc, "author", author, 0, 1))
+	    !add_metadata(doc, "author", author, 0))
 		goto err;
 	if (date[0] != '\0' &&
-	    !add_metadata(doc, "date", date, 0, 1))
+	    !add_metadata(doc, "date", date, 0))
 		goto err;
 
 	rc = 1;

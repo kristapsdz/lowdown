@@ -147,8 +147,6 @@ enum	lowdown_chng {
 };
 
 struct	rndr_meta {
-	int		   flags;
-#define HMETA_PANDOC	   0x01
 	struct lowdown_buf key;
 };
 
