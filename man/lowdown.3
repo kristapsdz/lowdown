@@ -195,6 +195,26 @@ Deprecated.
 Use
 .Dv LOWDOWN_ATTRS
 instead.
+.It Dv LOWDOWN_MANTITLE
+Recognise manpage titles in Pandoc metadata title lines.
+Only applicable if
+.Dv LOWDOWN_METADATA
+is also provided.
+Manpages titles must begin with a non-empty title followed by an open
+parenthesis, digit or
+.Qq n ,
+optional letters after, then a closing parenthesis.
+This may be optionally followed by a source and, if a vertical bar is
+detected, the content after as the volume.
+These are passed to the renderers as the
+.Li title ,
+.Li volume ,
+and optionally
+.Li source
+and
+.Li volume
+metadata key-value pairs.
+The original title is not recoverable.
 .It Dv LOWDOWN_MATH
 Parse mathematics equations.
 .It Dv LOWDOWN_METADATA

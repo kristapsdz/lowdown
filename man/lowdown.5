@@ -430,6 +430,33 @@ Wow what a day...
 Multiple authors may be separated by multiple white-space (including
 newlines), a semicolon, or both.
 .Pp
+The Pandoc title line is automatically scanned for whether it's a
+manpage-style title:
+.Bd -literal -offset indent
+% TREK(6)
+.Ed
+.Pp
+.Nm lowdown
+recognises a manpage title from the open parenthesis followed by a
+number (or
+.Qq n ) ,
+optional following characters, then a closing parenthesis.
+If found, the title is broken down into title and section.
+Any text following the title is further recognised as the source and, if
+a vertical bar is detected, what comes after as the volume.
+.Bd -literal -offset indent
+% TREK(6) OpenBSD | Games Manual
+.Ed
+.Pp
+These may be accessed with the
+.Li title
+and
+.Li section
+metadata keys, and optionally
+.Li volume
+and
+.Li source .
+.Pp
 Using either syntax, dates should be in the YYYY-MM-DD format, but can
 be in any format.
 Metadata values may be pasted into a document by
