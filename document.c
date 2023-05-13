@@ -4709,7 +4709,9 @@ parse_metadata_pandoc(struct lowdown_doc *doc, const char *data,
     size_t sz)
 {
 	char			*title = NULL, *author = NULL,
-				*date = NULL;
+				*date = NULL, *cp, *ccp;
+	const char		*sec = NULL, *source = NULL,
+				*volume = NULL;
 	size_t			 pos = 0;
 	int			 rc = -1;
 
@@ -4723,6 +4725,58 @@ parse_metadata_pandoc(struct lowdown_doc *doc, const char *data,
 	if (date == NULL)
 		goto err;
 
+	/*
+	 * Parse title, section, source, and volume from the title
+	 * alone.  This mimics how Pandoc automatically parses these
+	 * values from its metadata.
+	 *
+	 * title: PANDOC(1) Pandoc User Manuals | Version 4.0
+	 *        ^title |  |                     |
+	 *        section^  |                     |
+	 *                  ^source               ^volume
+	 *
+	 * NB: this was a poor choice by pandoc because it performs
+	 * additional parsing based upon the *output*.  So a document
+	 * in -tman has one title; the same document for -thtml has
+	 * another.  This is confusing for folks managing manpage
+	 * outputs for multiple media.  lowdown enables this parsing
+	 * *always* and depends upon a parse-level flag to control
+	 * whether or not it's enabled.
+	 */
+
+	if ((doc->ext_flags & LOWDOWN_MANTITLE) &&
+	    title != NULL && *title != '\0') {
+		if ((cp = ccp = strchr(title, '(')) != NULL) {
+			*cp++ = '\0';
+			while (ccp > title && ccp[-1] == ' ')
+				*--ccp = '\0';
+			while (*cp != '\0' && *cp == ' ')
+				cp++;
+			sec = cp;
+			if ((cp = strchr(sec, ')')) != NULL) {
+				*cp++ = '\0';
+				while (*cp != '\0' && *cp == ' ')
+					cp++;
+				source = cp;
+				cp = ccp = strchr(source, '|');
+				while (ccp > source && ccp[-1] == ' ')
+					*--ccp = '\0';
+				if (cp != NULL) {
+					*cp++ = '\0';
+					while (*cp != '\0' && *cp == ' ')
+						cp++;
+					volume = cp;
+				}
+			}
+		}
+		if (volume != NULL && *volume == '\0')
+			volume = NULL;
+		if (source != NULL && *source == '\0')
+			source = NULL;
+		if (sec != NULL && *sec == '\0')
+			sec = NULL;
+	}
+
 	if (title[0] != '\0' &&
 	    !add_metadata(doc, "title", title, 0))
 		goto err;
@@ -4731,6 +4785,12 @@ parse_metadata_pandoc(struct lowdown_doc *doc, const char *data,
 		goto err;
 	if (date[0] != '\0' &&
 	    !add_metadata(doc, "date", date, 0))
+		goto err;
+	if (sec != NULL && !add_metadata(doc, "section", sec, 0))
+		goto err;
+	if (volume != NULL && !add_metadata(doc, "volume", volume, 0))
+		goto err;
+	if (source != NULL && !add_metadata(doc, "source", source, 0))
 		goto err;
 
 	rc = 1;

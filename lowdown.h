@@ -302,6 +302,7 @@ struct	lowdown_opts {
 #define LOWDOWN_FOOTNOTES	  0x04
 #define LOWDOWN_HILITE		  0x40
 #define	LOWDOWN_IMG_EXT	 	  0x20000 /* -> LOWDOWN_ATTRS */
+#define	LOWDOWN_MANTITLE	  0x100000
 #define LOWDOWN_MATH		  0x200
 /* Disabled LOWDOWN_MATHEXP	  0x1000 */
 #define	LOWDOWN_METADATA	  0x4000

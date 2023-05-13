@@ -233,7 +233,7 @@ main(int argc, char *argv[])
 	struct lowdown_opts 	 opts;
 	struct stat		 st;
 	int			 c, diff = 0, fd, status = 0, afl = 0,
-				 rfl = 0, aiflag = 0, riflag = 0,
+				 rfl = 0, aifl = 0, rifl = 0,
 				 centre = 0, list = 0;
 	char			*ret = NULL, *cp, *odtsty = NULL;
 	size_t		 	 i, retsz = 0, rcols, sz;
@@ -306,39 +306,41 @@ main(int argc, char *argv[])
 		{ "out-standalone",	no_argument,	&afl, LOWDOWN_STANDALONE },
 		{ "out-no-standalone",	no_argument,	&rfl, LOWDOWN_STANDALONE },
 
-		{ "parse-hilite",	no_argument,	&aiflag, LOWDOWN_HILITE },
-		{ "parse-no-hilite",	no_argument,	&riflag, LOWDOWN_HILITE },
-		{ "parse-tables",	no_argument,	&aiflag, LOWDOWN_TABLES },
-		{ "parse-no-tables",	no_argument,	&riflag, LOWDOWN_TABLES },
-		{ "parse-fenced",	no_argument,	&aiflag, LOWDOWN_FENCED },
-		{ "parse-no-fenced",	no_argument,	&riflag, LOWDOWN_FENCED },
-		{ "parse-footnotes",	no_argument,	&aiflag, LOWDOWN_FOOTNOTES },
-		{ "parse-no-footnotes",	no_argument,	&riflag, LOWDOWN_FOOTNOTES },
-		{ "parse-autolink",	no_argument,	&aiflag, LOWDOWN_AUTOLINK },
-		{ "parse-no-autolink",	no_argument,	&riflag, LOWDOWN_AUTOLINK },
-		{ "parse-strike",	no_argument,	&aiflag, LOWDOWN_STRIKE },
-		{ "parse-no-strike",	no_argument,	&riflag, LOWDOWN_STRIKE },
-		{ "parse-super",	no_argument,	&aiflag, LOWDOWN_SUPER },
-		{ "parse-no-super",	no_argument,	&riflag, LOWDOWN_SUPER },
-		{ "parse-math",		no_argument,	&aiflag, LOWDOWN_MATH },
-		{ "parse-no-math",	no_argument,	&riflag, LOWDOWN_MATH },
-		{ "parse-codeindent",	no_argument,	&riflag, LOWDOWN_NOCODEIND },
-		{ "parse-no-codeindent",no_argument,	&aiflag, LOWDOWN_NOCODEIND },
-		{ "parse-intraemph",	no_argument,	&riflag, LOWDOWN_NOINTEM },
-		{ "parse-no-intraemph",	no_argument,	&aiflag, LOWDOWN_NOINTEM },
-		{ "parse-metadata",	no_argument,	&aiflag, LOWDOWN_METADATA },
-		{ "parse-no-metadata",	no_argument,	&riflag, LOWDOWN_METADATA },
-		{ "parse-cmark",	no_argument,	&aiflag, LOWDOWN_COMMONMARK },
-		{ "parse-no-cmark",	no_argument,	&riflag, LOWDOWN_COMMONMARK },
-		{ "parse-deflists",	no_argument,	&aiflag, LOWDOWN_DEFLIST },
-		{ "parse-no-deflists",	no_argument,	&riflag, LOWDOWN_DEFLIST },
+		{ "parse-hilite",	no_argument,	&aifl, LOWDOWN_HILITE },
+		{ "parse-no-hilite",	no_argument,	&rifl, LOWDOWN_HILITE },
+		{ "parse-tables",	no_argument,	&aifl, LOWDOWN_TABLES },
+		{ "parse-no-tables",	no_argument,	&rifl, LOWDOWN_TABLES },
+		{ "parse-fenced",	no_argument,	&aifl, LOWDOWN_FENCED },
+		{ "parse-no-fenced",	no_argument,	&rifl, LOWDOWN_FENCED },
+		{ "parse-footnotes",	no_argument,	&aifl, LOWDOWN_FOOTNOTES },
+		{ "parse-no-footnotes",	no_argument,	&rifl, LOWDOWN_FOOTNOTES },
+		{ "parse-autolink",	no_argument,	&aifl, LOWDOWN_AUTOLINK },
+		{ "parse-no-autolink",	no_argument,	&rifl, LOWDOWN_AUTOLINK },
+		{ "parse-strike",	no_argument,	&aifl, LOWDOWN_STRIKE },
+		{ "parse-no-strike",	no_argument,	&rifl, LOWDOWN_STRIKE },
+		{ "parse-super",	no_argument,	&aifl, LOWDOWN_SUPER },
+		{ "parse-no-super",	no_argument,	&rifl, LOWDOWN_SUPER },
+		{ "parse-math",		no_argument,	&aifl, LOWDOWN_MATH },
+		{ "parse-no-math",	no_argument,	&rifl, LOWDOWN_MATH },
+		{ "parse-mantitle",	no_argument,	&aifl, LOWDOWN_MANTITLE },
+		{ "parse-no-mantitle",	no_argument,	&rifl, LOWDOWN_MANTITLE },
+		{ "parse-codeindent",	no_argument,	&rifl, LOWDOWN_NOCODEIND },
+		{ "parse-no-codeindent",no_argument,	&aifl, LOWDOWN_NOCODEIND },
+		{ "parse-intraemph",	no_argument,	&rifl, LOWDOWN_NOINTEM },
+		{ "parse-no-intraemph",	no_argument,	&aifl, LOWDOWN_NOINTEM },
+		{ "parse-metadata",	no_argument,	&aifl, LOWDOWN_METADATA },
+		{ "parse-no-metadata",	no_argument,	&rifl, LOWDOWN_METADATA },
+		{ "parse-cmark",	no_argument,	&aifl, LOWDOWN_COMMONMARK },
+		{ "parse-no-cmark",	no_argument,	&rifl, LOWDOWN_COMMONMARK },
+		{ "parse-deflists",	no_argument,	&aifl, LOWDOWN_DEFLIST },
+		{ "parse-no-deflists",	no_argument,	&rifl, LOWDOWN_DEFLIST },
 		/* TODO: remove these... */
-		{ "parse-img-ext",	no_argument,	&aiflag, LOWDOWN_IMG_EXT },
-		{ "parse-no-img-ext",	no_argument,	&riflag, LOWDOWN_IMG_EXT },
-		{ "parse-ext-attrs",	no_argument,	&aiflag, LOWDOWN_ATTRS },
-		{ "parse-no-ext-attrs",	no_argument,	&riflag, LOWDOWN_ATTRS },
-		{ "parse-tasklists",	no_argument,	&aiflag, LOWDOWN_TASKLIST },
-		{ "parse-no-tasklists",	no_argument,	&riflag, LOWDOWN_TASKLIST },
+		{ "parse-img-ext",	no_argument,	&aifl, LOWDOWN_IMG_EXT },
+		{ "parse-no-img-ext",	no_argument,	&rifl, LOWDOWN_IMG_EXT },
+		{ "parse-ext-attrs",	no_argument,	&aifl, LOWDOWN_ATTRS },
+		{ "parse-no-ext-attrs",	no_argument,	&rifl, LOWDOWN_ATTRS },
+		{ "parse-tasklists",	no_argument,	&aifl, LOWDOWN_TASKLIST },
+		{ "parse-no-tasklists",	no_argument,	&rifl, LOWDOWN_TASKLIST },
 		{ "parse-maxdepth",	required_argument, NULL, 5 },
 
 		{ NULL,			0,	NULL,	0 }
@@ -362,6 +364,7 @@ main(int argc, char *argv[])
 		LOWDOWN_DEFLIST |
 		LOWDOWN_FENCED |
 		LOWDOWN_FOOTNOTES |
+		LOWDOWN_MANTITLE |
 		LOWDOWN_METADATA |
 		LOWDOWN_STRIKE |
 		LOWDOWN_SUPER |
@@ -438,10 +441,10 @@ main(int argc, char *argv[])
 				opts.oflags &= ~rfl;
 			if (afl)
 				opts.oflags |= afl;
-			if (riflag)
-				opts.feat &= ~riflag;
-			if (aiflag)
-				opts.feat |= aiflag;
+			if (rifl)
+				opts.feat &= ~rifl;
+			if (aifl)
+				opts.feat |= aifl;
 			break;
 		case 1:
 			opts.cols = strtonum(optarg, 0, INT_MAX, &er);
