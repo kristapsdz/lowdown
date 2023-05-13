@@ -4698,6 +4698,38 @@ parse_metadata_pandoc_val(const char *data, size_t *pos, size_t sz,
 }
 
 /*
+ * Test whether the pandoc title is a "man title", i.e.,
+ *
+ *   title(section)...
+ *
+ * This just tests that a proper title(section) is found: a non-empty
+ * title (no checks), opening paren, digit followed by optional alpha,
+ * then closing paren.
+ */
+static int
+is_metadata_pandoc_mantitle(const struct lowdown_doc *doc,
+    const char *title)
+{
+	const char	*cp;
+
+	if (!(doc->ext_flags & LOWDOWN_MANTITLE))
+		return 0;
+	if (title == NULL || *title == '\0')
+		return 0;
+	if ((cp = strchr(title, '(')) == NULL || cp == title)
+		return 0;
+	if (!isdigit((unsigned char)*++cp) && *cp != 'n')
+		return 0;
+	for (cp++; *cp != '\0'; cp++)
+		if (*cp == ')')
+			return 1;
+		else if (!isalpha((unsigned char)*cp))
+			return 0;
+	return 0;
+
+}
+
+/*
  * Parse the title, optional author, and optional date from a pandoc
  * metadata block "data" of length "sz".  Store the output in the doc's
  * "metaq" as well as in the tree.
@@ -4726,9 +4758,10 @@ parse_metadata_pandoc(struct lowdown_doc *doc, const char *data,
 		goto err;
 
 	/*
-	 * Parse title, section, source, and volume from the title
-	 * alone.  This mimics how Pandoc automatically parses these
-	 * values from its metadata.
+	 * Parse title, section, source, and volume from the title alone
+	 * IFF we have a title(nxx).  This mimics how Pandoc
+	 * automatically parses these values from its metadata but
+	 * tightens it a little bit.
 	 *
 	 * title: PANDOC(1) Pandoc User Manuals | Version 4.0
 	 *        ^title |  |                     |
@@ -4744,29 +4777,28 @@ parse_metadata_pandoc(struct lowdown_doc *doc, const char *data,
 	 * whether or not it's enabled.
 	 */
 
-	if ((doc->ext_flags & LOWDOWN_MANTITLE) &&
-	    title != NULL && *title != '\0') {
-		if ((cp = ccp = strchr(title, '(')) != NULL) {
+	if (is_metadata_pandoc_mantitle(doc, title)) {
+		cp = ccp = strchr(title, '(');
+		assert(cp != NULL && cp > title);
+		*cp++ = '\0';
+		while (ccp > title && ccp[-1] == ' ')
+			*--ccp = '\0';
+		while (*cp != '\0' && *cp == ' ')
+			cp++;
+		sec = cp;
+		if ((cp = strchr(sec, ')')) != NULL) {
 			*cp++ = '\0';
-			while (ccp > title && ccp[-1] == ' ')
-				*--ccp = '\0';
 			while (*cp != '\0' && *cp == ' ')
 				cp++;
-			sec = cp;
-			if ((cp = strchr(sec, ')')) != NULL) {
+			source = cp;
+			cp = ccp = strchr(source, '|');
+			while (ccp > source && ccp[-1] == ' ')
+				*--ccp = '\0';
+			if (cp != NULL) {
 				*cp++ = '\0';
 				while (*cp != '\0' && *cp == ' ')
 					cp++;
-				source = cp;
-				cp = ccp = strchr(source, '|');
-				while (ccp > source && ccp[-1] == ' ')
-					*--ccp = '\0';
-				if (cp != NULL) {
-					*cp++ = '\0';
-					while (*cp != '\0' && *cp == ' ')
-						cp++;
-					volume = cp;
-				}
+				volume = cp;
 			}
 		}
 		if (volume != NULL && *volume == '\0')
