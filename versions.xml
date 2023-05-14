@@ -1407,4 +1407,43 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>1.0.2</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2023-05-13">2023-05-13</time>
+		</header>
+		<aside>
+			<p>
+				Accept DOS CRLF newlines in all situations.  Prior to this, CRLF
+				newlines would cause problems in some contexts.
+			</p>
+			<p>
+				Add support for
+				<a href="https://pandoc.org/MANUAL.html#extension-pandoc_title_block">
+					pandoc title blocks
+				</a>
+				as a metadata block syntax choice.
+				Pandoc and MMD syntaxes are mutually exclusive, so only one may be
+				used in any given document.
+				The syntax is documented in <a href="lowdown.5.html">lowdown(5)</a>.
+			</p>
+			<p>
+				Add the <b>--html-titleblock</b> option.
+				If specified, output a Pandoc-style title header.
+			</p>
+			<p>
+				Pandoc has a poorly-executed feature where <b>-stman</b> outputs
+				have the title metadata line additionally parsed into a manpage
+				title, section, and optional source and volume.  This allows titles
+				like <code>TITLE(1) Source | Volume</code> to be split into their
+				respective manpage parts&#8212;but only when in <b>-stman</b> mode,
+				so an HTML document generated from the same page will not inherit
+				the additional parsing.
+				In <a href="lowdown.5.html">lowdown(5)</a>, introduce this parsing
+				for <i>all</i> outputs if <b>--parse-mantitle</b> is specified,
+				which is now the default.
+			</p>
+		</aside>
+	</article>
 </articles>
