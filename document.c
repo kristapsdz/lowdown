@@ -4428,6 +4428,10 @@ add_metadata(struct lowdown_doc *doc, const char *key,
 	if ((m->value = strndup(val, nvsz)) == NULL)
 		return 0;
 
+	/* In case there are NUL values... */
+
+	nvsz = strlen(m->value);
+
 	/* Strip trailing newlines. */
 
 	while (nvsz > 0 && m->value[nvsz - 1] == '\n')
