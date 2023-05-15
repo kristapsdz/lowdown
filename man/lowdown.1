@@ -173,6 +173,11 @@ See
 .Fl -parse-no-ext-attrs .
 .It Fl -parse-no-intraemph
 Do not parse emphasis within words and links.
+.It Fl -parse-no-mantitle
+Do not parse manpage title, section, source, and volume from Pandoc
+title metadata.
+Manpages titles are indicated by a title then an open parenthesis, digit
+followed by optional characters, then a closed parenthesis.
 .It Fl -parse-no-metadata
 Do not parse metadata.
 This does not affect metadata given on
