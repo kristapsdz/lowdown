@@ -1102,8 +1102,6 @@ rndr_doc_header(struct lowdown_buf *ob,
 
 	/* Overrides. */
 
-	if (title == NULL)
-		title = "Untitled article";
 	if (rcsdate != NULL)
 		date = rcsdate;
 	if (rcsauthor != NULL)
@@ -1157,16 +1155,21 @@ rndr_doc_header(struct lowdown_buf *ob,
 	     "<script src=\"", "\"></script>"))
 		return 0;
 
+	/* In HTML5, the title is required. */
+
 	if (!HBUF_PUTSL(ob, "<title>"))
 		return 0;
-	if (!hesc_html(ob, title, strlen(title), 
-	    st->flags & LOWDOWN_HTML_OWASP, 0,
-	    st->flags & LOWDOWN_HTML_NUM_ENT))
+	if (title != NULL &&
+	    !hesc_html(ob, title, strlen(title),
+		    st->flags & LOWDOWN_HTML_OWASP, 0,
+		    st->flags & LOWDOWN_HTML_NUM_ENT))
 		return 0;
 	if (!HBUF_PUTSL(ob, "</title>\n</head>\n<body>\n"))
 		return 0;
 
 	if (!(st->flags & LOWDOWN_HTML_TITLEBLOCK))
+		return 1;
+	if (author == NULL && title == NULL && date == NULL)
 		return 1;
 
 	/*

@@ -957,8 +957,6 @@ odt_metaq_flush(struct lowdown_buf *ob,
 
 	/* Overrides. */
 
-	if (title == NULL)
-		title = "Untitled article";
 	if (rcsdate != NULL)
 		date = rcsdate;
 	if (rcsauthor != NULL)
@@ -967,12 +965,14 @@ odt_metaq_flush(struct lowdown_buf *ob,
 	if (!HBUF_PUTSL(ob, "<office:meta>\n"))
 		return 0;
 
-	if (!HBUF_PUTSL(ob, "<dc:title>"))
-		return 0;
-	if (!hesc_html(ob, title, strlen(title), 1, 0, 1))
-		return 0;
-	if (!HBUF_PUTSL(ob, "</dc:title>\n"))
-		return 0;
+	if (title != NULL) {
+		if (!HBUF_PUTSL(ob, "<dc:title>"))
+			return 0;
+		if (!hesc_html(ob, title, strlen(title), 1, 0, 1))
+			return 0;
+		if (!HBUF_PUTSL(ob, "</dc:title>\n"))
+			return 0;
+	}
 
 	if (author != NULL) {
 		if (!HBUF_PUTSL(ob, "<dc:creator>"))

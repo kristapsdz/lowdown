@@ -20,8 +20,6 @@
 \usepackage{longtable}
 \usepackage{hyperref}
 \begin{document}
-\title{Untitled article}
-\maketitle
 
 \hypertarget{section}{%
 \section{section}\label{section}}

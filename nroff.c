@@ -1590,8 +1590,6 @@ rndr_doc_header(const struct nroff *st,
 
 	/* Overrides. */
 
-	if (title == NULL)
-		title = "Untitled article";
 	if (sec == NULL)
 		sec = "7";
 	if (rcsdate != NULL)
@@ -1624,12 +1622,21 @@ rndr_doc_header(const struct nroff *st,
 				goto out;
 		}
 
+		/*
+		 * The title is required if having an author or
+		 * affiliation; however, it doesn't make a difference if
+		 * there are none of these elements, so specify it
+		 * anyway.
+		 */
+
 		if (bqueue_block(obq, ".TL") == NULL)
 			goto out;
-		if ((bn = bqueue_span(obq, NULL)) == NULL)
-			goto out;
-		if ((bn->nbuf = strdup(title)) == NULL)
-			goto out;
+		if (title != NULL) {
+			if ((bn = bqueue_span(obq, NULL)) == NULL)
+				goto out;
+			if ((bn->nbuf = strdup(title)) == NULL)
+				goto out;
+		}
 		if (!rndr_meta_multi(obq, author, "AU"))
 			goto out;
 		if (!rndr_meta_multi(obq, affil, "AI"))
@@ -1645,12 +1652,16 @@ rndr_doc_header(const struct nroff *st,
 
 		if ((bn = bqueue_block(obq, ".TH")) == NULL)
 			goto out;
-
-		if (!hbuf_putc(ob, '"') ||
-		    !hesc_nroff(ob, title, strlen(title), 1, 0, 0) ||
-		    !HBUF_PUTSL(ob, "\" \"") ||
-		    !hesc_nroff(ob, sec, strlen(sec), 1, 0, 0) ||
-		    !hbuf_putc(ob, '"'))
+		if (!HBUF_PUTSL(ob, "\""))
+			goto out;
+		if (title != NULL &&
+		    !hesc_nroff(ob, title, strlen(title), 1, 0, 0))
+			goto out;
+		if (!HBUF_PUTSL(ob, "\" \""))
+			goto out;
+		if (!hesc_nroff(ob, sec, strlen(sec), 1, 0, 0))
+			goto out;
+		if (!HBUF_PUTSL(ob, "\" \""))
 			goto out;
 
 		/*
@@ -1658,8 +1669,6 @@ rndr_doc_header(const struct nroff *st,
 		 * case man(7) says the current date is used.
 		 */
 
-		if (!HBUF_PUTSL(ob, " \""))
-			goto out;
 		if (date != NULL &&
 		    !hesc_nroff(ob, date, strlen(date), 1, 0, 0))
 			goto out;

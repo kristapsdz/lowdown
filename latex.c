@@ -756,16 +756,26 @@ rndr_doc_header(struct lowdown_buf *ob,
 
 	/* Overrides. */
 
-	if (title == NULL)
-		title = "Untitled article";
 	if (rcsauthor != NULL)
 		author = rcsauthor;
 	if (rcsdate != NULL)
 		date = rcsdate;
 
-	if (!hbuf_printf(ob, "\\title{%s}\n", title))
-		return 0;
+	/*
+	 * Title, author, and date are not required.  However, if any of
+	 * them are specified, we need the title even if empty.
+	 */
 
+	if (title != NULL ||
+	    author != NULL ||
+	    date != NULL) {
+		if (!HBUF_PUTSL(ob, "\\title{"))
+			return 0;
+		if (title != NULL && !hbuf_puts(ob, title))
+			return 0;
+		if (!HBUF_PUTSL(ob, "}\n"))
+			return 0;
+	}
 	if (author != NULL) {
 		if (!hbuf_printf(ob, "\\author{%s", author))
 			return 0;
@@ -775,11 +785,18 @@ rndr_doc_header(struct lowdown_buf *ob,
 		if (!HBUF_PUTSL(ob, "}\n"))
 			return 0;
 	}
-
 	if (date != NULL && !hbuf_printf(ob, "\\date{%s}\n", date))
 		return 0;
 
-	return HBUF_PUTSL(ob, "\\maketitle\n");
+	/* Only construct the title if there are elements for it. */
+
+	if ((title != NULL ||
+	     author != NULL ||
+	     date != NULL) &&
+	    !HBUF_PUTSL(ob, "\\maketitle\n"))
+		return 0;
+
+	return 1;
 }
 
 static int

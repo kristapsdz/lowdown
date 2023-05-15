@@ -20,7 +20,7 @@
 \usepackage{longtable}
 \usepackage{hyperref}
 \begin{document}
-\title{Untitled article}
+\title{}
 \author{kristaps}
 \maketitle
 

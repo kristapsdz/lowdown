@@ -1,6 +1,5 @@
 .\" -*- mode: troff; coding: utf-8 -*-
 .TL
-Untitled article
 .AU
 kristaps
 .NH 1
