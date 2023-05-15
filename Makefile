@@ -1,4 +1,4 @@
-.PHONY: regress
+.PHONY: regress regen_regress
 .SUFFIXES: .xml .md .html .pdf .1 .1.html .3 .3.html .5 .5.html .thumb.jpg .png .in.pc .pc .valgrind .old.md .diff-valgrind
 
 include Makefile.configure
@@ -331,8 +331,59 @@ clean:
 distclean: clean
 	rm -f Makefile.configure config.h config.log config.h.old config.log.old
 
+regen_regress: bins
+	@tmp1=`mktemp` ; \
+	tmp2=`mktemp` ; \
+	set +e ; \
+	for f in regress/*.md ; do \
+		ff=regress/`basename $$f .md` ; \
+		for type in html fodt latex ms man gemini term ; do \
+			if [ -f $$ff.$$type ]; then \
+				./lowdown -t$$type $$f >$$tmp1 2>&1 ; \
+				diff -uw $$ff.$$type $$tmp1 ; \
+				[ $$? -eq 0 ] || { \
+					echo "$$f" ; \
+					echo -n "Replace? " ; \
+					read ; \
+					mv $$tmp1 $$f.$$type ; \
+				} ; \
+			fi ; \
+		done ; \
+	done ; \
+	for f in regress/standalone/*.md ; do \
+		ff=regress/standalone/`basename $$f .md` ; \
+		for type in html fodt latex ms man gemini term ; do \
+			if [ -f $$ff.$$type ]; then \
+				./lowdown -s -t$$type $$f >$$tmp1 2>&1 ; \
+				diff -uw $$ff.$$type $$tmp1 ; \
+				[ $$? -eq 0 ] || { \
+					echo -n "Replace? " ; \
+					read ; \
+					mv $$tmp1 $$ff.$$type ; \
+				} ; \
+			fi ; \
+		done ; \
+	done ; \
+	for f in regress/diff/*.old.md ; do \
+		bf=`dirname $$f`/`basename $$f .old.md` ; \
+		echo "$$f -> $$bf.new.md" ; \
+		for type in html fodt latex ms man gemini term ; do \
+			if [ -f $$bf.$$type ]; then \
+				./lowdown-diff -s -t$$type $$f $$bf.new.md >$$tmp1 2>&1 ; \
+				diff -uw $$bf.$$type $$tmp1 ; \
+				[ $$? -eq 0 ] || { \
+					echo -n "Replace? " ; \
+					read ; \
+					mv $$tmp1 $$bf.$$type ; \
+				} ; \
+			fi ; \
+		done ; \
+	done ; \
+	rm -f $$tmp1 ; \
+	rm -f $$tmp2
+
 regress: bins
-	tmp1=`mktemp` ; \
+	@tmp1=`mktemp` ; \
 	tmp2=`mktemp` ; \
 	for f in regress/original/*.text ; do \
 		echo "$$f" ; \
@@ -341,71 +392,29 @@ regress: bins
 		./lowdown $(REGRESS_ARGS) "$$f" | \
 			sed -e 's!	! !g' | sed -e '/^[ ]*$$/d' > $$tmp2 ; \
 		diff -uw $$tmp1 $$tmp2 ; \
-		./lowdown -s -thtml "$$f" >/dev/null 2>&1 ; \
-		./lowdown -s -tlatex "$$f" >/dev/null 2>&1 ; \
-		./lowdown -s -tman "$$f" >/dev/null 2>&1 ; \
-		./lowdown -s -tms "$$f" >/dev/null 2>&1 ; \
-		./lowdown -s -tfodt "$$f" >/dev/null 2>&1 ; \
-		./lowdown -s -tterm "$$f" >/dev/null 2>&1 ; \
-		./lowdown -s -ttree "$$f" >/dev/null 2>&1 ; \
+		for type in html fodt latex ms man gemini term tree ; do \
+			./lowdown -s -t$$type "$$f" >/dev/null 2>&1 ; \
+		done ; \
 	done  ; \
 	for f in regress/*.md ; do \
+		ff=regress/`basename $$f .md` ; \
 		echo "$$f" ; \
-		if [ -f regress/`basename $$f .md`.html ]; then \
-			./lowdown -thtml $$f >$$tmp1 2>&1 ; \
-			diff -uw regress/`basename $$f .md`.html $$tmp1 ; \
-		fi ; \
-		if [ -f regress/`basename $$f .md`.fodt ]; then \
-			./lowdown -tfodt $$f >$$tmp1 2>&1 ; \
-			diff -uw regress/`basename $$f .md`.fodt $$tmp1 ; \
-		fi ; \
-		if [ -f regress/`basename $$f .md`.term ]; then \
-			./lowdown -tterm $$f >$$tmp1 2>&1 ; \
-			diff -uw regress/`basename $$f .md`.term $$tmp1 ; \
-		fi ; \
-		if [ -f regress/`basename $$f .md`.latex ]; then \
-			./lowdown -tlatex $$f >$$tmp1 2>&1 ; \
-			diff -uw regress/`basename $$f .md`.latex $$tmp1 ; \
-		fi ; \
-		if [ -f regress/`basename $$f .md`.ms ]; then \
-			./lowdown -tms $$f >$$tmp1 2>&1 ; \
-			diff -uw regress/`basename $$f .md`.ms $$tmp1 ; \
-		fi ; \
-		if [ -f regress/`basename $$f .md`.man ]; then \
-			./lowdown -tman $$f >$$tmp1 2>&1 ; \
-			diff -uw regress/`basename $$f .md`.man $$tmp1 ; \
-		fi ; \
-		if [ -f regress/`basename $$f .md`.gemini ]; then \
-			./lowdown -tgemini $$f >$$tmp1 2>&1 ; \
-			diff -uw regress/`basename $$f .md`.gemini $$tmp1 ; \
-		fi ; \
+		for type in html fodt latex ms man gemini term ; do \
+			if [ -f $$ff.$$type ]; then \
+				./lowdown -t$$type $$f >$$tmp1 2>&1 ; \
+				diff -uw $$ff.$$type $$tmp1 ; \
+			fi ; \
+		done ; \
 	done ; \
 	for f in regress/standalone/*.md ; do \
+		ff=regress/`basename $$f .md` ; \
 		echo "$$f" ; \
-		if [ -f regress/standalone/`basename $$f .md`.html ]; then \
-			./lowdown -s -thtml $$f >$$tmp1 2>&1 ; \
-			diff -uw regress/standalone/`basename $$f .md`.html $$tmp1 ; \
-		fi ; \
-		if [ -f regress/standalone/`basename $$f .md`.fodt ]; then \
-			./lowdown -s -tfodt $$f >$$tmp1 2>&1 ; \
-			diff -uw regress/standalone/`basename $$f .md`.fodt $$tmp1 ; \
-		fi ; \
-		if [ -f regress/standalone/`basename $$f .md`.latex ]; then \
-			./lowdown -s -tlatex $$f >$$tmp1 2>&1 ; \
-			diff -uw regress/standalone/`basename $$f .md`.latex $$tmp1 ; \
-		fi ; \
-		if [ -f regress/standalone/`basename $$f .md`.ms ]; then \
-			./lowdown -s -tms $$f >$$tmp1 2>&1 ; \
-			diff -uw regress/standalone/`basename $$f .md`.ms $$tmp1 ; \
-		fi ; \
-		if [ -f regress/standalone/`basename $$f .md`.man ]; then \
-			./lowdown -s -tman $$f >$$tmp1 2>&1 ; \
-			diff -uw regress/standalone/`basename $$f .md`.man $$tmp1 ; \
-		fi ; \
-		if [ -f regress/standalone/`basename $$f .md`.gemini ]; then \
-			./lowdown -s -tgemini $$f >$$tmp1 2>&1 ; \
-			diff -uw regress/standalone/`basename $$f .md`.gemini $$tmp1 ; \
-		fi ; \
+		for type in html fodt latex ms man gemini term ; do \
+			if [ -f $$ff.$$type ]; then \
+				./lowdown -s -t$$type $$f >$$tmp1 2>&1 ; \
+				diff -uw $$ff.$$type $$tmp1 ; \
+			fi ; \
+		done ; \
 	done ; \
 	for f in regress/metadata/*.md ; do \
 		echo "$$f" ; \
@@ -417,22 +426,12 @@ regress: bins
 	for f in regress/diff/*.old.md ; do \
 		bf=`dirname $$f`/`basename $$f .old.md` ; \
 		echo "$$f -> $$bf.new.md" ; \
-		if [ -f $$bf.html ]; then \
-			./lowdown-diff -s -thtml $$f $$bf.new.md >$$tmp1 2>&1 ; \
-			diff -uw $$bf.html $$tmp1 ; \
-		fi ; \
-		if [ -f $$bf.ms ]; then \
-			./lowdown-diff -s -tms $$f $$bf.new.md >$$tmp1 2>&1 ; \
-			diff -uw $$bf.ms $$tmp1 ; \
-		fi ; \
-		if [ -f $$bf.man ]; then \
-			./lowdown-diff -s -tman $$f $$bf.new.md >$$tmp1 2>&1 ; \
-			diff -uw $$bf.man $$tmp1 ; \
-		fi ; \
-		if [ -f $$bf.latex ]; then \
-			./lowdown-diff -s -tlatex $$f $$bf.new.md >$$tmp1 2>&1 ; \
-			diff -uw $$bf.latex $$tmp1 ; \
-		fi ; \
+		for type in html fodt latex ms man gemini term ; do \
+			if [ -f $$bf.$$type ]; then \
+				./lowdown-diff -s -t$$type $$f $$bf.new.md >$$tmp1 2>&1 ; \
+				diff -uw $$bf.$$type $$tmp1 ; \
+			fi ; \
+		done ; \
 	done ; \
 	rm -f $$tmp1 ; \
 	rm -f $$tmp2
