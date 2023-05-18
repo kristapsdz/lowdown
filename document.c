@@ -662,32 +662,52 @@ is_metadata_block_pandoc(const char *data, size_t sz)
 /*
  * Test if the buffer "data" of size "sz" might be a MMD metadata block.
  * This only sees if the first line starts with an alnum and contains a
- * colon, and that the block ends in two newlines.
+ * colon, and that the block ends in two newlines.  Alternatively, the
+ * first line is "---" and last is "---" or "....", which is the YAML
+ * syntax ("is_yaml" will be set).
  * Returns zero if not a metadata block, otherwise the block length if
  * it may be.
  */
 static size_t
-is_metadata_block_mmd(const char *data, size_t sz)
+is_metadata_block_mmd(const char *data, size_t sz, int *is_yaml)
 {
-	size_t		 i;
+	size_t		 i = 0;
+	const char	*cp;
 
 	if (sz == 0)
 		return 0;
 
-	if (!isalnum((unsigned char)data[0]))
+	if (sz > 4 && strncmp(data, "---\n", 4) == 0) {
+		*is_yaml = 1;
+		i += 4;
+	}
+
+	if (!isalnum((unsigned char)data[i]))
 		return 0;
 
-	for (i = 0; i < sz; i++)
+	for ( ; i < sz; i++)
 		if (data[i] == '\n' || data[i] == ':')
 			break;
 
 	if (i == sz || data[i] != ':')
 		return 0;
 
-	for ( ; i < sz; i++)
-		if (i < sz + 1 &&
-		    data[i] == '\n' && data[i + 1] == '\n')
-			return i + 2;
+	/*
+	 * Look for trailing paragraph (if not YAML) or the YAML markers
+	 * otherwise.
+	 */
+
+	if (*is_yaml && sz - i > 5) {
+		cp = memmem(&data[i], sz - i, "\n---\n", 5);
+		if (cp == NULL)
+			cp = memmem(&data[i], sz - i, "\n...\n", 5);
+		if (cp != NULL)
+			return (ptrdiff_t)(cp - data) + 5;
+	} else if (!*is_yaml && sz - i > 2) {
+		cp = memmem(&data[i], sz - i, "\n\n", 2);
+		if (cp != NULL)
+			return (ptrdiff_t)(cp - data) + 2;
+	}
 
 	return 0;
 }
@@ -4511,9 +4531,17 @@ parse_metadata_mmd_val(const char *data, size_t sz, size_t *len)
 		*len += peek;
 		peek = 0;
 
-		/* (Filtered out prior to calling parse_metdata().) */
+		/*
+		 * YAML blocks may contain superfluous newlines.  If
+		 * we're at such a line, continue after all the
+		 * newlines: we'll strip them out when parsing.
+		 */
 
-		assert(!(i + 1 < sz && data[i + 1] == '\n'));
+		if (i + 1 < sz && data[i + 1] == '\n') {
+			for (++i; i < sz && data[i] == '\n'; i++)
+				(*len)++;
+			break;
+		}
 
 		/* Check if the next line has leading whitespace. */
 
@@ -4533,20 +4561,30 @@ parse_metadata_mmd_val(const char *data, size_t sz, size_t *len)
 /*
  * Parse key-value metadata pairs from a MMD metadata block "data" of
  * size "sz".  Store the output in the doc's "metaq" as well as in the
- * tree.
+ * tree.  If "is_yaml" is non-zero, the block passed in is bracketed by
+ * YAML markers; otherwise, it's optionally trailed by newlines.
  * Returns 0 if this is not MMD metadata, >0 of it is, <0 on failure.
  */
 static int
-parse_metadata_mmd(struct lowdown_doc *doc, const char *data, size_t sz)
+parse_metadata_mmd(struct lowdown_doc *doc, const char *data,
+    size_t sz, int is_yaml)
 {
 	size_t	 	 	 i, j, pos = 0, vsz, keysz;
 	const char		*val, *key;
 	char			*cp, *buf;
 
-	/* Strip trailing newlines. */
+	/*
+	 * If a YAML block, strip the leading and ending delimiter.
+	 * Otherwise, strip trailing newlines.
+	 */
 
-	while (sz && (data[sz - 1] == '\n'))
-		sz--;
+	if (is_yaml) {
+		assert(sz > 9);
+		data += 4;
+		sz -= 9;
+	} else
+		while (sz && (data[sz - 1] == '\n'))
+			sz--;
 
 	if (sz == 0)
 		return 0;
@@ -4853,7 +4891,7 @@ lowdown_doc_parse(struct lowdown_doc *doc, size_t *maxn,
 	size_t		 	 beg, end, i, j;
 	struct lowdown_node 	*n, *root = NULL;
 	struct lowdown_metaq	 mq;
-	int			 c, rc = 0;
+	int			 c, rc = 0, is_yaml = 0;
 
 	/*
 	 * Have a temporary "mq" if "metaq" is not set.  We clear this
@@ -4920,7 +4958,7 @@ lowdown_doc_parse(struct lowdown_doc *doc, size_t *maxn,
 
 	for (i = 0; i < doc->metasz; i++)
 		if (parse_metadata_mmd(doc,
-		    doc->meta[i], strlen(doc->meta[i])) < 0)
+		    doc->meta[i], strlen(doc->meta[i]), 0) < 0)
 			goto out;
 
 	if (doc->ext_flags & LOWDOWN_METADATA) {
@@ -4930,9 +4968,9 @@ lowdown_doc_parse(struct lowdown_doc *doc, size_t *maxn,
 			c = parse_metadata_pandoc
 				(doc, &data[beg], end - beg);
 		else if ((end = is_metadata_block_mmd
-		    (&data[beg], size - beg)) > 0)
+		    (&data[beg], size - beg, &is_yaml)) > 0)
 			c = parse_metadata_mmd
-				(doc, &data[beg], end - beg);
+				(doc, &data[beg], end - beg, is_yaml);
 		if (c > 0)
 			beg = end;
 		else if (c < 0)
@@ -4941,7 +4979,7 @@ lowdown_doc_parse(struct lowdown_doc *doc, size_t *maxn,
 
 	for (i = 0; i < doc->metaovrsz; i++)
 		if (parse_metadata_mmd(doc,
-		    doc->metaovr[i], strlen(doc->metaovr[i])) < 0)
+		    doc->metaovr[i], strlen(doc->metaovr[i]), 0) < 0)
 			goto out;
 
 	popnode(doc, n);
