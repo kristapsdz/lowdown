@@ -1411,7 +1411,7 @@
 		<header>
 			<h1>1.0.2</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2023-05-13">2023-05-13</time>
+			<time datetime="2023-05-18">2023-05-18</time>
 		</header>
 		<aside>
 			<p>
@@ -1429,6 +1429,10 @@
 				The syntax is documented in <a href="lowdown.5.html">lowdown(5)</a>.
 			</p>
 			<p>
+				While there, support starting and ending an MMD metadata block with
+				<q>---</q> on its own line, as in the MMD specification.
+			</p>
+			<p>
 				Add the <b>--html-titleblock</b> option.
 				If specified, output a Pandoc-style title header.
 			</p>
@@ -1443,6 +1447,15 @@
 				In <a href="lowdown.5.html">lowdown(5)</a>, introduce this parsing
 				for <i>all</i> outputs if <b>--parse-mantitle</b> is specified,
 				which is now the default.
+			</p>
+			<p>
+				<b>Behaviour change</b>: do not use <q>Untitled article</q> as the
+				default title for media supporting (or requiring) titles when in
+				standalone <b>-s</b> mode.  Instead, just the empty string if a
+				title is required.  This is a more logical choice: not only is
+				<q>Untitled article</q> language-specific, it also assumes the
+				output is an article.  For the previous behaviour,
+				<b>-mtitle="Untitled article"</b> may always be used.
 			</p>
 		</aside>
 	</article>
