@@ -3641,8 +3641,15 @@ parse_table_header(struct lowdown_node **np,
 	ssize_t	 		 pipes = 0;
 	struct lowdown_node	*n;
 
-	while (i < size && data[i] != '\n')
-		if (data[i++] == '|')
+	/*
+	 * Parse the number of cells in the header by looking at the
+	 * number of delimiters (pipes).  Disregard those on the
+	 * beginning and end of the line, and escaped ones.
+	 */
+
+	for ( ; i < size && data[i] != '\n'; i++)
+		if (data[i] == '|' &&
+		    (i == 0 || data[i - 1] != '\\'))
 			pipes++;
 
 	if (i == size || pipes == 0)
@@ -3655,8 +3662,8 @@ parse_table_header(struct lowdown_node **np,
 
 	if (data[0] == '|')
 		pipes--;
-
-	if (header_end && data[header_end - 1] == '|')
+	if (header_end && data[header_end - 1] == '|' &&
+	    (header_end < 2 || data[header_end - 2] != '\\'))
 		pipes--;
 
 	if (pipes < 0)
