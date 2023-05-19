@@ -166,7 +166,7 @@ rndr_blockcode(struct lowdown_buf *ob,
 	const struct rndr_blockcode *parm,
 	const struct html *st)
 {
-	if (ob->size && !hbuf_putc(ob, '\n'))
+	if (!newline(ob))
 		return 0;
 
 	if (parm->lang.size) {
@@ -220,7 +220,7 @@ rndr_definition(struct lowdown_buf *ob,
 	const struct lowdown_buf *content)
 {
 
-	if (ob->size && !hbuf_putc(ob, '\n'))
+	if (!newline(ob))
 		return 0;
 	if (!HBUF_PUTSL(ob, "<dl>\n"))
 		return 0;
@@ -329,7 +329,7 @@ rndr_header(struct lowdown_buf *ob, const struct lowdown_buf *content,
 	else if (level > 6)
 		level = 6;
 
-	if (ob->size && !hbuf_putc(ob, '\n'))
+	if (!newline(ob))
 		return 0;
 	if (!hbuf_printf(ob, "<h%zu", level))
 		return 0;
@@ -414,7 +414,7 @@ rndr_list(struct lowdown_buf *ob,
 	const struct rndr_list *param)
 {
 
-	if (ob->size && !hbuf_putc(ob, '\n'))
+	if (!newline(ob))
 		return 0;
 	if (param->flags & HLIST_FL_ORDERED) {
 		if (param->start > 1) {
@@ -586,7 +586,7 @@ rndr_raw_block(struct lowdown_buf *ob,
 	if (org >= sz)
 		return 1;
 
-	if (ob->size && !hbuf_putc(ob, '\n'))
+	if (!newline(ob))
 		return 0;
 
 	if (!hbuf_put(ob, param->text.data + org, sz - org))
@@ -610,7 +610,7 @@ static int
 rndr_hrule(struct lowdown_buf *ob)
 {
 
-	if (ob->size && !hbuf_putc(ob, '\n'))
+	if (!newline(ob))
 		return 0;
 	return hbuf_puts(ob, "<hr/>\n");
 }
@@ -707,7 +707,7 @@ rndr_table(struct lowdown_buf *ob,
 	const struct lowdown_buf *content)
 {
 
-	if (ob->size && !hbuf_putc(ob, '\n'))
+	if (!newline(ob))
 		return 0;
 	if (!HBUF_PUTSL(ob, "<table>\n"))
 		return 0;
@@ -721,7 +721,7 @@ rndr_table_header(struct lowdown_buf *ob,
 	const struct lowdown_buf *content)
 {
 
-	if (ob->size && !hbuf_putc(ob, '\n'))
+	if (!newline(ob))
 		return 0;
 	if (!HBUF_PUTSL(ob, "<thead>\n"))
 		return 0;
@@ -923,7 +923,7 @@ rndr_doc_footer(struct lowdown_buf *ob, const struct html *st)
 	 */
 
 	if (st->footsz > 0) {
-		if (ob->size && !hbuf_putc(ob, '\n'))
+		if (!newline(ob))
 			return 0;
 		if (!HBUF_PUTSL(ob,
 		    "<div class=\"footnotes\">\n<hr/>\n<ol>\n"))
