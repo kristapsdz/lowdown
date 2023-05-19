@@ -3703,7 +3703,13 @@ parse_table_header(struct lowdown_node **np,
 		if (i < under_end && data[i] != '|' && data[i] != '+')
 			break;
 
-		if (dashes < 3)
+		/*
+		 * At one point, three dashes/colons were required for a
+		 * cell to register.  At some point, this restriction
+		 * was lifted and now only one is required.
+		 */
+
+		if (dashes == 0)
 			break;
 
 		i++;

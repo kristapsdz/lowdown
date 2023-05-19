@@ -116,6 +116,15 @@ escape_attr(struct lowdown_buf *ob, const struct lowdown_buf *in)
 }
 
 static int
+newline(struct lowdown_buf *ob)
+{
+	if (ob->size > 0 && ob->data[ob->size - 1] != '\n' &&
+	    !hbuf_putc(ob, '\n'))
+		return 0;
+	return 1;
+}
+
+static int
 rndr_autolink(struct lowdown_buf *ob, 
 	const struct rndr_autolink *parm,
 	const struct html *st)
@@ -225,7 +234,7 @@ rndr_blockquote(struct lowdown_buf *ob,
 	const struct lowdown_buf *content)
 {
 
-	if (ob->size && !hbuf_putc(ob, '\n'))
+	if (!newline(ob))
 		return 0;
 	if (!HBUF_PUTSL(ob, "<blockquote>\n"))
 		return 0;
@@ -514,7 +523,7 @@ rndr_paragraph(struct lowdown_buf *ob,
 	if (i == content->size)
 		return 1;
 
-	if (ob->size && !hbuf_putc(ob, '\n'))
+	if (!newline(ob))
 		return 0;
 	if (!HBUF_PUTSL(ob, "<p>"))
 		return 0;
@@ -726,7 +735,9 @@ rndr_table_body(struct lowdown_buf *ob,
 	const struct lowdown_buf *content)
 {
 
-	if (ob->size && !hbuf_putc(ob, '\n'))
+	if (content->size == 0)
+		return 1;
+	if (!newline(ob))
 		return 0;
 	if (!HBUF_PUTSL(ob, "<tbody>\n"))
 		return 0;
