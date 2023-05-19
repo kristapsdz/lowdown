@@ -345,7 +345,7 @@ regen_regress: bins
 					echo "$$f" ; \
 					echo -n "Replace? " ; \
 					read ; \
-					mv $$tmp1 $$f.$$type ; \
+					mv $$tmp1 $$ff.$$type ; \
 				} ; \
 			fi ; \
 		done ; \
