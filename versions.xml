@@ -1457,6 +1457,13 @@
 				output is an article.  For the previous behaviour,
 				<b>-mtitle="Untitled article"</b> may always be used.
 			</p>
+			<p>
+				Fix support for
+				<a href="https://github.github.com/gfm/#table">GFM tables</a>.
+				Specifically, don't arbitrarily require a certain three or more
+				dashes/colons per cell in the layout row.  Also allow for escaped
+				vertical bars in the header row.
+			</p>
 		</aside>
 	</article>
 </articles>
