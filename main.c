@@ -235,7 +235,8 @@ main(int argc, char *argv[])
 	int			 c, diff = 0, fd, status = 0, afl = 0,
 				 rfl = 0, aifl = 0, rifl = 0,
 				 centre = 0, list = 0;
-	char			*ret = NULL, *cp, *odtsty = NULL;
+	char			*ret = NULL, *cp, *odtsty = NULL,
+				*nroffcodefn = NULL;
 	size_t		 	 i, retsz = 0, rcols, sz;
 	ssize_t			 ssz;
 	struct lowdown_meta 	*m;
@@ -271,6 +272,7 @@ main(int argc, char *argv[])
 		{ "nroff-no-shortlinks",no_argument, 	&rfl, LOWDOWN_NROFF_SHORTLINK },
 		{ "nroff-skiphtml",	no_argument,	&afl, LOWDOWN_NROFF_SKIP_HTML },
 		{ "nroff-no-skiphtml",	no_argument,	&rfl, LOWDOWN_NROFF_SKIP_HTML },
+		{ "nroff-code-font",	required_argument, NULL, 7 },
 
 		{ "odt-skiphtml",	no_argument,	&afl, LOWDOWN_ODT_SKIP_HTML },
 		{ "odt-no-skiphtml",	no_argument,	&rfl, LOWDOWN_ODT_SKIP_HTML },
@@ -480,6 +482,18 @@ main(int argc, char *argv[])
 		case 6:
 			odtstyfn = optarg;
 			break;
+		case 7:
+			if (strcmp(optarg, "none") == 0)
+				nroffcodefn = strdup("R,B,I,BI");
+			else if (strcmp(optarg, "bold") == 0)
+				nroffcodefn = strdup("B,B,BI,BI");
+			else if (strcmp(optarg, "code") == 0)
+				nroffcodefn = strdup("CR,CB,CI,CBI");
+			else
+				nroffcodefn = strdup(optarg);
+			if (nroffcodefn == NULL)
+				err(1, NULL);
+			break;
 		default:
 			goto usage;
 		}
@@ -561,6 +575,48 @@ main(int argc, char *argv[])
 		opts.odt.sty = odtsty;
 	}
 
+	/*
+	 * If specified and in -tman or -tms, parse the "code" font.  As
+	 * mentioned in nroff.c, the code font "C" is not portable, so
+	 * let the user override it.  (If in standalone mode, a useful
+	 * default will be provided.)  This comes as a comma-separated
+	 * sequence of R[,B[,I[,BI]]].  Any of these may inherit the
+	 * default by being unspecified or empty, e.g., "CR,CB".
+	 */
+
+	if ((opts.type == LOWDOWN_MAN || opts.type == LOWDOWN_NROFF) &&
+	    nroffcodefn != NULL && *nroffcodefn != '\0') {
+		opts.nroff.cr = cp = nroffcodefn;
+		while (*cp != '\0' && *cp != ',')
+			cp++;
+		if (*cp != '\0') {
+			*cp++ = '\0';
+			opts.nroff.cb = cp;
+			while (*cp != '\0' && *cp != ',')
+				cp++;
+			if (*cp != '\0') {
+				*cp++ = '\0';
+				opts.nroff.ci = cp;
+				while (*cp != '\0' && *cp != ',')
+					cp++;
+				if (*cp != '\0') {
+					*cp++ = '\0';
+					opts.nroff.cbi = cp;
+					while (*cp != '\0' && *cp != ',')
+						cp++;
+				}
+			}
+		}
+		if (opts.nroff.cr != NULL && *opts.nroff.cr == '\0')
+			opts.nroff.cr = NULL;
+		if (opts.nroff.cb != NULL && *opts.nroff.cb == '\0')
+			opts.nroff.cb = NULL;
+		if (opts.nroff.ci != NULL && *opts.nroff.ci == '\0')
+			opts.nroff.ci = NULL;
+		if (opts.nroff.cbi != NULL && *opts.nroff.cbi == '\0')
+			opts.nroff.cbi = NULL;
+	}
+
 	/* Configure the output file. */
 
 	if (fnout != NULL && strcmp(fnout, "-") &&
@@ -616,6 +672,7 @@ main(int argc, char *argv[])
 
 	free(ret);
 	free(odtsty);
+	free(nroffcodefn);
 
 	if (fout != stdout)
 		fclose(fout);

@@ -284,10 +284,18 @@ struct	lowdown_opts_odt {
 	const char		*sty;
 };
 
+struct	lowdown_opts_nroff {
+	const char		*cr;
+	const char		*cb;
+	const char		*ci;
+	const char		*cbi;
+};
+
 struct	lowdown_opts {
 	enum lowdown_type	  type;
 	union {
 		struct lowdown_opts_odt odt;
+		struct lowdown_opts_nroff nroff;
 	};
 	size_t			  maxdepth;
 	size_t			  cols;

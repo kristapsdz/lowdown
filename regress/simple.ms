@@ -5,7 +5,7 @@ An h1 header
 .LP
 Paragraphs are separated by a blank line.
 .PP
-2nd paragraph. \fIItalic\fR, \fBbold\fR, and \fCmonospace\fR. Itemized lists
+2nd paragraph. \fIItalic\fR, \fBbold\fR, and \f(CRmonospace\fR. Itemized lists
 look like:
 .IP "\(bu" 5
 this one

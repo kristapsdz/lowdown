@@ -50,6 +50,10 @@ struct 	nroff {
 	struct bnodeq		**foots; /* footnotes */
 	size_t			  footsz; /* footnote size */
 	size_t			  indent; /* indentation width */
+	const char		 *cr; /* fixed-width font */
+	const char		 *cb; /* fixed-width bold font */
+	const char		 *ci; /* fixed-width italic font */
+	const char		 *cbi; /* fixed-width bold-italic font */
 };
 
 enum	bscope {
@@ -205,41 +209,47 @@ nstate_colour_buf(unsigned int ft)
  * For compatibility with traditional troff, return non-block font code
  * using the correct sequence of \fX, \f(xx, and \f[xxx].
  */
-static const char *
-nstate_font_buf(unsigned int ft, int blk)
+static int
+nstate_font(const struct nroff *st, struct lowdown_buf *ob,
+    unsigned int ft, int enclose)
 {
-	static char 	 fonts[10];
+	const char	*font = NULL;
+	char		 fonts[3];
 	char		*cp = fonts;
-	size_t		 len = 0;
+	size_t		 sz;
 
-	if (ft & BFONT_FIXED)
-		len++;
-	if (ft & BFONT_BOLD)
-		len++;
-	if (ft & BFONT_ITALIC)
-		len++;
-	if (ft == 0)
-		len++;
+	if (ft & BFONT_FIXED) {
+		if ((ft & BFONT_BOLD) && (ft & BFONT_ITALIC))
+			font = st->cbi;
+		else if (ft & BFONT_BOLD)
+			font = st->cb;
+		else if (ft & BFONT_ITALIC)
+			font = st->ci;
+		else
+			font = st->cr;
+	} else {
+		font = cp = fonts;
+		if (ft & BFONT_BOLD)
+			(*cp++) = 'B';
+		if (ft & BFONT_ITALIC)
+			(*cp++) = 'I';
+		if (ft == 0)
+			(*cp++) = 'R';
+		*cp = '\0';
+	}
 
-	if (!blk && len == 3)
-		(*cp++) = '[';
-	else if (!blk && len == 2)
-		(*cp++) = '(';
+	assert(font != NULL);
+	sz = strlen(font);
+	assert(sz > 0);
 
-	if (ft & BFONT_FIXED)
-		(*cp++) = 'C';
-	if (ft & BFONT_BOLD)
-		(*cp++) = 'B';
-	if (ft & BFONT_ITALIC)
-		(*cp++) = 'I';
-	if (ft == 0)
-		(*cp++) = 'R';
+	if (!enclose || sz == 1)
+		return hbuf_puts(ob, font);
 
-	if (!blk && len == 3)
-		(*cp++) = ']';
+	if (sz > 2)
+		return HBUF_PUTSL(ob, "[") &&
+		    hbuf_puts(ob, font) && HBUF_PUTSL(ob, "]");
 
-	(*cp++) = '\0';
-	return fonts;
+	return HBUF_PUTSL(ob, "(") && hbuf_puts(ob, font);
 }
 
 static int
@@ -354,7 +364,8 @@ bqueue_strip_paras(struct bnodeq *bq)
 }
 
 static int
-bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq, int esc)
+bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
+    const struct bnodeq *bq, int esc)
 {
 	const struct bnode	*bn, *chk, *next;
 	const char		*cp;
@@ -411,12 +422,14 @@ bqueue_flush(struct lowdown_buf *ob, const struct bnodeq *bq, int esc)
 		/* Print font and colour escapes. */
 
 		if (bn->scope == BSCOPE_FONT && nextblk) {
-			if (!hbuf_printf(ob, ".ft %s",
-			    nstate_font_buf(bn->font, nextblk)))
+			if (!HBUF_PUTSL(ob, ".ft "))
+				return 0;
+			if (!nstate_font(st, ob, bn->font, 0))
 				return 0;
 		} else if (bn->scope == BSCOPE_FONT) {
-			if (!hbuf_printf(ob, "\\f%s", 
-			    nstate_font_buf(bn->font, nextblk)))
+			if (!HBUF_PUTSL(ob, "\\f"))
+				return 0;
+			if (!nstate_font(st, ob, bn->font, 1))
 				return 0;
 		} else if (bn->scope == BSCOPE_COLOUR) {
 			assert(nextblk);
@@ -649,7 +662,7 @@ putlink(struct bnodeq *obq, struct nroff *st,
 		goto out;
 	if (bq == NULL && !hbuf_putb(ob, link))
 		goto out;
-	else if (bq != NULL && !bqueue_flush(ob, bq, 1))
+	else if (bq != NULL && !bqueue_flush(st, ob, bq, 1))
 		goto out;
 
 	/*
@@ -1525,7 +1538,7 @@ rndr_meta(struct nroff *st, const struct bnodeq *bq,
 
 	if ((ob = hbuf_new(32)) == NULL)
 		return 0;
-	if (!bqueue_flush(ob, bq, 1)) {
+	if (!bqueue_flush(st, ob, bq, 1)) {
 		hbuf_free(ob);
 		return 0;
 	}
@@ -1929,7 +1942,7 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 	st->post_para = 0;
 
 	if (rndr(&metaq, st, n, &bq)) {
-		if (!bqueue_flush(ob, &bq, 1))
+		if (!bqueue_flush(st, ob, &bq, 1))
 			goto out;
 		if (ob->size && ob->data[ob->size - 1] != '\n' &&
 		    !hbuf_putc(ob, '\n'))
@@ -1962,6 +1975,32 @@ lowdown_nroff_new(const struct lowdown_opts *opts)
 
 	p->flags = opts != NULL ? opts->oflags : 0;
 	p->man = opts != NULL && opts->type == LOWDOWN_MAN;
+
+	p->cr = opts != NULL ? opts->nroff.cr : NULL;
+	p->cb = opts != NULL ? opts->nroff.cb : NULL;
+	p->ci = opts != NULL ? opts->nroff.ci : NULL;
+	p->cbi = opts != NULL ? opts->nroff.cbi : NULL;
+
+	/*
+	 * Set the default "code" (fixed-width) fonts.  This is complicated
+	 * because the "C" fixed-with font is not universally available on all
+	 * output media.  For example, -Tascii does not carry a "C" font.  The
+	 * standalone prologue can test whether the font exists, but if we're
+	 * not in standalone mode, we need to do someting if the value was not
+	 * given.  Thus, use bold for -Tman and the fixed-width for -Tms.  My
+	 * rationale is that -Tman is usually seen in the terminal, which will
+	 * either be -Tasci or -Tutf8; while -Tms is usually pushed into PDF/PS,
+	 * both of which we have fixed width fonts.
+	 */
+
+	if (p->cr == NULL)
+		p->cr = p->man ? "B" : "CR";
+	if (p->cb == NULL)
+		p->cb = p->man ? "B" : "CB";
+	if (p->ci == NULL)
+		p->ci = p->man ? "BI" : "CI";
+	if (p->cbi == NULL)
+		p->cbi = p->man ? "BI" : "CBI";
 
 	/*
 	 * Set a default indentation.  For -man, we use 3 because we
