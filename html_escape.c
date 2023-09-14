@@ -1,4 +1,3 @@
-/*	$Id$ */
 /*
  * Copyright (c) 2008, Natacha Porté
  * Copyright (c) 2011, Vicent Martí

@@ -1,4 +1,3 @@
-/*	$Id$ */
 /*
  * Copyright (c) 2017 Kristaps Dzonsons <kristaps@bsd.lv>
  *
