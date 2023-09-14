@@ -483,6 +483,10 @@ main(int argc, char *argv[])
 			odtstyfn = optarg;
 			break;
 		case 7:
+			/*
+			 * Break down some aliases here: "none", "bold",
+			 * or "code".
+			 */
 			if (strcmp(optarg, "none") == 0)
 				nroffcodefn = strdup("R,B,I,BI");
 			else if (strcmp(optarg, "bold") == 0)
@@ -576,12 +580,12 @@ main(int argc, char *argv[])
 	}
 
 	/*
-	 * If specified and in -tman or -tms, parse the "code" font.  As
-	 * mentioned in nroff.c, the code font "C" is not portable, so
-	 * let the user override it.  (If in standalone mode, a useful
-	 * default will be provided.)  This comes as a comma-separated
-	 * sequence of R[,B[,I[,BI]]].  Any of these may inherit the
-	 * default by being unspecified or empty, e.g., "CR,CB".
+	 * If specified and in -tman or -tms, parse the constant width
+	 * fonts.  As mentioned in nroff.c, the code font "C" is not
+	 * portable, so let the user override it.  This comes as a
+	 * comma-separated sequence of R[,B[,I[,BI]]].  Any of these may
+	 * inherit the default by being unspecified or empty, e.g.,
+	 * "CR,CB".
 	 */
 
 	if ((opts.type == LOWDOWN_MAN || opts.type == LOWDOWN_NROFF) &&

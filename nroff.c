@@ -1975,32 +1975,26 @@ lowdown_nroff_new(const struct lowdown_opts *opts)
 
 	p->flags = opts != NULL ? opts->oflags : 0;
 	p->man = opts != NULL && opts->type == LOWDOWN_MAN;
-
 	p->cr = opts != NULL ? opts->nroff.cr : NULL;
 	p->cb = opts != NULL ? opts->nroff.cb : NULL;
 	p->ci = opts != NULL ? opts->nroff.ci : NULL;
 	p->cbi = opts != NULL ? opts->nroff.cbi : NULL;
 
 	/*
-	 * Set the default "code" (fixed-width) fonts.  This is complicated
-	 * because the "C" fixed-with font is not universally available on all
-	 * output media.  For example, -Tascii does not carry a "C" font.  The
-	 * standalone prologue can test whether the font exists, but if we're
-	 * not in standalone mode, we need to do someting if the value was not
-	 * given.  Thus, use bold for -Tman and the fixed-width for -Tms.  My
-	 * rationale is that -Tman is usually seen in the terminal, which will
-	 * either be -Tasci or -Tutf8; while -Tms is usually pushed into PDF/PS,
-	 * both of which we have fixed width fonts.
+	 * Set the default "constant width" fonts.  This is complicated
+	 * because the "C" fixed-with font is not universally available
+	 * on all output media.  For example, -Tascii does not carry a
+	 * "C" font.  However, this is a good enough default.
 	 */
 
 	if (p->cr == NULL)
-		p->cr = p->man ? "B" : "CR";
+		p->cr = "CR";
 	if (p->cb == NULL)
-		p->cb = p->man ? "B" : "CB";
+		p->cb = "CB";
 	if (p->ci == NULL)
-		p->ci = p->man ? "BI" : "CI";
+		p->ci = "CI";
 	if (p->cbi == NULL)
-		p->cbi = p->man ? "BI" : "CBI";
+		p->cbi = "CBI";
 
 	/*
 	 * Set a default indentation.  For -man, we use 3 because we
