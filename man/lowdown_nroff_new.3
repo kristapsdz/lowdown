@@ -85,6 +85,20 @@ mode, GNU extensions to
 are used along with
 .Ar mspdf .
 These are only supported by groff.
+.Pp
+The allocated rendered will use constant-width fonts
+.Qq CR
+.Pq regular ,
+.Qq CB
+.Pq bold ,
+.Qq CI
+.Pq italic ,
+and
+.Qq CBI
+.Pq bold-italic .
+Override the defaults with variables in the
+.Vt "struct lowdown_opts_nroff"
+structure.
 .Sh RETURN VALUES
 Returns a pointer to the renderer or
 .Dv NULL
@@ -149,3 +163,7 @@ groff extensions described in
 .Qq Portable Document Format Publishing with GNU Troff
 by Keith Marshall.
 Neither are implemented in mandoc.
+.Sh CAVEATS
+The default constant-width fonts may not available for the formatter's
+output device (for example, the terminal).
+In this case, the formatter may raise a warning and ignore the font.

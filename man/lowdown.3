@@ -1,4 +1,3 @@
-.\"	$Id$
 .\"
 .\" Copyright (c) 2017, 2020 Kristaps Dzonsons <kristaps@bsd.lv>
 .\"
@@ -484,6 +483,25 @@ macros.
 The
 .Dv LOWDOWN_TREE
 type causes a debug tree to be written.
+.It Va struct lowdown_opts_nroff nroff
+If
+.Va type
+is
+.Dv LOWDOWN_MAN
+or
+.Dv LOWDOWN_NROFF ,
+this contains constant-width font variants:
+.Vt "const char *cr"
+for roman constant-width,
+.Vt "const char *cb"
+for bold,
+.Vt "const char *ci"
+for italic, and
+.Vt "const char *cbi"
+for bold-italic.
+If any of these are
+.Dv NULL ,
+they default to their constant-width variants.
 .It Va struct lowdown_opts_odt odt
 If
 .Va type
