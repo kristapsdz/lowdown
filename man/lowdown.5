@@ -182,6 +182,34 @@ blocks.
 >     yes | read engage
 .Ed
 .
+.Ss Admonitions
+Also called
+.Qq callouts ,
+these special block quotes call attention to contents.
+These are generally rendered as-is, but some output modes will specially
+render admonitions to highlight the content.
+.Bd -literal -offset indent
+> **Note**
+>
+> The computer is voiced by Majel Barrett.
+.Ed
+.Pp
+Callouts begin with a double-emphasis
+.Qq Note
+or
+.Qq Warning ,
+and omitting the initial newline suppresses white-space after the
+callout type.
+This is GFM syntax.
+The MDN syntax includes an initial phrase following the callout type and
+colon, and also supports the
+.Qq Callout
+type:
+.Bd -literal -offset indent
+> **Warning:** red alert.
+>
+> Romulan warbird decloaking!
+.Ed
 .Ss Lists
 Lists may be specified as ordered (numbered) or unordered.
 Ordered lists are invoked as numbers followed by periods

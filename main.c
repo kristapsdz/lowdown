@@ -342,6 +342,8 @@ main(int argc, char *argv[])
 		{ "parse-no-ext-attrs",	no_argument,	&rifl, LOWDOWN_ATTRS },
 		{ "parse-tasklists",	no_argument,	&aifl, LOWDOWN_TASKLIST },
 		{ "parse-no-tasklists",	no_argument,	&rifl, LOWDOWN_TASKLIST },
+		{ "parse-callouts",	no_argument,	&aifl, LOWDOWN_CALLOUTS },
+		{ "parse-no-callouts",	no_argument,	&rifl, LOWDOWN_CALLOUTS },
 		{ "parse-maxdepth",	required_argument, NULL, 5 },
 
 		{ NULL,			0,	NULL,	0 }

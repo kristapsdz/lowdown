@@ -141,6 +141,9 @@ This also disables using the first ordered list value instead of
 starting all lists at one.
 .It Fl -parse-no-codeindent
 Do not parse indented content as code blocks.
+.It Fl -parse-no-callouts
+Do not parse GFM/MDN callouts
+.Pq Qq admonitions .
 .It Fl -parse-no-deflists
 Do not parse PHP extra definition lists.
 .It Fl -parse-no-ext-attrs
@@ -227,6 +230,22 @@ and
 .Fl t Ns Ar ms ,
 the following apply:
 .Bl -tag -width Ds
+.It Fl -nroff-code-font Ns = Ns Ar fonts
+Override the default constant-width fonts with a tuple of regular, bold,
+italic, and bold-italic variants in that order.
+For example,
+.Li B,B,BI,BI
+uses bold
+.Pq Qq B
+instead of a constant-width.
+Not specifying a font will use the default, as will specifying a
+zero-length font name.
+Aliases
+.Li none ,
+.Li bold ,
+and
+.Li code
+set no special fonts, bold, and the default constant-width.
 .It Fl -nroff-no-groff
 Don't use
 .Xr groff 1
@@ -240,10 +259,6 @@ passed to
 or Unicode sequence syntax.
 The output is compatible with traditional
 .Xr troff 1 .
-Applies to
-.Fl t Ns Ar man
-and
-.Fl t Ns Ar ms .
 .It Fl -nroff-no-numbered
 Don't output numbered headings.
 Only applies to
@@ -566,6 +581,10 @@ and
 A JavaScript file included in the HTML5 document head.
 Multiple script files (in order) may be separated by two or more spaces
 (including newlines).
+Only used in
+.Fl t Ns Ar html .
+.It Li lang
+Document language in RFC 5646 format.
 Only used in
 .Fl t Ns Ar html .
 .It Li rcsauthor
