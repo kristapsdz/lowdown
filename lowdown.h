@@ -354,6 +354,8 @@ struct	lowdown_opts {
 #define	LOWDOWN_HTML_OWASP	  0x800 /* use OWASP escaping */
 #define LOWDOWN_HTML_SKIP_HTML	  0x01 /* skip all HTML */
 #define	LOWDOWN_HTML_TITLEBLOCK	  0x4000000 /* output title block */
+#define LOWDOWN_HTML_CALLOUT_GFM  0x8000000 /* GFM callouts */
+#define LOWDOWN_HTML_CALLOUT_MDN  0x10000000 /* MDN callouts */
 #define LOWDOWN_LATEX_NUMBERED	  0x4000 /* numbered sections */
 #define LOWDOWN_LATEX_SKIP_HTML	  0x2000 /* skip all HTML */
 #define LOWDOWN_NROFF_GROFF	  0x20 /* use groff extensions */

@@ -255,6 +255,10 @@ main(int argc, char *argv[])
 		{ "html-no-skiphtml",	no_argument,	&rfl, LOWDOWN_HTML_SKIP_HTML },
 		{ "html-titleblock",	no_argument,	&afl, LOWDOWN_HTML_TITLEBLOCK },
 		{ "html-no-titleblock",	no_argument,	&rfl, LOWDOWN_HTML_TITLEBLOCK },
+		{ "html-callout-mdn",	no_argument,	&afl, LOWDOWN_HTML_CALLOUT_MDN },
+		{ "html-no-callout-mdn",no_argument,	&rfl, LOWDOWN_HTML_CALLOUT_MDN },
+		{ "html-callout-gfm",	no_argument,	&afl, LOWDOWN_HTML_CALLOUT_GFM },
+		{ "html-no-callout-gfm",no_argument,	&rfl, LOWDOWN_HTML_CALLOUT_GFM },
 
 		{ "latex-numbered",	no_argument,	&afl, LOWDOWN_LATEX_NUMBERED },
 		{ "latex-no-numbered",	no_argument,	&rfl, LOWDOWN_LATEX_NUMBERED },

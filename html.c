@@ -229,17 +229,65 @@ rndr_definition(struct lowdown_buf *ob,
 }
 
 static int
-rndr_blockquote(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+rndr_blockquote(const struct html *st,
+	const struct rndr_blockquote *param,
+	struct lowdown_buf *ob, const struct lowdown_buf *content)
 {
+	size_t	 i;
 
 	if (!newline(ob))
 		return 0;
-	if (!HBUF_PUTSL(ob, "<blockquote>\n"))
+	if (param->type == BLOCKQUOTE_REGULAR || !(st->flags & 
+	    (LOWDOWN_HTML_CALLOUT_GFM|LOWDOWN_HTML_CALLOUT_MDN)))
+		return HBUF_PUTSL(ob, "<blockquote>\n") &&
+		    hbuf_putb(ob, content) &&
+		    HBUF_PUTSL(ob, "</blockquote>\n");
+
+	if (!HBUF_PUTSL(ob, "<div class=\""))
 		return 0;
-	if (!hbuf_putb(ob, content))
+
+	/* MDN/GFM style blockquotes. */
+
+	if (st->flags & LOWDOWN_HTML_CALLOUT_MDN) {
+		if (!hbuf_printf(ob, "%s",
+		    (param->admonition == ADMONITION_NOTE) ?
+		     "notecard note" :
+		    (param->admonition == ADMONITION_WARNING) ?
+		     "notecard warning" : "callout"))
+			return 0;
+	}
+	if (st->flags & LOWDOWN_HTML_CALLOUT_GFM) {
+		if (!hbuf_printf(ob, "%smarkdown-alert ",
+		    (st->flags & LOWDOWN_HTML_CALLOUT_MDN) ? " " : ""))
+			return 0;
+		if (!hbuf_printf(ob, "markdown-alert-%s",
+		    (param->admonition == ADMONITION_NOTE) ?
+		    "note" :
+		    (param->admonition == ADMONITION_WARNING) ?
+		    "warning" : "callout"))
+			return 0;
+	}
+
+	if (!HBUF_PUTSL(ob, "\">\n"))
 		return 0;
-	return HBUF_PUTSL(ob, "</blockquote>\n");
+
+	/*
+	 * Weird: content callouts have their initial callout type
+	 * removed.  Fortunately, this is hard-coded, so we know its
+	 * exact length.  Remove the callout type and any extra spacing
+	 * that follows it.
+	 */
+
+	if (param->admonition == ADMONITION_CALLOUT && content->size > 28) {
+		i = 28;
+		while (i < content->size && content->data[i] == ' ')
+			i++;
+		if (!HBUF_PUTSL(ob, "<p>") ||
+		    !hbuf_put(ob, content->data + i, content->size - i))
+			return 0;
+	} else if (!hbuf_putb(ob, content))
+		return 0;
+	return HBUF_PUTSL(ob, "</div>\n");
 }
 
 static int
@@ -1258,7 +1306,7 @@ rndr(struct lowdown_buf *ob,
 		rc = rndr_blockcode(ob, &n->rndr_blockcode, st);
 		break;
 	case LOWDOWN_BLOCKQUOTE:
-		rc = rndr_blockquote(ob, tmp);
+		rc = rndr_blockquote(st, &n->rndr_blockquote, ob, tmp);
 		break;
 	case LOWDOWN_DEFINITION:
 		rc = rndr_definition(ob, tmp);
