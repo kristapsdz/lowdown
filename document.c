@@ -2518,7 +2518,7 @@ parse_blockquote(struct lowdown_doc *doc, char *data, size_t size)
 {
 	size_t			 beg = 0, end = 0, pre, work_size = 0;
 	char			*work_data = NULL;
-	struct lowdown_node	*n;
+	struct lowdown_node	*n, *nn, *nnn;
 
 	while (beg < size) {
 		for (end = beg + 1;
@@ -2555,6 +2555,60 @@ parse_blockquote(struct lowdown_doc *doc, char *data, size_t size)
 	if (!parse_block(doc, work_data, work_size))
 		return -1;
 	popnode(doc, n);
+
+	if (!(doc->ext_flags & LOWDOWN_CALLOUTS))
+		return end;
+
+	/*
+	 * See if we're a GitHub or MDN admonition.  Begin by seeing if
+	 * the first node is a paragraph containing an initial double
+	 * emphasis with a specific word therein.
+	 */
+
+	if (TAILQ_EMPTY(&n->children))
+		return end;
+	nn = TAILQ_FIRST(&n->children);
+	if (nn->type != LOWDOWN_PARAGRAPH ||
+	    (nn = TAILQ_FIRST(&nn->children)) == NULL)
+		return end;
+	if (nn->type != LOWDOWN_DOUBLE_EMPHASIS ||
+	    (nnn = TAILQ_FIRST(&nn->children)) == NULL)
+		return end;
+	if (nnn->type != LOWDOWN_NORMAL_TEXT ||
+	    TAILQ_NEXT(nnn, entries) != NULL)
+		return end;
+
+	/*
+	 * GitHub uses the term on its own, while MDN uses the word, a
+	 * colon, and more text afterward.  Accept both.
+	 */
+
+	if (hbuf_streq(&nnn->rndr_normal_text.text, "Note"))
+		n->rndr_blockquote.admonition = ADMONITION_NOTE;
+	else if (hbuf_streq(&nnn->rndr_normal_text.text, "Note:"))
+		n->rndr_blockquote.admonition = ADMONITION_NOTE;
+	else if (hbuf_streq(&nnn->rndr_normal_text.text, "Callout"))
+		n->rndr_blockquote.admonition = ADMONITION_CALLOUT;
+	else if (hbuf_streq(&nnn->rndr_normal_text.text, "Callout:"))
+		n->rndr_blockquote.admonition = ADMONITION_CALLOUT;
+	else if (hbuf_streq(&nnn->rndr_normal_text.text, "Warning"))
+		n->rndr_blockquote.admonition = ADMONITION_WARNING;
+	else if (hbuf_streq(&nnn->rndr_normal_text.text, "Warning:"))
+		n->rndr_blockquote.admonition = ADMONITION_WARNING;
+	else
+		return end;
+	n->rndr_blockquote.type = BLOCKQUOTE_ADMONITION_BLOCK;
+
+	/* If the starting is just its own paragraph, done. */
+
+	if ((nn = TAILQ_NEXT(nn, entries)) == NULL)
+		return end;
+
+	/* ...or on its own line. */
+
+	if (nn->type == LOWDOWN_NORMAL_TEXT &&
+	    hbuf_strprefix(&nn->rndr_normal_text.text, "\n"))
+		n->rndr_blockquote.type = BLOCKQUOTE_ADMONITION;
 	return end;
 }
 

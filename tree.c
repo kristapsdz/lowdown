@@ -272,6 +272,20 @@ rndr(struct lowdown_buf *ob,
 		if (!HBUF_PUTSL(ob, "\n"))
 			return 0;
 		break;
+	case LOWDOWN_BLOCKQUOTE:
+		if (root->rndr_blockquote.type == BLOCKQUOTE_REGULAR)
+			break;
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "admonition (%s): %s\n",
+		    root->rndr_blockquote.type == BLOCKQUOTE_ADMONITION ?
+		    "single-line" : "double-line",
+		    root->rndr_blockquote.admonition == ADMONITION_NOTE ?
+		    "note" :
+		    root->rndr_blockquote.admonition == ADMONITION_WARNING ?
+		    "warning" : "callout"))
+			return 0;
+		break;
 	case LOWDOWN_BLOCKCODE:
 		if (!rndr_indent(ob, indent + 1))
 			return 0;

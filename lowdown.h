@@ -111,6 +111,19 @@ enum 	htbl_flags {
 	HTBL_FL_HEADER = 4
 };
 
+enum	admonition_type {
+	ADMONITION_NONE,
+	ADMONITION_NOTE,
+	ADMONITION_CALLOUT,
+	ADMONITION_WARNING,
+};
+
+enum 	blockquote_type {
+	BLOCKQUOTE_REGULAR,
+	BLOCKQUOTE_ADMONITION,
+	BLOCKQUOTE_ADMONITION_BLOCK
+};
+
 enum 	halink_type {
 	HALINK_NONE, /* used internally when it is not an autolink */
 	HALINK_NORMAL,
@@ -183,6 +196,11 @@ struct	rndr_link {
 struct	rndr_blockcode {
 	struct lowdown_buf text;
 	struct lowdown_buf lang;
+};
+
+struct	rndr_blockquote {
+	enum blockquote_type type;
+	enum admonition_type admonition;
 };
 
 struct	rndr_definition {
@@ -265,6 +283,7 @@ struct	lowdown_node {
 		struct rndr_raw_html rndr_raw_html; 
 		struct rndr_link rndr_link; 
 		struct rndr_blockcode rndr_blockcode; 
+		struct rndr_blockquote rndr_blockquote;
 		struct rndr_definition rndr_definition; 
 		struct rndr_codespan rndr_codespan; 
 		struct rndr_table rndr_table; 
@@ -310,6 +329,7 @@ struct	lowdown_opts {
 #define LOWDOWN_HILITE		  0x40
 #define	LOWDOWN_IMG_EXT	 	  0x20000 /* -> LOWDOWN_ATTRS */
 #define	LOWDOWN_MANTITLE	  0x100000
+#define LOWDOWN_CALLOUTS	  0x200000
 #define LOWDOWN_MATH		  0x200
 /* Disabled LOWDOWN_MATHEXP	  0x1000 */
 #define	LOWDOWN_METADATA	  0x4000
