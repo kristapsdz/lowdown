@@ -2580,15 +2580,14 @@ parse_blockquote(struct lowdown_doc *doc, char *data, size_t size)
 
 	/*
 	 * GitHub uses the term on its own, while MDN uses the word, a
-	 * colon, and more text afterward.  Accept both.
+	 * colon, and more text afterward.  Accept both.  (GitHub
+	 * doesn't support a "callout" admonition.)
 	 */
 
 	if (hbuf_streq(&nnn->rndr_normal_text.text, "Note"))
 		n->rndr_blockquote.admonition = ADMONITION_NOTE;
 	else if (hbuf_streq(&nnn->rndr_normal_text.text, "Note:"))
 		n->rndr_blockquote.admonition = ADMONITION_NOTE;
-	else if (hbuf_streq(&nnn->rndr_normal_text.text, "Callout"))
-		n->rndr_blockquote.admonition = ADMONITION_CALLOUT;
 	else if (hbuf_streq(&nnn->rndr_normal_text.text, "Callout:"))
 		n->rndr_blockquote.admonition = ADMONITION_CALLOUT;
 	else if (hbuf_streq(&nnn->rndr_normal_text.text, "Warning"))
