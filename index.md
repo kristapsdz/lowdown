@@ -96,7 +96,7 @@ following Markdown features and extensions:
 - autolinking
 - fenced code
 - tables
-- superscripts
+- superscripts (traditional and GFM)
 - footnotes
 - disabled inline HTML
 - "smart typography"
@@ -105,6 +105,7 @@ following Markdown features and extensions:
 - definition lists
 - extended attributes
 - task lists
+- admonitions
 
 ## Examples
 
