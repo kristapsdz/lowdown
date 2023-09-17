@@ -228,6 +228,13 @@ Do not parse emphasis within words.
 Parse strikethrough sequences.
 .It Dv LOWDOWN_SUPER
 Parse super-scripts.
+This accepts foo^bar^ GFM super-scripts.
+.It Dv LOWDOWN_SUPER_SHORT
+If
+.Dv LOWDOWN_SUPER
+is enabled, instead of the GFM style, accept the
+.Qq short
+form of superscript.
 This accepts foo^bar, which puts the parts following the caret until
 whitespace in superscripts; or foo^(bar), which puts only the parts in
 parenthesis.

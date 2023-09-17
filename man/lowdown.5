@@ -914,11 +914,21 @@ Nested footnotes are not allowed.
 .Ss Superscripts
 Uses the caret
 .Pq Dq \(ha
-to start a superscript.
-The superscripted material continues to white-space or, if starting with
-an open parenthesis, the close parenthesis.
+to start a superscript, then another to end it.
+Between these, white-space is not allowed.
+This is the GFM style.
 .Bd -literal -offset indent
-Though a great book, Q\(ha2 (Q\(ha(squared)) isn't Star Trek canon.
+Though a great book, Q\(ha2\(ha isn't Star Trek canon.
+.Ed
+.Pp
+If
+.Qq short
+.Pq traditional
+style super-scripts are enabled, start with a caret, continuing to
+white-space; or, if starting with an open parenthesis, continuing to the
+close parenthesis with possible white-space.
+.Bd -literal -offset indent
+Though a great book, Q\(ha2 isn't Star Trek canon.
 .Ed
 .
 .Ss HTML Content
