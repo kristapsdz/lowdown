@@ -337,6 +337,7 @@ struct	lowdown_opts {
 #define LOWDOWN_NOINTEM		  0x400
 #define LOWDOWN_STRIKE		  0x10
 #define LOWDOWN_SUPER		  0x100
+#define LOWDOWN_SUPER_SHORT	  0x400000
 #define LOWDOWN_TABLES		  0x01
 #define LOWDOWN_TASKLIST	  0x40000
 /* Omitted 			  0x20 */

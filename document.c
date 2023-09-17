@@ -2116,36 +2116,59 @@ cleanup:
 	return ret > 0 ? (ssize_t)i : ret;
 }
 
+/*
+ * '^': parsing a superscript.
+ */
 static ssize_t
-char_superscript(struct lowdown_doc *doc,
-	char *data, size_t offset, size_t size)
+char_superscript(struct lowdown_doc *doc, char *data, size_t offset,
+    size_t size)
 {
-	size_t	 sup_start, sup_len;
-	struct lowdown_node *n;
+	size_t			 sup_start, sup_len, end;
+	struct lowdown_node	*n;
 
 	if (size < 2)
 		return 0;
 
-	if (data[1] == '(') {
+	/*
+	 * The traditional syntax for superscripts is incompatible with
+	 * pandoc's (from GFM).  Calling the traditional syntax "short",
+	 * first check if not using that, then fall back on the
+	 * traditional syntaxes.
+	 */
+
+	if (!(doc->ext_flags & LOWDOWN_SUPER_SHORT)) {
+		sup_start = sup_len = 1;
+		while (sup_len < size && data[sup_len] != '^')
+			if (xisspace(data[sup_len++]))
+				return 0;
+		if (sup_len == size)
+			return 0;
+		end = sup_len + 1;
+		if (sup_len - sup_start == 0)
+			return 3;
+	} else if (data[1] == '(') {
 		sup_start = 2;
 		sup_len = find_emph_char(data + 2, size - 2, ')') + 2;
 		if (sup_len == size)
 			return 0;
+		end = sup_len + 1;
+		if (sup_len - sup_start == 0)
+			return 3;
 	} else {
 		sup_start = sup_len = 1;
 		while (sup_len < size && !xisspace(data[sup_len]))
 			sup_len++;
+		end = sup_len;
+		if (sup_len - sup_start == 0)
+			return 0;
 	}
-
-	if (sup_len - sup_start == 0)
-		return (sup_start == 2) ? 3 : 0;
 
 	if ((n = pushnode(doc, LOWDOWN_SUPERSCRIPT)) == NULL)
 		return -1;
 	if (!parse_inline(doc, data + sup_start, sup_len - sup_start))
 		return -1;
 	popnode(doc, n);
-	return (sup_start == 2) ? sup_len + 1 : sup_len;
+	return end;
 }
 
 static ssize_t

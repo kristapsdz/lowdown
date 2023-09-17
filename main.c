@@ -325,6 +325,8 @@ main(int argc, char *argv[])
 		{ "parse-no-strike",	no_argument,	&rifl, LOWDOWN_STRIKE },
 		{ "parse-super",	no_argument,	&aifl, LOWDOWN_SUPER },
 		{ "parse-no-super",	no_argument,	&rifl, LOWDOWN_SUPER },
+		{ "parse-super-short",	no_argument,	&aifl, LOWDOWN_SUPER_SHORT },
+		{ "parse-no-super-short",no_argument,	&rifl, LOWDOWN_SUPER_SHORT },
 		{ "parse-math",		no_argument,	&aifl, LOWDOWN_MATH },
 		{ "parse-no-math",	no_argument,	&rifl, LOWDOWN_MATH },
 		{ "parse-mantitle",	no_argument,	&aifl, LOWDOWN_MANTITLE },
