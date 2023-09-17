@@ -114,6 +114,7 @@ CFLAGS		+= -fPIC
 REGRESS_ARGS	 = "--out-no-smarty"
 REGRESS_ARGS	+= "--parse-no-img-ext"
 REGRESS_ARGS	+= "--parse-no-metadata"
+REGRESS_ARGS	+= "--parse-super-short"
 REGRESS_ARGS	+= "--html-no-head-ids"
 REGRESS_ARGS	+= "--html-no-skiphtml"
 REGRESS_ARGS	+= "--html-no-escapehtml"
