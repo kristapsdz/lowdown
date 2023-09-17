@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013 Tatsuhiko Kubo <cubicdaiya@gmail.com>
- * Copyright (c) 2018 Kristaps Dzonsons <kristaps@bsd.lv>
+ * Copyright (c) Kristaps Dzonsons <kristaps@bsd.lv>
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
