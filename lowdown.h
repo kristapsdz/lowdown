@@ -15,6 +15,10 @@
  */
 #ifndef LOWDOWN_H
 #define LOWDOWN_H
+/*
+ * The only visible symbols should be those in this header file.
+ */
+#pragma GCC visibility push(default)
 
 /*
  * All of this is documented in lowdown.3.
@@ -457,4 +461,5 @@ int 	 lowdown_odt_rndr(struct lowdown_buf *, void *,
 
 __END_DECLS
 
+#pragma GCC visibility pop /* visibility(default) */
 #endif /* !LOWDOWN_H */

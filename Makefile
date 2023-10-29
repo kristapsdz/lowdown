@@ -107,7 +107,10 @@ THUMBS		 = screen-mandoc.thumb.jpg \
 		   screen-term.thumb.jpg
 VALGRINDS	!= for f in `find regress -name \*.md` ; do echo `dirname $$f`/`basename $$f .md`.valgrind ; done
 VALGRINDDIFFS	!= for f in `find regress/diff -name \*.old.md` ; do echo `dirname $$f`/`basename $$f .old.md`.diff-valgrind ; done
+# Because the objects will be compiled into a shared library:
 CFLAGS		+= -fPIC
+# To avoid exporting internal functions (lowdown.h has default visibility).
+CFLAGS		+= -fvisibility=hidden
 
 # Only for MarkdownTestv1.0.3 in regress/original.
 
