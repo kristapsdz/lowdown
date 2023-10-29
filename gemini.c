@@ -773,10 +773,14 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			return 0;
 		st->last_blank = -1;
 		break;
-	case LOWDOWN_SUPERSCRIPT:
-		if (!HBUF_PUTSL(st->tmp, "^"))
+	case LOWDOWN_SUBSCRIPT:
+		if (!HBUF_PUTSL(st->tmp, "~") ||
+		    !rndr_buf(st, ob, n, st->tmp))
 			return 0;
-		if (!rndr_buf(st, ob, n, st->tmp))
+		break;
+	case LOWDOWN_SUPERSCRIPT:
+		if (!HBUF_PUTSL(st->tmp, "^") ||
+		    !rndr_buf(st, ob, n, st->tmp))
 			return 0;
 		break;
 	default:

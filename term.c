@@ -108,6 +108,7 @@ static const struct sty *stys[LOWDOWN__MAX] = {
 	&sty_link, /* LOWDOWN_LINK */
 	&sty_t_emph, /* LOWDOWN_TRIPLE_EMPHASIS */
 	&sty_strike, /* LOWDOWN_STRIKETHROUGH */
+	NULL, /* LOWDOWN_SUBSCRIPT */
 	NULL, /* LOWDOWN_SUPERSCRIPT */
 	NULL, /* LOWDOWN_FOOTNOTE */
 	NULL, /* LOWDOWN_MATH_BLOCK */

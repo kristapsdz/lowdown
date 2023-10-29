@@ -112,6 +112,7 @@ static ssize_t char_link(struct lowdown_doc *, char *, size_t, size_t);
 static ssize_t char_image(struct lowdown_doc *, char *, size_t, size_t);
 static ssize_t char_superscript(struct lowdown_doc *, char *, size_t, size_t);
 static ssize_t char_math(struct lowdown_doc *, char *, size_t, size_t);
+static ssize_t char_subscript(struct lowdown_doc *, char *, size_t, size_t);
 
 enum markdown_char_t {
 	MD_CHAR_NONE = 0,
@@ -127,6 +128,7 @@ enum markdown_char_t {
 	MD_CHAR_AUTOLINK_EMAIL,
 	MD_CHAR_AUTOLINK_WWW,
 	MD_CHAR_SUPERSCRIPT,
+	MD_CHAR_SUBSCRIPT,
 	MD_CHAR_QUOTE,
 	MD_CHAR_MATH
 };
@@ -145,6 +147,7 @@ static const char_trigger markdown_char_ptrs[] = {
 	&char_autolink_email,
 	&char_autolink_www,
 	&char_superscript,
+	&char_subscript,
 	NULL,
 	&char_math
 };
@@ -1027,8 +1030,6 @@ char_emphasis(struct lowdown_doc *doc,
 	/*
 	 * Spacing cannot follow an opening emphasis: strikethrough and
 	 * highlight only takes '~~'.
-	 * FIXME: don't depend upon the "ret =" as the last part of an
-	 * "or" chain---it's hard to read.
 	 */
 
 	if (size > 2 && data[1] != c) {
@@ -2117,35 +2118,42 @@ cleanup:
 }
 
 /*
- * '^': parsing a superscript.
+ * Parsing a superscript or subscript.
  */
 static ssize_t
-char_superscript(struct lowdown_doc *doc, char *data, size_t offset,
-    size_t size)
+char_supsubscript(struct lowdown_doc *doc, char *data, size_t offset,
+    size_t size, char token)
 {
 	size_t			 sup_start, sup_len, end;
 	struct lowdown_node	*n;
+
+	assert(token == '^' || token == '~');
 
 	if (size < 2)
 		return 0;
 
 	/*
 	 * The traditional syntax for superscripts is incompatible with
-	 * pandoc's (from GFM).  Calling the traditional syntax "short",
+	 * pandoc's (from GFM).  Calling the traditional syntax "short":
 	 * first check if not using that, then fall back on the
 	 * traditional syntaxes.
 	 */
 
 	if (!(doc->ext_flags & LOWDOWN_SUPER_SHORT)) {
 		sup_start = sup_len = 1;
-		while (sup_len < size && data[sup_len] != '^')
+		while (sup_len < size && data[sup_len] != token)
 			if (xisspace(data[sup_len++]))
 				return 0;
+
+		/*
+		 * FIXME: a standalone "~~" results in noting at all
+		 * being printed instead of the ~~.  
+		 */
 		if (sup_len == size)
 			return 0;
 		end = sup_len + 1;
 		if (sup_len - sup_start == 0)
-			return 3;
+			return 2;
 	} else if (data[1] == '(') {
 		sup_start = 2;
 		sup_len = find_emph_char(data + 2, size - 2, ')') + 2;
@@ -2163,12 +2171,30 @@ char_superscript(struct lowdown_doc *doc, char *data, size_t offset,
 			return 0;
 	}
 
-	if ((n = pushnode(doc, LOWDOWN_SUPERSCRIPT)) == NULL)
+	if ((n = pushnode(doc, token == '^' ?
+	    LOWDOWN_SUPERSCRIPT : LOWDOWN_SUBSCRIPT)) == NULL)
 		return -1;
 	if (!parse_inline(doc, data + sup_start, sup_len - sup_start))
 		return -1;
 	popnode(doc, n);
 	return end;
+}
+
+static ssize_t
+char_superscript(struct lowdown_doc *doc, char *data, size_t offset,
+    size_t size)
+{
+	return char_supsubscript(doc, data, offset, size, '^');
+}
+
+static ssize_t
+char_subscript(struct lowdown_doc *doc, char *data, size_t offset,
+    size_t size)
+{
+	if ((doc->ext_flags & LOWDOWN_STRIKE) && size > 0 &&
+	    data[1] == '~')
+		return char_emphasis(doc, data, offset, size);
+	return char_supsubscript(doc, data, offset, size, '~');
 }
 
 static ssize_t
@@ -4424,19 +4450,17 @@ struct lowdown_doc *
 lowdown_doc_new(const struct lowdown_opts *opts)
 {
 	struct lowdown_doc	*doc;
-	unsigned int		 extensions = opts ? opts->feat : 0;
 	size_t			 i;
 
 	doc = calloc(1, sizeof(struct lowdown_doc));
 	if (doc == NULL)
 		return NULL;
 
+	doc->ext_flags = opts == NULL ? 0 : opts->feat;
 	doc->maxdepth = opts == NULL ? 128 : opts->maxdepth;
 	doc->active_char['*'] = MD_CHAR_EMPHASIS;
 	doc->active_char['_'] = MD_CHAR_EMPHASIS;
-	if (extensions & LOWDOWN_STRIKE)
-		doc->active_char['~'] = MD_CHAR_EMPHASIS;
-	if (extensions & LOWDOWN_HILITE)
+	if (doc->ext_flags & LOWDOWN_HILITE)
 		doc->active_char['='] = MD_CHAR_EMPHASIS;
 	doc->active_char['`'] = MD_CHAR_CODESPAN;
 	doc->active_char['\n'] = MD_CHAR_LINEBREAK;
@@ -4445,17 +4469,18 @@ lowdown_doc_new(const struct lowdown_opts *opts)
 	doc->active_char['<'] = MD_CHAR_LANGLE;
 	doc->active_char['\\'] = MD_CHAR_ESCAPE;
 	doc->active_char['&'] = MD_CHAR_ENTITY;
-	if (extensions & LOWDOWN_AUTOLINK) {
+	if (doc->ext_flags & LOWDOWN_AUTOLINK) {
 		doc->active_char[':'] = MD_CHAR_AUTOLINK_URL;
 		doc->active_char['@'] = MD_CHAR_AUTOLINK_EMAIL;
 		doc->active_char['w'] = MD_CHAR_AUTOLINK_WWW;
 	}
-	if (extensions & LOWDOWN_SUPER)
+	if (doc->ext_flags & LOWDOWN_SUPER) {
 		doc->active_char['^'] = MD_CHAR_SUPERSCRIPT;
-	if (extensions & LOWDOWN_MATH)
+		doc->active_char['~'] = MD_CHAR_SUBSCRIPT;
+	} else if (doc->ext_flags & LOWDOWN_STRIKE)
+		doc->active_char['~'] = MD_CHAR_EMPHASIS;
+	if (doc->ext_flags & LOWDOWN_MATH)
 		doc->active_char['$'] = MD_CHAR_MATH;
-
-	doc->ext_flags = extensions;
 
 	if (opts != NULL && opts->metasz > 0) {
 		doc->meta = calloc(opts->metasz, sizeof(char *));

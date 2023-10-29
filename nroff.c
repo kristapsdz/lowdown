@@ -1300,13 +1300,23 @@ rndr_table_cell(struct bnodeq *obq, struct bnodeq *bq,
 }
 
 static int
-rndr_superscript(struct bnodeq *obq, struct bnodeq *bq)
+rndr_superscript(struct bnodeq *obq, struct bnodeq *bq,
+    enum lowdown_rndrt type)
 {
+	const char	*p1, *p2;
 
-	if (bqueue_span(obq, "\\u\\s-3") == NULL)
+	/* Lift pandoc's way of doing this. */
+
+	p1 = (type == LOWDOWN_SUPERSCRIPT) ?
+		"\\v\'-0.3m\'\\s[\\n[.s]*9u/12u]" : 
+		"\\v\'0.3m\'\\s[\\n[.s]*9u/12u]";
+	p2 = (type == LOWDOWN_SUPERSCRIPT) ?
+		"\\s0\\v\'0.3m\'" :
+		"\\s0\\v\'-0.3m\'";
+	if (bqueue_span(obq, p1) == NULL)
 		return 0;
 	TAILQ_CONCAT(obq, bq, entries);
-	return bqueue_span(obq, "\\s+3\\d") != NULL;
+	return bqueue_span(obq, p2) != NULL;
 }
 
 static int
@@ -1855,8 +1865,11 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	case LOWDOWN_LINK:
 		rc = rndr_link(st, obq, &tmpbq, &n->rndr_link);
 		break;
+	case LOWDOWN_SUBSCRIPT:
+		rc = rndr_superscript(obq, &tmpbq, n->type);
+		break;
 	case LOWDOWN_SUPERSCRIPT:
-		rc = rndr_superscript(obq, &tmpbq);
+		rc = rndr_superscript(obq, &tmpbq, n->type);
 		break;
 	case LOWDOWN_FOOTNOTE:
 		rc = rndr_footnote_ref(st, obq, &tmpbq);

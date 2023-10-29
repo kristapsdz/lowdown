@@ -323,6 +323,12 @@ odt_sty_flush(struct lowdown_buf *ob,
 				return 0;
 		}
 		break;
+	case LOWDOWN_SUBSCRIPT:
+		if (!HBUF_PUTSL(ob,
+		    "<style:text-properties"
+		    " style:text-position=\"sub 58%\"/>\n"))
+			return 0;
+		break;
 	case LOWDOWN_SUPERSCRIPT:
 		if (!HBUF_PUTSL(ob,
 		    "<style:text-properties"
@@ -2111,6 +2117,7 @@ rndr(struct lowdown_buf *ob,
 	case LOWDOWN_EMPHASIS:
 	case LOWDOWN_STRIKETHROUGH:
 	case LOWDOWN_HIGHLIGHT:
+	case LOWDOWN_SUBSCRIPT:
 	case LOWDOWN_SUPERSCRIPT:
 		if (!rndr_span(ob, tmp, n, st))
 			goto out;

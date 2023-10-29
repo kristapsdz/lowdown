@@ -644,14 +644,16 @@ rndr_tablecell(struct lowdown_buf *ob,
 
 static int
 rndr_superscript(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+	const struct lowdown_buf *content,
+	enum lowdown_rndrt type)
 {
+	const char	*elem;
 
-	if (!HBUF_PUTSL(ob, "\\textsuperscript{"))
-		return 0;
-	if (!hbuf_putb(ob, content))
-		return 0;
-	return HBUF_PUTSL(ob, "}");
+	elem = (type == LOWDOWN_SUPERSCRIPT) ? "super" : "sub";
+
+	return hbuf_printf(ob, "\\text%sscript{", elem) &&
+	    hbuf_putb(ob, content) &&
+	    HBUF_PUTSL(ob, "}");
 }
 
 static int
@@ -962,8 +964,12 @@ rndr(struct lowdown_buf *ob,
 		if (!rndr_triple_emphasis(ob, tmp))
 			return 0;
 		break;
+	case LOWDOWN_SUBSCRIPT:
+		if (!rndr_superscript(ob, tmp, n->type))
+			return 0;
+		break;
 	case LOWDOWN_SUPERSCRIPT:
-		if (!rndr_superscript(ob, tmp))
+		if (!rndr_superscript(ob, tmp, n->type))
 			return 0;
 		break;
 	case LOWDOWN_FOOTNOTE:
