@@ -174,7 +174,7 @@ lowdown: liblowdown.a main.o
 	$(CC) -o $@ main.o liblowdown.a $(LDFLAGS) $(LDADD_MD5) -lm $(LDADD)
 
 lowdown-diff: lowdown
-	ln -f lowdown lowdown-diff
+	ln -sf lowdown lowdown-diff
 
 liblowdown.a: $(OBJS) $(COMPAT_OBJS)
 	$(AR) rs $@ $(OBJS) $(COMPAT_OBJS)
