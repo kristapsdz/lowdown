@@ -190,6 +190,15 @@ liblowdown.so: $(OBJS) $(COMPAT_OBJS)
 	$(CC) -shared -o $@.$(LIBVER) $(OBJS) $(COMPAT_OBJS) $(LDFLAGS) $(LDADD_MD5) -lm -Wl,${LINKER_SONAME},$@.$(LIBVER) $(LDLIBS)
 	ln -sf $@.$(LIBVER) $@
 
+uninstall:
+	rm -rf $(SHAREDIR)/lowdown
+	rm -f $(BINDIR)/lowdown $(BINDIR)/lowdown-diff
+	for f in $(MAN1S) $(MAN5S) ; do \
+		name=`basename $$f .html` ; \
+		section=$${name##*.} ; \
+		rm -f $(MANDIR)/man$$section/$$name ; \
+	done
+
 install: bins
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
@@ -204,6 +213,15 @@ install: bins
 		$(INSTALL_MAN) man/$$name $(DESTDIR)$(MANDIR)/man$$section ; \
 	done
 
+uninstall_lib_common:
+	rm -f $(LIBDIR)/pkgconfig/lowdown.pc
+	rm -f $(INCLUDEDIR)/lowdown.h
+	for f in $(MAN3S) ; do \
+		name=`basename $$f .html` ; \
+		section=$${name##*.} ; \
+		rm -f $(MANDIR)/man$$section/$$name ; \
+	done
+
 install_lib_common: lowdown.pc
 	mkdir -p $(DESTDIR)$(MANDIR)/man3
 	mkdir -p $(DESTDIR)$(LIBDIR)/pkgconfig
@@ -216,12 +234,20 @@ install_lib_common: lowdown.pc
 		$(INSTALL_MAN) man/$$name $(DESTDIR)$(MANDIR)/man$$section ; \
 	done
 
+uninstall_shared: uninstall_lib_common
+	rm -f $(LIBDIR)/liblowdown.so.$(LIBVER) $(LIBDIR)/liblowdown.so
+
 install_shared: liblowdown.so install_lib_common
 	$(INSTALL_LIB) liblowdown.so.$(LIBVER) $(DESTDIR)$(LIBDIR)
 	( cd $(DESTDIR)$(LIBDIR) && ln -sf liblowdown.so.$(LIBVER) liblowdown.so )
 
+uninstall_static: uninstall_lib_common
+	rm -f $(LIBDIR)/liblowdown.a
+
 install_static: liblowdown.a install_lib_common
 	$(INSTALL_LIB) liblowdown.a $(DESTDIR)$(LIBDIR)
+
+uninstall_libs: uninstall_shared uninstall_static
 
 install_libs: install_shared install_static
 
