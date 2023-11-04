@@ -3,8 +3,15 @@
 
 include Makefile.configure
 
+# Follows semver.
+# This is complex because lowdown is both a program and a library; and
+# while libraries have well-defined semantics of semver change, programs
+# do not.  Let the library guide our versioning until a better way is
+# thought out.
 VERSION		 = 1.1.0
-LIBVER		 = 4
+# This is the major number of VERSION.  It might later become
+# MAJOR.MINOR, if the library moves a lot.
+LIBVER		 = 1
 OBJS		 = autolink.o \
 		   buffer.o \
 		   diff.o \
