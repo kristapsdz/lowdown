@@ -1260,14 +1260,12 @@ rndr_doc_header(struct lowdown_buf *ob,
 }
 
 static int
-rndr(struct lowdown_buf *ob,
-	struct lowdown_metaq *mq, void *ref, 
+rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq, struct html *st,
 	const struct lowdown_node *n)
 {
 	const struct lowdown_node	*child;
 	struct lowdown_buf		*tmp;
 	int32_t				 ent;
-	struct html			*st = ref;
 	int				 ret = 1, rc = 1;
 
 	if ((tmp = hbuf_new(64)) == NULL)
