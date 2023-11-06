@@ -55,9 +55,6 @@ enum	lowdown_type {
 	LOWDOWN_NULL
 };
 
-/*
- * All types of Markdown nodes that lowdown understands.
- */
 enum	lowdown_rndrt {
 	LOWDOWN_ROOT,
 	LOWDOWN_BLOCKCODE,
@@ -377,6 +374,7 @@ struct	lowdown_opts {
 #define	LOWDOWN_TERM_NOCOLOUR	  0x800000 /* no ANSI colours */
 #define LOWDOWN_TERM_NOLINK	  0x20000 /* don't show URLs */
 #define LOWDOWN_TERM_SHORTLINK	  0x400 /* shorten URLs */
+#define LOWDOWN_TERM_ALL_META	  0x20000000 /* show all metadata */
 	char			**meta;
 	size_t			  metasz;
 	char			**metaovr;

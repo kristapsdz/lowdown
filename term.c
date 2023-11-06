@@ -1230,6 +1230,14 @@ rndr_doc_header(struct lowdown_buf *ob, struct term *st,
 	if (!(st->opts & LOWDOWN_STANDALONE))
 		return 1;
 
+	if (st->opts & LOWDOWN_TERM_ALL_META) {
+		TAILQ_FOREACH(m, &st->metaq, entries)
+			if (!rndr_doc_header_meta(ob, st, n, m->key,
+			    m->value, 0))
+				return 0;
+		return 1;
+	}
+
 	TAILQ_FOREACH(m, &st->metaq, entries)
 		if (strcasecmp(m->key, "title") == 0)
 			title = m->value;

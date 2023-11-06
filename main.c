@@ -305,6 +305,8 @@ main(int argc, char *argv[])
 		{ "term-no-nolinks",	no_argument, 	&rfl, LOWDOWN_TERM_NOLINK },
 		{ "term-shortlinks",	no_argument, 	&afl, LOWDOWN_TERM_SHORTLINK },
 		{ "term-no-shortlinks",	no_argument, 	&rfl, LOWDOWN_TERM_SHORTLINK },
+		{ "term-all-meta",	no_argument, 	&afl, LOWDOWN_TERM_ALL_META },
+		{ "term-no-all-meta",	no_argument, 	&rfl, LOWDOWN_TERM_ALL_META },
 
 		{ "out-smarty",		no_argument,	&afl, LOWDOWN_SMARTY },
 		{ "out-no-smarty",	no_argument,	&rfl, LOWDOWN_SMARTY },
