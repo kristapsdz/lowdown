@@ -1613,7 +1613,7 @@ rndr(struct lowdown_buf *ob, struct term *st,
 			if (!rndr_buf_vspace(st, ob, n, 2))
 				return 0;
 			for (i = 0; i < st->footsz; i++)
-				if (!hbuf_putb(ob, st->foots[i]) &&
+				if (!hbuf_putb(ob, st->foots[i]) ||
 				    !HBUF_PUTSL(ob, "\n"))
 					return 0;
 		}
