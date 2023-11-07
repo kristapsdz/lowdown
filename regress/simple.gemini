@@ -26,20 +26,23 @@ Here’s a numbered list:
 
 Note again how the actual text starts at 4 columns in (4 characters from the left side). Here’s a code sample:
 
-```# Let me re-iterate ...
+```
+# Let me re-iterate ...
 for i in 1 .. 10 { do-something(i) }
 ```
 
 As you probably guessed, indented 4 spaces. By the way, instead of indenting the block, you can use delimited blocks, if you like:
 
-```define foobar() {
+```
+define foobar() {
     print "Welcome to flavor country!";
 }
 ```
 
 (which makes copying & pasting easier). You can optionally mark the delimited block for Pandoc to syntax highlight it:
 
-```import time
+```
+import time
 # Quick, count to ten!
 for i in range(10):
     # (but not *too* quick)
@@ -61,7 +64,8 @@ Now a nested list:
 
 3. Dump everything in the pot and follow this algorithm:
 
-```find wooden spoon
+```
+find wooden spoon
 uncover pot
 stir
 cover pot
@@ -82,7 +86,7 @@ Here’s a link to a website[a], to a local doc[b], and to a section heading in 
 
 Tables can look like this:
 
-```
+``` 
 size | material    | color      
 -----|-------------|-------------
 9    | leather     | brown      

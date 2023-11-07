@@ -607,7 +607,7 @@ static int
 rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	struct gemini *st, const struct lowdown_node *n)
 {
-	const struct lowdown_node	*child, *prev;
+	const struct lowdown_node	*child, *prev, *nn;
 	struct link			*l;
 	void				*pp;
 	struct lowdown_buf		*tmpbuf;
@@ -677,12 +677,30 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		break;
 	case LOWDOWN_DEFINITION_TITLE:
 	case LOWDOWN_HRULE:
-	case LOWDOWN_LINEBREAK:
 	case LOWDOWN_LISTITEM:
 	case LOWDOWN_META:
 	case LOWDOWN_TABLE_ROW:
 		if (!rndr_buf_vspace(st, ob, 1))
 			return 0;
+		break;
+	case LOWDOWN_LINEBREAK:
+		if (!rndr_buf_vspace(st, ob, 1))
+			return 0;
+
+		/*
+		 * A linebreak is special if invoked within a
+		 * blockquote, because it means we want to output a
+		 * newline but also continue outputting the blockquote
+		 * marker.
+		 */
+
+		for (nn = n->parent; nn != NULL; nn = nn->parent)
+			if (nn->type == LOWDOWN_BLOCKQUOTE) {
+				if (!HBUF_PUTSL(ob, "> "))
+					return 0;
+				st->last_blank = 0;
+				break;
+			}
 		break;
 	case LOWDOWN_IMAGE:
 	case LOWDOWN_LINK:
