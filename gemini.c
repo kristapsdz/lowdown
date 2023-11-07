@@ -703,7 +703,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	case LOWDOWN_TABLE_BLOCK:
 	case LOWDOWN_BLOCKCODE:
 	case LOWDOWN_BLOCKHTML:
-		if (!HBUF_PUTSL(st->tmp, "```"))
+		if (!HBUF_PUTSL(st->tmp, "```\n"))
 			return 0;
 		if (!rndr_buf(st, ob, n, st->tmp))
 			return 0;
