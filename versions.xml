@@ -1470,7 +1470,7 @@
 		<header>
 			<h1>1.1.0</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2023-11-05">2023-11-05</time>
+			<time datetime="2023-11-07">2023-11-07</time>
 		</header>
 		<aside>
 			<p>
@@ -1501,6 +1501,10 @@
 				specified, in which case print the title, author, and date just like
 				in the other modes.  Provide a <b>--term-all-meta</b> option to
 				print all metadata like before.
+			</p>
+			<p>
+				Make some small fixes to <b>-tgemini</b> regarding block quotes and
+				block code.
 			</p>
 			<p>
 				Lastly, significantly update
