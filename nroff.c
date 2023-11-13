@@ -1877,7 +1877,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		 * Restore what subsequent paragraphs should do.  This
 		 * macro will create output that's delayed in being
 		 * shown.  It might set post_para, which we don't want
-		 * to propogate to the actual output that will follow.
+		 * to propagate to the actual output that will follow.
 		 */
 		st->post_para = post_para;
 		break;

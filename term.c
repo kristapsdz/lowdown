@@ -1276,7 +1276,7 @@ rndr_doc_header(struct lowdown_buf *ob, struct term *st,
  * LOWDOWN_META, serialise directly into the metadata value without
  * formatting.
  *
- * This will be serialised to the ouptut buffer in rndr_doc_header().
+ * This will be serialised to the output buffer in rndr_doc_header().
  *
  * Return zero on failure (memory), non-zero otherwise.
  */
