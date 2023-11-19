@@ -15,7 +15,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-OCONFIGURE_VERSION="0.3.12"
+OCONFIGURE_VERSION="0.3.13"
 
 #
 # This script outputs two files: config.h and Makefile.configure.
@@ -579,7 +579,7 @@ cat << __HEREDOC__
 #define HAVE_RECALLOCARRAY ${HAVE_RECALLOCARRAY}
 #define HAVE_SANDBOX_INIT ${HAVE_SANDBOX_INIT}
 #define HAVE_SCAN_SCALED ${HAVE_SCAN_SCALED}
-#define HAVE_SECCOMP_FILTER ${HAVE_SECCOMP_FILTER}
+#define HAVE_SECCOMP_HEADER ${HAVE_SECCOMP_FILTER}
 #define HAVE_SETRESGID ${HAVE_SETRESGID}
 #define HAVE_SETRESUID ${HAVE_SETRESUID}
 #define HAVE_SHA2 ${HAVE_SHA2}
@@ -711,6 +711,7 @@ extern void warnc(int, const char *, ...);
 extern void vwarn(const char *, va_list);
 extern void vwarnc(int, const char *, va_list);
 extern void vwarnx(const char *, va_list);
+
 __HEREDOC__
 
 [ ${HAVE_MD5} -eq 0 ] && \
@@ -800,22 +801,74 @@ char *SHA512Data(const uint8_t *, size_t, char *);
 __HEREDOC__
 
 if [ ${HAVE_SECCOMP_FILTER} -eq 1 ]; then
+	seccomp_audit_arch=
 	arch=$(uname -m 2>/dev/null || echo unknown)
 	case "$arch" in
-		x86_64)
-			echo "#define SECCOMP_AUDIT_ARCH AUDIT_ARCH_X86_64"
-			;;
-		i*86)
-			echo "#define SECCOMP_AUDIT_ARCH AUDIT_ARCH_I386"
-			;;
-		arm*)
-			echo "#define SECCOMP_AUDIT_ARCH AUDIT_ARCH_ARM"
-			;;
-		aarch64)
-			echo "#define SECCOMP_AUDIT_ARCH AUDIT_ARCH_AARCH64"
-			;;
+	x86_64)
+		seccomp_audit_arch=AUDIT_ARCH_X86_64
+		;;
+	i*86)
+		seccomp_audit_arch=AUDIT_ARCH_I386
+		;;
+	arm*)
+		seccomp_audit_arch=AUDIT_ARCH_ARM
+		;;
+	aarch64*)
+		seccomp_audit_arch=AUDIT_ARCH_AARCH64
+		;;
+	s390x)
+		seccomp_audit_arch=AUDIT_ARCH_S390X
+		;;
+	s390)
+		seccomp_audit_arch=AUDIT_ARCH_S390
+		;;
+	ppc)
+		seccomp_audit_arch=AUDIT_ARCH_PPC
+		;;
+	ppc64)
+		seccomp_audit_arch=AUDIT_ARCH_PPC64
+		;;
+	ppc64le)
+		seccomp_audit_arch=AUDIT_ARCH_PPC64LE
+		;;
+	mips)
+		seccomp_audit_arch=AUDIT_ARCH_MIPS
+		;;
+	mipsel)
+		seccomp_audit_arch=AUDIT_ARCH_MIPSEL
+		;;
+	riscv64)
+		seccomp_audit_arch=AUDIT_ARCH_RISCV64
+		;;
 	esac
-	echo
+	if [ -n "$seccomp_audit_arch" ]
+	then
+		echo "seccomp-arch: $seccomp_audit_arch" 1>&2
+		cat << __HEREDOC__
+/*
+ * Seccomp is both available and has a recognised architecture.
+ */
+#define HAVE_SECCOMP_FILTER 1
+#define SECCOMP_AUDIT_ARCH $seccomp_audit_arch
+
+__HEREDOC__
+	else
+		echo "seccomp-arch: disabling (unknown: `uname -m`)" 1>&2
+		cat << __HEREDOC__
+/**
+ * Seccomp is available, but not with a recognised architecture.
+ * Please submit your architecture (via uname -m) to the oconfigure
+ * maintainers.
+ */
+#define HAVE_SECCOMP_FILTER 0
+
+__HEREDOC__
+	fi
+else
+	cat << __HEREDOC__
+#define HAVE_SECCOMP_FILTER 0
+
+__HEREDOC__
 fi
 
 [ ${HAVE_B64_NTOP} -eq 0 ] && \
