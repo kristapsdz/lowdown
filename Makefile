@@ -140,18 +140,22 @@ all: bins lowdown.pc liblowdown.so
 bins: lowdown lowdown-diff
 
 valgrind: $(VALGRINDS) $(VALGRINDDIFFS)
-	@for f in $(VALGRINDS) ; do \
+	@exit=0 ; \
+	for f in $(VALGRINDS) ; do \
 		if [ -s $$f ]; then \
 			echo `dirname $$f`/`basename $$f .valgrind`.md ; \
 			cat $$f ; \
+			exit=1 ; \
 		fi ; \
-	done
-	@for f in $(VALGRINDDIFFS) ; do \
+	done ; \
+	for f in $(VALGRINDDIFFS) ; do \
 		if [ -s $$f ]; then \
 			echo `dirname $$f`/`basename $$f .diff-valgrind`.old.md ; \
 			cat $$f ; \
+			exit=1 ; \
 		fi ; \
-	done
+	done ; \
+	exit $$exit
 
 $(VALGRINDS) $(VALGRINDDIFFS): bins
 
