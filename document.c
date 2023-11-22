@@ -3359,121 +3359,6 @@ parse_atxheader(struct lowdown_doc *doc, char *data, size_t size)
 }
 
 /*
- * Check for end of HTML block : </tag>( *)\n
- * Returns tag length on match, 0 otherwise.
- * Assumes data starts with "<".
- */
-static size_t
-html_is_end(const char *tag, size_t tag_len,
-	struct lowdown_doc *doc, const char *data, size_t size)
-{
-	size_t i = tag_len + 3, w;
-
-	/*
-	 * Try to match the end tag
-	 * Note: we're not considering tags like "</tag >" which are
-	 * still valid.
-	 */
-
-	if (i > size ||
-	    data[1] != '/' ||
-	    strncasecmp(data + 2, tag, tag_len) != 0 ||
-	    data[tag_len + 2] != '>')
-		return 0;
-
-	/* Rest of the line must be empty. */
-
-	if ((w = is_empty(data + i, size - i)) == 0 && i < size)
-		return 0;
-
-	return i + w;
-}
-
-/*
- * Try to find HTML block ending tag.
- * Returns the length on match, 0 otherwise.
- */
-static size_t
-html_find_end(const char *tag, size_t tag_len,
-	struct lowdown_doc *doc, const char *data, size_t size)
-{
-	size_t	i, w = 0;
-
-	for (i = 0; ; i++) {
-		while (i < size && data[i] != '<')
-			i++;
-		if (i >= size)
-			return 0;
-		w = html_is_end(tag, tag_len, doc, data + i, size - i);
-		if (w)
-			break;
-	}
-
-	return i + w;
-}
-
-/*
- * Try to find end of HTML block in strict mode (it must be an
- * unindented line, and have a blank line afterwards).
- * Returns the length on match, 0 otherwise.
- */
-static size_t
-html_find_end_strict(const char *tag, size_t tag_len,
-	struct lowdown_doc *doc, const char *data, size_t size)
-{
-	size_t i = 0, mark;
-
-	while (1) {
-		mark = i;
-		while (i < size && data[i] != '\n')
-			i++;
-		if (i < size)
-			i++;
-		if (i == mark)
-			return 0;
-
-		if (data[mark] == ' ' && mark > 0)
-			continue;
-		mark += html_find_end(tag, tag_len,
-			doc, data + mark, i - mark);
-		if (mark == i &&
-		    (is_empty(data + i, size - i) || i >= size))
-			break;
-	}
-
-	return i;
-}
-
-/*
- * See if the sequence of length "len" bytes in "str" is a void element.
- * Return zero if not, else the number of bytes until one after end of
- * the HTML string.
- */
-static size_t
-html_is_void_element(const char *str, size_t len)
-{
-	size_t			 i, sz;
-	static const char	*tags[] = {
-		"br",
-		"hr",
-		"link",
-		"meta",
-		NULL
-	};
-
-	for (i = 0; tags[i] != NULL; i++) {
-		sz = strlen(tags[i]);
-		if (len < sz || strncasecmp(tags[i], str, sz) != 0)
-			continue;
-		for ( ; sz < len && str[sz] != '>'; sz++)
-			/* Do nothing. */ ;
-		return sz < len ? sz + 1 : 0;
-	}
-
-	return 0;
-}
-
-/*
  * Canonicalise a sequence of length "len" bytes in "str".  This returns
  * NULL if the sequence is not recognised, or a NUL-terminated string of
  * the sequence otherwise.
@@ -3533,18 +3418,123 @@ html_find_block(const char *str, size_t len)
 }
 
 /*
+ * Check for end of HTML block : </tag>( *)\n
+ * Returns tag length on match, 0 otherwise.
+ * Assumes data starts with "<".
+ */
+static size_t
+html_is_end(const char *tag, size_t tag_len,
+	struct lowdown_doc *doc, const char *data, size_t size)
+{
+	size_t i = tag_len + 3, w;
+
+	/*
+	 * Try to match the end tag
+	 * Note: we're not considering tags like "</tag >" which are
+	 * still valid.
+	 */
+
+	if (i > size ||
+	    data[1] != '/' ||
+	    strncasecmp(data + 2, tag, tag_len) != 0 ||
+	    data[tag_len + 2] != '>')
+		return 0;
+
+	/* Rest of the line must be empty. */
+
+	if ((w = is_empty(data + i, size - i)) == 0 && i < size)
+		return 0;
+
+	return i + w;
+}
+
+/*
+ * Try to find HTML block ending tag.
+ * Returns the length on match, 0 otherwise.
+ */
+static size_t
+html_find_end(const char *tag, size_t tag_len,
+	struct lowdown_doc *doc, const char *data, size_t size)
+{
+	size_t i, j, w = 0, depth = 0;
+	const char *matched_tag;
+
+	for (i = 0; ; i++) {
+		/* Find next opening tag */
+		while (i < size && data[i] != '<')
+			i++;
+		/* Ran out of data to check */
+		if (i >= size)
+			return 0;
+		/* Start looking for the end of the attribute at lbracket+1 */
+		j = i + 1;
+		/* Find the rbracket or space */
+		while (j < size && data[j] != '>' && data[j] != ' ')
+			j++;
+		/* Search for a tag matching the current tag to increment the
+		 * search depth. Consider nested divs for instance - the next
+		 * encountered /div is not the one we are looking for if we
+		 * are within a nested div. */
+		matched_tag = html_find_block(data + i + 1, tag_len);
+		if (matched_tag && strncmp(matched_tag, tag, tag_len) == 0)
+			depth++;
+
+		w = html_is_end(tag, tag_len, doc, data + i, size - i);
+
+		if (w && depth == 0)
+			break;
+		else if (w)
+			depth--;
+	}
+
+	return i + w;
+}
+
+/*
+ * See if the sequence of length "len" bytes in "str" is a void element.
+ * Return zero if not, else the number of bytes until one after end of
+ * the HTML string.
+ */
+static size_t
+html_is_void_element(const char *str, size_t len)
+{
+	size_t			 i, sz;
+	static const char	*tags[] = {
+		"br",
+		"hr",
+		"link",
+		"meta",
+		NULL
+	};
+
+	for (i = 0; tags[i] != NULL; i++) {
+		sz = strlen(tags[i]);
+		if (len < sz || strncasecmp(tags[i], str, sz) != 0)
+			continue;
+		for ( ; sz < len && str[sz] != '>'; sz++)
+			/* Do nothing. */ ;
+		return sz < len ? sz + 1 : 0;
+	}
+
+	return 0;
+}
+
+
+/*
  * Parsing of inline HTML block.
  * Return <0 on failure, >0 on success, 0 if not a block.
  */
 static ssize_t
 parse_htmlblock(struct lowdown_doc *doc, char *data, size_t size)
 {
-	struct lowdown_buf	 work;
-	size_t	 	 	 i, j = 0, tag_len, tag_end;
+	struct lowdown_buf	 work, closing_tag;
+	size_t 	 i, j = 0, tag_len, tag_end = 0;
+	size_t start_of_tag_end, end_of_start_tag;
 	const char		*curtag = NULL;
-	struct lowdown_node 	*n;
+	struct lowdown_node 	*n, *p;
 
 	memset(&work, 0, sizeof(struct lowdown_buf));
+	memset(&closing_tag, 0, sizeof(struct lowdown_buf));
 
 	work.data = data;
 
@@ -3618,36 +3608,66 @@ parse_htmlblock(struct lowdown_doc *doc, char *data, size_t size)
 		return 0;
 	}
 
-	/* Looking for a matching closing tag in strict mode. */
-
 	tag_len = strlen(curtag);
-	tag_end = html_find_end_strict
-		(curtag, tag_len, doc, data, size);
 
 	/*
-	 * If not found, trying a second pass looking for indented match
-	 * but not if tag is "ins" or "del" (following original
-	 * Markdown.pl).
+	 * Search for an ending tag only if tag is not "ins" or
+	 * "del" (following original Markdown.pl).
 	 */
 
-	if (!tag_end &&
-	    strcmp(curtag, "ins") != 0 && strcmp(curtag, "del") != 0)
+	if (strcmp(curtag, "ins") != 0 && strcmp(curtag, "del") != 0)
 		tag_end = html_find_end
-			(curtag, tag_len, doc, data, size);
+			(curtag, tag_len, doc, data + tag_len, size) + tag_len;
 
 	if (!tag_end)
 		return 0;
 
 	/* The end of the block has been found. */
 
+	start_of_tag_end = tag_end - 1;
+	/* Iterate backwards from tag end to find the opening bracket */
+	while (start_of_tag_end >= 0 && data[start_of_tag_end] != '<')
+		start_of_tag_end--;
+
+	/* Capture the data for the closing tag to emit as a node later */
+	closing_tag.data = data + start_of_tag_end;
+	closing_tag.size = tag_end - start_of_tag_end;
+
+	for (end_of_start_tag = 0; end_of_start_tag < size; end_of_start_tag++) {
+		if (data[end_of_start_tag] == '>') {
+			end_of_start_tag +=
+				is_empty(data + end_of_start_tag + 1, size - end_of_start_tag - 1);
+			break;
+		}
+	}
+
 	n = pushnode(doc, LOWDOWN_BLOCKHTML);
 	if (n == NULL)
 		return -1;
 
-	work.size = tag_end;
+	work.size = end_of_start_tag;
+
 	if (!hbuf_createb(&n->rndr_blockhtml.text, &work))
 		return -1;
+
+	/* Within the LOWDOWN_BLOCKHTML, process everything from the
+	 * end of the opening tag to the beginning of the closing tag. */
+	if (!parse_block(doc, work.data + end_of_start_tag,
+					 start_of_tag_end - end_of_start_tag))
+		return -1;
+
+	/* Now insert the closing tag as a node. */
+	p = pushnode(doc, LOWDOWN_RAW_HTML);
+	if (p == NULL)
+		return -1;
+
+	if (!hbuf_createb(&p->rndr_raw_html.text, &closing_tag))
+		return -1;
+
+	popnode(doc, p);
+
 	popnode(doc, n);
+
 	return tag_end;
 }
 

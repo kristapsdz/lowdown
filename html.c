@@ -607,9 +607,11 @@ rndr_paragraph(struct lowdown_buf *ob,
 
 static int
 rndr_raw_block(struct lowdown_buf *ob,
+	const struct lowdown_buf *content,
 	const struct rndr_blockhtml *param,
 	const struct html *st)
 {
+	int result = 0;
 	size_t	org, sz;
 
 	if ((st->flags & LOWDOWN_HTML_SKIP_HTML))
@@ -638,7 +640,13 @@ rndr_raw_block(struct lowdown_buf *ob,
 
 	if (!hbuf_put(ob, param->text.data + org, sz - org))
 		return 0;
-	return hbuf_putc(ob, '\n');
+
+	result = hbuf_putc(ob, '\n');
+
+	if (!hbuf_putb(ob, content))
+		return 0;
+
+	return result;
 }
 
 static int
@@ -740,7 +748,6 @@ rndr_raw_html(struct lowdown_buf *ob,
 	const struct rndr_raw_html *param,
 	const struct html *st)
 {
-
 	if (st->flags & LOWDOWN_HTML_SKIP_HTML)
 		return 1;
 
@@ -1355,7 +1362,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq, struct html *st,
 		rc = rndr_tablecell(ob, tmp, &n->rndr_table_cell);
 		break;
 	case LOWDOWN_BLOCKHTML:
-		rc = rndr_raw_block(ob, &n->rndr_blockhtml, st);
+		rc = rndr_raw_block(ob, tmp, &n->rndr_blockhtml, st);
 		break;
 	case LOWDOWN_LINK_AUTO:
 		rc = rndr_autolink(ob, &n->rndr_autolink, st);
