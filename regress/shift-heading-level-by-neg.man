@@ -1,9 +1,7 @@
-.SH
-header 1
+.SH header 1
 .LP
 1
-.SH
-header 2
+.SH header 2
 .LP
 2
 .SS
