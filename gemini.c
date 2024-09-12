@@ -180,7 +180,8 @@ rndr_escape(struct lowdown_buf *out, const char *buf, size_t sz)
 			if (!hbuf_putc(out, ' '))
 				return 0;
 			start = i + 1;
-		} else if (iscntrl((unsigned char)buf[i])) {
+		} else if ((unsigned char) buf[i] < 0x80 && iscntrl((unsigned char)buf[i])) {
+            fprintf(stderr, "this is a control character: %x %x\n", (unsigned char)buf[i], buf[i]);
 			if (!hbuf_put(out, buf + start, i - start))
 				return 0;
 			start = i + 1;

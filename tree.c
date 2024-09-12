@@ -94,7 +94,7 @@ rndr_short(struct lowdown_buf *ob, const struct lowdown_buf *b)
 		} else if (b->data[i] == '\t') {
 			if (!HBUF_PUTSL(ob, "\\t"))
 				return 0;
-		} else if (iscntrl((unsigned char)b->data[i])) {
+		} else if ((unsigned char)b->data[i] < 0x80 && iscntrl((unsigned char)b->data[i])) {
 			if (!hbuf_putc(ob, '?'))
 				return 0;
 		} else {

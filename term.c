@@ -187,7 +187,7 @@ rndr_escape(struct term *term, struct lowdown_buf *out,
 	/* Don't allow control characters through. */
 
 	for (i = 0; i < sz; i++)
-		if (iscntrl((unsigned char)buf[i])) {
+		if ((unsigned char)buf[i] < 0x80 && iscntrl((unsigned char)buf[i])) {
 			ret = rndr_mbswidth
 				(term, buf + start, i - start);
 			if (ret < 0)
