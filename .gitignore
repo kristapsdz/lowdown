@@ -2,6 +2,7 @@
 Makefile.configure
 config.h
 config.log
+test-*.dSYM  # macOS only
 # object files
 *.[oa]
 *.so.*
