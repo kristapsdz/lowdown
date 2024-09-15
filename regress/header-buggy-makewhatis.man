@@ -1,0 +1,22 @@
+.SH Same line as SH.
+.LP
+a
+.SS
+Not same line as SS.
+.LP
+b
+.SH Same \(lqline\(rq.
+.LP
+c
+.SH
+Not same \fBline\fR <\fIfoo.com\fR>
+.LP
+d
+.SH
+Not same \fIline\fR.
+.LP
+e
+.SH
+Not same \fBline\fR.
+.LP
+e

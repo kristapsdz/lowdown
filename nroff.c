@@ -76,6 +76,7 @@ struct	bnode {
 	char				*args; /* (unsafe) 2nd args */
 	int				 close; /* BNODE_COLOUR/FONT */
 	int				 tblhack; /* BSCOPE_SPAN */
+        int				 headerhack; /* BSCOPE_BLOCK */
 	enum bscope			 scope; /* scope */
 	unsigned int			 font; /* if BNODE_FONT */
 #define	BFONT_ITALIC			 0x01
@@ -84,7 +85,6 @@ struct	bnode {
 	unsigned int			 colour; /* if BNODE_COLOUR */
 #define	BFONT_BLUE			 0x01
 #define	BFONT_RED			 0x02
-        int				 trailingspace; /* BSCOPE_BLOCK .SH */
 	TAILQ_ENTRY(bnode)		 entries;
 };
 
@@ -517,8 +517,18 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 				return 0;
 		}
 
-		/* Finally, trailing newline/space. */
-		trailingchar = bn->trailingspace ? ' ' : '\n';
+		/*
+		 * The "headerhack" is used by SH block macros to
+		 * indicate that their children are all normal text or
+		 * entities, and so to output the content on the same
+		 * line as the SH macro.  This is a hack because man(7)
+		 * specifically allows for next-line content; however,
+		 * buggy software (e.g., Mac OS X's makewhatis) don't
+		 * correctly parse empty SH properly.
+		 */
+
+		trailingchar = bn->headerhack ? ' ' : '\n';
+
 		if (nextblk && ob->size > 0 && 
 		    ob->data[ob->size - 1] != trailingchar &&
 		    !hbuf_putc(ob, trailingchar))
@@ -842,7 +852,7 @@ rndr_header(struct nroff *st, struct bnodeq *obq,
 	struct lowdown_buf		*buf = NULL;
 	const struct lowdown_buf	*nbuf;
 	int			 	 rc = 0;
-        const struct lowdown_node	*child = NULL;
+        const struct lowdown_node	*child;
 
 	level = (ssize_t)n->rndr_header.level + st->headers_offs;
 	if (level < 1)
@@ -861,23 +871,24 @@ rndr_header(struct nroff *st, struct bnodeq *obq,
 		if (bn == NULL)
 			return 0;
 
-		if (level == 1
-			&& (child = TAILQ_FIRST(&n->children))
-			&& !TAILQ_NEXT(child, entries)) {
-			/* This is a first-level header and there is exactly one child.
-			 *
-			 * If the child is a `LOWDOWN_NORMAL_TEXT`, put
-			 * a single space between the `.SH` and the
-			 * heading instead of a newline.
-			 *
-			 * This renders headers as (e.g.) `.SH
-			 * SYNOPSIS` instead of `.SH\nSYNOPSIS`, which
-			 * is important for macOS `makewhatis`.
-			 *
-			 * See: https://github.com/kristapsdz/lowdown/pull/138
-			 */
-			bn->trailingspace = child->type == LOWDOWN_NORMAL_TEXT;
+		/*
+		 * Do a scan of the contents of the SH.  If there's only
+		 * normal text (or entities), then record this fact.  It
+		 * will be used in bqueue_flush() for how the macro is
+		 * serialised.
+		 */
+
+		if (level == 1) {
+			bn->headerhack = 1;
+			TAILQ_FOREACH(child, &n->children, entries) {
+				if (child->type == LOWDOWN_ENTITY ||
+				    child->type == LOWDOWN_NORMAL_TEXT)
+					continue;
+				bn->headerhack = 0;
+				break;
+			}
 		}
+
 		TAILQ_CONCAT(obq, bq, entries);
 		st->post_para = 1;
 		return 1;
