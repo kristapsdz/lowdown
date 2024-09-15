@@ -1,5 +1,4 @@
-.SH
-An h1 header
+.SH An h1 header
 .LP
 Paragraphs are separated by a blank line.
 .PP

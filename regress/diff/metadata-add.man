@@ -1,6 +1,5 @@
 .\" -*- mode: troff; coding: utf-8 -*-
 .TH "" "7" ""
-.SH
-section
+.SH section
 .LP
 body

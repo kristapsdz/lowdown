@@ -84,6 +84,7 @@ struct	bnode {
 	unsigned int			 colour; /* if BNODE_COLOUR */
 #define	BFONT_BLUE			 0x01
 #define	BFONT_RED			 0x02
+        int				 trailingspace; /* BSCOPE_BLOCK .SH */
 	TAILQ_ENTRY(bnode)		 entries;
 };
 
@@ -369,6 +370,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 	const struct bnode	*bn, *chk, *next;
 	const char		*cp;
 	int		 	 nextblk;
+	char			 trailingchar;
 
 	TAILQ_FOREACH(bn, bq, entries) {
 		nextblk = 0;
@@ -515,11 +517,11 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 				return 0;
 		}
 
-		/* Finally, trailing newline. */
-
+		/* Finally, trailing newline/space. */
+		trailingchar = bn->trailingspace ? ' ' : '\n';
 		if (nextblk && ob->size > 0 && 
-		    ob->data[ob->size - 1] != '\n' &&
-		    !hbuf_putc(ob, '\n'))
+		    ob->data[ob->size - 1] != trailingchar &&
+		    !hbuf_putc(ob, trailingchar))
 			return 0;
 	}
 
@@ -840,6 +842,7 @@ rndr_header(struct nroff *st, struct bnodeq *obq,
 	struct lowdown_buf		*buf = NULL;
 	const struct lowdown_buf	*nbuf;
 	int			 	 rc = 0;
+        const struct lowdown_node	*child = NULL;
 
 	level = (ssize_t)n->rndr_header.level + st->headers_offs;
 	if (level < 1)
@@ -857,6 +860,24 @@ rndr_header(struct nroff *st, struct bnodeq *obq,
 			bqueue_block(obq, ".SS");
 		if (bn == NULL)
 			return 0;
+
+		if (level == 1
+			&& (child = TAILQ_FIRST(&n->children))
+			&& !TAILQ_NEXT(child, entries)) {
+			/* This is a first-level header and there is exactly one child.
+			 *
+			 * If the child is a `LOWDOWN_NORMAL_TEXT`, put
+			 * a single space between the `.SH` and the
+			 * heading instead of a newline.
+			 *
+			 * This renders headers as (e.g.) `.SH
+			 * SYNOPSIS` instead of `.SH\nSYNOPSIS`, which
+			 * is important for macOS `makewhatis`.
+			 *
+			 * See: https://github.com/kristapsdz/lowdown/pull/138
+			 */
+			bn->trailingspace = child->type == LOWDOWN_NORMAL_TEXT;
+		}
 		TAILQ_CONCAT(obq, bq, entries);
 		st->post_para = 1;
 		return 1;
