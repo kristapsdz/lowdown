@@ -365,6 +365,23 @@ Here is how you start the program xterm:
 
     xterm &
 .Ed
+.Pp
+Alternatively, code blocks are called
+.Dq fenced
+if they're surrounded in three or more matching backticks or tildes.
+Code fences may optionally include the language used in the code fence
+following the header, such as in the following.
+.Bd -literal -offset indent
+```c
+int main(void) {
+  puts("Engage!");
+  return 0;
+}
+```
+.Ed
+.Pp
+The language, if provided, is usually passed into the output is
+auxiliary information such as an HTML class.
 .
 .Ss Horizontal Rules
 A horizontal rule is a line that goes across an output page.
