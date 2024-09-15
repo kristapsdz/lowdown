@@ -82,25 +82,28 @@ rndr_indent(struct lowdown_buf *ob, size_t indent)
 static int
 rndr_short(struct lowdown_buf *ob, const struct lowdown_buf *b)
 {
-	size_t	 i;
+	size_t	 	 i;
+	unsigned char	 ch;
 
-	for (i = 0; i < 20 && i < b->size; i++)
-		if (b->data[i] == '\n') {
+	for (i = 0; i < 20 && i < b->size; i++) {
+		ch = (unsigned char)b->data[i];
+		if (ch == '\n') {
 			if (!HBUF_PUTSL(ob, "\\n"))
 				return 0;
-		} else if (b->data[i] == '\r') {
+		} else if (ch == '\r') {
 			if (!HBUF_PUTSL(ob, "\\r"))
 				return 0;
-		} else if (b->data[i] == '\t') {
+		} else if (ch == '\t') {
 			if (!HBUF_PUTSL(ob, "\\t"))
 				return 0;
-		} else if ((unsigned char)b->data[i] < 0x80 && iscntrl((unsigned char)b->data[i])) {
+		} else if (ch < 0x80 && iscntrl(ch)) {
 			if (!hbuf_putc(ob, '?'))
 				return 0;
 		} else {
 			if (!hbuf_putc(ob, b->data[i]))
 				return 0;
 		}
+	}
 
 	if (i < b->size && !HBUF_PUTSL(ob, "..."))
 		return 0;

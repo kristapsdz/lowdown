@@ -167,10 +167,12 @@ rndr_link_ref(const struct gemini *st,
 static int
 rndr_escape(struct lowdown_buf *out, const char *buf, size_t sz)
 {
-	size_t	 i, start = 0;
+	size_t	 	 i, start = 0;
+	unsigned char	 ch;
 
 	for (i = 0; i < sz; i++) {
-		if (buf[i] == '\n') {
+		ch = (unsigned char)buf[i];
+		if (ch == '\n') {
 			if (!hbuf_put(out, buf + start, i - start))
 				return 0;
 			if (out->size && 
@@ -180,18 +182,15 @@ rndr_escape(struct lowdown_buf *out, const char *buf, size_t sz)
 			if (!hbuf_putc(out, ' '))
 				return 0;
 			start = i + 1;
-		} else if ((unsigned char) buf[i] < 0x80 && iscntrl((unsigned char)buf[i])) {
-            fprintf(stderr, "this is a control character: %x %x\n", (unsigned char)buf[i], buf[i]);
+		} else if (ch < 0x80 && iscntrl(ch)) {
 			if (!hbuf_put(out, buf + start, i - start))
 				return 0;
 			start = i + 1;
 		}
 	}
 
-	if (start < sz &&
-	    !hbuf_put(out, buf + start, sz - start))
+	if (start < sz && !hbuf_put(out, buf + start, sz - start))
 		return 0;
-
 	return 1;
 }
 

@@ -181,15 +181,17 @@ static ssize_t
 rndr_escape(struct term *term, struct lowdown_buf *out,
 	const char *buf, size_t sz)
 {
-	size_t	 i, start = 0, cols = 0;
-	ssize_t	 ret;
+	size_t		 i, start = 0, cols = 0;
+	ssize_t		 ret;
+	unsigned char	 ch;
 
 	/* Don't allow control characters through. */
 
-	for (i = 0; i < sz; i++)
-		if ((unsigned char)buf[i] < 0x80 && iscntrl((unsigned char)buf[i])) {
-			ret = rndr_mbswidth
-				(term, buf + start, i - start);
+	for (i = 0; i < sz; i++) {
+		ch = (unsigned char)buf[i];
+		if (ch < 0x80 && iscntrl(ch)) {
+			ret = rndr_mbswidth (term, buf + start,
+				i - start);
 			if (ret < 0)
 				return -1;
 			cols += ret;
@@ -197,6 +199,7 @@ rndr_escape(struct term *term, struct lowdown_buf *out,
 				return -1;
 			start = i + 1;
 		}
+	}
 
 	/* Remaining bytes. */
 
