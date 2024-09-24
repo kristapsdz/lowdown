@@ -1476,7 +1476,7 @@
 			<p>
 				Accept GitHub and MDN-style admonitions.
 				Admonitions are block-quotes that begin with a bold phrase (e.g.,
-				<pre>note</pre>).
+				<code>note</code>).
 				The output rendering is only for <b>-thtml</b>.
 			</p>
 			<p>
