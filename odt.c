@@ -1966,7 +1966,7 @@ rndr(struct lowdown_buf *ob,
 	int32_t				 ent;
 	struct odt			*st = ref;
 	struct odt_sty			*sty = NULL;
-	size_t				 curid = (size_t)-1, curoffs,
+	size_t				 curid = (size_t)-1, curoffs = 0,
 					 chngid = (size_t)-1;
 	int				 ret = 1;
 	void				*pp;
