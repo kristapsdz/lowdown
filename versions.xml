@@ -1513,4 +1513,32 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>1.1.1</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2024-09-24">2024-09-24</time>
+		</header>
+		<aside>
+			<p>
+				Fix UTF8 handling on Mac OS X.  Prior to this,
+				some UTF8 characters (such as smart punctuation)
+				were being garbled on <b>-Tgemini</b> and
+				<b>-Tterm</b> output.  These now render properly
+				thanks to an excellent pull request contribution
+				(<a href="https://github.com/kristapsdz/lowdown/pull/140">#140</a>).
+			</p>
+			<p>
+				Hack around more buggy Mac OS X software, specifically
+				their version of <code>makewhatis(8)</code>.  While man(7)
+				specifically allows for header macros (<code>SH</code>) to
+				have their contents on the subsequent line, this breaks
+				buggy software that erroneously expects headers to have
+				their content on the same line.  This version, thanks to
+				another excellent pull request
+				(<a href="https://github.com/kristapsdz/lowdown/pull/138">#138</a>),
+				adds a hack for that specific condition.
+			</p>
+		</aside>
+	</article>
 </articles>

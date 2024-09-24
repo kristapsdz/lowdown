@@ -28,8 +28,7 @@
 					<a href="https://github.com/kristapsdz/lowdown">GitHub</a>,
 					<a href="snapshots/lowdown.tar.gz">Download</a>,
 					<a href="snapshots">Archive</a>,
-					<a href="archive.html">Version history</a>,
-					<a href="https://kristaps.bsd.lv/cgi-bin/minci.cgi/index.html?project-name=lowdown">Build status</a>
+					<a href="archive.html">Version history</a>
 					<a id="nav-atom" href="atom.xml"><i class="fa fa-fw fa-rss"></i></a>
 				</nav>
 			</div>
@@ -42,7 +41,7 @@
 			</nav>
 		</article>
 		<footer>
-			&#169; 2016&#8211;2019 <a rel="author" href="https://github.com/kristapsdz">Kristaps Dzonsons</a>
+			&#169; <a rel="author" href="https://github.com/kristapsdz">Kristaps Dzonsons</a>
 		</footer>
 	</body>
 </html>

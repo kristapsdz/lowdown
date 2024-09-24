@@ -8,7 +8,7 @@ include Makefile.configure
 # while libraries have well-defined semantics of semver change, programs
 # do not.  Let the library guide our versioning until a better way is
 # thought out.
-VERSION		 = 1.1.0
+VERSION		 = 1.1.1
 # This is the major number of VERSION.  It might later become
 # MAJOR.MINOR, if the library moves a lot.
 LIBVER		 = 1
