@@ -389,9 +389,10 @@ coverage-table.md:
 	  echo "|-------|----------|" ; \
 	  for f in $(OBJS) ; do \
 	  	src=$$(basename $$f .o).c ; \
+		link=https://github.com/kristapsdz/lowdown/blob/master/$$src ; \
 		pct=$$(gcov -H $$src | grep 'Lines executed' | head -n1 | \
 			cut -d ":" -f 2 | cut -d "%" -f 1) ; \
-	  	echo "| $$src | $$pct% | " ; \
+	  	echo "| [$$src]($$link) | $$pct% | " ; \
 	  done ; \
 	) >coverage-table.md
 
