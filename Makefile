@@ -345,6 +345,7 @@ lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/
 	mkdir -p .dist/lowdown-$(VERSION)/man
 	mkdir -p .dist/lowdown-$(VERSION)/share/odt
+	mkdir -p .dist/lowdown-$(VERSION)/regress/html
 	mkdir -p .dist/lowdown-$(VERSION)/regress/original
 	mkdir -p .dist/lowdown-$(VERSION)/regress/standalone
 	mkdir -p .dist/lowdown-$(VERSION)/regress/metadata
@@ -357,6 +358,7 @@ lowdown.tar.gz:
 	$(INSTALL) -m 0755 configure .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 644 regress/original/* .dist/lowdown-$(VERSION)/regress/original
 	$(INSTALL) -m 644 regress/*.* .dist/lowdown-$(VERSION)/regress
+	$(INSTALL) -m 644 regress/html/* .dist/lowdown-$(VERSION)/regress/html
 	$(INSTALL) -m 644 regress/standalone/* .dist/lowdown-$(VERSION)/regress/standalone
 	$(INSTALL) -m 644 regress/metadata/* .dist/lowdown-$(VERSION)/regress/metadata
 	$(INSTALL) -m 644 regress/diff/* .dist/lowdown-$(VERSION)/regress/diff
