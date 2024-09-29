@@ -1126,9 +1126,6 @@ rndr_doc_header(struct lowdown_buf *ob,
 					*rcsdate = NULL, *css = NULL,
 					*script = NULL;
 
-	if (!(st->flags & LOWDOWN_STANDALONE))
-		return 1;
-
 	TAILQ_FOREACH(m, mq, entries)
 		if (strcasecmp(m->key, "author") == 0)
 			author = m->value;
@@ -1149,16 +1146,6 @@ rndr_doc_header(struct lowdown_buf *ob,
 		else if (strcasecmp(m->key, "javascript") == 0)
 			script = m->value;
 
-	if (!hbuf_putb(ob, content))
-		return 0;
-
-	if (!HBUF_PUTSL(ob, 
-	    "<head>\n"
-	    "<meta charset=\"utf-8\" />\n"
-	    "<meta name=\"viewport\""
-	    " content=\"width=device-width,initial-scale=1\" />\n"))
-		return 0;
-
 	/* Overrides. */
 
 	if (rcsdate != NULL)
@@ -1166,97 +1153,103 @@ rndr_doc_header(struct lowdown_buf *ob,
 	if (rcsauthor != NULL)
 		author = rcsauthor;
 
-	if (!rndr_meta_multi(ob, affil, 0,
-	    "<meta name=\"creator\" content=\"", "\" />"))
-		return 0;
-	if (!rndr_meta_multi(ob, author, 0,
-	    "<meta name=\"author\" content=\"", "\" />"))
-		return 0;
-	if (!rndr_meta_multi(ob, copy, 0,
-	    "<meta name=\"copyright\" content=\"", "\" />"))
-		return 0;
+	/* Conditionally output a header block. */
 
-	if (date != NULL) {
-		if (!HBUF_PUTSL(ob, "<meta name=\"date\" "))
+	if (st->flags & LOWDOWN_STANDALONE) {
+		/* Document type and <html>. */
+		if (!hbuf_putb(ob, content))
+			return 0;
+		if (!HBUF_PUTSL(ob, 
+		    "<head>\n"
+		    "<meta charset=\"utf-8\" />\n"
+		    "<meta name=\"viewport\" content=\""
+		    "width=device-width,initial-scale=1\" />\n"))
+			return 0;
+		if (!rndr_meta_multi(ob, affil, 0,
+		    "<meta name=\"creator\" content=\"", "\" />"))
+			return 0;
+		if (!rndr_meta_multi(ob, author, 0,
+		    "<meta name=\"author\" content=\"", "\" />"))
+			return 0;
+		if (!rndr_meta_multi(ob, copy, 0,
+		    "<meta name=\"copyright\" content=\"", "\" />"))
+			return 0;
+		if (date != NULL) {
+			if (!HBUF_PUTSL(ob, "<meta name=\"date\" "))
+				return 0;
+			/*
+			 * Don't use "scheme" if the date isn't in the
+			 * appropriate format.
+			 */
+			if (strlen(date) == 10 &&
+			    isdigit((unsigned char)date[0]) &&
+			    isdigit((unsigned char)date[1]) &&
+			    isdigit((unsigned char)date[2]) &&
+			    isdigit((unsigned char)date[3]) &&
+			    date[4] == '-' &&
+			    isdigit((unsigned char)date[5]) &&
+			    isdigit((unsigned char)date[6]) &&
+			    date[7] == '-' &&
+			    isdigit((unsigned char)date[8]) &&
+			    isdigit((unsigned char)date[9]) &&
+			    !HBUF_PUTSL(ob, "scheme=\"YYYY-MM-DD\" "))
+				return 0;
+			if (!HBUF_PUTSL(ob, "content=\""))
+				return 0;
+			if (!hesc_attr(ob, date, strlen(date)))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\" />\n"))
+				return 0;
+		}
+		if (!rndr_meta_multi(ob, css, 1,
+		    "<link rel=\"stylesheet\" href=\"", "\" />"))
+			return 0;
+		if (!rndr_meta_multi(ob, script, 1,
+		     "<script src=\"", "\"></script>"))
 			return 0;
 
-		/*
-		 * Don't use "scheme" if the date isn't in the
-		 * appropriate format.
-		 */
+		/* In HTML5, the title is required. */
 
-		if (strlen(date) == 10 &&
-		    isdigit((unsigned char)date[0]) &&
-		    isdigit((unsigned char)date[1]) &&
-		    isdigit((unsigned char)date[2]) &&
-		    isdigit((unsigned char)date[3]) &&
-		    date[4] == '-' &&
-		    isdigit((unsigned char)date[5]) &&
-		    isdigit((unsigned char)date[6]) &&
-		    date[7] == '-' &&
-		    isdigit((unsigned char)date[8]) &&
-		    isdigit((unsigned char)date[9]) &&
-		    !HBUF_PUTSL(ob, "scheme=\"YYYY-MM-DD\" "))
+		if (!HBUF_PUTSL(ob, "<title>"))
 			return 0;
-
-		if (!HBUF_PUTSL(ob, "content=\""))
+		if (title != NULL &&
+		    !hesc_html(ob, title, strlen(title),
+			    st->flags & LOWDOWN_HTML_OWASP, 0,
+			    st->flags & LOWDOWN_HTML_NUM_ENT))
 			return 0;
-		if (!hesc_attr(ob, date, strlen(date)))
-			return 0;
-		if (!HBUF_PUTSL(ob, "\" />\n"))
+		if (!HBUF_PUTSL(ob, "</title>\n</head>\n<body>\n"))
 			return 0;
 	}
 
-	if (!rndr_meta_multi(ob, css, 1,
-	    "<link rel=\"stylesheet\" href=\"", "\" />"))
-		return 0;
-	if (!rndr_meta_multi(ob, script, 1,
-	     "<script src=\"", "\"></script>"))
-		return 0;
+	/* Conditionally output a title block. */
 
-	/* In HTML5, the title is required. */
-
-	if (!HBUF_PUTSL(ob, "<title>"))
-		return 0;
-	if (title != NULL &&
-	    !hesc_html(ob, title, strlen(title),
-		    st->flags & LOWDOWN_HTML_OWASP, 0,
-		    st->flags & LOWDOWN_HTML_NUM_ENT))
-		return 0;
-	if (!HBUF_PUTSL(ob, "</title>\n</head>\n<body>\n"))
-		return 0;
-
-	if (!(st->flags & LOWDOWN_HTML_TITLEBLOCK))
-		return 1;
-	if (author == NULL && title == NULL && date == NULL)
-		return 1;
-
-	/*
-	 * Output a title block.  This will be empty if we don't have
-	 * any title components to output.
-	 */
-
-	if (!HBUF_PUTSL(ob, "<header id=\"title-block-header\">\n"))
-		return 0;
-	if (title != NULL &&
-	    (!HBUF_PUTSL(ob, "<h1 class=\"title\">") ||
-	     !hesc_html(ob, title, strlen(title), 
-		     st->flags & LOWDOWN_HTML_OWASP, 0,
-		     st->flags & LOWDOWN_HTML_NUM_ENT) ||
-	     !HBUF_PUTSL(ob, "</h1>\n")))
+	if ((st->flags & LOWDOWN_HTML_TITLEBLOCK) &&
+	    !(author == NULL && title == NULL && date == NULL)) {
+		if (!HBUF_PUTSL(ob,
+		    "<header id=\"title-block-header\">\n"))
 			return 0;
-	if (author != NULL &&
-	    !rndr_meta_multi(ob, author, 0,
-		    "<p class=\"author\">", "</p>"))
-		return 0;
-	if (date != NULL &&
-	    (!HBUF_PUTSL(ob, "<p class=\"date\">") ||
-	     !hesc_html(ob, date, strlen(date), 
-		     st->flags & LOWDOWN_HTML_OWASP, 0,
-		     st->flags & LOWDOWN_HTML_NUM_ENT) ||
-	     !HBUF_PUTSL(ob, "</p>\n")))
+		if (title != NULL &&
+		    (!HBUF_PUTSL(ob, "<h1 class=\"title\">") ||
+		     !hesc_html(ob, title, strlen(title), 
+			     st->flags & LOWDOWN_HTML_OWASP, 0,
+			     st->flags & LOWDOWN_HTML_NUM_ENT) ||
+		     !HBUF_PUTSL(ob, "</h1>\n")))
+				return 0;
+		if (author != NULL &&
+		    !rndr_meta_multi(ob, author, 0,
+			    "<p class=\"author\">", "</p>"))
 			return 0;
-	return HBUF_PUTSL(ob, "</header>\n");
+		if (date != NULL &&
+		    (!HBUF_PUTSL(ob, "<p class=\"date\">") ||
+		     !hesc_html(ob, date, strlen(date), 
+			     st->flags & LOWDOWN_HTML_OWASP, 0,
+			     st->flags & LOWDOWN_HTML_NUM_ENT) ||
+		     !HBUF_PUTSL(ob, "</p>\n")))
+				return 0;
+		return HBUF_PUTSL(ob, "</header>\n");
+	}
+
+	return 1;
 }
 
 static int
