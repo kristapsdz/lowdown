@@ -483,7 +483,7 @@ regress: bins
 	for f in regress/metadata/*.md ; do \
 		echo "$$f" ; \
 		if [ -f regress/metadata/`basename $$f .md`.txt ]; then \
-			./lowdown -X test $$f >$$tmp1 2>&1 ; \
+			./lowdown -X title $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/metadata/`basename $$f .md`.txt $$tmp1 ; \
 		fi ; \
 	done ; \

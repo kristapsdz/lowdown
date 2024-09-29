@@ -1,3 +1,3 @@
-test: foo
+title: foo
 
 Hello, world.
