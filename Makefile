@@ -2,6 +2,8 @@
 .SUFFIXES: .xml .md .html .pdf .1 .1.html .3 .3.html .5 .5.html .thumb.jpg .png .in.pc .pc .valgrind .old.md .diff-valgrind
 
 include Makefile.configure
+WWWDIR		 = /var/www/vhosts/kristaps.bsd.lv/htdocs/lowdown
+sinclude Makefile.local
 
 # Follows semver.
 # This is complex because lowdown is both a program and a library; and
@@ -30,7 +32,6 @@ OBJS		 = autolink.o \
 		   tree.o \
 		   util.o
 COMPAT_OBJS	 = compats.o
-WWWDIR		 = /var/www/vhosts/kristaps.bsd.lv/htdocs/lowdown
 HTMLS		 = archive.html \
 		   atom.xml \
 		   diff.html \
@@ -326,6 +327,14 @@ $(HTMLS): versions.xml lowdown
 	  ./lowdown $< ; \
 	  echo "</article>" ; ) >$@
 
+index.xml: index.md coverage.md coverage-table.md lowdown
+	( echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" ; \
+	  echo "<article data-sblg-article=\"1\">" ; \
+	  ./lowdown index.md ; \
+	  ./lowdown coverage.md ; \
+	  ./lowdown coverage-table.md ; \
+	  echo "</article>" ; ) >$@
+
 .1.1.html .3.3.html .5.5.html:
 	mandoc -Thtml -Ostyle=https://bsd.lv/css/mandoc.css $< >$@
 
@@ -371,6 +380,20 @@ clean:
 
 distclean: clean
 	rm -f Makefile.configure config.h config.log config.h.old config.log.old
+
+coverage-table.md:
+	$(MAKE) clean
+	CC=gcc CFLAGS="--coverage" ./configure LDFLAGS="--coverage"
+	$(MAKE) regress
+	( echo "| Files | Coverage |" ; \
+	  echo "|-------|----------|" ; \
+	  for f in $(OBJS) ; do \
+	  	src=$$(basename $$f .o).c ; \
+		pct=$$(gcov -H $$src | grep 'Lines executed' | head -n1 | \
+			cut -d ":" -f 2 | cut -d "%" -f 1) ; \
+	  	echo "| $$src | $$pct% | " ; \
+	  done ; \
+	) >coverage-table.md
 
 regen_regress: bins
 	@tmp1=`mktemp` ; \

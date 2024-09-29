@@ -1,0 +1,19 @@
+| Files | Coverage |
+|-------|----------|
+| autolink.c | 65.73% | 
+| buffer.c | 71.91% | 
+| diff.c | 79.40% | 
+| document.c | 74.01% | 
+| entity.c | 40.74% | 
+| gemini.c | 65.91% | 
+| html.c | 66.51% | 
+| html_escape.c | 87.65% | 
+| latex.c | 64.08% | 
+| library.c | 80.14% | 
+| libdiff.c | 94.05% | 
+| nroff.c | 71.38% | 
+| odt.c | 63.64% | 
+| smartypants.c | 83.89% | 
+| term.c | 67.54% | 
+| tree.c | 34.84% | 
+| util.c | 6.38% | 
