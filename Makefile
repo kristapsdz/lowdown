@@ -471,7 +471,7 @@ regress: bins
 		done ; \
 	done ; \
 	for f in regress/standalone/*.md ; do \
-		ff=regress/`basename $$f .md` ; \
+		ff=regress/standalone/`basename $$f .md` ; \
 		echo "$$f" ; \
 		for type in html fodt latex ms man gemini term ; do \
 			if [ -f $$ff.$$type ]; then \
@@ -479,6 +479,12 @@ regress: bins
 				diff -uw $$ff.$$type $$tmp1 ; \
 			fi ; \
 		done ; \
+	done ; \
+	for f in regress/html/*.md ; do \
+		ff=regress/html/`basename $$f .md` ; \
+		echo "$$f" ; \
+		./lowdown -thtml --html-callout-gfm --html-callout-mdn $$f >$$tmp1 2>&1 ; \
+		diff -uw $$ff.html $$tmp1 ; \
 	done ; \
 	for f in regress/metadata/*.md ; do \
 		echo "$$f" ; \
