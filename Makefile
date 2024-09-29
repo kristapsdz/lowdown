@@ -484,7 +484,8 @@ regress: bins
 	for f in regress/html/*.md ; do \
 		ff=regress/html/`basename $$f .md` ; \
 		echo "$$f" ; \
-		./lowdown -thtml --html-callout-gfm --html-callout-mdn $$f >$$tmp1 2>&1 ; \
+		./lowdown -thtml --parse-math --html-callout-gfm \
+			--html-callout-mdn --html-titleblock $$f >$$tmp1 2>&1 ; \
 		diff -uw $$ff.html $$tmp1 ; \
 	done ; \
 	for f in regress/metadata/*.md ; do \
