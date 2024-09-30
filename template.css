@@ -7,7 +7,7 @@ h2				{ font-size: 140%; }
 a				{ text-decoration: none; }
 strong, b			{ font-weight: 500; }
 aside				{ font-size: 125%; }
-pre, code			{ font-size: 65%;
+pre, code			{ font-size: smaller;
 				  line-height: 1.3em; }
 body > header			{ padding: 48pt 0 12pt 0; 
 				  background-color: #333; 

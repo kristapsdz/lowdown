@@ -330,9 +330,7 @@ $(HTMLS): versions.xml lowdown
 index.xml: index.md coverage.md coverage-table.md lowdown
 	( echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" ; \
 	  echo "<article data-sblg-article=\"1\">" ; \
-	  ./lowdown index.md ; \
-	  ./lowdown coverage.md ; \
-	  ./lowdown coverage-table.md ; \
+	  cat index.md coverage.md coverage-table.md | ./lowdown ; \
 	  echo "</article>" ; ) >$@
 
 .1.1.html .3.3.html .5.5.html:
