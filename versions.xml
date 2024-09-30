@@ -1541,4 +1541,23 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>1.1.2</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2024-09-29">2024-09-29</time>
+		</header>
+		<aside>
+			<p>
+				Add documentation for <b>--html-titleblock</b> and
+				slightly change semantics where it will print regardless
+				if in <b>-s</b> mode.
+			</p>
+			<p>
+				Add regression code coverage to main website, include
+				<code>make</code> rules for generating coverage.  Many
+				more regression tests to exercise coverage.
+			</p>
+		</aside>
+	</article>
 </articles>
