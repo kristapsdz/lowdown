@@ -114,29 +114,3 @@ rcsauthor2str(const char *v)
 
 	return buf;
 }
-
-/*
- * Convert an ISO date (y/m/d or y-m-d) to a canonical form.
- * Returns NULL if the string is malformed at all or the date otherwise.
- */
-char *
-date2str(const char *v)
-{
-	unsigned int	y, m, d;
-	int		rc;
-	static char	buf[32];
-
-	if (NULL == v)
-		return(NULL);
-
-	rc = sscanf(v, "%u/%u/%u", &y, &m, &d);
-	if (3 != rc) {
-		rc = sscanf(v, "%u-%u-%u", &y, &m, &d);
-		if (3 != rc)
-			return(NULL);
-	}
-
-	snprintf(buf, sizeof(buf), "%u-%.2u-%.2u", y, m, d);
-	return(buf);
-}
-

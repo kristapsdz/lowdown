@@ -70,7 +70,6 @@ int		 hesc_href(struct lowdown_buf *, const char *, size_t);
 int		 hesc_html(struct lowdown_buf *, const char *, size_t, int, int, int);
 
 char		*rcsdate2str(const char *);
-char		*date2str(const char *);
 char		*rcsauthor2str(const char *);
 
 #endif /* !EXTERN_H */
