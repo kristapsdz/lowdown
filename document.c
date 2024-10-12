@@ -782,6 +782,14 @@ find_emph_char(const char *data, size_t size, char c)
 
 			/* Skipping a link. */
 
+			/*
+			 * XXX: it's trivially possible to allow for
+			 * nested links by maintaining a stack depth
+			 * here on the opening and closing bracket.
+			 * However, no other Markdowns appear to support
+			 * this syntax, so don't do so.
+			 */
+
 			i++;
 			while (i < size && data[i] != ']') {
 				if (!tmp_i && data[i] == c)
@@ -1645,6 +1653,18 @@ char_link(struct lowdown_doc *doc,
 		data[1] == '^';
 	is_metadata = (doc->ext_flags & LOWDOWN_METADATA) &&
 		data[1] == '%';
+
+	/*
+	 * XXX: immediately disregard nested links.  CommonMark
+	 * is contradictory here, saying "links may not contain links",
+	 * but follows by saying "if they are...".  Follow what pandoc
+	 * does instead and only parse the top-level link, letting all
+	 * sub-content be rendered as text.
+	 */
+
+	if (!is_img && doc->in_link_body)
+		goto cleanup;
+
 
 	/* Looking for the matching closing bracket. */
 
