@@ -53,6 +53,7 @@ struct term {
 	size_t			  footsz; /* footnotes size  */
 	int			  footoff; /* don't collect (tables) */
 	struct lowdown_metaq	  metaq; /* metadata */
+	const struct lowdown_node*in_link; /* in an OSC8 hyperlink */
 };
 
 /*
@@ -247,6 +248,58 @@ rndr_buf_unstyle(const struct term *term,
 }
 
 /*
+ * Start sequence for a terminal link (only in ANSI mode).  
+ */
+static int
+rndr_buf_osc8_open(const struct term *term, struct lowdown_buf *out,
+    const struct lowdown_node *n)
+{
+	const struct lowdown_buf	*uri = NULL;
+
+	if (term->opts & LOWDOWN_TERM_NOANSI)
+		return 1;
+	
+	if (n->type == LOWDOWN_LINK_AUTO)
+		uri = &n->rndr_autolink.link;
+	else if (n->type == LOWDOWN_LINK)
+		uri = &n->rndr_link.link;
+	else if (n->type == LOWDOWN_IMAGE)
+		uri = &n->rndr_image.link;
+
+	/*
+	 * Don't output an id for the link.  It's trivial to have a
+	 * random per-page value for this identifier (e.g., to
+	 * initialise a random number then append the node identifier),
+	 * but let the terminal handle this.
+	 */
+
+	assert(uri != NULL);
+	return HBUF_PUTSL(out, "\033]8;;") &&
+	    hbuf_putb(out, uri) &&
+	    HBUF_PUTSL(out, "\033\\");
+}
+
+/*
+ * Close a currently-open link.
+ */
+static int
+rndr_buf_osc8_close(const struct term *term, struct lowdown_buf *out)
+{
+
+	if (term->opts & LOWDOWN_TERM_NOANSI)
+		return 1;
+
+	/*
+	 * It would be trivial to crawl up our parent chain and either
+	 * switch from the current link or close out the link context
+	 * entirely, but lowdown(5) stipulates that nested links are not
+	 * possible.
+	 */
+
+	return HBUF_PUTSL(out, "\033]8;;\033\\");
+}
+
+/*
  * Output style "s" into "out" as an ANSI escape.  If "s" does not have
  * any style information or is NULL, output nothing.  Return zero on
  * failure (memory), non-zero on success.
@@ -411,7 +464,13 @@ static int
 rndr_buf_endwords(struct term *term, struct lowdown_buf *out,
 	const struct lowdown_node *n, const struct sty *osty)
 {
+	/*
+	 * If an OSC8 hyperlink should be closed, do it now (it doesn't
+	 * matter where this appears in relation to other styling).
+	 */
 
+	if (term->in_link && !rndr_buf_osc8_close(term, out))
+		return 0;
 	if (rndr_buf_endstyle(n))
 		return rndr_buf_unstyle(term, out, NULL);
 	if (osty != NULL)
@@ -685,9 +744,11 @@ rndr_buf_startline_prefixes(struct term *term,
 }
 
 /*
- * Like rndr_buf_startwords(), but at the start of a line.
- * This also outputs all line prefixes of the block context.
- * Return zero on failure (memory), non-zero on success.
+ * Like rndr_buf_startwords(), but at the start of a line.  (Unlike
+ * rndr_buf_endline(), which calls rndr_buf_endwords(), this does not
+ * call rndr_buf_startwords().)  This also outputs all line prefixes of
+ * the block context.  Return zero on failure (memory), non-zero on
+ * success.
  */
 static int
 rndr_buf_startline(struct term *term, struct lowdown_buf *out,
@@ -702,6 +763,16 @@ rndr_buf_startline(struct term *term, struct lowdown_buf *out,
 	memset(&s, 0, sizeof(struct sty));
 	if (!rndr_buf_startline_prefixes(term, &s, n, out, &depth))
 		return 0;
+
+	/*
+	 * If an OSC8 hyperlink should be printed, do it now (it doesn't
+	 * matter where this appears in relation to other styling).
+	 */
+
+	if (term->in_link != NULL &&
+	    !rndr_buf_osc8_open(term, out, term->in_link))
+		return 0;
+
 	if (osty != NULL)
 		rndr_node_style_apply(&s, osty);
 	return rndr_buf_style(term, out, &s);
@@ -766,6 +837,15 @@ rndr_buf_startwords(struct term *term, struct lowdown_buf *out,
 	const struct lowdown_node *n, const struct sty *osty)
 {
 	struct sty	 s;
+
+	/*
+	 * If an OSC8 hyperlink should be printed, do it now (it doesn't
+	 * matter where this appears in relation to other styling).
+	 */
+
+	if (term->in_link != NULL &&
+	    !rndr_buf_osc8_open(term, out, term->in_link))
+		return 0;
 
 	assert(!term->last_blank);
 	assert(term->col > 0);
@@ -1406,6 +1486,11 @@ rndr(struct lowdown_buf *ob, struct term *st,
 	/* Output leading content. */
 
 	switch (n->type) {
+	case LOWDOWN_IMAGE:
+	case LOWDOWN_LINK:
+	case LOWDOWN_LINK_AUTO:
+		st->in_link = n;
+		break;
 	case LOWDOWN_SUPERSCRIPT:
 		hbuf_truncate(st->tmp);
 		if (!hbuf_puts(st->tmp, ifx_super) ||
@@ -1537,9 +1622,8 @@ rndr(struct lowdown_buf *ob, struct term *st,
 		if (st->opts & LOWDOWN_TERM_NOLINK)
 			break;
 		hbuf_truncate(st->tmp);
-		if (!HBUF_PUTSL(st->tmp, " "))
-			return 0;
-		if (!rndr_buf(st, ob, n, st->tmp, NULL))
+		if (!HBUF_PUTSL(st->tmp, " ") ||
+		    !rndr_buf(st, ob, n, st->tmp, NULL))
 			return 0;
 		if (st->opts & LOWDOWN_TERM_SHORTLINK) {
 			hbuf_truncate(st->tmp);
@@ -1607,9 +1691,14 @@ rndr(struct lowdown_buf *ob, struct term *st,
 		break;
 	}
 
-	/* Trailing block spaces. */
-
-	if (n->type == LOWDOWN_ROOT) {
+	switch (n->type) {
+	case LOWDOWN_IMAGE:
+	case LOWDOWN_LINK:
+	case LOWDOWN_LINK_AUTO:
+		st->in_link = NULL;
+		break;
+	case LOWDOWN_ROOT:
+		/* Trailing block spaces. */
 		if (st->footsz) {
 			if (!rndr_buf_vspace(st, ob, n, 2))
 				return 0;
@@ -1640,6 +1729,9 @@ rndr(struct lowdown_buf *ob, struct term *st,
 		for (i = 0; i < st->vmargin; i++)
 			if (!HBUF_PUTSL(ob, "\n"))
 				return 0;
+		break;
+	default:
+		break;
 	}
 
 	return 1;
@@ -1654,6 +1746,7 @@ lowdown_term_rndr(struct lowdown_buf *ob,
 
 	TAILQ_INIT(&st->metaq);
 	st->stackpos = 0;
+	st->in_link = NULL;
 	rc = rndr(ob, st, n);
 	rndr_free_footnotes(st);
 	lowdown_metaq_free(&st->metaq);
