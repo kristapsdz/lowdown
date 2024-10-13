@@ -4611,7 +4611,7 @@ static const char *
 parse_metadata_mmd_val(const char *data, size_t sz, size_t *len)
 {
 	const char	*val;
-	size_t		 i, nlines = 0, peek = 0;
+	size_t		 i, peek = 0;
 	int		 startws;
 
 	/* Skip leading whitespace. */
@@ -4626,8 +4626,6 @@ parse_metadata_mmd_val(const char *data, size_t sz, size_t *len)
 		continue;
 
 	*len = i;
-	if (i < sz && data[i] == '\n')
-		nlines++;
 
 	/*
 	 * Iterate through zero or more following multilines.
@@ -4660,7 +4658,6 @@ parse_metadata_mmd_val(const char *data, size_t sz, size_t *len)
 		 * the next line starts with whitespace.
 		 */
 
-		nlines++;
 		*len += peek;
 		peek = 0;
 
