@@ -33,6 +33,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
+#include "pikchr.h"
 
 /*
  * Our internal state object.
@@ -125,18 +126,18 @@ newline(struct lowdown_buf *ob)
 
 static int
 rndr_autolink(struct lowdown_buf *ob, 
-	const struct rndr_autolink *parm,
+	const struct rndr_autolink *param,
 	const struct html *st)
 {
 
-	if (parm->link.size == 0)
+	if (param->link.size == 0)
 		return 1;
 
 	if (!HBUF_PUTSL(ob, "<a href=\""))
 		return 0;
-	if (parm->type == HALINK_EMAIL && !HBUF_PUTSL(ob, "mailto:"))
+	if (param->type == HALINK_EMAIL && !HBUF_PUTSL(ob, "mailto:"))
 		return 0;
-	if (!escape_href(ob, &parm->link, st))
+	if (!escape_href(ob, &param->link, st))
 		return 0;
 	if (!HBUF_PUTSL(ob, "\">"))
 		return 0;
@@ -147,13 +148,13 @@ rndr_autolink(struct lowdown_buf *ob,
 	 * want to print the `mailto:` prefix
 	 */
 
-	if (hbuf_strprefix(&parm->link, "mailto:")) {
+	if (hbuf_strprefix(&param->link, "mailto:")) {
 		if (!escape_html(ob, 
-		    parm->link.data + 7, 
-		    parm->link.size - 7, st))
+		    param->link.data + 7, 
+		    param->link.size - 7, st))
 			return 0;
 	} else {
-		if (!escape_htmlb(ob, &parm->link, st))
+		if (!escape_htmlb(ob, &param->link, st))
 			return 0;
 	}
 
@@ -162,25 +163,45 @@ rndr_autolink(struct lowdown_buf *ob,
 
 static int
 rndr_blockcode(struct lowdown_buf *ob, 
-	const struct rndr_blockcode *parm,
+	const struct rndr_blockcode *param,
 	const struct html *st)
 {
 	if (!newline(ob))
 		return 0;
 
-	if (parm->lang.size) {
-		if (!HBUF_PUTSL(ob, "<pre><code class=\"language-"))
-			return 0;
-		if (!escape_href(ob, &parm->lang, st))
-			return 0;
-		if (!HBUF_PUTSL(ob, "\">"))
-			return 0;
+	if (param->lang.size) {
+		if (param->lang.size == 6 && strncmp(param->lang.data, "pikchr", 6) == 0) {
+			int res = 0;
+			int w, h;
+			char *rndr_pikchr = pikchr(param->text.data, "pikchr", PIKCHR_PLAINTEXT_ERRORS, &w, &h);
+			if(w < 0) {
+				if (rndr_pikchr == 0) {
+					fprintf(stderr, "pikchr() returns NULL. Out of memory?\n");
+				} else {
+					fprintf(stderr, "%s\n", rndr_pikchr);
+				}
+			}
+			else {
+				res = hbuf_printf(ob, "<div style='max-width:%d'>\n%s", w, rndr_pikchr);
+				if (res)
+					res = HBUF_PUTSL(ob, "</div>\n");
+			}
+			free(rndr_pikchr);
+			return res;
+		} else {
+			if (!HBUF_PUTSL(ob, "<pre><code class=\"language-"))
+				return 0;
+			if (!escape_href(ob, &param->lang, st))
+				return 0;
+			if (!HBUF_PUTSL(ob, "\">"))
+				return 0;
+		}
 	} else {
 		if (! HBUF_PUTSL(ob, "<pre><code>"))
 			return 0;
 	}
 
-	if (!escape_literal(ob, &parm->text, st))
+	if (!escape_literal(ob, &param->text, st))
 		return 0;
 	return HBUF_PUTSL(ob, "</code></pre>\n");
 }
@@ -292,7 +313,7 @@ rndr_blockquote(const struct html *st,
 
 static int
 rndr_codespan(struct lowdown_buf *ob,
-	const struct rndr_codespan *param, 
+	const struct rndr_codespan *param,
 	const struct html *st)
 {
 

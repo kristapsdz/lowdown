@@ -1002,13 +1002,13 @@ out:
  */
 static struct lowdown_node *
 node_merge(const struct lowdown_node *nold,
-	const struct lowdown_node *nnew, struct merger *parms)
+	const struct lowdown_node *nnew, struct merger *params)
 {
 	const struct xnode		*xnew, *xold;
 	struct lowdown_node		*n, *nn;
 	const struct lowdown_node	*nnold;
-	const struct xmap 		*xoldmap = parms->xoldmap,
-	      				*xnewmap = parms->xnewmap;
+	const struct xmap 		*xoldmap = params->xoldmap,
+	      				*xnewmap = params->xnewmap;
 
 	/* 
 	 * Invariant: the current nodes are matched.
@@ -1022,7 +1022,7 @@ node_merge(const struct lowdown_node *nold,
 	assert(xold->match != NULL);
 	assert(xnew->match == xold->node);
 
-	if ((n = node_clone(nnew, parms->id++)) == NULL)
+	if ((n = node_clone(nnew, params->id++)) == NULL)
 		goto err;
 
 	/* Now walk through the children on both sides. */
@@ -1045,7 +1045,7 @@ node_merge(const struct lowdown_node *nold,
 			    LOWDOWN_NORMAL_TEXT == nold->type)
 				break;
 			if ((nn = node_clonetree
-			    (nold, &parms->id)) == NULL)
+			    (nold, &params->id)) == NULL)
 				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
@@ -1066,7 +1066,7 @@ node_merge(const struct lowdown_node *nold,
 			    LOWDOWN_NORMAL_TEXT == nnew->type)
 				break;
 			if ((nn = node_clonetree
-			    (nnew, &parms->id)) == NULL)
+			    (nnew, &params->id)) == NULL)
 				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
@@ -1085,7 +1085,7 @@ node_merge(const struct lowdown_node *nold,
 		    xold->match == NULL &&
 		    nnew->type == LOWDOWN_NORMAL_TEXT &&
 		    xnew->match == NULL) {
-			if (!node_lcs(nold, nnew, n, &parms->id))
+			if (!node_lcs(nold, nnew, n, &params->id))
 				goto err;
 			nold = TAILQ_NEXT(nold, entries);
 			nnew = TAILQ_NEXT(nnew, entries);
@@ -1096,7 +1096,7 @@ node_merge(const struct lowdown_node *nold,
 			if (xold->match != NULL)
 				break;
 			if ((nn = node_clonetree
-			    (nold, &parms->id)) == NULL)
+			    (nold, &params->id)) == NULL)
 				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
@@ -1109,7 +1109,7 @@ node_merge(const struct lowdown_node *nold,
 			if (xnew->match != NULL)
 				break;
 			if ((nn = node_clonetree
-			    (nnew, &parms->id)) == NULL)
+			    (nnew, &params->id)) == NULL)
 				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
@@ -1151,7 +1151,7 @@ node_merge(const struct lowdown_node *nold,
 
 		if (nnold == NULL) {
 			if ((nn = node_clonetree
-			    (nnew, &parms->id)) == NULL)
+			    (nnew, &params->id)) == NULL)
 				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
@@ -1167,7 +1167,7 @@ node_merge(const struct lowdown_node *nold,
 			if (xnew->node == xold->match) 
 				break;
 			if ((nn = node_clonetree
-			    (nold, &parms->id)) == NULL)
+			    (nold, &params->id)) == NULL)
 				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
@@ -1186,13 +1186,13 @@ node_merge(const struct lowdown_node *nold,
 		if (is_opaque(nnew)) {
 			assert(is_opaque(nold));
 			if ((nn = node_clonetree
-			    (nnew, &parms->id)) == NULL)
+			    (nnew, &params->id)) == NULL)
 				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
 			nn->parent = n;
 		} else {
 			assert(!is_opaque(nold));
-			nn = node_merge(nold, nnew, parms);
+			nn = node_merge(nold, nnew, params);
 			if (nn == NULL)
 				goto err;
 			TAILQ_INSERT_TAIL(&n->children, nn, entries);
@@ -1206,7 +1206,7 @@ node_merge(const struct lowdown_node *nold,
 	/* Flush remaining old nodes. */
 
 	while (nold != NULL) {
-		if ((nn = node_clonetree (nold, &parms->id)) == NULL)
+		if ((nn = node_clonetree (nold, &params->id)) == NULL)
 			goto err;
 		TAILQ_INSERT_TAIL(&n->children, nn, entries);
 		nn->parent = n;
@@ -1394,7 +1394,7 @@ lowdown_diff(const struct lowdown_node *nold,
 	const struct lowdown_node	*n, *nn;
 	struct lowdown_node		*comp = NULL;
 	size_t				 i;
-	struct merger			 parms;
+	struct merger			 params;
 
 	memset(&xoldmap, 0, sizeof(struct xmap));
 	memset(&xnewmap, 0, sizeof(struct xmap));
@@ -1532,10 +1532,10 @@ lowdown_diff(const struct lowdown_node *nold,
 	 * See "Phase 5", sec. 5.2.
 	 */
 
-	memset(&parms, 0, sizeof(struct merger));
-	parms.xoldmap = &xoldmap;
-	parms.xnewmap = &xnewmap;
-	comp = node_merge(nold, nnew, &parms);
+	memset(&params, 0, sizeof(struct merger));
+	params.xoldmap = &xoldmap;
+	params.xnewmap = &xnewmap;
+	comp = node_merge(nold, nnew, &params);
 
 	*maxn = xnewmap.maxid > xoldmap.maxid ?
 		xnewmap.maxid + 1 :
