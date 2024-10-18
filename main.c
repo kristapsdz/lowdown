@@ -265,8 +265,10 @@ main(int argc, char *argv[])
 		{ "latex-skiphtml",	no_argument,	&afl, LOWDOWN_LATEX_SKIP_HTML },
 		{ "latex-no-skiphtml",	no_argument,	&rfl, LOWDOWN_LATEX_SKIP_HTML },
 
-		{ "nroff-groff",	no_argument,	&afl, LOWDOWN_NROFF_GROFF },
+		{ "nroff-traditional",	no_argument,	&rfl, LOWDOWN_NROFF_GROFF },
+		{ "nroff-no-traditional",no_argument,	&afl, LOWDOWN_NROFF_GROFF },
 		{ "nroff-no-groff",	no_argument,	&rfl, LOWDOWN_NROFF_GROFF },
+		{ "nroff-groff",	no_argument,	&afl, LOWDOWN_NROFF_GROFF },
 		{ "nroff-nolinks",	no_argument, 	&afl, LOWDOWN_NROFF_NOLINK },
 		{ "nroff-no-nolinks",	no_argument, 	&rfl, LOWDOWN_NROFF_NOLINK },
 		{ "nroff-numbered",	no_argument,	&afl, LOWDOWN_NROFF_NUMBERED },

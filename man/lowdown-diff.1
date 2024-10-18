@@ -227,6 +227,9 @@ Output embedded HTML.
 By default, embedded HTML is not output at all.
 See
 .Fl -html-no-escapehtml .
+.It Fl -html-titleblock
+If any were parsed, format the title information (title, author, date)
+into a header element appearing first in the document.
 .El
 .Pp
 For both
@@ -252,20 +255,45 @@ and
 .Li code
 set no special fonts, bold, and the default constant-width.
 .It Fl -nroff-no-groff
-Don't use
-.Xr groff 1
-style section headings, PDF hyperlinks and multi-page tables (these further
-require
-.Fl t Ns Ar ms
-mode and
-.Fl m Ns Ar spdf
-passed to
-.Xr groff 1 ) ,
-or Unicode sequence syntax.
+Deprecated alias for
+.Fl -nroff-traditional .
+.It Fl -nroff-traditional
+Don't use hyperlink macros
+.Po
+.Li .pdfhref ,
+.Li .UR ,
+.Li .MT
+.Pc ,
+multi-page tables
+.Po
+.Li .TS H ,
+.Li .TH
+.Pc ,
+Unicode sequence syntax
+.Po
+.Li \e[uNNNN]
+.Pc ,
+example block macros
+.Po
+.Li .EX
+.Pc ,
+modern section headings
+.Po
+.Li .NH NN ,
+.Li .SH NN ,
+.Li .pdfhref O NN
+.Pc ,
+or intra-document links
+.Po
+.Li .pdfhref L
+.Pc .
 The output is compatible with traditional
 .Xr troff 1 .
 .It Fl -nroff-no-numbered
-Don't output numbered headings.
+Don't output numbered headings
+.Po
+.Li .NH NN
+.Pc .
 Only applies to
 .Fl t Ns Ar ms .
 .It Fl -nroff-no-skiphtml
@@ -282,7 +310,7 @@ for images and links.
 Applies to
 .Fl t Ns Ar man
 or when
-.Fl nroff-no-groff
+.Fl nroff-traditional
 is specified.
 .It Fl -nroff-shortlinks
 Shorten URLs for images, links, and autolinks to only the domain name
@@ -290,7 +318,7 @@ and final path.
 Applies to
 .Fl t Ns Ar man
 or when
-.Fl nroff-no-groff
+.Fl nroff-traditional
 is specified.
 .El
 .Pp
@@ -458,6 +486,8 @@ The
 macro package suitable for reading by
 .Xr groff 1 ,
 .Xr mandoc 1 ,
+Heirloom
+.Xr troff ,
 or traditional
 .Xr troff 1 .
 Does not support equations and images.
