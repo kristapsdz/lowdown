@@ -12,225 +12,305 @@ T}
 T{
 9
 T}|T{
-\fIhttp://www.foo.com\fR
+.UR http://www.foo.com
+.UE
 T}|T{
-\fBfoo\fR <\fIhttps://foo.com\fR>
+.UR https://foo.com
+foo
+.UE
 T}
 T{
 10
 T}|T{
-\fIhttp://www.bar.com\fR
+.UR http://www.bar.com
+.UE
 T}|T{
-\fIhttps://baz.com\fR
+.UR https://baz.com
+.UE
 T}
 T{
 9
 T}|T{
-\fIhttp://www.foo.com\fR
+.UR http://www.foo.com
+.UE
 T}|T{
-\fBfoo\fR <\fIhttps://foo.com\fR>
+.UR https://foo.com
+foo
+.UE
 T}
 T{
 10
 T}|T{
-\fIhttp://www.bar.com\fR
+.UR http://www.bar.com
+.UE
 T}|T{
-\fIhttps://baz.com\fR
+.UR https://baz.com
+.UE
 T}
 T{
 9
 T}|T{
-\fIhttp://www.foo.com\fR
+.UR http://www.foo.com
+.UE
 T}|T{
-\fBfoo\fR <\fIhttps://foo.com\fR>
+.UR https://foo.com
+foo
+.UE
 T}
 T{
 10
 T}|T{
-\fIhttp://www.bar.com\fR
+.UR http://www.bar.com
+.UE
 T}|T{
-\fIhttps://baz.com\fR
+.UR https://baz.com
+.UE
 T}
 T{
 9
 T}|T{
-\fIhttp://www.foo.com\fR
+.UR http://www.foo.com
+.UE
 T}|T{
-\fBfoo\fR <\fIhttps://foo.com\fR>
+.UR https://foo.com
+foo
+.UE
 T}
 T{
 10
 T}|T{
-\fIhttp://www.bar.com\fR
+.UR http://www.bar.com
+.UE
 T}|T{
-\fIhttps://baz.com\fR
+.UR https://baz.com
+.UE
 T}
 T{
 9
 T}|T{
-\fIhttp://www.foo.com\fR
+.UR http://www.foo.com
+.UE
 T}|T{
-\fBfoo\fR <\fIhttps://foo.com\fR>
+.UR https://foo.com
+foo
+.UE
 T}
 T{
 10
 T}|T{
-\fIhttp://www.bar.com\fR
+.UR http://www.bar.com
+.UE
 T}|T{
-\fIhttps://baz.com\fR
+.UR https://baz.com
+.UE
 T}
 T{
 9
 T}|T{
-\fIhttp://www.foo.com\fR
+.UR http://www.foo.com
+.UE
 T}|T{
-\fBfoo\fR <\fIhttps://foo.com\fR>
+.UR https://foo.com
+foo
+.UE
 T}
 T{
 10
 T}|T{
-\fIhttp://www.bar.com\fR
+.UR http://www.bar.com
+.UE
 T}|T{
-\fIhttps://baz.com\fR
+.UR https://baz.com
+.UE
 T}
 T{
 9
 T}|T{
-\fIhttp://www.foo.com\fR
+.UR http://www.foo.com
+.UE
 T}|T{
-\fBfoo\fR <\fIhttps://foo.com\fR>
+.UR https://foo.com
+foo
+.UE
 T}
 T{
 10
 T}|T{
-\fIhttp://www.bar.com\fR
+.UR http://www.bar.com
+.UE
 T}|T{
-\fIhttps://baz.com\fR
+.UR https://baz.com
+.UE
 T}
 T{
 9
 T}|T{
-\fIhttp://www.foo.com\fR
+.UR http://www.foo.com
+.UE
 T}|T{
-\fBfoo\fR <\fIhttps://foo.com\fR>
+.UR https://foo.com
+foo
+.UE
 T}
 T{
 10
 T}|T{
-\fIhttp://www.bar.com\fR
+.UR http://www.bar.com
+.UE
 T}|T{
-\fIhttps://baz.com\fR
+.UR https://baz.com
+.UE
 T}
 T{
 9
 T}|T{
-\fIhttp://www.foo.com\fR
+.UR http://www.foo.com
+.UE
 T}|T{
-\fBfoo\fR <\fIhttps://foo.com\fR>
+.UR https://foo.com
+foo
+.UE
 T}
 T{
 10
 T}|T{
-\fIhttp://www.bar.com\fR
+.UR http://www.bar.com
+.UE
 T}|T{
-\fIhttps://baz.com\fR
+.UR https://baz.com
+.UE
 T}
 T{
 9
 T}|T{
-\fIhttp://www.foo.com\fR
+.UR http://www.foo.com
+.UE
 T}|T{
-\fBfoo\fR <\fIhttps://foo.com\fR>
+.UR https://foo.com
+foo
+.UE
 T}
 T{
 10
 T}|T{
-\fIhttp://www.bar.com\fR
+.UR http://www.bar.com
+.UE
 T}|T{
-\fIhttps://baz.com\fR
+.UR https://baz.com
+.UE
 T}
 T{
 9
 T}|T{
-\fIhttp://www.foo.com\fR
+.UR http://www.foo.com
+.UE
 T}|T{
-\fBfoo\fR <\fIhttps://foo.com\fR>
+.UR https://foo.com
+foo
+.UE
 T}
 T{
 10
 T}|T{
-\fIhttp://www.bar.com\fR
+.UR http://www.bar.com
+.UE
 T}|T{
-\fIhttps://baz.com\fR
+.UR https://baz.com
+.UE
 T}
 T{
 9
 T}|T{
-\fIhttp://www.foo.com\fR
+.UR http://www.foo.com
+.UE
 T}|T{
-\fBfoo\fR <\fIhttps://foo.com\fR>
+.UR https://foo.com
+foo
+.UE
 T}
 T{
 10
 T}|T{
-\fIhttp://www.bar.com\fR
+.UR http://www.bar.com
+.UE
 T}|T{
-\fIhttps://baz.com\fR
+.UR https://baz.com
+.UE
 T}
 T{
 9
 T}|T{
-\fIhttp://www.foo.com\fR
+.UR http://www.foo.com
+.UE
 T}|T{
-\fBfoo\fR <\fIhttps://foo.com\fR>
+.UR https://foo.com
+foo
+.UE
 T}
 T{
 10
 T}|T{
-\fIhttp://www.bar.com\fR
+.UR http://www.bar.com
+.UE
 T}|T{
-\fIhttps://baz.com\fR
+.UR https://baz.com
+.UE
 T}
 T{
 9
 T}|T{
-\fIhttp://www.foo.com\fR
+.UR http://www.foo.com
+.UE
 T}|T{
-\fBfoo\fR <\fIhttps://foo.com\fR>
+.UR https://foo.com
+foo
+.UE
 T}
 T{
 10
 T}|T{
-\fIhttp://www.bar.com\fR
+.UR http://www.bar.com
+.UE
 T}|T{
-\fIhttps://baz.com\fR
+.UR https://baz.com
+.UE
 T}
 T{
 9
 T}|T{
-\fIhttp://www.foo.com\fR
+.UR http://www.foo.com
+.UE
 T}|T{
-\fBfoo\fR <\fIhttps://foo.com\fR>
+.UR https://foo.com
+foo
+.UE
 T}
 T{
 10
 T}|T{
-\fIhttp://www.bar.com\fR
+.UR http://www.bar.com
+.UE
 T}|T{
-\fIhttps://baz.com\fR
+.UR https://baz.com
+.UE
 T}
 T{
 9
 T}|T{
-\fIhttp://www.foo.com\fR
+.UR http://www.foo.com
+.UE
 T}|T{
-\fBfoo\fR <\fIhttps://foo.com\fR>
+.UR https://foo.com
+foo
+.UE
 T}
 T{
 10
 T}|T{
-\fIhttp://www.bar.com\fR
+.UR http://www.bar.com
+.UE
 T}|T{
-\fIhttps://baz.com\fR
+.UR https://baz.com
+.UE
 T}
 .TE

@@ -58,7 +58,8 @@ struct 	nroff {
 enum	bscope {
 	BSCOPE_BLOCK = 0,
 	BSCOPE_SPAN,
-	BSCOPE_PDFHREF,
+	BSCOPE_SEMI,
+	BSCOPE_SEMI_CLOSE,
 	BSCOPE_LITERAL,
 	BSCOPE_FONT,
 	BSCOPE_COLOUR
@@ -317,13 +318,6 @@ bqueue_block(struct bnodeq *bq, const char *text)
 	return bqueue_node(bq, BSCOPE_BLOCK, text);
 }
 
-static struct bnode *
-bqueue_semiblock(struct bnodeq *bq, const char *text)
-{
-
-	return bqueue_node(bq, BSCOPE_PDFHREF, text);
-}
-
 static void
 bnode_free(struct bnode *bn)
 {
@@ -375,14 +369,20 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 	TAILQ_FOREACH(bn, bq, entries) {
 		nextblk = 0;
 
-		if (bn->scope == BSCOPE_PDFHREF &&
+		/*
+		 * The semi-block macro is a span (within text content),
+		 * but has block syntax.  If there's no leading space,
+		 * use "\c" to inhibit whitespace prior to the macro.
+		 */
+
+		if (bn->scope == BSCOPE_SEMI &&
 		    ob->size > 0 && 
 		    ob->data[ob->size - 1] != '\n' &&
 		    !hbuf_puts(ob, "\\c"))
 			return 0;
 
 		/* 
-		 * Block scopes start with a newline.
+		 * Block/semi scopes start with a newline.
 		 * Also have colours use their own block, as otherwise
 		 * (bugs in groff?) inline colour selection after a
 		 * hyperlink macro causes line breaks.
@@ -391,7 +391,8 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		 */
 
 		if (bn->scope == BSCOPE_BLOCK ||
-		    bn->scope == BSCOPE_PDFHREF ||
+		    bn->scope == BSCOPE_SEMI ||
+		    bn->scope == BSCOPE_SEMI_CLOSE ||
 		    bn->scope == BSCOPE_COLOUR) {
 			if (ob->size > 0 && 
 			    ob->data[ob->size - 1] != '\n' &&
@@ -410,7 +411,8 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 				TAILQ_PREV(bn, bnodeq, entries) :
 				TAILQ_NEXT(bn, entries);
 			if (chk != NULL && 
-			    (chk->scope == BSCOPE_PDFHREF ||
+			    (chk->scope == BSCOPE_SEMI ||
+			     chk->scope == BSCOPE_SEMI_CLOSE ||
 			     chk->scope == BSCOPE_BLOCK)) {
 				if (ob->size > 0 && 
 				    ob->data[ob->size - 1] != '\n' &&
@@ -480,14 +482,33 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 			    strlen(bn->buf), 0, 0, esc))
 				return 0;
 
-		if (bn->scope == BSCOPE_PDFHREF &&
-		    (next = TAILQ_NEXT(bn, entries)) != NULL &&
+		/*
+		 * Special handling of the semi-blocks, specifically
+		 * either ".pdfhref" or ".UE", where the next text has
+		 * no leading space.  In this case, we need to terminate
+		 * the semi-block macro with "\c" to inhibit whitespace.
+		 */
+
+		if ((next = TAILQ_NEXT(bn, entries)) != NULL &&
 		    next->scope == BSCOPE_SPAN &&
 		    next->buf != NULL &&
 		    next->buf[0] != ' ' &&
-		    next->buf[0] != '\n' &&
-		    !HBUF_PUTSL(ob, " -A \"\\c\""))
-			return 0;
+		    next->buf[0] != '\n') {
+			if (!st->man &&
+			    bn->scope == BSCOPE_SEMI &&
+			    !HBUF_PUTSL(ob, " -A \"\\c\""))
+				return 0;
+			if (st->man &&
+			    bn->scope == BSCOPE_SEMI_CLOSE &&
+			    !HBUF_PUTSL(ob, " \\c"))
+				return 0;
+		}
+
+		/*
+		 * FIXME: BSCOPE_SEMI_CLOSE in a font context needs to
+		 * reopen the font (e.g., \fB), as it internally will
+		 * unset any font context.
+		 */
 
 		/* 
 		 * Macro arguments follow after space.  For links, these
@@ -496,7 +517,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 
 		if (bn->nargs != NULL &&
 		    (bn->scope == BSCOPE_BLOCK ||
-		     bn->scope == BSCOPE_PDFHREF)) {
+		     bn->scope == BSCOPE_SEMI)) {
 			assert(nextblk);
 			if (!hbuf_putc(ob, ' '))
 				return 0;
@@ -509,7 +530,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		if (bn->args != NULL) {
 			assert(nextblk);
 			assert(bn->scope == BSCOPE_BLOCK ||
-				bn->scope == BSCOPE_PDFHREF);
+				bn->scope == BSCOPE_SEMI);
 			if (!hbuf_putc(ob, ' '))
 				return 0;
 			if (!hesc_nroff(ob, bn->args,
@@ -564,32 +585,77 @@ out:
 	return ret;
 }
 
+/**
+ * Escape a URL.  Return FALSE on error (memory), TRUE on success.
+ */
+static int
+putlinkhref(struct lowdown_buf *ob, const struct lowdown_buf *link,
+    enum halink_type *type)
+{
+	size_t	 i = 0;
+
+	if (type != NULL && *type == HALINK_EMAIL &&
+	    hbuf_strprefix(link, "mailto:"))
+		i = strlen("mailto:");
+
+	for ( ; i < link->size; i++) {
+		if (!isprint((unsigned char)link->data[i]) ||
+		    strchr("<>\\^`{|}\"", link->data[i]) != NULL) {
+			if (!hbuf_printf(ob, "%%%.2X", link->data[i]))
+				return 0;
+		} else if (!hbuf_putc(ob, link->data[i]))
+			return 0;
+	}
+
+	return 1;
+}
+
 /*
- * Manage hypertext linking with the groff "pdfhref" macro or simply
- * using italics.  XXX: use italics because the UR/UE macro doesn't
- * support leading un-spaced content, so "x[foo](https://foo.com)y"
- * wouldn't work.  Until a solution is found, let's just italicise the
- * link text (or link, if no text is found).  Return FALSE on error
- * (memory), TRUE on success.
+ * Manage hypertext linking with the groff "pdfhref" macro, UR/UE, or
+ * simply using italics.  Return FALSE on error (memory), TRUE on
+ * success.
  */
 static int
 putlink(struct bnodeq *obq, struct nroff *st, 
-	const struct lowdown_buf *link, 
-	const struct lowdown_buf *id, 
-	struct bnodeq *bq, enum halink_type type)
+    const struct lowdown_node *n, const struct lowdown_buf *link, 
+    const struct lowdown_buf *id, struct bnodeq *bq,
+    enum halink_type type)
 {
 	struct lowdown_buf	*ob = NULL;
 	struct bnode		*bn;
-	size_t			 i;
-	int			 rc = 0, local = 0;
+	int			 rc = 0, classic = 0;
+
+	classic = !(st->flags & LOWDOWN_NROFF_GROFF);
+
+	if (type != HALINK_EMAIL && hbuf_strprefix(link, "mailto:"))
+		type = HALINK_EMAIL;
 
 	/*
-	 * For -Tman or without .pdfhref, format the link as-is, with
-	 * text then link, or use the various shorteners.
+	 * XXX: override as classic if -tman and in a section header or
+	 * definition title.
+	 * This is because UR/UE or MT/ME don't work properly in at
+	 * least mandoc when invoked with link text: the parser things
+	 * that the content is the next line, then puts all UE content
+	 * in the subsequent body.
 	 */
 
-	if (st->man || !(st->flags & LOWDOWN_NROFF_GROFF)) {
+	if (st->man && (st->flags & LOWDOWN_NROFF_GROFF))
+		for ( ; n != NULL && !classic; n = n->parent)
+			if (n->type == LOWDOWN_HEADER ||
+			    n->type == LOWDOWN_DEFINITION_TITLE)
+				classic = 1;
+
+	if (classic) {
+		/*
+		 * For output without .pdfhref ("groff") or UR/UE,
+		 * format the link as-is, with text then link, or use
+		 * the various shorteners.
+		 */
 		if (bq == NULL) {
+			/*
+			 * No link content: format the URL according to
+			 * the user's style and output it in italics.
+			 */
 			st->fonts[NFONT_ITALIC]++;
 			if (!bqueue_font(st, obq, 0))
 				goto out;
@@ -610,6 +676,9 @@ putlink(struct bnodeq *obq, struct nroff *st,
 			rc = 1;
 			goto out;
 		}
+
+		/* Link content exists: output it in bold. */
+
 		st->fonts[NFONT_BOLD]++;
 		if (!bqueue_font(st, obq, 0))
 			goto out;
@@ -621,6 +690,9 @@ putlink(struct bnodeq *obq, struct nroff *st,
 			rc = 1;
 			goto out;
 		}
+
+		/* Optionally output the link following the content. */
+
 		if (bqueue_span(obq, " <") == NULL)
 			goto out;
 		st->fonts[NFONT_ITALIC]++;
@@ -642,36 +714,78 @@ putlink(struct bnodeq *obq, struct nroff *st,
 			goto out;
 		if (bqueue_span(obq, ">") == NULL)
 			goto out;
+
+		rc = 1;
+		goto out;
+	} else if (st->man) {
+		/* 
+		 * For man(7) documents, use UR/UE or MT/ME.  According
+		 * to the groff documentation, these are supported by
+		 * all modern formatters.
+		 */
+		if ((ob = hbuf_new(32)) == NULL)
+			goto out;
+
+		/* This will strip out the "mailto:", if defined. */
+
+		if (!putlinkhref(ob, link, &type))
+			goto out;
+
+		/* Either MT or UR depending on if a URL. */
+
+		bn = bqueue_node(obq, BSCOPE_SEMI, type == HALINK_EMAIL ?
+			".MT" : ".UR");
+		if (bn == NULL)
+			goto out;
+		if ((bn->nargs = strndup(ob->data, ob->size)) == NULL)
+			goto out;
+
+		/* Link text (optional). */
+
+		if (bq != NULL)
+			TAILQ_CONCAT(obq, bq, entries);
+
+		/* Close out the link content. */
+
+		bn = bqueue_node(obq, BSCOPE_SEMI_CLOSE,
+			type == HALINK_EMAIL ?  ".ME" : ".UE");
+		if (bn == NULL)
+			goto out;
+
 		rc = 1;
 		goto out;
 	}
 
-	/* Otherwise, use .pdfhref. */
+	/* This is an ms document with groff extensions: use pdfhref. */
 
 	if ((ob = hbuf_new(32)) == NULL)
 		goto out;
 
 	/* Encode the URL. */
 
-	local = type != HALINK_EMAIL &&
-		link->size && link->data[0] == '#';
-
 	if (!HBUF_PUTSL(ob, "-D "))
 		goto out;
-	if (type == HALINK_EMAIL && !HBUF_PUTSL(ob, "mailto:"))
-		goto out;
-	for (i = local ? 1 : 0; i < link->size; i++) {
-		if (!isprint((unsigned char)link->data[i]) ||
-		    strchr("<>\\^`{|}\"", link->data[i]) != NULL) {
-			if (!hbuf_printf(ob, "%%%.2X", link->data[i]))
-				goto out;
-		} else if (!hbuf_putc(ob, link->data[i]))
-			goto out;
-	}
 
+	/*
+	 * If this link an e-mail, make sure it doesn't already start
+	 * with "mailto:", which can happen when we override te type by
+	 * investigating whether the prefix is "mailto:".
+	 */
+
+	if (type == HALINK_EMAIL && !hbuf_strprefix(link, "mailto:") &&
+	    !HBUF_PUTSL(ob, "mailto:"))
+		goto out;
+	if (!putlinkhref(ob, link, NULL))
+		goto out;
 	if (!HBUF_PUTSL(ob, " -- "))
 		goto out;
-	if (bq == NULL && !hbuf_putb(ob, link))
+
+	/*
+	 * If no content, ouput the link (possibly stripping "mailto:").
+	 * Otherwise, flush the content to the output.
+	 */
+
+	if (bq == NULL && !putlinkhref(ob, link, &type))
 		goto out;
 	else if (bq != NULL && !bqueue_flush(st, ob, bq, 1))
 		goto out;
@@ -683,7 +797,7 @@ putlink(struct bnodeq *obq, struct nroff *st,
 	 */
 
 	if (id != NULL && id->size > 0) {
-		bn = bqueue_semiblock(obq, ".pdfhref M");
+		bn = bqueue_node(obq, BSCOPE_SEMI, ".pdfhref M");
 		if (bn == NULL)
 			goto out;
 		bn->args = strndup(id->data, id->size);
@@ -691,11 +805,12 @@ putlink(struct bnodeq *obq, struct nroff *st,
 			goto out;
 	}
 
-	/* Finally, emit the link contents. */
+	/* Finally, emit the external or in-page link contents. */
 
-	bn = local ? 
-		bqueue_semiblock(obq, ".pdfhref L") :
-		bqueue_semiblock(obq, ".pdfhref W");
+	bn = bqueue_node(obq, BSCOPE_SEMI,
+		(type != HALINK_EMAIL && link->size > 0 &&
+		 link->data[0] == '#') ?
+		".pdfhref L" : ".pdfhref W");
 	if (bn == NULL)
 		goto out;
 	if ((bn->nargs = strndup(ob->data, ob->size)) == NULL)
@@ -712,10 +827,11 @@ out:
  */
 static int
 rndr_autolink(struct nroff *st, struct bnodeq *obq,
-	const struct rndr_autolink *param)
+	const struct lowdown_node *n)
 {
 
-	return putlink(obq, st, &param->link, NULL, NULL, param->type);
+	return putlink(obq, st, n, &n->rndr_autolink.link, NULL, NULL,
+		n->rndr_autolink.type);
 }
 
 static int
@@ -978,11 +1094,11 @@ out:
  */
 static ssize_t
 rndr_link(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
-	const struct rndr_link *param)
+	const struct lowdown_node *n)
 {
 
-	return putlink(obq, st, &param->link,
-		&param->attr_id, bq, HALINK_NORMAL);
+	return putlink(obq, st, n, &n->rndr_link.link,
+		&n->rndr_link.attr_id, bq, HALINK_NORMAL);
 }
 
 static int
@@ -1883,7 +1999,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_raw_block(st, obq, &n->rndr_blockhtml);
 		break;
 	case LOWDOWN_LINK_AUTO:
-		rc = rndr_autolink(st, obq, &n->rndr_autolink);
+		rc = rndr_autolink(st, obq, n);
 		break;
 	case LOWDOWN_CODESPAN:
 		rc = rndr_codespan(obq, &n->rndr_codespan);
@@ -1895,7 +2011,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_linebreak(obq);
 		break;
 	case LOWDOWN_LINK:
-		rc = rndr_link(st, obq, &tmpbq, &n->rndr_link);
+		rc = rndr_link(st, obq, &tmpbq, n);
 		break;
 	case LOWDOWN_SUBSCRIPT:
 		rc = rndr_superscript(obq, &tmpbq, n->type);

@@ -1,0 +1,40 @@
+.PP
+a \c
+.UR https://bar.com
+.UE
+b c
+.PP
+a b\c
+.UR https://bar.com
+.UE \c
+c d
+.PP
+a \c
+.UR https://bar.com
+b
+.UE
+c
+.PP
+a b\c
+.UR https://bar.com
+c
+.UE \c
+d e
+.SH
+a \fBb\fR <\fIhttps://bar.com\fR> c
+.LP
+asd
+.SH
+a\fBb\fR <\fIhttps://bar.com\fR>c
+.LP
+a \c
+.UR https://foo.com
+\fIb\fR \f(BIc\fR
+.UE
+d
+.PP
+\f(BIa \c
+.UR https://foo.com
+b
+.UE
+c\fR d

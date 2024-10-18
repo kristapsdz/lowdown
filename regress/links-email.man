@@ -1,0 +1,21 @@
+.PP
+a \c
+.MT kristaps@bsd.lv
+.ME
+b c
+.PP
+a \c
+.MT kristaps@bsd.lv
+.ME
+b c
+.PP
+a b\c
+.MT kristaps@bsd.lv
+.ME \c
+c d
+.PP
+a \c
+.UR kristaps@bsd.lv
+b
+.UE
+c

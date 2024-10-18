@@ -123,9 +123,21 @@ Do not bump wooden spoon or it will fall.
 Notice again how text always lines up on 4-space indents (including
 that last line which continues item 3 above).
 .PP
-Here\(cqs a link to \fBa website\fR <\fIhttp://foo.bar\fR>, to a \fBlocal
-doc\fR <\fIlocal-doc.html\fR>, and to a \fBsection heading in the current
-doc\fR <\fI#an-h2-header\fR>. Here\(cqs a footnote \u\s-31\s+3\d.
+Here\(cqs a link to \c
+.UR http://foo.bar
+a website
+.UE \c
+, to a \c
+.UR local-doc.html
+local
+doc
+.UE \c
+, and to a \c
+.UR #an-h2-header
+section heading in the current
+doc
+.UE \c
+\&. Here\(cqs a footnote \u\s-31\s+3\d.
 .PP
 Tables can look like this:
 .TS
