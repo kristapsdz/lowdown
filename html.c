@@ -1124,7 +1124,7 @@ rndr_doc_header(struct lowdown_buf *ob,
 					*affil = NULL, *date = NULL,
 					*copy = NULL, *rcsauthor = NULL, 
 					*rcsdate = NULL, *css = NULL,
-					*script = NULL;
+					*script = NULL, *header = NULL;
 
 	TAILQ_FOREACH(m, mq, entries)
 		if (strcasecmp(m->key, "author") == 0)
@@ -1145,6 +1145,8 @@ rndr_doc_header(struct lowdown_buf *ob,
 			css = m->value;
 		else if (strcasecmp(m->key, "javascript") == 0)
 			script = m->value;
+		else if (strcasecmp(m->key, "htmlheader") == 0)
+			header = m->value;
 
 	/* Overrides. */
 
@@ -1217,7 +1219,19 @@ rndr_doc_header(struct lowdown_buf *ob,
 			    st->flags & LOWDOWN_HTML_OWASP, 0,
 			    st->flags & LOWDOWN_HTML_NUM_ENT))
 			return 0;
-		if (!HBUF_PUTSL(ob, "</title>\n</head>\n<body>\n"))
+		if (!HBUF_PUTSL(ob, "</title>\n"))
+			return 0;
+
+		/* Optional raw HTML header. */
+
+		if (header != NULL) {
+			if (!hbuf_puts(ob, header))
+				return 0;
+			if (header[strlen(header) - 1] != '\n' &&
+			    !HBUF_PUTSL(ob, "\n"))
+				return 0;
+		}
+		if (!HBUF_PUTSL(ob, "</head>\n<body>\n"))
 			return 0;
 	}
 

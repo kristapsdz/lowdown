@@ -539,10 +539,23 @@ and prologue
 and
 .Li <office:body> .
 .It Fl t Ns Ar html
-Envelope
+HTML5 doctype declaration followed by envelope
 .Li <html>
-and prologue
+with optional language, then
 .Li <head> .
+In order, the
+.Li <head>
+consists of charset and viewport
+.Li <meta>
+elements; optional
+.Li <meta>
+elements from metadata affiliation (creator), author, copyright, and
+date;
+optional CSS sources from metadata;
+optional JavaScript sources from metadata;
+the possibly-empty
+.Li <title> ;
+then arbitrary content from metadata.
 .It Fl t Ns Ar latex
 Prologue
 .Li documentclass
@@ -604,9 +617,11 @@ Used in
 and
 .Fl t Ns Ar html .
 .It Li css
-A CSS file included in the HTML5 document head.
+A CSS file output in the HTML document head as a
+.Li <link rel="stylesheet" href="..." />
+statement.
 Multiple CSS files (in order) may be separated by two or more spaces
-(including newlines).
+(including newlines) and are output in the given order.
 Only used in
 .Fl t Ns Ar html .
 .It Li date
@@ -621,10 +636,17 @@ Used in
 .Fl t Ns Ar ms ,
 and
 .Fl t Ns Ar term .
+.It Li htmlheader
+Arbitrary HTML content output in the HTML document head immediately
+prior to closing the head element.
+Only used in
+.Fl t Ns Ar html .
 .It Li javascript
-A JavaScript file included in the HTML5 document head.
+A JavaScript file output in the HTML document head as a
+.Li <script src="..."></script>
+statement.
 Multiple script files (in order) may be separated by two or more spaces
-(including newlines).
+(including newlines) and are output in the given order.
 Only used in
 .Fl t Ns Ar html .
 .It Li lang
