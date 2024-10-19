@@ -558,13 +558,14 @@ optional CSS sources from metadata;
 optional JavaScript sources from metadata;
 the possibly-empty
 .Li <title> ;
-then arbitrary content from metadata.
+then optional arbitrary content from metadata HTML header.
 .It Fl t Ns Ar latex
 Prologue
 .Li documentclass
 and
 .Li usepackage
-statements, and surrounding
+statements, optional arbitrary content from metadata LaTeX header, then
+surrounding
 .Li begin{document}
 statements.
 .It Fl t Ns Ar man , Fl t Ns Ar ms
@@ -656,6 +657,12 @@ Only used in
 Document language in RFC 5646 format.
 Only used in
 .Fl t Ns Ar html .
+.It Li latexheader
+Arbitrary LaTeX content output in the document prologue immediately
+prior to the
+.Li begin{document} .
+Only used in
+.Fl t Ns Ar latex .
 .It Li rcsauthor
 Like
 .Li author ,

@@ -36,15 +36,22 @@ struct latex {
 	struct hentryq	headers_used; /* headers we've seen */
 	ssize_t		headers_offs; /* header offset */
 	size_t		footsz; /* current footnote */
+	int		noescape; /* don't escape text */
 };
 
 /*
+ * Escape LaTeX special characters unless "noescape" is set, in which
+ * case copy the input to the output.
  * Return zero on failure, non-zero on success.
  */
 static int
-rndr_escape_text(struct lowdown_buf *ob, const char *data, size_t sz)
+rndr_escape_text(const struct latex *st, struct lowdown_buf *ob,
+    const char *data, size_t sz)
 {
 	size_t	 i;
+
+	if (st->noescape)
+		return hbuf_put(ob, data, sz);
 
 	for (i = 0; i < sz; i++)
 		switch (data[i]) {
@@ -82,17 +89,29 @@ rndr_escape_text(struct lowdown_buf *ob, const char *data, size_t sz)
 }
 
 /*
- * Return zero on failure, non-zero on success.
+ * Like rndr_escape_text() but with a NUL-terminated string.
  */
 static int
-rndr_escape(struct lowdown_buf *ob, const struct lowdown_buf *dat)
+rndr_escape_string(const struct latex *st, struct lowdown_buf *ob,
+    const char *data)
+{
+
+	return rndr_escape_text(st, ob, data, strlen(data));
+}
+
+/*
+ * Like rndr_escape_text() but with a buffer.
+ */
+static int
+rndr_escape(const struct latex *st, struct lowdown_buf *ob,
+    const struct lowdown_buf *dat)
 {
 	
-	return rndr_escape_text(ob, dat->data, dat->size);
+	return rndr_escape_text(st, ob, dat->data, dat->size);
 }
 
 static int
-rndr_autolink(struct lowdown_buf *ob,
+rndr_autolink(const struct latex *st, struct lowdown_buf *ob,
 	const struct rndr_autolink *param)
 {
 
@@ -102,13 +121,13 @@ rndr_autolink(struct lowdown_buf *ob,
 		return 0;
 	if (param->type == HALINK_EMAIL && !HBUF_PUTSL(ob, "mailto:"))
 		return 0;
-	if (!rndr_escape(ob, &param->link))
+	if (!rndr_escape(st, ob, &param->link))
 		return 0;
 	return HBUF_PUTSL(ob, "}");
 }
 
 static int
-rndr_entity(struct lowdown_buf *ob,
+rndr_entity(const struct latex *st, struct lowdown_buf *ob,
 	const struct rndr_entity *param)
 {
 	const char	*tex;
@@ -116,7 +135,7 @@ rndr_entity(struct lowdown_buf *ob,
 
 	tex = entity_find_tex(&param->text, &texflags);
 	if (tex == NULL)
-		return rndr_escape(ob, &param->text);
+		return rndr_escape(st, ob, &param->text);
 
 	if ((texflags & TEX_ENT_MATH) && (texflags & TEX_ENT_ASCII))
 		return hbuf_printf(ob, "$\\mathrm{%s}$", tex);
@@ -194,7 +213,7 @@ rndr_blockquote(struct lowdown_buf *ob,
 }
 
 static int
-rndr_codespan(struct lowdown_buf *ob,
+rndr_codespan(const struct latex *st, struct lowdown_buf *ob,
 	const struct rndr_codespan *param)
 {
 #if 0
@@ -203,7 +222,7 @@ rndr_codespan(struct lowdown_buf *ob,
 #else
 	if (!HBUF_PUTSL(ob, "\\texttt{"))
 		return 0;
-	if (!rndr_escape(ob, &param->text))
+	if (!rndr_escape(st, ob, &param->text))
 		return 0;
 #endif
 	return HBUF_PUTSL(ob, "}");
@@ -265,8 +284,8 @@ rndr_linebreak(struct lowdown_buf *ob)
 }
 
 static int
-rndr_header(struct lowdown_buf *ob, const struct lowdown_buf *content,
-	const struct lowdown_node *n, struct latex *st)
+rndr_header(struct latex *st, struct lowdown_buf *ob,
+    const struct lowdown_buf *content, const struct lowdown_node *n)
 {
 	const char			*type;
 	ssize_t				 level;
@@ -277,7 +296,7 @@ rndr_header(struct lowdown_buf *ob, const struct lowdown_buf *content,
 	if (n->rndr_header.attr_id.size) {
 		if ((buf = hbuf_new(32)) == NULL)
 			goto out;
-		if (!rndr_escape(buf, &n->rndr_header.attr_id))
+		if (!rndr_escape(st, buf, &n->rndr_header.attr_id))
 			goto out;
 		id = buf;
 	} else {
@@ -340,7 +359,7 @@ out:
 }
 
 static int
-rndr_link(struct lowdown_buf *ob,
+rndr_link(const struct latex *st, struct lowdown_buf *ob,
 	const struct lowdown_buf *content,
 	const struct rndr_link *param)
 {
@@ -364,9 +383,9 @@ rndr_link(struct lowdown_buf *ob,
 		return 0;
 
 	if (loc && !rndr_escape_text
-	    (ob, &param->link.data[1], param->link.size - 1))
+	    (st, ob, &param->link.data[1], param->link.size - 1))
 		return 0;
-	else if (!loc && !rndr_escape(ob, &param->link))
+	else if (!loc && !rndr_escape(st, ob, &param->link))
 		return 0;
 	if (!HBUF_PUTSL(ob, "}{"))
 		return 0;
@@ -492,8 +511,8 @@ rndr_hrule(struct lowdown_buf *ob)
 }
 
 static int
-rndr_image(struct lowdown_buf *ob,
-	const struct rndr_image *param)
+rndr_image(const struct latex *st, struct lowdown_buf *ob,
+    const struct rndr_image *param)
 {
 	const char	*cp;
 	char		 dimbuf[32];
@@ -562,29 +581,28 @@ rndr_image(struct lowdown_buf *ob,
 		if (!HBUF_PUTSL(ob, "{"))
 			return 0;
 		if (!rndr_escape_text
-		    (ob, param->link.data, cp - param->link.data))
+		    (st, ob, param->link.data, cp - param->link.data))
 			return 0;
 		if (!HBUF_PUTSL(ob, "}"))
 			return 0;
-		if (!rndr_escape_text(ob, cp, 
+		if (!rndr_escape_text(st, ob, cp, 
 		    param->link.size - (cp - param->link.data)))
 			return 0;
 	} else {
-		if (!rndr_escape(ob, &param->link))
+		if (!rndr_escape(st, ob, &param->link))
 			return 0;
 	}
 	return HBUF_PUTSL(ob, "}");
 }
 
 static int
-rndr_raw_html(struct lowdown_buf *ob,
-	const struct rndr_raw_html *param,
-	const struct latex *st)
+rndr_raw_html(const struct latex *st, struct lowdown_buf *ob,
+    const struct rndr_raw_html *param)
 {
 
 	if (st->oflags & LOWDOWN_LATEX_SKIP_HTML)
 		return 1;
-	return rndr_escape(ob, &param->text);
+	return rndr_escape(st, ob, &param->text);
 }
 
 static int
@@ -657,11 +675,11 @@ rndr_superscript(struct lowdown_buf *ob,
 }
 
 static int
-rndr_normal_text(struct lowdown_buf *ob,
-	const struct rndr_normal_text *param)
+rndr_normal_text(const struct latex *st, struct lowdown_buf *ob,
+    const struct rndr_normal_text *param)
 {
 
-	return rndr_escape(ob, &param->text);
+	return rndr_escape(st, ob, &param->text);
 }
 
 static int
@@ -704,17 +722,42 @@ rndr_doc_footer(struct lowdown_buf *ob, const struct latex *st)
 }
 
 static int
-rndr_doc_header(struct lowdown_buf *ob,
-	const struct lowdown_metaq *mq, const struct latex *st)
+rndr_doc_header(const struct latex *st, struct lowdown_buf *ob,
+    const struct lowdown_metaq *mq)
 {
 	const struct lowdown_meta	*m;
 	const char			*author = NULL, *title = NULL,
 					*affil = NULL, *date = NULL,
 					*rcsauthor = NULL, 
-					*rcsdate = NULL;
+					*rcsdate = NULL, *header = NULL;
 
 	if (!(st->oflags & LOWDOWN_STANDALONE))
 		return 1;
+
+	TAILQ_FOREACH(m, mq, entries)
+		if (strcasecmp(m->key, "author") == 0)
+			author = m->value;
+		else if (strcasecmp(m->key, "affiliation") == 0)
+			affil = m->value;
+		else if (strcasecmp(m->key, "date") == 0)
+			date = m->value;
+		else if (strcasecmp(m->key, "rcsauthor") == 0)
+			rcsauthor = rcsauthor2str(m->value);
+		else if (strcasecmp(m->key, "rcsdate") == 0)
+			rcsdate = rcsdate2str(m->value);
+		else if (strcasecmp(m->key, "title") == 0)
+			title = m->value;
+		else if (strcasecmp(m->key, "latexheader") == 0)
+			header = m->value;
+
+	/* Overrides. */
+
+	if (rcsauthor != NULL)
+		author = rcsauthor;
+	if (rcsdate != NULL)
+		date = rcsdate;
+
+	/* Standard header. */
 
 	if (!HBUF_PUTSL(ob, 
 	    "% Options for packages loaded elsewhere\n"
@@ -737,63 +780,62 @@ rndr_doc_header(struct lowdown_buf *ob,
 	    "\\usepackage{xcolor}\n"
 	    "\\usepackage{graphicx}\n"
 	    "\\usepackage{longtable}\n"
-	    "\\usepackage{hyperref}\n"
-	    "\\begin{document}\n"))
+	    "\\usepackage{hyperref}\n"))
+	    	return 0;
+
+	/* Optional raw LaTeX header. */
+
+	if (header != NULL) {
+		if (!hbuf_puts(ob, header))
+			return 0;
+		if (header[strlen(header) - 1] != '\n' &&
+		    !HBUF_PUTSL(ob, "\n"))
+			return 0;
+	}
+
+	if (!HBUF_PUTSL(ob, "\\begin{document}\n"))
 		return 0;
-
-	TAILQ_FOREACH(m, mq, entries)
-		if (strcasecmp(m->key, "author") == 0)
-			author = m->value;
-		else if (strcasecmp(m->key, "affiliation") == 0)
-			affil = m->value;
-		else if (strcasecmp(m->key, "date") == 0)
-			date = m->value;
-		else if (strcasecmp(m->key, "rcsauthor") == 0)
-			rcsauthor = rcsauthor2str(m->value);
-		else if (strcasecmp(m->key, "rcsdate") == 0)
-			rcsdate = rcsdate2str(m->value);
-		else if (strcasecmp(m->key, "title") == 0)
-			title = m->value;
-
-	/* Overrides. */
-
-	if (rcsauthor != NULL)
-		author = rcsauthor;
-	if (rcsdate != NULL)
-		date = rcsdate;
 
 	/*
 	 * Title, author, and date are not required.  However, if any of
 	 * them are specified, we need the title even if empty.
 	 */
 
-	if (title != NULL ||
-	    author != NULL ||
-	    date != NULL) {
+	if (title != NULL || author != NULL || date != NULL) {
 		if (!HBUF_PUTSL(ob, "\\title{"))
 			return 0;
-		if (title != NULL && !hbuf_puts(ob, title))
+		if (title != NULL && !rndr_escape_string(st, ob, title))
 			return 0;
 		if (!HBUF_PUTSL(ob, "}\n"))
 			return 0;
 	}
 	if (author != NULL) {
-		if (!hbuf_printf(ob, "\\author{%s", author))
+		if (!HBUF_PUTSL(ob, "\\author{"))
 			return 0;
-		if (affil != NULL && 
-		    !hbuf_printf(ob, " \\\\ %s", affil))
+		if (!rndr_escape_string(st, ob, author))
+			return 0;
+		if (affil != NULL) {
+			if (!HBUF_PUTSL(ob, " \\\\ "))
+				return 0;
+			if (!rndr_escape_string(st, ob, affil))
+				return 0;
+		}
+		if (!HBUF_PUTSL(ob, "}\n"))
+			return 0;
+	}
+
+	if (date != NULL) {
+		if (!HBUF_PUTSL(ob, "\\date{"))
+			return 0;
+		if (!rndr_escape_string(st, ob, date))
 			return 0;
 		if (!HBUF_PUTSL(ob, "}\n"))
 			return 0;
 	}
-	if (date != NULL && !hbuf_printf(ob, "\\date{%s}\n", date))
-		return 0;
 
 	/* Only construct the title if there are elements for it. */
 
-	if ((title != NULL ||
-	     author != NULL ||
-	     date != NULL) &&
+	if ((title != NULL || author != NULL || date != NULL) &&
 	    !HBUF_PUTSL(ob, "\\maketitle\n"))
 		return 0;
 
@@ -850,6 +892,16 @@ rndr(struct lowdown_buf *ob,
 	if ((tmp = hbuf_new(64)) == NULL)
 		return 0;
 
+	/*
+	 * If we're processing metadata, don't escape the content as we
+	 * read and parse it.  This prevents double-escaping.  We'll
+	 * properly escape things as we inline them (standalone mode) or
+	 * when we write body text.
+	 */
+
+	if (n->type == LOWDOWN_META)
+		st->noescape = 1;
+
 	TAILQ_FOREACH(child, &n->children, entries)
 		if (!rndr(tmp, mq, st, child))
 			goto out;
@@ -884,16 +936,17 @@ rndr(struct lowdown_buf *ob,
 			return 0;
 		break;
 	case LOWDOWN_DOC_HEADER:
-		if (!rndr_doc_header(ob, mq, st))
+		if (!rndr_doc_header(st, ob, mq))
 			return 0;
 		break;
 	case LOWDOWN_META:
+		st->noescape = 0;
 		if (n->chng != LOWDOWN_CHNG_DELETE &&
 		    !rndr_meta(ob, tmp, mq, n, st))
 			return 0;
 		break;
 	case LOWDOWN_HEADER:
-		if (!rndr_header(ob, tmp, n, st))
+		if (!rndr_header(st, ob, tmp, n))
 			return 0;
 		break;
 	case LOWDOWN_HRULE:
@@ -929,11 +982,11 @@ rndr(struct lowdown_buf *ob,
 			return 0;
 		break;
 	case LOWDOWN_LINK_AUTO:
-		if (!rndr_autolink(ob, &n->rndr_autolink))
+		if (!rndr_autolink(st, ob, &n->rndr_autolink))
 			return 0;
 		break;
 	case LOWDOWN_CODESPAN:
-		if (!rndr_codespan(ob, &n->rndr_codespan))
+		if (!rndr_codespan(st, ob, &n->rndr_codespan))
 			return 0;
 		break;
 	case LOWDOWN_DOUBLE_EMPHASIS:
@@ -949,7 +1002,7 @@ rndr(struct lowdown_buf *ob,
 			return 0;
 		break;
 	case LOWDOWN_IMAGE:
-		if (!rndr_image(ob, &n->rndr_image))
+		if (!rndr_image(st, ob, &n->rndr_image))
 			return 0;
 		break;
 	case LOWDOWN_LINEBREAK:
@@ -957,7 +1010,7 @@ rndr(struct lowdown_buf *ob,
 			return 0;
 		break;
 	case LOWDOWN_LINK:
-		if (!rndr_link(ob, tmp, &n->rndr_link))
+		if (!rndr_link(st, ob, tmp, &n->rndr_link))
 			return 0;
 		break;
 	case LOWDOWN_TRIPLE_EMPHASIS:
@@ -981,15 +1034,15 @@ rndr(struct lowdown_buf *ob,
 			return 0;
 		break;
 	case LOWDOWN_RAW_HTML:
-		if (!rndr_raw_html(ob, &n->rndr_raw_html, st))
+		if (!rndr_raw_html(st, ob, &n->rndr_raw_html))
 			return 0;
 		break;
 	case LOWDOWN_NORMAL_TEXT:
-		if (!rndr_normal_text(ob, &n->rndr_normal_text))
+		if (!rndr_normal_text(st, ob, &n->rndr_normal_text))
 			return 0;
 		break;
 	case LOWDOWN_ENTITY:
-		if (!rndr_entity(ob, &n->rndr_entity))
+		if (!rndr_entity(st, ob, &n->rndr_entity))
 			return 0;
 		break;
 	case LOWDOWN_ROOT:
