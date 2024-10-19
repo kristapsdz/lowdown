@@ -1562,35 +1562,39 @@
 	</article>
 	<article data-sblg-article="1" data-sblg-tags="version">
 		<header>
-			<h1>1.1.2</h1>
-			<!-- IN PROGRESS -->
+			<h1>1.1.3</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2024-10-12">2024-10-12</time>
+			<time datetime="2024-10-18">2024-10-18</time>
 		</header>
 		<aside>
 			<p>
 				Be specific about the behaviour of nested links.  This is
-				inconsistent across the various Markdown implementations (and
-				CommonMark).  Document and stick to a standard.
+				inconsistent across the various Markdown implementations
+				(and CommonMark).  Document and stick to a standard.
 			</p>
 			<p>
 				Output OSC8 hyperlinks in <b>-tterm</b> mode.  See
-				<a href="https://github.com/Alhadis/OSC8-Adoption/">OSC8 Adoption</a>
-				for the gist.  This won't affect terminals not supporting links
-				(such as with OpenBSD's default xterm).  As of this change, all
-				links (including image links) and link titles will be clickable in
-				supporting terminals.
+				<a href="https://github.com/Alhadis/OSC8-Adoption/">
+					OSC8 Adoption
+				</a>
+				for the gist.  This won't affect terminals not supporting
+				links (such as with OpenBSD's default xterm).  As of this
+				change, all links (including image links) and link titles
+				will be clickable in supporting terminals unless
+				<b>--term-no-ansi</b> is given.
 			</p>
 			<p>
 				Conditionally output <code>UR</code>/<code>UE</code> or
-				<code>MT</code>/<code>ME</code> macros for <b>-tman</b> links.  This
-				makes links be <q>live</q> in some <b>-tman</b> utilities.
+				<code>MT</code>/<code>ME</code> macros for <b>-tman</b>
+				links.  This makes links be <q>live</q> in some
+				<b>-tman</b> utilities.
 			</p>
 			<p>
-				Deprecate the <b>--nroff-no-groff</b> in favour of
-				<b>--nroff-traditional</b>, as they equally favour mandoc and
-				Heirloom troff.  Does not change the code interface, which uses the
-				same macro name as before.
+				Rename the <b>--nroff-no-groff</b> flag as
+				<b>--nroff-traditional</b>, as the changes it effects
+				equally favour mandoc and Heirloom troff.  Does not change
+				the code interface, which uses the same macro name as
+				before.
 			</p>
 		</aside>
 	</article>
