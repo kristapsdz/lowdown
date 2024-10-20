@@ -2,7 +2,6 @@
 .TL
 .AU
 \&.ab\(ticde
-.AU
 \&.fgh
 .PP
 foo bar

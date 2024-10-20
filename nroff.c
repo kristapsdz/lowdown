@@ -53,6 +53,7 @@ struct 	nroff {
 	const char		 *cb; /* fixed-width bold font */
 	const char		 *ci; /* fixed-width italic font */
 	const char		 *cbi; /* fixed-width bold-italic font */
+	int			  noescape;
 };
 
 enum	bscope {
@@ -1627,8 +1628,9 @@ rndr_entity(const struct nroff *st,
 }
 
 /*
- * Split "b" at sequential white-space, outputting the results in the
- * line-based "env" macro.  The content in "b" has already been escaped.
+ * Split "b" at sequential white-space, outputting the results per-line,
+ * after outputting the initial block macro.
+ * The content in "b" has not been escaped.
  */
 static int
 rndr_meta_multi(struct bnodeq *obq, const char *b, const char *env)
@@ -1636,14 +1638,14 @@ rndr_meta_multi(struct bnodeq *obq, const char *b, const char *env)
 	const char	*start;
 	size_t		 sz, i, bsz;
 	struct bnode	*bn;
-	char		 macro[32];
 
 	if (b == NULL)
 		return 1;
 
-	assert(strlen(env) < sizeof(macro) - 1);
-	snprintf(macro, sizeof(macro), ".%s", env);
 	bsz = strlen(b);
+
+	if (bqueue_block(obq, env) == NULL)
+		return 0;
 
 	for (i = 0; i < bsz; i++) {
 		while (i < bsz &&
@@ -1661,11 +1663,9 @@ rndr_meta_multi(struct bnodeq *obq, const char *b, const char *env)
 		if ((sz = &b[i] - start) == 0)
 			continue;
 
-		if (bqueue_block(obq, macro) == NULL)
+		if ((bn = bqueue_block(obq, NULL)) == NULL)
 			return 0;
-		if ((bn = bqueue_span(obq, NULL)) == NULL)
-			return 0;
-		if ((bn->nbuf = strndup(start, sz)) == NULL)
+		if ((bn->buf = strndup(start, sz)) == NULL)
 			return 0;
 	}
 
@@ -1731,7 +1731,9 @@ rndr_doc_header(const struct nroff *st,
 					*affil = NULL, *date = NULL,
 					*copy = NULL, *sec = NULL,
 					*rcsauthor = NULL, *rcsdate = NULL,
-					*source = NULL, *volume = NULL;
+					*source = NULL, *volume = NULL,
+					*msheader = NULL,
+					*manheader = NULL;
 
 	if (!(st->flags & LOWDOWN_STANDALONE))
 		return 1;
@@ -1757,6 +1759,10 @@ rndr_doc_header(const struct nroff *st,
 			source = m->value;
 		else if (strcasecmp(m->key, "volume") == 0)
 			volume = m->value;
+		else if (strcasecmp(m->key, "msheader") == 0)
+			msheader = m->value;
+		else if (strcasecmp(m->key, "manheader") == 0)
+			manheader = m->value;
 
 	/* Overrides. */
 
@@ -1778,7 +1784,7 @@ rndr_doc_header(const struct nroff *st,
 				".ds LF Copyright \\(co");
 			if (bn == NULL)
 				goto out;
-			if ((bn->nargs = strdup(copy)) == NULL)
+			if ((bn->args = strdup(copy)) == NULL)
 				goto out;
 		}
 		if (date != NULL) {
@@ -1788,9 +1794,13 @@ rndr_doc_header(const struct nroff *st,
 				bn = bqueue_block(obq, ".DA");
 			if (bn == NULL)
 				goto out;
-			if ((bn->nargs = strdup(date)) == NULL)
+			if ((bn->args = strdup(date)) == NULL)
 				goto out;
 		}
+
+		if (msheader != NULL &&
+		    bqueue_block(obq, msheader) == NULL)
+			goto out;
 
 		/*
 		 * The title is required if having an author or
@@ -1804,14 +1814,27 @@ rndr_doc_header(const struct nroff *st,
 		if (title != NULL) {
 			if ((bn = bqueue_span(obq, NULL)) == NULL)
 				goto out;
-			if ((bn->nbuf = strdup(title)) == NULL)
+			if ((bn->buf = strdup(title)) == NULL)
 				goto out;
 		}
-		if (!rndr_meta_multi(obq, author, "AU"))
+		
+		/*
+		 * XXX: in groff_ms(7), it's stipulated that multiple
+		 * authors get multiple AU invocations.  However, these
+		 * are grouped with the subsequent AI.  In lowdown, we
+		 * accept all authors and institutions at once (without
+		 * grouping), so simply put these all together.
+		 */
+
+		if (!rndr_meta_multi(obq, author, ".AU"))
 			goto out;
-		if (!rndr_meta_multi(obq, affil, "AI"))
+		if (!rndr_meta_multi(obq, affil, ".AI"))
 			goto out;
 	} else {
+		if (manheader != NULL &&
+		    bqueue_block(obq, manheader) == NULL)
+			goto out;
+
 		if ((ob = hbuf_new(32)) == NULL)
 			goto out;
 
@@ -1825,11 +1848,11 @@ rndr_doc_header(const struct nroff *st,
 		if (!HBUF_PUTSL(ob, "\""))
 			goto out;
 		if (title != NULL &&
-		    !hesc_nroff(ob, title, strlen(title), 1, 0, 0))
+		    !hesc_nroff(ob, title, strlen(title), 1, 0, 1))
 			goto out;
 		if (!HBUF_PUTSL(ob, "\" \""))
 			goto out;
-		if (!hesc_nroff(ob, sec, strlen(sec), 1, 0, 0))
+		if (!hesc_nroff(ob, sec, strlen(sec), 1, 0, 1))
 			goto out;
 		if (!HBUF_PUTSL(ob, "\" \""))
 			goto out;
@@ -1840,7 +1863,7 @@ rndr_doc_header(const struct nroff *st,
 		 */
 
 		if (date != NULL &&
-		    !hesc_nroff(ob, date, strlen(date), 1, 0, 0))
+		    !hesc_nroff(ob, date, strlen(date), 1, 0, 1))
 			goto out;
 		if (!HBUF_PUTSL(ob, "\""))
 			goto out;
@@ -1855,14 +1878,14 @@ rndr_doc_header(const struct nroff *st,
 			if (!HBUF_PUTSL(ob, " \""))
 				goto out;
 			if (source != NULL && !hesc_nroff
-			    (ob, source, strlen(source), 1, 0, 0))
+			    (ob, source, strlen(source), 1, 0, 1))
 				goto out;
 			if (!HBUF_PUTSL(ob, "\""))
 				goto out;
 			if (!HBUF_PUTSL(ob, " \""))
 				goto out;
 			if (volume != NULL && !hesc_nroff
-			    (ob, volume, strlen(volume), 1, 0, 0))
+			    (ob, volume, strlen(volume), 1, 0, 1))
 				goto out;
 			if (!HBUF_PUTSL(ob, "\""))
 				goto out;
@@ -1935,6 +1958,9 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		break;
 	}
 
+	if (n->type == LOWDOWN_META)
+		st->noescape = 1;
+
 	TAILQ_FOREACH(child, &n->children, entries)
 		if (!rndr(mq, st, child, &tmpbq))
 			goto out;
@@ -1959,6 +1985,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_doc_header(st, obq, mq);
 		break;
 	case LOWDOWN_META:
+		st->noescape = 0;
 		if (n->chng != LOWDOWN_CHNG_DELETE)
 			rc = rndr_meta(st, &tmpbq, mq, &n->rndr_meta);
 		break;
@@ -2035,11 +2062,19 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	case LOWDOWN_NORMAL_TEXT:
 		if ((bn = bqueue_span(obq, NULL)) == NULL)
 			goto out;
-		bn->buf = strndup
-			(n->rndr_normal_text.text.data,
-			 n->rndr_normal_text.text.size);
-		if (bn->buf == NULL)
-			goto out;
+		if (st->noescape) {
+			bn->nbuf = strndup
+				(n->rndr_normal_text.text.data,
+				 n->rndr_normal_text.text.size);
+			if (bn->buf == NULL)
+				goto out;
+		} else {
+			bn->buf = strndup
+				(n->rndr_normal_text.text.data,
+				 n->rndr_normal_text.text.size);
+			if (bn->buf == NULL)
+				goto out;
+		}
 		break;
 	case LOWDOWN_ENTITY:
 		rc = rndr_entity(st, obq, &n->rndr_entity);
@@ -2100,6 +2135,7 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 	memset(st->fonts, 0, sizeof(st->fonts));
 	st->headers_offs = 1;
 	st->post_para = 0;
+	st->noescape = 0;
 
 	if (rndr(&metaq, st, n, &bq)) {
 		if (!bqueue_flush(st, ob, &bq, 1))

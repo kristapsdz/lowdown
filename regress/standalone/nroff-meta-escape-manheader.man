@@ -1,0 +1,6 @@
+.\" -*- mode: troff; coding: utf-8 -*-
+.nr PS 24p  
+.nr S 10
+.TH ".ds \e*a \e(bc --- .ds EF" "7" ".nr PS 24p"
+.PP
+aasdfasdfs
