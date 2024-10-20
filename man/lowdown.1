@@ -645,6 +645,7 @@ Arbitrary HTML content output in the HTML document head immediately
 prior to closing the head element.
 Only used in
 .Fl t Ns Ar html .
+This metadata is not processed: it's passed unchanged into the output.
 .It Li javascript
 A JavaScript file output in the HTML document head as a
 .Li <script src="..."></script>
@@ -663,6 +664,21 @@ prior to the
 .Li begin{document} .
 Only used in
 .Fl t Ns Ar latex .
+This metadata is not processed: it's passed unchanged into the output.
+.It Li manheader
+Arbitrary roff content output immediately prior to the
+.Li .TH
+macro.
+Only used in
+.Fl t Ns Ar man .
+This metadata is not processed: it's passed unchanged into the output.
+.It Li msheader
+Arbitrary roff content output immediately prior to the
+.Li .TL
+macro.
+Only used in
+.Fl t Ns Ar ms .
+This metadata is not processed: it's passed unchanged into the output.
 .It Li rcsauthor
 Like
 .Li author ,
