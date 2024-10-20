@@ -1079,6 +1079,7 @@ lowdown_latex_rndr(struct lowdown_buf *ob,
 	TAILQ_INIT(&metaq);
 	st->headers_offs = 1;
 	st->footsz = 0;
+	st->noescape = 0;
 
 	rc = rndr(ob, &metaq, st, n);
 
