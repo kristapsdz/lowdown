@@ -1024,12 +1024,16 @@ rndr_root(struct lowdown_buf *ob,
 
 /*
  * Split "val" into multiple strings delimited by two or more whitespace
- * characters, padding the output with "starttag" and "endtag".
+ * characters, padding the output with "starttag" and "endtag".  If
+ * "href" is set, escape as if this were a link; if "attr" were set,
+ * escape as if this were an HTML attribute; if neither, then escape as
+ * if regular HTML.
  * Return zero on failure, non-zero on success.
  */
 static int
-rndr_meta_multi(struct lowdown_buf *ob, const char *b, int href,
-    const char *starttag, const char *endtag)
+rndr_meta_multi(const struct html *st, struct lowdown_buf *ob,
+    const char *b, int href, int attr, const char *starttag,
+    const char *endtag)
 {
 	const char	*start;
 	size_t		 sz, i, bsz;
@@ -1058,9 +1062,13 @@ rndr_meta_multi(struct lowdown_buf *ob, const char *b, int href,
 
 		if (!hbuf_puts(ob, starttag))
 			return 0;
-		if (!href && !hesc_attr(ob, start, sz))
+		if (attr && !hesc_attr(ob, start, sz))
 			return 0;
 		else if (href && !hesc_href(ob, start, sz))
+			return 0;
+		else if (!attr && !href && !hesc_html(ob, start, sz,
+		    st->flags & LOWDOWN_HTML_OWASP, 0,
+		    st->flags & LOWDOWN_HTML_NUM_ENT))
 			return 0;
 		if (!hbuf_puts(ob, endtag))
 			return 0;
@@ -1167,13 +1175,13 @@ rndr_doc_header(struct lowdown_buf *ob,
 		    "<meta name=\"viewport\" content=\""
 		    "width=device-width,initial-scale=1\" />\n"))
 			return 0;
-		if (!rndr_meta_multi(ob, affil, 0,
+		if (!rndr_meta_multi(st, ob, affil, 0, 1,
 		    "<meta name=\"creator\" content=\"", "\" />"))
 			return 0;
-		if (!rndr_meta_multi(ob, author, 0,
+		if (!rndr_meta_multi(st, ob, author, 0, 1,
 		    "<meta name=\"author\" content=\"", "\" />"))
 			return 0;
-		if (!rndr_meta_multi(ob, copy, 0,
+		if (!rndr_meta_multi(st, ob, copy, 0, 1,
 		    "<meta name=\"copyright\" content=\"", "\" />"))
 			return 0;
 		if (date != NULL) {
@@ -1203,10 +1211,10 @@ rndr_doc_header(struct lowdown_buf *ob,
 			if (!HBUF_PUTSL(ob, "\" />\n"))
 				return 0;
 		}
-		if (!rndr_meta_multi(ob, css, 1,
+		if (!rndr_meta_multi(st, ob, css, 1, 0,
 		    "<link rel=\"stylesheet\" href=\"", "\" />"))
 			return 0;
-		if (!rndr_meta_multi(ob, script, 1,
+		if (!rndr_meta_multi(st, ob, script, 1, 0,
 		     "<script src=\"", "\"></script>"))
 			return 0;
 
@@ -1250,7 +1258,7 @@ rndr_doc_header(struct lowdown_buf *ob,
 		     !HBUF_PUTSL(ob, "</h1>\n")))
 				return 0;
 		if (author != NULL &&
-		    !rndr_meta_multi(ob, author, 0,
+		    !rndr_meta_multi(st, ob, author, 0, 0,
 			    "<p class=\"author\">", "</p>"))
 			return 0;
 		if (date != NULL &&
