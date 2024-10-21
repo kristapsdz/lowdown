@@ -1353,62 +1353,6 @@ rndr_doc_header(struct lowdown_buf *ob, struct term *st,
 	return 1;
 }
 
-/*
- * Extract metadata into "metaq".  This avoids calling rndr_buf()
- * because of all the line fiddling: because we know the contents of the
- * LOWDOWN_META, serialise directly into the metadata value without
- * formatting.
- *
- * This will be serialised to the output buffer in rndr_doc_header().
- *
- * Return zero on failure (memory), non-zero otherwise.
- */
-static int
-rndr_meta(struct term *st, const struct lowdown_node *n)
-{
-	struct lowdown_meta		*m;
-	const struct lowdown_node	*child;
-	struct lowdown_buf		*metatmp;
-	int32_t				 entity;
-
-	m = calloc(1, sizeof(struct lowdown_meta));
-	if (m == NULL)
-		return 0;
-	TAILQ_INSERT_TAIL(&st->metaq, m, entries);
-	m->key = strndup(n->rndr_meta.key.data,
-		n->rndr_meta.key.size);
-	if (m->key == NULL)
-		return 0;
-	if ((metatmp = hbuf_new(128)) == NULL)
-		return 0;
-	TAILQ_FOREACH(child, &n->children, entries) {
-		switch (child->type) {
-		case LOWDOWN_NORMAL_TEXT:
-			if (!hbuf_putb(metatmp,
-			    &child->rndr_normal_text.text))
-				return 0;
-			break;
-		case LOWDOWN_ENTITY:
-			entity = entity_find_iso
-				(&child->rndr_entity.text);
-			if (entity == 0)
-				break;
-			hbuf_truncate(st->tmp);
-			if (!rndr_entity(st->tmp, entity) ||
-			    !hbuf_putb(metatmp, st->tmp))
-				return 0;
-			break;
-		default:
-			abort();
-		}
-	}
-	m->value = strndup(metatmp->data, metatmp->size);
-	if (m->value == NULL)
-		return 0;
-	hbuf_free(metatmp);
-	return 1;
-}
-
 static int
 rndr(struct lowdown_buf *ob, struct term *st,
 	const struct lowdown_node *n)
@@ -1535,7 +1479,7 @@ rndr(struct lowdown_buf *ob, struct term *st,
 			return 0;
 		break;
 	case LOWDOWN_META:
-		if (!rndr_meta(st, n))
+		if (lowdown_get_meta(n, &st->metaq) == NULL)
 			return 0;
 		break;
 	default:
