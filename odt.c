@@ -1928,27 +1928,15 @@ rndr_meta(struct lowdown_buf *ob,
 	ssize_t			 val;
 	const char		*ep;
 
-	m = calloc(1, sizeof(struct lowdown_meta));
-	if (m == NULL)
-		return 0;
-	TAILQ_INSERT_TAIL(mq, m, entries);
-
-	m->key = strndup(n->rndr_meta.key.data,
-		n->rndr_meta.key.size);
-	if (m->key == NULL)
-		return 0;
-	m->value = strndup(content->data, content->size);
-	if (m->value == NULL)
+	if ((m = lowdown_get_meta(n, mq)) == NULL)
 		return 0;
 
 	if (strcmp(m->key, "shiftheadinglevelby") == 0) {
-		val = (ssize_t)strtonum
-			(m->value, -100, 100, &ep);
+		val = (ssize_t)strtonum(m->value, -100, 100, &ep);
 		if (ep == NULL)
 			st->headers_offs = val + 1;
 	} else if (strcmp(m->key, "baseheaderlevel") == 0) {
-		val = (ssize_t)strtonum
-			(m->value, 1, 100, &ep);
+		val = (ssize_t)strtonum(m->value, 1, 100, &ep);
 		if (ep == NULL)
 			st->headers_offs = val;
 	}
