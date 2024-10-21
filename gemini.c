@@ -310,12 +310,10 @@ static int
 rndr_meta(struct gemini *st, 
 	const struct lowdown_node *n, struct lowdown_metaq *mq)
 {
-	ssize_t				 last_blank;
-	struct lowdown_buf		*tmp = NULL;
-	struct lowdown_meta		*m;
-	const struct lowdown_node	*child;
-	ssize_t				 val;
-	const char			*ep;
+	ssize_t			 last_blank;
+	struct lowdown_meta	*m;
+	ssize_t			 val;
+	const char		*ep;
 
 	/*
 	 * Manually render the children of the meta into a
@@ -327,43 +325,21 @@ rndr_meta(struct gemini *st,
 	last_blank = st->last_blank;
 	st->last_blank = -1;
 
-	if ((tmp = hbuf_new(128)) == NULL)
-		goto err;
-	if ((m = calloc(1, sizeof(struct lowdown_meta))) == NULL)
-		goto err;
-	TAILQ_INSERT_TAIL(mq, m, entries);
-
-	m->key = strndup(n->rndr_meta.key.data,
-		n->rndr_meta.key.size);
-	if (m->key == NULL)
-		goto err;
-
-	TAILQ_FOREACH(child, &n->children, entries)
-		if (!rndr(tmp, mq, st, child))
-			goto err;
-
-	m->value = strndup(tmp->data, tmp->size);
-	if (m->value == NULL)
-		goto err;
+	if ((m = lowdown_get_meta(n, mq)) == NULL)
+		return 0;
 
 	if (strcmp(m->key, "shiftheadinglevelby") == 0) {
-		val = (ssize_t)strtonum
-			(m->value, -100, 100, &ep);
+		val = (ssize_t)strtonum(m->value, -100, 100, &ep);
 		if (ep == NULL)
 			st->headers_offs = val + 1;
 	} else if (strcmp(m->key, "baseheaderlevel") == 0) {
-		val = (ssize_t)strtonum
-			(m->value, 1, 100, &ep);
+		val = (ssize_t)strtonum(m->value, 1, 100, &ep);
 		if (ep == NULL)
 			st->headers_offs = val;
 	}
 
-	hbuf_free(tmp);
 	st->last_blank = last_blank;
 	return 1;
-err:
-	hbuf_free(tmp);
-	return 0;
 }
 
 /*
