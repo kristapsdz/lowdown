@@ -53,7 +53,6 @@ struct 	nroff {
 	const char		 *cb; /* fixed-width bold font */
 	const char		 *ci; /* fixed-width italic font */
 	const char		 *cbi; /* fixed-width bold-italic font */
-	int			  noescape;
 };
 
 enum	bscope {
@@ -1677,41 +1676,22 @@ rndr_meta_multi(struct bnodeq *obq, const char *b, const char *env)
  * strings are escaped.
  */
 static int
-rndr_meta(struct nroff *st, const struct bnodeq *bq, 
-	struct lowdown_metaq *mq, const struct rndr_meta *params)
+rndr_meta(struct nroff *st, const struct lowdown_node *n,
+    struct lowdown_metaq *mq)
 {
 	struct lowdown_meta	*m;
-	struct lowdown_buf	*ob;
 	ssize_t			 val;
 	const char		*ep;
 
-	if ((m = calloc(1, sizeof(struct lowdown_meta))) == NULL)
-		return 0;
-	TAILQ_INSERT_TAIL(mq, m, entries);
-
-	m->key = strndup(params->key.data, params->key.size);
-	if (m->key == NULL)
-		return 0;
-
-	if ((ob = hbuf_new(32)) == NULL)
-		return 0;
-	if (!bqueue_flush(st, ob, bq, 1)) {
-		hbuf_free(ob);
-		return 0;
-	}
-	m->value = strndup(ob->data, ob->size);
-	hbuf_free(ob);
-	if (m->value == NULL)
+	if ((m = lowdown_get_meta(n, mq)) == NULL)
 		return 0;
 
 	if (strcmp(m->key, "shiftheadinglevelby") == 0) {
-		val = (ssize_t)strtonum
-			(m->value, -100, 100, &ep);
+		val = (ssize_t)strtonum(m->value, -100, 100, &ep);
 		if (ep == NULL)
 			st->headers_offs = val + 1;
 	} else if (strcmp(m->key, "baseheaderlevel") == 0) {
-		val = (ssize_t)strtonum
-			(m->value, 1, 100, &ep);
+		val = (ssize_t)strtonum(m->value, 1, 100, &ep);
 		if (ep == NULL)
 			st->headers_offs = val;
 	}
@@ -1958,9 +1938,6 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		break;
 	}
 
-	if (n->type == LOWDOWN_META)
-		st->noescape = 1;
-
 	TAILQ_FOREACH(child, &n->children, entries)
 		if (!rndr(mq, st, child, &tmpbq))
 			goto out;
@@ -1985,9 +1962,8 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_doc_header(st, obq, mq);
 		break;
 	case LOWDOWN_META:
-		st->noescape = 0;
 		if (n->chng != LOWDOWN_CHNG_DELETE)
-			rc = rndr_meta(st, &tmpbq, mq, &n->rndr_meta);
+			rc = rndr_meta(st, n, mq);
 		break;
 	case LOWDOWN_HEADER:
 		rc = rndr_header(st, obq, &tmpbq, n);
@@ -2062,19 +2038,11 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	case LOWDOWN_NORMAL_TEXT:
 		if ((bn = bqueue_span(obq, NULL)) == NULL)
 			goto out;
-		if (st->noescape) {
-			bn->nbuf = strndup
-				(n->rndr_normal_text.text.data,
-				 n->rndr_normal_text.text.size);
-			if (bn->buf == NULL)
-				goto out;
-		} else {
-			bn->buf = strndup
-				(n->rndr_normal_text.text.data,
-				 n->rndr_normal_text.text.size);
-			if (bn->buf == NULL)
-				goto out;
-		}
+		bn->buf = strndup
+			(n->rndr_normal_text.text.data,
+			 n->rndr_normal_text.text.size);
+		if (bn->buf == NULL)
+			goto out;
 		break;
 	case LOWDOWN_ENTITY:
 		rc = rndr_entity(st, obq, &n->rndr_entity);
@@ -2135,7 +2103,6 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 	memset(st->fonts, 0, sizeof(st->fonts));
 	st->headers_offs = 1;
 	st->post_para = 0;
-	st->noescape = 0;
 
 	if (rndr(&metaq, st, n, &bq)) {
 		if (!bqueue_flush(st, ob, &bq, 1))

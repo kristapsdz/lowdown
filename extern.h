@@ -23,6 +23,9 @@ struct	hentry {
 
 TAILQ_HEAD(hentryq, hentry);
 
+struct lowdown_meta
+		*lowdown_get_meta(const struct lowdown_node *, struct lowdown_metaq *);
+
 int	 	 smarty(struct lowdown_node *, size_t, enum lowdown_type);
 
 const char	*entity_find_nroff(const struct lowdown_buf *, int32_t *);

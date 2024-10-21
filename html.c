@@ -41,7 +41,6 @@ struct 	html {
 	struct hentryq	 	  headers_used; /* headers we've seen */
 	ssize_t			  headers_offs; /* header offset */
 	unsigned int 		  flags; /* "oflags" in lowdown_opts */
-	int			  noescape; /* don't escape text */
 	struct lowdown_buf	**foots; /* footnotes */
 	size_t			  footsz; /* footnotes size  */
 };
@@ -55,7 +54,6 @@ escape_html(struct lowdown_buf *ob, const char *source,
 	size_t length, const struct html *st)
 {
 
-	assert(st->noescape == 0);
 	return hesc_html(ob, source, length, 
 		st->flags & LOWDOWN_HTML_OWASP, 0,
 		st->flags & LOWDOWN_HTML_NUM_ENT);
@@ -69,9 +67,7 @@ escape_htmlb(struct lowdown_buf *ob,
 	const struct lowdown_buf *in, const struct html *st)
 {
 
-	return st->noescape ?
-		hbuf_putb(ob, in) :
-		escape_html(ob, in->data, in->size, st);
+	return escape_html(ob, in->data, in->size, st);
 }
 
 /*
@@ -84,7 +80,6 @@ escape_literal(struct lowdown_buf *ob,
 	const struct lowdown_buf *in, const struct html *st)
 {
 
-	assert(st->noescape == 0);
 	return hesc_html(ob, in->data, in->size, 
 		st->flags & LOWDOWN_HTML_OWASP, 1,
 		st->flags & LOWDOWN_HTML_NUM_ENT);
@@ -99,7 +94,6 @@ escape_href(struct lowdown_buf *ob, const struct lowdown_buf *in,
 	const struct html *st)
 {
 
-	assert(st->noescape == 0);
 	return hesc_href(ob, in->data, in->size);
 }
 
@@ -1084,36 +1078,22 @@ rndr_meta_multi(const struct html *st, struct lowdown_buf *ob,
  * Return zero on failure, non-zero on success.
  */
 static int
-rndr_meta(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	struct lowdown_metaq *mq,
-	const struct lowdown_node *n, struct html *st)
+rndr_meta(struct html *st, const struct lowdown_node *n, 
+    struct lowdown_metaq *mq)
 {
 	struct lowdown_meta	*m;
 	ssize_t			 val;
 	const char		*ep;
 
-	m = calloc(1, sizeof(struct lowdown_meta));
-	if (m == NULL)
-		return 0;
-	TAILQ_INSERT_TAIL(mq, m, entries);
-
-	m->key = strndup(n->rndr_meta.key.data,
-		n->rndr_meta.key.size);
-	if (m->key == NULL)
-		return 0;
-	m->value = strndup(content->data, content->size);
-	if (m->value == NULL)
+	if ((m = lowdown_get_meta(n, mq)) == NULL)
 		return 0;
 
 	if (strcmp(m->key, "shiftheadinglevelby") == 0) {
-		val = (ssize_t)strtonum
-			(m->value, -100, 100, &ep);
+		val = (ssize_t)strtonum(m->value, -100, 100, &ep);
 		if (ep == NULL)
 			st->headers_offs = val + 1;
 	} else if (strcmp(m->key, "baseheaderlevel") == 0) {
-		val = (ssize_t)strtonum
-			(m->value, 1, 100, &ep);
+		val = (ssize_t)strtonum(m->value, 1, 100, &ep);
 		if (ep == NULL)
 			st->headers_offs = val;
 	}
@@ -1286,16 +1266,6 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq, struct html *st,
 	if ((tmp = hbuf_new(64)) == NULL)
 		return 0;
 
-	/*
-	 * If we're processing metadata, don't escape the content as we
-	 * read and parse it.  This prevents double-escaping.  We'll
-	 * properly escape things as we inline them (standalone mode) or
-	 * when we write body text.
-	 */
-
-	if (n->type == LOWDOWN_META)
-		st->noescape = 1;
-
 	TAILQ_FOREACH(child, &n->children, entries)
 		if (!rndr(tmp, mq, st, child))
 			goto out;
@@ -1335,9 +1305,8 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq, struct html *st,
 		rc = rndr_doc_header(ob, tmp, mq, st);
 		break;
 	case LOWDOWN_META:
-		st->noescape = 0;
 		if (n->chng != LOWDOWN_CHNG_DELETE)
-			rc = rndr_meta(ob, tmp, mq, n, st);
+			rc = rndr_meta(st, n, mq);
 		break;
 	case LOWDOWN_HEADER:
 		rc = rndr_header(ob, tmp, n, st);
@@ -1477,7 +1446,6 @@ lowdown_html_rndr(struct lowdown_buf *ob,
 	TAILQ_INIT(&st->headers_used);
 	TAILQ_INIT(&metaq);
 	st->headers_offs = 1;
-	st->noescape = 0;
 
 	rc = rndr(ob, &metaq, st, n);
 

@@ -36,12 +36,10 @@ struct latex {
 	struct hentryq	headers_used; /* headers we've seen */
 	ssize_t		headers_offs; /* header offset */
 	size_t		footsz; /* current footnote */
-	int		noescape; /* don't escape text */
 };
 
 /*
- * Escape LaTeX special characters unless "noescape" is set, in which
- * case copy the input to the output.
+ * Escape LaTeX special characters.
  * Return zero on failure, non-zero on success.
  */
 static int
@@ -49,9 +47,6 @@ rndr_escape_text(const struct latex *st, struct lowdown_buf *ob,
     const char *data, size_t sz)
 {
 	size_t	 i;
-
-	if (st->noescape)
-		return hbuf_put(ob, data, sz);
 
 	for (i = 0; i < sz; i++)
 		switch (data[i]) {
@@ -843,35 +838,22 @@ rndr_doc_header(const struct latex *st, struct lowdown_buf *ob,
 }
 
 static int
-rndr_meta(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	struct lowdown_metaq *mq,
-	const struct lowdown_node *n, struct latex *st)
+rndr_meta(struct latex *st, const struct lowdown_node *n, 
+    struct lowdown_metaq *mq)
 {
 	struct lowdown_meta	*m;
 	ssize_t			 val;
 	const char		*ep;
 
-	if ((m = calloc(1, sizeof(struct lowdown_meta))) == NULL)
-		return 0;
-	TAILQ_INSERT_TAIL(mq, m, entries);
-
-	m->key = strndup(n->rndr_meta.key.data,
-		n->rndr_meta.key.size);
-	if (m->key == NULL)
-		return 0;
-	m->value = strndup(content->data, content->size);
-	if (m->value == NULL)
+	if ((m = lowdown_get_meta(n, mq)) == NULL)
 		return 0;
 
 	if (strcmp(m->key, "shiftheadinglevelby") == 0) {
-		val = (ssize_t)strtonum
-			(m->value, -100, 100, &ep);
+		val = (ssize_t)strtonum(m->value, -100, 100, &ep);
 		if (ep == NULL)
 			st->headers_offs = val + 1;
 	} else if (strcmp(m->key, "baseheaderlevel") == 0) {
-		val = (ssize_t)strtonum
-			(m->value, 1, 100, &ep);
+		val = (ssize_t)strtonum(m->value, 1, 100, &ep);
 		if (ep == NULL)
 			st->headers_offs = val;
 	}
@@ -891,16 +873,6 @@ rndr(struct lowdown_buf *ob,
 
 	if ((tmp = hbuf_new(64)) == NULL)
 		return 0;
-
-	/*
-	 * If we're processing metadata, don't escape the content as we
-	 * read and parse it.  This prevents double-escaping.  We'll
-	 * properly escape things as we inline them (standalone mode) or
-	 * when we write body text.
-	 */
-
-	if (n->type == LOWDOWN_META)
-		st->noescape = 1;
 
 	TAILQ_FOREACH(child, &n->children, entries)
 		if (!rndr(tmp, mq, st, child))
@@ -940,9 +912,8 @@ rndr(struct lowdown_buf *ob,
 			return 0;
 		break;
 	case LOWDOWN_META:
-		st->noescape = 0;
 		if (n->chng != LOWDOWN_CHNG_DELETE &&
-		    !rndr_meta(ob, tmp, mq, n, st))
+		    !rndr_meta(st, n, mq))
 			return 0;
 		break;
 	case LOWDOWN_HEADER:
@@ -1079,7 +1050,6 @@ lowdown_latex_rndr(struct lowdown_buf *ob,
 	TAILQ_INIT(&metaq);
 	st->headers_offs = 1;
 	st->footsz = 0;
-	st->noescape = 0;
 
 	rc = rndr(ob, &metaq, st, n);
 
