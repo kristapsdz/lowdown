@@ -1596,6 +1596,18 @@
 				the code interface, which uses the same macro name as
 				before.
 			</p>
+			<p>
+				Have metadata not be processed by the <q>smart</q>
+				typography at all.  This is because some values are links
+				and others are mainlined directly into output and should
+				not be touched.
+			</p>
+			<p>
+				Add metadata <code>html header</code>,
+				<code>latex header</code>, <code>ms header</code>, and
+				<code>man header</code> for adding media-specific
+				invocations in the document headers.
+			</p>
 		</aside>
 	</article>
 </articles>
