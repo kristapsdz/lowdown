@@ -144,11 +144,13 @@ Here\(cqs a link to \c
 .pdfhref W -A "\c" -D local-doc.html -- local doc
 , and to a \c
 .pdfhref L -A "\c" -D #an-h2-header -- section heading in the current doc
-\&. Here\(cqs a footnote \**
+\&. Here\(cqs a footnote \c
+.pdfhref L -A "\c" -D footnote-1 -- \**
+\&.
 .FS
+.pdfhref M footnote-1
 Footnote text goes here.
 .FE
-\&.
 .PP
 Tables can look like this:
 .TS H
