@@ -329,9 +329,6 @@ Want to hack on *lowdown*?  Of course you do.
 You can always just search for `TODO`, `XXX`, or `FIXME` in the source
 code.  This is your best bet.
 
-- Footnotes in **-tms** with groff extensions should use pdfmark to link
-to and from the definition.
-
 - If you want a larger project, a **-tpdf** seems most interesting (and
 quite difficult given that UTF-8 need be present).  Another project that
 has been implemented elsewhere is a parser for mathematics such that
