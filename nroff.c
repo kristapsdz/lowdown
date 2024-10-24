@@ -49,7 +49,7 @@ struct 	nroff {
 	struct bnodeq		**foots; /* footnotes */
 	size_t			  footsz; /* footnote size */
 	size_t			  footpos; /* footnote position (-tms) */
-	size_t			  footdepth; /* printing footnotes... */
+	size_t			  footdepth; /* printing/parsing footnotes */
 	size_t			  indent; /* indentation width */
 	const char		 *cr; /* fixed-width font */
 	const char		 *cb; /* fixed-width bold font */
@@ -92,11 +92,6 @@ struct	bnode {
 };
 
 TAILQ_HEAD(bnodeq, bnode);
-
-/*
- * Forward declarations.
- */
-static int rndr_footnotes(struct nroff *, struct bnodeq *);
 
 /*
  * Escape unsafe text into roff output such that no roff features are
@@ -1525,17 +1520,30 @@ rndr_footnote_def(struct nroff *st, struct bnodeq *obq,
 }
 
 /*
- * Flush out footnotes unless we're already flushing out footnotes, in
- * which case do nothing and return success.
- * This should only be run a single time for -tman documents, at the end
- * of all processing.  For -tms, it should be run after a definition,
- * around blocks.
- * Returns zero on failure (memory allocation), non-zero on success.
+ * Flush out footnotes or (in some conditions) do nothing and return
+ * success.  If "fin" is non-zero, this is the final invocation of
+ * rndr_footnotes() at the root of the document after everything else;
+ * otherwise, this is being called within the document.  Footnote
+ * conditions are that footnotes must exist, mustn't already be printing
+ * and parsing, and satisfy endnote/footnote criterion.  Returns zero on
+ * failure (memory allocation), non-zero on success.
  */
 static int
-rndr_footnotes(struct nroff *st, struct bnodeq *obq)
+rndr_footnotes(struct nroff *st, struct bnodeq *obq, int fin)
 {
+	/* Already printing/parsing, or none to print. */
+
 	if (st->footdepth > 0 || st->footpos >= st->footsz)
+		return 1;
+
+	/* Non-final and in -tman (-tman has only endnotes). */
+
+	if (!fin && st->man)
+		return 1;
+
+	/* Non-final and -tms with endnotes specified. */
+
+	if (!fin && !st->man && (st->flags & LOWDOWN_NROFF_ENDNOTES))
 		return 1;
 
 	st->footdepth++;
@@ -2032,7 +2040,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	case LOWDOWN_ROOT:
 		TAILQ_CONCAT(obq, &tmpbq, entries);
 		assert(st->footdepth == 0);
-		rc = rndr_footnotes(st, obq);
+		rc = rndr_footnotes(st, obq, 1);
 		break;
 	case LOWDOWN_BLOCKHTML:
 		rc = rndr_raw_block(st, obq, &n->rndr_blockhtml);
@@ -2060,6 +2068,8 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		break;
 	case LOWDOWN_FOOTNOTE:
 		rc = rndr_footnote_ref(st, obq, &tmpbq);
+		assert(st->footdepth > 0);
+		st->footdepth--;
 		/*
 		 * Restore what subsequent paragraphs should do.  This
 		 * macro will create output that's delayed in being
@@ -2067,8 +2077,6 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		 * to propagate to the actual output that will follow.
 		 */
 		st->post_para = post_para;
-		assert(st->footdepth > 0);
-		st->footdepth--;
 		break;
 	case LOWDOWN_RAW_HTML:
 		rc = rndr_raw_html(st, obq, &n->rndr_raw_html);
@@ -2119,30 +2127,31 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	}
 
 	/*
-	 * Option to flush out all existing footnotes.  This is because
-	 * in -tms, footnotes will go on the same page as the footnote
-	 * definition, but only if the FS/FE is declared on the same
-	 * page as well.  This is delayed until a block because, if it
-	 * were produced alongside the .pdfhref macro, it would confuse
-	 * spacing in the event, of, e.g., foo[^ref]bar.
+	 * Flush out all existing footnotes, if applicable.  This is
+	 * because in -tms with footnotes, footnotes will go on the same
+	 * page as the footnote definition, but only if the FS/FE is
+	 * declared on the same page as well.  This is delayed until a
+	 * block because, if it were produced alongside the .pdfhref
+	 * macro, it would confuse spacing in the event, of, e.g.,
+	 * foo[^ref]bar.
 	 */
 	
-	if (!st->man)
-		switch (n->type) {
-		case LOWDOWN_BLOCKCODE:
-		case LOWDOWN_BLOCKQUOTE:
-		case LOWDOWN_PARAGRAPH:
-		case LOWDOWN_DEFINITION:
-		case LOWDOWN_LIST:
-		case LOWDOWN_HEADER:
-		case LOWDOWN_TABLE_BLOCK:
-			if (rndr_footnotes(st, obq))
-				break;
+	switch (n->type) {
+	case LOWDOWN_BLOCKCODE:
+	case LOWDOWN_BLOCKQUOTE:
+	case LOWDOWN_PARAGRAPH:
+	case LOWDOWN_DEFINITION:
+	case LOWDOWN_LIST:
+	case LOWDOWN_HEADER:
+	case LOWDOWN_TABLE_BLOCK:
+		if (!rndr_footnotes(st, obq, 0)) {
 			rc = 0;
 			goto out;
-		default:
-			break;
 		}
+		break;
+	default:
+		break;
+	}
 out:
 	bqueue_free(&tmpbq);
 	return rc;

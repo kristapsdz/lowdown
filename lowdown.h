@@ -367,6 +367,7 @@ struct	lowdown_opts {
 #define LOWDOWN_NROFF_NUMBERED	  0x80 /* numbered section headers */
 #define LOWDOWN_NROFF_SHORTLINK	  0x40000 /* shorten URLs */
 #define LOWDOWN_NROFF_SKIP_HTML	  0x08 /* skip all HTML */
+#define LOWDOWN_NROFF_ENDNOTES	  0x40000000 /* endnotes for -tms */
 #define	LOWDOWN_ODT_SKIP_HTML	  0x2000000 /* skip all HTML */
 #define	LOWDOWN_SMARTY	  	  0x40 /* smart typography */
 #define LOWDOWN_STANDALONE	  0x200 /* emit complete document */

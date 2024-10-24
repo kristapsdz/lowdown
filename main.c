@@ -277,6 +277,8 @@ main(int argc, char *argv[])
 		{ "nroff-no-shortlinks",no_argument, 	&rfl, LOWDOWN_NROFF_SHORTLINK },
 		{ "nroff-skiphtml",	no_argument,	&afl, LOWDOWN_NROFF_SKIP_HTML },
 		{ "nroff-no-skiphtml",	no_argument,	&rfl, LOWDOWN_NROFF_SKIP_HTML },
+		{ "nroff-endnotes",	no_argument,	&afl, LOWDOWN_NROFF_ENDNOTES },
+		{ "nroff-no-endnotes",	no_argument,	&rfl, LOWDOWN_NROFF_ENDNOTES },
 		{ "nroff-code-font",	required_argument, NULL, 7 },
 
 		{ "odt-skiphtml",	no_argument,	&afl, LOWDOWN_ODT_SKIP_HTML },

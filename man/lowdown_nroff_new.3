@@ -49,6 +49,7 @@ and must be freed with
 The bits recognised in
 .Fa opts->oflags
 are
+.Dv LOWDOWN_NROFF_ENDNOTES ,
 .Dv LOWDOWN_NROFF_GROFF ,
 .Dv LOWDOWN_NROFF_NOLINK ,
 .Dv LOWDOWN_NROFF_NUMBERED ,
@@ -83,6 +84,12 @@ mode, GNU extensions to
 are used along with
 .Ar mspdf .
 These are only supported by groff.
+.Pp
+.Dv LOWDOWN_NROFF_ENDNOTES
+delays printing of footnotes until the end of a document.
+Does not affect
+.Dv LOWDOWN_MAN
+documents, which structurally only supports endnotes.
 .Pp
 The allocated rendered will use constant-width fonts
 .Qq CR
