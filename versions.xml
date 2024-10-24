@@ -1562,9 +1562,9 @@
 	</article>
 	<article data-sblg-article="1" data-sblg-tags="version">
 		<header>
-			<h1>1.1.3</h1>
+			<h1>1.2.0</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2024-10-18">2024-10-18</time>
+			<time datetime="2024-10-23">2024-10-23</time>
 		</header>
 		<aside>
 			<p>
@@ -1607,6 +1607,16 @@
 				<code>latex header</code>, <code>ms header</code>, and
 				<code>man header</code> for adding media-specific
 				invocations in the document headers.
+			</p>
+			<p>
+				Have footnotes in <b>-tms</b> be linked: clicking on a
+				footnote number will jump to that footnote in the document.
+			</p>
+			<p>
+				Introduce <b>--nroff-endnotes</b>, which adds a new flag
+				to the public API (hence the minor number addition).  This
+				delays printing of <b>-tms</b> footnotes until the end of
+				the document, making them endnotes.
 			</p>
 		</aside>
 	</article>
