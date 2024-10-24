@@ -389,6 +389,13 @@ hbuf_extract_text(struct lowdown_buf *ob, const struct lowdown_node *n)
 {
 	const struct lowdown_node	*child;
 
+	/* For footnotes, use nothing and don't descend to children. */
+
+	if (n->type == LOWDOWN_FOOTNOTE)
+		return 1;
+
+	/* All non-footnotes are ok... */
+
 	if (n->type == LOWDOWN_NORMAL_TEXT)
 		if (!hbuf_putb(ob, &n->rndr_normal_text.text))
 			return 0;
