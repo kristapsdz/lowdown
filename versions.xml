@@ -1564,14 +1564,9 @@
 		<header>
 			<h1>1.2.0</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2024-10-23">2024-10-23</time>
+			<time datetime="2024-10-24">2024-10-24</time>
 		</header>
 		<aside>
-			<p>
-				Be specific about the behaviour of nested links.  This is
-				inconsistent across the various Markdown implementations
-				(and CommonMark).  Document and stick to a standard.
-			</p>
 			<p>
 				Output OSC8 hyperlinks in <b>-tterm</b> mode.  See
 				<a href="https://github.com/Alhadis/OSC8-Adoption/">
@@ -1590,7 +1585,24 @@
 				<b>-tman</b> utilities.
 			</p>
 			<p>
-				Rename the <b>--nroff-no-groff</b> flag as
+				Add metadata <code>html header</code>,
+				<code>latex header</code>, <code>ms header</code>, and
+				<code>man header</code> for adding media-specific
+				invocations in the document headers.
+			</p>
+			<p>
+				Have footnotes in <b>-tms</b> be linked: clicking on a
+				footnote number will jump to that footnote in the
+				document.
+			</p>
+			<p>
+				Introduce <b>--nroff-endnotes</b>, which adds a new flag
+				to the public API (hence the minor number addition).  This
+				delays printing of <b>-tms</b> footnotes until the end of
+				the document, making them endnotes.
+			</p>
+			<p>
+				Deprecate the <b>--nroff-no-groff</b> flag in favour of
 				<b>--nroff-traditional</b>, as the changes it effects
 				equally favour mandoc and Heirloom troff.  Does not change
 				the code interface, which uses the same macro name as
@@ -1603,20 +1615,9 @@
 				not be touched.
 			</p>
 			<p>
-				Add metadata <code>html header</code>,
-				<code>latex header</code>, <code>ms header</code>, and
-				<code>man header</code> for adding media-specific
-				invocations in the document headers.
-			</p>
-			<p>
-				Have footnotes in <b>-tms</b> be linked: clicking on a
-				footnote number will jump to that footnote in the document.
-			</p>
-			<p>
-				Introduce <b>--nroff-endnotes</b>, which adds a new flag
-				to the public API (hence the minor number addition).  This
-				delays printing of <b>-tms</b> footnotes until the end of
-				the document, making them endnotes.
+				Be specific about the behaviour of nested links.  This is
+				inconsistent across the various Markdown implementations
+				(and CommonMark).  Document and stick to a standard.
 			</p>
 		</aside>
 	</article>
