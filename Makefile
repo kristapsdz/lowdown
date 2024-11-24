@@ -1,5 +1,5 @@
-.PHONY: regress regen_regress
-.SUFFIXES: .xml .md .html .pdf .1 .1.html .3 .3.html .5 .5.html .thumb.jpg .png .in.pc .pc .valgrind .old.md .diff-valgrind
+.PHONY: regress regen_regress valgrind
+.SUFFIXES: .xml .md .html .pdf .1 .1.html .3 .3.html .5 .5.html .thumb.jpg .png .in.pc .pc .old.md
 
 include Makefile.configure
 WWWDIR		 = /var/www/vhosts/kristaps.bsd.lv/htdocs/lowdown
@@ -115,8 +115,6 @@ IMAGES		 = screen-mandoc.png \
 THUMBS		 = screen-mandoc.thumb.jpg \
 		   screen-groff.thumb.jpg \
 		   screen-term.thumb.jpg
-VALGRINDS	!= for f in `find regress -name \*.md` ; do echo `dirname $$f`/`basename $$f .md`.valgrind ; done
-VALGRINDDIFFS	!= for f in `find regress/diff -name \*.old.md` ; do echo `dirname $$f`/`basename $$f .old.md`.diff-valgrind ; done
 # Because the objects will be compiled into a shared library:
 CFLAGS		+= -fPIC
 # To avoid exporting internal functions (lowdown.h has default visibility).
@@ -138,48 +136,10 @@ REGRESS_ARGS	+= "--parse-no-cmark"
 REGRESS_ARGS	+= "--parse-no-deflists"
 
 VALGRIND_ARGS	 = -q --leak-check=full --leak-resolution=high --show-reachable=yes
+VALGRIND_ARGS	+= --log-fd=3
 
 all: bins lowdown.pc liblowdown.so
 bins: lowdown lowdown-diff
-
-valgrind: $(VALGRINDS) $(VALGRINDDIFFS)
-	@exit=0 ; \
-	for f in $(VALGRINDS) ; do \
-		if [ -s $$f ]; then \
-			echo `dirname $$f`/`basename $$f .valgrind`.md ; \
-			cat $$f ; \
-			exit=1 ; \
-		fi ; \
-	done ; \
-	for f in $(VALGRINDDIFFS) ; do \
-		if [ -s $$f ]; then \
-			echo `dirname $$f`/`basename $$f .diff-valgrind`.old.md ; \
-			cat $$f ; \
-			exit=1 ; \
-		fi ; \
-	done ; \
-	exit $$exit
-
-$(VALGRINDS) $(VALGRINDDIFFS): bins
-
-.old.md.diff-valgrind:
-	@rm -f $@
-	valgrind $(VALGRIND_ARGS) ./lowdown-diff -s -tfodt $< `dirname $<`/`basename $< .old.md`.new.md >/dev/null 2>>$@
-	valgrind $(VALGRIND_ARGS) ./lowdown-diff -s -thtml $< `dirname $<`/`basename $< .old.md`.new.md >/dev/null 2>>$@
-	valgrind $(VALGRIND_ARGS) ./lowdown-diff -s -tms $< `dirname $<`/`basename $< .old.md`.new.md >/dev/null 2>>$@
-	valgrind $(VALGRIND_ARGS) ./lowdown-diff -s -tman $< `dirname $<`/`basename $< .old.md`.new.md >/dev/null 2>>$@
-	valgrind $(VALGRIND_ARGS) ./lowdown-diff -s -tterm $< `dirname $<`/`basename $< .old.md`.new.md >/dev/null 2>>$@
-	valgrind $(VALGRIND_ARGS) ./lowdown-diff -s -tgemini $< `dirname $<`/`basename $< .old.md`.new.md >/dev/null 2>>$@
-
-.md.valgrind:
-	@rm -f $@
-	valgrind $(VALGRIND_ARGS) ./lowdown -s -tfodt $< >/dev/null 2>>$@
-	valgrind $(VALGRIND_ARGS) ./lowdown -s -thtml $< >/dev/null 2>>$@
-	valgrind $(VALGRIND_ARGS) ./lowdown -s -tms $< >/dev/null 2>>$@
-	valgrind $(VALGRIND_ARGS) ./lowdown -s -tman $< >/dev/null 2>>$@
-	valgrind $(VALGRIND_ARGS) ./lowdown -s -tterm $< >/dev/null 2>>$@
-	valgrind $(VALGRIND_ARGS) ./lowdown -s -tgemini $< >/dev/null 2>>$@
-	valgrind $(VALGRIND_ARGS) ./lowdown -s -tlatex $< >/dev/null 2>>$@
 
 www: all $(HTMLS) $(PDFS) $(THUMBS) lowdown.tar.gz lowdown.tar.gz.sha512
 
@@ -379,7 +339,7 @@ clean:
 	rm -f $(OBJS) $(COMPAT_OBJS) main.o
 	rm -f lowdown lowdown-diff liblowdown.a liblowdown.so liblowdown.so.$(LIBVER) lowdown.pc
 	rm -f index.xml diff.xml diff.diff.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
-	rm -f $(PDFS) $(HTMLS) $(THUMBS) $(VALGRINDS) $(VALGRINDDIFFS)
+	rm -f $(PDFS) $(HTMLS) $(THUMBS)
 	rm -f index.latex.aux index.latex.latex index.latex.log index.latex.out
 
 distclean: clean
@@ -450,6 +410,77 @@ regen_regress: bins
 	done ; \
 	rm -f $$tmp1 ; \
 	rm -f $$tmp2
+
+valgrind:: bins
+	@ulimit -n 1024 ; \
+	tmp=`mktemp` ; \
+	( \
+	for f in regress/original/*.text ; do \
+		echo "$$f" ; \
+		for type in html fodt latex ms man gemini term tree ; do \
+			valgrind $(VALGRIND_ARGS) \
+				./lowdown -s -t$$type "$$f" >/dev/null 2>&1 ; \
+		done ; \
+	done ; \
+	for f in regress/*.md ; do \
+		ff=regress/`basename $$f .md` ; \
+		echo "$$f" ; \
+		for type in html fodt latex ms man gemini term ; do \
+			if [ -f $$ff.$$type ]; then \
+				valgrind $(VALGRIND_ARGS) \
+					./lowdown -t$$type $$f >/dev/null 2>&1 ; \
+			fi ; \
+		done ; \
+	done ; \
+	for f in regress/standalone/*.md ; do \
+		ff=regress/standalone/`basename $$f .md` ; \
+		echo "$$f" ; \
+		for type in html fodt latex ms man gemini term ; do \
+			if [ -f $$ff.$$type ]; then \
+				valgrind $(VALGRIND_ARGS) \
+					./lowdown -s -t$$type $$f >/dev/null 2>&1 ; \
+			fi ; \
+		done ; \
+	done ; \
+	for f in regress/template/*.html ; do \
+		ff=regress/template/`basename $$f .html` ; \
+		echo "$$f" ; \
+		tf=regress/template/simple.md ; \
+		[ ! -f $$ff.md ] || tf=$$ff.md ; \
+		valgrind $(VALGRIND_ARGS) \
+			./lowdown -s --template $$ff.xml $$tf >/dev/null 2>&1 ; \
+	done ; \
+	for f in regress/html/*.md ; do \
+		ff=regress/html/`basename $$f .md` ; \
+		echo "$$f" ; \
+		valgrind $(VALGRIND_ARGS) \
+			./lowdown -thtml --parse-math --html-callout-gfm \
+			--html-callout-mdn --html-titleblock $$f >/dev/null 2>&1 ; \
+	done ; \
+	for f in regress/metadata/*.md ; do \
+		echo "$$f" ; \
+		if [ -f regress/metadata/`basename $$f .md`.txt ]; then \
+			valgrind $(VALGRIND_ARGS) \
+				./lowdown -X title $$f >/dev/null 2>&1 ; \
+		fi ; \
+	done ; \
+	for f in regress/diff/*.old.md ; do \
+		bf=`dirname $$f`/`basename $$f .old.md` ; \
+		echo "$$f -> $$bf.new.md" ; \
+		for type in html fodt latex ms man gemini term ; do \
+			if [ -f $$bf.$$type ]; then \
+				valgrind $(VALGRIND_ARGS) \
+					./lowdown-diff -s -t$$type $$f \
+					$$bf.new.md >/dev/null 2>&1 ; \
+			fi ; \
+		done ; \
+	done ; \
+	) 3>$$tmp ; \
+	rc=0 ; \
+	[ ! -s $$tmp ] || rc=1 ; \
+	cat $$tmp ; \
+	rm -f $$tmp ; \
+	exit $$rc
 
 regress: bins
 	@tmp1=`mktemp` ; \
