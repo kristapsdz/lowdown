@@ -338,7 +338,7 @@ lowdown_template(const char *templ, const struct lowdown_buf *content,
 		if ((nextcp = strchr(cp, '$')) == NULL)
 			break;
 
-		savecp = cp;
+		savecp = nextcp;
 
 		/* Output all text up to the delimiter. */
 
@@ -396,7 +396,7 @@ lowdown_template(const char *templ, const struct lowdown_buf *content,
 
 		/* Look up and process the operation. */
 
-		if (!op_queue(&q, &cop, cp, sz))
+		if (sz > 0 && !op_queue(&q, &cop, cp, sz))
 			goto out;
 
 		cp = nextcp + 1;
