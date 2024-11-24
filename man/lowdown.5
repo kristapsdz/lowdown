@@ -445,8 +445,9 @@ Metadata keys must consist of alphanumeric ASCII characters, the hyphen
 .Pq Qq \&- ,
 or the underscore
 .Pq Qq \&_ .
-They must have at least one character and are stripped of white-space
-and converted to lower case.
+They must have at least one character and are stripped of white-space,
+have non-conforming characters replaced with underscores, and converted
+to lower case.
 .Pp
 Metadata values are opaque text: Markdown statements (e.g., italics,
 entities, etc.) are copied as-is.

@@ -4746,8 +4746,8 @@ parse_metadata_mmd(struct lowdown_doc *doc, const char *data,
 
 		/*
 		 * Normalise the key to lowercase alphanumerics, "-",
-		 * and "_", discard whitespace, replace other characters
-		 * with a question mark.
+		 * and "_" by discarding whitespace and replacing
+		 * non-conforming characters with an underscore.
 		 */
 
 		for (j = 0; j < keysz; j++) {
@@ -4757,7 +4757,7 @@ parse_metadata_mmd(struct lowdown_doc *doc, const char *data,
 				continue;
 			} else if (isspace((unsigned char)key[j]))
 				continue;
-			*cp++ = '?';
+			*cp++ = '_';
 		}
 		*cp = '\0';
 
