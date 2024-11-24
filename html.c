@@ -43,6 +43,7 @@ struct 	html {
 	unsigned int 		  flags; /* "oflags" in lowdown_opts */
 	struct lowdown_buf	**foots; /* footnotes */
 	size_t			  footsz; /* footnotes size  */
+	const char		 *templ; /* output template */
 };
 
 /*
@@ -50,8 +51,8 @@ struct 	html {
  * Return zero on failure, non-zero on success.
  */
 static int
-escape_html(struct lowdown_buf *ob, const char *source,
-	size_t length, const struct html *st)
+escape_html(struct lowdown_buf *ob, const char *source, size_t length,
+    const struct html *st)
 {
 
 	return hesc_html(ob, source, length, 
@@ -64,7 +65,7 @@ escape_html(struct lowdown_buf *ob, const char *source,
  */
 static int
 escape_htmlb(struct lowdown_buf *ob, 
-	const struct lowdown_buf *in, const struct html *st)
+    const struct lowdown_buf *in, const struct html *st)
 {
 
 	return escape_html(ob, in->data, in->size, st);
@@ -77,7 +78,7 @@ escape_htmlb(struct lowdown_buf *ob,
  */
 static int
 escape_literal(struct lowdown_buf *ob, 
-	const struct lowdown_buf *in, const struct html *st)
+    const struct lowdown_buf *in, const struct html *st)
 {
 
 	return hesc_html(ob, in->data, in->size, 
@@ -91,7 +92,7 @@ escape_literal(struct lowdown_buf *ob,
  */
 static int
 escape_href(struct lowdown_buf *ob, const struct lowdown_buf *in,
-	const struct html *st)
+    const struct html *st)
 {
 
 	return hesc_href(ob, in->data, in->size);
@@ -119,8 +120,7 @@ newline(struct lowdown_buf *ob)
 
 static int
 rndr_autolink(struct lowdown_buf *ob, 
-	const struct rndr_autolink *parm,
-	const struct html *st)
+    const struct rndr_autolink *parm, const struct html *st)
 {
 
 	if (parm->link.size == 0)
@@ -156,8 +156,7 @@ rndr_autolink(struct lowdown_buf *ob,
 
 static int
 rndr_blockcode(struct lowdown_buf *ob, 
-	const struct rndr_blockcode *parm,
-	const struct html *st)
+    const struct rndr_blockcode *parm, const struct html *st)
 {
 	if (!newline(ob))
 		return 0;
@@ -181,7 +180,7 @@ rndr_blockcode(struct lowdown_buf *ob,
 
 static int
 rndr_definition_data(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+    const struct lowdown_buf *content)
 {
 
 	if (!HBUF_PUTSL(ob, "<dd>\n"))
@@ -193,7 +192,7 @@ rndr_definition_data(struct lowdown_buf *ob,
 
 static int
 rndr_definition_title(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+    const struct lowdown_buf *content)
 {
 	size_t	 sz;
 
@@ -210,7 +209,7 @@ rndr_definition_title(struct lowdown_buf *ob,
 
 static int
 rndr_definition(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+    const struct lowdown_buf *content)
 {
 
 	if (!newline(ob))
@@ -224,8 +223,8 @@ rndr_definition(struct lowdown_buf *ob,
 
 static int
 rndr_blockquote(const struct html *st,
-	const struct rndr_blockquote *param,
-	struct lowdown_buf *ob, const struct lowdown_buf *content)
+    const struct rndr_blockquote *param, struct lowdown_buf *ob,
+    const struct lowdown_buf *content)
 {
 	size_t	 i;
 
@@ -286,8 +285,7 @@ rndr_blockquote(const struct html *st,
 
 static int
 rndr_codespan(struct lowdown_buf *ob,
-	const struct rndr_codespan *param, 
-	const struct html *st)
+    const struct rndr_codespan *param, const struct html *st)
 {
 
 	if (!HBUF_PUTSL(ob, "<code>"))
@@ -299,7 +297,7 @@ rndr_codespan(struct lowdown_buf *ob,
 
 static int
 rndr_strikethrough(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+    const struct lowdown_buf *content)
 {
 
 	if (!HBUF_PUTSL(ob, "<del>"))
@@ -323,7 +321,7 @@ rndr_double_emphasis(struct lowdown_buf *ob,
 
 static int
 rndr_emphasis(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+    const struct lowdown_buf *content)
 {
 
 	if (!HBUF_PUTSL(ob, "<em>"))
@@ -335,7 +333,7 @@ rndr_emphasis(struct lowdown_buf *ob,
 
 static int
 rndr_highlight(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+    const struct lowdown_buf *content)
 {
 
 	if (!HBUF_PUTSL(ob, "<mark>"))
@@ -354,7 +352,7 @@ rndr_linebreak(struct lowdown_buf *ob)
 
 static int
 rndr_header(struct lowdown_buf *ob, const struct lowdown_buf *content,
-	const struct lowdown_node *n, struct html *st)
+    const struct lowdown_node *n, struct html *st)
 {
 	ssize_t				 level;
 	const struct lowdown_buf	*buf;
@@ -418,10 +416,8 @@ rndr_header(struct lowdown_buf *ob, const struct lowdown_buf *content,
 }
 
 static int
-rndr_link(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	const struct rndr_link *param,
-	const struct html *st)
+rndr_link(struct lowdown_buf *ob, const struct lowdown_buf *content,
+    const struct rndr_link *param, const struct html *st)
 {
 
 	if (!HBUF_PUTSL(ob, "<a href=\"") ||
@@ -450,9 +446,8 @@ rndr_link(struct lowdown_buf *ob,
 }
 
 static int
-rndr_list(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	const struct rndr_list *param)
+rndr_list(struct lowdown_buf *ob, const struct lowdown_buf *content,
+    const struct rndr_list *param)
 {
 
 	if (!newline(ob))
@@ -479,8 +474,7 @@ rndr_list(struct lowdown_buf *ob,
 
 static int
 rndr_listitem(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	const struct lowdown_node *n)
+    const struct lowdown_buf *content, const struct lowdown_node *n)
 {
 	size_t	 size;
 	int	 blk = 0;
@@ -551,8 +545,7 @@ rndr_listitem(struct lowdown_buf *ob,
 
 static int
 rndr_paragraph(struct lowdown_buf *ob,
-	const struct lowdown_buf *content, 
-	struct html *st)
+    const struct lowdown_buf *content, struct html *st)
 {
 	size_t	i = 0, org;
 
@@ -601,8 +594,7 @@ rndr_paragraph(struct lowdown_buf *ob,
 
 static int
 rndr_raw_block(struct lowdown_buf *ob,
-	const struct rndr_blockhtml *param,
-	const struct html *st)
+    const struct rndr_blockhtml *param, const struct html *st)
 {
 	size_t	org, sz;
 
@@ -637,7 +629,7 @@ rndr_raw_block(struct lowdown_buf *ob,
 
 static int
 rndr_triple_emphasis(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+    const struct lowdown_buf *content)
 {
 
 	if (!HBUF_PUTSL(ob, "<strong><em>"))
@@ -657,9 +649,8 @@ rndr_hrule(struct lowdown_buf *ob)
 }
 
 static int
-rndr_image(struct lowdown_buf *ob,
-	const struct rndr_image *param, 
-	const struct html *st)
+rndr_image(struct lowdown_buf *ob, const struct rndr_image *param,
+    const struct html *st)
 {
 	char		 dimbuf[32];
 	unsigned int	 x, y;
@@ -731,8 +722,7 @@ rndr_image(struct lowdown_buf *ob,
 
 static int
 rndr_raw_html(struct lowdown_buf *ob,
-	const struct rndr_raw_html *param,
-	const struct html *st)
+    const struct rndr_raw_html *param, const struct html *st)
 {
 
 	if (st->flags & LOWDOWN_HTML_SKIP_HTML)
@@ -745,7 +735,7 @@ rndr_raw_html(struct lowdown_buf *ob,
 
 static int
 rndr_table(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+    const struct lowdown_buf *content)
 {
 
 	if (!newline(ob))
@@ -759,7 +749,7 @@ rndr_table(struct lowdown_buf *ob,
 
 static int
 rndr_table_header(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+    const struct lowdown_buf *content)
 {
 
 	if (!newline(ob))
@@ -773,7 +763,7 @@ rndr_table_header(struct lowdown_buf *ob,
 
 static int
 rndr_table_body(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+    const struct lowdown_buf *content)
 {
 
 	if (content->size == 0)
@@ -788,8 +778,8 @@ rndr_table_body(struct lowdown_buf *ob,
 }
 
 static int
-rndr_tablerow(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+rndr_table_row(struct lowdown_buf *ob,
+    const struct lowdown_buf *content)
 {
 
 	if (!HBUF_PUTSL(ob, "<tr>\n"))
@@ -801,8 +791,8 @@ rndr_tablerow(struct lowdown_buf *ob,
 
 static int
 rndr_tablecell(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	const struct rndr_table_cell *param)
+    const struct lowdown_buf *content,
+    const struct rndr_table_cell *param)
 {
 
 	if (param->flags & HTBL_FL_HEADER) {
@@ -842,7 +832,7 @@ rndr_tablecell(struct lowdown_buf *ob,
 
 static int
 rndr_superscript(struct lowdown_buf *ob,
-	const struct lowdown_buf *content, enum lowdown_rndrt type)
+    const struct lowdown_buf *content, enum lowdown_rndrt type)
 {
 	const char	*elem;
 
@@ -855,8 +845,7 @@ rndr_superscript(struct lowdown_buf *ob,
 
 static int
 rndr_normal_text(struct lowdown_buf *ob,
-	const struct rndr_normal_text *param,
-	const struct html *st)
+    const struct rndr_normal_text *param, const struct html *st)
 {
 
 	return escape_htmlb(ob, &param->text, st);
@@ -864,7 +853,7 @@ rndr_normal_text(struct lowdown_buf *ob,
 
 static int
 rndr_footnote_def(struct lowdown_buf *ob,
-	const struct lowdown_buf *content, size_t num)
+    const struct lowdown_buf *content, size_t num)
 {
 	size_t	i = 0;
 	int	pfound = 0;
@@ -910,7 +899,7 @@ rndr_footnote_def(struct lowdown_buf *ob,
 
 static int
 rndr_footnote_ref(struct lowdown_buf *ob,
-	const struct lowdown_buf *content, struct html *st)
+    const struct lowdown_buf *content, struct html *st)
 {
 	void	*pp;
 	size_t	 num = st->footsz + 1;
@@ -936,9 +925,8 @@ rndr_footnote_ref(struct lowdown_buf *ob,
 }
 
 static int
-rndr_math(struct lowdown_buf *ob,
-	const struct rndr_math *param, 
-	const struct html *st)
+rndr_math(struct lowdown_buf *ob, const struct rndr_math *param, 
+    const struct html *st)
 {
 
 	if (param->blockmode && !HBUF_PUTSL(ob, "\\["))
@@ -959,61 +947,22 @@ rndr_doc_footer(struct lowdown_buf *ob, const struct html *st)
 {
 	size_t	 i;
 
+	if (st->footsz == 0)
+		return 1;
+
 	/*
 	 * Start by flushing out our footnotes.  Footnotes are "sparse"
 	 * in that we may not have them all defined (?).
 	 */
 
-	if (st->footsz > 0) {
-		if (!newline(ob))
-			return 0;
-		if (!HBUF_PUTSL(ob,
-		    "<div class=\"footnotes\">\n<hr/>\n<ol>\n"))
-			return 0;
-		for (i = 0; i < st->footsz; i++)
-			if (!rndr_footnote_def(ob, st->foots[i], i + 1))
-				return 0;
-		if (!HBUF_PUTSL(ob, "\n</ol>\n</div>\n"))
-			return 0;
-	}
-
-	return (st->flags & LOWDOWN_STANDALONE) ?
-		HBUF_PUTSL(ob, "</body>\n") : 1;
-}
-
-static int
-rndr_root(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	const struct lowdown_metaq *mq,
-	const struct html *st)
-{
-	const struct lowdown_meta	*m;
-	const char			*lang = NULL;
-
-	TAILQ_FOREACH(m, mq, entries)
-		if (strcasecmp(m->key, "lang") == 0)
-			lang = m->value;
-
-	if (st->flags & LOWDOWN_STANDALONE) {
-		if (!HBUF_PUTSL(ob, "<!DOCTYPE html>\n"))
-			return 0;
-		if (lang == NULL) {
-			if (!HBUF_PUTSL(ob, "<html>\n"))
-				return 0;
-		} else {
-			if (!HBUF_PUTSL(ob, "<html lang=\"") ||
-			    !hesc_attr(ob, lang, strlen(lang)) ||
-			    !HBUF_PUTSL(ob, "\">\n"))
-				return 0;
-		}
-	}
-	if (!hbuf_putb(ob, content))
+	if (!newline(ob))
 		return 0;
-	if (!rndr_doc_footer(ob, st))
+	if (!HBUF_PUTSL(ob, "<div class=\"footnotes\">\n<hr/>\n<ol>\n"))
 		return 0;
-	if (st->flags & LOWDOWN_STANDALONE)
-		return HBUF_PUTSL(ob, "</html>\n");
-	return 1;
+	for (i = 0; i < st->footsz; i++)
+		if (!rndr_footnote_def(ob, st->foots[i], i + 1))
+			return 0;
+	return HBUF_PUTSL(ob, "\n</ol>\n</div>\n");
 }
 
 /*
@@ -1073,6 +1022,143 @@ rndr_meta_multi(const struct html *st, struct lowdown_buf *ob,
 	return 1;
 }
 
+static int
+rndr_root(struct lowdown_buf *ob, const struct lowdown_buf *content,
+    const struct lowdown_metaq *mq, const struct html *st)
+{
+	const struct lowdown_meta	*m;
+	const char			*author = NULL, *title = NULL,
+					*affil = NULL, *date = NULL,
+					*copy = NULL, *rcsauthor = NULL, 
+					*rcsdate = NULL, *css = NULL,
+					*script = NULL, *header = NULL,
+					*lang = NULL;
+
+	if (st->templ != NULL) 
+		return lowdown_template(st->templ, content, ob, mq);
+	else if (!(st->flags & LOWDOWN_STANDALONE))
+		return hbuf_putb(ob, content);
+
+	TAILQ_FOREACH(m, mq, entries)
+		if (strcasecmp(m->key, "author") == 0)
+			author = m->value;
+		else if (strcasecmp(m->key, "copyright") == 0)
+			copy = m->value;
+		else if (strcasecmp(m->key, "affiliation") == 0)
+			affil = m->value;
+		else if (strcasecmp(m->key, "date") == 0)
+			date = m->value;
+		else if (strcasecmp(m->key, "rcsauthor") == 0)
+			rcsauthor = rcsauthor2str(m->value);
+		else if (strcasecmp(m->key, "rcsdate") == 0)
+			rcsdate = rcsdate2str(m->value);
+		else if (strcasecmp(m->key, "title") == 0)
+			title = m->value;
+		else if (strcasecmp(m->key, "css") == 0)
+			css = m->value;
+		else if (strcasecmp(m->key, "javascript") == 0)
+			script = m->value;
+		else if (strcasecmp(m->key, "htmlheader") == 0)
+			header = m->value;
+		else if (strcasecmp(m->key, "lang") == 0)
+			lang = m->value;
+
+	/* Overrides. */
+
+	if (rcsdate != NULL)
+		date = rcsdate;
+	if (rcsauthor != NULL)
+		author = rcsauthor;
+
+	if (!HBUF_PUTSL(ob, "<!DOCTYPE html>\n"))
+		return 0;
+	if (lang != NULL &&
+	    (!HBUF_PUTSL(ob, "<html lang=\"") ||
+	     !hesc_attr(ob, lang, strlen(lang)) ||
+	     !HBUF_PUTSL(ob, "\">\n")))
+		return 0;
+	else if (lang == NULL &&
+	    !HBUF_PUTSL(ob, "<html>\n"))
+		return 0;
+	if (!HBUF_PUTSL(ob, 
+	    "<head>\n"
+	    "<meta charset=\"utf-8\" />\n"
+	    "<meta name=\"viewport\" content=\""
+	    "width=device-width,initial-scale=1\" />\n"))
+		return 0;
+	if (!rndr_meta_multi(st, ob, affil, 0, 1,
+	    "<meta name=\"creator\" content=\"", "\" />"))
+		return 0;
+	if (!rndr_meta_multi(st, ob, author, 0, 1,
+	    "<meta name=\"author\" content=\"", "\" />"))
+		return 0;
+	if (!rndr_meta_multi(st, ob, copy, 0, 1,
+	    "<meta name=\"copyright\" content=\"", "\" />"))
+		return 0;
+	if (date != NULL) {
+		if (!HBUF_PUTSL(ob, "<meta name=\"date\" "))
+			return 0;
+		/*
+		 * Don't use "scheme" if the date isn't in the
+		 * appropriate format.
+		 */
+		if (strlen(date) == 10 &&
+		    isdigit((unsigned char)date[0]) &&
+		    isdigit((unsigned char)date[1]) &&
+		    isdigit((unsigned char)date[2]) &&
+		    isdigit((unsigned char)date[3]) &&
+		    date[4] == '-' &&
+		    isdigit((unsigned char)date[5]) &&
+		    isdigit((unsigned char)date[6]) &&
+		    date[7] == '-' &&
+		    isdigit((unsigned char)date[8]) &&
+		    isdigit((unsigned char)date[9]) &&
+		    !HBUF_PUTSL(ob, "scheme=\"YYYY-MM-DD\" "))
+			return 0;
+		if (!HBUF_PUTSL(ob, "content=\""))
+			return 0;
+		if (!hesc_attr(ob, date, strlen(date)))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\" />\n"))
+			return 0;
+	}
+	if (!rndr_meta_multi(st, ob, css, 1, 0,
+	    "<link rel=\"stylesheet\" href=\"", "\" />"))
+		return 0;
+	if (!rndr_meta_multi(st, ob, script, 1, 0,
+	     "<script src=\"", "\"></script>"))
+		return 0;
+
+	/* In HTML5, the title is required. */
+
+	if (!HBUF_PUTSL(ob, "<title>"))
+		return 0;
+	if (title != NULL &&
+	    !hesc_html(ob, title, strlen(title),
+		    st->flags & LOWDOWN_HTML_OWASP, 0,
+		    st->flags & LOWDOWN_HTML_NUM_ENT))
+		return 0;
+	if (!HBUF_PUTSL(ob, "</title>\n"))
+		return 0;
+
+	/* Optional raw HTML header. */
+
+	if (header != NULL) {
+		if (!hbuf_puts(ob, header))
+			return 0;
+		if (header[strlen(header) - 1] != '\n' &&
+		    !HBUF_PUTSL(ob, "\n"))
+			return 0;
+	}
+	if (!HBUF_PUTSL(ob, "</head>\n<body>\n"))
+		return 0;
+
+	if (!hbuf_putb(ob, content))
+		return 0;
+
+	return HBUF_PUTSL(ob, "</body>\n</html>\n");
+}
+
 /*
  * Allocate a meta-data value on the queue "mq".
  * Return zero on failure, non-zero on success.
@@ -1101,26 +1187,25 @@ rndr_meta(struct html *st, const struct lowdown_node *n,
 	return 1;
 }
 
+/*
+ * Conditionally output a title block for the document.  This needs at
+ * least one of the title, author, or date.
+ */
 static int
-rndr_doc_header(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	const struct lowdown_metaq *mq, 
-	const struct html *st)
+rndr_doc_header(struct lowdown_buf *ob, const struct lowdown_metaq *mq,
+    const struct html *st)
 {
 	const struct lowdown_meta	*m;
 	const char			*author = NULL, *title = NULL,
-					*affil = NULL, *date = NULL,
-					*copy = NULL, *rcsauthor = NULL, 
-					*rcsdate = NULL, *css = NULL,
-					*script = NULL, *header = NULL;
+					*date = NULL, *rcsauthor = NULL, 
+					*rcsdate = NULL;
+
+	if (!(st->flags & LOWDOWN_HTML_TITLEBLOCK))
+		return 1;
 
 	TAILQ_FOREACH(m, mq, entries)
 		if (strcasecmp(m->key, "author") == 0)
 			author = m->value;
-		else if (strcasecmp(m->key, "copyright") == 0)
-			copy = m->value;
-		else if (strcasecmp(m->key, "affiliation") == 0)
-			affil = m->value;
 		else if (strcasecmp(m->key, "date") == 0)
 			date = m->value;
 		else if (strcasecmp(m->key, "rcsauthor") == 0)
@@ -1129,12 +1214,6 @@ rndr_doc_header(struct lowdown_buf *ob,
 			rcsdate = rcsdate2str(m->value);
 		else if (strcasecmp(m->key, "title") == 0)
 			title = m->value;
-		else if (strcasecmp(m->key, "css") == 0)
-			css = m->value;
-		else if (strcasecmp(m->key, "javascript") == 0)
-			script = m->value;
-		else if (strcasecmp(m->key, "htmlheader") == 0)
-			header = m->value;
 
 	/* Overrides. */
 
@@ -1143,120 +1222,37 @@ rndr_doc_header(struct lowdown_buf *ob,
 	if (rcsauthor != NULL)
 		author = rcsauthor;
 
-	/* Conditionally output a header block. */
-
-	if (st->flags & LOWDOWN_STANDALONE) {
-		/* Document type and <html>. */
-		if (!hbuf_putb(ob, content))
-			return 0;
-		if (!HBUF_PUTSL(ob, 
-		    "<head>\n"
-		    "<meta charset=\"utf-8\" />\n"
-		    "<meta name=\"viewport\" content=\""
-		    "width=device-width,initial-scale=1\" />\n"))
-			return 0;
-		if (!rndr_meta_multi(st, ob, affil, 0, 1,
-		    "<meta name=\"creator\" content=\"", "\" />"))
-			return 0;
-		if (!rndr_meta_multi(st, ob, author, 0, 1,
-		    "<meta name=\"author\" content=\"", "\" />"))
-			return 0;
-		if (!rndr_meta_multi(st, ob, copy, 0, 1,
-		    "<meta name=\"copyright\" content=\"", "\" />"))
-			return 0;
-		if (date != NULL) {
-			if (!HBUF_PUTSL(ob, "<meta name=\"date\" "))
-				return 0;
-			/*
-			 * Don't use "scheme" if the date isn't in the
-			 * appropriate format.
-			 */
-			if (strlen(date) == 10 &&
-			    isdigit((unsigned char)date[0]) &&
-			    isdigit((unsigned char)date[1]) &&
-			    isdigit((unsigned char)date[2]) &&
-			    isdigit((unsigned char)date[3]) &&
-			    date[4] == '-' &&
-			    isdigit((unsigned char)date[5]) &&
-			    isdigit((unsigned char)date[6]) &&
-			    date[7] == '-' &&
-			    isdigit((unsigned char)date[8]) &&
-			    isdigit((unsigned char)date[9]) &&
-			    !HBUF_PUTSL(ob, "scheme=\"YYYY-MM-DD\" "))
-				return 0;
-			if (!HBUF_PUTSL(ob, "content=\""))
-				return 0;
-			if (!hesc_attr(ob, date, strlen(date)))
-				return 0;
-			if (!HBUF_PUTSL(ob, "\" />\n"))
-				return 0;
-		}
-		if (!rndr_meta_multi(st, ob, css, 1, 0,
-		    "<link rel=\"stylesheet\" href=\"", "\" />"))
-			return 0;
-		if (!rndr_meta_multi(st, ob, script, 1, 0,
-		     "<script src=\"", "\"></script>"))
-			return 0;
-
-		/* In HTML5, the title is required. */
-
-		if (!HBUF_PUTSL(ob, "<title>"))
-			return 0;
-		if (title != NULL &&
-		    !hesc_html(ob, title, strlen(title),
-			    st->flags & LOWDOWN_HTML_OWASP, 0,
-			    st->flags & LOWDOWN_HTML_NUM_ENT))
-			return 0;
-		if (!HBUF_PUTSL(ob, "</title>\n"))
-			return 0;
-
-		/* Optional raw HTML header. */
-
-		if (header != NULL) {
-			if (!hbuf_puts(ob, header))
-				return 0;
-			if (header[strlen(header) - 1] != '\n' &&
-			    !HBUF_PUTSL(ob, "\n"))
-				return 0;
-		}
-		if (!HBUF_PUTSL(ob, "</head>\n<body>\n"))
-			return 0;
-	}
-
 	/* Conditionally output a title block. */
 
-	if ((st->flags & LOWDOWN_HTML_TITLEBLOCK) &&
-	    !(author == NULL && title == NULL && date == NULL)) {
-		if (!HBUF_PUTSL(ob,
-		    "<header id=\"title-block-header\">\n"))
-			return 0;
-		if (title != NULL &&
-		    (!HBUF_PUTSL(ob, "<h1 class=\"title\">") ||
-		     !hesc_html(ob, title, strlen(title), 
-			     st->flags & LOWDOWN_HTML_OWASP, 0,
-			     st->flags & LOWDOWN_HTML_NUM_ENT) ||
-		     !HBUF_PUTSL(ob, "</h1>\n")))
-				return 0;
-		if (author != NULL &&
-		    !rndr_meta_multi(st, ob, author, 0, 0,
-			    "<p class=\"author\">", "</p>"))
-			return 0;
-		if (date != NULL &&
-		    (!HBUF_PUTSL(ob, "<p class=\"date\">") ||
-		     !hesc_html(ob, date, strlen(date), 
-			     st->flags & LOWDOWN_HTML_OWASP, 0,
-			     st->flags & LOWDOWN_HTML_NUM_ENT) ||
-		     !HBUF_PUTSL(ob, "</p>\n")))
-				return 0;
-		return HBUF_PUTSL(ob, "</header>\n");
-	}
+	if (author == NULL && title == NULL && date == NULL)
+		return 1;
 
-	return 1;
+	if (!HBUF_PUTSL(ob, "<header id=\"title-block-header\">\n"))
+		return 0;
+	if (title != NULL &&
+	    (!HBUF_PUTSL(ob, "<h1 class=\"title\">") ||
+	     !hesc_html(ob, title, strlen(title), 
+		     st->flags & LOWDOWN_HTML_OWASP, 0,
+		     st->flags & LOWDOWN_HTML_NUM_ENT) ||
+	     !HBUF_PUTSL(ob, "</h1>\n")))
+			return 0;
+	if (author != NULL &&
+	    !rndr_meta_multi(st, ob, author, 0, 0,
+		    "<p class=\"author\">", "</p>"))
+		return 0;
+	if (date != NULL &&
+	    (!HBUF_PUTSL(ob, "<p class=\"date\">") ||
+	     !hesc_html(ob, date, strlen(date), 
+		     st->flags & LOWDOWN_HTML_OWASP, 0,
+		     st->flags & LOWDOWN_HTML_NUM_ENT) ||
+	     !HBUF_PUTSL(ob, "</p>\n")))
+			return 0;
+	return HBUF_PUTSL(ob, "</header>\n");
 }
 
 static int
 rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq, struct html *st,
-	const struct lowdown_node *n)
+    const struct lowdown_node *n)
 {
 	const struct lowdown_node	*child;
 	struct lowdown_buf		*tmp;
@@ -1284,7 +1280,8 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq, struct html *st,
 
 	switch (n->type) {
 	case LOWDOWN_ROOT:
-		rc = rndr_root(ob, tmp, mq, st);
+		rc = rndr_doc_footer(tmp, st) &&
+			rndr_root(ob, tmp, mq, st);
 		break;
 	case LOWDOWN_BLOCKCODE:
 		rc = rndr_blockcode(ob, &n->rndr_blockcode, st);
@@ -1302,7 +1299,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq, struct html *st,
 		rc = rndr_definition_data(ob, tmp);
 		break;
 	case LOWDOWN_DOC_HEADER:
-		rc = rndr_doc_header(ob, tmp, mq, st);
+		rc = rndr_doc_header(ob, mq, st);
 		break;
 	case LOWDOWN_META:
 		if (n->chng != LOWDOWN_CHNG_DELETE)
@@ -1333,7 +1330,7 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq, struct html *st,
 		rc = rndr_table_body(ob, tmp);
 		break;
 	case LOWDOWN_TABLE_ROW:
-		rc = rndr_tablerow(ob, tmp);
+		rc = rndr_table_row(ob, tmp);
 		break;
 	case LOWDOWN_TABLE_CELL:
 		rc = rndr_tablecell(ob, tmp, &n->rndr_table_cell);
@@ -1435,8 +1432,8 @@ out:
 }
 
 int
-lowdown_html_rndr(struct lowdown_buf *ob,
-	void *arg, const struct lowdown_node *n)
+lowdown_html_rndr(struct lowdown_buf *ob, void *arg,
+    const struct lowdown_node *n)
 {
 	struct html		*st = arg;
 	struct lowdown_metaq	 metaq;
@@ -1469,6 +1466,7 @@ lowdown_html_new(const struct lowdown_opts *opts)
 		return NULL;
 
 	p->flags = opts == NULL ? 0 : opts->oflags;
+	p->templ = opts == NULL ? NULL : opts->templ;
 	return p;
 }
 

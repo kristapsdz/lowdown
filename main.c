@@ -219,6 +219,41 @@ metadata_parse(char opt, char ***vals, size_t *valsz, const char *arg)
 	errx(1, "-%c: malformed metadata", opt);
 }
 
+/*
+ * Read a full file into the NUL-terminated return pointer.  Exits on
+ * failure.
+ */
+static char *
+readfile(const char *fn)
+{
+	int	 	 fd;
+	struct stat	 st;
+	ssize_t		 ssz;
+	size_t		 sz;
+	char		*cp, *orig;
+
+	if ((fd = open(fn, O_RDONLY)) == -1)
+		err(1, "%s", fn);
+	if (fstat(fd, &st) == -1)
+		err(1, "%s", fn);
+	if ((uint64_t)st.st_size > SIZE_MAX - 1)
+		errx(1, "%s: file too long", fn);
+	sz = (size_t)st.st_size;
+	if ((cp = orig = malloc(sz + 1)) == NULL)
+		err(1, NULL);
+	while (sz > 0) {
+		if ((ssz = read(fd, cp, sz)) == -1)
+			err(1, "%s", fn);
+		if (ssz == 0)
+			errx(1, "%s: short file", fn);
+		sz -= (size_t)ssz;
+		cp += ssz;
+	}
+	*cp = '\0';
+	close(fd);
+	return orig;
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -228,16 +263,15 @@ main(int argc, char *argv[])
 	      	 		*fndin = NULL, *extract = NULL, *er,
 				*mainopts = "LM:m:sT:t:o:X:",
 	      			*diffopts = "M:m:sT:t:o:",
-				*odtstyfn = NULL;
+				*templfn = NULL, *odtstylefn = NULL;
 	struct lowdown_opts 	 opts;
-	struct stat		 st;
-	int			 c, diff = 0, fd, status = 0, afl = 0,
+	int			 c, diff = 0, status = 0, afl = 0,
 				 rfl = 0, aifl = 0, rifl = 0,
 				 centre = 0, list = 0;
-	char			*ret = NULL, *cp, *odtsty = NULL,
-				*nroffcodefn = NULL;
-	size_t		 	 i, retsz = 0, rcols, sz;
-	ssize_t			 ssz;
+	char			*ret = NULL, *cp, *templptr = NULL,
+				*nroffcodefn = NULL,
+				*odtstyleptr = NULL;
+	size_t		 	 i, retsz = 0, rcols;
 	struct lowdown_meta 	*m;
 	struct lowdown_metaq	 mq;
 	struct option 		 lo[] = {
@@ -360,6 +394,7 @@ main(int argc, char *argv[])
 		{ "parse-no-callouts",	no_argument,	&rifl, LOWDOWN_CALLOUTS },
 		{ "parse-maxdepth",	required_argument, NULL, 5 },
 
+		{ "template",		required_argument, NULL, 8 },
 		{ NULL,			0,	NULL,	0 }
 	};
 
@@ -496,7 +531,7 @@ main(int argc, char *argv[])
 				break;
 			errx(1, "--parse-maxdepth: %s", er);
 		case 6:
-			odtstyfn = optarg;
+			odtstylefn = optarg;
 			break;
 		case 7:
 			/*
@@ -513,6 +548,9 @@ main(int argc, char *argv[])
 				nroffcodefn = strdup(optarg);
 			if (nroffcodefn == NULL)
 				err(1, NULL);
+			break;
+		case 8:
+			templfn = optarg;
 			break;
 		default:
 			goto usage;
@@ -568,32 +606,19 @@ main(int argc, char *argv[])
 	}
 
 	/*
-	 * If we have a style sheet specified for -Tfodt, load it now
-	 * before we drop privileges.
+	 * If we have a template specified, load it now before we drop
+	 * privileges.
 	 */
 
-	if (opts.type == LOWDOWN_FODT && odtstyfn != NULL) {
-		if ((fd = open(odtstyfn, O_RDONLY)) == -1)
-			err(1, "%s", odtstyfn);
-		if (fstat(fd, &st) == -1)
-			err(1, "%s", odtstyfn);
-		if ((uint64_t)st.st_size > SIZE_MAX - 1)
-			errx(1, "%s: file too long", odtstyfn);
-		sz = (size_t)st.st_size;
-		if ((odtsty = cp = malloc(sz + 1)) == NULL)
-			err(1, NULL);
-		while (sz > 0) {
-			if ((ssz = read(fd, cp, sz)) == -1)
-				err(1, "%s", odtstyfn);
-			if (ssz == 0)
-				errx(1, "%s: short file", odtstyfn);
-			sz -= (size_t)ssz;
-			cp += ssz;
-		}
-		*cp = '\0';
-		close(fd);
-		opts.odt.sty = odtsty;
-	}
+	if (templfn != NULL)
+		opts.templ = templptr = readfile(templfn);
+
+	/*
+	 * DEPRECATED: use --template instead.
+	 */
+
+	if (opts.type == LOWDOWN_FODT && odtstylefn != NULL)
+		opts.odt.sty = odtstyleptr = readfile(odtstylefn);
 
 	/*
 	 * If specified and in -tman or -tms, parse the constant width
@@ -691,8 +716,9 @@ main(int argc, char *argv[])
 		fwrite(ret, 1, retsz, fout);
 
 	free(ret);
-	free(odtsty);
 	free(nroffcodefn);
+	free(templptr);
+	free(odtstyleptr);
 
 	if (fout != stdout)
 		fclose(fout);

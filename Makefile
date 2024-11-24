@@ -28,6 +28,7 @@ OBJS		 = autolink.o \
 		   nroff.o \
 		   odt.o \
 		   smartypants.o \
+		   template.o \
 		   term.o \
 		   tree.o \
 		   util.o
@@ -91,6 +92,7 @@ SOURCES		 = autolink.c \
 		   nroff.c \
 		   odt.c \
 		   smartypants.c \
+		   template.c \
 		   term.c \
 		   tests.c \
 		   tree.c \
@@ -344,9 +346,10 @@ lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/man
 	mkdir -p .dist/lowdown-$(VERSION)/share/odt
 	mkdir -p .dist/lowdown-$(VERSION)/regress/html
+	mkdir -p .dist/lowdown-$(VERSION)/regress/metadata
 	mkdir -p .dist/lowdown-$(VERSION)/regress/original
 	mkdir -p .dist/lowdown-$(VERSION)/regress/standalone
-	mkdir -p .dist/lowdown-$(VERSION)/regress/metadata
+	mkdir -p .dist/lowdown-$(VERSION)/regress/template
 	mkdir -p .dist/lowdown-$(VERSION)/regress/diff
 	$(INSTALL) -m 0644 $(HEADERS) .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 0644 $(SOURCES) .dist/lowdown-$(VERSION)
@@ -356,10 +359,11 @@ lowdown.tar.gz:
 	$(INSTALL) -m 0755 configure .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 644 regress/original/* .dist/lowdown-$(VERSION)/regress/original
 	$(INSTALL) -m 644 regress/*.* .dist/lowdown-$(VERSION)/regress
-	$(INSTALL) -m 644 regress/html/* .dist/lowdown-$(VERSION)/regress/html
-	$(INSTALL) -m 644 regress/standalone/* .dist/lowdown-$(VERSION)/regress/standalone
-	$(INSTALL) -m 644 regress/metadata/* .dist/lowdown-$(VERSION)/regress/metadata
 	$(INSTALL) -m 644 regress/diff/* .dist/lowdown-$(VERSION)/regress/diff
+	$(INSTALL) -m 644 regress/html/* .dist/lowdown-$(VERSION)/regress/html
+	$(INSTALL) -m 644 regress/metadata/* .dist/lowdown-$(VERSION)/regress/metadata
+	$(INSTALL) -m 644 regress/standalone/* .dist/lowdown-$(VERSION)/regress/standalone
+	$(INSTALL) -m 644 regress/template/* .dist/lowdown-$(VERSION)/regress/template
 	( cd .dist/ && tar zcf ../$@ lowdown-$(VERSION) )
 	rm -rf .dist/
 
@@ -480,6 +484,14 @@ regress: bins
 				diff -uw $$ff.$$type $$tmp1 ; \
 			fi ; \
 		done ; \
+	done ; \
+	for f in regress/template/*.html ; do \
+		ff=regress/template/`basename $$f .html` ; \
+		echo "$$f" ; \
+		tf=regress/template/simple.md ; \
+		[ ! -f $$ff.md ] || tf=$$ff.md ; \
+		./lowdown --template $$ff.xml -s $$tf >$$tmp1 2>&1 ; \
+		diff -uw $$f $$tmp1 ; \
 	done ; \
 	for f in regress/html/*.md ; do \
 		ff=regress/html/`basename $$f .md` ; \

@@ -380,6 +380,7 @@ struct	lowdown_opts {
 	size_t			  metasz;
 	char			**metaovr;
 	size_t			  metaovrsz;
+	const char		 *templ;
 };
 
 struct lowdown_doc;

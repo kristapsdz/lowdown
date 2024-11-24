@@ -25,6 +25,8 @@ TAILQ_HEAD(hentryq, hentry);
 
 struct lowdown_meta
 		*lowdown_get_meta(const struct lowdown_node *, struct lowdown_metaq *);
+int		 lowdown_template(const char *, const struct lowdown_buf *,
+			struct lowdown_buf *, const struct lowdown_metaq *);
 
 int	 	 smarty(struct lowdown_node *, size_t, enum lowdown_type);
 

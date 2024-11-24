@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta charset="utf-8" /> 
+		<title>foo</title>
+	</head>
+	<body>
+		0
+		$ifdef(title)$
+		1
+			$ifdef(shtitle)$
+				$ifdef(title)$
+					NO
+				$endif$
+			$endif$
+		2
+		$endif$
+		3
+	</body>
+</html>
