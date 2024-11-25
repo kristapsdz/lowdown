@@ -1,0 +1,17 @@
+
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns#">
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta charset="utf-8" /> 
+		<title>${blank}</title>
+	</head>
+	<body>
+		[$for(blank.split)$[$this$]$endfor$]
+		[$for(blank.split.join)$[$this$]$endfor$]
+		[$for(blank.join.split)$[$this$]$endfor$]
+		[$blank.uppercase$]
+		[$blank.lowercase$]
+		[$blank.trim$]
+	</body>
+</html>

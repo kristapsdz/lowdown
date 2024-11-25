@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns#">
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta charset="utf-8" /> 
+		<title>${title.trim}</title>
+	</head>
+	<body>
+		[$authors$]
+		$for(authors.split)$
+			[$this$]
+		$endfor$
+		$for(authors.split.join)$
+			[$this$]
+		$endfor$
+	</body>
+</html>

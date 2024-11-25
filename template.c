@@ -327,7 +327,7 @@ op_resq_clone(const struct op_resq *q, int trim)
 		}
 
 		assert(sz > 0);
-		nres = malloc(sizeof(struct op_res));
+		nres = calloc(1, sizeof(struct op_res));
 		if (nres == NULL) {
 			op_resq_free(nq);
 			return NULL;
@@ -346,7 +346,8 @@ op_resq_clone(const struct op_resq *q, int trim)
 /*
  * Split each input string along white-space boundaries.  This trims
  * white-space around all strings during the split.  The result is a
- * list of non-empty, non-only-whitespace strings.
+ * list of non-empty, non-only-whitespace strings.  Returns NULL on
+ * allocation failure.
  */
 static struct op_resq *
 op_eval_function_split(const struct lowdown_metaq *mq,
@@ -390,7 +391,7 @@ op_eval_function_split(const struct lowdown_metaq *mq,
 		/* Split at white-space. */
 
 		*cp = '\0';
-		if ((nnres = malloc(sizeof(struct op_res))) == NULL) {
+		if ((nnres = calloc(1, sizeof(struct op_res))) == NULL) {
 			op_resq_free(nq);
 			return NULL;
 		}
@@ -404,6 +405,125 @@ op_eval_function_split(const struct lowdown_metaq *mq,
 	return nq;
 }
 
+/*
+ * HTML-escape (for URL attributes) all characters in all list items.
+ * Returns NULL on allocation failure.
+ */
+static struct op_resq *
+op_eval_function_escape_htmlurl(const struct lowdown_metaq *mq,
+    const struct op_resq *input)
+{
+	struct op_resq		*nq = NULL;
+	struct op_res		*nres;
+	const struct op_res	*res;
+	struct lowdown_buf	*buf;
+
+	if ((buf = hbuf_new(32)) == NULL)
+		goto err;
+	if ((nq = malloc(sizeof(struct op_resq))) == NULL)
+		goto err;
+	TAILQ_INIT(nq);
+
+	TAILQ_FOREACH(res, input, entries) {
+		hbuf_truncate(buf);
+		if (!hesc_href(buf, res->res, strlen(res->res)))
+			goto err;
+		if ((nres = calloc(1, sizeof(struct op_res))) == NULL)
+			goto err;
+		TAILQ_INSERT_TAIL(nq, nres, entries);
+		nres->res = strndup(buf->data, buf->size);
+		if (nres->res == NULL)
+			goto err;
+	}
+	hbuf_free(buf);
+	return nq;
+err:
+	hbuf_free(buf);
+	op_resq_free(nq);
+	return NULL;
+}
+
+/*
+ * HTML-escape (for attributes) all characters in all list items.
+ * Returns NULL on allocation failure.
+ */
+static struct op_resq *
+op_eval_function_escape_htmlattr(const struct lowdown_metaq *mq,
+    const struct op_resq *input)
+{
+	struct op_resq		*nq = NULL;
+	struct op_res		*nres;
+	const struct op_res	*res;
+	struct lowdown_buf	*buf;
+
+	if ((buf = hbuf_new(32)) == NULL)
+		goto err;
+	if ((nq = malloc(sizeof(struct op_resq))) == NULL)
+		goto err;
+	TAILQ_INIT(nq);
+
+	TAILQ_FOREACH(res, input, entries) {
+		hbuf_truncate(buf);
+		if (!hesc_attr(buf, res->res, strlen(res->res)))
+			goto err;
+		if ((nres = calloc(1, sizeof(struct op_res))) == NULL)
+			goto err;
+		TAILQ_INSERT_TAIL(nq, nres, entries);
+		nres->res = strndup(buf->data, buf->size);
+		if (nres->res == NULL)
+			goto err;
+	}
+	hbuf_free(buf);
+	return nq;
+err:
+	hbuf_free(buf);
+	op_resq_free(nq);
+	return NULL;
+}
+
+/*
+ * HTML-escape (for general content) all characters in all list items.
+ * Returns NULL on allocation failure.
+ */
+static struct op_resq *
+op_eval_function_escape_html(const struct lowdown_metaq *mq,
+    const struct op_resq *input)
+{
+	struct op_resq		*nq = NULL;
+	struct op_res		*nres;
+	const struct op_res	*res;
+	struct lowdown_buf	*buf;
+
+	if ((buf = hbuf_new(32)) == NULL)
+		goto err;
+	if ((nq = malloc(sizeof(struct op_resq))) == NULL)
+		goto err;
+	TAILQ_INIT(nq);
+
+	TAILQ_FOREACH(res, input, entries) {
+		hbuf_truncate(buf);
+		if (!hesc_html(buf, res->res, strlen(res->res),
+		    1, 0, 0))
+			goto err;
+		if ((nres = calloc(1, sizeof(struct op_res))) == NULL)
+			goto err;
+		TAILQ_INSERT_TAIL(nq, nres, entries);
+		nres->res = strndup(buf->data, buf->size);
+		if (nres->res == NULL)
+			goto err;
+	}
+	hbuf_free(buf);
+	return nq;
+err:
+	hbuf_free(buf);
+	op_resq_free(nq);
+	return NULL;
+}
+
+/*
+ * Lowercase all characters in all list items.  Returns NULL on
+ * allocation failure.
+ */
 static struct op_resq *
 op_eval_function_lowercase(const struct lowdown_metaq *mq,
     const struct op_resq *input)
@@ -420,6 +540,10 @@ op_eval_function_lowercase(const struct lowdown_metaq *mq,
 	return nq;
 }
 
+/*
+ * Uppercase all characters in all list items.  Returns NULL on
+ * allocation failure.
+ */
 static struct op_resq *
 op_eval_function_uppercase(const struct lowdown_metaq *mq,
     const struct op_resq *input)
@@ -436,6 +560,58 @@ op_eval_function_uppercase(const struct lowdown_metaq *mq,
 	return nq;
 }
 
+/*
+ * Join all list items into a singleton, with two white-spaces
+ * delimiting the new string.  If the input list is empty, produces an
+ * empty output.  Returns NULL on allocation failure.
+ */
+static struct op_resq *
+op_eval_function_join(const struct lowdown_metaq *mq,
+    const struct op_resq *input)
+{
+	struct op_resq		*nq;
+	struct op_res		*nres;
+	const struct op_res	*res;
+	size_t			 sz = 0;
+	void			*p;
+
+	if ((nq = malloc(sizeof(struct op_resq))) == NULL)
+		return NULL;
+	TAILQ_INIT(nq);
+
+	/* Empty list -> empty singleton. */
+
+	if (TAILQ_EMPTY(input))
+		return nq;
+
+	if ((nres = calloc(1, sizeof(struct op_res))) == NULL) {
+		op_resq_free(nq);
+		return NULL;
+	}
+	TAILQ_INSERT_TAIL(nq, nres, entries);
+	nres->res = NULL;
+	TAILQ_FOREACH(res, input, entries) {
+		if (sz == 0) {
+			if ((nres->res = strdup(res->res)) == NULL) {
+				op_resq_free(nq);
+				return NULL;
+			}
+			sz = strlen(nres->res) + 1;
+		} else {
+			sz += strlen(res->res) + 2;
+			if ((p = realloc(nres->res, sz)) == NULL) {
+				op_resq_free(nq);
+				return NULL;
+			}
+			nres->res = p;
+			strlcat(nres->res, "  ", sz);
+			strlcat(nres->res, res->res, sz);
+		}
+	}
+	assert(sz > 0);
+	return nq;
+}
+
 static struct op_resq *
 op_eval_function(const char *expr, size_t sz,
     const struct lowdown_metaq *mq, const struct op_resq *input)
@@ -448,14 +624,28 @@ op_eval_function(const char *expr, size_t sz,
 		nq = op_eval_function_lowercase(mq, input);
 	else if (sz == 5 && strncasecmp(expr, "split", 5) == 0)
 		nq = op_eval_function_split(mq, input);
+	else if (sz == 4 && strncasecmp(expr, "join", 4) == 0)
+		nq = op_eval_function_join(mq, input);
 	else if (sz == 4 && strncasecmp(expr, "trim", 4) == 0)
 		nq = op_resq_clone(input, 1);
+	else if (sz == 10 && strncasecmp(expr, "escapehtml", 10) == 0)
+		nq = op_eval_function_escape_html(mq, input);
+	else if (sz == 14 && strncasecmp(expr, "escapehtmlattr", 14) == 0)
+		nq = op_eval_function_escape_htmlattr(mq, input);
+	else if (sz == 13 && strncasecmp(expr, "escapehtmlurl", 13) == 0)
+		nq = op_eval_function_escape_htmlurl(mq, input);
 	else if ((nq = malloc(sizeof(struct op_resq))) != NULL)
 		TAILQ_INIT(nq);
 
 	return nq;
 }
 
+/*
+ * The initial expression in an expression chain must resolve to a
+ * variable of some sort.  This consists of metadata or "special"
+ * variables.  Evaluate this variable to either a non-empty singleton or
+ * an empty list.  Returns NULL on allocation failure.
+ */
 static struct op_resq *
 op_eval_initial(const char *expr, size_t sz, const char *this,
     const struct lowdown_metaq *mq, const struct lowdown_buf *content)
@@ -486,10 +676,12 @@ op_eval_initial(const char *expr, size_t sz, const char *this,
 				break;
 			}
 
-	if (v == NULL)
+	/* Invariant: non-empty or empty list. */
+
+	if (v == NULL || v[0] == '\0')
 		return q;
 
-	if ((res = malloc(sizeof(struct op_res))) == NULL) {
+	if ((res = calloc(1, sizeof(struct op_res))) == NULL) {
 		op_resq_free(q);
 		return NULL;
 	}

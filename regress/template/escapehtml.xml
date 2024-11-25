@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns#">
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta charset="utf-8" /> 
+                $for(author.split)$
+		<meta name="author" content="$this.escapehtmlattr$" />
+		$endfor$
+                $for(css.split)$
+		<link rel="stylesheet" href="$this.escapehtmlurl$" />
+		$endfor$
+		<title>${title.escapehtml}</title>
+	</head>
+	<body>
+		blah
+	</body>
+</html>

@@ -447,8 +447,8 @@ valgrind:: bins
 		echo "$$f" ; \
 		tf=regress/template/simple.md ; \
 		[ ! -f $$ff.md ] || tf=$$ff.md ; \
-		valgrind $(VALGRIND_ARGS) \
-			./lowdown -s --template $$ff.xml $$tf >/dev/null 2>&1 ; \
+		valgrind $(VALGRIND_ARGS) ./lowdown -M "blank=" \
+			-s --template $$ff.xml $$tf >/dev/null 2>&1 ; \
 	done ; \
 	for f in regress/html/*.md ; do \
 		ff=regress/html/`basename $$f .md` ; \
@@ -521,7 +521,7 @@ regress: bins
 		echo "$$f" ; \
 		tf=regress/template/simple.md ; \
 		[ ! -f $$ff.md ] || tf=$$ff.md ; \
-		./lowdown --template $$ff.xml -s $$tf >$$tmp1 2>&1 ; \
+		./lowdown -M "blank=" --template $$ff.xml -s $$tf >$$tmp1 2>&1 ; \
 		diff -uw $$f $$tmp1 ; \
 	done ; \
 	for f in regress/html/*.md ; do \

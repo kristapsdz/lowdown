@@ -833,7 +833,7 @@ Expressions consist of
 .Li initial[.transform]* ,
 with
 .Li initial
-being a canonicalisd metadata key,
+being a canonicalised metadata key,
 .Li this
 .Pq value of a current loop context ,
 or
@@ -857,10 +857,13 @@ transformation.
 .Pp
 The following transformations are available:
 .Bl -tag -width Ds
+.It Li escapehtml , escapehtmlattr , escapehtmlurl
+Escape list items for HTML body content, attributes, and URL attributes,
+respectively.
+.It Li join
+Join a list into a singleton list using two spaces as a join delimiter.
 .It Li lowercase
 Lowercase all list items.
-.It Li uppercase
-Uppercase all list items.
 .It Li split
 Split list items on sequences of two or more white-space tokens (space,
 newline, tab).
@@ -873,6 +876,8 @@ The resulting list has no items that are only white-space.
 .It Li trim
 Trim white-space from the beginning and end of all list items.
 If an item has no non-white-space, it is discarded.
+.It Li uppercase
+Uppercase all list items.
 .El
 .Sh ENVIRONMENT
 .Bl -tag -width Ds
