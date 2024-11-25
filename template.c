@@ -254,17 +254,17 @@ op_queue(struct opq *q, struct op **cop, const char *str, size_t sz)
 {
 	/* TODO: space before "(". */
 
-	if (sz > 7 && strncmp(str, "ifdef(", 6) == 0 &&
+	if (sz > 7 && strncasecmp(str, "ifdef(", 6) == 0 &&
 	    str[sz - 1] == ')')
 		return op_queue_ifdef(q, cop, str + 6, sz - 7);
-	if (sz > 5 && strncmp(str, "for(", 4) == 0 &&
+	if (sz > 5 && strncasecmp(str, "for(", 4) == 0 &&
 	    str[sz - 1] == ')')
 		return op_queue_for(q, cop, str + 4, sz - 5);
-	if (sz == 4 && strncmp(str, "else", 4) == 0)
+	if (sz == 4 && strncasecmp(str, "else", 4) == 0)
 		return op_queue_else(q, cop);
-	if (sz == 5 && strncmp(str, "endif", 5) == 0)
+	if (sz == 5 && strncasecmp(str, "endif", 5) == 0)
 		return op_queue_endif(cop);
-	if (sz == 6 && strncmp(str, "endfor", 6) == 0)
+	if (sz == 6 && strncasecmp(str, "endfor", 6) == 0)
 		return op_queue_endfor(cop);
 
 	return op_queue_expr(q, *cop, str, sz);
@@ -442,13 +442,13 @@ op_eval_function(const char *expr, size_t sz,
 {
 	struct op_resq	*nq;
 
-	if (sz == 9 && strncmp(expr, "uppercase", 9) == 0)
+	if (sz == 9 && strncasecmp(expr, "uppercase", 9) == 0)
 		nq = op_eval_function_uppercase(mq, input);
-	else if (sz == 9 && strncmp(expr, "lowercase", 9) == 0)
+	else if (sz == 9 && strncasecmp(expr, "lowercase", 9) == 0)
 		nq = op_eval_function_lowercase(mq, input);
-	else if (sz == 5 && strncmp(expr, "split", 5) == 0)
+	else if (sz == 5 && strncasecmp(expr, "split", 5) == 0)
 		nq = op_eval_function_split(mq, input);
-	else if (sz == 4 && strncmp(expr, "trim", 4) == 0)
+	else if (sz == 4 && strncasecmp(expr, "trim", 4) == 0)
 		nq = op_resq_clone(input, 1);
 	else if ((nq = malloc(sizeof(struct op_resq))) != NULL)
 		TAILQ_INIT(nq);
@@ -471,16 +471,16 @@ op_eval_initial(const char *expr, size_t sz, const char *this,
 
 	TAILQ_INIT(q);
 
-	if (sz == 4 && strncmp(expr, "this", sz) == 0) {
+	if (sz == 4 && strncasecmp(expr, "this", sz) == 0) {
 		v = this;
 		vsz = this == NULL ? 0 : strlen(this);
-	} else if (sz == 4 && strncmp(expr, "body", sz) == 0) {
+	} else if (sz == 4 && strncasecmp(expr, "body", sz) == 0) {
 		v = content->data;
 		vsz = content->size;
 	} else 
 		TAILQ_FOREACH(m, mq, entries)
 			if (strlen(m->key) == sz &&
-			    strncmp(m->key, expr, sz) == 0) {
+			    strncasecmp(m->key, expr, sz) == 0) {
 				v = m->value;
 				vsz = strlen(m->value);
 				break;

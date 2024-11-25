@@ -770,8 +770,8 @@ Templates control statements are delimited as
 .Li $statement$
 or
 .Li ${statement} .
-Arbitrary white-space may surround the statement between matching
-delimiters.
+Arbitrary white-space may surround the case-insensitive statement
+between matching delimiters.
 Empty statements are stripped, with the exception of
 .Li $$ ,
 which outputs a literal
@@ -833,7 +833,7 @@ Expressions consist of
 .Li initial[.transform]* ,
 with
 .Li initial
-being a metadata key,
+being a canonicalisd metadata key,
 .Li this
 .Pq value of a current loop context ,
 or
