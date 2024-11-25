@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta charset="utf-8" /> 
+		<title>foo</title>
+	</head>
+	<body>
+		$ifdef(this)$NO$endif$
+		$for(authors::split)$
+			$ifdef(this)$YES$endif$: $this$
+		$endfor$
+		$ifdef(this)$NO$else$YES$endif$
+	</body>
+</html>
