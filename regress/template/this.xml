@@ -7,7 +7,7 @@
 	</head>
 	<body>
 		$ifdef(this)$NO$endif$
-		$for(authors::split)$
+		$for(authors.split)$
 			$ifdef(this)$YES$endif$: $this$
 		$endfor$
 		$ifdef(this)$NO$else$YES$endif$

@@ -512,11 +512,11 @@ op_eval(const char *expr, size_t sz, const struct lowdown_metaq *mq,
 
 	/* Find next expression in chain. */
 
-	next = memmem(expr, sz, "::", 2);
+	next = memchr(expr, '.', sz);
 	if (next != NULL) {
 		assert(next >= expr);
 		mysz = (size_t)(next - expr);
-		next += 2;
+		next++;
 		assert(next > expr);
 		nextsz = sz - (size_t)(next - expr);
 	} else

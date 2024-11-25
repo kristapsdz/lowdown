@@ -6,8 +6,8 @@
 		<title>foo</title>
 	</head>
 	<body>
-		[${title::uppercase::lowercase}]
-		[${authors::uppercase::lowercase}]
-		[${authors::split::uppercase::lowercase}]
+		[${title.uppercase.lowercase}]
+		[${authors.uppercase.lowercase}]
+		[${authors.split.uppercase.lowercase}]
 	</body>
 </html>

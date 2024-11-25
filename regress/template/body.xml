@@ -6,7 +6,7 @@
 		<title>foo</title>
 	</head>
 	<body>
-		[${body::trim}]
-		[${body::trim::uppercase}]
+		[${body.trim}]
+		[${body.trim.uppercase}]
 	</body>
 </html>

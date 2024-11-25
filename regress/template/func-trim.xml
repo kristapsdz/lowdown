@@ -6,7 +6,7 @@
 		<title>foo</title>
 	</head>
 	<body>
-		[${authors::trim}]
-		[${authors::split::trim}]
+		[${authors.trim}]
+		[${authors.split.trim}]
 	</body>
 </html>
