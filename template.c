@@ -75,7 +75,6 @@ enum op_type {
 	OP_IFDEF,
 	OP_ELSE,
 	OP_STR,
-	OP_THIS,
 	OP_EXPR,
 	OP_ROOT,
 };
@@ -101,7 +100,8 @@ struct op {
 /* Forward declaration. */
 
 static int op_exec(const struct op *, struct lowdown_buf *,
-    const struct lowdown_metaq *, const char *);
+    const struct lowdown_metaq *, const struct lowdown_buf *,
+    const char *);
 
 /*
  * Allocate the generic members of "struct op".  The caller should be
@@ -140,17 +140,6 @@ op_queue_expr(struct opq *q, struct op *cop, const char *expr,
 	op->op_expr.sz = sz;
 	return 1;
 }
-
-/*
- * Queue an operation to print the current loop value (or empty).
- * Returns non-zero on success, zero on failure (allocation failure).
- */
-static int
-op_queue_this(struct opq *q, struct op *cop)
-{
-	return op_alloc(q, OP_THIS, cop) == NULL ? 0 : 1;
-}
-
 
 /*
  * Queue an opaque string-printing operation.  Returns non-zero on
@@ -277,8 +266,6 @@ op_queue(struct opq *q, struct op **cop, const char *str, size_t sz)
 		return op_queue_endif(cop);
 	if (sz == 6 && strncmp(str, "endfor", 6) == 0)
 		return op_queue_endfor(cop);
-	if (sz == 4 && strncmp(str, "this", 4) == 0)
-		return op_queue_this(q, *cop);
 
 	return op_queue_expr(q, *cop, str, sz);
 }
@@ -292,18 +279,6 @@ op_exec_str(const struct op *op, struct lowdown_buf *ob)
 {
 	assert(op->op_type == OP_STR);
 	return hbuf_put(ob, op->op_str.str, op->op_str.sz);
-}
-
-/*
- * Copy the currently-executing loop value into the output (or an empty
- * string, if nothing's there).  Returns zero on failure (memory
- * allocation), non-zero on success.
- */
-static int
-op_exec_this(const struct op *op, struct lowdown_buf *ob, const char *this)
-{
-	assert(op->op_type == OP_THIS);
-	return hbuf_puts(ob, this == NULL ? "" : this);
 }
 
 static void
@@ -483,12 +458,13 @@ op_eval_function(const char *expr, size_t sz,
 
 static struct op_resq *
 op_eval_initial(const char *expr, size_t sz, const char *this,
-    const struct lowdown_metaq *mq)
+    const struct lowdown_metaq *mq, const struct lowdown_buf *content)
 {
 	struct op_resq			*q;
 	struct op_res			*res;
 	const struct lowdown_meta	*m;
 	const char			*v = NULL;
+	size_t				 vsz;
 
 	if ((q = malloc(sizeof(struct op_resq))) == NULL)
 		return NULL;
@@ -497,11 +473,16 @@ op_eval_initial(const char *expr, size_t sz, const char *this,
 
 	if (sz == 4 && strncmp(expr, "this", sz) == 0) {
 		v = this;
+		vsz = this == NULL ? 0 : strlen(this);
+	} else if (sz == 4 && strncmp(expr, "body", sz) == 0) {
+		v = content->data;
+		vsz = content->size;
 	} else 
 		TAILQ_FOREACH(m, mq, entries)
 			if (strlen(m->key) == sz &&
 			    strncmp(m->key, expr, sz) == 0) {
 				v = m->value;
+				vsz = strlen(m->value);
 				break;
 			}
 
@@ -513,7 +494,7 @@ op_eval_initial(const char *expr, size_t sz, const char *this,
 		return NULL;
 	}
 	TAILQ_INSERT_TAIL(q, res, entries);
-	if ((res->res = strdup(v)) == NULL) {
+	if ((res->res = strndup(v, vsz)) == NULL) {
 		op_resq_free(q);
 		return NULL;
 	}
@@ -522,7 +503,8 @@ op_eval_initial(const char *expr, size_t sz, const char *this,
 
 static struct op_resq *
 op_eval(const char *expr, size_t sz, const struct lowdown_metaq *mq,
-    const char *this, const struct op_resq *input)
+    const char *this, const struct op_resq *input,
+    const struct lowdown_buf *content)
 {
 	size_t	 	 nextsz = 0, mysz;
 	const char	*next;
@@ -546,7 +528,7 @@ op_eval(const char *expr, size_t sz, const struct lowdown_metaq *mq,
 	 */
 
 	q = (input == NULL) ?
-		op_eval_initial(expr, mysz, this, mq) :
+		op_eval_initial(expr, mysz, this, mq, content) :
 		op_eval_function(expr, mysz, mq, input);
 
 	/* Return or pass to the next, then free current. */
@@ -554,7 +536,7 @@ op_eval(const char *expr, size_t sz, const struct lowdown_metaq *mq,
 	if (next == NULL)
 		return q;
 
-	nextq = op_eval(next, nextsz, mq, this, q);
+	nextq = op_eval(next, nextsz, mq, this, q, content);
 	op_resq_free(q);
 	return nextq;
 }
@@ -565,7 +547,8 @@ op_eval(const char *expr, size_t sz, const struct lowdown_metaq *mq,
  */
 static int
 op_exec_expr(const struct op *op, struct lowdown_buf *ob,
-    const struct lowdown_metaq *mq, const char *this)
+    const struct lowdown_metaq *mq, const char *this,
+    const struct lowdown_buf *content)
 {
 	struct op_resq	*resq;
 	struct op_res	*res;
@@ -573,7 +556,7 @@ op_exec_expr(const struct op *op, struct lowdown_buf *ob,
 
 	assert(op->op_type == OP_EXPR);
 	resq = op_eval(op->op_expr.expr, op->op_expr.sz, mq, this,
-		NULL);
+		NULL, content);
 	if (resq == NULL)
 		return 0;
 
@@ -596,18 +579,20 @@ out:
  */
 static int
 op_exec_for(const struct op *op, struct lowdown_buf *ob,
-    const struct lowdown_metaq *mq, const char *this)
+    const struct lowdown_metaq *mq, const char *this,
+    const struct lowdown_buf *content)
 {
 	struct op_resq	*resq;
 	struct op_res	*res;
 
 	assert(op->op_type == OP_FOR);
-	resq = op_eval(op->op_for.expr, op->op_for.sz, mq, this, NULL);
+	resq = op_eval(op->op_for.expr, op->op_for.sz, mq, this, NULL,
+		content);
 	if (resq == NULL)
 		return 0;
 
 	TAILQ_FOREACH(res, resq, entries)
-		if (!op_exec(op, ob, mq, res->res)) {
+		if (!op_exec(op, ob, mq, content, res->res)) {
 			op_resq_free(resq);
 			return 0;
 		}
@@ -622,28 +607,30 @@ op_exec_for(const struct op *op, struct lowdown_buf *ob,
  */
 static int
 op_exec_ifdef(const struct op *op, struct lowdown_buf *ob,
-    const struct lowdown_metaq *mq, const char *this)
+    const struct lowdown_metaq *mq, const char *this,
+    const struct lowdown_buf *content)
 {
 	struct op_resq	*resq;
 	int	 	 rc;
 
 	assert(op->op_type == OP_IFDEF);
 	resq = op_eval(op->op_ifdef.expr, op->op_ifdef.sz, mq, this,
-		NULL);
+		NULL, content);
 	if (resq == NULL)
 		return 0;
 
 	rc = !TAILQ_EMPTY(resq);
 	op_resq_free(resq);
 
-	return rc ? op_exec(op, ob, mq, this) :
+	return rc ? op_exec(op, ob, mq, content, this) :
 		op->op_ifdef.chain == NULL ? 1 :
-		op_exec(op->op_ifdef.chain, ob, mq, this);
+		op_exec(op->op_ifdef.chain, ob, mq, content, this);
 }
 
 static int
 op_exec(const struct op *cop, struct lowdown_buf *ob,
-    const struct lowdown_metaq *mq, const char *this)
+    const struct lowdown_metaq *mq, const struct lowdown_buf *content,
+    const char *this)
 {
 	const struct op	*op;
 
@@ -653,20 +640,16 @@ op_exec(const struct op *cop, struct lowdown_buf *ob,
 			if (!op_exec_str(op, ob))
 				return 0;
 			break;
-		case OP_THIS:
-			if (!op_exec_this(op, ob, this))
-				return 0;
-			break;
 		case OP_EXPR:
-			if (!op_exec_expr(op, ob, mq, this))
+			if (!op_exec_expr(op, ob, mq, this, content))
 				return 0;
 			break;
 		case OP_IFDEF:
-			if (!op_exec_ifdef(op, ob, mq, this))
+			if (!op_exec_ifdef(op, ob, mq, this, content))
 				return 0;
 			break;
 		case OP_FOR:
-			if (!op_exec_for(op, ob, mq, this))
+			if (!op_exec_for(op, ob, mq, this, content))
 				return 0;
 			break;
 		case OP_ELSE:
@@ -784,7 +767,7 @@ lowdown_template(const char *templ, const struct lowdown_buf *content,
 
 	/* Execute the generation operation tree. */
 
-	rc = op_exec(root, ob, mq, NULL);
+	rc = op_exec(root, ob, mq, content, NULL);
 out:
 	while ((op = TAILQ_FIRST(&q)) != NULL) {
 		TAILQ_REMOVE(&q, op, _all);
