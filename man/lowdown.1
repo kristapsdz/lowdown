@@ -844,17 +844,24 @@ accept optional arguments.
 .Pp
 The
 .Li initial
-value is either a canonicalised metadata key,
+value is one of the following:
+.Bl -bullet
+.It
+a canonicalised metadata key
+.It
 .Li this
-.Pq value of a current loop context ,
+.Pq value of a current loop context
+.It
 .Li body
-.Pq parsed input document body ,
-or
+.Pq parsed input document body
+.It
 .Li meta(val)
 to force accepting
 .Li val
 as a metadata key, even if it's a special variable like
-.Li body .
+.Li body
+.El
+.Pp
 If a metadata key is not specified in the input, or if the anaphoric
 .Li this
 has not initialised by a looping context, the initial value evaluates to an
@@ -900,6 +907,11 @@ Same as
 .El
 .Sh FILES
 .Bl -tag -width Ds
+.It Pa share/html/default.html
+The default template used if
+.Fl -template
+is not provided to
+.Fl t Ns Ar html .
 .It Pa share/odt/styles.xml
 Default styles used when generating standalone
 .Fl t Ns Ar fodt

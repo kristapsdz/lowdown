@@ -35,7 +35,7 @@ Shows differences between
 documents as formatted output.
 Results are written to standard output.
 .Pp
-The arguments are as follows:
+The short arguments are as follows:
 .Bl -tag -width Ds
 .It Fl s
 Standalone mode.
@@ -111,7 +111,7 @@ is not given or
 it is read from standard input.
 .El
 .Pp
-The following are options for input parsing.
+The following are long options for input parsing.
 These affect the parse tree passed to all outputs.
 .Bl -tag -width Ds
 .It Fl -parse-hilite
@@ -182,7 +182,7 @@ non-GFM
 syntax.
 .El
 .Pp
-There are many output options.
+There are many output long options.
 The following are shared by all output modes:
 .Bl -tag -width Ds
 .It Fl -out-standalone
@@ -192,9 +192,17 @@ Alias for
 Do not use the smart typography filter.
 By default, certain character sequences are translated into
 output-specific glyphs.
+.It Fl -template Ar template
+When producing standalone
+.Fl s
+output, use a template file.
+See
+.Sx Templates .
+Currently only for
+.Fl t Ns Ar html .
 .El
 .Pp
-What follows are per-output options.
+What follows are per-output long options.
 For HTML with
 .Fl t Ns Ar html ,
 these are as follows:
@@ -255,6 +263,13 @@ Aliases
 and
 .Li code
 set no special fonts, bold, and the default constant-width.
+.It Fl -nroff-endnotes
+Delay printing of footnotes until the end of the document.
+Only applies to
+.Fl t Ns Ar ms ,
+as
+.Fl t Ns Ar man
+only supports endnotes.
 .It Fl -nroff-no-groff
 Deprecated alias for
 .Fl -nroff-traditional .
@@ -757,6 +772,135 @@ In formats where metadata are part of the document body, such as
 and
 .Fl t Ns Ar tree ,
 all metadata are shown as if in the document body.
+.Ss Templates
+Some output modes accept a template
+.Pq Fl -template
+to customise standalone
+.Pq Fl s
+output.
+Parsed input content is filled into templates through control statements
+that support conditionals, loops, and transformation sequences.
+.Pp
+Templates control statements are delimited as
+.Li $statement$
+or
+.Li ${statement} .
+Arbitrary white-space may surround the case-insensitive statement
+between matching delimiters.
+Empty statements are stripped, with the exception of
+.Li $$ ,
+which outputs a literal
+.Li $ .
+Statements without a closing delimiter are considered opaque text.
+.Pp
+The following statements are available:
+.Bl -tag -width Ds
+.It Li $ifdef(expression)$
+Conditional statement.
+There may not be any white-space between the
+.Li ifdef
+and the opening parenthesis.
+Begins a block that is ended by a
+.Li else ,
+.Li endif ,
+or the end of file.
+Its contents are output only if
+.Li expression
+evaluates to a non-empty string.
+.It Li $else$
+Begins a block that is ended by a
+.Li endif
+or end of file.
+Its contents are output only if the condition of a 
+preceding
+.Li ifdef
+evaluates to an empty string.
+An
+.Li else
+without a preceding
+.Li ifdef
+is not output.
+.It Li $endif$
+Closes a block begin with
+.Li ifdef
+or
+.Li else .
+If not preceded by one of those statements, is silently ignored.
+.It Li $for(expression)$
+Looping statement.
+There may not be any white-space between the
+.Li for
+and the opening parenthesis.
+Begins a block that is ended by an
+.Li endfor
+or the end of file.
+Block contents contents are repeatedly output for each list item
+evaluated from
+.Li expression .
+The anaphoric keyword
+.Li this
+may be used to access the current loop expression within the block.
+.It Li $expression$
+Replaced by the result of evaluating a template expression.
+.El
+.Pp
+Expressions consist of
+.Li initial[([arg]*)]?[.transform[([arg]*)]?]* ,
+or an initial value followed by an optional series of transforms that
+accept optional arguments.
+.Pp
+The
+.Li initial
+value is one of the following:
+.Bl -bullet
+.It
+a canonicalised metadata key
+.It
+.Li this
+.Pq value of a current loop context
+.It
+.Li body
+.Pq parsed input document body
+.It
+.Li meta(val)
+to force accepting
+.Li val
+as a metadata key, even if it's a special variable like
+.Li body
+.El
+.Pp
+If a metadata key is not specified in the input, or if the anaphoric
+.Li this
+has not initialised by a looping context, the initial value evaluates to an
+empty list.
+Otherwise, the value is a singleton list.
+.Pp
+If transforms are invalid, they will transform into an empty list.
+.Pp
+The following transformations are available:
+.Bl -tag -width Ds
+.It Li escapehtml , escapehtmlattr , escapehtmlurl
+Escape list items for HTML body content, attributes, and URL attributes,
+respectively.
+.It Li join
+Join a list into a singleton list using two spaces as a join delimiter.
+.It Li lowercase
+Lowercase all list items.
+.It Li split
+Split list items on sequences of two or more white-space tokens (space,
+newline, tab).
+This is usually invoked on a singleton, but may be repeatedly invoked on
+a pre-split list.
+Invokes
+.Li trim
+prior to the first split.
+The resulting list has no items that are only white-space.
+.It Li trim
+Trim white-space from the beginning and end of all list items.
+If an item has no non-white-space, it is discarded.
+.It Li uppercase
+Uppercase all list items.
+.El
 .Sh ENVIRONMENT
 .Bl -tag -width Ds
 .It Ev NO_COLOR
@@ -770,6 +914,11 @@ Same as
 .El
 .Sh FILES
 .Bl -tag -width Ds
+.It Pa share/html/default.html
+The default template used if
+.Fl -template
+is not provided to
+.Fl t Ns Ar html .
 .It Pa share/odt/styles.xml
 Default styles used when generating standalone
 .Fl t Ns Ar fodt
