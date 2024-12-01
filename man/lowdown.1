@@ -35,7 +35,7 @@ Translate from
 into diverse output formats.
 Results are written to standard output.
 .Pp
-The arguments are as follows:
+The short arguments are as follows:
 .Bl -tag -width Ds
 .It Fl L
 Lists metadata keys, one key per line.
@@ -129,7 +129,7 @@ is
 it is read from standard input.
 .El
 .Pp
-The following are options for input parsing.
+The following are long options for input parsing.
 These affect the parse tree passed to all outputs.
 .Bl -tag -width Ds
 .It Fl -parse-hilite
@@ -200,7 +200,7 @@ non-GFM
 syntax.
 .El
 .Pp
-There are many output options.
+There are many output long options.
 The following are shared by all output modes:
 .Bl -tag -width Ds
 .It Fl -out-standalone
@@ -210,9 +210,17 @@ Alias for
 Do not use the smart typography filter.
 By default, certain character sequences are translated into
 output-specific glyphs.
+.It Fl -template Ar template
+When producing standalone
+.Fl s
+output, use a template file.
+See
+.Sx Templates .
+Currently only for
+.Fl t Ns Ar html .
 .El
 .Pp
-What follows are per-output options.
+What follows are per-output long options.
 For HTML with
 .Fl t Ns Ar html ,
 these are as follows:
@@ -830,30 +838,30 @@ Replaced by the result of evaluating a template expression.
 .El
 .Pp
 Expressions consist of
-.Li initial[.transform]* ,
-with
+.Li initial[([arg]*)]?[.transform[([arg]*)]?]* ,
+or an initial value followed by an optional series of transforms that
+accept optional arguments.
+.Pp
+The
 .Li initial
-being a canonicalised metadata key,
+value is either a canonicalised metadata key,
 .Li this
 .Pq value of a current loop context ,
-or
 .Li body
-.Pq parsed input document body .
-.Pp
+.Pq parsed input document body ,
+or
+.Li meta(val)
+to force accepting
+.Li val
+as a metadata key, even if it's a special variable like
+.Li body .
 If a metadata key is not specified in the input, or if the anaphoric
 .Li this
 has not initialised by a looping context, the initial value evaluates to an
 empty list.
-The initial value is optionally followed by a series of transformations.
+Otherwise, the value is a singleton list.
 .Pp
-Expressions are represented by lists of non-empty strings, with
-.Li initial
-being a singleton list.
-Singletons are expanded for use in
-.Li for
-loops by using the
-.Li split
-transformation.
+If transforms are invalid, they will transform into an empty list.
 .Pp
 The following transformations are available:
 .Bl -tag -width Ds

@@ -613,26 +613,27 @@ op_eval_function_join(const struct lowdown_metaq *mq,
 }
 
 static struct op_resq *
-op_eval_function(const char *expr, size_t sz,
-    const struct lowdown_metaq *mq, const struct op_resq *input)
+op_eval_function(const char *expr, size_t exprsz, const char *args,
+    size_t argsz, const struct lowdown_metaq *mq,
+    const struct op_resq *input)
 {
 	struct op_resq	*nq;
 
-	if (sz == 9 && strncasecmp(expr, "uppercase", 9) == 0)
+	if (exprsz == 9 && strncasecmp(expr, "uppercase", 9) == 0)
 		nq = op_eval_function_uppercase(mq, input);
-	else if (sz == 9 && strncasecmp(expr, "lowercase", 9) == 0)
+	else if (exprsz == 9 && strncasecmp(expr, "lowercase", 9) == 0)
 		nq = op_eval_function_lowercase(mq, input);
-	else if (sz == 5 && strncasecmp(expr, "split", 5) == 0)
+	else if (exprsz == 5 && strncasecmp(expr, "split", 5) == 0)
 		nq = op_eval_function_split(mq, input);
-	else if (sz == 4 && strncasecmp(expr, "join", 4) == 0)
+	else if (exprsz == 4 && strncasecmp(expr, "join", 4) == 0)
 		nq = op_eval_function_join(mq, input);
-	else if (sz == 4 && strncasecmp(expr, "trim", 4) == 0)
+	else if (exprsz == 4 && strncasecmp(expr, "trim", 4) == 0)
 		nq = op_resq_clone(input, 1);
-	else if (sz == 10 && strncasecmp(expr, "escapehtml", 10) == 0)
+	else if (exprsz == 10 && strncasecmp(expr, "escapehtml", 10) == 0)
 		nq = op_eval_function_escape_html(mq, input);
-	else if (sz == 14 && strncasecmp(expr, "escapehtmlattr", 14) == 0)
+	else if (exprsz == 14 && strncasecmp(expr, "escapehtmlattr", 14) == 0)
 		nq = op_eval_function_escape_htmlattr(mq, input);
-	else if (sz == 13 && strncasecmp(expr, "escapehtmlurl", 13) == 0)
+	else if (exprsz == 13 && strncasecmp(expr, "escapehtmlurl", 13) == 0)
 		nq = op_eval_function_escape_htmlurl(mq, input);
 	else if ((nq = malloc(sizeof(struct op_resq))) != NULL)
 		TAILQ_INIT(nq);
@@ -647,8 +648,9 @@ op_eval_function(const char *expr, size_t sz,
  * an empty list.  Returns NULL on allocation failure.
  */
 static struct op_resq *
-op_eval_initial(const char *expr, size_t sz, const char *this,
-    const struct lowdown_metaq *mq, const struct lowdown_buf *content)
+op_eval_initial(const char *expr, size_t exprsz, const char *args,
+    size_t argsz, const char *this, const struct lowdown_metaq *mq,
+    const struct lowdown_buf *content)
 {
 	struct op_resq			*q;
 	struct op_res			*res;
@@ -661,20 +663,34 @@ op_eval_initial(const char *expr, size_t sz, const char *this,
 
 	TAILQ_INIT(q);
 
-	if (sz == 4 && strncasecmp(expr, "this", sz) == 0) {
+	if (exprsz == 4 && strncasecmp(expr, "this", exprsz) == 0) {
+		/* Anaphoric keyword in current loop or NULL. */
 		v = this;
 		vsz = this == NULL ? 0 : strlen(this);
-	} else if (sz == 4 && strncasecmp(expr, "body", sz) == 0) {
+	} else if (exprsz == 4 && strncasecmp(expr, "body", exprsz) == 0) {
+		/* Body of HTML document. */
 		v = content->data;
 		vsz = content->size;
-	} else 
+	} else {
+		/*
+		 * If "meta", interpret argument as being a metadata
+		 * key, allowing the use of the overridden names e.g.
+		 * body.
+		 */
+		if (exprsz == 4 &&
+		    strncasecmp(expr, "meta", exprsz) == 0 &&
+		    args != NULL) {
+			expr = args;
+			exprsz = argsz;
+		}
 		TAILQ_FOREACH(m, mq, entries)
-			if (strlen(m->key) == sz &&
-			    strncasecmp(m->key, expr, sz) == 0) {
+			if (strlen(m->key) == exprsz &&
+			    strncasecmp(m->key, expr, exprsz) == 0) {
 				v = m->value;
 				vsz = strlen(m->value);
 				break;
 			}
+	}
 
 	/* Invariant: non-empty or empty list. */
 
@@ -698,8 +714,8 @@ op_eval(const char *expr, size_t sz, const struct lowdown_metaq *mq,
     const char *this, const struct op_resq *input,
     const struct lowdown_buf *content)
 {
-	size_t	 	 nextsz = 0, mysz;
-	const char	*next;
+	size_t	 	 nextsz = 0, exprsz, argsz = 0;
+	const char	*next, *args;
 	struct op_resq	*q, *nextq;
 
 	/* Find next expression in chain. */
@@ -707,12 +723,19 @@ op_eval(const char *expr, size_t sz, const struct lowdown_metaq *mq,
 	next = memchr(expr, '.', sz);
 	if (next != NULL) {
 		assert(next >= expr);
-		mysz = (size_t)(next - expr);
+		exprsz = (size_t)(next - expr);
 		next++;
 		assert(next > expr);
 		nextsz = sz - (size_t)(next - expr);
 	} else
-		mysz = sz;
+		exprsz = sz;
+
+	if (exprsz > 0 && expr[exprsz - 1] == ')' &&
+	    ((args = memchr(expr, '(', exprsz)) != NULL)) {
+		argsz = &expr[exprsz - 1] - args - 1;
+		exprsz = args - expr;
+		args++;
+	}
 
 	/*
 	 * If input is NULL, this is the first of the chain, so it
@@ -720,8 +743,9 @@ op_eval(const char *expr, size_t sz, const struct lowdown_metaq *mq,
 	 */
 
 	q = (input == NULL) ?
-		op_eval_initial(expr, mysz, this, mq, content) :
-		op_eval_function(expr, mysz, mq, input);
+		op_eval_initial(expr, exprsz, args, argsz, this, mq,
+			content) :
+		op_eval_function(expr, exprsz, args, argsz, mq, input);
 
 	/* Return or pass to the next, then free current. */
 
