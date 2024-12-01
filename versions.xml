@@ -1621,4 +1621,26 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>1.3.0</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2024-11-30">2024-11-30</time>
+		</header>
+		<aside>
+			<p>
+				Specify that characters not complying with the metadata
+				key specification are replaced with underscores (which are
+				allowed by the metadata key character restrictions)
+				instead of as curently with question marks (which are not
+				valid metadata key characters).
+			</p>
+			<p>
+				Add new <b>--template</b> functionality, initially for
+				<b>-thtml</b>.  This is still experimental, so
+				transformations and syntax might change.  It allows for
+				templating the output HTML file.
+			</p>
+		</aside>
+	</article>
 </articles>

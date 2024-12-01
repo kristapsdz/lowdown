@@ -10,7 +10,7 @@ sinclude Makefile.local
 # while libraries have well-defined semantics of semver change, programs
 # do not.  Let the library guide our versioning until a better way is
 # thought out.
-VERSION		 = 1.2.0
+VERSION		 = 1.3.0
 # This is the major number of VERSION.  It might later become
 # MAJOR.MINOR, if the library moves a lot.
 LIBVER		 = 1
@@ -177,8 +177,10 @@ install: bins
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
 	mkdir -p $(DESTDIR)$(MANDIR)/man5
+	mkdir -p $(DESTDIR)$(SHAREDIR)/lowdown/html
 	mkdir -p $(DESTDIR)$(SHAREDIR)/lowdown/odt
-	$(INSTALL_DATA) share/odt/styles.xml $(DESTDIR)$(SHAREDIR)/lowdown/odt
+	$(INSTALL_DATA) share/html/* $(DESTDIR)$(SHAREDIR)/lowdown/html
+	$(INSTALL_DATA) share/odt/* $(DESTDIR)$(SHAREDIR)/lowdown/odt
 	$(INSTALL_PROGRAM) lowdown $(DESTDIR)$(BINDIR)
 	$(INSTALL_PROGRAM) lowdown-diff $(DESTDIR)$(BINDIR)
 	for f in $(MAN1S) $(MAN5S) ; do \
@@ -304,6 +306,7 @@ lowdown.tar.gz.sha512: lowdown.tar.gz
 lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/
 	mkdir -p .dist/lowdown-$(VERSION)/man
+	mkdir -p .dist/lowdown-$(VERSION)/share/html
 	mkdir -p .dist/lowdown-$(VERSION)/share/odt
 	mkdir -p .dist/lowdown-$(VERSION)/regress/html
 	mkdir -p .dist/lowdown-$(VERSION)/regress/metadata
@@ -313,6 +316,7 @@ lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/regress/diff
 	$(INSTALL) -m 0644 $(HEADERS) .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 0644 $(SOURCES) .dist/lowdown-$(VERSION)
+	$(INSTALL) -m 0644 share/html/* .dist/lowdown-$(VERSION)/share/html
 	$(INSTALL) -m 0644 share/odt/* .dist/lowdown-$(VERSION)/share/odt
 	$(INSTALL) -m 0644 lowdown.in.pc Makefile LICENSE.md .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 0644 man/*.1 man/*.3 man/*.5 .dist/lowdown-$(VERSION)/man
