@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html$ifdef(lang)$ lang="$lang$"$endif$>
+	<head>
+		<meta charset="utf-8" /> 
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		$for(affiliation.split)$
+		<meta name="creator" content="$this.escapehtmlattr$" />
+		$endfor$
+		$for(author.split)$
+		<meta name="author" content="$this.escapehtmlattr$" />
+		$endfor$
+		$for(copyright.split)$
+		<meta name="copyright" content="$this.escapehtmlattr$" />
+		$endfor$
+		$ifdef(date)$
+		<meta name="date" content="$date.escapehtmlattr$" />
+		$endif$
+		$for(css.split)$
+		<link rel="stylesheet" href="$this.escapehtmlurl$" />
+		$endfor$
+		$for(javascript.split)$
+		<script src="$this.escapehtmlurl$"></script>
+		$endfor$
+		<title>$ifdef(title)$$title.escapehtml$$endif$</title>
+		$htmlheader$
+	</head>
+	<body>
+$body$
+	</body>
+</html>
