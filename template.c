@@ -426,7 +426,7 @@ op_eval_function_escape_htmlurl(const struct lowdown_metaq *mq,
 
 	TAILQ_FOREACH(res, input, entries) {
 		hbuf_truncate(buf);
-		if (!hesc_href(buf, res->res, strlen(res->res)))
+		if (!lowdown_html_esc_href(buf, res->res, strlen(res->res)))
 			goto err;
 		if ((nres = calloc(1, sizeof(struct op_res))) == NULL)
 			goto err;
@@ -464,7 +464,45 @@ op_eval_function_escape_htmlattr(const struct lowdown_metaq *mq,
 
 	TAILQ_FOREACH(res, input, entries) {
 		hbuf_truncate(buf);
-		if (!hesc_attr(buf, res->res, strlen(res->res)))
+		if (!lowdown_html_esc_attr(buf, res->res, strlen(res->res)))
+			goto err;
+		if ((nres = calloc(1, sizeof(struct op_res))) == NULL)
+			goto err;
+		TAILQ_INSERT_TAIL(nq, nres, entries);
+		nres->res = strndup(buf->data, buf->size);
+		if (nres->res == NULL)
+			goto err;
+	}
+	hbuf_free(buf);
+	return nq;
+err:
+	hbuf_free(buf);
+	op_resq_free(nq);
+	return NULL;
+}
+
+/*
+ * LaTeX-escape (for general content) all characters in all list items.
+ * Returns NULL on allocation failure.
+ */
+static struct op_resq *
+op_eval_function_escape_latex(const struct lowdown_metaq *mq,
+    const struct op_resq *input)
+{
+	struct op_resq		*nq = NULL;
+	struct op_res		*nres;
+	const struct op_res	*res;
+	struct lowdown_buf	*buf;
+
+	if ((buf = hbuf_new(32)) == NULL)
+		goto err;
+	if ((nq = malloc(sizeof(struct op_resq))) == NULL)
+		goto err;
+	TAILQ_INIT(nq);
+
+	TAILQ_FOREACH(res, input, entries) {
+		hbuf_truncate(buf);
+		if (!lowdown_latex_esc(buf, res->res, strlen(res->res)))
 			goto err;
 		if ((nres = calloc(1, sizeof(struct op_res))) == NULL)
 			goto err;
@@ -502,7 +540,7 @@ op_eval_function_escape_html(const struct lowdown_metaq *mq,
 
 	TAILQ_FOREACH(res, input, entries) {
 		hbuf_truncate(buf);
-		if (!hesc_html(buf, res->res, strlen(res->res),
+		if (!lowdown_html_esc(buf, res->res, strlen(res->res),
 		    1, 0, 0))
 			goto err;
 		if ((nres = calloc(1, sizeof(struct op_res))) == NULL)
@@ -629,6 +667,8 @@ op_eval_function(const char *expr, size_t exprsz, const char *args,
 		nq = op_eval_function_join(mq, input);
 	else if (exprsz == 4 && strncasecmp(expr, "trim", 4) == 0)
 		nq = op_resq_clone(input, 1);
+	else if (exprsz == 11 && strncasecmp(expr, "escapelatex", 11) == 0)
+		nq = op_eval_function_escape_latex(mq, input);
 	else if (exprsz == 10 && strncasecmp(expr, "escapehtml", 10) == 0)
 		nq = op_eval_function_escape_html(mq, input);
 	else if (exprsz == 14 && strncasecmp(expr, "escapehtmlattr", 14) == 0)
