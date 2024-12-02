@@ -909,7 +909,7 @@ odt_changes_flush(struct lowdown_buf *ob,
 		if (author != NULL) {
 			if (!HBUF_PUTSL(ob, "<dc:creator>"))
 				return 0;
-			if (!hesc_html(ob, author,
+			if (!lowdown_html_esc(ob, author,
 			    strlen(author), 1, 0, 1))
 				return 0;
 			if (!HBUF_PUTSL(ob, "</dc:creator>\n"))
@@ -917,7 +917,7 @@ odt_changes_flush(struct lowdown_buf *ob,
 		}
 		if (!HBUF_PUTSL(ob, "<dc:date>"))
 			return 0;
-		if (!hesc_html(ob, date, strlen(date), 1, 0, 1))
+		if (!lowdown_html_esc(ob, date, strlen(date), 1, 0, 1))
 			return 0;
 		if (!HBUF_PUTSL(ob, "</dc:date>\n"))
 			return 0;
@@ -974,7 +974,7 @@ odt_metaq_flush(struct lowdown_buf *ob,
 	if (title != NULL) {
 		if (!HBUF_PUTSL(ob, "<dc:title>"))
 			return 0;
-		if (!hesc_html(ob, title, strlen(title), 1, 0, 1))
+		if (!lowdown_html_esc(ob, title, strlen(title), 1, 0, 1))
 			return 0;
 		if (!HBUF_PUTSL(ob, "</dc:title>\n"))
 			return 0;
@@ -983,13 +983,13 @@ odt_metaq_flush(struct lowdown_buf *ob,
 	if (author != NULL) {
 		if (!HBUF_PUTSL(ob, "<dc:creator>"))
 			return 0;
-		if (!hesc_html(ob, author, strlen(author), 1, 0, 1))
+		if (!lowdown_html_esc(ob, author, strlen(author), 1, 0, 1))
 			return 0;
 		if (!HBUF_PUTSL(ob, "</dc:creator>\n"))
 			return 0;
 		if (!HBUF_PUTSL(ob, "<meta:initial-creator>"))
 			return 0;
-		if (!hesc_html(ob, author, strlen(author), 1, 0, 1))
+		if (!lowdown_html_esc(ob, author, strlen(author), 1, 0, 1))
 			return 0;
 		if (!HBUF_PUTSL(ob, "</meta:initial-creator>\n"))
 			return 0;
@@ -998,13 +998,13 @@ odt_metaq_flush(struct lowdown_buf *ob,
 	if (date != NULL) {
 		if (!HBUF_PUTSL(ob, "<dc:date>"))
 			return 0;
-		if (!hesc_html(ob, date, strlen(date), 1, 0, 1))
+		if (!lowdown_html_esc(ob, date, strlen(date), 1, 0, 1))
 			return 0;
 		if (!HBUF_PUTSL(ob, "</dc:date>\n"))
 			return 0;
 		if (!HBUF_PUTSL(ob, "<meta:creation-date>"))
 			return 0;
-		if (!hesc_html(ob, date, strlen(date), 1, 0, 1))
+		if (!lowdown_html_esc(ob, date, strlen(date), 1, 0, 1))
 			return 0;
 		if (!HBUF_PUTSL(ob, "</meta:creation-date>\n"))
 			return 0;
@@ -1022,7 +1022,7 @@ escape_html(struct lowdown_buf *ob, const char *source,
 	size_t length, const struct odt *st)
 {
 
-	return hesc_html(ob, source, length, 1, 0, 1);
+	return lowdown_html_esc(ob, source, length, 1, 0, 1);
 }
 
 /*
@@ -1044,14 +1044,14 @@ escape_href(struct lowdown_buf *ob, const struct lowdown_buf *in,
 	const struct odt *st)
 {
 
-	return hesc_href(ob, in->data, in->size);
+	return lowdown_html_esc_href(ob, in->data, in->size);
 }
 
 static int
 escape_attr(struct lowdown_buf *ob, const struct lowdown_buf *in)
 {
 
-	return hesc_attr(ob, in->data, in->size);
+	return lowdown_html_esc_attr(ob, in->data, in->size);
 }
 
 /*
@@ -1145,7 +1145,7 @@ rndr_blockcode(struct lowdown_buf *ob,
 			if (parm->text.data[i] == ' ' &&
 			    i < parm->text.size - 1 &&
 			    parm->text.data[i + 1] == ' ') {
-				if (!hesc_html(ob,
+				if (!lowdown_html_esc(ob,
 				    &parm->text.data[j], sz, 1, 1, 1))
 					return 0;
 				sz = 0;
@@ -1162,7 +1162,7 @@ rndr_blockcode(struct lowdown_buf *ob,
 			    parm->text.data[i] == '\n')
 				break;
 		}
-		if (!hesc_html(ob, &parm->text.data[j], sz, 1, 1, 1))
+		if (!lowdown_html_esc(ob, &parm->text.data[j], sz, 1, 1, 1))
 			return 0;
 		if (!HBUF_PUTSL(ob, "</text:p>\n"))
 			return 0;

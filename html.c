@@ -55,7 +55,7 @@ escape_html(struct lowdown_buf *ob, const char *source, size_t length,
     const struct html *st)
 {
 
-	return hesc_html(ob, source, length, 
+	return lowdown_html_esc(ob, source, length,
 		st->flags & LOWDOWN_HTML_OWASP, 0,
 		st->flags & LOWDOWN_HTML_NUM_ENT);
 }
@@ -64,7 +64,7 @@ escape_html(struct lowdown_buf *ob, const char *source, size_t length,
  * See escape_html().
  */
 static int
-escape_htmlb(struct lowdown_buf *ob, 
+escape_htmlb(struct lowdown_buf *ob,
     const struct lowdown_buf *in, const struct html *st)
 {
 
@@ -77,11 +77,11 @@ escape_htmlb(struct lowdown_buf *ob,
  * Return zero on failure, non-zero on success.
  */
 static int
-escape_literal(struct lowdown_buf *ob, 
+escape_literal(struct lowdown_buf *ob,
     const struct lowdown_buf *in, const struct html *st)
 {
 
-	return hesc_html(ob, in->data, in->size, 
+	return lowdown_html_esc(ob, in->data, in->size,
 		st->flags & LOWDOWN_HTML_OWASP, 1,
 		st->flags & LOWDOWN_HTML_NUM_ENT);
 }
@@ -95,7 +95,7 @@ escape_href(struct lowdown_buf *ob, const struct lowdown_buf *in,
     const struct html *st)
 {
 
-	return hesc_href(ob, in->data, in->size);
+	return lowdown_html_esc_href(ob, in->data, in->size);
 }
 
 /*
@@ -106,7 +106,7 @@ static int
 escape_attr(struct lowdown_buf *ob, const struct lowdown_buf *in)
 {
 
-	return hesc_attr(ob, in->data, in->size);
+	return lowdown_html_esc_attr(ob, in->data, in->size);
 }
 
 static int
@@ -119,7 +119,7 @@ newline(struct lowdown_buf *ob)
 }
 
 static int
-rndr_autolink(struct lowdown_buf *ob, 
+rndr_autolink(struct lowdown_buf *ob,
     const struct rndr_autolink *parm, const struct html *st)
 {
 
@@ -142,8 +142,8 @@ rndr_autolink(struct lowdown_buf *ob,
 	 */
 
 	if (hbuf_strprefix(&parm->link, "mailto:")) {
-		if (!escape_html(ob, 
-		    parm->link.data + 7, 
+		if (!escape_html(ob,
+		    parm->link.data + 7,
 		    parm->link.size - 7, st))
 			return 0;
 	} else {
@@ -155,7 +155,7 @@ rndr_autolink(struct lowdown_buf *ob,
 }
 
 static int
-rndr_blockcode(struct lowdown_buf *ob, 
+rndr_blockcode(struct lowdown_buf *ob,
     const struct rndr_blockcode *parm, const struct html *st)
 {
 	if (!newline(ob))
@@ -230,7 +230,7 @@ rndr_blockquote(const struct html *st,
 
 	if (!newline(ob))
 		return 0;
-	if (param->type == BLOCKQUOTE_REGULAR || !(st->flags & 
+	if (param->type == BLOCKQUOTE_REGULAR || !(st->flags &
 	    (LOWDOWN_HTML_CALLOUT_GFM|LOWDOWN_HTML_CALLOUT_MDN)))
 		return HBUF_PUTSL(ob, "<blockquote>\n") &&
 		    hbuf_putb(ob, content) &&
@@ -454,7 +454,7 @@ rndr_list(struct lowdown_buf *ob, const struct lowdown_buf *content,
 		return 0;
 	if (param->flags & HLIST_FL_ORDERED) {
 		if (param->start > 1) {
-			if (!hbuf_printf(ob, 
+			if (!hbuf_printf(ob,
 			    "<ol start=\"%zu\">\n", param->start))
 				return 0;
 		} else {
@@ -489,7 +489,7 @@ rndr_listitem(struct lowdown_buf *ob,
 	     n->parent != NULL &&
 	     n->parent->parent != NULL &&
 	     n->parent->parent->type == LOWDOWN_DEFINITION &&
-	     (n->parent->parent->rndr_definition.flags & 
+	     (n->parent->parent->rndr_definition.flags &
 	      HLIST_FL_BLOCK)) ||
 	    (!(n->rndr_listitem.flags & HLIST_FL_DEF) &&
 	     n->parent != NULL &&
@@ -552,7 +552,7 @@ rndr_paragraph(struct lowdown_buf *ob,
 	if (content->size == 0)
 		return 1;
 	while (i < content->size &&
-	       isspace((unsigned char)content->data[i])) 
+	       isspace((unsigned char)content->data[i]))
 		i++;
 	if (i == content->size)
 		return 1;
@@ -565,7 +565,7 @@ rndr_paragraph(struct lowdown_buf *ob,
 	if (st->flags & LOWDOWN_HTML_HARD_WRAP) {
 		for ( ; i < content->size; i++) {
 			org = i;
-			while (i < content->size && 
+			while (i < content->size &&
 			       content->data[i] != '\n')
 				i++;
 
@@ -584,7 +584,7 @@ rndr_paragraph(struct lowdown_buf *ob,
 				return 0;
 		}
 	} else {
-		if (!hbuf_put(ob, 
+		if (!hbuf_put(ob,
 		    content->data + i, content->size - i))
 			return 0;
 	}
@@ -603,9 +603,9 @@ rndr_raw_block(struct lowdown_buf *ob,
 	if ((st->flags & LOWDOWN_HTML_ESCAPE))
 		return escape_htmlb(ob, &param->text, st);
 
-	/* 
+	/*
 	 * FIXME: Do we *really* need to trim the HTML? How does that
-	 * make a difference? 
+	 * make a difference?
 	 */
 
 	sz = param->text.size;
@@ -662,7 +662,7 @@ rndr_image(struct lowdown_buf *ob, const struct rndr_image *param,
 	 * that as a cap to the size.
 	 */
 
-	if (param->dims.size && 
+	if (param->dims.size &&
 	    param->dims.size < sizeof(dimbuf) - 1) {
 		memset(dimbuf, 0, sizeof(dimbuf));
 		memcpy(dimbuf, param->dims.data, param->dims.size);
@@ -861,14 +861,14 @@ rndr_footnote_def(struct lowdown_buf *ob,
 	/* Insert anchor at the end of first paragraph block. */
 
 	while ((i + 3) < content->size) {
-		if (content->data[i++] != '<') 
+		if (content->data[i++] != '<')
 			continue;
-		if (content->data[i++] != '/') 
+		if (content->data[i++] != '/')
 			continue;
-		if (content->data[i++] != 'p' && 
-		    content->data[i] != 'P') 
+		if (content->data[i++] != 'p' &&
+		    content->data[i] != 'P')
 			continue;
-		if (content->data[i] != '>') 
+		if (content->data[i] != '>')
 			continue;
 		i -= 3;
 		pfound = 1;
@@ -886,7 +886,7 @@ rndr_footnote_def(struct lowdown_buf *ob,
 		    "&#8617;"
 		    "</a>", num))
 			return 0;
-		if (!hbuf_put(ob, 
+		if (!hbuf_put(ob,
 		    content->data + i, content->size - i))
 			return 0;
 	} else {
@@ -918,14 +918,14 @@ rndr_footnote_ref(struct lowdown_buf *ob,
 	if ((st->foots[st->footsz++] = hbuf_dup(content)) == NULL)
 		return 0;
 
-	return hbuf_printf(ob, 
+	return hbuf_printf(ob,
 		"<sup id=\"fnref%zu\">"
 		"<a href=\"#fn%zu\" rel=\"footnote\">"
 		"%zu</a></sup>", num, num, num);
 }
 
 static int
-rndr_math(struct lowdown_buf *ob, const struct rndr_math *param, 
+rndr_math(struct lowdown_buf *ob, const struct rndr_math *param,
     const struct html *st)
 {
 
@@ -1005,12 +1005,12 @@ rndr_meta_multi(const struct html *st, struct lowdown_buf *ob,
 
 		if (!hbuf_puts(ob, starttag))
 			return 0;
-		if (attr && !hesc_attr(ob, start, sz))
+		if (attr && !lowdown_html_esc_attr(ob, start, sz))
 			return 0;
-		else if (href && !hesc_href(ob, start, sz))
+		else if (href && !lowdown_html_esc_href(ob, start, sz))
 			return 0;
-		else if (!attr && !href && !hesc_html(ob, start, sz,
-		    st->flags & LOWDOWN_HTML_OWASP, 0,
+		else if (!attr && !href && !lowdown_html_esc(ob, start,
+		    sz, st->flags & LOWDOWN_HTML_OWASP, 0,
 		    st->flags & LOWDOWN_HTML_NUM_ENT))
 			return 0;
 		if (!hbuf_puts(ob, endtag))
@@ -1029,12 +1029,12 @@ rndr_root(struct lowdown_buf *ob, const struct lowdown_buf *content,
 	const struct lowdown_meta	*m;
 	const char			*author = NULL, *title = NULL,
 					*affil = NULL, *date = NULL,
-					*copy = NULL, *rcsauthor = NULL, 
+					*copy = NULL, *rcsauthor = NULL,
 					*rcsdate = NULL, *css = NULL,
 					*script = NULL, *header = NULL,
 					*lang = NULL;
 
-	if (st->templ != NULL) 
+	if (st->templ != NULL)
 		return lowdown_template(st->templ, content, ob, mq);
 	else if (!(st->flags & LOWDOWN_STANDALONE))
 		return hbuf_putb(ob, content);
@@ -1074,13 +1074,13 @@ rndr_root(struct lowdown_buf *ob, const struct lowdown_buf *content,
 		return 0;
 	if (lang != NULL &&
 	    (!HBUF_PUTSL(ob, "<html lang=\"") ||
-	     !hesc_attr(ob, lang, strlen(lang)) ||
+	     !lowdown_html_esc_attr(ob, lang, strlen(lang)) ||
 	     !HBUF_PUTSL(ob, "\">\n")))
 		return 0;
 	else if (lang == NULL &&
 	    !HBUF_PUTSL(ob, "<html>\n"))
 		return 0;
-	if (!HBUF_PUTSL(ob, 
+	if (!HBUF_PUTSL(ob,
 	    "<head>\n"
 	    "<meta charset=\"utf-8\" />\n"
 	    "<meta name=\"viewport\" content=\""
@@ -1117,7 +1117,7 @@ rndr_root(struct lowdown_buf *ob, const struct lowdown_buf *content,
 			return 0;
 		if (!HBUF_PUTSL(ob, "content=\""))
 			return 0;
-		if (!hesc_attr(ob, date, strlen(date)))
+		if (!lowdown_html_esc_attr(ob, date, strlen(date)))
 			return 0;
 		if (!HBUF_PUTSL(ob, "\" />\n"))
 			return 0;
@@ -1134,7 +1134,7 @@ rndr_root(struct lowdown_buf *ob, const struct lowdown_buf *content,
 	if (!HBUF_PUTSL(ob, "<title>"))
 		return 0;
 	if (title != NULL &&
-	    !hesc_html(ob, title, strlen(title),
+	    !lowdown_html_esc(ob, title, strlen(title),
 		    st->flags & LOWDOWN_HTML_OWASP, 0,
 		    st->flags & LOWDOWN_HTML_NUM_ENT))
 		return 0;
@@ -1164,7 +1164,7 @@ rndr_root(struct lowdown_buf *ob, const struct lowdown_buf *content,
  * Return zero on failure, non-zero on success.
  */
 static int
-rndr_meta(struct html *st, const struct lowdown_node *n, 
+rndr_meta(struct html *st, const struct lowdown_node *n,
     struct lowdown_metaq *mq)
 {
 	struct lowdown_meta	*m;
@@ -1197,7 +1197,7 @@ rndr_doc_header(struct lowdown_buf *ob, const struct lowdown_metaq *mq,
 {
 	const struct lowdown_meta	*m;
 	const char			*author = NULL, *title = NULL,
-					*date = NULL, *rcsauthor = NULL, 
+					*date = NULL, *rcsauthor = NULL,
 					*rcsdate = NULL;
 
 	if (!(st->flags & LOWDOWN_HTML_TITLEBLOCK))
@@ -1231,7 +1231,7 @@ rndr_doc_header(struct lowdown_buf *ob, const struct lowdown_metaq *mq,
 		return 0;
 	if (title != NULL &&
 	    (!HBUF_PUTSL(ob, "<h1 class=\"title\">") ||
-	     !hesc_html(ob, title, strlen(title), 
+	     !lowdown_html_esc(ob, title, strlen(title),
 		     st->flags & LOWDOWN_HTML_OWASP, 0,
 		     st->flags & LOWDOWN_HTML_NUM_ENT) ||
 	     !HBUF_PUTSL(ob, "</h1>\n")))
@@ -1242,7 +1242,7 @@ rndr_doc_header(struct lowdown_buf *ob, const struct lowdown_metaq *mq,
 		return 0;
 	if (date != NULL &&
 	    (!HBUF_PUTSL(ob, "<p class=\"date\">") ||
-	     !hesc_html(ob, date, strlen(date), 
+	     !lowdown_html_esc(ob, date, strlen(date),
 		     st->flags & LOWDOWN_HTML_OWASP, 0,
 		     st->flags & LOWDOWN_HTML_NUM_ENT) ||
 	     !HBUF_PUTSL(ob, "</p>\n")))

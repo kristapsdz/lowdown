@@ -39,70 +39,25 @@ struct latex {
 };
 
 /*
- * Escape LaTeX special characters.
- * Return zero on failure, non-zero on success.
- */
-static int
-rndr_escape_text(const struct latex *st, struct lowdown_buf *ob,
-    const char *data, size_t sz)
-{
-	size_t	 i;
-
-	for (i = 0; i < sz; i++)
-		switch (data[i]) {
-		case '&':
-		case '%':
-		case '$':
-		case '#':
-		case '_':
-		case '{':
-		case '}':
-			if (!hbuf_putc(ob, '\\'))
-				return 0;
-			if (!hbuf_putc(ob, data[i]))
-				return 0;
-			break;
-		case '~':
-			if (!HBUF_PUTSL(ob, "\\textasciitilde{}"))
-				return 0;
-			break;
-		case '^':
-			if (!HBUF_PUTSL(ob, "\\textasciicircum{}"))
-				return 0;
-			break;
-		case '\\':
-			if (!HBUF_PUTSL(ob, "\\textbackslash{}"))
-				return 0;
-			break;
-		default:
-			if (!hbuf_putc(ob, data[i]))
-				return 0;
-			break;
-		}
-
-	return 1;
-}
-
-/*
- * Like rndr_escape_text() but with a NUL-terminated string.
+ * Like lowdown_latex_esc() but with a NUL-terminated string.
  */
 static int
 rndr_escape_string(const struct latex *st, struct lowdown_buf *ob,
     const char *data)
 {
 
-	return rndr_escape_text(st, ob, data, strlen(data));
+	return lowdown_latex_esc(ob, data, strlen(data));
 }
 
 /*
- * Like rndr_escape_text() but with a buffer.
+ * Like lowdown_latex_esc() but with a buffer.
  */
 static int
 rndr_escape(const struct latex *st, struct lowdown_buf *ob,
     const struct lowdown_buf *dat)
 {
 	
-	return rndr_escape_text(st, ob, dat->data, dat->size);
+	return lowdown_latex_esc(ob, dat->data, dat->size);
 }
 
 static int
@@ -377,8 +332,8 @@ rndr_link(const struct latex *st, struct lowdown_buf *ob,
 	else if (!loc && !HBUF_PUTSL(ob, "\\href{"))
 		return 0;
 
-	if (loc && !rndr_escape_text
-	    (st, ob, &param->link.data[1], param->link.size - 1))
+	if (loc && !lowdown_latex_esc
+	    (ob, &param->link.data[1], param->link.size - 1))
 		return 0;
 	else if (!loc && !rndr_escape(st, ob, &param->link))
 		return 0;
@@ -575,13 +530,13 @@ rndr_image(const struct latex *st, struct lowdown_buf *ob,
 	if (cp != NULL) {
 		if (!HBUF_PUTSL(ob, "{"))
 			return 0;
-		if (!rndr_escape_text
-		    (st, ob, param->link.data, cp - param->link.data))
+		if (!lowdown_latex_esc
+		    (ob, param->link.data, cp - param->link.data))
 			return 0;
 		if (!HBUF_PUTSL(ob, "}"))
 			return 0;
-		if (!rndr_escape_text(st, ob, cp, 
-		    param->link.size - (cp - param->link.data)))
+		if (!lowdown_latex_esc
+		    (ob, cp, param->link.size - (cp - param->link.data)))
 			return 0;
 	} else {
 		if (!rndr_escape(st, ob, &param->link))

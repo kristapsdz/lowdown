@@ -23,6 +23,7 @@ OBJS		 = autolink.o \
 		   html.o \
 		   html_escape.o \
 		   latex.o \
+		   latex_escape.o \
 		   library.o \
 		   libdiff.o \
 		   nroff.o \
@@ -86,6 +87,7 @@ SOURCES		 = autolink.c \
 		   html.c \
 		   html_escape.c \
 		   latex.c \
+		   latex_escape.c \
 		   libdiff.c \
 		   library.c \
 		   main.c \
