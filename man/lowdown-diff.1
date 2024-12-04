@@ -853,21 +853,28 @@ accept optional arguments.
 The
 .Li initial
 value is one of the following:
-.Bl -bullet
-.It
-a canonicalised metadata key
-.It
-.Li this
-.Pq value of a current loop context
-.It
-.Li body
-.Pq parsed input document body
-.It
-.Li meta(val)
-to force accepting
+.Bl -tag -width Ds
+.It Li and(expression[,expression]*)
+A non-empty list containing the value
+.Li true
+if all expressions evaluate to non-empty lists, otherwise an empty list.
+An empty expression evaluates to an empty list.
+.It canonicalised metadata key
+The value for the given metadata key, if found, otherwise an empty list.
+.It Li body
+The parsed input document body.
+.It Li meta(val)
+Evaluate
 .Li val
 as a metadata key, even if it's a special variable like
-.Li body
+.Li body .
+.It Li or(expression[,expression]*)
+A non-empty list containing the value
+.Li true
+if one expression evaluates to non-empty lists, otherwise an empty list.
+An empty expression evaluates to an empty list.
+.It Li this
+The value of a current loop context or an empty list.
 .El
 .Pp
 If a metadata key is not specified in the input, or if the anaphoric
