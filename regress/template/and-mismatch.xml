@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta charset="utf-8" /> 
+		<title>foo</title>
+	</head>
+	<body>
+		empty=[$ifdef(and(title,nope))$no$endif$]
+		empty=[$ifdef(and(title,))$no$endif$]
+		has=[$ifdef(and(title,authors))$yes$endif$]
+		has=[$ifdef(and(title))$yes$endif$]
+		empty=[$ifdef(and())$no$endif$]
+		empty=[$ifdef(and(,,))$no$endif$]
+	</body>
+</html>

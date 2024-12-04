@@ -805,7 +805,8 @@ op_eval_initial(const char *expr, size_t exprsz, const char *args,
 				return 0;
 			rc = !TAILQ_EMPTY(resq);
 			op_resq_free(resq);
-		}
+		} else if (i == start)
+			rc = 0;
 
 		if (rc == 1) {
 			v = "true";

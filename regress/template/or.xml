@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta charset="utf-8" /> 
+		<title>foo</title>
+	</head>
+	<body>
+		empty=[$ifdef(or(alsonope,nope))$no$endif$]
+		has=[$ifdef(or(alsonope,nope,authors))$yes$endif$]
+		has=[$ifdef(or(,,,,authors))$yes$endif$]
+		has=[$ifdef(or(title,asdf,fdsa))$yes$endif$]
+	</body>
+</html>
