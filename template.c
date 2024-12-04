@@ -102,6 +102,9 @@ struct op {
 static int op_exec(const struct op *, struct lowdown_buf *,
     const struct lowdown_metaq *, const struct lowdown_buf *,
     const char *);
+static struct op_resq *op_eval(const char *, size_t,
+    const struct lowdown_metaq *, const char *, const struct op_resq *,
+    const struct lowdown_buf *);
 
 /*
  * Allocate the generic members of "struct op".  The caller should be
@@ -692,11 +695,12 @@ op_eval_initial(const char *expr, size_t exprsz, const char *args,
     size_t argsz, const char *this, const struct lowdown_metaq *mq,
     const struct lowdown_buf *content)
 {
-	struct op_resq			*q;
+	struct op_resq			*q, *resq;
 	struct op_res			*res;
 	const struct lowdown_meta	*m;
 	const char			*v = NULL;
-	size_t				 vsz;
+	size_t				 i, vsz, stack = 0, start;
+	int				 rc;
 
 	if ((q = malloc(sizeof(struct op_resq))) == NULL)
 		return NULL;
@@ -711,6 +715,102 @@ op_eval_initial(const char *expr, size_t exprsz, const char *args,
 		/* Body of HTML document. */
 		v = content->data;
 		vsz = content->size;
+	} else if (exprsz == 2 && strncasecmp(expr, "or", exprsz) == 0) {
+		/* "OR" of all arguments. */
+		for (rc = 0, start = i = 0; rc == 0 && i < argsz; i++) {
+			/*
+			 * Read until next comma, then evaluate its
+			 * arguments.  Short-circuit if arguments
+			 * evaluate to true.  Check stack to pass over
+			 * sub-arguments.
+			 */
+
+			if (args[i] == '(') {
+				stack++;
+				continue;
+			} else if (args[i] == ')') {
+				stack--;
+				continue;
+			} else if (args[i] != ',' || stack > 0)
+				continue;
+
+			/* Evaluate or empty evaluates to false. */
+
+			if (i > start) {
+				resq = op_eval(&args[start], i - start,
+					mq, this, NULL, content);
+				if (resq == NULL)
+					return 0;
+				rc = !TAILQ_EMPTY(resq);
+				op_resq_free(resq);
+			} else
+				rc = 0;
+			start = i + 1;
+		}
+
+		/* Catch remaining arguments. */
+
+		if (i > start && rc == 0) {
+			resq = op_eval(&args[start], i - start, mq,
+				this, NULL, content);
+			if (resq == NULL)
+				return 0;
+			rc = !TAILQ_EMPTY(resq);
+			op_resq_free(resq);
+		}
+
+		if (rc == 1) {
+			v = "true";
+			vsz = 4;
+		}
+	} else if (exprsz == 3 && strncasecmp(expr, "and", exprsz) == 0) {
+		/* "And" of all arguments. */
+		for (rc = 1, start = i = 0; rc == 1 && i < argsz; i++) {
+			/*
+			 * Read until next comma, then evaluate its
+			 * arguments.  Short-circuit if arguments
+			 * evaluate to false.  Check stack to pass over
+			 * sub-arguments.
+			 */
+
+			if (args[i] == '(') {
+				stack++;
+				continue;
+			} else if (args[i] == ')') {
+				stack--;
+				continue;
+			} else if (args[i] != ',' || stack > 0)
+				continue;
+
+			/* Evaluate or empty evaluates to false. */
+
+			if (i > start) {
+				resq = op_eval(&args[start], i - start,
+					mq, this, NULL, content);
+				if (resq == NULL)
+					return 0;
+				rc = !TAILQ_EMPTY(resq);
+				op_resq_free(resq);
+			} else
+				rc = 0;
+			start = i + 1;
+		}
+
+		/* Catch remaining arguments. */
+
+		if (i > start && rc == 1) {
+			resq = op_eval(&args[start], i - start, mq,
+				this, NULL, content);
+			if (resq == NULL)
+				return 0;
+			rc = !TAILQ_EMPTY(resq);
+			op_resq_free(resq);
+		}
+
+		if (rc == 1) {
+			v = "true";
+			vsz = 4;
+		}
 	} else {
 		/*
 		 * If "meta", interpret argument as being a metadata
