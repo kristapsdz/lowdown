@@ -32,10 +32,11 @@
 #include "extern.h"
 
 struct latex {
-	unsigned int	oflags; /* same as in lowdown_opts */
-	struct hentryq	headers_used; /* headers we've seen */
-	ssize_t		headers_offs; /* header offset */
-	size_t		footsz; /* current footnote */
+	unsigned int	 oflags; /* same as in lowdown_opts */
+	struct hentryq	 headers_used; /* headers we've seen */
+	ssize_t		 headers_offs; /* header offset */
+	size_t		 footsz; /* current footnote */
+	const char	*templ; /* output template */
 };
 
 /*
@@ -663,17 +664,8 @@ rndr_math(struct lowdown_buf *ob,
 }
 
 static int
-rndr_doc_footer(struct lowdown_buf *ob, const struct latex *st)
-{
-
-	if (st->oflags & LOWDOWN_STANDALONE)
-		return HBUF_PUTSL(ob, "\\end{document}\n");
-	return 1;
-}
-
-static int
-rndr_doc_header(const struct latex *st, struct lowdown_buf *ob,
-    const struct lowdown_metaq *mq)
+rndr_root(const struct latex *st, struct lowdown_buf *ob,
+    const struct lowdown_metaq *mq, const struct lowdown_buf *content)
 {
 	const struct lowdown_meta	*m;
 	const char			*author = NULL, *title = NULL,
@@ -682,7 +674,9 @@ rndr_doc_header(const struct latex *st, struct lowdown_buf *ob,
 					*rcsdate = NULL, *header = NULL;
 
 	if (!(st->oflags & LOWDOWN_STANDALONE))
-		return 1;
+		return hbuf_putb(ob, content);
+	if (st->templ != NULL)
+		return lowdown_template(st->templ, content, ob, mq);
 
 	TAILQ_FOREACH(m, mq, entries)
 		if (strcasecmp(m->key, "author") == 0)
@@ -789,7 +783,10 @@ rndr_doc_header(const struct latex *st, struct lowdown_buf *ob,
 	    !HBUF_PUTSL(ob, "\\maketitle\n"))
 		return 0;
 
-	return 1;
+	if (!hbuf_putb(ob, content))
+		return 0;
+
+	return HBUF_PUTSL(ob, "\\end{document}\n");
 }
 
 static int
@@ -850,6 +847,9 @@ rndr(struct lowdown_buf *ob,
 		if (!rndr_blockcode(ob, &n->rndr_blockcode))
 			return 0;
 		break;
+	case LOWDOWN_DOC_HEADER:
+		/* Don't output anything for this. */
+		break;
 	case LOWDOWN_BLOCKQUOTE:
 		if (!rndr_blockquote(ob, tmp))
 			return 0;
@@ -860,10 +860,6 @@ rndr(struct lowdown_buf *ob,
 		break;
 	case LOWDOWN_DEFINITION_TITLE:
 		if (!rndr_definition_title(ob, tmp))
-			return 0;
-		break;
-	case LOWDOWN_DOC_HEADER:
-		if (!rndr_doc_header(st, ob, mq))
 			return 0;
 		break;
 	case LOWDOWN_META:
@@ -972,9 +968,7 @@ rndr(struct lowdown_buf *ob,
 			return 0;
 		break;
 	case LOWDOWN_ROOT:
-		if (!hbuf_putb(ob, tmp))
-			return 0;
-		if (!rndr_doc_footer(ob, st))
+		if (!rndr_root(st, ob, mq, tmp))
 			return 0;
 		break;
 	default:
@@ -1022,6 +1016,7 @@ lowdown_latex_new(const struct lowdown_opts *opts)
 		return NULL;
 
 	p->oflags = opts == NULL ? 0 : opts->oflags;
+	p->templ = opts == NULL ? NULL : opts->templ;
 	return p;
 }
 

@@ -200,7 +200,9 @@ See
 .Sx Templates .
 This is experimental functionality.
 Currently only for
-.Fl t Ns Ar html .
+.Fl t Ns Ar html
+and
+.Fl t Ns Ar latex .
 .El
 .Pp
 What follows are per-output long options.
@@ -927,6 +929,11 @@ The default template used if
 .Fl -template
 is not provided to
 .Fl t Ns Ar html .
+.It Pa share/latex/default.latex
+The default template used if
+.Fl -template
+is not provided to
+.Fl t Ns Ar latex .
 .It Pa share/odt/styles.xml
 Default styles used when generating standalone
 .Fl t Ns Ar fodt
