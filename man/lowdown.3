@@ -554,6 +554,14 @@ and in-document metadata, so it overrides prior values.
 .It Va size_t metaovrsz
 Number of pairs in
 .Va metaovr .
+.It Va const char *templ
+If
+.Dv LOWDOWN_STANDALONE
+is specified, this is set to the external template file or
+.Dv NULL
+to use internal templating.
+This is only valid for output media supporting external templates;
+otherwise, it may be ignored.
 .El
 .Pp
 Parsed metadata is held in key-value
