@@ -1034,10 +1034,10 @@ rndr_root(struct lowdown_buf *ob, const struct lowdown_buf *content,
 					*script = NULL, *header = NULL,
 					*lang = NULL;
 
+	if (!(st->flags & LOWDOWN_STANDALONE))
+		return hbuf_putb(ob, content);
 	if (st->templ != NULL)
 		return lowdown_template(st->templ, content, ob, mq);
-	else if (!(st->flags & LOWDOWN_STANDALONE))
-		return hbuf_putb(ob, content);
 
 	TAILQ_FOREACH(m, mq, entries)
 		if (strcasecmp(m->key, "author") == 0)
