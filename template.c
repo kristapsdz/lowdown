@@ -1060,23 +1060,11 @@ lowdown_template(const char *templ, const struct lowdown_buf *content,
 		assert(nextcp >= cp);
 		if (!op_queue_str(&q, cop, cp, (size_t)(nextcp - cp)))
 			goto out;
-
-		/*
-		 * If the next character is a '$', output that as a
-		 * literal '$'.
-		 */
-
 		cp = nextcp + 1;
-		if (*cp == '$') {
-			if (!op_queue_str(&q, cop, "$", 1))
-				goto out;
-			cp++;
-			continue;
-		}
 
 		/* Determine the closing delimiter. */
 
-		if (*cp == '{') {
+		if (cp[0] == '{') {
 			delim = '}';
 			cp++;
 		} else
@@ -1108,6 +1096,26 @@ lowdown_template(const char *templ, const struct lowdown_buf *content,
 		while (sz > 0 &&
 		    (cp[sz - 1] == ' ' || cp[sz - 1] == '\t'))
 			sz--;
+
+		/* Fully empty statements output a literal '$'. */
+
+		if (sz == 0) {
+			if (!op_queue_str(&q, cop, "$", 1))
+				goto out;
+			cp++;
+			continue;
+		}
+
+		/* Special instruction that ignores til eoln/f. */
+
+		if (sz == 2 && strncmp(cp, "--", sz) == 0) {
+			cp = nextcp + 1;
+			while (*cp != '\0' && *cp != '\n')
+				cp++;
+			if (*cp == '\n')
+				cp++;
+			continue;
+		}
 
 		/* Look up and process the operation. */
 

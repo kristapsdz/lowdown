@@ -775,22 +775,22 @@ to customise standalone
 .Pq Fl s
 output.
 Parsed input content is filled into templates through control statements
-that support conditionals, loops, and transformation sequences.
+that support conditionals, loops, and variable transformation sequences.
 .Pp
-Templates control statements are delimited as
+Control statements are delimited as
 .Li $statement$
 or
 .Li ${statement} .
 Arbitrary white-space may surround the case-insensitive statement
 between matching delimiters.
-Empty statements are stripped, with the exception of
-.Li $$ ,
-which outputs a literal
-.Li $ .
 Statements without a closing delimiter are considered opaque text.
 .Pp
 The following statements are available:
 .Bl -tag -width Ds
+.It Li $$ , ${}
+Output a literal
+.Li $ .
+This may contain arbitrary white-space.
 .It Li $ifdef(expression)$
 Conditional statement.
 There may not be any white-space between the
@@ -861,8 +861,10 @@ The parsed input document body.
 .It Li meta(val)
 Evaluate
 .Li val
-as a metadata key, even if it's a special variable like
-.Li body .
+as a metadata key, even if it's a keyword like
+.Li body
+or
+.Li endif .
 .It Li or(expression[,expression]*)
 A non-empty list containing the value
 .Li true
@@ -885,6 +887,8 @@ The following transformations are available:
 .It Li escapehtml , escapehtmlattr , escapehtmlurl
 Escape list items for HTML body content, attributes, and URL attributes,
 respectively.
+.It Li escapelatex
+Escape list items for LaTeX body content.
 .It Li join
 Join a list into a singleton list using two spaces as a join delimiter.
 .It Li lowercase
