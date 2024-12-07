@@ -1660,4 +1660,30 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>1.3.2</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2024-12-05">2024-12-05</time>
+		</header>
+		<aside>
+			<p>
+				Add <code>not()</code> to the <b>--template</b> functions
+				and document <code>escapelatex()</code>.
+				Recognise a special modifier <code>--</code> at the end of
+				control statements (e.g., <code>$endfor--$</code>, which
+				consumes up and and including the end-of-line.  This is
+				necessary for integrating templates with roff-based
+				languages that are line sensitive.
+			</p>
+			<p>
+				Clarify that any empty statement, even with only
+				white-space, evaluates to the <code>$</code> literal.
+				This simplifies the parser and reduces corner cases.
+				(Earlier, an empty statement with white-space was ignored,
+				but an empty statement without white-space was a literal
+				<code>$</code>)
+			</p>
+		</aside>
+	</article>
 </articles>
