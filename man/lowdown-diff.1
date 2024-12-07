@@ -847,10 +847,18 @@ may be used to access the current loop expression within the block.
 Replaced by the result of evaluating a template expression.
 .El
 .Pp
+If a control statement ends with two consecutive hyphens before the
+closing delimiter, input is consumed up to and including the next
+newline or until end of file.
+This allows for line-sensitive output media to use control statements
+without superfluous blank lines.
+.Pp
 Expressions consist of
 .Li initial[([arg]*)]?[.transform[([arg]*)]?]* ,
-or an initial value followed by an optional series of transforms that
-accept optional arguments.
+or an initial value accepting optional arguments followed by an optional
+series of transforms accepting optional arguments.
+If an argument list is empty or not provided, it evaluates to an empty
+list.
 .Pp
 The
 .Li initial
@@ -868,10 +876,15 @@ The parsed input document body.
 .It Li meta(val)
 Evaluate
 .Li val
-as a metadata key, even if it's a keyword like
+as a canonicalised metadata key, even if it's a keyword like
 .Li body
 or
 .Li endif .
+.It Li not(expression)
+A non-empty list
+containing the value
+.Li true
+if the expression evaluates as an empty list, otherwise an empty list.
 .It Li or(expression[,expression]*)
 A non-empty list containing the value
 .Li true
