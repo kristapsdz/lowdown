@@ -11,6 +11,7 @@
 		has=[$ifdef(and(title,authors))$yes$endif$]
 		has=[$ifdef(and(title))$yes$endif$]
 		empty=[$ifdef(and())$no$endif$]
+		empty=[$ifdef(and)$no$endif$]
 		empty=[$ifdef(and(,,))$no$endif$]
 	</body>
 </html>

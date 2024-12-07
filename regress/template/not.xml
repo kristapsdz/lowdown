@@ -6,11 +6,10 @@
 		<title>foo</title>
 	</head>
 	<body>
-		empty=[]
-		has=[yes]
-		has=[yes]
-		has=[]
-		has=[]
-		has=[yes]
+		[$ifdef(not())$yes$endif$]
+		[$ifdef(not)$yes$endif$]
+		[$ifdef(not(title))$no$endif$]
+		[$ifdef(not(and(title,authors)))$no$endif$]
+		[$ifdef(not(and(title,)))$yes$endif$]
 	</body>
 </html>

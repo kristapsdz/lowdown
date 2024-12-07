@@ -257,10 +257,10 @@ op_queue(struct opq *q, struct op **cop, const char *str, size_t sz)
 {
 	/* TODO: space before "(". */
 
-	if (sz > 7 && strncasecmp(str, "ifdef(", 6) == 0 &&
+	if (sz > 6 && strncasecmp(str, "ifdef(", 6) == 0 &&
 	    str[sz - 1] == ')')
 		return op_queue_ifdef(q, cop, str + 6, sz - 7);
-	if (sz > 5 && strncasecmp(str, "for(", 4) == 0 &&
+	if (sz > 4 && strncasecmp(str, "for(", 4) == 0 &&
 	    str[sz - 1] == ')')
 		return op_queue_for(q, cop, str + 4, sz - 5);
 	if (sz == 4 && strncasecmp(str, "else", 4) == 0)
@@ -715,6 +715,20 @@ op_eval_initial(const char *expr, size_t exprsz, const char *args,
 		/* Body of HTML document. */
 		v = content->data;
 		vsz = content->size;
+	} else if (exprsz == 3 && strncasecmp(expr, "not", exprsz) == 0) {
+		/* "NOT" single argument (reduce to boolean). */
+		if (argsz > 0) {
+			resq = op_eval(args, argsz, mq, this, NULL, content);
+			if (resq == NULL)
+				return 0;
+			rc = TAILQ_EMPTY(resq);
+			op_resq_free(resq);
+		} else
+			rc = 1;
+		if (rc) {
+			v = "true";
+			vsz = 4;
+		}
 	} else if (exprsz == 2 && strncasecmp(expr, "or", exprsz) == 0) {
 		/* "OR" of all arguments. */
 		for (rc = 0, start = i = 0; rc == 0 && i < argsz; i++) {
@@ -943,6 +957,12 @@ op_exec_for(const struct op *op, struct lowdown_buf *ob,
 	struct op_res	*res;
 
 	assert(op->op_type == OP_FOR);
+
+	/* Empty arguments evaluate to an empty list. */
+
+	if (op->op_for.sz == 0)
+		return 1;
+
 	resq = op_eval(op->op_for.expr, op->op_for.sz, mq, this, NULL,
 		content);
 	if (resq == NULL)
@@ -971,13 +991,18 @@ op_exec_ifdef(const struct op *op, struct lowdown_buf *ob,
 	int	 	 rc;
 
 	assert(op->op_type == OP_IFDEF);
-	resq = op_eval(op->op_ifdef.expr, op->op_ifdef.sz, mq, this,
-		NULL, content);
-	if (resq == NULL)
-		return 0;
 
-	rc = !TAILQ_EMPTY(resq);
-	op_resq_free(resq);
+	/* Empty arguments evaluate to an empty list. */
+
+	if (op->op_ifdef.sz > 0) {
+		resq = op_eval(op->op_ifdef.expr, op->op_ifdef.sz, mq, this,
+			NULL, content);
+		if (resq == NULL)
+			return 0;
+		rc = !TAILQ_EMPTY(resq);
+		op_resq_free(resq);
+	} else
+		rc = 0;
 
 	return rc ? op_exec(op, ob, mq, content, this) :
 		op->op_ifdef.chain == NULL ? 1 :
@@ -1035,7 +1060,7 @@ lowdown_template(const char *templ, const struct lowdown_buf *content,
 	const char	*cp, *nextcp, *savecp;
 	struct opq	 q;
 	struct op	*op, *cop, *root;
-	int		 rc = 0;
+	int		 rc = 0, igneoln;
 	size_t		 sz;
 
 	TAILQ_INIT(&q);
@@ -1081,6 +1106,16 @@ lowdown_template(const char *templ, const struct lowdown_buf *content,
 		}
 
 		/*
+		 * A double-hypen before the end delimiter means that
+		 * input must be consumed up to and including the eoln
+		 * following the instruction.
+		 */
+
+		igneoln = nextcp > (cp + 2) &&
+			nextcp[-1] == '-' &&
+			nextcp[-2] == '-';
+
+		/*
 		 * From "cp" to "nextcp" is the statement to evaluate.
 		 * Trim the string.
 		 */
@@ -1092,6 +1127,11 @@ lowdown_template(const char *templ, const struct lowdown_buf *content,
 
 		assert(nextcp >= cp);
 		sz = (size_t)(nextcp - cp);
+
+		/* Account for double-hyphens. */
+
+		if (igneoln)
+			sz -= 2;
 
 		while (sz > 0 &&
 		    (cp[sz - 1] == ' ' || cp[sz - 1] == '\t'))
@@ -1106,23 +1146,21 @@ lowdown_template(const char *templ, const struct lowdown_buf *content,
 			continue;
 		}
 
-		/* Special instruction that ignores til eoln/f. */
-
-		if (sz == 2 && strncmp(cp, "--", sz) == 0) {
-			cp = nextcp + 1;
-			while (*cp != '\0' && *cp != '\n')
-				cp++;
-			if (*cp == '\n')
-				cp++;
-			continue;
-		}
-
 		/* Look up and process the operation. */
 
 		if (sz > 0 && !op_queue(&q, &cop, cp, sz))
 			goto out;
 
 		cp = nextcp + 1;
+
+		/* Special instruction that ignores til eoln/f. */
+
+		if (igneoln) {
+			while (*cp != '\0' && *cp != '\n')
+				cp++;
+			if (*cp == '\n')
+				cp++;
+		}
 	}
 
 	/* Mop up any remaining tokens. */

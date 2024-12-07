@@ -6,11 +6,17 @@
 		<title>foo</title>
 	</head>
 	<body>
-		empty=[]
-		has=[yes]
-		has=[yes]
-		has=[]
-		has=[]
-		has=[yes]
+$ifdef(title)--$ignore
+hello
+$endif--$
+$ifdef(title)   --$ignore
+hello
+$endif    --$
+$ifdef()   --$still ignore
+nope
+$endif    --$
+$ifdef()   -$huh?
+sdfasd?
+$endif    -$
 	</body>
 </html>
