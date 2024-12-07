@@ -27,6 +27,7 @@ OBJS		 = autolink.o \
 		   library.o \
 		   libdiff.o \
 		   nroff.o \
+		   nroff_escape.o \
 		   odt.o \
 		   smartypants.o \
 		   template.o \
@@ -92,6 +93,7 @@ SOURCES		 = autolink.c \
 		   library.c \
 		   main.c \
 		   nroff.c \
+		   nroff_escape.c \
 		   odt.c \
 		   smartypants.c \
 		   template.c \

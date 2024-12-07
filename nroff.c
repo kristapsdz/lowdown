@@ -93,106 +93,6 @@ struct	bnode {
 
 TAILQ_HEAD(bnodeq, bnode);
 
-/*
- * Escape unsafe text into roff output such that no roff features are
- * invoked by the text (macros, escapes, etc.).
- * If "oneline" is non-zero, newlines are replaced with spaces.
- * If "literal", doesn't strip leading space.
- * Return zero on failure, non-zero on success.
- */
-static int
-hesc_nroff(struct lowdown_buf *ob, const char *data, size_t size,
-    int oneline, int literal, int esc)
-{
-	size_t	 	i = 0;
-	unsigned char	ch;
-
-	if (size == 0)
-		return 1;
-
-	if (!esc && oneline) {
-		assert(!literal);
-		for (i = 0; i < size; i++) {
-			ch = data[i] == '\n' ? ' ' : data[i];
-			if (!hbuf_putc(ob, ch))
-				return 0;
-			if (ch != ' ')
-				continue;
-			while (i < size && isspace((unsigned char)data[i]))
-				i++;
-			i--;
-		}
-		return 1;
-	} else if (!esc)
-		return hbuf_put(ob, data, size);
-
-	/* Strip leading whitespace. */
-
-	if (!literal && ob->size > 0 && ob->data[ob->size - 1] == '\n')
-		while (i < size && (data[i] == ' ' || data[i] == '\n'))
-			i++;
-
-	/*
-	 * According to mandoc_char(7), we need to escape the backtick,
-	 * single apostrophe, and tilde or else they'll be considered as
-	 * special Unicode output.
-	 * Slashes need to be escaped too.
-	 * We also escape double-quotes because this text might be used
-	 * within quoted macro arguments.
-	 */
-
-	for ( ; i < size; i++)
-		switch (data[i]) {
-		case '^':
-			if (!HBUF_PUTSL(ob, "\\(ha"))
-				return 0;
-			break;
-		case '~':
-			if (!HBUF_PUTSL(ob, "\\(ti"))
-				return 0;
-			break;
-		case '`':
-			if (!HBUF_PUTSL(ob, "\\(ga"))
-				return 0;
-			break;
-		case '"':
-			if (!HBUF_PUTSL(ob, "\\(dq"))
-				return 0;
-			break;
-		case '\n':
-			if (!hbuf_putc(ob, oneline ? ' ' : '\n'))
-				return 0;
-			if (literal)
-				break;
-
-			/* Prevent leading spaces on the line. */
-
-			while (i + 1 < size && 
-			       (data[i + 1] == ' ' || 
-				data[i + 1] == '\n'))
-				i++;
-			break;
-		case '\\':
-			if (!HBUF_PUTSL(ob, "\\e"))
-				return 0;
-			break;
-		case '\'':
-		case '.':
-			if (!oneline &&
-			    ob->size > 0 && 
-			    ob->data[ob->size - 1] == '\n' &&
-			    !HBUF_PUTSL(ob, "\\&"))
-				return 0;
-			/* FALLTHROUGH */
-		default:
-			if (!hbuf_putc(ob, data[i]))
-				return 0;
-			break;
-		}
-
-	return 1;
-}
-
 static const char *
 nstate_colour_buf(unsigned int ft)
 {
@@ -480,12 +380,12 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 
 		if (bn->scope == BSCOPE_LITERAL) {
 			assert(bn->buf != NULL);
-			if (!hesc_nroff(ob, bn->buf,
-			    strlen(bn->buf), 0, 1, 1))
+			if (!lowdown_nroff_esc(ob, bn->buf,
+			    strlen(bn->buf), 0, 1))
 				return 0;
 		} else if (bn->buf != NULL)
-			if (!hesc_nroff(ob, bn->buf,
-			    strlen(bn->buf), 0, 0, 1))
+			if (!lowdown_nroff_esc(ob, bn->buf,
+			    strlen(bn->buf), 0, 0))
 				return 0;
 
 		/*
@@ -539,8 +439,8 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 				bn->scope == BSCOPE_SEMI);
 			if (!hbuf_putc(ob, ' '))
 				return 0;
-			if (!hesc_nroff(ob, bn->args,
-			    strlen(bn->args), 1, 0, 1))
+			if (!lowdown_nroff_esc(ob, bn->args,
+			    strlen(bn->args), 1, 0))
 				return 0;
 		}
 
@@ -582,7 +482,7 @@ hbuf2shortlink(const struct lowdown_buf *link)
 		goto out;
 	if (!hbuf_shortlink(tmp, link))
 		goto out;
-	if (!hesc_nroff(slink, tmp->data, tmp->size, 1, 0, 1))
+	if (!lowdown_nroff_esc(slink, tmp->data, tmp->size, 1, 0))
 		goto out;
 	ret = strndup(slink->data, slink->size);
 out:
@@ -1866,11 +1766,11 @@ rndr_doc_header(struct nroff *st, struct bnodeq *obq,
 		if (!HBUF_PUTSL(ob, "\""))
 			goto out;
 		if (title != NULL &&
-		    !hesc_nroff(ob, title, strlen(title), 1, 0, 1))
+		    !lowdown_nroff_esc(ob, title, strlen(title), 1, 0))
 			goto out;
 		if (!HBUF_PUTSL(ob, "\" \""))
 			goto out;
-		if (!hesc_nroff(ob, sec, strlen(sec), 1, 0, 1))
+		if (!lowdown_nroff_esc(ob, sec, strlen(sec), 1, 0))
 			goto out;
 		if (!HBUF_PUTSL(ob, "\" \""))
 			goto out;
@@ -1881,7 +1781,7 @@ rndr_doc_header(struct nroff *st, struct bnodeq *obq,
 		 */
 
 		if (date != NULL &&
-		    !hesc_nroff(ob, date, strlen(date), 1, 0, 1))
+		    !lowdown_nroff_esc(ob, date, strlen(date), 1, 0))
 			goto out;
 		if (!HBUF_PUTSL(ob, "\""))
 			goto out;
@@ -1895,15 +1795,15 @@ rndr_doc_header(struct nroff *st, struct bnodeq *obq,
 		if (source != NULL || volume != NULL) {
 			if (!HBUF_PUTSL(ob, " \""))
 				goto out;
-			if (source != NULL && !hesc_nroff
-			    (ob, source, strlen(source), 1, 0, 1))
+			if (source != NULL && !lowdown_nroff_esc
+			    (ob, source, strlen(source), 1, 0))
 				goto out;
 			if (!HBUF_PUTSL(ob, "\""))
 				goto out;
 			if (!HBUF_PUTSL(ob, " \""))
 				goto out;
-			if (volume != NULL && !hesc_nroff
-			    (ob, volume, strlen(volume), 1, 0, 1))
+			if (volume != NULL && !lowdown_nroff_esc
+			    (ob, volume, strlen(volume), 1, 0))
 				goto out;
 			if (!HBUF_PUTSL(ob, "\""))
 				goto out;
