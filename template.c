@@ -409,7 +409,7 @@ op_eval_function_split(const struct lowdown_metaq *mq,
 }
 
 /*
- * HTML-escape (for URL attributes) all characters in all list items.
+ * Escape all characters in all list items for HTML URL attributes.
  * Returns NULL on allocation failure.
  */
 static struct op_resq *
@@ -447,7 +447,7 @@ err:
 }
 
 /*
- * HTML-escape (for attributes) all characters in all list items.
+ * Escape all characters in all list items for HTML attributes.
  * Returns NULL on allocation failure.
  */
 static struct op_resq *
@@ -485,7 +485,7 @@ err:
 }
 
 /*
- * LaTeX-escape (for general content) all characters in all list items.
+ * Escape all characters in all list items for general LaTeX content.
  * Returns NULL on allocation failure.
  */
 static struct op_resq *
@@ -523,7 +523,48 @@ err:
 }
 
 /*
- * HTML-escape (for general content) all characters in all list items.
+ * Escape all characters in all list items for Gemini, either over
+ * multiple lines or with newlines removed for a single line.
+ * Returns NULL on allocation failure.
+ */
+static struct op_resq *
+op_eval_function_escape_gemini(const struct lowdown_metaq *mq,
+    const struct op_resq *input, int oneline)
+{
+	struct op_resq		*nq = NULL;
+	struct op_res		*nres;
+	const struct op_res	*res;
+	struct lowdown_buf	*buf;
+
+	if ((buf = hbuf_new(32)) == NULL)
+		goto err;
+	if ((nq = malloc(sizeof(struct op_resq))) == NULL)
+		goto err;
+	TAILQ_INIT(nq);
+
+	TAILQ_FOREACH(res, input, entries) {
+		hbuf_truncate(buf);
+		if (!lowdown_gemini_esc(buf, res->res, strlen(res->res),
+		    oneline))
+			goto err;
+		if ((nres = calloc(1, sizeof(struct op_res))) == NULL)
+			goto err;
+		TAILQ_INSERT_TAIL(nq, nres, entries);
+		nres->res = strndup(buf->data, buf->size);
+		if (nres->res == NULL)
+			goto err;
+	}
+	hbuf_free(buf);
+	return nq;
+err:
+	hbuf_free(buf);
+	op_resq_free(nq);
+	return NULL;
+}
+
+/*
+ * Escape all characters in all list items for roff (ms/man), either
+ * over multiple lines or with newlines removed for a single line.
  * Returns NULL on allocation failure.
  */
 static struct op_resq *
@@ -709,14 +750,18 @@ op_eval_function(const char *expr, size_t exprsz, const char *args,
 		nq = op_eval_function_join(mq, input);
 	else if (exprsz == 4 && strncasecmp(expr, "trim", 4) == 0)
 		nq = op_resq_clone(input, 1);
-	else if (exprsz == 11 && strncasecmp(expr, "escapelatex", 11) == 0)
-		nq = op_eval_function_escape_latex(mq, input);
+	else if (exprsz == 12 && strncasecmp(expr, "escapegemini", 12) == 0)
+		nq = op_eval_function_escape_gemini(mq, input, 0);
+	else if (exprsz == 16 && strncasecmp(expr, "escapegeminiline", 16) == 0)
+		nq = op_eval_function_escape_gemini(mq, input, 1);
 	else if (exprsz == 10 && strncasecmp(expr, "escapehtml", 10) == 0)
 		nq = op_eval_function_escape_html(mq, input);
 	else if (exprsz == 14 && strncasecmp(expr, "escapehtmlattr", 14) == 0)
 		nq = op_eval_function_escape_htmlattr(mq, input);
 	else if (exprsz == 13 && strncasecmp(expr, "escapehtmlurl", 13) == 0)
 		nq = op_eval_function_escape_htmlurl(mq, input);
+	else if (exprsz == 11 && strncasecmp(expr, "escapelatex", 11) == 0)
+		nq = op_eval_function_escape_latex(mq, input);
 	else if (exprsz == 10 && strncasecmp(expr, "escaperoff", 10) == 0)
 		nq = op_eval_function_escape_roff(mq, input, 0);
 	else if (exprsz == 14 && strncasecmp(expr, "escaperoffline", 14) == 0)

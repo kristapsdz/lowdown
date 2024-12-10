@@ -67,6 +67,7 @@ struct gemini {
 	ssize_t			  headers_offs; /* header offset */
 	struct lowdown_buf	**foots; /* footnotes */
 	size_t			  footsz; /* footnotes size  */
+	const char		 *templ; /* output template */
 };
 
 /*
@@ -971,20 +972,29 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 }
 
 int
-lowdown_gemini_rndr(struct lowdown_buf *ob,
-	void *arg, const struct lowdown_node *n)
+lowdown_gemini_rndr(struct lowdown_buf *ob, void *arg,
+    const struct lowdown_node *n)
 {
 	struct gemini		*st = arg;
-	int			 rc;
+	int			 rc = 0;
 	size_t			 i;
 	struct lowdown_metaq	 metaq;
+	struct lowdown_buf	*tmp = NULL;
 
 	TAILQ_INIT(&metaq);
 	st->last_blank = 0;
 	st->headers_offs = 1;
 
-	rc = rndr(ob, &metaq, st, n);
+	if (st->templ != NULL) {
+		if ((tmp = hbuf_new(64)) == NULL)
+			goto out;
+		if (!rndr(tmp, &metaq, st, n))
+			goto out;
+		rc = lowdown_template(st->templ, tmp, ob, &metaq);
+	} else
+		rc = rndr(ob, &metaq, st, n);
 
+out:
 	link_freeq(&st->linkq);
 	st->linkqsz = 0;
 	st->nolinkqsz = 0;
@@ -992,6 +1002,7 @@ lowdown_gemini_rndr(struct lowdown_buf *ob,
 	for (i = 0; i < st->footsz; i++)
 		hbuf_free(st->foots[i]);
 
+	hbuf_free(tmp);
 	free(st->foots);
 	st->footsz = 0;
 	st->foots = NULL;
@@ -1009,6 +1020,7 @@ lowdown_gemini_new(const struct lowdown_opts *opts)
 
 	TAILQ_INIT(&p->linkq);
 	p->flags = opts != NULL ? opts->oflags : 0;
+	p->templ = opts != NULL ? opts->templ : NULL;
 
 	/* Only use one kind of flag output. */
 
