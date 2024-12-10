@@ -2090,7 +2090,7 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 		if (tmp->size && tmp->data[tmp->size - 1] != '\n' &&
 		    !hbuf_putc(tmp, '\n'))
 			goto out;
-		rc = st->templ == NULL ?  hbuf_putb(ob, tmp) :
+		rc = st->templ == NULL ? hbuf_putb(ob, tmp) :
 			lowdown_template(st->templ, tmp, ob, &metaq);
 	}
 
