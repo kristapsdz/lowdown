@@ -70,6 +70,8 @@ ssize_t		 halink_email(size_t *, struct lowdown_buf *, char *, size_t, size_t);
 ssize_t		 halink_url(size_t *, struct lowdown_buf *, char *, size_t, size_t);
 ssize_t		 halink_www(size_t *, struct lowdown_buf *, char *, size_t, size_t);
 
+int		 lowdown_gemini_esc(struct lowdown_buf *,
+			const char *, size_t, int);
 int		 lowdown_html_esc(struct lowdown_buf *,
 			const char *, size_t, int, int, int);
 int		 lowdown_html_esc_attr(struct lowdown_buf *,

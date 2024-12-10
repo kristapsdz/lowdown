@@ -160,41 +160,6 @@ rndr_link_ref(const struct gemini *st,
 }
 
 /*
- * Convert newlines to spaces, elide control characters.
- * If a newline follows a period, it's converted to two spaces.
- * Return zero on failure (memory), non-zero on success.
- */
-static int
-rndr_escape(struct lowdown_buf *out, const char *buf, size_t sz)
-{
-	size_t	 	 i, start = 0;
-	unsigned char	 ch;
-
-	for (i = 0; i < sz; i++) {
-		ch = (unsigned char)buf[i];
-		if (ch == '\n') {
-			if (!hbuf_put(out, buf + start, i - start))
-				return 0;
-			if (out->size && 
-			    out->data[out->size - 1] == '.' &&
-			    !hbuf_putc(out, ' '))
-				return 0;
-			if (!hbuf_putc(out, ' '))
-				return 0;
-			start = i + 1;
-		} else if (ch < 0x80 && iscntrl(ch)) {
-			if (!hbuf_put(out, buf + start, i - start))
-				return 0;
-			start = i + 1;
-		}
-	}
-
-	if (start < sz && !hbuf_put(out, buf + start, sz - start))
-		return 0;
-	return 1;
-}
-
-/*
  * Output optional number of newlines before or after content.
  * Return zero on failure (memory), non-zero on success.
  */
@@ -242,7 +207,7 @@ rndr_buf(struct gemini *st, struct lowdown_buf *out,
 			if (!isspace((unsigned char)in->data[i]))
 				break;
 
-	if (!rndr_escape(out, in->data + i, in->size - i))
+	if (!lowdown_gemini_esc(out, in->data + i, in->size - i, 1))
 		return 0;
 	if (in->size && st->last_blank != 0)
 		st->last_blank = 0;
@@ -288,11 +253,11 @@ rndr_doc_header(struct gemini *st, struct lowdown_buf *out,
 	if (!(st->flags & LOWDOWN_GEMINI_METADATA))
 		return 1;
 	TAILQ_FOREACH(m, mq, entries) {
-		if (!rndr_escape(out, m->key, strlen(m->key)))
+		if (!lowdown_gemini_esc(out, m->key, strlen(m->key), 1))
 			return 0;
 		if (!HBUF_PUTSL(out, ": "))
 			return 0;
-		if (!rndr_escape(out, m->value, strlen(m->value)))
+		if (!lowdown_gemini_esc(out, m->value, strlen(m->value), 1))
 			return 0;
 		st->last_blank = 0;
 		if (!rndr_buf_vspace(st, out, 1))

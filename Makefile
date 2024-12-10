@@ -20,6 +20,7 @@ OBJS		 = autolink.o \
 		   document.o \
 		   entity.o \
 		   gemini.o \
+		   gemini_escape.o \
 		   html.o \
 		   html_escape.o \
 		   latex.o \
@@ -85,6 +86,7 @@ SOURCES		 = autolink.c \
 		   document.c \
 		   entity.c \
 		   gemini.c \
+		   gemini_escape.c \
 		   html.c \
 		   html_escape.c \
 		   latex.c \
