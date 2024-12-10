@@ -90,7 +90,9 @@ for HTML5 output,
 .Ar latex
 for LaTeX,
 .Ar gemini
-for the Gemini format,
+for the Gemini
+.Dq gemtext
+format,
 .Ar ms
 for roff output using the classic (i.e., no-extension)
 .Fl ms
@@ -159,7 +161,7 @@ starting all lists at one.
 Do not parse indented content as code blocks.
 .It Fl -parse-no-callouts
 Do not parse GFM/MDN callouts
-.Pq Qq admonitions .
+.Pq Dq admonitions .
 .It Fl -parse-no-deflists
 Do not parse PHP extra definition lists.
 .It Fl -parse-no-ext-attrs
@@ -196,7 +198,7 @@ Do not parse GFM task lists.
 .It Fl -parse-super-short
 If super-script parsing is enabled, use the traditional
 non-GFM
-.Qq short
+.Dq short
 syntax.
 .El
 .Pp
@@ -216,8 +218,8 @@ When producing standalone
 output, use a template file.
 See
 .Sx Templates .
-This is experimental functionality.
 Currently only for
+.Fl t Ns Ar gemini ,
 .Fl t Ns Ar html ,
 .Fl t Ns Ar latex ,
 .Fl t Ns Ar man ,
@@ -276,7 +278,7 @@ italic, and bold-italic variants in that order.
 For example,
 .Li B,B,BI,BI
 uses bold
-.Pq Qq B
+.Pq Dq B
 instead of a constant-width.
 Not specifying a font will use the default, as will specifying a
 zero-length font name.
@@ -481,8 +483,9 @@ with output.
 Classes specified by PHP extended attributes are not checked for
 existence.
 .It Fl t Ns Ar gemini
-Gemini protocol output.
-This output mode is experimental.
+Gemini
+.Dq gemtext
+format.
 .It Fl t Ns Ar html
 HTML5 output with UTF-8 encoding.
 .It Fl t Ns Ar latex
@@ -1040,7 +1043,7 @@ lowdown -stms foo.md | pdfroff -itk -mspdf -FU-T > foo.pdf
 .Ed
 .Pp
 To list all metadata keys, then to extract the
-.Qq title
+.Dq title
 metadata value from
 .Pa foo.md :
 .Pp
