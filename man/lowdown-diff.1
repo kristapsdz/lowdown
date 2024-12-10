@@ -908,6 +908,10 @@ If transforms are invalid, they will transform into an empty list.
 .Pp
 The following transformations are available:
 .Bl -tag -width Ds
+.It Li escapegemini , escapegeminiline
+Escape list items for gemini
+.Pq Fl t Ns Ar gemini ,
+either for multiple lines or compressed to a single line.
 .It Li escapehtml , escapehtmlattr , escapehtmlurl
 Escape list items for HTML
 .Pq Fl t Ns Ar html
@@ -917,7 +921,7 @@ respectively.
 Escape list items for LaTeX
 .Pq Fl t Ns Ar latex
 body content.
-.It Li escaperoff , esaperoffline
+.It Li escaperoff , escaperoffline
 Escape list items for roff
 .Pq Fl t Ns Ar ms , Fl t Ns Ar man ,
 either for multiple lines or compressed to a single line.
