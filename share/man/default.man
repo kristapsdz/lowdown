@@ -1,0 +1,6 @@
+.\" -*- mode: troff; coding: utf-8 -*-"
+$ifdef(manheader)--$
+$manheader$
+$endif--$
+.TH "$title.escaperoffline$" "$section.escaperoffline$" "$date.escaperoffline$" $ifdef(or(source,volume))$"$source.escaperoffline$" "$volume.escaperoffline$"$endif$
+$body--$

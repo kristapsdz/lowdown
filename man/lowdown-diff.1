@@ -200,9 +200,11 @@ See
 .Sx Templates .
 This is experimental functionality.
 Currently only for
-.Fl t Ns Ar html
+.Fl t Ns Ar html ,
+.Fl t Ns Ar latex ,
+.Fl t Ns Ar man ,
 and
-.Fl t Ns Ar latex .
+.Fl t Ns Ar ms .
 .El
 .Pp
 What follows are per-output long options.
@@ -905,10 +907,18 @@ If transforms are invalid, they will transform into an empty list.
 The following transformations are available:
 .Bl -tag -width Ds
 .It Li escapehtml , escapehtmlattr , escapehtmlurl
-Escape list items for HTML body content, attributes, and URL attributes,
+Escape list items for HTML
+.Pq Fl t Ns Ar html
+body content, attributes, and URL attributes,
 respectively.
 .It Li escapelatex
-Escape list items for LaTeX body content.
+Escape list items for LaTeX
+.Pq Fl t Ns Ar latex
+body content.
+.It Li escaperoff , esaperoffline
+Escape list items for roff
+.Pq Fl t Ns Ar ms , Fl t Ns Ar man ,
+either for multiple lines or compressed to a single line.
 .It Li join
 Join a list into a singleton list using two spaces as a join delimiter.
 .It Li lowercase
@@ -951,6 +961,16 @@ The default template used if
 .Fl -template
 is not provided to
 .Fl t Ns Ar latex .
+.It Pa share/man/default.man
+The default template used if
+.Fl -template
+is not provided to
+.Fl t Ns Ar man .
+.It Pa share/man/default.ms
+The default template used if
+.Fl -template
+is not provided to
+.Fl t Ns Ar ms .
 .It Pa share/odt/styles.xml
 Default styles used when generating standalone
 .Fl t Ns Ar fodt

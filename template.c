@@ -527,6 +527,45 @@ err:
  * Returns NULL on allocation failure.
  */
 static struct op_resq *
+op_eval_function_escape_roff(const struct lowdown_metaq *mq,
+    const struct op_resq *input, int oneline)
+{
+	struct op_resq		*nq = NULL;
+	struct op_res		*nres;
+	const struct op_res	*res;
+	struct lowdown_buf	*buf;
+
+	if ((buf = hbuf_new(32)) == NULL)
+		goto err;
+	if ((nq = malloc(sizeof(struct op_resq))) == NULL)
+		goto err;
+	TAILQ_INIT(nq);
+
+	TAILQ_FOREACH(res, input, entries) {
+		hbuf_truncate(buf);
+		if (!lowdown_nroff_esc(buf, res->res, strlen(res->res),
+		    oneline, 0))
+			goto err;
+		if ((nres = calloc(1, sizeof(struct op_res))) == NULL)
+			goto err;
+		TAILQ_INSERT_TAIL(nq, nres, entries);
+		nres->res = strndup(buf->data, buf->size);
+		if (nres->res == NULL)
+			goto err;
+	}
+	hbuf_free(buf);
+	return nq;
+err:
+	hbuf_free(buf);
+	op_resq_free(nq);
+	return NULL;
+}
+
+/*
+ * HTML-escape (for general content) all characters in all list items.
+ * Returns NULL on allocation failure.
+ */
+static struct op_resq *
 op_eval_function_escape_html(const struct lowdown_metaq *mq,
     const struct op_resq *input)
 {
@@ -678,6 +717,10 @@ op_eval_function(const char *expr, size_t exprsz, const char *args,
 		nq = op_eval_function_escape_htmlattr(mq, input);
 	else if (exprsz == 13 && strncasecmp(expr, "escapehtmlurl", 13) == 0)
 		nq = op_eval_function_escape_htmlurl(mq, input);
+	else if (exprsz == 10 && strncasecmp(expr, "escaperoff", 10) == 0)
+		nq = op_eval_function_escape_roff(mq, input, 0);
+	else if (exprsz == 14 && strncasecmp(expr, "escaperoffline", 14) == 0)
+		nq = op_eval_function_escape_roff(mq, input, 1);
 	else if ((nq = malloc(sizeof(struct op_resq))) != NULL)
 		TAILQ_INIT(nq);
 
