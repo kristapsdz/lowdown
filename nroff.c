@@ -55,6 +55,7 @@ struct 	nroff {
 	const char		 *cb; /* fixed-width bold font */
 	const char		 *ci; /* fixed-width italic font */
 	const char		 *cbi; /* fixed-width bold-italic font */
+	const char		 *templ; /* output template */
 };
 
 enum	bscope {
@@ -1638,8 +1639,8 @@ rndr_meta(struct nroff *st, const struct lowdown_node *n,
 }
 
 static int
-rndr_doc_header(struct nroff *st, struct bnodeq *obq,
-    const struct lowdown_metaq *mq)
+rndr_root(struct nroff *st, struct bnodeq *obq,
+    struct bnodeq *bq, const struct lowdown_metaq *mq)
 {
 	struct lowdown_buf		*ob = NULL;
 	struct bnode			*bn;
@@ -1653,8 +1654,13 @@ rndr_doc_header(struct nroff *st, struct bnodeq *obq,
 					*msheader = NULL,
 					*manheader = NULL;
 
-	if (!(st->flags & LOWDOWN_STANDALONE))
+	if (!(st->flags & LOWDOWN_STANDALONE)) {
+		TAILQ_CONCAT(obq, bq, entries);
 		return 1;
+	} else if (st->templ != NULL) {
+		TAILQ_CONCAT(obq, bq, entries);
+		return 1;
+	}
 
 	TAILQ_FOREACH(m, mq, entries)
 		if (strcasecmp(m->key, "author") == 0)
@@ -1814,6 +1820,7 @@ rndr_doc_header(struct nroff *st, struct bnodeq *obq,
 
 	rc = 1;
 out:
+	TAILQ_CONCAT(obq, bq, entries);
 	hbuf_free(ob);
 	return rc;
 }
@@ -1902,7 +1909,6 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_definition_title(st, obq, &tmpbq);
 		break;
 	case LOWDOWN_DOC_HEADER:
-		rc = rndr_doc_header(st, obq, mq);
 		break;
 	case LOWDOWN_META:
 		if (n->chng != LOWDOWN_CHNG_DELETE)
@@ -1938,9 +1944,9 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_table_cell(obq, &tmpbq, &n->rndr_table_cell);
 		break;
 	case LOWDOWN_ROOT:
-		TAILQ_CONCAT(obq, &tmpbq, entries);
 		assert(st->footdepth == 0);
-		rc = rndr_footnotes(st, obq, 1);
+		rc = rndr_footnotes(st, &tmpbq, 1) &&
+			rndr_root(st, obq, &tmpbq, mq);
 		break;
 	case LOWDOWN_BLOCKHTML:
 		rc = rndr_raw_block(st, obq, &n->rndr_blockhtml);
@@ -2062,6 +2068,7 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 	void *arg, const struct lowdown_node *n)
 {
 	struct nroff		*st = arg;
+	struct lowdown_buf	*tmp = NULL;
 	struct lowdown_metaq	 metaq;
 	int			 rc = 0;
 	struct bnodeq		 bq;
@@ -2076,12 +2083,15 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 	st->post_para = 0;
 
 	if (rndr(&metaq, st, n, &bq)) {
-		if (!bqueue_flush(st, ob, &bq))
+		if ((tmp = hbuf_new(64)) == NULL)
 			goto out;
-		if (ob->size && ob->data[ob->size - 1] != '\n' &&
-		    !hbuf_putc(ob, '\n'))
+		if (!bqueue_flush(st, tmp, &bq))
 			goto out;
-		rc = 1;
+		if (tmp->size && tmp->data[tmp->size - 1] != '\n' &&
+		    !hbuf_putc(tmp, '\n'))
+			goto out;
+		rc = st->templ == NULL ?  hbuf_putb(ob, tmp) :
+			lowdown_template(st->templ, tmp, ob, &metaq);
 	}
 
 out:
@@ -2090,6 +2100,7 @@ out:
 		free(st->foots[i]);
 	}
 
+	hbuf_free(tmp);
 	free(st->foots);
 	st->footsz = st->footpos = 0;
 	st->foots = NULL;
@@ -2113,6 +2124,7 @@ lowdown_nroff_new(const struct lowdown_opts *opts)
 	p->cb = opts != NULL ? opts->nroff.cb : NULL;
 	p->ci = opts != NULL ? opts->nroff.ci : NULL;
 	p->cbi = opts != NULL ? opts->nroff.cbi : NULL;
+	p->templ = opts != NULL ? opts->templ : NULL;
 
 	/*
 	 * Set the default "constant width" fonts.  This is complicated
