@@ -265,14 +265,14 @@ If any were parsed, format the title information (title, author, date)
 into a header element appearing first in the document.
 .El
 .Pp
-For both
+For both roff formats
 .Fl t Ns Ar man
 and
 .Fl t Ns Ar ms
 .Pq unless as noted ,
 the following apply:
 .Bl -tag -width Ds
-.It Fl -nroff-code-font Ns = Ns Ar fonts
+.It Fl -roff-code-font Ns = Ns Ar fonts
 Override the default constant-width fonts with a tuple of regular, bold,
 italic, and bold-italic variants in that order.
 For example,
@@ -288,44 +288,41 @@ Aliases
 and
 .Li code
 set no special fonts, bold, and the default constant-width.
-.It Fl -nroff-endnotes
+.It Fl -roff-endnotes
 Delay printing of footnotes until the end of the document.
 Only applies to
 .Fl t Ns Ar ms ,
 as
 .Fl t Ns Ar man
 only supports endnotes.
-.It Fl -nroff-no-groff
-Deprecated alias for
-.Fl -nroff-traditional .
-.It Fl -nroff-no-numbered
+.It Fl -roff-no-numbered
 Don't output numbered headings
 .Po
 .Li .NH NN
 .Pc .
 Only applies to
 .Fl t Ns Ar ms .
-.It Fl -nroff-no-skiphtml
+.It Fl -roff-no-skiphtml
 Output embedded HTML.
 This usually doesn't make sense because the HTML won't be interpreted by
 the output reader.
 By default, HTML is omitted.
-.It Fl -nroff-nolinks
+.It Fl -roff-nolinks
 Don't show URLs for images and links (autolinks are still shown).
 .Pq Link content is still shown.
 Overrides
-.Fl -nroff-shortlinks
+.Fl -roff-shortlinks
 for images and links.
 Only applies when
-.Fl -nroff-traditional
+.Fl -roff-traditional
 is specified.
-.It Fl -nroff-shortlinks
+.It Fl -roff-shortlinks
 Shorten URLs for images, links, and autolinks to only the domain name
 and final path.
 Only applies when
-.Fl -nroff-traditional
+.Fl -roff-traditional
 is specified.
-.It Fl -nroff-traditional
+.It Fl -roff-traditional
 Don't use hyperlink macros
 .Po
 .Li .pdfhref ,
@@ -357,7 +354,17 @@ or intra-document links
 .Pc .
 The output is compatible with traditional
 .Xr troff 1 .
+The deprecated
+.Fl -roff-no-groff
+was previously used for this argument.
 .El
+.Pp
+The argument prefix
+.Fl -nroff ,
+such as in
+.Fl -nroff-traditional ,
+is deprecated in favour of
+.Fl -roff .
 .Pp
 The
 .Fl t Ns Ar term

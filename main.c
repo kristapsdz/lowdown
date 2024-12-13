@@ -299,21 +299,21 @@ main(int argc, char *argv[])
 		{ "latex-skiphtml",	no_argument,	&afl, LOWDOWN_LATEX_SKIP_HTML },
 		{ "latex-no-skiphtml",	no_argument,	&rfl, LOWDOWN_LATEX_SKIP_HTML },
 
-		{ "nroff-traditional",	no_argument,	&rfl, LOWDOWN_NROFF_GROFF },
-		{ "nroff-no-traditional",no_argument,	&afl, LOWDOWN_NROFF_GROFF },
-		{ "nroff-no-groff",	no_argument,	&rfl, LOWDOWN_NROFF_GROFF },
-		{ "nroff-groff",	no_argument,	&afl, LOWDOWN_NROFF_GROFF },
-		{ "nroff-nolinks",	no_argument, 	&afl, LOWDOWN_NROFF_NOLINK },
-		{ "nroff-no-nolinks",	no_argument, 	&rfl, LOWDOWN_NROFF_NOLINK },
-		{ "nroff-numbered",	no_argument,	&afl, LOWDOWN_NROFF_NUMBERED },
-		{ "nroff-no-numbered",	no_argument,	&rfl, LOWDOWN_NROFF_NUMBERED },
-		{ "nroff-shortlinks",	no_argument, 	&afl, LOWDOWN_NROFF_SHORTLINK },
-		{ "nroff-no-shortlinks",no_argument, 	&rfl, LOWDOWN_NROFF_SHORTLINK },
-		{ "nroff-skiphtml",	no_argument,	&afl, LOWDOWN_NROFF_SKIP_HTML },
-		{ "nroff-no-skiphtml",	no_argument,	&rfl, LOWDOWN_NROFF_SKIP_HTML },
-		{ "nroff-endnotes",	no_argument,	&afl, LOWDOWN_NROFF_ENDNOTES },
-		{ "nroff-no-endnotes",	no_argument,	&rfl, LOWDOWN_NROFF_ENDNOTES },
-		{ "nroff-code-font",	required_argument, NULL, 7 },
+		{ "roff-traditional",	no_argument,	&rfl, LOWDOWN_NROFF_GROFF },
+		{ "roff-no-traditional",no_argument,	&afl, LOWDOWN_NROFF_GROFF },
+		{ "roff-no-groff",	no_argument,	&rfl, LOWDOWN_NROFF_GROFF },
+		{ "roff-groff",		no_argument,	&afl, LOWDOWN_NROFF_GROFF },
+		{ "roff-nolinks",	no_argument, 	&afl, LOWDOWN_NROFF_NOLINK },
+		{ "roff-no-nolinks",	no_argument, 	&rfl, LOWDOWN_NROFF_NOLINK },
+		{ "roff-numbered",	no_argument,	&afl, LOWDOWN_NROFF_NUMBERED },
+		{ "roff-no-numbered",	no_argument,	&rfl, LOWDOWN_NROFF_NUMBERED },
+		{ "roff-shortlinks",	no_argument, 	&afl, LOWDOWN_NROFF_SHORTLINK },
+		{ "roff-no-shortlinks",no_argument, 	&rfl, LOWDOWN_NROFF_SHORTLINK },
+		{ "roff-skiphtml",	no_argument,	&afl, LOWDOWN_NROFF_SKIP_HTML },
+		{ "roff-no-skiphtml",	no_argument,	&rfl, LOWDOWN_NROFF_SKIP_HTML },
+		{ "roff-endnotes",	no_argument,	&afl, LOWDOWN_NROFF_ENDNOTES },
+		{ "roff-no-endnotes",	no_argument,	&rfl, LOWDOWN_NROFF_ENDNOTES },
+		{ "roff-code-font",	required_argument, NULL, 7 },
 
 		{ "odt-skiphtml",	no_argument,	&afl, LOWDOWN_ODT_SKIP_HTML },
 		{ "odt-no-skiphtml",	no_argument,	&rfl, LOWDOWN_ODT_SKIP_HTML },
@@ -395,6 +395,25 @@ main(int argc, char *argv[])
 		{ "parse-maxdepth",	required_argument, NULL, 5 },
 
 		{ "template",		required_argument, NULL, 8 },
+
+		/* Deprecated "nroff" prefix. */
+
+		{ "nroff-traditional",	no_argument,	&rfl, LOWDOWN_NROFF_GROFF },
+		{ "nroff-no-traditional",no_argument,	&afl, LOWDOWN_NROFF_GROFF },
+		{ "nroff-no-groff",	no_argument,	&rfl, LOWDOWN_NROFF_GROFF },
+		{ "nroff-groff",	no_argument,	&afl, LOWDOWN_NROFF_GROFF },
+		{ "nroff-nolinks",	no_argument, 	&afl, LOWDOWN_NROFF_NOLINK },
+		{ "nroff-no-nolinks",	no_argument, 	&rfl, LOWDOWN_NROFF_NOLINK },
+		{ "nroff-numbered",	no_argument,	&afl, LOWDOWN_NROFF_NUMBERED },
+		{ "nroff-no-numbered",	no_argument,	&rfl, LOWDOWN_NROFF_NUMBERED },
+		{ "nroff-shortlinks",	no_argument, 	&afl, LOWDOWN_NROFF_SHORTLINK },
+		{ "nroff-no-shortlinks",no_argument, 	&rfl, LOWDOWN_NROFF_SHORTLINK },
+		{ "nroff-skiphtml",	no_argument,	&afl, LOWDOWN_NROFF_SKIP_HTML },
+		{ "nroff-no-skiphtml",	no_argument,	&rfl, LOWDOWN_NROFF_SKIP_HTML },
+		{ "nroff-endnotes",	no_argument,	&afl, LOWDOWN_NROFF_ENDNOTES },
+		{ "nroff-no-endnotes",	no_argument,	&rfl, LOWDOWN_NROFF_ENDNOTES },
+		{ "nroff-code-font",	required_argument, NULL, 7 },
+
 		{ NULL,			0,	NULL,	0 }
 	};
 

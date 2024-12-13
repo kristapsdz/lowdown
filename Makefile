@@ -254,7 +254,7 @@ $(PDFS) index.xml README.xml: lowdown
 index.html README.html: template.xml
 
 .md.pdf:
-	./lowdown --nroff-no-numbered -s -tms $< | \
+	./lowdown --roff-no-numbered -s -tms $< | \
 		pdfroff -i -mspdf -t -k > $@
 
 index.latex.pdf: index.md $(THUMBS)
@@ -263,11 +263,11 @@ index.latex.pdf: index.md $(THUMBS)
 	pdflatex index.latex.latex
 
 index.mandoc.pdf: index.md
-	./lowdown --nroff-no-numbered -s -tman index.md | \
+	./lowdown --roff-no-numbered -s -tman index.md | \
 		mandoc -Tpdf > $@
 
 index.nroff.pdf: index.md
-	./lowdown --nroff-no-numbered -s -tms index.md | \
+	./lowdown --roff-no-numbered -s -tms index.md | \
 		pdfroff -i -mspdf -t -k > $@
 
 .xml.html:
@@ -286,7 +286,7 @@ diff.diff.html: diff.md diff.old.md lowdown-diff
 	./lowdown-diff -s diff.old.md diff.md >$@
 
 diff.diff.pdf: diff.md diff.old.md lowdown-diff
-	./lowdown-diff --nroff-no-numbered -s -tms diff.old.md diff.md | \
+	./lowdown-diff --roff-no-numbered -s -tms diff.old.md diff.md | \
 		pdfroff -i -mspdf -t -k > $@
 
 $(HTMLS): versions.xml lowdown
