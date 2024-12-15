@@ -1037,7 +1037,7 @@ rndr_root(struct lowdown_buf *ob, const struct lowdown_buf *content,
 	if (!(st->flags & LOWDOWN_STANDALONE))
 		return hbuf_putb(ob, content);
 	if (st->templ != NULL)
-		return lowdown_template(st->templ, content, ob, mq);
+		return lowdown_template(st->templ, content, ob, mq, 0);
 
 	TAILQ_FOREACH(m, mq, entries)
 		if (strcasecmp(m->key, "author") == 0)

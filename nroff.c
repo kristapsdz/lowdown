@@ -2091,7 +2091,7 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 		    !hbuf_putc(tmp, '\n'))
 			goto out;
 		rc = st->templ == NULL ? hbuf_putb(ob, tmp) :
-			lowdown_template(st->templ, tmp, ob, &metaq);
+			lowdown_template(st->templ, tmp, ob, &metaq, 0);
 	}
 
 out:

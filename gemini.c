@@ -990,7 +990,7 @@ lowdown_gemini_rndr(struct lowdown_buf *ob, void *arg,
 			goto out;
 		if (!rndr(tmp, &metaq, st, n))
 			goto out;
-		rc = lowdown_template(st->templ, tmp, ob, &metaq);
+		rc = lowdown_template(st->templ, tmp, ob, &metaq, 0);
 	} else
 		rc = rndr(ob, &metaq, st, n);
 

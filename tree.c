@@ -111,7 +111,7 @@ rndr_short(struct lowdown_buf *ob, const struct lowdown_buf *b)
 }
 
 static int
-rndr(struct lowdown_buf *ob,
+rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 	const struct lowdown_node *root, size_t indent)
 {
 	const struct lowdown_node	*n;
@@ -354,6 +354,8 @@ rndr(struct lowdown_buf *ob,
 			return 0;
 		break;
 	case LOWDOWN_META:
+		if (lowdown_get_meta(root, mq) == NULL)
+			return 0;
 		if (!rndr_indent(ob, indent + 1))
 			return 0;
 		if (!hbuf_printf(ob, "key: "))
@@ -463,7 +465,7 @@ rndr(struct lowdown_buf *ob,
 		return 0;
 
 	TAILQ_FOREACH(n, &root->children, entries)
-		if (!rndr(tmp, n, indent + 1)) {
+		if (!rndr(tmp, mq, n, indent + 1)) {
 			hbuf_free(tmp);
 			return 0;
 		}
@@ -475,9 +477,66 @@ rndr(struct lowdown_buf *ob,
 
 int
 lowdown_tree_rndr(struct lowdown_buf *ob,
-	const struct lowdown_node *root)
+	const struct lowdown_node *root,
+	const struct lowdown_opts *opts)
 {
+	struct lowdown_buf	*obtmp = NULL, *mqtmp = NULL;
+	struct lowdown_metaq	 mq;
+	struct lowdown_meta	*m;
+	int			 rc = 0;
+	size_t			 init_depth = 0;
 
-	return rndr(ob, root, 0);
+	TAILQ_INIT(&mq);
+
+	if ((obtmp = hbuf_new(64)) == NULL)
+		goto out;
+	if ((mqtmp = hbuf_new(64)) == NULL)
+		goto out;
+
+	/*
+	 * Output the parsed document into obtmp, with optional envelope
+	 * in standalone mode.
+	 */
+
+	if (opts != NULL && (opts->oflags & LOWDOWN_STANDALONE)) {
+		init_depth = 1;
+		if (!HBUF_PUTSL(obtmp, "document:\n"))
+			goto out;
+	}
+	if (!rndr(obtmp, &mq, root, init_depth))
+		goto out;
+
+	/* Optionally output the parsed metadata into mqtmp. */
+
+	if (opts != NULL && (opts->oflags & LOWDOWN_STANDALONE)) {
+		if (!HBUF_PUTSL(mqtmp, "metadata:\n"))
+			return 0;
+		TAILQ_FOREACH(m, &mq, entries)
+			if (!hbuf_printf(mqtmp, "  %s: %s\n", m->key,
+			    m->value))
+				return 0;
+	}
+
+	/*
+	 * If a template has been provided in standalone mode, print
+	 * that after the body and metadata.  Otherwise, directly print
+	 * the body (and optional metadata).
+	 */
+
+	if (opts != NULL && opts->templ != NULL &&
+	    (opts->oflags & LOWDOWN_STANDALONE)) {
+		if (!(hbuf_putb(ob, obtmp) && hbuf_putb(ob, mqtmp)))
+			return 0;
+		if (!HBUF_PUTSL(ob, "template:\n"))
+			return 0;
+		rc = lowdown_template(opts->templ, obtmp, ob, &mq, 1);
+	} else
+		rc = hbuf_putb(ob, obtmp) && hbuf_putb(ob, mqtmp);
+
+out:
+	lowdown_metaq_free(&mq);
+	hbuf_free(obtmp);
+	hbuf_free(mqtmp);
+	return rc;
 }
 

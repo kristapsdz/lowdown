@@ -88,7 +88,7 @@ lowdown_render(const struct lowdown_opts *opts,
 		lowdown_term_free(rndr);
 		break;
 	case LOWDOWN_TREE:
-		c = lowdown_tree_rndr(ob, n);
+		c = lowdown_tree_rndr(ob, n, opts);
 		break;
 	default:
 		c = 1;

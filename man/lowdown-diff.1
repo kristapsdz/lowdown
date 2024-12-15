@@ -38,35 +38,25 @@ Results are written to standard output.
 The short arguments are as follows:
 .Bl -tag -width Ds
 .It Fl s
-Standalone mode.
-This emits a document envelope surrounding the output by drawing from
-document metadata.
+Produce a standalone document (e.g., a valid HTML document including
+document type, head, etc.) around the formatted content.
 See
-.Sx Metadata
-on providing information to the document envelope.
-This applies to
-.Fl t Ns Ar gemini ,
-.Fl t Ns Ar html ,
-.Fl t Ns Ar latex ,
-.Fl t Ns Ar ms ,
-.Fl t Ns Ar man ,
-and
-.Fl t Ns Ar fodt .
+.Sx Standalone documents
+for details.
 .It Fl M Ar metadata
 Provide a single metadata key-value pair.
-This may be in the syntax specified by
-.Xr lowdown 5
-or as pairs separated by an equal sign, depending upon which character
-(a colon or equal sign) comes first.
-Exits with an error if given neither colon nor equal sign.
-May be invoked multiple times for each pair.
+This may be in the normal syntax or as pairs separated by an equal sign,
+depending upon which character (a colon or equal sign) comes first.
+Exits with an error if given neither.
 This overrides
 .Fl m
 and what's parsed from the document.
+See
+.Sx Metadata .
 .It Fl m Ar metadata
 Like
 .Fl M ,
-but is overridden by what's parsed the document, then
+but overridden by what's parsed the document, then
 .Fl M .
 .It Fl o Ar file
 Send output to
@@ -100,7 +90,7 @@ to show the parse tree of the input document, and
 .Ar null
 to parse the document but do no rendering.
 See
-.Sx Output modes .
+.Sx Output media .
 The
 .Fl T Ar mode
 form is retained for backward compatibility.
@@ -185,7 +175,7 @@ syntax.
 .El
 .Pp
 There are many output long options.
-The following are shared by all output modes:
+The following are shared by all output media:
 .Bl -tag -width Ds
 .It Fl -out-standalone
 Alias for
@@ -205,8 +195,9 @@ Currently only for
 .Fl t Ns Ar html ,
 .Fl t Ns Ar latex ,
 .Fl t Ns Ar man ,
+.Fl t Ns Ar ms ,
 and
-.Fl t Ns Ar ms .
+.Fl t Ns Ar tree .
 .El
 .Pp
 What follows are per-output long options.
@@ -458,7 +449,7 @@ and
 XML elements in the root of the document.
 This is not syntax-checked in any way.
 .El
-.Ss Output modes
+.Ss Output media
 The output media is specified by
 .Fl t ,
 which defaults to
@@ -471,18 +462,12 @@ Automatic styles (those conditional upon document state) are generated
 with output.
 Classes specified by PHP extended attributes are not checked for
 existence.
-Differences are rendered using document tracking.
 .It Fl t Ns Ar gemini
 Gemini
 .Dq gemtext
 format.
 .It Fl t Ns Ar html
 HTML5 output with UTF-8 encoding.
-Differences are rendered using the
-.Li <ins>
-and
-.Li <del>
-elements.
 .It Fl t Ns Ar latex
 Simple LaTeX output.
 The following packages are required:
@@ -504,8 +489,6 @@ for Latin modern font,
 for the difference engine output, and
 .Li hyperref
 for links.
-Differences are rendered by colouring in blue (insert) and red (delete)
-(this format is not fixed).
 .It Fl t Ns Ar man
 The
 .Ar man
@@ -522,8 +505,6 @@ Table support is provided by
 Since UTF-8 may be passed as input values,
 .Xr preconv 1
 may need to be used.
-Differences are rendered by colouring in blue (insert) and red (delete)
-(this format is not fixed).
 .It Fl t Ns Ar ms
 The
 .Ar ms
@@ -541,20 +522,50 @@ Table support is provided by
 Since UTF-8 may be passed as input values,
 .Xr preconv 1
 may need to be used.
-Differences are rendered by colouring in blue (insert) and red (delete)
-(this format is not fixed).
 .It Fl t Ns Ar term
 ANSI-escaped UTF-8 output suitable for reading on the terminal.
 Images and equations not supported.
+.It Fl t Ns Ar tree
+Debugging output.
+Not for programmatic use, as the format may change between versions.
+.El
+.Ss Differences
+The differences between old and new document are illustrated in the following
+ways:
+.Bl -tag -width Ds
+.It Fl t Ns Ar fodt
+.Dq Flat
+Differences are rendered using document tracking.
+.It Fl t Ns Ar gemini
+Differences are not rendered.
+.It Fl t Ns Ar latex
+Differences are rendered by colouring in blue (insert) and red (delete)
+(this format is not fixed).
+.It Fl t Ns Ar man
+Differences are rendered by colouring in blue (insert) and red (delete)
+(this format is not fixed).
+.It Fl t Ns Ar ms
+Differences are rendered by colouring in blue (insert) and red (delete)
+(this format is not fixed).
+.It Fl t Ns Ar term
 Differences are rendered by background-colouring in blue (insert) and
 red (delete) (this format is not fixed).
 .It Fl t Ns Ar tree
-Debugging output: not for general use.
+Differences are manually in the tree output.
 .El
+.Pp
+Differences in content metadata use the following rule: deleted metadata
+key-value pairs are not processed in the output, so only inserted or
+retained metadata are processed.
 .Ss Standalone documents
 When
 .Fl s
-is specified, additional content may be added to output:
+is specified, the formatted content is serialised into a self-contained
+document template as defined by the output type.
+.Pp
+If not explicitly set with
+.Fl -template ,
+a default template is produced as follows:
 .Bl -tag -width Ds
 .It Fl t Ns Ar fodt
 Envelope
@@ -595,18 +606,32 @@ statements.
 Prologue macros.
 .It Fl t Ns Ar term
 Prologue lines.
+.It Fl t Ns Ar tree
+Metadata and parsed template.
 .El
 .Pp
-If parsed from the document or as given by
+See
+.Sx Metadata
+for metadata values used by the default template.
+.Ss Metadata
+Metadata keys are canonicalised and de-deduplicated in the following
+order:
 .Fl m
-or
-.Fl M ,
-the following metadata keys are used by additional content.
-The metadata keys are canonicalised in lowercase and without spaces.
+.Pq overridden by document content and Fl M ,
+the prologue of the document itself, then
+.Fl M
+.Pq overriding document content and Fl m .
 .Pp
-Metadata values should not be encoded in their output format, e.g.,
-.Dq css: foo&amp;bar .
-The renderer will perform any necessary output encoding.
+After de-duplication, metadata is serialised into document variables
+and/or standalone
+.Fl s
+output.
+.Pp
+When not using
+.Fl -template ,
+the following metadata keys are used in the default
+.Fl s
+template:
 .Bl -tag -width Ds
 .It Li affiliation
 Author affiliation (organisation or institution).
@@ -765,29 +790,14 @@ and
 .Fl t Ns Ar term .
 .El
 .Pp
-Metadata values are parsed and may be used as variables in markdown
-documents regardless of whether
-.Fl s
-is specified or not.
-.Pp
 Default values, such
 .Dq 7
 for the
 .Li section ,
 are not set as metadata values, and will not appear if the metadata key
 is used as a variable.
-.Pp
-Differences in additional content metadata are rendered differently than
-in the document body: deleted metadata key-value pairs are not processed
-in the output, so only inserted or retained metadata are processed.
-.Pp
-In formats where metadata are part of the document body, such as
-.Fl t Ns Ar term
-and
-.Fl t Ns Ar tree ,
-all metadata are shown as if in the document body.
 .Ss Templates
-Some output modes accept a template
+Some output media accept a template
 .Pq Fl -template
 to customise standalone
 .Pq Fl s
@@ -796,65 +806,65 @@ Parsed input content is filled into templates through control statements
 that support conditionals, loops, and variable transformation sequences.
 .Pp
 Control statements are delimited as
-.Li $statement$
+.Cm $statement$
 or
-.Li ${statement} .
+.Cm ${statement} .
 Arbitrary white-space may surround the case-insensitive statement
 between matching delimiters.
 Statements without a closing delimiter are considered opaque text.
 .Pp
 The following statements are available:
 .Bl -tag -width Ds
-.It Li $$ , ${}
+.It Cm $$ , ${}
 Output a literal
-.Li $ .
+.Cm $ .
 This may contain arbitrary white-space.
-.It Li $ifdef(expression)$
+.It Cm $ifdef(expression)$
 Conditional statement.
 There may not be any white-space between the
-.Li ifdef
+.Cm ifdef
 and the opening parenthesis.
 Begins a block that is ended by a
-.Li else ,
-.Li endif ,
+.Cm else ,
+.Cm endif ,
 or the end of file.
 Its contents are output only if
-.Li expression
+.Cm expression
 evaluates to a non-empty string.
-.It Li $else$
+.It Cm $else$
 Begins a block that is ended by a
-.Li endif
+.Cm endif
 or end of file.
 Its contents are output only if the condition of a 
 preceding
-.Li ifdef
+.Cm ifdef
 evaluates to an empty string.
 An
-.Li else
+.Cm else
 without a preceding
-.Li ifdef
+.Cm ifdef
 is not output.
-.It Li $endif$
+.It Cm $endif$
 Closes a block begin with
-.Li ifdef
+.Cm ifdef
 or
-.Li else .
+.Cm else .
 If not preceded by one of those statements, is silently ignored.
-.It Li $for(expression)$
+.It Cm $for(expression)$
 Looping statement.
 There may not be any white-space between the
-.Li for
+.Cm for
 and the opening parenthesis.
 Begins a block that is ended by an
-.Li endfor
+.Cm endfor
 or the end of file.
 Block contents contents are repeatedly output for each list item
 evaluated from
-.Li expression .
+.Cm expression .
 The anaphoric keyword
-.Li this
+.Cm this
 may be used to access the current loop expression within the block.
-.It Li $expression$
+.It Cm $expression$
 Replaced by the result of evaluating a template expression.
 .El
 .Pp
@@ -875,38 +885,38 @@ The
 .Li initial
 value is one of the following:
 .Bl -tag -width Ds
-.It Li and(expression[,expression]*)
+.It Cm and(expression[,expression]*)
 A non-empty list containing the value
 .Li true
 if all expressions evaluate to non-empty lists, otherwise an empty list.
 An empty expression evaluates to an empty list.
 .It canonicalised metadata key
 The value for the given metadata key, if found, otherwise an empty list.
-.It Li body
+.It Cm body
 The parsed input document body.
-.It Li meta(val)
-Evaluate
-.Li val
-as a canonicalised metadata key, even if it's a keyword like
+.It Cm meta(key)
+Produce the metadata value for the canonicalised metadata
+.Cm key .
+Allows for keys that are also keywords like
 .Li body
 or
 .Li endif .
-.It Li not(expression)
+.It Cm not(expression)
 A non-empty list
 containing the value
 .Li true
 if the expression evaluates as an empty list, otherwise an empty list.
-.It Li or(expression[,expression]*)
+.It Cm or(expression[,expression]*)
 A non-empty list containing the value
 .Li true
 if one expression evaluates to non-empty lists, otherwise an empty list.
 An empty expression evaluates to an empty list.
-.It Li this
+.It Cm this
 The value of a current loop context or an empty list.
 .El
 .Pp
 If a metadata key is not specified in the input, or if the anaphoric
-.Li this
+.Cm this
 has not initialised by a looping context, the initial value evaluates to an
 empty list.
 Otherwise, the value is a singleton list.
@@ -915,40 +925,40 @@ If transforms are invalid, they will transform into an empty list.
 .Pp
 The following transformations are available:
 .Bl -tag -width Ds
-.It Li escapegemini , escapegeminiline
+.It Cm escapegemini , escapegeminiline
 Escape list items for gemini
 .Pq Fl t Ns Ar gemini ,
 either for multiple lines or compressed to a single line.
-.It Li escapehtml , escapehtmlattr , escapehtmlurl
+.It Cm escapehtml , escapehtmlattr , escapehtmlurl
 Escape list items for HTML
 .Pq Fl t Ns Ar html
 body content, attributes, and URL attributes,
 respectively.
-.It Li escapelatex
+.It Cm escapelatex
 Escape list items for LaTeX
 .Pq Fl t Ns Ar latex
 body content.
-.It Li escaperoff , escaperoffline
+.It Cm escaperoff , escaperoffline
 Escape list items for roff
 .Pq Fl t Ns Ar ms , Fl t Ns Ar man ,
 either for multiple lines or compressed to a single line.
-.It Li join
+.It Cm join
 Join a list into a singleton list using two spaces as a join delimiter.
-.It Li lowercase
+.It Cm lowercase
 Lowercase all list items.
-.It Li split
+.It Cm split
 Split list items on sequences of two or more white-space tokens (space,
 newline, tab).
 This is usually invoked on a singleton, but may be repeatedly invoked on
 a pre-split list.
 Invokes
-.Li trim
+.Cm trim
 prior to the first split.
 The resulting list has no items that are only white-space.
-.It Li trim
+.It Cm trim
 Trim white-space from the beginning and end of all list items.
 If an item has no non-white-space, it is discarded.
-.It Li uppercase
+.It Cm uppercase
 Uppercase all list items.
 .El
 .Sh ENVIRONMENT
