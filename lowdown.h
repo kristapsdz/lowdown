@@ -320,6 +320,7 @@ struct	lowdown_opts {
 	size_t			  maxdepth;
 	size_t			  cols;
 	size_t			  hmargin;
+	size_t			  hpadding;
 	size_t			  vmargin;
 	unsigned int		  feat;
 #define LOWDOWN_ATTRS		  0x80000

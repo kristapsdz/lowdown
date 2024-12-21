@@ -45,6 +45,7 @@ struct term {
 	size_t			  stackpos; /* position in stack */
 	size_t			  maxcol; /* soft limit */
 	size_t			  hmargin; /* left of content */
+	size_t			  hpadding; /* left of content */
 	size_t			  vmargin; /* before/after content */
 	struct lowdown_buf	 *tmp; /* for temporary allocations */
 	wchar_t			 *buf; /* buffer for counting wchar */
@@ -617,6 +618,9 @@ rndr_buf_startline_prefixes(struct term *term,
 			return 0;
 		pstyle = 1;
 		for (i = 0; i < term->hmargin; i++)
+			if (!HBUF_PUTSL(out, " "))
+				return 0;
+		for (i = 0; i < term->hpadding; i++)
 			if (!HBUF_PUTSL(out, " "))
 				return 0;
 		break;
@@ -1718,10 +1722,18 @@ lowdown_term_new(const struct lowdown_opts *opts)
 	if (opts != NULL) {
 		st->maxcol = opts->cols == 0 ? 80 : opts->cols;
 		st->hmargin = opts->hmargin;
+		st->hpadding = opts->hpadding;
 		st->vmargin = opts->vmargin;
 		st->opts = opts->oflags;
-	} else
+	} else {
 		st->maxcol = 80;
+		st->hpadding = 4;
+	}
+
+	if (st->hpadding >= st->maxcol)
+		st->maxcol = 1;
+	else
+		st->maxcol -= st->hpadding;
 
 	if ((st->tmp = hbuf_new(32)) == NULL) {
 		free(st);

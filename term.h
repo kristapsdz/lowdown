@@ -164,7 +164,7 @@ static const struct sty sty_table =	{ 0, 0, 0, 0,   0, 93, 0 };
  */
 
 /* All non-header (child to the document root) content (no style). */
-static const struct pfx pfx_body =	{ "    ", 4 };
+static const struct pfx pfx_body =	{ "", 0 };
 
 /* All header (child to the document root) content (no style). */
 static const struct pfx pfx_header =	{ "", 0 };

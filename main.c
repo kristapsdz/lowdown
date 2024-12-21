@@ -321,6 +321,7 @@ main(int argc, char *argv[])
 
 		{ "term-columns",	required_argument, NULL, 4 },
 		{ "term-hmargin",	required_argument, NULL, 2 },
+		{ "term-hpadding",	required_argument, NULL, 9 },
 		{ "term-vmargin",	required_argument, NULL, 3 },
 		{ "term-width",		required_argument, NULL, 1 },
 
@@ -426,6 +427,7 @@ main(int argc, char *argv[])
 	TAILQ_INIT(&mq);
 	memset(&opts, 0, sizeof(struct lowdown_opts));
 
+	opts.hpadding = 4;
 	opts.maxdepth = 128;
 	opts.type = LOWDOWN_HTML;
 	opts.feat =
@@ -571,6 +573,12 @@ main(int argc, char *argv[])
 		case 8:
 			templfn = optarg;
 			break;
+		case 9:
+			opts.hpadding = strtonum
+				(optarg, 0, INT_MAX, &er);
+			if (er == NULL)
+				break;
+			errx(1, "--term-hpadding: %s", er);
 		default:
 			goto usage;
 		}
