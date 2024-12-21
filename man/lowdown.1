@@ -367,13 +367,25 @@ If
 is specified, output all metadata instead of just the title, author, and
 date.
 .It Fl -term-columns=columns
-The number of columns in the screen.
+The number of columns in the terminal.
 Useful for when running in a pipe.
-Defaults to what the terminal reports or 72 if in a pipe.
+Defaults to what the terminal reports or 72 if not in a terminal.
 .It Fl -term-hmargin=margin
-The number of left margin spaces.
-Truncated to the number of columns.
+The number of left margin characters.
 Defaults to zero.
+Can also be
+.Ar centre
+or
+.Ar center
+to set the left margin to half the remaining
+.Fl -term-columns
+after subtracting
+.Fl -term-width .
+.It Fl -term-hpadding=padding
+The number of left padding characters.
+Defaults to four.
+Padding eats into
+.Fl -term-width .
 .It Fl -term-no-ansi
 Don't show ANSI styles at all.
 This implies
@@ -395,10 +407,14 @@ and final path.
 The number of top and bottom margin newlines.
 Defaults to zero.
 .It Fl -term-width=width
-Set the soft limit on the number of characters per line.
+Soft limit on the number of characters per line including
+.Pq Fl -term-hpadding .
 This may be exceeded by literal text.
-The default (or if zero) is the number of terminal columns or 80 at
-most.
+If zero or unset, defaults to
+.Fl -term-columns
+or 80 at most.
+Truncates to
+.Fl -term-columns .
 .El
 .Pp
 The
