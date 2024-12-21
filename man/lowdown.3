@@ -484,21 +484,6 @@ to only show shortened autolinks.
 .It Va size_t maxdepth
 The maximum parse depth before the parser exits.
 Most documents will have a parse depth in the single digits.
-.It Va size_t cols
-For
-.Dv LOWDOWN_TERM ,
-the
-.Dq soft limit
-for width of terminal output not including margins.
-If zero, 80 shall be used.
-.It Va size_t hmargin
-For
-.Dv LOWDOWN_TERM ,
-the left margin (space characters).
-.It Va size_t vmargin
-For
-.Dv LOWDOWN_TERM ,
-the top/bottom margin (newlines).
 .It Va struct lowdown_opts_nroff nroff
 If
 .Va type
@@ -531,6 +516,27 @@ or the OpenDocument styles used when creating standalone documents.
 If
 .Dv NULL ,
 the default styles are used.
+.It Va struct lowdown_opts_term term
+If
+.Va type
+is
+.Dv LOWDOWN_TERM ,
+this contains
+.Vt "size_t cols" ,
+the non-zero number of columns in the terminal;
+.Vt "size_t width" ,
+the requested content width or zero for auto;
+.Vt "size_t hmargin" ,
+left-margin width;
+.Vt "size_t hpadding" ,
+left-padding width eating into
+.Vt width ;
+.Vt "size_t vmargin" ,
+the vertical margin in lines; and
+.Vt "int centre"
+if the content should be centred
+.Vt ( hmargin
+is ignored).
 .It Va char **meta
 An array of metadata key-value pairs or
 .Dv NULL .
