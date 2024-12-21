@@ -902,9 +902,10 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 	const struct lowdown_node *n, const struct lowdown_buf *in,
 	const struct sty *osty)
 {
-	size_t				 i = 0, len, cols;
+	size_t				 i = 0, len, cols, nlen;
 	ssize_t				 ret;
-	int				 needspace, begin = 1, end = 0;
+	int				 needspace, hasspace,
+					 begin = 1, end = 0;
 	const char			*start;
 	const struct lowdown_node	*nn;
 
@@ -913,22 +914,30 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 	  	    nn->type == LOWDOWN_BLOCKHTML)
 			return rndr_buf_literal(term, out, n, in, osty);
 
-	/* Start each word by seeing if it has leading space. */
-
 	while (i < in->size) {
+		/*
+		 * Whether we need a space (word begins with space) and
+		 * have a space (current printed content ends with one).
+		 */
+
 		needspace = isspace((unsigned char)in->data[i]);
+		hasspace = out->size > 0 &&
+			isspace((unsigned char)out->data[out->size - 1]);
+
+		/* Skip to next word, then see how long the word is. */
 
 		while (i < in->size &&
 		       isspace((unsigned char)in->data[i]))
 			i++;
-
-		/* See how long it the coming word (may be 0). */
-
 		start = &in->data[i];
 		while (i < in->size &&
 		       !isspace((unsigned char)in->data[i]))
 			i++;
+
+		/* Get length and adjusted length (includes space). */
+
 		len = &in->data[i] - start;
+		nlen = len + (needspace ? 1 : 0);
 
 		/*
 		 * If we cross our maximum width and are preceded by a
@@ -939,10 +948,9 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 		 * This will also unset the current style.
 		 */
 
-		if ((needspace ||
-	 	     (out->size && isspace
-		      ((unsigned char)out->data[out->size - 1]))) &&
-		    term->col && term->col + len > term->maxcol) {
+		if ((needspace || hasspace) &&
+		    term->col > 0 &&
+		    term->col + nlen >= term->maxcol) {
 			if (!rndr_buf_endline(term, out, n, osty))
 				return 0;
 			end = 0;
