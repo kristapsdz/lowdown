@@ -43,7 +43,7 @@ struct term {
 	struct tstack		 *stack; /* stack of nodes */
 	size_t			  stackmax; /* size of stack */
 	size_t			  stackpos; /* position in stack */
-	size_t			  maxcol; /* soft limit */
+	size_t			  width; /* soft width of content */
 	size_t			  hmargin; /* left of content */
 	size_t			  hpadding; /* left of content */
 	size_t			  vmargin; /* before/after content */
@@ -954,7 +954,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 
 		if ((needspace || hasspace) &&
 		    term->col > 0 &&
-		    term->col + nlen >= term->maxcol) {
+		    term->col + nlen >= term->width) {
 			if (!rndr_buf_endline(term, out, n, osty))
 				return 0;
 			end = 0;
@@ -1116,12 +1116,12 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 				 * line wrapping.
 				 */
 
-				maxcol = st->maxcol;
+				maxcol = st->width;
 				last_blank = st->last_blank;
 				col = st->col;
 
 				st->last_blank = 0;
-				st->maxcol = SIZE_MAX;
+				st->width = SIZE_MAX;
 				st->col = 1;
 				if (!rndr(celltmp, st, cell))
 					goto out;
@@ -1129,7 +1129,7 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 					widths[i] = st->col;
 				st->last_blank = last_blank;
 				st->col = col;
-				st->maxcol = maxcol;
+				st->width = maxcol;
 			}
 	}
 
@@ -1149,12 +1149,12 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 			TAILQ_FOREACH(cell, &row->children, entries) {
 				i = cell->rndr_table_cell.col;
 				hbuf_truncate(celltmp);
-				maxcol = st->maxcol;
+				maxcol = st->width;
 				last_blank = st->last_blank;
 				col = st->col;
 
 				st->last_blank = 0;
-				st->maxcol = SIZE_MAX;
+				st->width = SIZE_MAX;
 				st->col = 1;
 				if (!rndr(celltmp, st, cell))
 					goto out;
@@ -1196,7 +1196,7 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 
 				st->last_blank = last_blank;
 				st->col = col;
-				st->maxcol = maxcol;
+				st->width = maxcol;
 
 				if (TAILQ_NEXT(cell, entries) == NULL)
 					continue;
@@ -1717,23 +1717,43 @@ lowdown_term_new(const struct lowdown_opts *opts)
 	if ((st = calloc(1, sizeof(struct term))) == NULL)
 		return NULL;
 
-	/* Give us 80 columns by default. */
-
 	if (opts != NULL) {
-		st->maxcol = opts->cols == 0 ? 80 : opts->cols;
-		st->hmargin = opts->hmargin;
-		st->hpadding = opts->hpadding;
-		st->vmargin = opts->vmargin;
+		/*
+		 * Compute the width of the content pre-padding.  If
+		 * zero, limit to 80 or the number of terminal columns.
+		 * Otherwise, truncate to the number of columns.
+		 */
+
+		if (opts->term.width == 0) {
+			if ((st->width = opts->term.cols) > 80)
+				st->width = 80;
+		} else if (opts->term.width > opts->term.cols) {
+			st->width = opts->term.cols;
+		} else
+			st->width = opts->term.width;
+
+		/*
+		 * Compute the horizontal margin: either as given or, if
+		 * centred, computed from the content width.
+		 */
+
+		if (opts->term.centre && st->width < opts->term.cols)
+			st->hmargin = (opts->term.cols - st->width) / 2;
+		else
+			st->hmargin = opts->term.hmargin;
+
+		st->hpadding = opts->term.hpadding;
+		st->vmargin = opts->term.vmargin;
 		st->opts = opts->oflags;
 	} else {
-		st->maxcol = 80;
+		st->width = 80;
 		st->hpadding = 4;
 	}
 
-	if (st->hpadding >= st->maxcol)
-		st->maxcol = 1;
+	if (st->hpadding >= st->width)
+		st->width = 1;
 	else
-		st->maxcol -= st->hpadding;
+		st->width -= st->hpadding;
 
 	if ((st->tmp = hbuf_new(32)) == NULL) {
 		free(st);

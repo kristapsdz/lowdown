@@ -264,6 +264,7 @@ main(int argc, char *argv[])
 				*mainopts = "LM:m:sT:t:o:X:",
 	      			*diffopts = "M:m:sT:t:o:",
 				*templfn = NULL, *odtstylefn = NULL;
+	struct lowdown_opts_term topts;
 	struct lowdown_opts 	 opts;
 	int			 c, diff = 0, status = 0, afl = 0,
 				 rfl = 0, aifl = 0, rifl = 0,
@@ -420,14 +421,15 @@ main(int argc, char *argv[])
 
 	/* Get the real number of columns or 72. */
 
-	rcols = get_columns();
+	memset(&topts, 0, sizeof(struct lowdown_opts_term));
+	topts.cols = get_columns();
+	topts.hpadding = 4;
 
 	sandbox_pre();
 
 	TAILQ_INIT(&mq);
 	memset(&opts, 0, sizeof(struct lowdown_opts));
 
-	opts.hpadding = 4;
 	opts.maxdepth = 128;
 	opts.type = LOWDOWN_HTML;
 	opts.feat =
@@ -521,28 +523,28 @@ main(int argc, char *argv[])
 				opts.feat |= aifl;
 			break;
 		case 1:
-			opts.cols = strtonum(optarg, 0, INT_MAX, &er);
+			topts.width = strtonum(optarg, 0, INT_MAX, &er);
 			if (er == NULL)
 				break;
 			errx(1, "--term-width: %s", er);
 		case 2:
 			if (strcmp(optarg, "centre") == 0 ||
 			    strcmp(optarg, "centre") == 0) {
-				centre = 1;
+				topts.centre = 1;
 				break;
 			}
-			opts.hmargin = strtonum
+			topts.hmargin = strtonum
 				(optarg, 0, INT_MAX, &er);
 			if (er == NULL)
 				break;
 			errx(1, "--term-hmargin: %s", er);
 		case 3:
-			opts.vmargin = strtonum(optarg, 0, INT_MAX, &er);
+			topts.vmargin = strtonum(optarg, 0, INT_MAX, &er);
 			if (er == NULL)
 				break;
 			errx(1, "--term-vmargin: %s", er);
 		case 4:
-			rcols = strtonum(optarg, 1, INT_MAX, &er);
+			topts.cols = strtonum(optarg, 1, INT_MAX, &er);
 			if (er == NULL)
 				break;
 			errx(1, "--term-columns: %s", er);
@@ -574,7 +576,7 @@ main(int argc, char *argv[])
 			templfn = optarg;
 			break;
 		case 9:
-			opts.hpadding = strtonum
+			topts.hpadding = strtonum
 				(optarg, 0, INT_MAX, &er);
 			if (er == NULL)
 				break;
@@ -590,21 +592,8 @@ main(int argc, char *argv[])
  	    opts.type == LOWDOWN_GEMINI)
 		setlocale(LC_CTYPE, "");
 
-	/* 
-	 * By default, try to show 80 columns.
-	 * Don't show more than the number of available columns.
-	 */
-
-	if (opts.cols == 0) {
-		if ((opts.cols = rcols) > 80)
-			opts.cols = 80;
-	} else if (opts.cols > rcols)
-		opts.cols = rcols;
-
-	/* If we're centred, set our margins. */
-
-	if (centre && opts.cols < rcols)
-		opts.hmargin = (rcols - opts.cols) / 2;
+	if (opts.type == LOWDOWN_TERM)
+		opts.term = topts;
 
 	/* 
 	 * Diff mode takes two arguments: the first is mandatory (the

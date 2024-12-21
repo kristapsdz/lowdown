@@ -311,17 +311,23 @@ struct	lowdown_opts_nroff {
 	const char		*cbi;
 };
 
+struct	lowdown_opts_term {
+	size_t			 cols;
+	size_t			 width;
+	size_t			 hmargin;
+	size_t			 hpadding;
+	size_t			 vmargin;
+	int			 centre;
+};
+
 struct	lowdown_opts {
 	enum lowdown_type	  type;
 	union {
 		struct lowdown_opts_odt odt;
 		struct lowdown_opts_nroff nroff;
+		struct lowdown_opts_term term;
 	};
 	size_t			  maxdepth;
-	size_t			  cols;
-	size_t			  hmargin;
-	size_t			  hpadding;
-	size_t			  vmargin;
 	unsigned int		  feat;
 #define LOWDOWN_ATTRS		  0x80000
 #define LOWDOWN_AUTOLINK	  0x08
