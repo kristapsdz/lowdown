@@ -29,17 +29,10 @@
 .Fa "const struct lowdown_opts *opts"
 .Fc
 .Sh DESCRIPTION
-Allocates a terminal renderer using
-.Fa opts->cols ,
-.Fa opts->hmargin ,
-.Fa opts->vmargin ,
-and
-.Fa opts->oflags ,
-or 80 and all others zero, respectively, if
-.Fa opts
-is
-.Dv NULL .
-These fields are documented in
+Allocates a terminal renderer using variables in the
+.Va "struct lowdown_opts_term"
+structure.
+Its fields are documented in
 .Xr lowdown 3 .
 The returned pointer may be used with multiple invocations of
 .Xr lowdown_term_rndr 3
