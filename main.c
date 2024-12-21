@@ -267,12 +267,11 @@ main(int argc, char *argv[])
 	struct lowdown_opts_term topts;
 	struct lowdown_opts 	 opts;
 	int			 c, diff = 0, status = 0, afl = 0,
-				 rfl = 0, aifl = 0, rifl = 0,
-				 centre = 0, list = 0;
+				 rfl = 0, aifl = 0, rifl = 0, list = 0;
 	char			*ret = NULL, *cp, *templptr = NULL,
 				*nroffcodefn = NULL,
 				*odtstyleptr = NULL;
-	size_t		 	 i, retsz = 0, rcols;
+	size_t		 	 i, retsz = 0;
 	struct lowdown_meta 	*m;
 	struct lowdown_metaq	 mq;
 	struct option 		 lo[] = {
@@ -528,8 +527,9 @@ main(int argc, char *argv[])
 				break;
 			errx(1, "--term-width: %s", er);
 		case 2:
-			if (strcmp(optarg, "centre") == 0 ||
-			    strcmp(optarg, "centre") == 0) {
+			if (strcmp(optarg, "auto") == 0 ||
+			    strcmp(optarg, "centre") == 0 ||
+			    strcmp(optarg, "center") == 0) {
 				topts.centre = 1;
 				break;
 			}
