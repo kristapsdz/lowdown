@@ -121,6 +121,7 @@ IMAGES		 = screen-mandoc.png \
 THUMBS		 = screen-mandoc.thumb.jpg \
 		   screen-groff.thumb.jpg \
 		   screen-term.thumb.jpg
+CFLAGS		+= -DVERSION=\"$(VERSION)\"
 # Because the objects will be compiled into a shared library:
 CFLAGS		+= -fPIC
 # To avoid exporting internal functions (lowdown.h has default visibility).

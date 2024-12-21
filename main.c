@@ -261,12 +261,12 @@ main(int argc, char *argv[])
 				*din = NULL;
 	const char		*fnin = "<stdin>", *fnout = NULL,
 	      	 		*fndin = NULL, *extract = NULL, *er,
-				*mainopts = "LM:m:sT:t:o:X:",
-	      			*diffopts = "M:m:sT:t:o:",
+				*mainopts = "LM:m:sT:t:o:X:h",
+				*diffopts = "M:m:sT:t:o:h",
 				*templfn = NULL, *odtstylefn = NULL;
 	struct lowdown_opts_term topts;
 	struct lowdown_opts 	 opts;
-	int			 c, diff = 0, status = 0, afl = 0,
+	int			 c, diff = 0, status = 1, afl = 0,
 				 rfl = 0, aifl = 0, rifl = 0, list = 0;
 	char			*ret = NULL, *cp, *templptr = NULL,
 				*nroffcodefn = NULL,
@@ -394,8 +394,9 @@ main(int argc, char *argv[])
 		{ "parse-callouts",	no_argument,	&aifl, LOWDOWN_CALLOUTS },
 		{ "parse-no-callouts",	no_argument,	&rifl, LOWDOWN_CALLOUTS },
 		{ "parse-maxdepth",	required_argument, NULL, 5 },
-
 		{ "template",		required_argument, NULL, 8 },
+		{ "version",		no_argument,	NULL, 10 },
+		{ "help",		no_argument,	NULL, 11 },
 
 		/* Deprecated "nroff" prefix. */
 
@@ -581,9 +582,29 @@ main(int argc, char *argv[])
 			if (er == NULL)
 				break;
 			errx(1, "--term-hpadding: %s", er);
+		case 10:
+			/*
+			 * Print the version with --version.
+			 */
+			printf("lowdown %s\n", VERSION);
+			return 0;
+		case 'h':
+			/* FALLTHROUGH */
+		case 11:
+			/*
+			 * Used by -h or --help to print the usage
+			 * message and not exit with failure.
+			 */
+			status = 0;
+			goto usage;
 		default:
+			/*
+			 * Bad argument: exit with failure.
+			 */
 			goto usage;
 		}
+
+	status = 0;
 
 	argc -= optind;
 	argv += optind;
@@ -756,15 +777,15 @@ main(int argc, char *argv[])
 usage:
 	if (!diff) {
 		fprintf(stderr, 
-			"usage: lowdown [-Ls] [input_options] "
+			"usage: lowdown [-hLs] [input_options] "
 			"[output_options] [-M metadata]\n"
 			"               [-m metadata] "
 			"[-o output] [-t mode] [-X keyword] [file]\n");
 	} else
 		fprintf(stderr, 
-			"usage: lowdown-diff [-s] [input_options] "
+			"usage: lowdown-diff [-hs] [input_options] "
 			"[output_options] [-M metadata]\n"
 			"                    [-m metadata] "
 			"[-o output] [-t mode] oldfile [newfile]\n");
-	return 1;
+	return status;
 }
