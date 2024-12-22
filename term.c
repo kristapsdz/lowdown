@@ -583,21 +583,6 @@ rndr_buf_startline_prefixes(struct term *term,
 	emit = term->stack[i].lines++;
 
 	/*
-	 * If we're below the document root and not a header, that means
-	 * we're in a body part.  Emit the general body indentation.
-	 */
-
-	if (*depth == 0 && n->type != LOWDOWN_HEADER) {
-		if (!hbuf_puts(out, pfx_body.text))
-			return 0;
-		rndr_buf_advance(term, pfx_body.cols);
-	} else if (*depth == 0) {
-		if (!hbuf_puts(out, pfx_header.text))
-			return 0;
-		rndr_buf_advance(term, pfx_header.cols);
-	}
-
-	/*
 	 * Output any prefixes.
 	 * Any output must have rndr_buf_style() and set pstyle so that
 	 * we close out the style afterward.

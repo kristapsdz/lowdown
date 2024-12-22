@@ -163,12 +163,6 @@ static const struct sty sty_tbl =	{ 0, 0, 0, 0,   0, 93, 0 };
  * least 4 spaces would be printed, even if it were "1. " -> " 1. ".
  */
 
-/* All non-header (child to the document root) content (no style). */
-static const struct pfx pfx_body =	{ "", 0 };
-
-/* All header (child to the document root) content (no style). */
-static const struct pfx pfx_header =	{ "", 0 };
-
 /* Block code (see sty_bkcd_pfx). */
 static const struct pfx pfx_bkcd =	{ "  │ ", 4 };
 
