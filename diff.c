@@ -767,7 +767,7 @@ node_clonetree(const struct lowdown_node *v, size_t *id)
 	struct lowdown_node *n, *nn;
 	const struct lowdown_node *vv;
 
-	if ((n = node_clone(v, *id++)) == NULL)
+	if ((n = node_clone(v, (*id)++)) == NULL)
 		return NULL;
 
 	TAILQ_FOREACH(vv, &v->children, entries) {
