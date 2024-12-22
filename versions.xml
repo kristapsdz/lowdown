@@ -1694,4 +1694,68 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>1.4.0</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2024-12-22">2024-12-22</time>
+		</header>
+		<aside>
+			<p>
+				Deprecate the <b>--nroff</b> argument prefix in favour of
+				<b>--roff</b>, so for example <b>--nroff-traditional</b>
+				becomes <b>--roff-traditional</b>.  The old prefix is
+				retained and will not be removed. Deprecated old
+				forms (e.g., <b>--nroff-no-groff</b>) did not get a
+				replacement.
+			</p>
+			<p>
+				Deprecate
+				<b>--term-nolinks</b> and
+				<b>--term-shortlinks</b> in favour of
+				<b>--term-no-links</b> and
+				<b>--term-short-links</b>, respectively.
+				The old forms are retained and will not be removed.
+			</p>
+			<p>
+				Add <b>--term-hpadding</b> and clarify the roles of
+				<b>--term-cols</b>, <b>--term-hmargin</b>, and
+				<b>--term-width</b>.  Also document <b>auto</b> argument
+				to <b>-term-hmargin</b>.  The default output looks the
+				same as it did before, but <b>--term-hpadding=0</b> can
+				now omit any leading characters.
+			</p>
+			<p>
+				Add <b>--term-no-rellinks</b> to omit only relative links.
+				This is useful because terminal output doesn't have a
+				concept of a "relative" link.
+			</p>
+			<p>
+				Document <b>--term-hmargin=auto</b>, previously
+				undocumented as <b>centre</b>.
+			</p>
+			<p>
+				Use UTF-8 sequences for <b>-tterm</b> lines: horizontal
+				lines, tables, block vertical lines, etc.
+				Simplify the image link output to look a little more
+				like pandoc.
+			</p>
+			<p>
+				API change (hence the minor version bump):
+				<a href="lowdown_tree_rndr.3.html">lowdown_tree_rndr(3)</a>
+				now also accepts a pointer to the options.
+				This is to enable debugging of the parse tree of
+				<b>--template</b>.
+				Now, passing <b>-s --template</b> to <b>-ttree</b> will
+				produce the template's parse tree alongside the parsed
+				content of the input.
+			</p>
+			<p>
+				API change (hence the minor version bump):
+				moving terminal-specific members of
+				<code>lowdown_opts</code> into
+				<code>lowdown_opts_term</code>.
+			</p>
+		</aside>
+	</article>
 </articles>
