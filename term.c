@@ -874,8 +874,8 @@ rndr_buf_startwords(struct term *term, struct lowdown_buf *out,
  */
 static int
 rndr_buf_literal(struct term *term, struct lowdown_buf *out,
-	const struct lowdown_node *n, const struct lowdown_buf *in,
-	const struct sty *osty)
+    const struct lowdown_node *n, const struct lowdown_buf *in,
+    const struct sty *osty)
 {
 	size_t		 i = 0, len;
 	const char	*start;
@@ -1050,6 +1050,32 @@ rndr_entity(struct lowdown_buf *buf, int32_t val)
 }
 
 /*
+ * Render a horizontal rule by repeating the character(s) in "hr" until
+ * the full screen width has been met.  This presumes that the caller
+ * has started a new line.  The style may be NULL.  A zero-length rule
+ * is silently ignored.
+ */
+static int
+rndr_hrule(struct term *st, struct lowdown_buf *ob, const char *hr,
+    const struct lowdown_node *n, const struct sty *sty)
+{
+	ssize_t	 ssz;
+	size_t	 sz, i;
+
+	if ((sz = strlen(hr)) == 0)
+		return 1;
+	if ((ssz = rndr_mbswidth(st, hr, sz)) < 0)
+		return 0;
+	if (ssz == 0)
+		return 1;
+	hbuf_truncate(st->tmp);
+	for (i = 0; i + ssz <= st->width; i += ssz)
+		if (!hbuf_puts(st->tmp, hr))
+			return 0;
+	return rndr_buf_literal(st, ob, n, st->tmp, sty);
+}
+
+/*
  * Adjust the stack of current nodes we're looking at.
  */
 static int
@@ -1211,7 +1237,7 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 
 				if (!HBUF_PUTSL(rowtmp, " ") ||
 				    !rndr_buf_style(st, rowtmp, &sty_tbl) ||
-				    !hbuf_puts(rowtmp, ifx_tbl_col.text) ||
+				    !hbuf_puts(rowtmp, ifx_tbl_col) ||
 				    !rndr_buf_unstyle(st, rowtmp, &sty_tbl) ||
 				    !HBUF_PUTSL(rowtmp, " "))
 					goto out;
@@ -1250,11 +1276,11 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 				goto out;
 			for (i = 0; i < n->rndr_table.columns; i++) {
 				for (j = 0; j < widths[i]; j++)
-					if (!hbuf_puts(ob, ifx_tbl_row.text))
+					if (!hbuf_puts(ob, ifx_tbl_row))
 						goto out;
 				if (i < n->rndr_table.columns - 1 &&
-				    !hbuf_puts(ob, ifx_tbl_mcol.text) &&
-				    !hbuf_puts(ob, ifx_tbl_row.text))
+				    !hbuf_puts(ob, ifx_tbl_mcol) &&
+				    !hbuf_puts(ob, ifx_tbl_row))
 					goto out;
 			}
 			rndr_buf_advance(st, 1);
@@ -1524,20 +1550,7 @@ rndr(struct lowdown_buf *ob, struct term *st,
 			return 0;
 		break;
 	case LOWDOWN_HRULE:
-		if (ifx_hrule.cols == 0)
-			break;
-
-		/*
-		 * Render the horizontal rule by having it stretch to
-		 * cover the entire printable space.
-		 */
-
-		hbuf_truncate(st->tmp);
-		for (i = 0; i + ifx_hrule.cols <= st->width;
-		     i += ifx_hrule.cols)
-			if (!hbuf_puts(st->tmp, ifx_hrule.text))
-				return 0;
-		if (!rndr_buf_literal(st, ob, n, st->tmp, NULL))
+		if (!rndr_hrule(st, ob, ifx_hrule, n, NULL))
 			return 0;
 		break;
 	case LOWDOWN_FOOTNOTE:
@@ -1597,15 +1610,27 @@ rndr(struct lowdown_buf *ob, struct term *st,
 		}
 		break;
 	case LOWDOWN_LINK:
-		if (st->opts & LOWDOWN_TERM_NOLINK)
+		/*
+		 * The child content of the link has already been
+		 * produced to the output buffer.  Inhibit printing the
+		 * link address if requested for all links or if a
+		 * relative address and requested only for those.
+		 */
+
+		if ((st->opts & LOWDOWN_TERM_NOLINK) ||
+		    ((st->opts & LOWDOWN_TERM_NORELLINK) &&
+		     link_isrelative(&n->rndr_link.link)))
 			break;
-		if ((st->opts & LOWDOWN_TERM_NORELLINK) &&
-		    link_isrelative(&n->rndr_link.link))
-			break;
+
+		/* Separate between text and link address. */
+
 		hbuf_truncate(st->tmp);
-		if (!HBUF_PUTSL(st->tmp, " ") ||
+		if (!hbuf_puts(st->tmp, ifx_link_sep) ||
 		    !rndr_buf(st, ob, n, st->tmp, NULL))
 			return 0;
+
+		/* Format the link address. */
+
 		if (st->opts & LOWDOWN_TERM_SHORTLINK) {
 			hbuf_truncate(st->tmp);
 			if (!hbuf_shortlink
@@ -1620,52 +1645,62 @@ rndr(struct lowdown_buf *ob, struct term *st,
 		}
 		break;
 	case LOWDOWN_IMAGE:
-		if (!rndr_buf(st, ob, n, &n->rndr_image.alt, NULL))
+		/*
+		 * This is a bit more complicated than LOWDOWN_LINK
+		 * because the image "alt" is in a buffer and not
+		 * arranged as child nodes.  Begin with the image-left
+		 * bracketing.
+		 */
+
+		hbuf_truncate(st->tmp);
+		if (!hbuf_puts(st->tmp, ifx_imgbox_left) ||
+		    !rndr_buf(st, ob, n, st->tmp, &sty_imgbox) ||
+		    !rndr_buf(st, ob, n, &n->rndr_image.alt,
+		    &sty_linkalt))
 			return 0;
-		if (n->rndr_image.alt.size) {
+
+		/* If omitting the link, right-bracket and bail. */
+
+		if ((st->opts & LOWDOWN_TERM_NOLINK) ||
+		    ((st->opts & LOWDOWN_TERM_NORELLINK) &&
+		     link_isrelative(&n->rndr_image.link))) {
 			hbuf_truncate(st->tmp);
-			if (!HBUF_PUTSL(st->tmp, " "))
-				return 0;
-			if (!rndr_buf(st, ob, n, st->tmp, NULL))
-				return 0;
-		}
-		if (st->opts & LOWDOWN_TERM_NOLINK) {
-			hbuf_truncate(st->tmp);
-			if (!hbuf_puts(st->tmp, ifx_imgbox_left))
-				return 0;
-			if (!hbuf_puts(st->tmp, ifx_imgbox_right))
-				return 0;
-			if (!rndr_buf(st, ob, n, st->tmp, &sty_imgbox))
+			if (!hbuf_puts(st->tmp, ifx_imgbox_right) ||
+			    !rndr_buf(st, ob, n, st->tmp, &sty_imgbox))
 				return 0;
 			break;
 		}
+
+		/* Separate between text and link address. */
+
 		hbuf_truncate(st->tmp);
-		if (!hbuf_puts(st->tmp, ifx_imgbox_left))
+		if (!hbuf_puts(st->tmp, ifx_imgbox_sep) ||
+		    !rndr_buf(st, ob, n, st->tmp, &sty_imgbox))
 			return 0;
-		if (!hbuf_puts(st->tmp, ifx_imgbox_sep))
-			return 0;
-		if (!rndr_buf(st, ob, n, st->tmp, &sty_imgbox))
-			return 0;
+
+		/* Format link address. */
+
 		if (st->opts & LOWDOWN_TERM_SHORTLINK) {
-			hbuf_truncate(st->tmp);
 			if (!hbuf_shortlink
 			    (st->tmp, &n->rndr_image.link))
 				return 0;
 			if (!rndr_buf(st, ob, n, st->tmp, &sty_imgurl))
 				return 0;
 		} else
-			if (!rndr_buf(st, ob, n,
-			    &n->rndr_image.link, &sty_imgurl))
+			if (!rndr_buf(st, ob, n, &n->rndr_image.link,
+			    &sty_imgurl))
 				return 0;
+
+		/* Right-bracket and end. */
+
 		hbuf_truncate(st->tmp);
-		if (!hbuf_puts(st->tmp, ifx_imgbox_right))
-			return 0;
-		if (!rndr_buf(st, ob, n, st->tmp, &sty_imgbox))
+		if (!hbuf_puts(st->tmp, ifx_imgbox_right) ||
+		    !rndr_buf(st, ob, n, st->tmp, &sty_imgbox))
 			return 0;
 		break;
 	case LOWDOWN_NORMAL_TEXT:
-		if (!rndr_buf(st, ob, n,
-		     &n->rndr_normal_text.text, NULL))
+		if (!rndr_buf(st, ob, n, &n->rndr_normal_text.text,
+		    NULL))
 			return 0;
 		break;
 	default:
@@ -1688,14 +1723,8 @@ rndr(struct lowdown_buf *ob, struct term *st,
 
 		if (st->footsz && !rndr_buf_vspace(st, ob, n, 2))
 			return 0;
-		if (st->footsz && ifx_foot.cols > 0) {
-			hbuf_truncate(st->tmp);
-			for (i = 0; i + ifx_foot.cols <= st->width;
-			     i += ifx_foot.cols)
-				if (!hbuf_puts(st->tmp, ifx_foot.text))
-					return 0;
-			if (!rndr_buf_literal(st, ob, n, st->tmp,
-			    &sty_foot))
+		if (st->footsz) {
+			if (!rndr_hrule(st, ob, ifx_foot, n, &sty_foot))
 				return 0;
 			if (!rndr_buf_vspace(st, ob, n, 2))
 				return 0;

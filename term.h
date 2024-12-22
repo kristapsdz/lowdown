@@ -211,7 +211,7 @@ static const struct pfx pfx_header_n =	{ "#", 1 };
  */
 
 /* Footnote block header (see sty_foot). */
-static const struct pfx ifx_foot =	{ "─", 1 };
+static const char *ifx_foot =		"─";
 
 /* Superscript. */
 static const char *ifx_super =		"^";
@@ -220,16 +220,19 @@ static const char *ifx_super =		"^";
 static const char *ifx_meta_key =	": ";
 
 /* Horizontal rule (repeats until covering full space). */
-static const struct pfx ifx_hrule =    { "─", 1 };
+static const char *ifx_hrule =    	"─";
 
 /* Image link box left-box (see sty_imgbox). */
-static const char *ifx_imgbox_left =	"[Image";
+static const char *ifx_imgbox_left = 	"[🖻 ";
 
 /* Image link box right-box (see sty_imgbox). */
 static const char *ifx_imgbox_right =	"]";
 
 /* Image link box separator (see sty_imgbox). */
-static const char *ifx_imgbox_sep =	": ";
+static const char *ifx_imgbox_sep =	" ";
+
+/* Link separator. */
+static const char *ifx_link_sep =	" ";
 
 /* Footnote reference left-box (see sty_fref). */
 static const char *ifx_fref_left =	"[";
@@ -238,10 +241,10 @@ static const char *ifx_fref_left =	"[";
 static const char *ifx_fref_right =	"]";
 
 /* Table column separator (see sty_tbl). */
-static const struct pfx ifx_tbl_col =	{ "│", 1 };
+static const char *ifx_tbl_col =	"│";
 
 /* Table header row separator (see sty_tbl). */
-static const struct pfx ifx_tbl_row =	{ "─", 1 };
+static const char *ifx_tbl_row =	"─";
 
 /* Table header row cross-separator (see sty_tbl). */
-static const struct pfx ifx_tbl_mcol =	{ "┼", 1 };
+static const char *ifx_tbl_mcol =	"┼";
