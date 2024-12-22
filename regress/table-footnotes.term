@@ -5,12 +5,12 @@
     
     a[1;93m[1][0m a[1;93m[2][0m a[1;93m[3][0m a[1;93m[4][0m a[1;93m[5][0m a[1;93m[6][0m a[1;93m[7][0m a[1;93m[8][0m
     
-              Officer[93m | [0mRank                
-    [93m------------------|----------------------[0m
-      Jean-Luc Picard[93m | [0mCaptain             
-              Worf[1;93m[9][0m[93m | [0mLieutenant Commander
-             Data[1;93m[10][0m[93m | [0mLieutenant Commander
-    William Riker[1;93m[11][0m[93m | [0mCommander           
+              Officer [93m│[0m Rank                
+    [93m──────────────────┼─────────────────────[0m
+      Jean-Luc Picard [93m│[0m Captain             
+              Worf[1;93m[9][0m [93m│[0m Lieutenant Commander
+             Data[1;93m[10][0m [93m│[0m Lieutenant Commander
+    William Riker[1;93m[11][0m [93m│[0m Commander           
 
     [37m~~~~~~~~[0m
 

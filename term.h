@@ -137,8 +137,8 @@ static const struct sty sty_bkqt_pfx =	{ 0, 0, 0, 0,   0, 93, 0 };
 /* Block code prefix (see pfx_bkcd): ``` >|< void \n >|< main``` */
 static const struct sty sty_bkcd_pfx =	{ 0, 0, 0, 0,   0, 94, 0 };
 
-/* Table separator (see ifx_table_col, ifx_table_col) . */
-static const struct sty sty_table =	{ 0, 0, 0, 0,   0, 93, 0 };
+/* Table separator (see ifx_tbl_col, ifx_tbl_mcol, ifx_tbl_row). */
+static const struct sty sty_tbl =	{ 0, 0, 0, 0,   0, 93, 0 };
 
 /*
  * Prefixes
@@ -170,10 +170,10 @@ static const struct pfx pfx_body =	{ "", 0 };
 static const struct pfx pfx_header =	{ "", 0 };
 
 /* Block code (see sty_bkcd_pfx). */
-static const struct pfx pfx_bkcd =	{ "  | ", 4 };
+static const struct pfx pfx_bkcd =	{ "  │ ", 4 };
 
 /* Block quote (see sty_bkqt_pfx). */
-static const struct pfx pfx_bkqt =	{ "  | ", 4 };
+static const struct pfx pfx_bkqt =	{ "  │ ", 4 };
 
 /* Definition list data, first line (see sty_dli_pfx). */
 static const struct pfx pfx_dli_1 =	{ "  : ", 4 };
@@ -243,8 +243,11 @@ static const char *ifx_fref_left =	"[";
 /* Footnote reference right-box (see sty_fref). */
 static const char *ifx_fref_right =	"]";
 
-/* Table column separator (see sty_table). */
-static const char *ifx_table_col =	"|";
+/* Table column separator (see sty_tbl). */
+static const struct pfx ifx_tbl_col =	{ "│", 1 };
 
-/* Table header row separator (see sty_table). */
-static const char *ifx_table_row =	"-";
+/* Table header row separator (see sty_tbl). */
+static const struct pfx ifx_tbl_row =	{ "─", 1 };
+
+/* Table header row cross-separator (see sty_tbl). */
+static const struct pfx ifx_tbl_mcol =	{ "┼", 1 };

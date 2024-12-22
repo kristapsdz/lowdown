@@ -1201,9 +1201,11 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 				if (TAILQ_NEXT(cell, entries) == NULL)
 					continue;
 
-				if (!rndr_buf_style(st, rowtmp, &sty_table) ||
-				    !hbuf_printf(rowtmp, " %s ", ifx_table_col) ||
-				    !rndr_buf_unstyle(st, rowtmp, &sty_table))
+				if (!HBUF_PUTSL(rowtmp, " ") ||
+				    !rndr_buf_style(st, rowtmp, &sty_tbl) ||
+				    !hbuf_puts(rowtmp, ifx_tbl_col.text) ||
+				    !rndr_buf_unstyle(st, rowtmp, &sty_tbl) ||
+				    !HBUF_PUTSL(rowtmp, " "))
 					goto out;
 			}
 
@@ -1236,19 +1238,19 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 			st->stackpos++;
 			if (!rndr_stackpos_init(st, n))
 				goto out;
-			if (!rndr_buf_startline(st, ob, n, &sty_table))
+			if (!rndr_buf_startline(st, ob, n, &sty_tbl))
 				goto out;
 			for (i = 0; i < n->rndr_table.columns; i++) {
 				for (j = 0; j < widths[i]; j++)
-					if (!hbuf_puts(ob, ifx_table_row))
+					if (!hbuf_puts(ob, ifx_tbl_row.text))
 						goto out;
 				if (i < n->rndr_table.columns - 1 &&
-				    !hbuf_printf(ob, "%s%s",
-				    ifx_table_col, ifx_table_row))
+				    !hbuf_puts(ob, ifx_tbl_mcol.text) &&
+				    !hbuf_puts(ob, ifx_tbl_row.text))
 					goto out;
 			}
 			rndr_buf_advance(st, 1);
-			if (!rndr_buf_endline(st, ob, n, &sty_table))
+			if (!rndr_buf_endline(st, ob, n, &sty_tbl))
 				goto out;
 			if (!rndr_buf_vspace(st, ob, n, 1))
 				goto out;
