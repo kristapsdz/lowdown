@@ -379,7 +379,13 @@ Don't show URLs for images and links (autolinks are still shown).
 .Pq Link content is still shown.
 Overrides
 .Fl -term-shortlinks
-for images and links.
+and
+.Fl -term-no-rellinks .
+.It Fl -term-no-rellinks
+Don't show URLs for relative links.
+.Pq Link content is still shown.
+Overrides
+.Fl -term-shortlinks .
 .It Fl -term-shortlinks
 Shorten URLs for images, links, and autolinks to only the domain name
 and final path.

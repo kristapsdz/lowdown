@@ -340,6 +340,7 @@ main(int argc, char *argv[])
 		{ "term-ansi",		no_argument, 	&rfl, LOWDOWN_TERM_NOANSI },
 		{ "term-no-colour",	no_argument, 	&afl, LOWDOWN_TERM_NOCOLOUR },
 		{ "term-colour",	no_argument, 	&rfl, LOWDOWN_TERM_NOCOLOUR },
+		{ "term-no-rellinks",	no_argument, 	&afl, LOWDOWN_TERM_NORELLINK },
 		{ "term-nolinks",	no_argument, 	&afl, LOWDOWN_TERM_NOLINK },
 		{ "term-no-nolinks",	no_argument, 	&rfl, LOWDOWN_TERM_NOLINK },
 		{ "term-shortlinks",	no_argument, 	&afl, LOWDOWN_TERM_SHORTLINK },
