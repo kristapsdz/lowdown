@@ -298,16 +298,16 @@ Output embedded HTML.
 This usually doesn't make sense because the HTML won't be interpreted by
 the output reader.
 By default, HTML is omitted.
-.It Fl -roff-nolinks
+.It Fl -roff-no-links
 Don't show URLs for images and links (autolinks are still shown).
 .Pq Link content is still shown.
 Overrides
-.Fl -roff-shortlinks
+.Fl -roff-short-links
 for images and links.
 Only applies when
 .Fl -roff-traditional
 is specified.
-.It Fl -roff-shortlinks
+.It Fl -roff-short-links
 Shorten URLs for images, links, and autolinks to only the domain name
 and final path.
 Only applies when
@@ -389,19 +389,19 @@ This implies
 Don't show ANSI colours.
 This will still decorate text with underlines, bolds, and italics, but
 not emit any colour codes.
-.It Fl -term-nolinks
+.It Fl -term-no-links
 Don't show URLs for images and links (autolinks are still shown).
 .Pq Link content is still shown.
 Overrides
-.Fl -term-shortlinks
+.Fl -term-short-links
 and
 .Fl -term-no-rellinks .
 .It Fl -term-no-rellinks
 Don't show URLs for relative links.
 .Pq Link content is still shown.
 Overrides
-.Fl -term-shortlinks .
-.It Fl -term-shortlinks
+.Fl -term-short-links .
+.It Fl -term-short-links
 Shorten URLs for images, links, and autolinks to only the domain name
 and final path.
 .It Fl -term-vmargin=margin

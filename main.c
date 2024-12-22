@@ -295,9 +295,9 @@ main(int argc, char *argv[])
 		{ "latex-no-skiphtml",	no_argument,	&rfl, LOWDOWN_LATEX_SKIP_HTML },
 
 		{ "roff-traditional",	no_argument,	&rfl, LOWDOWN_NROFF_GROFF },
-		{ "roff-nolinks",	no_argument, 	&afl, LOWDOWN_NROFF_NOLINK },
+		{ "roff-no-links",	no_argument, 	&afl, LOWDOWN_NROFF_NOLINK },
 		{ "roff-no-numbered",	no_argument,	&rfl, LOWDOWN_NROFF_NUMBERED },
-		{ "roff-shortlinks",	no_argument, 	&afl, LOWDOWN_NROFF_SHORTLINK },
+		{ "roff-short-links",	no_argument, 	&afl, LOWDOWN_NROFF_SHORTLINK },
 		{ "roff-no-skiphtml",	no_argument,	&rfl, LOWDOWN_NROFF_SKIP_HTML },
 		{ "roff-endnotes",	no_argument,	&afl, LOWDOWN_NROFF_ENDNOTES },
 		{ "roff-code-font",	required_argument, NULL, 7 },
@@ -314,8 +314,8 @@ main(int argc, char *argv[])
 		{ "term-no-ansi",	no_argument, 	&afl, LOWDOWN_TERM_NOANSI },
 		{ "term-no-colour",	no_argument, 	&afl, LOWDOWN_TERM_NOCOLOUR },
 		{ "term-no-rellinks",	no_argument, 	&afl, LOWDOWN_TERM_NORELLINK },
-		{ "term-nolinks",	no_argument, 	&afl, LOWDOWN_TERM_NOLINK },
-		{ "term-shortlinks",	no_argument, 	&afl, LOWDOWN_TERM_SHORTLINK },
+		{ "term-no-links",	no_argument, 	&afl, LOWDOWN_TERM_NOLINK },
+		{ "term-short-links",	no_argument, 	&afl, LOWDOWN_TERM_SHORTLINK },
 		{ "term-all-meta",	no_argument, 	&afl, LOWDOWN_TERM_ALL_META },
 		{ "term-all-metadata",	no_argument, 	&afl, LOWDOWN_TERM_ALL_META },
 		{ "term-columns",	required_argument, NULL, 4 },
@@ -346,7 +346,15 @@ main(int argc, char *argv[])
 		{ "parse-no-callouts",	no_argument,	&rifl, LOWDOWN_CALLOUTS },
 		{ "parse-maxdepth",	required_argument, NULL, 5 },
 
-		/* Deprecated "nroff" prefix. */
+		/*
+		 * What follows are options that are deprecated.  These
+		 * are still accepted, but are not documented.
+		 */
+
+		/*
+		 * Deprecated "nroff" prefix: lowdown moved from
+		 * --nroff-xyz to --roff-xyz in 1.4.0.
+		 */
 
 		{ "nroff-traditional",	no_argument,	&rfl, LOWDOWN_NROFF_GROFF },
 		{ "nroff-no-traditional",no_argument,	&afl, LOWDOWN_NROFF_GROFF },
@@ -364,7 +372,11 @@ main(int argc, char *argv[])
 		{ "nroff-no-endnotes",	no_argument,	&rfl, LOWDOWN_NROFF_ENDNOTES },
 		{ "nroff-code-font",	required_argument, NULL, 7 },
 
-		/* Remove undocumented "inverse" options. */
+		/*
+		 * Deprecated "inverse" options: these were never
+		 * documented to start with.  They turn back on
+		 * functionality that's the default to start with.
+		 */
 
 		{ "term-colour",	no_argument, 	&rfl, LOWDOWN_TERM_NOCOLOUR },
 		{ "term-ansi",		no_argument, 	&rfl, LOWDOWN_TERM_NOANSI },
@@ -410,6 +422,13 @@ main(int argc, char *argv[])
 		{ "parse-ext-attrs",	no_argument,	&aifl, LOWDOWN_ATTRS },
 		{ "parse-tasklists",	no_argument,	&aifl, LOWDOWN_TASKLIST },
 		{ "parse-callouts",	no_argument,	&aifl, LOWDOWN_CALLOUTS },
+
+		/*
+		 * Some options re-hyphenated for consistency.
+		 */
+
+		{ "term-nolinks",	no_argument, 	&afl, LOWDOWN_TERM_NOLINK },
+		{ "term-shortlinks",	no_argument, 	&afl, LOWDOWN_TERM_SHORTLINK },
 
 		{ NULL,			0,	NULL,	0 }
 	};
