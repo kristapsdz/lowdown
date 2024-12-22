@@ -1418,9 +1418,11 @@ rndr(struct lowdown_buf *ob, struct term *st,
 		vs = n->rndr_math.blockmode ? 1 : 0;
 		break;
 	case LOWDOWN_DEFINITION_DATA:
-	case LOWDOWN_HRULE:
 	case LOWDOWN_LINEBREAK:
 		vs = 1;
+		break;
+	case LOWDOWN_HRULE:
+		vs = 2;
 		break;
 	case LOWDOWN_LISTITEM:
 		vs = 1;
