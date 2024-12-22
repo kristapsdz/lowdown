@@ -329,60 +329,60 @@ struct	lowdown_opts {
 	};
 	size_t			  maxdepth;
 	unsigned int		  feat;
-#define LOWDOWN_ATTRS		  0x80000
-#define LOWDOWN_AUTOLINK	  0x08
-#define	LOWDOWN_COMMONMARK	  0x8000
-#define	LOWDOWN_DEFLIST		  0x10000
+#define LOWDOWN_TABLES		  0x01
 #define LOWDOWN_FENCED		  0x02
 #define LOWDOWN_FOOTNOTES	  0x04
+#define LOWDOWN_AUTOLINK	  0x08
+#define LOWDOWN_STRIKE		  0x10
+/* Omitted 			  0x20 */
 #define LOWDOWN_HILITE		  0x40
+/* Omitted 			  0x80 */
+#define LOWDOWN_SUPER		  0x100
+#define LOWDOWN_MATH		  0x200
+#define LOWDOWN_NOINTEM		  0x400
+/* Disabled LOWDOWN_MATHEXP	  0x1000 */
+#define LOWDOWN_NOCODEIND	  0x2000
+#define	LOWDOWN_METADATA	  0x4000
+#define	LOWDOWN_COMMONMARK	  0x8000
+#define	LOWDOWN_DEFLIST		  0x10000
 #define	LOWDOWN_IMG_EXT	 	  0x20000 /* -> LOWDOWN_ATTRS */
+#define LOWDOWN_TASKLIST	  0x40000
+#define LOWDOWN_ATTRS		  0x80000
 #define	LOWDOWN_MANTITLE	  0x100000
 #define LOWDOWN_CALLOUTS	  0x200000
-#define LOWDOWN_MATH		  0x200
-/* Disabled LOWDOWN_MATHEXP	  0x1000 */
-#define	LOWDOWN_METADATA	  0x4000
-#define LOWDOWN_NOCODEIND	  0x2000
-#define LOWDOWN_NOINTEM		  0x400
-#define LOWDOWN_STRIKE		  0x10
-#define LOWDOWN_SUPER		  0x100
 #define LOWDOWN_SUPER_SHORT	  0x400000
-#define LOWDOWN_TABLES		  0x01
-#define LOWDOWN_TASKLIST	  0x40000
-/* Omitted 			  0x20 */
-/* Omitted 			  0x80 */
 	unsigned int		  oflags;
-#define	LOWDOWN_GEMINI_LINK_END	  0x8000 /* links at end */
-#define	LOWDOWN_GEMINI_LINK_IN	  0x10000 /* links inline */
-#define	LOWDOWN_GEMINI_LINK_NOREF 0x200000 /* for !inline, no names */
-#define	LOWDOWN_GEMINI_LINK_ROMAN 0x400000 /* roman link names */
-#define LOWDOWN_GEMINI_METADATA	  0x100000 /* show metadata */
+#define LOWDOWN_HTML_SKIP_HTML	  0x01 /* skip all HTML */
 #define LOWDOWN_HTML_ESCAPE	  0x02 /* escape HTML (if not skip) */
 #define LOWDOWN_HTML_HARD_WRAP	  0x04 /* paragraph line breaks */
+#define LOWDOWN_NROFF_SKIP_HTML	  0x08 /* skip all HTML */
+#define LOWDOWN_TERM_NORELLINK	  0x10 /* don't show relative links */
+#define LOWDOWN_NROFF_GROFF	  0x20 /* use groff extensions */
+#define	LOWDOWN_SMARTY	  	  0x40 /* smart typography */
+#define LOWDOWN_NROFF_NUMBERED	  0x80 /* numbered section headers */
 #define LOWDOWN_HTML_HEAD_IDS	  0x100 /* <hN id="the_name"> */
-#define	LOWDOWN_HTML_NUM_ENT	  0x1000 /* use &#nn; if possible */
+#define LOWDOWN_STANDALONE	  0x200 /* emit complete document */
+#define LOWDOWN_TERM_SHORTLINK	  0x400 /* shorten URLs */
 #define	LOWDOWN_HTML_OWASP	  0x800 /* use OWASP escaping */
-#define LOWDOWN_HTML_SKIP_HTML	  0x01 /* skip all HTML */
+#define	LOWDOWN_HTML_NUM_ENT	  0x1000 /* use &#nn; if possible */
+#define LOWDOWN_LATEX_SKIP_HTML	  0x2000 /* skip all HTML */
+#define LOWDOWN_LATEX_NUMBERED	  0x4000 /* numbered sections */
+#define	LOWDOWN_GEMINI_LINK_END	  0x8000 /* links at end */
+#define	LOWDOWN_GEMINI_LINK_IN	  0x10000 /* links inline */
+#define LOWDOWN_TERM_NOLINK	  0x20000 /* don't show URLs */
+#define LOWDOWN_NROFF_SHORTLINK	  0x40000 /* shorten URLs */
+#define LOWDOWN_NROFF_NOLINK	  0x80000 /* don't show URLs */
+#define LOWDOWN_GEMINI_METADATA	  0x100000 /* show metadata */
+#define	LOWDOWN_GEMINI_LINK_NOREF 0x200000 /* for !inline, no names */
+#define	LOWDOWN_GEMINI_LINK_ROMAN 0x400000 /* roman link names */
+#define	LOWDOWN_TERM_NOCOLOUR	  0x800000 /* no ANSI colours */
+#define	LOWDOWN_TERM_NOANSI	  0x1000000 /* no ANSI escapes at all */
+#define	LOWDOWN_ODT_SKIP_HTML	  0x2000000 /* skip all HTML */
 #define	LOWDOWN_HTML_TITLEBLOCK	  0x4000000 /* output title block */
 #define LOWDOWN_HTML_CALLOUT_GFM  0x8000000 /* GFM callouts */
 #define LOWDOWN_HTML_CALLOUT_MDN  0x10000000 /* MDN callouts */
-#define LOWDOWN_LATEX_NUMBERED	  0x4000 /* numbered sections */
-#define LOWDOWN_LATEX_SKIP_HTML	  0x2000 /* skip all HTML */
-#define LOWDOWN_NROFF_GROFF	  0x20 /* use groff extensions */
-/* Disable LOWDOWN_NROFF_HARD_WRAP 0x10 */
-#define LOWDOWN_NROFF_NOLINK	  0x80000 /* don't show URLs */
-#define LOWDOWN_NROFF_NUMBERED	  0x80 /* numbered section headers */
-#define LOWDOWN_NROFF_SHORTLINK	  0x40000 /* shorten URLs */
-#define LOWDOWN_NROFF_SKIP_HTML	  0x08 /* skip all HTML */
-#define LOWDOWN_NROFF_ENDNOTES	  0x40000000 /* endnotes for -tms */
-#define	LOWDOWN_ODT_SKIP_HTML	  0x2000000 /* skip all HTML */
-#define	LOWDOWN_SMARTY	  	  0x40 /* smart typography */
-#define LOWDOWN_STANDALONE	  0x200 /* emit complete document */
-#define	LOWDOWN_TERM_NOANSI	  0x1000000 /* no ANSI escapes at all */
-#define	LOWDOWN_TERM_NOCOLOUR	  0x800000 /* no ANSI colours */
-#define LOWDOWN_TERM_NOLINK	  0x20000 /* don't show URLs */
-#define LOWDOWN_TERM_SHORTLINK	  0x400 /* shorten URLs */
 #define LOWDOWN_TERM_ALL_META	  0x20000000 /* show all metadata */
+#define LOWDOWN_NROFF_ENDNOTES	  0x40000000 /* endnotes for -tms */
 	char			**meta;
 	size_t			  metasz;
 	char			**metaovr;

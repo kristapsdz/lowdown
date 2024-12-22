@@ -174,6 +174,29 @@ rndr_mbswidth(struct term *term, const char *buf, size_t sz)
 }
 
 /*
+ * Determine whether a link URL is relative.  Use a simple heuristic to
+ * accomplish this: a relative URL is one without a schema.  Returns
+ * zero if not a relative link, non-zero if it is.
+ */
+static int
+link_isrelative(const struct lowdown_buf *link)
+{
+	const char	*colon;
+	size_t	 	 rem;
+
+	/* If there's no colon, it's a relative link (no schema) */
+
+	if ((colon = memchr(link->data, ':', link->size)) == NULL)
+		return 1;
+
+	/* If there's a slash before the colon, it's a (rel) path. */
+
+	assert(colon > link->data);
+	rem = colon - link->data;
+	return memchr(link->data, '/', rem) != NULL;
+}
+
+/*
  * Copy the buffer into "out", escaping along the width.
  * Returns the number of actual printed columns, which in the case of
  * multi-byte glyphs, may be less than the given bytes.
@@ -1575,6 +1598,9 @@ rndr(struct lowdown_buf *ob, struct term *st,
 		break;
 	case LOWDOWN_LINK:
 		if (st->opts & LOWDOWN_TERM_NOLINK)
+			break;
+		if ((st->opts & LOWDOWN_TERM_NORELLINK) &&
+		    link_isrelative(&n->rndr_link.link))
 			break;
 		hbuf_truncate(st->tmp);
 		if (!HBUF_PUTSL(st->tmp, " ") ||
