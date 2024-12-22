@@ -147,7 +147,8 @@ lowdown_get_meta(const struct lowdown_node *n, struct lowdown_metaq *mq)
 		if (!hbuf_putb(ob, &child->rndr_normal_text.text))
 			goto out;
 	}
-	m->value = strndup(ob->data, ob->size);
+	m->value = ob->size == 0 ?
+		strdup("") : strndup(ob->data, ob->size);
 	if (m->value == NULL)
 		goto out;
 

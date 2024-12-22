@@ -962,7 +962,8 @@ rndr_header(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 		 * escaping into roff.
 		 */
 
-		bn->args = strndup(buf->data, buf->size);
+		bn->args = buf->size == 0 ?
+			strdup("") : strndup(buf->data, buf->size);
 		if (bn->args == NULL)
 			goto out;
 
