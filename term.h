@@ -217,7 +217,7 @@ static const struct pfx pfx_header_n =	{ "#", 1 };
  */
 
 /* Footnote block header (see sty_foot). */
-static const char *ifx_foot =		"~~~~~~~~";
+static const struct pfx ifx_foot =	{ "─", 1 };
 
 /* Superscript. */
 static const char *ifx_super =		"^";

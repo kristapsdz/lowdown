@@ -1668,34 +1668,40 @@ rndr(struct lowdown_buf *ob, struct term *st,
 		st->in_link = NULL;
 		break;
 	case LOWDOWN_ROOT:
-		/* Trailing block spaces. */
-		if (st->footsz) {
-			if (!rndr_buf_vspace(st, ob, n, 2))
-				return 0;
+		/*
+		 * If there are footnotes, begin by offsetting with
+		 * vertical space.  Then, if there's a footnote block
+		 * header, output that followed by vertical space.
+		 * Lastly, output the footnotes themselves.
+		 */
+
+		if (st->footsz && !rndr_buf_vspace(st, ob, n, 2))
+			return 0;
+		if (st->footsz && ifx_foot.cols > 0) {
 			hbuf_truncate(st->tmp);
-			if (!hbuf_puts(st->tmp, pfx_body.text))
-				return 0;
-			if (!hbuf_puts(st->tmp, ifx_foot))
-				return 0;
+			for (i = 0; i + ifx_foot.cols <= st->width;
+			     i += ifx_foot.cols)
+				if (!hbuf_puts(st->tmp, ifx_foot.text))
+					return 0;
 			if (!rndr_buf_literal(st, ob, n, st->tmp,
 			    &sty_foot))
 				return 0;
 			if (!rndr_buf_vspace(st, ob, n, 2))
 				return 0;
-			for (i = 0; i < st->footsz; i++)
-				if (!hbuf_putb(ob, st->foots[i]) ||
-				    !HBUF_PUTSL(ob, "\n"))
-					return 0;
 		}
+		for (i = 0; i < st->footsz; i++)
+			if (!hbuf_putb(ob, st->foots[i]) ||
+			    !HBUF_PUTSL(ob, "\n"))
+				return 0;
 		if (!rndr_buf_vspace(st, ob, n, 1))
 			return 0;
+		
+		/* Strip trailing newlines but for the vmargin. */
+
 		while (ob->size && ob->data[ob->size - 1] == '\n')
 			ob->size--;
 		if (!HBUF_PUTSL(ob, "\n"))
 			return 0;
-
-		/* Strip breaks but for the vmargin. */
-
 		for (i = 0; i < st->vmargin; i++)
 			if (!HBUF_PUTSL(ob, "\n"))
 				return 0;
