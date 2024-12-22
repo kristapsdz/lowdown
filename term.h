@@ -225,8 +225,8 @@ static const char *ifx_super =		"^";
 /* Metadata key (see sty_meta_key). */
 static const char *ifx_meta_key =	": ";
 
-/* Horizontal rule. */
-static const char *ifx_hrule =		"~~~~~~~~";
+/* Horizontal rule (repeats until covering full space). */
+static const struct pfx ifx_hrule =    { "─", 1 };
 
 /* Image link box left-box (see sty_imgbox). */
 static const char *ifx_imgbox_left =	"[Image";

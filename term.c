@@ -1514,10 +1514,20 @@ rndr(struct lowdown_buf *ob, struct term *st,
 			return 0;
 		break;
 	case LOWDOWN_HRULE:
+		if (ifx_hrule.cols == 0)
+			break;
+
+		/*
+		 * Render the horizontal rule by having it stretch to
+		 * cover the entire printable space.
+		 */
+
 		hbuf_truncate(st->tmp);
-		if (!hbuf_puts(st->tmp, ifx_hrule))
-			return 0;
-		if (!rndr_buf(st, ob, n, st->tmp, NULL))
+		for (i = 0; i + ifx_hrule.cols <= st->width;
+		     i += ifx_hrule.cols)
+			if (!hbuf_puts(st->tmp, ifx_hrule.text))
+				return 0;
+		if (!rndr_buf_literal(st, ob, n, st->tmp, NULL))
 			return 0;
 		break;
 	case LOWDOWN_FOOTNOTE:
