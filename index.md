@@ -208,6 +208,10 @@ If you have [valgrind](https://valgrind.org) installed, `make valgrind` will
 run all regression tests with all output modes and store any leaks or bad
 behaviour.  These are output to the screen at the conclusion of all tests.
 
+The CI runner in *lowdown*'s GitHub repository runs both valgrind and
+regular regression tests, the latter with the compiler's **-fsanitize**
+options enabled, on each push.
+
 I've extensively run [AFL](http://lcamtuf.coredump.cx/afl/) against the
 compiled sources with no failures---definitely a credit to the
 [hoedown](https://github.com/hoedown/hoedown) authors (and those from whom they
@@ -319,17 +323,26 @@ was invoked within.
 the Markdown test suite, last version 1.0.3.  This suite is available as part
 of the `make regress` functionality.
 
+There are many other extensions to Markdown implemented in *lowdown*:
+see the manpages for specifics.
+
 ## How Can You Help?
 
 Want to hack on *lowdown*?  Of course you do.
 
 - Using a perfect hash (such as **gperf**) for entities.
 
+- RTL languages are totally unrepresented.  It's difficult but not
+impossible to refactor term.c to internally create a sequence of lines,
+instead of a stream of contiguous output, allowing for a post-processing
+RTL pass.
+
 - There are bits and bobs remaining to be fixed or implemented.
 You can always just search for `TODO`, `XXX`, or `FIXME` in the source
 code.  This is your best bet.
 
 - If you want a larger project, a **-tpdf** seems most interesting (and
-quite difficult given that UTF-8 need be present).  Another project that
-has been implemented elsewhere is a parser for mathematics such that
-`eqn` or similar may be output.
+quite difficult given that UTF-8 need be present).
+
+- Implement a parser for mathematics such that `eqn` or similar may be
+output.
