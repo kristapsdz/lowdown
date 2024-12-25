@@ -1,0 +1,4 @@
+$title.escapelatex()$
+$for(author.split())--$
+$this.escapelatex()$
+$endfor--$
