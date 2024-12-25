@@ -1,0 +1,14 @@
+$"\"$
+$"\""$
+$"\"\""$
+$"\"  \""$
+$for("\"  \"".split())--$
+quot: $this$
+$endfor--$
+$for("\"\"".split())--$
+dquot: $this$
+$endfor--$
+$for("\"\"  \"\"".split())--$
+dquot: $this$
+$endfor--$
+$"this\"this.foo()\"".uppercase$

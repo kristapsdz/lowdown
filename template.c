@@ -413,7 +413,8 @@ op_argq_new(struct op_argq *q, const char *args, size_t argsz)
 
 	for (start = i = 0; i < argsz; i++) {
 		if (args[i] == '"') {
-			inquot = !inquot;
+			if (i == 0 || args[i - 1] != '\\')
+				inquot = !inquot;
 			continue;
 		} else if (args[i] == '(') {
 			substack++;
@@ -870,7 +871,7 @@ op_eval_initial(struct op_out *out, const char *expr, size_t exprsz,
 	struct op_arg			*arg;
 	const struct lowdown_meta	*m;
 	const char			*v = NULL;
-	size_t				 vsz;
+	size_t				 vsz, i, j;
 	int				 rc;
 
 	if (!op_debug(out, "%s: %.*s", __func__, (int)exprsz, expr))
@@ -883,7 +884,24 @@ op_eval_initial(struct op_out *out, const char *expr, size_t exprsz,
 	TAILQ_INIT(&argq);
 	TAILQ_INIT(q);
 
-	if (exprsz == 4 && strncasecmp(expr, "this", 4) == 0) {
+	if (exprsz > 1 && expr[0] == '"' && expr[exprsz - 1] == '"') {
+		v = &expr[1];
+		vsz = exprsz - 2;
+		if (vsz > 0) {
+			if ((res = calloc(1, sizeof(struct op_res))) == NULL)
+				goto err;
+			TAILQ_INSERT_TAIL(q, res, entries);
+			if ((res->res = malloc(vsz + 1)) == NULL)
+				goto err;
+			for (i = j = 0; i < vsz; i++)
+				if (!(v[i] == '\\' && v[i + 1] == '"'))
+					res->res[j++] = v[i];
+			res->res[j] = '\0';
+			op_argq_free(&argq);
+			out->depth--;
+			return q;
+		}
+	} else if (exprsz == 4 && strncasecmp(expr, "this", 4) == 0) {
 		/* Anaphoric keyword in current loop or NULL. */
 		v = this;
 		vsz = this == NULL ? 0 : strlen(this);
@@ -969,7 +987,7 @@ op_eval_initial(struct op_out *out, const char *expr, size_t exprsz,
 
 	/* Invariant: non-empty or empty list. */
 
-	if (v == NULL || v[0] == '\0')
+	if (v == NULL || vsz == 0)
 		return q;
 	if ((res = calloc(1, sizeof(struct op_res))) == NULL)
 		goto err;
@@ -987,9 +1005,10 @@ static struct op_resq *
 op_eval(struct op_out *out, const char *expr, size_t sz,
     const char *this, const struct op_resq *input)
 {
-	size_t	 	 nextsz = 0, exprsz, argsz = 0;
-	const char	*next, *args;
+	size_t	 	 nextsz = 0, exprsz, argsz = 0, i;
+	const char	*next = NULL, *args;
 	struct op_resq	*q, *nextq;
+	int		 inquot = 0;
 
 	if (sz == 0) {
 		if ((q = malloc(sizeof(struct op_resq))) == NULL)
@@ -1000,7 +1019,13 @@ op_eval(struct op_out *out, const char *expr, size_t sz,
 
 	/* Find next expression in chain. */
 
-	next = memchr(expr, '.', sz);
+	for (i = 0; next == NULL && i < sz; i++)
+		if (expr[i] == '"') {
+			if (i == 0 || expr[i - 1] != '\\')
+				inquot = !inquot;
+		} else if (expr[i] == '.' && !inquot)
+			next = &expr[i];
+
 	if (next != NULL) {
 		assert(next >= expr);
 		exprsz = (size_t)(next - expr);

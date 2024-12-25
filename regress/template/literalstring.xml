@@ -1,0 +1,12 @@
+$"hello there".uppercase()$
+$for("hello  there".split())--$
+$this$
+$endfor--$
+$"this$
+$this"$
+$"this".uppercase$
+$"this()".uppercase$
+$"this.uppercase"$
+$"this.uppercase"().uppercase$
+$"this.uppercase".uppercase.lowercase()$
+$title."hello, world".uppercase()$
