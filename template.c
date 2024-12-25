@@ -840,7 +840,7 @@ op_eval_function(struct op_out *out, const char *expr, size_t exprsz,
 	else if (exprsz == 11 && strncasecmp(expr, "escapelatex", 11) == 0)
 		nq = op_eval_function_escape_latex(out, input);
 	else if (exprsz == 10 && strncasecmp(expr, "escaperoff", 10) == 0)
-		nq = op_eval_function_escape_roff(out, input, 0);
+		nq = op_eval_function_escape_roff(out, input, -1);
 	else if (exprsz == 14 && strncasecmp(expr, "escaperoffline", 14) == 0)
 		nq = op_eval_function_escape_roff(out, input, 1);
 	else {

@@ -34,7 +34,10 @@
 /*
  * Escape unsafe text into roff output such that no roff features are
  * invoked by the text (macros, escapes, etc.).
- * If "oneline" is non-zero, newlines are replaced with spaces.
+ * If "oneline" is >0, newlines are replaced with spaces; if =0,
+ * newlines are retained and roff delimiters after the newline are
+ * escaped; if <0, like =0 except that the first character if a
+ * delimiter is also escaped.
  * If "literal", doesn't strip leading space.
  * Return zero on failure, non-zero on success.
  */
@@ -81,7 +84,7 @@ lowdown_nroff_esc(struct lowdown_buf *ob, const char *data, size_t size,
 				return 0;
 			break;
 		case '\n':
-			if (!hbuf_putc(ob, oneline ? ' ' : '\n'))
+			if (!hbuf_putc(ob, oneline > 0 ? ' ' : '\n'))
 				return 0;
 			if (literal)
 				break;
@@ -99,9 +102,10 @@ lowdown_nroff_esc(struct lowdown_buf *ob, const char *data, size_t size,
 			break;
 		case '\'':
 		case '.':
-			if (!oneline &&
-			    ob->size > 0 && 
-			    ob->data[ob->size - 1] == '\n' &&
+			if (((oneline < 0 && i == 0) ||
+			     (oneline <= 0 &&
+			      ob->size > 0 &&
+			      ob->data[ob->size - 1] == '\n')) &&
 			    !HBUF_PUTSL(ob, "\\&"))
 				return 0;
 			/* FALLTHROUGH */
