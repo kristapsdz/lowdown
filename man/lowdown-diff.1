@@ -892,7 +892,9 @@ This allows for line-sensitive output media to use control statements
 without superfluous blank lines.
 .Pp
 Expressions consist of
-.Li initial[([arg]*)]?[.transform[([arg]*)]?]* ,
+.Pp
+.Dl initial[([arg]*)]?[.transform[([arg]*)]?]* ,
+.Pp
 or an initial value accepting optional arguments followed by an optional
 series of transforms accepting optional arguments.
 If an argument list is empty or not provided, it evaluates to an empty
@@ -907,6 +909,13 @@ A non-empty list containing the value
 .Li true
 if all expressions evaluate to non-empty lists, otherwise an empty list.
 An empty expression evaluates to an empty list.
+.It Li \(dqliteral string\(dq
+Evaluates to a singleton list containing the string.
+An empty string evaluates to an empty list.
+The double quote character may be escaped, such as
+.Li \(dqfoo\e\(dqbar\(dq .
+.It Cm body
+The parsed input document body.
 .It canonicalised metadata key
 The value for the given metadata key, if found, otherwise an empty list.
 .It Cm body

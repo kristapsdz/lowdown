@@ -1,0 +1,5 @@
+$ifdef("")$NO$endif$
+$ifdef(not(""))$YES$endif$
+$ifdef("".uppercase)$NO$endif$
+$ifdef(and("","foo"))$NO$endif$
+$ifdef(or("","foo"))$YES$endif$
