@@ -1239,7 +1239,7 @@ lowdown_template(const char *templ, const struct lowdown_buf *content,
 	const char	*cp, *nextcp, *savecp;
 	struct opq	 q;
 	struct op	*op, *cop, *root;
-	int		 rc = 0, igneoln;
+	int		 rc = 0, igneoln, inquot;
 	size_t		 sz;
 	struct op_out	 out;
 
@@ -1277,10 +1277,19 @@ lowdown_template(const char *templ, const struct lowdown_buf *content,
 
 		/*
 		 * If the closing delimiter was not found, revert to the
-		 * beginning of the delimit sequence and bail out.
+		 * beginning of the delimit sequence and bail out.  Pass
+		 * over any quoted materials inside of the sequence.
 		 */
 
-		if ((nextcp = strchr(cp, delim)) == NULL) {
+		inquot = 0;
+		for (nextcp = cp; *nextcp != '\0'; nextcp++)
+			if (*nextcp == '"') {
+				if (nextcp[-1] != '\\')
+					inquot = !inquot;
+			} else if (*nextcp == delim && !inquot)
+				break;
+
+		if (*nextcp == '\0') {
 			cp = savecp;
 			break;
 		}
