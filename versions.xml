@@ -1698,7 +1698,7 @@
 		<header>
 			<h1>1.4.0</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2024-12-22">2024-12-22</time>
+			<time datetime="2024-12-25">2024-12-25</time>
 		</header>
 		<aside>
 			<p>
@@ -1729,6 +1729,10 @@
 				Add <b>--term-no-rellinks</b> to omit only relative links.
 				This is useful because terminal output doesn't have a
 				concept of a "relative" link.
+			</p>
+			<p>
+				Add passing literal strings as initial values to
+				<b>--template</b>.
 			</p>
 			<p>
 				Document <b>--term-hmargin=auto</b>, previously

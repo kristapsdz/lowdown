@@ -10,7 +10,7 @@ sinclude Makefile.local
 # while libraries have well-defined semantics of semver change, programs
 # do not.  Let the library guide our versioning until a better way is
 # thought out.
-VERSION		 = 1.3.2
+VERSION		 = 1.4.0
 # This is the major number of VERSION.  It might later become
 # MAJOR.MINOR, if the library moves a lot.
 LIBVER		 = 1
