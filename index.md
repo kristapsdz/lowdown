@@ -4,8 +4,9 @@ author: Kristaps Dzonsons
 
 # [%title]
 
-*lowdown* is a Markdown translator producing HTML5, *roff* documents
-in the **ms** and **man** formats, LaTeX, gemini, OpenDocument, and terminal output.
+*lowdown* is a Markdown translator producing HTML5, *roff* documents in
+the **ms** and **man** formats, LaTeX, gemini ("gemtext"), OpenDocument,
+and ANSI/UTF8 terminal output.
 The [open source](http://opensource.org/licenses/ISC) C source code has
 no dependencies.
 
@@ -13,12 +14,12 @@ The tools are documented in
 [lowdown(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) and
 [lowdown-diff(1)](https://kristaps.bsd.lv/lowdown/lowdown-diff.1.html),
 the language in
-[lowdown(5)](https://kristaps.bsd.lv/lowdown/lowdown.5.html),
-and the library interface in
+[lowdown(5)](https://kristaps.bsd.lv/lowdown/lowdown.5.html), and the
+library interface in
 [lowdown(3)](https://kristaps.bsd.lv/lowdown/lowdown.3.html).
 
-To get and use *lowdown*, check if it's available from your system's package
-manager.  If not,
+To get and use *lowdown*, check if it's available from your system's
+package manager.  If not,
 [download](https://kristaps.bsd.lv/lowdown/snapshots/lowdown.tar.gz),
 [verify](https://kristaps.bsd.lv/lowdown/snapshots/lowdown.tar.gz.sha512),
 and unpack the source.  Then build:
@@ -29,6 +30,8 @@ and unpack the source.  Then build:
 % make regress
 # make install install_libs
 ```
+
+On non-BSD systems, you may need to use `bmake`.
 
 *lowdown* is a [BSD.lv](https://bsd.lv) project.  Its portability to
 OpenBSD, NetBSD, FreeBSD, Mac OS X, Linux (glibc and musl), Solaris, and
@@ -43,21 +46,16 @@ which shows the difference between two markdown trees in markdown.
 
 ## Output
 
-*lowdown* produces HTML5 output in XML mode with **-thtml**,
+*lowdown* produces HTML5 output with **-thtml**,
 [LaTeX](https://www.latex-project.org/) documents with **-tlatex**,
-"flat"
-[OpenDocument](https://docs.oasis-open.org/office/OpenDocument/v1.3/os/part1-introduction/OpenDocument-v1.3-os-part1-introduction.html)
-XML documentx (OpenDocument version 1.3) with **-tfodt**, 
-[Gemini](https://gemini.circumlunar.space/docs/specification.html) with
-**-tgemini**, *roff* documents with **-tms** and **-tman**[^nomanpages]
-outputs (via
-[groff](https://www.gnu.org/s/groff) or 
-[mandoc](https://mdocml.bsd.lv), or directly on ANSI terminals with
-**-tterm**.
+"flat" OpenDocument (version 1.3) documents with **-tfodt**, 
+[Gemini](https://gemini.circumlunar.space/docs/specification.html)
+("gemtext") with **-tgemini**, *roff* documents with **-tms** and
+**-tman**, or directly on ANSI terminals with **-tterm**.
 
 The **-tlatex** and **-tms** are commonly used for PDF documents,
-**-tman** for manpages, **-thtml** or **-tgemini** for web, and
-**-tterm** for the command line.
+**-tfodt** for document processing, **-tman** for manpages, **-thtml**
+or **-tgemini** for web, and **-tterm** for the command line.
 
 By way of example: this page,
 [index.md](https://kristaps.bsd.lv/lowdown/index.md), renders as
@@ -67,13 +65,6 @@ with LaTeX (via **-tlatex**),
 with mandoc (via **-tman**), or
 [index.nroff.pdf](https://kristaps.bsd.lv/lowdown/index.nroff.pdf)
 with groff (via **-tms**).
-
-[^nomanpages]:
-    You may be tempted to write [manpages](https://man.openbsd.org)
-    in Markdown, but please don't: use
-    [mdoc(7)](https://man.openbsd.org/mdoc), instead --- it's built
-    for that purpose!  The **man** output is for technical
-    documentation only (section 7).
 
 > [![mandoc](screen-mandoc.thumb.jpg){width=30%}](screen-mandoc.png)
 > [![term](screen-term.thumb.jpg){width=30%}](screen-term.png)
@@ -104,42 +95,15 @@ following Markdown features and extensions:
 - extended attributes
 - task lists
 - admonitions
+- templating
 
 ## Examples
 
 Want to quickly review your Markdown in a terminal window?
 
 ```sh
-lowdown -tterm README.md | less -R
+lowdown -t term README.md | less -R
 ```
-
-I usually use *lowdown* when writing
-[sblg](https://kristaps.bsd.lv/sblg) articles when I'm too lazy to
-write in proper HTML5.
-([sblg](https://kristaps.bsd.lv/sblg) is a simple tool for knitting
-together blog articles into a blog feed.)
-This basically means wrapping the output of *lowdown* in the elements
-indicating a blog article.
-I do this in my Makefiles:
-
-```Makefile
-.md.xml:
-     ( echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" ; \
-       echo "<article data-sblg-article=\"1\">" ; \
-       echo "<header>" ; \
-       echo "<h1>" ; \
-       lowdown -X title $< ; \
-       echo "</h1>" ; \
-       echo "<aside>" ; \
-       lowdown -X htmlaside $< ; \
-       echo "</aside>" ; \
-       echo "</header>" ; \
-       lowdown $< ; \
-       echo "</article>" ; ) >$@
-```
-
-**Note**: you'll want to make sure that the title and aside are properly
-HTML formatted, as **-X** will not escape for the output format.
 
 If you just want a straight-up HTML5 file, use standalone mode:
 
@@ -150,42 +114,26 @@ lowdown -s -o README.html README.md
 This can use the document's meta-data to populate the title, CSS file,
 and so on.
 
-The troff output modes work well to make PS or PDF files, although they
-will omit equations and only use local PS/EPS images in **-tms** mode.
-The extra groff arguments in the following invocation are for UTF-8
-processing (**-k**), tables (**-t**), and clickable links
-and a table of contents (**-mspdf**).
-
-If outputting PDF, use the pdfroff script instead of **-Tpdf** output.
-This allows image generation to work properly.  If not, a blank square
-will be output in places of your images.
+The roff **ms** macros work to make PS or PDF files.  The extra groff
+arguments in the following are for UTF-8 processing (**-k**), tables
+(**-t**), and clickable links and a table of contents (**-mspdf**).
 
 ```sh
-lowdown -stms README.md | groff -itk -mspdf > README.ps
-lowdown -stms README.md | pdfroff -itk -mspdf > README.pdf
+lowdown -s -t ms README.md | pdfroff -itk -mspdf > README.pdf
 ```
 
 The same can be effected with systems using
-[mandoc](https://mdocml.bsd.lv):
+[mandoc](https://mandoc.bsd.lv) through the simpler **man** macros.
 
 ```sh
-lowdown -stman README.md | mandoc -Tps > README.ps
-lowdown -stman README.md | mandoc -Tpdf > README.pdf
+lowdown -s -tman README.md | mandoc -Tpdf > README.pdf
 ```
 
 More support for PDF (and other print formats) is available with the
 **-tlatex** output.
 
 ```sh
-lowdown -stlatex README.md | pdflatex
-```
-
-For terminal output, troff or mandoc may be used in their respective
-**-Tutf8** or **-Tascii** modes.  Alternatively, *lowdown* can render
-directly to ANSI terminals with UTF-8 support:
-
-```sh
-lowdown -tterm README.md | less -R
+lowdown -s -tlatex README.md | pdflatex
 ```
 
 Read [lowdown(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) for
@@ -201,12 +149,14 @@ is what's used internally by
 
 ## Testing
 
-The canonical Markdown tests are available as part of a regression framework
-within the system.  Just use `make regress` to run these and many other tests.
+The canonical Markdown tests are available as part of a regression
+framework within the system.  Just use `make regress` to run these and
+many other tests.
 
-If you have [valgrind](https://valgrind.org) installed, `make valgrind` will
-run all regression tests with all output modes and store any leaks or bad
-behaviour.  These are output to the screen at the conclusion of all tests.
+If you have [valgrind](https://valgrind.org) installed, `make valgrind`
+will run all regression tests with all output modes and store any leaks
+or bad behaviour.  These are output to the screen at the conclusion of
+all tests.
 
 The CI runner in *lowdown*'s GitHub repository runs both valgrind and
 regular regression tests, the latter with the compiler's **-fsanitize**
@@ -214,9 +164,9 @@ options enabled, on each push.
 
 I've extensively run [AFL](http://lcamtuf.coredump.cx/afl/) against the
 compiled sources with no failures---definitely a credit to the
-[hoedown](https://github.com/hoedown/hoedown) authors (and those from whom they
-forked their own sources).  I'll also regularly run the system through
-[valgrind](http://valgrind.org/), also without issue.  The
+[hoedown](https://github.com/hoedown/hoedown) authors (and those from
+whom they forked their own sources).  I'll also regularly run the system
+through [valgrind](http://valgrind.org/), also without issue.  The
 [afl/in](afl/in) directory contains a series of small input files that
 may be used in longer AFL runs.
 
@@ -227,19 +177,18 @@ The code is neatly layed out and heavily documented internally.
 First, start in
 [library.c](https://github.com/kristapsdz/lowdown/blob/master/library.c).
 (The [main.c](https://github.com/kristapsdz/lowdown/blob/master/main.c)
-file is just a caller to the library interface.)
-Both the renderer (which renders the parsed document contents in the
-output format) and the document (which generates the parse AST) are
-initialised.
+file is just a caller to the library interface.) Both the renderer
+(which renders the parsed document contents in the output format) and
+the document (which generates the parse AST) are initialised.
 
 The parse is started in
 [document.c](https://github.com/kristapsdz/lowdown/blob/master/document.c).
 It is preceded by meta-data parsing, if applicable, which occurs before
-document parsing but after the BOM.
-The document is parsed into an AST (abstract syntax tree) that describes
-the document as a tree of nodes, each node corresponding an input token.
-Once the entire tree has been generated, the AST is passed into the
-front-end renderers, which construct output depth-first.
+document parsing but after the BOM.  The document is parsed into an AST
+(abstract syntax tree) that describes the document as a tree of nodes,
+each node corresponding an input token.  Once the entire tree has been
+generated, the AST is passed into the front-end renderers, which
+construct output depth-first.
 
 There are a variety of renderers supported:
 [html.c](https://github.com/kristapsdz/lowdown/blob/master/html.c) for
@@ -259,8 +208,9 @@ for terminal output, and a debugging renderer
 ## Installing
 
 You'll need a C compiler with essential build tools
-([make](https://man.openbsd.org/make), [cc](https://man.openbsd.org/cc), etc.).
-First, configure the system:
+([make](https://man.openbsd.org/make), [cc](https://man.openbsd.org/cc),
+etc.).  On non-BSD systems, you may need to use `bmake`.  First,
+configure the system:
 
 ```
 ./configure
@@ -319,9 +269,9 @@ was invoked within.
 
 ## Compatibility
 
-*lowdown* is fully compatible with the original Markdown syntax as checked by
-the Markdown test suite, last version 1.0.3.  This suite is available as part
-of the `make regress` functionality.
+*lowdown* is fully compatible with the original Markdown syntax as
+checked by the Markdown test suite, last version 1.0.3.  This suite is
+available as part of the `make regress` functionality.
 
 There are many other extensions to Markdown implemented in *lowdown*:
 see the manpages for specifics.
