@@ -81,11 +81,27 @@ sandbox_post(int fdin, int fddin, int fdout)
 	char	*ep;
 	int	 rc;
 
-	rc = sandbox_init
-		(kSBXProfilePureComputation,
-		 SANDBOX_NAMED, &ep);
-	if (rc != 0)
-		errx(1, "sandbox_init: %s", ep);
+	rc = sandbox_init(kSBXProfilePureComputation, SANDBOX_NAMED,
+		&ep);
+	if (rc == 0)
+		return;
+
+#ifdef SANDBOX_INIT_ERROR_IGNORE
+#warning Allowing sandbox_init() to ignore errors
+	/*
+	 * sandbox_init() will fail if invoked within an existing
+	 * sandbox due to its poor design.
+	 *
+	 * If the system is compiled with SANDBOX_INIT_ERROR_IGNORE
+	 * and the SANDBOX_INIT_ERROR_IGNORE environment variable is
+	 * set, failure to create the sandbox will not cause the system
+	 * to fail.
+	 */
+	if (getenv("SANDBOX_INIT_ERROR_IGNORE") != NULL)
+		return;
+#endif
+
+	errx(1, "sandbox_init: %s", ep);
 }
 
 static void

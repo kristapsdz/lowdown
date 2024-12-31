@@ -122,6 +122,9 @@ THUMBS		 = screen-mandoc.thumb.jpg \
 		   screen-groff.thumb.jpg \
 		   screen-term.thumb.jpg
 CFLAGS		+= -DVERSION=\"$(VERSION)\"
+.ifdef SANDBOX_INIT_ERROR_IGNORE
+CFLAGS		+= -DSANDBOX_INIT_ERROR_IGNORE=ignore
+.endif
 # Because the objects will be compiled into a shared library:
 CFLAGS		+= -fPIC
 # To avoid exporting internal functions (lowdown.h has default visibility).
