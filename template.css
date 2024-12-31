@@ -7,15 +7,13 @@ h2				{ font-size: 140%; }
 a				{ text-decoration: none; }
 strong, b			{ font-weight: 500; }
 aside				{ font-size: 125%; }
-pre, code			{ font-size: smaller;
+pre, code			{ font-size: 90%;
 				  line-height: 1.3em; }
 body > header			{ padding: 48pt 0 12pt 0; 
 				  background-color: #333; 
 			  	  color: #aaa; }
 body > header a			{ color: #fff; }
-body > header nav		{ display: inline-block;
-				  font-size: smaller; }
-body > header nav i.fa		{ font-size: smaller; }
+body > header nav		{ display: inline-block; }
 #nav-atom			{ border-left: thin solid #aaa;
 				  margin-left: 0.5rem;
 				  padding-left: 0.5rem;
