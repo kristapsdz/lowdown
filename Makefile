@@ -185,8 +185,14 @@ install: bins
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
 	mkdir -p $(DESTDIR)$(MANDIR)/man5
 	mkdir -p $(DESTDIR)$(SHAREDIR)/lowdown/html
+	mkdir -p $(DESTDIR)$(SHAREDIR)/lowdown/latex
+	mkdir -p $(DESTDIR)$(SHAREDIR)/lowdown/man
+	mkdir -p $(DESTDIR)$(SHAREDIR)/lowdown/ms
 	mkdir -p $(DESTDIR)$(SHAREDIR)/lowdown/odt
 	$(INSTALL_DATA) share/html/* $(DESTDIR)$(SHAREDIR)/lowdown/html
+	$(INSTALL_DATA) share/latex/* $(DESTDIR)$(SHAREDIR)/lowdown/latex
+	$(INSTALL_DATA) share/man/* $(DESTDIR)$(SHAREDIR)/lowdown/man
+	$(INSTALL_DATA) share/ms/* $(DESTDIR)$(SHAREDIR)/lowdown/ms
 	$(INSTALL_DATA) share/odt/* $(DESTDIR)$(SHAREDIR)/lowdown/odt
 	$(INSTALL_PROGRAM) lowdown $(DESTDIR)$(BINDIR)
 	$(INSTALL_PROGRAM) lowdown-diff $(DESTDIR)$(BINDIR)
@@ -314,6 +320,9 @@ lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/
 	mkdir -p .dist/lowdown-$(VERSION)/man
 	mkdir -p .dist/lowdown-$(VERSION)/share/html
+	mkdir -p .dist/lowdown-$(VERSION)/share/latex
+	mkdir -p .dist/lowdown-$(VERSION)/share/man
+	mkdir -p .dist/lowdown-$(VERSION)/share/ms
 	mkdir -p .dist/lowdown-$(VERSION)/share/odt
 	mkdir -p .dist/lowdown-$(VERSION)/regress/html
 	mkdir -p .dist/lowdown-$(VERSION)/regress/metadata
@@ -324,6 +333,9 @@ lowdown.tar.gz:
 	$(INSTALL) -m 0644 $(HEADERS) .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 0644 $(SOURCES) .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 0644 share/html/* .dist/lowdown-$(VERSION)/share/html
+	$(INSTALL) -m 0644 share/latex/* .dist/lowdown-$(VERSION)/share/latex
+	$(INSTALL) -m 0644 share/man/* .dist/lowdown-$(VERSION)/share/man
+	$(INSTALL) -m 0644 share/ms/* .dist/lowdown-$(VERSION)/share/ms
 	$(INSTALL) -m 0644 share/odt/* .dist/lowdown-$(VERSION)/share/odt
 	$(INSTALL) -m 0644 lowdown.in.pc Makefile LICENSE.md .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 0644 man/*.1 man/*.3 man/*.5 .dist/lowdown-$(VERSION)/man
