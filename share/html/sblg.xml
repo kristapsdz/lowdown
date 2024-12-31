@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<article
+ $ifdef(title)$data-sblg-title="$title.escapehtmlattr$"$endif--$
+ $ifdef(tags)$data-sblg-tags="$tags.escapehtmlattr$"$endif--$
+ $ifdef(date)$data-sblg-datetime="$date.escapehtmlattr$"$endif--$
+ $ifdef(author)$data-sblg-author="$author.escapehtmlattr$"$endif--$
+ $ifdef(aside)$data-sblg-aside="$aside.escapehtmlattr$"$endif--$
+ data-sblg-article="1">
+$body$
+</article>
