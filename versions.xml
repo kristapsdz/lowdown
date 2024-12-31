@@ -1762,4 +1762,35 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>2.0.0</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2024-12-30">2024-12-30</time>
+		</header>
+		<aside>
+			<p>
+				Formalise using semantic versioning (<q>semver</q>).
+				The prior version (1.4.0) introduced API changes that were
+				incompatible: future versions will follow semver to
+				prevent confusion.
+			</p>
+			<p>
+				Adds some missing template files to the share directory.
+			</p>
+			<p>
+				Lastly, to address downstream breakage when using nested
+				Mac OS X sandboxes, a special argument
+				<code>SANDBOX_INIT_ERROR_IGNORE</code> value may be passed
+				during the <code>make</code> build sequence.
+				If set to <code>always</code>, errors from the underlying
+				Mac OS X sandbox are always ignored.
+				If set to any other value, the user must set the
+				environment variable
+				<code>SANDBOX_INIT_ERROR_IGNORE</code> to ignore these
+				errors.  This is only relevant to Mac OS X builds with the
+				sandbox feature enabled during configuration.
+			</p>
+		</aside>
+	</article>
 </articles>

@@ -1,5 +1,5 @@
 title: lowdown --- simple markdown translator
-date: 2021-09-23
+date: 2024-12-30
 author: Kristaps Dzonsons
 
 # [%title]
@@ -43,6 +43,14 @@ that it internally converts to an AST instead of directly formatting
 output.  This enables some semantic analysis of the content such as with
 the [difference engine](https://kristaps.bsd.lv/lowdown/diff.html),
 which shows the difference between two markdown trees in markdown.
+
+As of version 2.0.0, *lowdown* uses
+[semantic versioning](https://semver.org/) ("semver").  A major number
+change indicates a change in the
+[lowdown(3)](https://kristaps.bsd.lv/lowdown/lowdown.3.html) API, a
+minor number indicates a change in functionality, and a patch number
+indicates a bug-fix or change without functionality.  The version 2.0.0
+reflects API changes in 1.4.0 that preceded.
 
 ## Output
 
