@@ -96,11 +96,17 @@ sandbox_post(int fdin, int fddin, int fdout)
 	 * and the SANDBOX_INIT_ERROR_IGNORE environment variable is
 	 * set, failure to create the sandbox will not cause the system
 	 * to fail.
+	 *
+	 * Alternatively, if SANDBOX_INIT_ERROR_IGNORE is 2, errors are
+	 * ignored all the time.
 	 */
+# if SANDBOX_INIT_ERROR_IGNORE == 2
+	return
+# else
 	if (getenv("SANDBOX_INIT_ERROR_IGNORE") != NULL)
 		return;
+# endif
 #endif
-
 	errx(1, "sandbox_init: %s", ep);
 }
 

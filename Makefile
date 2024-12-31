@@ -122,8 +122,18 @@ THUMBS		 = screen-mandoc.thumb.jpg \
 		   screen-groff.thumb.jpg \
 		   screen-term.thumb.jpg
 CFLAGS		+= -DVERSION=\"$(VERSION)\"
+# Hack around broken Mac OS X nested sandboxes.
+# If SANDBOX_INIT_ERROR_IGNORE is set to "always", errors from
+# sandbox_init() are ignored.  If set to anything else, the user must
+# also set SANDBOX_INIT_ERROR_IGNORE in their environment to ignore
+# failure.
+# Has no effect unless HAVE_SANDBOX_INIT is defined.
 .ifdef SANDBOX_INIT_ERROR_IGNORE
-CFLAGS		+= -DSANDBOX_INIT_ERROR_IGNORE=ignore
+.if $(SANDBOX_INIT_ERROR_IGNORE) == "always"
+CFLAGS		+= -DSANDBOX_INIT_ERROR_IGNORE=2
+.else
+CFLAGS		+= -DSANDBOX_INIT_ERROR_IGNORE=1
+.endif
 .endif
 # Because the objects will be compiled into a shared library:
 CFLAGS		+= -fPIC
