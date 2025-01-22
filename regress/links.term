@@ -1,17 +1,17 @@
-    a ]8;;https://bar.com\[4;32mhttps://bar.com]8;;\[0m b c
-
-    a b]8;;https://bar.com\[4;32mhttps://bar.com]8;;\[0mc d
-
-    a ]8;;https://bar.com\[1;93mb]8;;\[0m ]8;;https://bar.com\[4;32mhttps://bar.com]8;;\[0m c
-
-    a b]8;;https://bar.com\[1;93mc]8;;\[0m ]8;;https://bar.com\[4;32mhttps://bar.com]8;;\[0md e
-
-[1;91m[0m[1;91ma [0m]8;;https://bar.com\[1;93mb]8;;\[0m ]8;;https://bar.com\[1;4;32mhttps://bar.com]8;;\[0m[1;91m c[0m
-
+    a ]8;;https://bar.com\[4;32mhttps://bar.com[0m]8;;\ b c
+    
+    a b]8;;https://bar.com\[4;32mhttps://bar.com[0m]8;;\c d
+    
+    a ]8;;https://bar.com\[1;93mb[0m]8;;\ ]8;;https://bar.com\[4;32mhttps://bar.com[0m]8;;\ c
+    
+    a b]8;;https://bar.com\[1;93mc[0m]8;;\ ]8;;https://bar.com\[4;32mhttps://bar.com[0m]8;;\d e
+    
+    [1;91m[0m[1;91ma [0m]8;;https://bar.com\[1;93mb[0m]8;;\ ]8;;https://bar.com\[1;4;32mhttps://bar.com[0m]8;;\[1;91m c[0m
+    
     asd
-
-[1;91m[0m[1;91ma[0m]8;;https://bar.com\[1;93mb]8;;\[0m ]8;;https://bar.com\[1;4;32mhttps://bar.com]8;;\[0m[1;91mc[0m
-
-    a ]8;;https://foo.com\[1;3;93mb]8;;\[0m ]8;;https://foo.com\[1;3;93mc]8;;\[0m ]8;;https://foo.com\[4;32mhttps://foo.com]8;;\[0m d
-
-    [1;3ma [0m]8;;https://foo.com\[1;3;93mb]8;;\[0m ]8;;https://foo.com\[1;4;3;32mhttps://foo.com]8;;\[0m[1;3m c[0m d
+    
+    [1;91m[0m[1;91ma[0m]8;;https://bar.com\[1;93mb[0m]8;;\ ]8;;https://bar.com\[1;4;32mhttps://bar.com[0m]8;;\[1;91mc[0m
+    
+    a ]8;;https://foo.com\[1;3;93mb[0m]8;;\ ]8;;https://foo.com\[1;3;93mc[0m]8;;\ ]8;;https://foo.com\[4;32mhttps://foo.com[0m]8;;\ d
+    
+    [1;3ma [0m]8;;https://foo.com\[1;3;93mb[0m]8;;\ ]8;;https://foo.com\[1;4;3;32mhttps://foo.com[0m]8;;\[1;3m c[0m d
