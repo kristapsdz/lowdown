@@ -272,7 +272,7 @@ rndr_buf_unstyle(const struct term *term,
 }
 
 /*
- * Start sequence for a terminal link (only in ANSI mode).  
+ * Start sequence for a terminal link (only in ANSI mode).
  */
 static int
 rndr_buf_osc8_open(const struct term *term, struct lowdown_buf *out,
@@ -282,7 +282,7 @@ rndr_buf_osc8_open(const struct term *term, struct lowdown_buf *out,
 
 	if (term->opts & LOWDOWN_TERM_NOANSI)
 		return 1;
-	
+
 	if (n->type == LOWDOWN_LINK_AUTO)
 		uri = &n->rndr_autolink.link;
 	else if (n->type == LOWDOWN_LINK)
@@ -493,12 +493,15 @@ rndr_buf_endwords(struct term *term, struct lowdown_buf *out,
 	 * matter where this appears in relation to other styling).
 	 */
 
+	if (rndr_buf_endstyle(n) && !rndr_buf_unstyle(term, out, NULL))
+        	return 0;
+
+	if (osty != NULL && !rndr_buf_unstyle(term, out, osty))
+        	return 0;
+
 	if (term->in_link && !rndr_buf_osc8_close(term, out))
-		return 0;
-	if (rndr_buf_endstyle(n))
-		return rndr_buf_unstyle(term, out, NULL);
-	if (osty != NULL)
-		return rndr_buf_unstyle(term, out, osty);
+        	return 0;
+
 	return 1;
 }
 
@@ -1578,7 +1581,7 @@ rndr(struct lowdown_buf *ob, struct term *st,
 			if (!rndr_buf(st, ob, n, st->tmp, NULL))
 				return 0;
 		} else {
-			if (!rndr_buf(st, ob, n, 
+			if (!rndr_buf(st, ob, n,
 			     &n->rndr_entity.text, &sty_bad_ent))
 				return 0;
 		}
@@ -1735,7 +1738,7 @@ rndr(struct lowdown_buf *ob, struct term *st,
 				return 0;
 		if (!rndr_buf_vspace(st, ob, n, 1))
 			return 0;
-		
+
 		/* Strip trailing newlines but for the vmargin. */
 
 		while (ob->size && ob->data[ob->size - 1] == '\n')
@@ -1826,7 +1829,7 @@ void
 lowdown_term_free(void *arg)
 {
 	struct term	*st = arg;
-	
+
 	if (st == NULL)
 		return;
 
