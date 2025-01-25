@@ -6,13 +6,14 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - name: Install dependencies
-      run: sudo apt-get install -y bmake valgrind
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y bmake valgrind
     - name: Configure
       run: |
-        cat /etc/os-release
         ./configure
-        echo 'CFLAGS += -fsanitize=undefined -fsanitize=address' > Makefile.local
-        echo 'LDFLAGS += -fsanitize=undefined -fsanitize=address' >> Makefile.local
+        echo 'CFLAGS += -fsanitize=undefined,address -fomit-frame-pointer -O0' > Makefile.local
+        echo 'LDFLAGS += -fsanitize=undefined,address -fomit-frame-pointer -O0' >> Makefile.local
         bmake regress
         rm -f Makefile.local
         bmake clean
