@@ -1766,7 +1766,7 @@
 		<header>
 			<h1>2.0.0</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2024-12-30">2024-12-30</time>
+			<time datetime="2025-01-25">2025-01-25</time>
 		</header>
 		<aside>
 			<p>
@@ -1777,6 +1777,10 @@
 			</p>
 			<p>
 				Adds some missing template files to the share directory.
+			</p>
+			<p>
+				Fix how links in <b>-tterm</b> have their ANSI escapes
+				closed out.
 			</p>
 			<p>
 				Lastly, to address downstream breakage when using nested
