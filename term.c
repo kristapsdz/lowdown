@@ -495,13 +495,10 @@ rndr_buf_endwords(struct term *term, struct lowdown_buf *out,
 
 	if (rndr_buf_endstyle(n) && !rndr_buf_unstyle(term, out, NULL))
         	return 0;
-
 	if (osty != NULL && !rndr_buf_unstyle(term, out, osty))
         	return 0;
-
 	if (term->in_link && !rndr_buf_osc8_close(term, out))
         	return 0;
-
 	return 1;
 }
 
