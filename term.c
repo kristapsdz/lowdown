@@ -1274,13 +1274,35 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 				goto out;
 			if (!rndr_buf_startline(st, ob, n, &sty_tbl))
 				goto out;
+
+			/*
+			 * Output the row line.  This consists of:
+			 *
+			 *   inter    padding
+			 *       |    | |
+			 *       |    | |
+			 *   ----+-----+-----
+			 *   xyz   xyz   xyz
+			 *   |     |
+			 *   content
+			 *
+			 * So starting with the content, ending with a
+			 * padding of one byte (encompassed in the
+			 * width), the inter mark or nothing if at the
+			 * end, then another padding or nothing if at
+			 * the end.
+			 */
 			for (i = 0; i < n->rndr_table.columns; i++) {
+				/* Pre-padding. */
+				if (i > 0 && !hbuf_puts(ob, ifx_tbl_row))
+					goto out;
+				/* Content and post-padding. */
 				for (j = 0; j < widths[i]; j++)
 					if (!hbuf_puts(ob, ifx_tbl_row))
 						goto out;
+				/* Inter. */
 				if (i < n->rndr_table.columns - 1 &&
-				    !hbuf_puts(ob, ifx_tbl_mcol) &&
-				    !hbuf_puts(ob, ifx_tbl_row))
+				    !hbuf_puts(ob, ifx_tbl_mcol))
 					goto out;
 			}
 			rndr_buf_advance(st, 1);
