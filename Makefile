@@ -155,8 +155,7 @@ REGRESS_ARGS	+= "--parse-no-autolink"
 REGRESS_ARGS	+= "--parse-no-cmark"
 REGRESS_ARGS	+= "--parse-no-deflists"
 
-VALGRIND_ARGS	 = -q --leak-check=full --leak-resolution=high --show-reachable=yes
-VALGRIND_ARGS	+= --log-fd=3
+REGRESS_ENV	 = LC_ALL=en_US.UTF-8
 
 all: bins lowdown.pc liblowdown.so
 bins: lowdown lowdown-diff
@@ -447,89 +446,28 @@ regen_regress: bins
 	rm -f $$tmp1 ; \
 	rm -f $$tmp2
 
-valgrind:: bins
+valgrind::
 	@ulimit -n 1024 ; \
 	tmp=`mktemp` ; \
-	( \
-	for f in regress/original/*.text ; do \
-		echo "$$f" ; \
-		for type in html fodt latex ms man gemini term tree ; do \
-			valgrind $(VALGRIND_ARGS) \
-				./lowdown -s -t$$type "$$f" >/dev/null 2>&1 ; \
-		done ; \
-	done ; \
-	for f in regress/*.md ; do \
-		ff=regress/`basename $$f .md` ; \
-		echo "$$f" ; \
-		for type in html fodt latex ms man gemini term ; do \
-			if [ -f $$ff.$$type ]; then \
-				valgrind $(VALGRIND_ARGS) \
-					./lowdown -t$$type $$f >/dev/null 2>&1 ; \
-			fi ; \
-		done ; \
-	done ; \
-	for f in regress/standalone/*.md ; do \
-		ff=regress/standalone/`basename $$f .md` ; \
-		echo "$$f" ; \
-		for type in html fodt latex ms man gemini term ; do \
-			if [ -f $$ff.$$type ]; then \
-				valgrind $(VALGRIND_ARGS) \
-					./lowdown -s -t$$type $$f >/dev/null 2>&1 ; \
-			fi ; \
-		done ; \
-	done ; \
-	for f in regress/template/*.html ; do \
-		ff=regress/template/`basename $$f .html` ; \
-		echo "$$f" ; \
-		tf=regress/template/simple.md ; \
-		[ ! -f $$ff.md ] || tf=$$ff.md ; \
-		valgrind $(VALGRIND_ARGS) ./lowdown -M "blank=" \
-			-s --template $$ff.xml $$tf >/dev/null 2>&1 ; \
-	done ; \
-	for f in regress/html/*.md ; do \
-		ff=regress/html/`basename $$f .md` ; \
-		echo "$$f" ; \
-		valgrind $(VALGRIND_ARGS) \
-			./lowdown -thtml --parse-math --html-callout-gfm \
-			--html-callout-mdn --html-titleblock $$f >/dev/null 2>&1 ; \
-	done ; \
-	for f in regress/metadata/*.md ; do \
-		echo "$$f" ; \
-		if [ -f regress/metadata/`basename $$f .md`.txt ]; then \
-			valgrind $(VALGRIND_ARGS) \
-				./lowdown -X title $$f >/dev/null 2>&1 ; \
-		fi ; \
-	done ; \
-	for f in regress/diff/*.old.md ; do \
-		bf=`dirname $$f`/`basename $$f .old.md` ; \
-		echo "$$f -> $$bf.new.md" ; \
-		for type in html fodt latex ms man gemini term ; do \
-			if [ -f $$bf.$$type ]; then \
-				valgrind $(VALGRIND_ARGS) \
-					./lowdown-diff -s -t$$type $$f \
-					$$bf.new.md >/dev/null 2>&1 ; \
-			fi ; \
-		done ; \
-	done ; \
-	) 3>$$tmp ; \
+	VALGRIND="valgrind -q --leak-check=full --leak-resolution=high --show-reachable=yes --log-fd=3" $(MAKE) regress 3>$$tmp ; \
 	rc=0 ; \
 	[ ! -s $$tmp ] || rc=1 ; \
 	cat $$tmp ; \
 	rm -f $$tmp ; \
 	exit $$rc
 
-regress: bins
+regress:: bins
 	@tmp1=`mktemp` ; \
 	tmp2=`mktemp` ; \
 	for f in regress/original/*.text ; do \
 		echo "$$f" ; \
 		want="`dirname \"$$f\"`/`basename \"$$f\" .text`.html" ; \
 		sed -e '/^[ ]*$$/d' "$$want" > $$tmp1 ; \
-		./lowdown $(REGRESS_ARGS) "$$f" | \
+		$(REGRESS_ENV) $(VALGRIND) ./lowdown $(REGRESS_ARGS) "$$f" | \
 			sed -e 's!	! !g' | sed -e '/^[ ]*$$/d' > $$tmp2 ; \
 		diff -uw $$tmp1 $$tmp2 ; \
 		for type in html fodt latex ms man gemini term tree ; do \
-			./lowdown -s -t$$type "$$f" >/dev/null 2>&1 ; \
+			$(REGRESS_ENV) $(VALGRIND) ./lowdown -s -t$$type "$$f" >/dev/null 2>&1 ; \
 		done ; \
 	done  ; \
 	for f in regress/*.md ; do \
@@ -537,7 +475,7 @@ regress: bins
 		echo "$$f" ; \
 		for type in html fodt latex ms man gemini term ; do \
 			if [ -f $$ff.$$type ]; then \
-				./lowdown -t$$type $$f >$$tmp1 2>&1 ; \
+				$(REGRESS_ENV) $(VALGRIND) ./lowdown -t$$type $$f >$$tmp1 2>&1 ; \
 				diff -uw $$ff.$$type $$tmp1 ; \
 			fi ; \
 		done ; \
@@ -547,7 +485,7 @@ regress: bins
 		echo "$$f" ; \
 		for type in html fodt latex ms man gemini term ; do \
 			if [ -f $$ff.$$type ]; then \
-				./lowdown -s -t$$type $$f >$$tmp1 2>&1 ; \
+				$(REGRESS_ENV) $(VALGRIND) ./lowdown -s -t$$type $$f >$$tmp1 2>&1 ; \
 				diff -uw $$ff.$$type $$tmp1 ; \
 			fi ; \
 		done ; \
@@ -557,20 +495,20 @@ regress: bins
 		echo "$$f" ; \
 		tf=regress/template/simple.md ; \
 		[ ! -f $$ff.md ] || tf=$$ff.md ; \
-		./lowdown -M "blank=" --template $$ff.xml -s $$tf >$$tmp1 2>&1 ; \
+		$(REGRESS_ENV) $(VALGRIND) ./lowdown -M "blank=" --template $$ff.xml -s $$tf >$$tmp1 2>&1 ; \
 		diff -uw $$f $$tmp1 ; \
 	done ; \
 	for f in regress/html/*.md ; do \
 		ff=regress/html/`basename $$f .md` ; \
 		echo "$$f" ; \
-		./lowdown -thtml --parse-math --html-callout-gfm \
+		$(REGRESS_ENV) $(VALGRIND) ./lowdown -thtml --parse-math --html-callout-gfm \
 			--html-callout-mdn --html-titleblock $$f >$$tmp1 2>&1 ; \
 		diff -uw $$ff.html $$tmp1 ; \
 	done ; \
 	for f in regress/metadata/*.md ; do \
 		echo "$$f" ; \
 		if [ -f regress/metadata/`basename $$f .md`.txt ]; then \
-			./lowdown -X title $$f >$$tmp1 2>&1 ; \
+			$(REGRESS_ENV) $(VALGRIND) ./lowdown -X title $$f >$$tmp1 2>&1 ; \
 			diff -uw regress/metadata/`basename $$f .md`.txt $$tmp1 ; \
 		fi ; \
 	done ; \
@@ -579,7 +517,7 @@ regress: bins
 		echo "$$f -> $$bf.new.md" ; \
 		for type in html fodt latex ms man gemini term ; do \
 			if [ -f $$bf.$$type ]; then \
-				./lowdown-diff -s -t$$type $$f $$bf.new.md >$$tmp1 2>&1 ; \
+				$(REGRESS_ENV) $(VALGRIND) ./lowdown-diff -s -t$$type $$f $$bf.new.md >$$tmp1 2>&1 ; \
 				diff -uw $$bf.$$type $$tmp1 ; \
 			fi ; \
 		done ; \
