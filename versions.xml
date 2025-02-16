@@ -1799,13 +1799,16 @@
 	</article>
 	<article data-sblg-article="1" data-sblg-tags="version">
 		<header>
-			<h1>2.0.1</h1>
+			<h1>2.0.2</h1>
 			<address>Kristaps Dzonsons</address>
 			<time datetime="2025-02-16">2025-02-16</time>
 		</header>
 		<aside>
 			<p>
 				Fix table separators in <b>-tterm</b>. 
+				Fix running <code>make regress</code> without a UTF-8
+				locale set, which would cause different output for the
+				<b>-tterm</b> tests.
 			</p>
 		</aside>
 	</article>
