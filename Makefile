@@ -140,6 +140,12 @@ CFLAGS		+= -fPIC
 # To avoid exporting internal functions (lowdown.h has default visibility).
 CFLAGS		+= -fvisibility=hidden
 
+ifeq ($(LINK_METHOD),"static")
+LIB_LOWDOWN = liblowdown.a
+else
+LIB_LOWDOWN = liblowdown.so
+endif
+
 # Only for MarkdownTestv1.0.3 in regress/original.
 
 REGRESS_ARGS	 = "--out-no-smarty"
@@ -170,8 +176,8 @@ installwww: www
 	$(INSTALL) -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots
 	$(INSTALL) -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots
 
-lowdown: liblowdown.a main.o
-	$(CC) -o $@ main.o liblowdown.a $(LDFLAGS) $(LDADD_MD5) -lm $(LDADD)
+lowdown: main.o $(LIB_LOWDOWN)
+	$(CC) -o $@ $+ $(LDFLAGS) $(LDADD_MD5) -lm $(LDADD)
 
 lowdown-diff: lowdown
 	ln -sf lowdown lowdown-diff

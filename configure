@@ -170,11 +170,18 @@ do
 		SBINDIR="$val" ;;
 	INCLUDEDIR)
 		INCLUDEDIR="$val" ;;
+	LINK_METHOD)
+		LINK_METHOD="$val" ;;
 	*)
 		echo "$0: invalid key: $key" 1>&2
 		exit 1
 	esac
 done
+
+if [ "${LINK_METHOD:-static}" != "static" ] && [ "${LINK_METHOD:-static}" != "shared" ]; then
+    echo 'LINK_METHOD must be "shared" or "static"' 1>&2
+    exit 1
+fi
 
 #----------------------------------------------------------------------
 # If the user doesn't specify whether we want "-soname" or
@@ -2517,12 +2524,13 @@ echo "config.h: written" 1>&3
 
 exec > Makefile.configure
 
-[ -z "${BINDIR}"     ] && BINDIR="${PREFIX}/bin"
-[ -z "${SBINDIR}"    ] && SBINDIR="${PREFIX}/sbin"
-[ -z "${INCLUDEDIR}" ] && INCLUDEDIR="${PREFIX}/include"
-[ -z "${LIBDIR}"     ] && LIBDIR="${PREFIX}/lib"
-[ -z "${MANDIR}"     ] && MANDIR="${PREFIX}/man"
-[ -z "${SHAREDIR}"   ] && SHAREDIR="${PREFIX}/share"
+[ -z "${BINDIR}"      ] && BINDIR="${PREFIX}/bin"
+[ -z "${SBINDIR}"     ] && SBINDIR="${PREFIX}/sbin"
+[ -z "${INCLUDEDIR}"  ] && INCLUDEDIR="${PREFIX}/include"
+[ -z "${LIBDIR}"      ] && LIBDIR="${PREFIX}/lib"
+[ -z "${MANDIR}"      ] && MANDIR="${PREFIX}/man"
+[ -z "${SHAREDIR}"    ] && SHAREDIR="${PREFIX}/share"
+[ -z "${LINK_METHOD}" ] && LINK_METHOD=static
 
 [ -z "${INSTALL_PROGRAM}" ] && INSTALL_PROGRAM="${INSTALL} -m 0555"
 [ -z "${INSTALL_LIB}"     ] && INSTALL_LIB="${INSTALL} -m 0444"
@@ -2545,6 +2553,7 @@ LDADD_SCAN_SCALED= ${LDADD_SCAN_SCALED}
 LDADD_STATIC	 = ${LDADD_STATIC}
 LDFLAGS		 = ${LDFLAGS}
 LINKER_SONAME	 = ${LINKER_SONAME}
+LINK_METHOD	 = ${LINK_METHOD}
 STATIC		 = ${STATIC}
 PREFIX		 = ${PREFIX}
 BINDIR		 = ${BINDIR}
