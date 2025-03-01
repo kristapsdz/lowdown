@@ -450,7 +450,7 @@ valgrind::
 	@ulimit -n 1024 ; \
 	tmp=`mktemp` ; \
 	VALGRIND="valgrind -q --leak-check=full --leak-resolution=high --show-reachable=yes --log-fd=3" $(MAKE) regress 3>$$tmp ; \
-	rc=0 ; \
+	rc=$$? ; \
 	[ ! -s $$tmp ] || rc=1 ; \
 	cat $$tmp ; \
 	rm -f $$tmp ; \
@@ -459,13 +459,14 @@ valgrind::
 regress:: bins
 	@tmp1=`mktemp` ; \
 	tmp2=`mktemp` ; \
+	rc=0 ; \
 	for f in regress/original/*.text ; do \
 		echo "$$f" ; \
 		want="`dirname \"$$f\"`/`basename \"$$f\" .text`.html" ; \
 		sed -e '/^[ ]*$$/d' "$$want" > $$tmp1 ; \
 		$(REGRESS_ENV) $(VALGRIND) ./lowdown $(REGRESS_ARGS) "$$f" | \
 			sed -e 's!	! !g' | sed -e '/^[ ]*$$/d' > $$tmp2 ; \
-		diff -uw $$tmp1 $$tmp2 ; \
+		diff -uw $$tmp1 $$tmp2 || rc=$$((rc + 1)) ; \
 		for type in html fodt latex ms man gemini term tree ; do \
 			$(REGRESS_ENV) $(VALGRIND) ./lowdown -s -t$$type "$$f" >/dev/null 2>&1 ; \
 		done ; \
@@ -476,7 +477,7 @@ regress:: bins
 		for type in html fodt latex ms man gemini term ; do \
 			if [ -f $$ff.$$type ]; then \
 				$(REGRESS_ENV) $(VALGRIND) ./lowdown -t$$type $$f >$$tmp1 2>&1 ; \
-				diff -uw $$ff.$$type $$tmp1 ; \
+				diff -uw $$ff.$$type $$tmp1 || rc=$$((rc + 1)) ; \
 			fi ; \
 		done ; \
 	done ; \
@@ -486,7 +487,7 @@ regress:: bins
 		for type in html fodt latex ms man gemini term ; do \
 			if [ -f $$ff.$$type ]; then \
 				$(REGRESS_ENV) $(VALGRIND) ./lowdown -s -t$$type $$f >$$tmp1 2>&1 ; \
-				diff -uw $$ff.$$type $$tmp1 ; \
+				diff -uw $$ff.$$type $$tmp1 || rc=$$((rc + 1)) ; \
 			fi ; \
 		done ; \
 	done ; \
@@ -496,20 +497,20 @@ regress:: bins
 		tf=regress/template/simple.md ; \
 		[ ! -f $$ff.md ] || tf=$$ff.md ; \
 		$(REGRESS_ENV) $(VALGRIND) ./lowdown -M "blank=" --template $$ff.xml -s $$tf >$$tmp1 2>&1 ; \
-		diff -uw $$f $$tmp1 ; \
+		diff -uw $$f $$tmp1 || rc=$$((rc + 1)) ; \
 	done ; \
 	for f in regress/html/*.md ; do \
 		ff=regress/html/`basename $$f .md` ; \
 		echo "$$f" ; \
 		$(REGRESS_ENV) $(VALGRIND) ./lowdown -thtml --parse-math --html-callout-gfm \
 			--html-callout-mdn --html-titleblock $$f >$$tmp1 2>&1 ; \
-		diff -uw $$ff.html $$tmp1 ; \
+		diff -uw $$ff.html $$tmp1 || rc=$$((rc + 1)) ; \
 	done ; \
 	for f in regress/metadata/*.md ; do \
 		echo "$$f" ; \
 		if [ -f regress/metadata/`basename $$f .md`.txt ]; then \
 			$(REGRESS_ENV) $(VALGRIND) ./lowdown -X title $$f >$$tmp1 2>&1 ; \
-			diff -uw regress/metadata/`basename $$f .md`.txt $$tmp1 ; \
+			diff -uw regress/metadata/`basename $$f .md`.txt $$tmp1 || rc=$$((rc + 1)) ; \
 		fi ; \
 	done ; \
 	for f in regress/diff/*.old.md ; do \
@@ -518,12 +519,16 @@ regress:: bins
 		for type in html fodt latex ms man gemini term ; do \
 			if [ -f $$bf.$$type ]; then \
 				$(REGRESS_ENV) $(VALGRIND) ./lowdown-diff -s -t$$type $$f $$bf.new.md >$$tmp1 2>&1 ; \
-				diff -uw $$bf.$$type $$tmp1 ; \
+				diff -uw $$bf.$$type $$tmp1 || rc=$$((rc + 1)) ; \
 			fi ; \
 		done ; \
 	done ; \
 	rm -f $$tmp1 ; \
-	rm -f $$tmp2
+	rm -f $$tmp2 ; \
+	if [ $$rc -gt 0 ]; then \
+		echo "Failed with $$rc test failures" 1>&2 ; \
+		exit 1 ; \
+	fi
 
 .png.thumb.jpg:
 	convert $< -thumbnail 350 -quality 50 $@
