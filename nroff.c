@@ -499,18 +499,19 @@ static int
 putlinkhref(struct lowdown_buf *ob, const struct lowdown_buf *link,
     enum halink_type *type)
 {
-	size_t	 i = 0;
+	size_t	 	 i = 0;
+	unsigned char	 ch;
 
 	if (type != NULL && *type == HALINK_EMAIL &&
 	    hbuf_strprefix(link, "mailto:"))
 		i = strlen("mailto:");
 
 	for ( ; i < link->size; i++) {
-		if (!isprint((unsigned char)link->data[i]) ||
-		    strchr("<>\\^`{|}\"", link->data[i]) != NULL) {
-			if (!hbuf_printf(ob, "%%%.2X", link->data[i]))
+		ch = (unsigned char)link->data[i];
+		if (!isprint(ch) || strchr(" <>\\^`{|}\"", ch) != NULL) {
+			if (!hbuf_printf(ob, "%%%.2X", ch))
 				return 0;
-		} else if (!hbuf_putc(ob, link->data[i]))
+		} else if (!hbuf_putc(ob, ch))
 			return 0;
 	}
 
