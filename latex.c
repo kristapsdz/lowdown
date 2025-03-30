@@ -101,7 +101,7 @@ rndr_url(struct lowdown_buf *ob, const struct lowdown_buf *link,
 
 static int
 rndr_autolink(const struct latex *st, struct lowdown_buf *ob,
-	const struct rndr_autolink *param)
+    const struct rndr_autolink *param)
 {
 
 	if (param->link.size == 0)
@@ -115,7 +115,7 @@ rndr_autolink(const struct latex *st, struct lowdown_buf *ob,
 
 static int
 rndr_entity(const struct latex *st, struct lowdown_buf *ob,
-	const struct rndr_entity *param)
+    const struct rndr_entity *param)
 {
 	const char	*tex;
 	unsigned char	 texflags;
@@ -135,7 +135,7 @@ rndr_entity(const struct latex *st, struct lowdown_buf *ob,
 
 static int
 rndr_blockcode(struct lowdown_buf *ob,
-	const struct rndr_blockcode *param)
+    const struct rndr_blockcode *param)
 {
 
 	if (ob->size && !HBUF_PUTSL(ob, "\n"))
@@ -163,7 +163,7 @@ rndr_blockcode(struct lowdown_buf *ob,
 
 static int
 rndr_definition_title(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+    const struct lowdown_buf *content)
 {
 
 	if (!HBUF_PUTSL(ob, "\\item ["))
@@ -175,7 +175,7 @@ rndr_definition_title(struct lowdown_buf *ob,
 
 static int
 rndr_definition(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+    const struct lowdown_buf *content)
 {
 
 	if (!HBUF_PUTSL(ob, "\\begin{description}\n"))
@@ -187,7 +187,7 @@ rndr_definition(struct lowdown_buf *ob,
 
 static int
 rndr_blockquote(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+    const struct lowdown_buf *content)
 {
 
 	if (ob->size && !HBUF_PUTSL(ob, "\n"))
@@ -201,7 +201,7 @@ rndr_blockquote(struct lowdown_buf *ob,
 
 static int
 rndr_codespan(const struct latex *st, struct lowdown_buf *ob,
-	const struct rndr_codespan *param)
+    const struct rndr_codespan *param)
 {
 #if 0
 	HBUF_PUTSL(ob, "\\lstinline{");
@@ -217,7 +217,7 @@ rndr_codespan(const struct latex *st, struct lowdown_buf *ob,
 
 static int
 rndr_triple_emphasis(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+    const struct lowdown_buf *content)
 {
 
 	if (!HBUF_PUTSL(ob, "\\textbf{\\emph{"))
@@ -229,7 +229,7 @@ rndr_triple_emphasis(struct lowdown_buf *ob,
 
 static int
 rndr_double_emphasis(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+    const struct lowdown_buf *content)
 {
 
 	if (!HBUF_PUTSL(ob, "\\textbf{"))
@@ -241,7 +241,7 @@ rndr_double_emphasis(struct lowdown_buf *ob,
 
 static int
 rndr_emphasis(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+    const struct lowdown_buf *content)
 {
 
 	if (!HBUF_PUTSL(ob, "\\emph{"))
@@ -253,7 +253,7 @@ rndr_emphasis(struct lowdown_buf *ob,
 
 static int
 rndr_highlight(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+    const struct lowdown_buf *content)
 {
 
 	if (!HBUF_PUTSL(ob, "\\underline{"))
@@ -347,8 +347,7 @@ out:
 
 static int
 rndr_link(const struct latex *st, struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	const struct rndr_link *param)
+    const struct lowdown_buf *content, const struct rndr_link *param)
 {
 	int	loc;
 
@@ -383,9 +382,8 @@ rndr_link(const struct latex *st, struct lowdown_buf *ob,
 }
 
 static int
-rndr_list(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	const struct rndr_list *param)
+rndr_list(struct lowdown_buf *ob, const struct lowdown_buf *content,
+    const struct rndr_list *param)
 {
 	const char	*type;
 
@@ -408,13 +406,12 @@ rndr_list(struct lowdown_buf *ob,
 }
 
 static int
-rndr_listitem(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	const struct rndr_listitem *param)
+rndr_listitem(struct lowdown_buf *ob, const struct lowdown_buf *content,
+    const struct rndr_listitem *param)
 {
 	size_t	 size;
 
-	/* Only emit <li> if we're not a <dl> list. */
+	/* Only emit \item if we're not a definition list. */
 
 	if (!(param->flags & HLIST_FL_DEF)) {
 		if (!HBUF_PUTSL(ob, "\\item"))
@@ -443,7 +440,7 @@ rndr_listitem(struct lowdown_buf *ob,
 
 static int
 rndr_paragraph(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+    const struct lowdown_buf *content)
 {
 	size_t	i = 0;
 
@@ -464,8 +461,7 @@ rndr_paragraph(struct lowdown_buf *ob,
 
 static int
 rndr_raw_block(struct lowdown_buf *ob,
-	const struct rndr_blockhtml *param,
-	const struct latex *st)
+    const struct rndr_blockhtml *param, const struct latex *st)
 {
 	size_t	org = 0, sz = param->text.size;
 
@@ -592,8 +588,7 @@ rndr_raw_html(const struct latex *st, struct lowdown_buf *ob,
 }
 
 static int
-rndr_table(struct lowdown_buf *ob,
-	const struct lowdown_buf *content)
+rndr_table(struct lowdown_buf *ob, const struct lowdown_buf *content)
 {
 
 	/* Open the table in rndr_table_header. */
@@ -607,8 +602,8 @@ rndr_table(struct lowdown_buf *ob,
 
 static int
 rndr_table_header(struct lowdown_buf *ob,
-	const struct lowdown_buf *content, 
-	const struct rndr_table_header *param)
+    const struct lowdown_buf *content, 
+    const struct rndr_table_header *param)
 {
 	size_t	 i;
 	char	 align;
@@ -635,8 +630,8 @@ rndr_table_header(struct lowdown_buf *ob,
 
 static int
 rndr_tablecell(struct lowdown_buf *ob,
-	const struct lowdown_buf *content, 
-	const struct rndr_table_cell *param)
+    const struct lowdown_buf *content, 
+    const struct rndr_table_cell *param)
 {
 
 	if (!hbuf_putb(ob, content))
@@ -648,8 +643,7 @@ rndr_tablecell(struct lowdown_buf *ob,
 
 static int
 rndr_superscript(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	enum lowdown_rndrt type)
+    const struct lowdown_buf *content, enum lowdown_rndrt type)
 {
 	const char	*elem;
 
@@ -670,7 +664,7 @@ rndr_normal_text(const struct latex *st, struct lowdown_buf *ob,
 
 static int
 rndr_footnote_ref(struct lowdown_buf *ob,
-	const struct lowdown_buf *content, struct latex *st)
+    const struct lowdown_buf *content, struct latex *st)
 {
 
 	if (!hbuf_printf(ob, "\\footnote[%zu]{", ++st->footsz))
@@ -681,8 +675,7 @@ rndr_footnote_ref(struct lowdown_buf *ob,
 }
 
 static int
-rndr_math(struct lowdown_buf *ob,
-	const struct rndr_math *param)
+rndr_math(struct lowdown_buf *ob, const struct rndr_math *param)
 {
 
 	if (param->blockmode && !HBUF_PUTSL(ob, "\\["))
@@ -849,9 +842,8 @@ rndr_meta(struct latex *st, const struct lowdown_node *n,
 }
 
 static int
-rndr(struct lowdown_buf *ob,
-	struct lowdown_metaq *mq, void *arg, 
-	const struct lowdown_node *n)
+rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq, void *arg, 
+    const struct lowdown_node *n)
 {
 	struct lowdown_buf		*tmp;
 	struct latex			*st = arg;
@@ -1023,19 +1015,25 @@ out:
 }
 
 int
-lowdown_latex_rndr(struct lowdown_buf *ob,
-	void *arg, const struct lowdown_node *n)
+lowdown_latex_rndr(struct lowdown_buf *ob, void *arg,
+    const struct lowdown_node *n)
 {
 	struct latex		*st = arg;
 	struct lowdown_metaq	 metaq;
 	int			 rc;
+
+	/* Reset header identifiers, metadata, and footnotes. */
 
 	TAILQ_INIT(&st->headers_used);
 	TAILQ_INIT(&metaq);
 	st->headers_offs = 1;
 	st->footsz = 0;
 
+	/* Actually perform rendering. */
+
 	rc = rndr(ob, &metaq, st, n);
+
+	/* Clean up header identifiers and metadata. */
 
 	lowdown_metaq_free(&metaq);
 	hentryq_clear(&st->headers_used);
