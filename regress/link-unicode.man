@@ -1,0 +1,29 @@
+.PP
+.UR http://www.google.com/search?q=%E2%99%A5
+text
+.UE
+.UR http://www.google.com/search?q=%E2%80%A6
+text
+.UE
+.UR http://www.google.com/search?q=hi%22there
+text
+.UE
+.UR http://www.google.com/search?q=hi%20there
+text
+.UE
+.UR http://www.google.com/search?q=hi%5Ethere
+text
+.UE
+.UR http://www.google.com/search?q=hi&there
+text
+.UE
+.UR http://www.google.com/search?q=hi%0Dthere
+text
+.UE
+.PP
+.UR http://www.google.com/search?q=%E2%99%A5
+.UE
+or
+.UR http://www.google.com/search?q=%E2%80%A6
+.UE
+or
