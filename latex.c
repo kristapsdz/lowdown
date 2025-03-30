@@ -61,6 +61,44 @@ rndr_escape(const struct latex *st, struct lowdown_buf *ob,
 	return lowdown_latex_esc(ob, dat->data, dat->size);
 }
 
+/*
+ * Escape a URL with a sized buffer.  Return FALSE on error (memory),
+ * TRUE on success. XXX: this is the same function found in nroff.c.
+ */
+static int
+rndr_url_buf(struct lowdown_buf *ob, const char *data, size_t sz,
+    const enum halink_type *type)
+{
+	size_t	 	 i = 0;
+	unsigned char	 ch;
+
+	if (type != NULL && *type == HALINK_EMAIL && sz > 7 &&
+	    strncmp(data, "mailto:", 7) == 0)
+		i = 7;
+
+	for ( ; i < sz; i++) {
+		ch = (unsigned char)data[i];
+		if (!isprint(ch) || strchr(" <>\\^`{|}\"", ch) != NULL) {
+			if (!hbuf_printf(ob, "\\%%%.2X", ch))
+				return 0;
+		} else if (!hbuf_putc(ob, ch))
+			return 0;
+	}
+
+	return 1;
+}
+
+/*
+ * Escape a URL.  Return FALSE on error (memory), TRUE on success.
+ */
+static int
+rndr_url(struct lowdown_buf *ob, const struct lowdown_buf *link,
+    const enum halink_type *type)
+{
+
+	return rndr_url_buf(ob, link->data, link->size, type);
+}
+
 static int
 rndr_autolink(const struct latex *st, struct lowdown_buf *ob,
 	const struct rndr_autolink *param)
@@ -70,9 +108,7 @@ rndr_autolink(const struct latex *st, struct lowdown_buf *ob,
 		return 1;
 	if (!HBUF_PUTSL(ob, "\\url{"))
 		return 0;
-	if (param->type == HALINK_EMAIL && !HBUF_PUTSL(ob, "mailto:"))
-		return 0;
-	if (!rndr_escape(st, ob, &param->link))
+	if (!rndr_url(ob, &param->link, &param->type))
 		return 0;
 	return HBUF_PUTSL(ob, "}");
 }
@@ -332,11 +368,10 @@ rndr_link(const struct latex *st, struct lowdown_buf *ob,
 		return 0;
 	else if (!loc && !HBUF_PUTSL(ob, "\\href{"))
 		return 0;
-
-	if (loc && !lowdown_latex_esc
-	    (ob, &param->link.data[1], param->link.size - 1))
+	if (loc && !rndr_url_buf(ob, &param->link.data[1],
+	    param->link.size - 1, NULL))
 		return 0;
-	else if (!loc && !rndr_escape(st, ob, &param->link))
+	else if (!loc && !rndr_url( ob, &param->link, NULL))
 		return 0;
 	if (!HBUF_PUTSL(ob, "}{"))
 		return 0;

@@ -1,0 +1,11 @@
+
+\href{http://www.google.com/search?q=\%E2\%99\%A5}{text}
+\href{http://www.google.com/search?q=\%E2\%80\%A6}{text}
+\href{http://www.google.com/search?q=hi\%22there}{text}
+\href{http://www.google.com/search?q=hi\%20there}{text}
+\href{http://www.google.com/search?q=hi\%5Ethere}{text}
+\href{http://www.google.com/search?q=hi&there}{text}
+\href{http://www.google.com/search?q=hi\%0Dthere}{text}
+
+\url{http://www.google.com/search?q=\%E2\%99\%A5} or
+\url{http://www.google.com/search?q=\%E2\%80\%A6} or

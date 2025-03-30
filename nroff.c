@@ -492,11 +492,12 @@ out:
 	return ret;
 }
 
-/**
+/*
  * Escape a URL.  Return FALSE on error (memory), TRUE on success.
+ * XXX: this is the same function found in latex.c.
  */
 static int
-putlinkhref(struct lowdown_buf *ob, const struct lowdown_buf *link,
+rndr_url_content(struct lowdown_buf *ob, const struct lowdown_buf *link,
     enum halink_type *type)
 {
 	size_t	 	 i = 0;
@@ -524,7 +525,7 @@ putlinkhref(struct lowdown_buf *ob, const struct lowdown_buf *link,
  * success.
  */
 static int
-putlink(struct bnodeq *obq, struct nroff *st, 
+rndr_url(struct bnodeq *obq, struct nroff *st, 
     const struct lowdown_node *n, const struct lowdown_buf *link, 
     const struct lowdown_buf *id, struct bnodeq *bq,
     enum halink_type type)
@@ -636,7 +637,7 @@ putlink(struct bnodeq *obq, struct nroff *st,
 
 		/* This will strip out the "mailto:", if defined. */
 
-		if (!putlinkhref(ob, link, &type))
+		if (!rndr_url_content(ob, link, &type))
 			goto out;
 
 		/* Either MT or UR depending on if a URL. */
@@ -683,7 +684,7 @@ putlink(struct bnodeq *obq, struct nroff *st,
 	if (type == HALINK_EMAIL && !hbuf_strprefix(link, "mailto:") &&
 	    !HBUF_PUTSL(ob, "mailto:"))
 		goto out;
-	if (!putlinkhref(ob, link, NULL))
+	if (!rndr_url_content(ob, link, NULL))
 		goto out;
 	if (!HBUF_PUTSL(ob, " -- "))
 		goto out;
@@ -693,7 +694,7 @@ putlink(struct bnodeq *obq, struct nroff *st,
 	 * Otherwise, flush the content to the output.
 	 */
 
-	if (bq == NULL && !putlinkhref(ob, link, &type))
+	if (bq == NULL && !rndr_url_content(ob, link, &type))
 		goto out;
 	else if (bq != NULL && !bqueue_flush(st, ob, bq))
 		goto out;
@@ -738,7 +739,7 @@ rndr_autolink(struct nroff *st, struct bnodeq *obq,
 	const struct lowdown_node *n)
 {
 
-	return putlink(obq, st, n, &n->rndr_autolink.link, NULL, NULL,
+	return rndr_url(obq, st, n, &n->rndr_autolink.link, NULL, NULL,
 		n->rndr_autolink.type);
 }
 
@@ -1007,7 +1008,7 @@ rndr_link(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 	const struct lowdown_node *n)
 {
 
-	return putlink(obq, st, n, &n->rndr_link.link,
+	return rndr_url(obq, st, n, &n->rndr_link.link,
 		&n->rndr_link.attr_id, bq, HALINK_NORMAL);
 }
 
