@@ -1,5 +1,5 @@
 title: lowdown --- simple markdown translator
-date: 2024-12-30
+date: 2025-04-20
 author: Kristaps Dzonsons
 
 # [%title]
@@ -24,14 +24,13 @@ package manager.  If not,
 [verify](https://kristaps.bsd.lv/lowdown/snapshots/lowdown.tar.gz.sha512),
 and unpack the source.  Then build:
 
-```c
-% ./configure
-% make
-% make regress
-# make install install_libs
+```sh
+./configure
+make
+doas make install install_libs
 ```
 
-On non-BSD systems, you may need to use `bmake`.
+On non-BSD systems, you may need to use `bmake` and `sudo`.
 
 *lowdown* is a [BSD.lv](https://bsd.lv) project.  Its portability to
 OpenBSD, NetBSD, FreeBSD, Mac OS X, Linux (glibc and musl), Solaris, and
@@ -105,7 +104,11 @@ following Markdown features and extensions:
 - admonitions
 - templating
 
-## Examples
+*lowdown* is fully compatible with the original Markdown syntax as
+checked by the Markdown test suite, last version 1.0.3.  This suite is
+available as part of the regression suite.
+
+## Usage
 
 Want to quickly review your Markdown in a terminal window?
 
@@ -147,38 +150,70 @@ lowdown -s -tlatex README.md | pdflatex
 Read [lowdown(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) for
 details on running the system.
 
-## Library
-
 *lowdown* is also available as a library,
 [lowdown(3)](https://kristaps.bsd.lv/lowdown/lowdown.3.html).  This
 is what's used internally by
 [lowdown(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) and
 [lowdown-diff(1)](https://kristaps.bsd.lv/lowdown/lowdown-diff.1.html).
 
-## Testing
+## Installation
 
-The canonical Markdown tests are available as part of a regression
-framework within the system.  Just use `make regress` to run these and
-many other tests.
+Configure the system with the `configure` script, which may be passed
+variables like `PREFIX` and `CC` that affect the build process.
+See [oconfigure](https://github.com/kristapsdz/oconfigure) for possible
+arguments.
 
-If you have [valgrind](https://valgrind.org) installed, `make valgrind`
-will run all regression tests with all output modes and store any leaks
-or bad behaviour.  These are output to the screen at the conclusion of
-all tests.
+```sh
+./configure
+```
 
-The CI runner in *lowdown*'s GitHub repository runs both valgrind and
-regular regression tests, the latter with the compiler's **-fsanitize**
-options enabled, on each push.
+If on a Mac OS X system, `./configure` may be passed
+`SANDBOX_INIT_ERROR_IGNORE` set to `always` or `env`.  If `always`,
+errors from the sandbox initialisation are ignored; if set to anything
+else (like `env`), sandbox initialisation errors are ignored if the
+user's environment contains `SANDBOX_INIT_ERROR_IGNORE`.  Passing this
+on non-Mac OS X systems has no effect.
 
-I've extensively run [AFL](http://lcamtuf.coredump.cx/afl/) against the
-compiled sources with no failures---definitely a credit to the
-[hoedown](https://github.com/hoedown/hoedown) authors (and those from
-whom they forked their own sources).  I'll also regularly run the system
-through [valgrind](http://valgrind.org/), also without issue.  The
-[afl/in](afl/in) directory contains a series of small input files that
-may be used in longer AFL runs.
+```sh
+./configure SANDBOX_INIT_ERROR_IGNORE=always
+```
 
-## Code layout
+This convoluted methodology is because Mac OS X sandboxes may not be
+nested; and if *lowdown* were uesd within a sandbox, it would fail.
+
+On Linux, the *lowdown* binary may be compiled with its shared library
+instead of the default static library by passing `LINK_METHOD=shared` to
+`./configure`.  Passing any other value, or omitting this entirely,
+defaults to static linking.
+
+```sh
+./configure LINK_METHOD=shared
+```
+
+Once configured, build the system with `make` or, on non-BSD systems,
+`bmake`.
+
+```sh
+make
+```
+
+To install the binaries (as root, in this example), run:
+
+```sh
+doas make install
+```
+
+On non-BSD systems, `sudo` might be required.  For libraries, you can
+additionally run:
+
+```sh
+doas make install_libs
+```
+
+This may be split into `install_shared` and `install_static` for shared
+and static libraries, respectively.
+
+## Development
 
 The code is neatly layed out and heavily documented internally.
 
@@ -213,35 +248,9 @@ OpenDocument,
 for terminal output, and a debugging renderer
 [tree.c](https://github.com/kristapsdz/lowdown/blob/master/tree.c).
 
-## Installing
+### Parsing
 
-You'll need a C compiler with essential build tools
-([make](https://man.openbsd.org/make), [cc](https://man.openbsd.org/cc),
-etc.).  On non-BSD systems, you may need to use `bmake`.  First,
-configure the system:
-
-```
-./configure
-```
-
-You can pass variables like `PREFIX` and such here.  To install the binaries, run:
-
-```
-make install
-```
-
-For libraries, you can additionally run:
-
-```
-make install_libs
-```
-
-This may be split into `install_shared` and `install_static` for shared
-and static libraries, respectively.
-
-## Example
-
-For example, consider the following:
+Consider the following:
 
 ```markdown
 ## Hello **world**
@@ -275,16 +284,30 @@ outputs).
 Finally, the subsection block would be fitted into whatever context it
 was invoked within.
 
-## Compatibility
+### Testing
 
-*lowdown* is fully compatible with the original Markdown syntax as
-checked by the Markdown test suite, last version 1.0.3.  This suite is
-available as part of the `make regress` functionality.
+The canonical Markdown tests are available as part of a regression
+framework within the system.  Just use `make regress` to run these and
+many other tests.
 
-There are many other extensions to Markdown implemented in *lowdown*:
-see the manpages for specifics.
+If you have [valgrind](https://valgrind.org) installed, `make valgrind`
+will run all regression tests with all output modes and store any leaks
+or bad behaviour.  These are output to the screen at the conclusion of
+all tests.
 
-## How Can You Help?
+The CI runner in *lowdown*'s GitHub repository runs both valgrind and
+regular regression tests, the latter with the compiler's **-fsanitize**
+options enabled, on each push.
+
+I've extensively run [AFL](http://lcamtuf.coredump.cx/afl/) against the
+compiled sources with no failures---definitely a credit to the
+[hoedown](https://github.com/hoedown/hoedown) authors (and those from
+whom they forked their own sources).  I'll also regularly run the system
+through [valgrind](http://valgrind.org/), also without issue.  The
+[afl/in](afl/in) directory contains a series of small input files that
+may be used in longer AFL runs.
+
+### How Can You Help?
 
 Want to hack on *lowdown*?  Of course you do.
 

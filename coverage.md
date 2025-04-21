@@ -1,5 +1,5 @@
 
-## Coverage
+### Coverage
 
 The regression suite executes the *lowdown* code in many ways.  It's
 easy to track this by examining run-time coverage using
