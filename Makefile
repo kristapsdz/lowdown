@@ -11,9 +11,12 @@ sinclude Makefile.local
 # do not.  Let the library guide our versioning until a better way is
 # thought out.
 VERSION		 = 2.0.2
+
 # This is the major number of VERSION.  It might later become
 # MAJOR.MINOR, if the library moves a lot.
 LIBVER		 = 2
+
+# The usual variables.
 OBJS		 = autolink.o \
 		   buffer.o \
 		   diff.o \
@@ -122,6 +125,7 @@ THUMBS		 = screen-mandoc.thumb.jpg \
 		   screen-groff.thumb.jpg \
 		   screen-term.thumb.jpg
 CFLAGS		+= -DVERSION=\"$(VERSION)\"
+
 # Hack around broken Mac OS X nested sandboxes.
 # If SANDBOX_INIT_ERROR_IGNORE is set to "always", errors from
 # sandbox_init() are ignored.  If set to anything else, the user must
@@ -135,6 +139,18 @@ CFLAGS		+= -DSANDBOX_INIT_ERROR_IGNORE=2
 CFLAGS		+= -DSANDBOX_INIT_ERROR_IGNORE=1
 .endif
 .endif
+
+# On some Linux distributions, the preferred method of distributing
+# binaries is with dynamically-linked libraries.  Use the LINK_METHOD
+# variable set with ./configure to determine whether to use static
+# (default) or dynamic linking.
+LIB_LOWDOWN 	 = liblowdown.a
+.ifdef LINK_METHOD
+.if $(LINK_METHOD) == "shared"
+LIB_LOWDOWN 	 = liblowdown.so
+.endif
+.endif
+
 # Because the objects will be compiled into a shared library:
 CFLAGS		+= -fPIC
 # To avoid exporting internal functions (lowdown.h has default visibility).
@@ -170,8 +186,8 @@ installwww: www
 	$(INSTALL) -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots
 	$(INSTALL) -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots
 
-lowdown: liblowdown.a main.o
-	$(CC) -o $@ main.o liblowdown.a $(LDFLAGS) $(LDADD_MD5) -lm $(LDADD)
+lowdown: $(LIB_LOWDOWN) main.o
+	$(CC) -o $@ main.o $(LIB_LOWDOWN) $(LDFLAGS) $(LDADD_MD5) -lm $(LDADD)
 
 lowdown-diff: lowdown
 	ln -f lowdown lowdown-diff
