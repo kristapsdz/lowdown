@@ -11,6 +11,8 @@ test-*.dSYM  # macOS only
 # vi swap files
 *.swp
 # generated files
+index.html
+index.xml
 lowdown
 lowdown-diff
 lowdown.pc
