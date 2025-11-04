@@ -144,10 +144,14 @@ CFLAGS		+= -DSANDBOX_INIT_ERROR_IGNORE=1
 # binaries is with dynamically-linked libraries.  Use the LINK_METHOD
 # variable set with ./configure to determine whether to use static
 # (default) or dynamic linking.
+# The dynamic version will also need the compats when building the main
+# object.
 LIB_LOWDOWN 	 = liblowdown.a
+MAIN_OBJS	 =
 .ifdef LINK_METHOD
 .if $(LINK_METHOD) == "shared"
 LIB_LOWDOWN 	 = liblowdown.so
+MAIN_OBJS	 = $(COMPAT_OBJS)
 .endif
 .endif
 
@@ -186,8 +190,8 @@ installwww: www
 	$(INSTALL) -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots
 	$(INSTALL) -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots
 
-lowdown: $(LIB_LOWDOWN) main.o
-	$(CC) -o $@ main.o $(LIB_LOWDOWN) $(LDFLAGS) $(LDADD_MD5) -lm $(LDADD)
+lowdown: $(LIB_LOWDOWN) $(MAIN_OBJS) main.o
+	$(CC) -o $@ main.o $(MAIN_OBJS) $(LIB_LOWDOWN) $(LDFLAGS) $(LDADD_MD5) -lm $(LDADD)
 
 lowdown-diff: lowdown
 	ln -f lowdown lowdown-diff
