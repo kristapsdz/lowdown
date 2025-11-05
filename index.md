@@ -223,7 +223,8 @@ doas make install_libs
 ```
 
 This may be split into `install_shared` and `install_static` for shared
-and static libraries, respectively.
+and static libraries, respectively.  **If linking to the shared library,
+you will need `install_shared` for your binary to work.**
 
 ## Development
 
