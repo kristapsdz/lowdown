@@ -1427,7 +1427,7 @@ static int
 rndr(struct lowdown_buf *ob, struct term *st,
 	const struct lowdown_node *n)
 {
-	const struct lowdown_node	*child, *nn;
+	const struct lowdown_node	*child, *nn, *in_link = st->in_link;
 	struct lowdown_buf		*metatmp;
 	void				*pp;
 	size_t				 i, col, vs;
@@ -1505,9 +1505,22 @@ rndr(struct lowdown_buf *ob, struct term *st,
 	case LOWDOWN_IMAGE:
 	case LOWDOWN_LINK:
 	case LOWDOWN_LINK_AUTO:
-		st->in_link = n;
+		/*
+		 * If links aren't being shown, nested links (image
+		 * within a link) should yield to the parent.
+		 */
+		if (n->type != LOWDOWN_IMAGE ||
+		    n->parent == NULL ||
+		    n->parent->type != LOWDOWN_LINK ||
+		    !((st->opts & LOWDOWN_TERM_NOLINK) ||
+		      ((st->opts & LOWDOWN_TERM_NORELLINK) &&
+		       link_isrelative(&n->parent->rndr_link.link))))
+			st->in_link = n;
 		break;
 	case LOWDOWN_SUPERSCRIPT:
+		/*
+		 * Output the superscript character.
+		 */
 		hbuf_truncate(st->tmp);
 		if (!hbuf_puts(st->tmp, ifx_super) ||
 		    !rndr_buf(st, ob, n, st->tmp, NULL))
@@ -1733,7 +1746,7 @@ rndr(struct lowdown_buf *ob, struct term *st,
 	case LOWDOWN_IMAGE:
 	case LOWDOWN_LINK:
 	case LOWDOWN_LINK_AUTO:
-		st->in_link = NULL;
+		st->in_link = in_link;
 		break;
 	case LOWDOWN_ROOT:
 		/*
