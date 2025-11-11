@@ -150,7 +150,7 @@ LIB_LOWDOWN 	 = liblowdown.a
 MAIN_OBJS	 =
 .ifdef LINK_METHOD
 .if $(LINK_METHOD) == "shared"
-LIB_LOWDOWN 	 = liblowdown.so
+LIB_LOWDOWN 	 = liblowdown.$(LINKER_SOSUFFIX)
 MAIN_OBJS	 = $(COMPAT_OBJS)
 .endif
 .endif
@@ -177,7 +177,7 @@ REGRESS_ARGS	+= "--parse-no-deflists"
 
 REGRESS_ENV	 = LC_ALL=en_US.UTF-8
 
-all: bins lowdown.pc liblowdown.so
+all: bins lowdown.pc liblowdown.$(LINKER_SOSUFFIX)
 bins: lowdown lowdown-diff
 
 www: all $(HTMLS) $(PDFS) $(THUMBS) lowdown.tar.gz lowdown.tar.gz.sha512
@@ -199,8 +199,9 @@ lowdown-diff: lowdown
 liblowdown.a: $(OBJS) $(COMPAT_OBJS)
 	$(AR) rs $@ $(OBJS) $(COMPAT_OBJS)
 
-liblowdown.so: $(OBJS) $(COMPAT_OBJS)
-	$(CC) -shared -o $@.$(LIBVER) $(OBJS) $(COMPAT_OBJS) $(LDFLAGS) $(LDADD_MD5) -lm -Wl,${LINKER_SONAME},$@.$(LIBVER) $(LDLIBS)
+liblowdown.$(LINKER_SOSUFFIX): $(OBJS) $(COMPAT_OBJS)
+	$(CC) $(LINKER_SOFLAG) -o $@.$(LIBVER) $(OBJS) $(COMPAT_OBJS) $(LDFLAGS) $(LDADD_MD5) -lm \
+		-Wl,${LINKER_SONAME},$@.$(LIBVER) $(LDLIBS)
 	ln -sf $@.$(LIBVER) $@
 
 uninstall:
@@ -256,11 +257,11 @@ install_lib_common: lowdown.pc
 	done
 
 uninstall_shared: uninstall_lib_common
-	rm -f $(LIBDIR)/liblowdown.so.$(LIBVER) $(LIBDIR)/liblowdown.so
+	rm -f $(LIBDIR)/liblowdown.$(LINKER_SOSUFFIX).$(LIBVER) $(LIBDIR)/liblowdown.$(LINKER_SOSUFFIX)
 
-install_shared: liblowdown.so install_lib_common
-	$(INSTALL_LIB) liblowdown.so.$(LIBVER) $(DESTDIR)$(LIBDIR)
-	( cd $(DESTDIR)$(LIBDIR) && ln -sf liblowdown.so.$(LIBVER) liblowdown.so )
+install_shared: liblowdown.$(LINKER_SOSUFFIX) install_lib_common
+	$(INSTALL_LIB) liblowdown.$(LINKER_SOSUFFIX).$(LIBVER) $(DESTDIR)$(LIBDIR)
+	( cd $(DESTDIR)$(LIBDIR) && ln -sf liblowdown.$(LINKER_SOSUFFIX).$(LIBVER) liblowdown.$(LINKER_SOSUFFIX) )
 
 uninstall_static: uninstall_lib_common
 	rm -f $(LIBDIR)/liblowdown.a
@@ -392,7 +393,8 @@ main.o: lowdown.h
 
 clean:
 	rm -f $(OBJS) $(COMPAT_OBJS) main.o
-	rm -f lowdown lowdown-diff liblowdown.a liblowdown.so liblowdown.so.$(LIBVER) lowdown.pc
+	rm -f lowdown lowdown-diff lowdown.pc
+	rm -f liblowdown.a liblowdown.$(LINKER_SOSUFFIX) liblowdown.$(LINKER_SOSUFFIX).$(LIBVER)
 	rm -f index.xml diff.xml diff.diff.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
 	rm -f $(PDFS) $(HTMLS) $(THUMBS)
 	rm -f index.latex.aux index.latex.latex index.latex.log index.latex.out

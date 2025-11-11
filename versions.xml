@@ -1812,4 +1812,17 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>x.x.x</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2025-02-16">2025-02-16</time>
+		</header>
+		<aside>
+			<p>
+				Automatically create the correct shared library type (<q>dylib</q>)
+				on Mac OS X.
+			</p>
+		</aside>
+	</article>
 </articles>

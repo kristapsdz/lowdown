@@ -15,7 +15,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-OCONFIGURE_VERSION="0.5.1"
+OCONFIGURE_VERSION="1.0.0"
 
 #
 # This script outputs two files: config.h and Makefile.configure.
@@ -131,7 +131,9 @@ LDADD_SCAN_SCALED=
 LDADD_STATIC=
 CPPFLAGS=
 LDFLAGS=
+LINKER_SOFLAG=
 LINKER_SONAME=
+LINKER_SOSUFFIX=
 DESTDIR=
 PREFIX="/usr/local"
 BINDIR=
@@ -192,8 +194,12 @@ do
 		LDLIBS="$val" ;;
 	LDFLAGS)
 		LDFLAGS="$val" ;;
+	LINKER_SOFLAG)
+		LINKER_SOFLAG="$val" ;;
 	LINKER_SONAME)
 		LINKER_SONAME="$val" ;;
+	LINKER_SOSUFFIX)
+		LINKER_SOSUFFIX="$val" ;;
 	CPPFLAGS)
 		CPPFLAGS="$val" ;;
 	DESTDIR)
@@ -218,6 +224,57 @@ do
 done
 
 #----------------------------------------------------------------------
+# If the user doesn't specify how to link shared libraries, try
+# "-shared" or "-dynamiclib", the latter of which is Mac OS X only at
+# the moment.  Also set the proper shared library suffix.
+#
+# This is for link-time shared library generation only: the "-shared"
+# should be used for creating dynamically-loaded libraries on all
+# Unix-like systems.
+
+if [ -z "$LINKER_SOFLAG" ]
+then
+	test_soname="`mktemp`" || {
+		echo "mktemp: failed" 1>&2
+		echo "mktemp: failed" 1>&3
+		exit 1
+	}
+	echo "int foo(void) { return 1; }" > "${test_soname}.c"
+	${CC} -fPIC -o ${test_soname}.o -c ${test_soname}.c || {
+		echo "${CC} -fPIC -o ${test_soname}.o -c ${test_soname}.c: failed" 1>&2
+		echo "${CC} -fPIC -o ${test_soname}.o -c ${test_soname}.c: failed" 1>&3
+	}
+	LINKER_SOFLAG="-dynamiclib"
+	LINKER_SOSUFFIX="dylib"
+	echo "LINKER_SOSUFFIX: testing ${LINKER_SOFLAG}" 1>&3
+	${CC} ${LINKER_SOFLAG} -o ${test_soname}.${LINKER_SOSUFFIX}.0 \
+	    ${test_soname}.o 2>/dev/null || {
+		LINKER_SOFLAG="-shared"
+		LINKER_SOSUFFIX="so"
+		echo "LINKER_SOFLAG: testing ${LINKER_SOFLAG}" 1>&3
+		${CC} ${LINKER_SOFLAG} -o ${test_soname}.${LINKER_SOSUFFIX}.0 \
+		    ${test_soname}.o || {
+			echo "LINKER_SOFLAG: cannot determine: default to -shared" 1>&2
+			echo "LINKER_SOFLAG: cannot determine: default to -shared" 1>&3
+		}
+	}
+	echo "LINKER_SOFLAG: $LINKER_SOFLAG" 1>&3
+	echo "LINKER_SOSUFFIX: $LINKER_SOSUFFIX" 1>&3
+	rm -f "$test_soname" "${test_soname}.*"
+fi
+
+if [ -z "$LINKER_SOSUFFIX" ]
+then
+	if [ "$LINKER_SOFLAG" = "-shared" ]
+	then
+		LINKER_SOSUFFIX="so"
+	else
+		LINKER_SOSUFFIX="dylib"
+	fi
+	echo "LINKER_SOSUFFIX: $LINKER_SOSUFFIX" 1>&3
+fi
+
+#----------------------------------------------------------------------
 # If the user doesn't specify whether we want "-soname" or
 # "-install_name" for the linker option to generate shared libraries,
 # try to figure it out here.  If we can't figure it out, just set it to
@@ -237,10 +294,12 @@ then
 	}
 	LINKER_SONAME="-soname"
 	echo "LINKER_SONAME: testing -soname" 1>&3
-	${CC} -shared -o ${test_soname}.so.0 ${test_soname}.o -Wl,${LINKER_SONAME},${test_soname}.so.0 || {
+	${CC} -shared -o ${test_soname}.so.0 ${test_soname}.o \
+	    -Wl,${LINKER_SONAME},${test_soname}.so.0 2>/dev/null || {
 		LINKER_SONAME="-install_name"
 		echo "LINKER_SONAME: testing -install_name" 1>&3
-		${CC} -shared -o ${test_soname}.so.0 ${test_soname}.o -Wl,-install_name,${test_soname}.so.0 || {
+		${CC} -shared -o ${test_soname}.so.0 ${test_soname}.o \
+		    -Wl,-install_name,${test_soname}.so.0 || {
 			echo "LINKER_SONAME: cannot determine: default to -soname" 1>&2
 			echo "LINKER_SONAME: cannot determine: default to -soname" 1>&3
 			LINKER_SONAME="-soname"
@@ -2559,8 +2618,9 @@ LDADD_SHA2	 = ${LDADD_SHA2}
 LDADD_SCAN_SCALED= ${LDADD_SCAN_SCALED}
 LDADD_STATIC	 = ${LDADD_STATIC}
 LDFLAGS		 = ${LDFLAGS}
+LINKER_SOFLAG	 = ${LINKER_SOFLAG}
 LINKER_SONAME	 = ${LINKER_SONAME}
-STATIC		 = ${STATIC}
+LINKER_SOSUFFIX	 = ${LINKER_SOSUFFIX}
 PREFIX		 = ${PREFIX}
 BINDIR		 = ${BINDIR}
 SHAREDIR	 = ${SHAREDIR}

@@ -14,6 +14,7 @@ jobs:
         ./configure
         rm -f Makefile.local
         bmake clean
+        bmake
         bmake regress
     - name: Regress with sanitiser
       run: |
@@ -21,16 +22,47 @@ jobs:
         echo 'CFLAGS += -fsanitize=undefined,address -fomit-frame-pointer -O0' > Makefile.local
         echo 'LDFLAGS += -fsanitize=undefined,address -fomit-frame-pointer -O0' >> Makefile.local
         bmake clean
+        bmake
         bmake regress
     - name: Regress with valgrind
       run: |
         ./configure
         rm -f Makefile.local
         bmake clean
+        bmake
         bmake valgrind
     - name: Regress with shared
       run: |
         ./configure LINK_METHOD=shared
         rm -f Makefile.local
         bmake clean
+        bmake
+        LD_LIBRARY_PATH="." bmake regress
+  macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Install dependencies
+      run: brew install bmake
+    - name: Regress
+      run: |
+        ./configure
+        rm -f Makefile.local
+        bmake clean
+        bmake
+        bmake regress
+    - name: Regress with sanitiser
+      run: |
+        ./configure
+        echo 'CFLAGS += -fsanitize=undefined,address -fomit-frame-pointer -O0' > Makefile.local
+        echo 'LDFLAGS += -fsanitize=undefined,address -fomit-frame-pointer -O0' >> Makefile.local
+        bmake clean
+        bmake
+        bmake regress
+    - name: Regress with shared
+      run: |
+        ./configure LINK_METHOD=shared
+        rm -f Makefile.local
+        bmake clean
+        bmake
         LD_LIBRARY_PATH="." bmake regress
