@@ -1075,6 +1075,78 @@ rndr_hrule(struct term *st, struct lowdown_buf *ob, const char *hr,
 	return rndr_buf_literal(st, ob, n, st->tmp, sty);
 }
 
+static int
+rndr_image(struct term *st, struct lowdown_buf *ob,
+    const struct lowdown_node *n)
+{
+	const struct lowdown_node	*nn, *link = NULL;
+
+	for (nn = n->parent; nn != NULL; nn = nn->parent)
+		if (nn->type == LOWDOWN_LINK) {
+			link = nn;
+			break;
+		}
+
+	/*
+	 * This is a bit more complicated than LOWDOWN_LINK
+	 * because the image "alt" is in a buffer and not
+	 * arranged as child nodes.  Begin with the image-left
+	 * bracketing.
+	 */
+
+	hbuf_truncate(st->tmp);
+	if (!hbuf_puts(st->tmp, ifx_imgbox_left) ||
+	    !rndr_buf(st, ob, n, st->tmp, &sty_imgbox))
+		return 0;
+
+	if (link != NULL)
+		st->in_link = link;
+	if (!rndr_buf(st, ob, n, &n->rndr_image.alt, &sty_linkalt))
+		return 0;
+	st->in_link = n;
+
+	/* If omitting the link, right-bracket and bail. */
+
+	if ((st->opts & LOWDOWN_TERM_NOLINK) ||
+	    ((st->opts & LOWDOWN_TERM_NORELLINK) &&
+	     link_isrelative(&n->rndr_image.link))) {
+		hbuf_truncate(st->tmp);
+		if (!hbuf_puts(st->tmp, ifx_imgbox_right) ||
+		    !rndr_buf(st, ob, n, st->tmp, &sty_imgbox))
+			return 0;
+		return 1;
+	}
+
+	/* Separate between text and link address. */
+
+	hbuf_truncate(st->tmp);
+	if (!hbuf_puts(st->tmp, ifx_imgbox_sep) ||
+	    !rndr_buf(st, ob, n, st->tmp, &sty_imgbox))
+		return 0;
+
+	/* Format link address. */
+
+	if (st->opts & LOWDOWN_TERM_SHORTLINK) {
+		if (!hbuf_shortlink
+		    (st->tmp, &n->rndr_image.link))
+			return 0;
+		if (!rndr_buf(st, ob, n, st->tmp, &sty_imgurl))
+			return 0;
+	} else
+		if (!rndr_buf(st, ob, n, &n->rndr_image.link,
+		    &sty_imgurl))
+			return 0;
+
+	/* Right-bracket and end. */
+
+	hbuf_truncate(st->tmp);
+	if (!hbuf_puts(st->tmp, ifx_imgbox_right) ||
+	    !rndr_buf(st, ob, n, st->tmp, &sty_imgbox))
+		return 0;
+
+	return 1;
+}
+
 /*
  * Adjust the stack of current nodes we're looking at.
  */
@@ -1505,17 +1577,7 @@ rndr(struct lowdown_buf *ob, struct term *st,
 	case LOWDOWN_IMAGE:
 	case LOWDOWN_LINK:
 	case LOWDOWN_LINK_AUTO:
-		/*
-		 * If links aren't being shown, nested links (image
-		 * within a link) should yield to the parent.
-		 */
-		if (n->type != LOWDOWN_IMAGE ||
-		    n->parent == NULL ||
-		    n->parent->type != LOWDOWN_LINK ||
-		    !((st->opts & LOWDOWN_TERM_NOLINK) ||
-		      ((st->opts & LOWDOWN_TERM_NORELLINK) &&
-		       link_isrelative(&n->parent->rndr_link.link))))
-			st->in_link = n;
+		st->in_link = n;
 		break;
 	case LOWDOWN_SUPERSCRIPT:
 		/*
@@ -1680,57 +1742,7 @@ rndr(struct lowdown_buf *ob, struct term *st,
 		}
 		break;
 	case LOWDOWN_IMAGE:
-		/*
-		 * This is a bit more complicated than LOWDOWN_LINK
-		 * because the image "alt" is in a buffer and not
-		 * arranged as child nodes.  Begin with the image-left
-		 * bracketing.
-		 */
-
-		hbuf_truncate(st->tmp);
-		if (!hbuf_puts(st->tmp, ifx_imgbox_left) ||
-		    !rndr_buf(st, ob, n, st->tmp, &sty_imgbox) ||
-		    !rndr_buf(st, ob, n, &n->rndr_image.alt,
-		    &sty_linkalt))
-			return 0;
-
-		/* If omitting the link, right-bracket and bail. */
-
-		if ((st->opts & LOWDOWN_TERM_NOLINK) ||
-		    ((st->opts & LOWDOWN_TERM_NORELLINK) &&
-		     link_isrelative(&n->rndr_image.link))) {
-			hbuf_truncate(st->tmp);
-			if (!hbuf_puts(st->tmp, ifx_imgbox_right) ||
-			    !rndr_buf(st, ob, n, st->tmp, &sty_imgbox))
-				return 0;
-			break;
-		}
-
-		/* Separate between text and link address. */
-
-		hbuf_truncate(st->tmp);
-		if (!hbuf_puts(st->tmp, ifx_imgbox_sep) ||
-		    !rndr_buf(st, ob, n, st->tmp, &sty_imgbox))
-			return 0;
-
-		/* Format link address. */
-
-		if (st->opts & LOWDOWN_TERM_SHORTLINK) {
-			if (!hbuf_shortlink
-			    (st->tmp, &n->rndr_image.link))
-				return 0;
-			if (!rndr_buf(st, ob, n, st->tmp, &sty_imgurl))
-				return 0;
-		} else
-			if (!rndr_buf(st, ob, n, &n->rndr_image.link,
-			    &sty_imgurl))
-				return 0;
-
-		/* Right-bracket and end. */
-
-		hbuf_truncate(st->tmp);
-		if (!hbuf_puts(st->tmp, ifx_imgbox_right) ||
-		    !rndr_buf(st, ob, n, st->tmp, &sty_imgbox))
+		if (!rndr_image(st, ob, n))
 			return 0;
 		break;
 	case LOWDOWN_NORMAL_TEXT:
