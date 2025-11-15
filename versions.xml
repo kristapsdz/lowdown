@@ -1814,14 +1814,18 @@
 	</article>
 	<article data-sblg-article="1" data-sblg-tags="version">
 		<header>
-			<h1>x.x.x</h1>
+			<h1>2.0.3</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2025-02-16">2025-02-16</time>
+			<time datetime="2025-11-15">2025-11-15</time>
 		</header>
 		<aside>
 			<p>
 				Automatically create the correct shared library type (<q>dylib</q>)
 				on Mac OS X.
+				Fix how image links within links have their link content displayed
+				using OSC8 encoding in terminal mode
+				Fix how -tlatex, -tms, and -tman escape URLs or otherwise do percent
+				and space encoding.
 			</p>
 		</aside>
 	</article>
