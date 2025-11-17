@@ -140,25 +140,31 @@ CFLAGS		+= -DSANDBOX_INIT_ERROR_IGNORE=1
 .endif
 .endif
 
+# Names of shared and static libraries.
+LIB_SO		 = liblowdown.$(LINKER_SOSUFFIX)
+LIB_ST		 = liblowdown.a
+
 # On some Linux distributions, the preferred method of distributing
 # binaries is with dynamically-linked libraries.  Use the LINK_METHOD
 # variable set with ./configure to determine whether to use static
 # (default) or dynamic linking.
 # The dynamic version will also need the compats when building the main
 # object.
-LIB_LOWDOWN 	 = liblowdown.a
+LIB_LOWDOWN 	 = $(LIB_ST)
 MAIN_OBJS	 =
 .ifdef LINK_METHOD
 .if $(LINK_METHOD) == "shared"
-LIB_LOWDOWN 	 = liblowdown.$(LINKER_SOSUFFIX)
+LIB_LOWDOWN 	 = $(LIB_SO)
 MAIN_OBJS	 = $(COMPAT_OBJS)
 .endif
 .endif
 
+# Mac OS X and other Unix systems use different conventions for
+# indicating shared library versions.
 .if $(LINKER_SOSUFFIX) == "dylib"
-LINKER_SOSUFFIX_WITH_VER = $(LIBVER).$(LINKER_SOSUFFIX)
+LIB_SOVER	 = liblowdown.$(LIBVER).$(LINKER_SOSUFFIX)
 .else
-LINKER_SOSUFFIX_WITH_VER = $(LINKER_SOSUFFIX).$(LIBVER)
+LIB_SOVER	 = liblowdown.$(LINKER_SOSUFFIX).$(LIBVER)
 .endif
 
 # Because the objects will be compiled into a shared library:
@@ -183,7 +189,7 @@ REGRESS_ARGS	+= "--parse-no-deflists"
 
 REGRESS_ENV	 = LC_ALL=en_US.UTF-8
 
-all: bins lowdown.pc liblowdown.$(LINKER_SOSUFFIX)
+all: bins lowdown.pc $(LIB_SO)
 bins: lowdown lowdown-diff
 
 www: all $(HTMLS) $(PDFS) $(THUMBS) lowdown.tar.gz lowdown.tar.gz.sha512
@@ -202,14 +208,14 @@ lowdown: $(LIB_LOWDOWN) $(MAIN_OBJS) main.o
 lowdown-diff: lowdown
 	ln -f lowdown lowdown-diff
 
-liblowdown.a: $(OBJS) $(COMPAT_OBJS)
+$(LIB_ST): $(OBJS) $(COMPAT_OBJS)
 	$(AR) rs $@ $(OBJS) $(COMPAT_OBJS)
 
-liblowdown.$(LINKER_SOSUFFIX): $(OBJS) $(COMPAT_OBJS)
-	echo $(LINKER_SOSUFFIX_WITH_VER)
-	$(CC) $(LINKER_SOFLAG) -o liblowdown.$(LINKER_SOSUFFIX_WITH_VER) $(OBJS) $(COMPAT_OBJS) $(LDFLAGS) $(LDADD_MD5) -lm \
-		-Wl,${LINKER_SONAME},liblowdown.$(LINKER_SOSUFFIX_WITH_VER) $(LDLIBS)
-	ln -sf liblowdown.$(LINKER_SOSUFFIX_WITH_VER) $@
+$(LIB_SO): $(OBJS) $(COMPAT_OBJS)
+	$(CC) $(LINKER_SOFLAG) -o $(LIB_SOVER) $(OBJS) $(COMPAT_OBJS) \
+		$(LDFLAGS) $(LDADD_MD5) -lm \
+		-Wl,${LINKER_SONAME},$(LIB_SOVER) $(LDLIBS)
+	ln -sf $(LIB_SOVER) $@
 
 uninstall:
 	rm -rf $(SHAREDIR)/lowdown
@@ -264,17 +270,17 @@ install_lib_common: lowdown.pc
 	done
 
 uninstall_shared: uninstall_lib_common
-	rm -f $(LIBDIR)/liblowdown.$(LINKER_SOSUFFIX_WITH_VER) $(LIBDIR)/liblowdown.$(LINKER_SOSUFFIX)
+	rm -f $(LIBDIR)/$(LIB_SOVER) $(LIBDIR)/$(LIB_SO)
 
-install_shared: liblowdown.$(LINKER_SOSUFFIX) install_lib_common
-	$(INSTALL_LIB) liblowdown.$(LINKER_SOSUFFIX_WITH_VER) $(DESTDIR)$(LIBDIR)
-	( cd $(DESTDIR)$(LIBDIR) && ln -sf liblowdown.$(LINKER_SOSUFFIX_WITH_VER) liblowdown.$(LINKER_SOSUFFIX) )
+install_shared: $(LIB_SO) install_lib_common
+	$(INSTALL_LIB) $(LIB_SOVER) $(DESTDIR)$(LIBDIR)
+	( cd $(DESTDIR)$(LIBDIR) && ln -sf $(LIB_SOVER) $(LIB_SO) )
 
 uninstall_static: uninstall_lib_common
-	rm -f $(LIBDIR)/liblowdown.a
+	rm -f $(LIBDIR)/$(LIB_ST)
 
-install_static: liblowdown.a install_lib_common
-	$(INSTALL_LIB) liblowdown.a $(DESTDIR)$(LIBDIR)
+install_static: $(LIB_ST) install_lib_common
+	$(INSTALL_LIB) $(LIB_ST) $(DESTDIR)$(LIBDIR)
 
 uninstall_libs: uninstall_shared uninstall_static
 
@@ -401,7 +407,7 @@ main.o: lowdown.h
 clean:
 	rm -f $(OBJS) $(COMPAT_OBJS) main.o
 	rm -f lowdown lowdown-diff lowdown.pc
-	rm -f liblowdown.a liblowdown.$(LINKER_SOSUFFIX) liblowdown.$(LINKER_SOSUFFIX).$(LIBVER)
+	rm -f $(LIB_ST) $(LIB_SO) $(LIB_SOVER)
 	rm -f index.xml diff.xml diff.diff.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
 	rm -f $(PDFS) $(HTMLS) $(THUMBS)
 	rm -f index.latex.aux index.latex.latex index.latex.log index.latex.out
