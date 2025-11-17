@@ -155,6 +155,12 @@ MAIN_OBJS	 = $(COMPAT_OBJS)
 .endif
 .endif
 
+.if $(LINKER_SOSUFFIX) == "dylib"
+LINKER_SOSUFFIX_WITH_VER = $(LIBVER).$(LINKER_SOSUFFIX)
+.else
+LINKER_SOSUFFIX_WITH_VER = $(LINKER_SOSUFFIX).$(LIBVER)
+.endif
+
 # Because the objects will be compiled into a shared library:
 CFLAGS		+= -fPIC
 # To avoid exporting internal functions (lowdown.h has default visibility).
@@ -200,9 +206,10 @@ liblowdown.a: $(OBJS) $(COMPAT_OBJS)
 	$(AR) rs $@ $(OBJS) $(COMPAT_OBJS)
 
 liblowdown.$(LINKER_SOSUFFIX): $(OBJS) $(COMPAT_OBJS)
-	$(CC) $(LINKER_SOFLAG) -o $@.$(LIBVER) $(OBJS) $(COMPAT_OBJS) $(LDFLAGS) $(LDADD_MD5) -lm \
-		-Wl,${LINKER_SONAME},$@.$(LIBVER) $(LDLIBS)
-	ln -sf $@.$(LIBVER) $@
+	echo $(LINKER_SOSUFFIX_WITH_VER)
+	$(CC) $(LINKER_SOFLAG) -o liblowdown.$(LINKER_SOSUFFIX_WITH_VER) $(OBJS) $(COMPAT_OBJS) $(LDFLAGS) $(LDADD_MD5) -lm \
+		-Wl,${LINKER_SONAME},liblowdown.$(LINKER_SOSUFFIX_WITH_VER) $(LDLIBS)
+	ln -sf liblowdown.$(LINKER_SOSUFFIX_WITH_VER) $@
 
 uninstall:
 	rm -rf $(SHAREDIR)/lowdown
@@ -257,11 +264,11 @@ install_lib_common: lowdown.pc
 	done
 
 uninstall_shared: uninstall_lib_common
-	rm -f $(LIBDIR)/liblowdown.$(LINKER_SOSUFFIX).$(LIBVER) $(LIBDIR)/liblowdown.$(LINKER_SOSUFFIX)
+	rm -f $(LIBDIR)/liblowdown.$(LINKER_SOSUFFIX_WITH_VER) $(LIBDIR)/liblowdown.$(LINKER_SOSUFFIX)
 
 install_shared: liblowdown.$(LINKER_SOSUFFIX) install_lib_common
-	$(INSTALL_LIB) liblowdown.$(LINKER_SOSUFFIX).$(LIBVER) $(DESTDIR)$(LIBDIR)
-	( cd $(DESTDIR)$(LIBDIR) && ln -sf liblowdown.$(LINKER_SOSUFFIX).$(LIBVER) liblowdown.$(LINKER_SOSUFFIX) )
+	$(INSTALL_LIB) liblowdown.$(LINKER_SOSUFFIX_WITH_VER) $(DESTDIR)$(LIBDIR)
+	( cd $(DESTDIR)$(LIBDIR) && ln -sf liblowdown.$(LINKER_SOSUFFIX_WITH_VER) liblowdown.$(LINKER_SOSUFFIX) )
 
 uninstall_static: uninstall_lib_common
 	rm -f $(LIBDIR)/liblowdown.a
