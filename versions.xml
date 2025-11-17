@@ -1829,4 +1829,17 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>2.0.4</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2025-11-16">2025-11-16</time>
+		</header>
+		<aside>
+			<p>
+				Hot-fix 2.0.3 with correct Mac OS X conventions in shared library
+				versioning.
+			</p>
+		</aside>
+	</article>
 </articles>
