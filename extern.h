@@ -63,6 +63,7 @@ int		 hbuf_putf(struct lowdown_buf *, FILE *);
 int		 hbuf_puts(struct lowdown_buf *, const char *);
 void		 hbuf_truncate(struct lowdown_buf *);
 int		 hbuf_shortlink(struct lowdown_buf *, const struct lowdown_buf *);
+int		 hbuf_isrellink(const struct lowdown_buf *);
 void		 hentryq_clear(struct hentryq *);
 
 #define 	 HBUF_PUTSL(output, literal) \

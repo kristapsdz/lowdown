@@ -497,3 +497,25 @@ hentryq_clear(struct hentryq *q)
 	}
 }
 
+/*
+ * Determine whether a link URL is relative.  Use a simple heuristic to
+ * accomplish this: a relative URL is one without a schema.  Returns
+ * zero if not a relative link, non-zero if it is.
+ */
+int
+hbuf_isrellink(const struct lowdown_buf *link)
+{
+	const char	*colon;
+	size_t	 	 rem;
+
+	/* If there's no colon, it's a relative link (no schema) */
+
+	if ((colon = memchr(link->data, ':', link->size)) == NULL)
+		return 1;
+
+	/* If there's a slash before the colon, it's a (rel) path. */
+
+	assert(colon > link->data);
+	rem = colon - link->data;
+	return memchr(link->data, '/', rem) != NULL;
+}

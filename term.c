@@ -173,28 +173,6 @@ rndr_mbswidth(struct term *term, const char *buf, size_t sz)
 	return csz == (size_t)-1 ? sz : csz;
 }
 
-/*
- * Determine whether a link URL is relative.  Use a simple heuristic to
- * accomplish this: a relative URL is one without a schema.  Returns
- * zero if not a relative link, non-zero if it is.
- */
-static int
-link_isrelative(const struct lowdown_buf *link)
-{
-	const char	*colon;
-	size_t	 	 rem;
-
-	/* If there's no colon, it's a relative link (no schema) */
-
-	if ((colon = memchr(link->data, ':', link->size)) == NULL)
-		return 1;
-
-	/* If there's a slash before the colon, it's a (rel) path. */
-
-	assert(colon > link->data);
-	rem = colon - link->data;
-	return memchr(link->data, '/', rem) != NULL;
-}
 
 /*
  * Copy the buffer into "out", escaping along the width.
@@ -1109,7 +1087,7 @@ rndr_image(struct term *st, struct lowdown_buf *ob,
 
 	if ((st->opts & LOWDOWN_TERM_NOLINK) ||
 	    ((st->opts & LOWDOWN_TERM_NORELLINK) &&
-	     link_isrelative(&n->rndr_image.link))) {
+	     hbuf_isrellink(&n->rndr_image.link))) {
 		hbuf_truncate(st->tmp);
 		if (!hbuf_puts(st->tmp, ifx_imgbox_right) ||
 		    !rndr_buf(st, ob, n, st->tmp, &sty_imgbox))
@@ -1716,7 +1694,7 @@ rndr(struct lowdown_buf *ob, struct term *st,
 
 		if ((st->opts & LOWDOWN_TERM_NOLINK) ||
 		    ((st->opts & LOWDOWN_TERM_NORELLINK) &&
-		     link_isrelative(&n->rndr_link.link)))
+		     hbuf_isrellink(&n->rndr_link.link)))
 			break;
 
 		/* Separate between text and link address. */
