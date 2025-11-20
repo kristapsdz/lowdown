@@ -383,6 +383,7 @@ struct	lowdown_opts {
 #define LOWDOWN_HTML_CALLOUT_MDN  0x10000000 /* MDN callouts */
 #define LOWDOWN_TERM_ALL_META	  0x20000000 /* show all metadata */
 #define LOWDOWN_NROFF_ENDNOTES	  0x40000000 /* endnotes for -tms */
+#define LOWDOWN_NROFF_NORELLINK	  0x80000000 /* don't show relative */
 	char			**meta;
 	size_t			  metasz;
 	char			**metaovr;

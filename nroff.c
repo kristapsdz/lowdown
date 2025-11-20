@@ -532,27 +532,35 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 {
 	struct lowdown_buf	*ob = NULL;
 	struct bnode		*bn;
-	int			 rc = 0, classic = 0;
-
-	classic = !(st->flags & LOWDOWN_NROFF_GROFF);
-
-	if (type != HALINK_EMAIL && hbuf_strprefix(link, "mailto:"))
-		type = HALINK_EMAIL;
+	int			 rc = 0, classic = 0, inhibit = 0;
 
 	/*
-	 * XXX: override as classic if -tman and in a section header or
-	 * definition title.
-	 * This is because UR/UE or MT/ME don't work properly in at
+	 * Classic means traditional mode, inhibiting links entirely, or
+	 * -tman and in a section header or definition title.
+	 * The last is because UR/UE or MT/ME don't work properly in at
 	 * least mandoc when invoked with link text: the parser things
 	 * that the content is the next line, then puts all UE content
 	 * in the subsequent body.
 	 */
 
+	classic = !(st->flags & LOWDOWN_NROFF_GROFF);
 	if (st->man && (st->flags & LOWDOWN_NROFF_GROFF))
 		for ( ; n != NULL && !classic; n = n->parent)
 			if (n->type == LOWDOWN_HEADER ||
 			    n->type == LOWDOWN_DEFINITION_TITLE)
 				classic = 1;
+
+	/* Inhibit means that no link should be shown. */
+
+	if ((st->flags & LOWDOWN_NROFF_NOLINK) ||
+	    ((st->flags & LOWDOWN_NROFF_NORELLINK) &&
+	     hbuf_isrellink(link)))
+		classic = inhibit = 1;
+
+	/* Override type as e-mail if the link so resolves. */
+
+	if (type != HALINK_EMAIL && hbuf_strprefix(link, "mailto:"))
+		type = HALINK_EMAIL;
 
 	if (classic) {
 		/*
@@ -564,6 +572,8 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 			/*
 			 * No link content: format the URL according to
 			 * the user's style and output it in italics.
+			 * Ignore if inhibiting the link since there's
+			 * no content (show something).
 			 */
 			st->fonts[NFONT_ITALIC]++;
 			if (!bqueue_font(st, obq, 0))
@@ -595,7 +605,10 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 		st->fonts[NFONT_BOLD]--;
 		if (!bqueue_font(st, obq, 1))
 			goto out;
-		if (st->flags & LOWDOWN_NROFF_NOLINK) {
+
+		/* If inhibiting links, short-circuit here. */
+
+		if (inhibit) {
 			rc = 1;
 			goto out;
 		}
@@ -1198,7 +1211,9 @@ rndr_image(struct nroff *st, struct bnodeq *obq,
 	st->fonts[NFONT_BOLD]--;
 	if (!bqueue_font(st, obq, 1))
 		return 0;
-	if (st->flags & LOWDOWN_NROFF_NOLINK)
+	if ((st->flags & LOWDOWN_NROFF_NOLINK) ||
+	    ((st->flags & LOWDOWN_NROFF_NORELLINK) &&
+	     hbuf_isrellink(&param->link)))
 		return bqueue_span(obq, " (Image)") != NULL;
 	if (bqueue_span(obq, " (Image: ") == NULL)
 		return 0;
