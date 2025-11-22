@@ -317,10 +317,10 @@ main(int argc, char *argv[])
 		{ "latex-no-skiphtml",	no_argument,	&rfl, LOWDOWN_LATEX_SKIP_HTML },
 
 		{ "roff-traditional",	no_argument,	&rfl, LOWDOWN_NROFF_GROFF },
-		{ "roff-no-rellinks",	no_argument, 	&afl, LOWDOWN_NROFF_NORELLINK },
-		{ "roff-no-links",	no_argument, 	&afl, LOWDOWN_NROFF_NOLINK },
+		{ "roff-no-rellinks",	no_argument, 	&afl, LOWDOWN_NORELLINK },
+		{ "roff-no-links",	no_argument, 	&afl, LOWDOWN_NOLINK },
 		{ "roff-no-numbered",	no_argument,	&rfl, LOWDOWN_NROFF_NUMBERED },
-		{ "roff-short-links",	no_argument, 	&afl, LOWDOWN_NROFF_SHORTLINK },
+		{ "roff-short-links",	no_argument, 	&afl, LOWDOWN_SHORTLINK },
 		{ "roff-no-skiphtml",	no_argument,	&rfl, LOWDOWN_NROFF_SKIP_HTML },
 		{ "roff-endnotes",	no_argument,	&afl, LOWDOWN_NROFF_ENDNOTES },
 		{ "roff-code-font",	required_argument, NULL, 7 },
@@ -336,9 +336,9 @@ main(int argc, char *argv[])
 
 		{ "term-no-ansi",	no_argument, 	&afl, LOWDOWN_TERM_NOANSI },
 		{ "term-no-colour",	no_argument, 	&afl, LOWDOWN_TERM_NOCOLOUR },
-		{ "term-no-rellinks",	no_argument, 	&afl, LOWDOWN_TERM_NORELLINK },
-		{ "term-no-links",	no_argument, 	&afl, LOWDOWN_TERM_NOLINK },
-		{ "term-short-links",	no_argument, 	&afl, LOWDOWN_TERM_SHORTLINK },
+		{ "term-no-rellinks",	no_argument, 	&afl, LOWDOWN_NORELLINK },
+		{ "term-no-links",	no_argument, 	&afl, LOWDOWN_NOLINK },
+		{ "term-short-links",	no_argument, 	&afl, LOWDOWN_SHORTLINK },
 		{ "term-all-meta",	no_argument, 	&afl, LOWDOWN_TERM_ALL_META },
 		{ "term-all-metadata",	no_argument, 	&afl, LOWDOWN_TERM_ALL_META },
 		{ "term-columns",	required_argument, NULL, 4 },
@@ -383,12 +383,12 @@ main(int argc, char *argv[])
 		{ "nroff-no-traditional",no_argument,	&afl, LOWDOWN_NROFF_GROFF },
 		{ "nroff-no-groff",	no_argument,	&rfl, LOWDOWN_NROFF_GROFF },
 		{ "nroff-groff",	no_argument,	&afl, LOWDOWN_NROFF_GROFF },
-		{ "nroff-nolinks",	no_argument, 	&afl, LOWDOWN_NROFF_NOLINK },
-		{ "nroff-no-nolinks",	no_argument, 	&rfl, LOWDOWN_NROFF_NOLINK },
+		{ "nroff-nolinks",	no_argument, 	&afl, LOWDOWN_NOLINK },
+		{ "nroff-no-nolinks",	no_argument, 	&rfl, LOWDOWN_NOLINK },
 		{ "nroff-numbered",	no_argument,	&afl, LOWDOWN_NROFF_NUMBERED },
 		{ "nroff-no-numbered",	no_argument,	&rfl, LOWDOWN_NROFF_NUMBERED },
-		{ "nroff-shortlinks",	no_argument, 	&afl, LOWDOWN_NROFF_SHORTLINK },
-		{ "nroff-no-shortlinks",no_argument, 	&rfl, LOWDOWN_NROFF_SHORTLINK },
+		{ "nroff-shortlinks",	no_argument, 	&afl, LOWDOWN_SHORTLINK },
+		{ "nroff-no-shortlinks",no_argument, 	&rfl, LOWDOWN_SHORTLINK },
 		{ "nroff-skiphtml",	no_argument,	&afl, LOWDOWN_NROFF_SKIP_HTML },
 		{ "nroff-no-skiphtml",	no_argument,	&rfl, LOWDOWN_NROFF_SKIP_HTML },
 		{ "nroff-endnotes",	no_argument,	&afl, LOWDOWN_NROFF_ENDNOTES },
@@ -405,8 +405,8 @@ main(int argc, char *argv[])
 		{ "term-ansi",		no_argument, 	&rfl, LOWDOWN_TERM_NOANSI },
 		{ "term-no-all-meta",	no_argument, 	&rfl, LOWDOWN_TERM_ALL_META },
 		{ "term-no-all-metadata", no_argument, 	&rfl, LOWDOWN_TERM_ALL_META },
-		{ "term-no-nolinks",	no_argument, 	&rfl, LOWDOWN_TERM_NOLINK },
-		{ "term-no-shortlinks",	no_argument, 	&rfl, LOWDOWN_TERM_SHORTLINK },
+		{ "term-no-nolinks",	no_argument, 	&rfl, LOWDOWN_NOLINK },
+		{ "term-no-shortlinks",	no_argument, 	&rfl, LOWDOWN_SHORTLINK },
 		{ "out-smarty",		no_argument,	&afl, LOWDOWN_SMARTY },
 		{ "out-no-standalone",	no_argument,	&rfl, LOWDOWN_STANDALONE },
 		{ "gemini-no-link-inline",no_argument, 	&rfl, LOWDOWN_GEMINI_LINK_IN },
@@ -450,8 +450,8 @@ main(int argc, char *argv[])
 		 * Some options re-hyphenated for consistency.
 		 */
 
-		{ "term-nolinks",	no_argument, 	&afl, LOWDOWN_TERM_NOLINK },
-		{ "term-shortlinks",	no_argument, 	&afl, LOWDOWN_TERM_SHORTLINK },
+		{ "term-nolinks",	no_argument, 	&afl, LOWDOWN_NOLINK },
+		{ "term-shortlinks",	no_argument, 	&afl, LOWDOWN_SHORTLINK },
 
 		{ NULL,			0,	NULL,	0 }
 	};

@@ -1085,8 +1085,8 @@ rndr_image(struct term *st, struct lowdown_buf *ob,
 
 	/* If omitting the link, right-bracket and bail. */
 
-	if ((st->opts & LOWDOWN_TERM_NOLINK) ||
-	    ((st->opts & LOWDOWN_TERM_NORELLINK) &&
+	if ((st->opts & LOWDOWN_NOLINK) ||
+	    ((st->opts & LOWDOWN_NORELLINK) &&
 	     hbuf_isrellink(&n->rndr_image.link))) {
 		hbuf_truncate(st->tmp);
 		if (!hbuf_puts(st->tmp, ifx_imgbox_right) ||
@@ -1104,7 +1104,7 @@ rndr_image(struct term *st, struct lowdown_buf *ob,
 
 	/* Format link address. */
 
-	if (st->opts & LOWDOWN_TERM_SHORTLINK) {
+	if (st->opts & LOWDOWN_SHORTLINK) {
 		if (!hbuf_shortlink
 		    (st->tmp, &n->rndr_image.link))
 			return 0;
@@ -1671,7 +1671,7 @@ rndr(struct lowdown_buf *ob, struct term *st,
 			return 0;
 		break;
 	case LOWDOWN_LINK_AUTO:
-		if (st->opts & LOWDOWN_TERM_SHORTLINK) {
+		if (st->opts & LOWDOWN_SHORTLINK) {
 			hbuf_truncate(st->tmp);
 			if (!hbuf_shortlink
 			    (st->tmp, &n->rndr_autolink.link))
@@ -1692,8 +1692,8 @@ rndr(struct lowdown_buf *ob, struct term *st,
 		 * relative address and requested only for those.
 		 */
 
-		if ((st->opts & LOWDOWN_TERM_NOLINK) ||
-		    ((st->opts & LOWDOWN_TERM_NORELLINK) &&
+		if ((st->opts & LOWDOWN_NOLINK) ||
+		    ((st->opts & LOWDOWN_NORELLINK) &&
 		     hbuf_isrellink(&n->rndr_link.link)))
 			break;
 
@@ -1706,7 +1706,7 @@ rndr(struct lowdown_buf *ob, struct term *st,
 
 		/* Format the link address. */
 
-		if (st->opts & LOWDOWN_TERM_SHORTLINK) {
+		if (st->opts & LOWDOWN_SHORTLINK) {
 			hbuf_truncate(st->tmp);
 			if (!hbuf_shortlink
 			    (st->tmp, &n->rndr_link.link))

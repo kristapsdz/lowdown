@@ -552,8 +552,8 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 
 	/* Inhibit means that no link should be shown. */
 
-	if ((st->flags & LOWDOWN_NROFF_NOLINK) ||
-	    ((st->flags & LOWDOWN_NROFF_NORELLINK) &&
+	if ((st->flags & LOWDOWN_NOLINK) ||
+	    ((st->flags & LOWDOWN_NORELLINK) &&
 	     hbuf_isrellink(link)))
 		classic = inhibit = 1;
 
@@ -580,7 +580,7 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 				goto out;
 			if ((bn = bqueue_span(obq, NULL)) == NULL)
 				goto out;
-			if (st->flags & LOWDOWN_NROFF_SHORTLINK) {
+			if (st->flags & LOWDOWN_SHORTLINK) {
 				bn->nbuf = hbuf2shortlink(link);
 				if (bn->nbuf == NULL)
 					goto out;
@@ -622,7 +622,7 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 			goto out;
 		if ((bn = bqueue_span(obq, NULL)) == NULL)
 			goto out;
-		if (st->flags & LOWDOWN_NROFF_SHORTLINK) {
+		if (st->flags & LOWDOWN_SHORTLINK) {
 			bn->nbuf = hbuf2shortlink(link);
 			if (bn->nbuf == NULL)
 				goto out;
@@ -1211,8 +1211,8 @@ rndr_image(struct nroff *st, struct bnodeq *obq,
 	st->fonts[NFONT_BOLD]--;
 	if (!bqueue_font(st, obq, 1))
 		return 0;
-	if ((st->flags & LOWDOWN_NROFF_NOLINK) ||
-	    ((st->flags & LOWDOWN_NROFF_NORELLINK) &&
+	if ((st->flags & LOWDOWN_NOLINK) ||
+	    ((st->flags & LOWDOWN_NORELLINK) &&
 	     hbuf_isrellink(&param->link)))
 		return bqueue_span(obq, " (Image)") != NULL;
 	if (bqueue_span(obq, " (Image: ") == NULL)
@@ -1222,7 +1222,7 @@ rndr_image(struct nroff *st, struct bnodeq *obq,
 		return 0;
 	if ((bn = bqueue_span(obq, NULL)) == NULL)
 		return 0;
-	if (st->flags & LOWDOWN_NROFF_SHORTLINK) {
+	if (st->flags & LOWDOWN_SHORTLINK) {
 		bn->nbuf = hbuf2shortlink(&param->link);
 		if (bn->nbuf == NULL)
 			return 0;

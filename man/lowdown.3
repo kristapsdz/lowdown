@@ -279,6 +279,37 @@ and are not guaranteed to be globally unique.
 For all types:
 .Pp
 .Bl -tag -width Ds -compact
+.It Dv LOWDOWN_NOLINK
+Don't show links at all.
+Applies to images and regular links: autolinks are still shown.
+This may be combined with
+.Dv LOWDOWN_SHORTLINK
+to also shorten autolinks.
+Only applies to
+.Dv LOWDOWN_MAN ,
+.Dv LOWDOWN_NROFF ,
+and
+.Dv LOWDOWN_TERM .
+.It Dv LOWDOWN_SHORTLINK
+Render link URLs in short form.
+Applies to images, autolinks, and regular links.
+This may be combined with
+.Dv LOWDOWN_NOLINK
+to only show shortened autolinks.
+Only applies to
+.Dv LOWDOWN_MAN ,
+.Dv LOWDOWN_NROFF ,
+and
+.Dv LOWDOWN_TERM .
+.It Dv LOWDOWN_NORELLINK
+Like
+.Dv LOWDOWN_NOLINK ,
+but only for relative links.
+Only applies to
+.Dv LOWDOWN_MAN ,
+.Dv LOWDOWN_NROFF ,
+and
+.Dv LOWDOWN_TERM .
 .It Dv LOWDOWN_SMARTY
 Don't use smart typography formatting.
 .It Dv LOWDOWN_STANDALONE
@@ -422,14 +453,6 @@ Applies to the
 and
 .Dv LOWDOWN_NROFF
 output types.
-.It Dv LOWDOWN_NROFF_NOLINK
-Don't show links at all if they have embedded text.
-Applies to images and regular links.
-Only in
-.Dv LOWDOWN_MAN
-or when
-.Dv LOWDOWN_NROFF_GROFF
-is not specified.
 .It Dv LOWDOWN_NROFF_NUMBERED
 Use numbered sections if
 .Dv LOWDOWON_NROFF_GROFF
@@ -437,14 +460,6 @@ is not specified.
 Only applies to the
 .Dv LOWDOWN_NROFF
 output type.
-.It Dv LOWDOWN_NROFF_SHORTLINK
-Render link URLs in short form.
-Applies to images, autolinks, and regular links.
-Only in
-.Dv LOWDOWN_MAN
-or when
-.Dv LOWDOWN_NROFF_GROFF
-is not specified.
 .It Dv LOWDOWN_NROFF_SKIP_HTML
 Do not render in-document HTML at all.
 Text within HTML elements remains.
@@ -468,22 +483,6 @@ Don't apply ANSI colour codes.
 This will still show underline, bold, etc.
 This should not be used in difference mode, as the output will make no
 sense.
-.It Dv LOWDOWN_TERM_NOLINK
-Don't show links at all.
-Applies to images and regular links: autolinks are still shown.
-This may be combined with
-.Dv LOWDOWN_TERM_SHORTLINK
-to also shorten autolinks.
-.It Dv LOWDOWN_TERM_NORELLINK
-Like
-.Dv LOWDOWN_TERM_NOLINK ,
-but only for relative links.
-.It Dv LOWDOWN_TERM_SHORTLINK
-Render link URLs in short form.
-Applies to images, autolinks, and regular links.
-This may be combined with
-.Dv LOWDOWN_TERM_NOLINK
-to only show shortened autolinks.
 .El
 .It Va size_t maxdepth
 The maximum parse depth before the parser exits.
