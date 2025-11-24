@@ -498,25 +498,39 @@ out:
  */
 static int
 rndr_url_content(struct lowdown_buf *ob, const struct lowdown_buf *link,
-    enum halink_type *type)
+    enum halink_type *type, int shorten)
 {
-	size_t	 	 i = 0;
-	unsigned char	 ch;
+	size_t			 i = 0;
+	unsigned char		 ch;
+	struct lowdown_buf	*tmp;
+	int			 rc = 0;
+
+	if ((tmp = hbuf_new(32)) == NULL)
+		return 0;
+
+	if (shorten) {
+		if (!hbuf_shortlink(tmp, link))
+			goto out;
+	} else if (!hbuf_putb(tmp, link))
+		goto out;
 
 	if (type != NULL && *type == HALINK_EMAIL &&
-	    hbuf_strprefix(link, "mailto:"))
+	    hbuf_strprefix(tmp, "mailto:"))
 		i = strlen("mailto:");
 
-	for ( ; i < link->size; i++) {
-		ch = (unsigned char)link->data[i];
+	for ( ; i < tmp->size; i++) {
+		ch = (unsigned char)tmp->data[i];
 		if (!isprint(ch) || strchr(" <>\\^`{|}\"", ch) != NULL) {
 			if (!hbuf_printf(ob, "%%%.2X", ch))
-				return 0;
+				goto out;
 		} else if (!hbuf_putc(ob, ch))
-			return 0;
+			goto out;
 	}
 
-	return 1;
+	rc = 1;
+out:
+	hbuf_free(tmp);
+	return rc;
 }
 
 /*
@@ -643,14 +657,20 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 		/* 
 		 * For man(7) documents, use UR/UE or MT/ME.  According
 		 * to the groff documentation, these are supported by
-		 * all modern formatters.
+		 * all modern formatters.  Both of these formats show
+		 * the full URI, so don't respect the shortening
+		 * directive.  Requesting not to show the link will not
+		 * have routed to this block in the first place.
 		 */
 		if ((ob = hbuf_new(32)) == NULL)
 			goto out;
 
-		/* This will strip out the "mailto:", if defined. */
+		/*
+		 * This will strip out the "mailto:", if defined, since
+		 * it is not allowed by the MT/ME macros.
+		 */
 
-		if (!rndr_url_content(ob, link, &type))
+		if (!rndr_url_content(ob, link, &type, 0))
 			goto out;
 
 		/* Either MT or UR depending on if a URL. */
@@ -662,7 +682,10 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 		if ((bn->nargs = strndup(ob->data, ob->size)) == NULL)
 			goto out;
 
-		/* Link text (optional). */
+		/*
+		 * Link text (optional).  This will be shown alongside
+		 * the link itself in most (all?) viewers.
+		 */
 
 		if (bq != NULL)
 			TAILQ_CONCAT(obq, bq, entries);
@@ -697,7 +720,7 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 	if (type == HALINK_EMAIL && !hbuf_strprefix(link, "mailto:") &&
 	    !HBUF_PUTSL(ob, "mailto:"))
 		goto out;
-	if (!rndr_url_content(ob, link, NULL))
+	if (!rndr_url_content(ob, link, NULL, 0))
 		goto out;
 	if (!HBUF_PUTSL(ob, " -- "))
 		goto out;
@@ -707,7 +730,8 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 	 * Otherwise, flush the content to the output.
 	 */
 
-	if (bq == NULL && !rndr_url_content(ob, link, &type))
+	if (bq == NULL && !rndr_url_content(ob, link, &type,
+	    st->flags & LOWDOWN_SHORTLINK))
 		goto out;
 	else if (bq != NULL && !bqueue_flush(st, ob, bq))
 		goto out;
