@@ -352,10 +352,10 @@ struct	lowdown_opts {
 #define LOWDOWN_CALLOUTS	  0x200000
 #define LOWDOWN_SUPER_SHORT	  0x400000
 	unsigned int		  oflags;
-#define LOWDOWN_HTML_SKIP_HTML	  0x01 /* skip all HTML */
+#define LOWDOWN_SKIP_HTML	  0x01 /* skip all HTML */
 #define LOWDOWN_HTML_ESCAPE	  0x02 /* escape HTML (if not skip) */
 #define LOWDOWN_HTML_HARD_WRAP	  0x04 /* paragraph line breaks */
-#define LOWDOWN_NROFF_SKIP_HTML	  0x08 /* skip all HTML */
+/* Missing                        0x08 */
 #define LOWDOWN_NORELLINK	  0x10 /* don't show relative links */
 #define LOWDOWN_NROFF_GROFF	  0x20 /* use groff extensions */
 #define	LOWDOWN_SMARTY	  	  0x40 /* smart typography */
@@ -365,7 +365,7 @@ struct	lowdown_opts {
 #define LOWDOWN_SHORTLINK	  0x400 /* shorten URLs */
 #define	LOWDOWN_HTML_OWASP	  0x800 /* use OWASP escaping */
 #define	LOWDOWN_HTML_NUM_ENT	  0x1000 /* use &#nn; if possible */
-#define LOWDOWN_LATEX_SKIP_HTML	  0x2000 /* skip all HTML */
+/* Missing			  0x2000 */
 #define LOWDOWN_LATEX_NUMBERED	  0x4000 /* numbered sections */
 #define	LOWDOWN_GEMINI_LINK_END	  0x8000 /* links at end */
 #define	LOWDOWN_GEMINI_LINK_IN	  0x10000 /* links inline */
@@ -377,7 +377,7 @@ struct	lowdown_opts {
 #define	LOWDOWN_GEMINI_LINK_ROMAN 0x400000 /* roman link names */
 #define	LOWDOWN_TERM_NOCOLOUR	  0x800000 /* no ANSI colours */
 #define	LOWDOWN_TERM_NOANSI	  0x1000000 /* no ANSI escapes at all */
-#define	LOWDOWN_ODT_SKIP_HTML	  0x2000000 /* skip all HTML */
+/* Missing			  0x2000000 */
 #define	LOWDOWN_HTML_TITLEBLOCK	  0x4000000 /* output title block */
 #define LOWDOWN_HTML_CALLOUT_GFM  0x8000000 /* GFM callouts */
 #define LOWDOWN_HTML_CALLOUT_MDN  0x10000000 /* MDN callouts */

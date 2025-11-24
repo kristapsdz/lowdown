@@ -465,7 +465,7 @@ rndr_raw_block(struct lowdown_buf *ob,
 {
 	size_t	org = 0, sz = param->text.size;
 
-	if (st->oflags & LOWDOWN_LATEX_SKIP_HTML)
+	if (st->oflags & LOWDOWN_SKIP_HTML)
 		return 1;
 	while (sz > 0 && param->text.data[sz - 1] == '\n')
 		sz--;
@@ -582,7 +582,7 @@ rndr_raw_html(const struct latex *st, struct lowdown_buf *ob,
     const struct rndr_raw_html *param)
 {
 
-	if (st->oflags & LOWDOWN_LATEX_SKIP_HTML)
+	if (st->oflags & LOWDOWN_SKIP_HTML)
 		return 1;
 	return rndr_escape(st, ob, &param->text);
 }

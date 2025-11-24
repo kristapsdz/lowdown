@@ -290,6 +290,10 @@ Only applies to
 .Dv LOWDOWN_NROFF ,
 and
 .Dv LOWDOWN_TERM .
+.It Dv LOWDOWN_NORELLINK
+Like
+.Dv LOWDOWN_NOLINK ,
+but only for relative links.
 .It Dv LOWDOWN_SHORTLINK
 Where possible, render link URLs in short form.
 Applies to images, autolinks, and regular links.
@@ -301,15 +305,16 @@ Only applies to
 .Dv LOWDOWN_NROFF ,
 and
 .Dv LOWDOWN_TERM .
-.It Dv LOWDOWN_NORELLINK
-Like
-.Dv LOWDOWN_NOLINK ,
-but only for relative links.
-Only applies to
+.It Dv LOWDOWN_SKIP_HTML
+Do not render in-document HTML at all.
+Text within HTML elements remains.
+Applies to
+.Dv LOWDOWN_HTML ,
+.Dv LOWDOWN_FODT ,
+.Dv LOWDOWN_LATEX ,
 .Dv LOWDOWN_MAN ,
-.Dv LOWDOWN_NROFF ,
 and
-.Dv LOWDOWN_TERM .
+.Dv LOWDOWN_NROFF .
 .It Dv LOWDOWN_SMARTY
 Don't use smart typography formatting.
 .It Dv LOWDOWN_STANDALONE
@@ -330,7 +335,7 @@ For
 Output MDN and/or GFM-style callout syntax.
 .It Dv LOWDOWN_HTML_ESCAPE
 If
-.Dv LOWDOWN_HTML_SKIP_HTML
+.Dv LOWDOWN_SKIP_HTML
 has not been set, escapes in-document HTML so that it is rendered as
 opaque text.
 .It Dv LOWDOWN_HTML_HARD_WRAP
@@ -344,8 +349,6 @@ If not set, the entities are used as given in the input.
 .It Dv LOWDOWN_HTML_OWASP
 When escaping text, be extra paranoid in following the OWASP suggestions
 for which characters to escape.
-.It Dv LOWDOWN_HTML_SKIP_HTML
-Do not render in-document HTML at all.
 .It Dv LOWDOWN_HTML_TITLEBLOCK
 Output a Pandoc-style title block.
 This is a
@@ -408,13 +411,8 @@ or
 If both are specified, the latter is unset.
 .Pp
 For
-.Dv LOWDOWN_FODT :
-.Pp
-.Bl -tag -width Ds -compact
-.It Dv LOWDOWN_ODT_SKIP_HTML
-Do not render in-document HTML at all.
-Text within HTML elements remains.
-.El
+.Dv LOWDOWN_FODT ,
+there are no specific flags.
 .Pp
 For
 .Dv LOWDOWN_LATEX :
@@ -423,9 +421,6 @@ For
 .It Dv LOWDOWN_LATEX_NUMBERED
 Use the default numbering scheme for sections, subsections, etc.
 If not specified, these are inhibited.
-.It Dv LOWDOWN_LATEX_SKIP_HTML
-Do not render in-document HTML at all.
-Text within HTML elements remains.
 .El
 .Pp
 For
@@ -460,9 +455,6 @@ is not specified.
 Only applies to the
 .Dv LOWDOWN_NROFF
 output type.
-.It Dv LOWDOWN_NROFF_SKIP_HTML
-Do not render in-document HTML at all.
-Text within HTML elements remains.
 .El
 .Pp
 For

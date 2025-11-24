@@ -1160,7 +1160,7 @@ rndr_raw_block(const struct nroff *st, struct bnodeq *obq,
 {
 	struct bnode	*bn;
 
-	if (st->flags & LOWDOWN_NROFF_SKIP_HTML)
+	if (st->flags & LOWDOWN_SKIP_HTML)
 		return 1;
 	if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
 		return 0;
@@ -1267,7 +1267,7 @@ rndr_raw_html(const struct nroff *st,
 {
 	struct bnode	*bn;
 
-	if (st->flags & LOWDOWN_NROFF_SKIP_HTML)
+	if (st->flags & LOWDOWN_SKIP_HTML)
 		return 1;
 	if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
 		return 0;

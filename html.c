@@ -598,7 +598,7 @@ rndr_raw_block(struct lowdown_buf *ob,
 {
 	size_t	org, sz;
 
-	if ((st->flags & LOWDOWN_HTML_SKIP_HTML))
+	if ((st->flags & LOWDOWN_SKIP_HTML))
 		return 1;
 	if ((st->flags & LOWDOWN_HTML_ESCAPE))
 		return escape_htmlb(ob, &param->text, st);
@@ -725,7 +725,7 @@ rndr_raw_html(struct lowdown_buf *ob,
     const struct rndr_raw_html *param, const struct html *st)
 {
 
-	if (st->flags & LOWDOWN_HTML_SKIP_HTML)
+	if (st->flags & LOWDOWN_SKIP_HTML)
 		return 1;
 
 	return (st->flags & LOWDOWN_HTML_ESCAPE) ?

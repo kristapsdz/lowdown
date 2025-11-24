@@ -1539,7 +1539,7 @@ rndr_html(struct lowdown_buf *ob,
 	const struct odt *st)
 {
 
-	if (st->flags & LOWDOWN_ODT_SKIP_HTML)
+	if (st->flags & LOWDOWN_SKIP_HTML)
 		return 1;
 	return escape_htmlb(ob, param, st);
 }

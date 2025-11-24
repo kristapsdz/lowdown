@@ -308,24 +308,24 @@ main(int argc, char *argv[])
 		{ "html-no-head-ids",	no_argument,	&rfl, LOWDOWN_HTML_HEAD_IDS },
 		{ "html-no-num-ent",	no_argument,	&rfl, LOWDOWN_HTML_NUM_ENT },
 		{ "html-no-owasp",	no_argument,	&rfl, LOWDOWN_HTML_OWASP },
-		{ "html-no-skiphtml",	no_argument,	&rfl, LOWDOWN_HTML_SKIP_HTML },
+		{ "html-no-skiphtml",	no_argument,	&rfl, LOWDOWN_SKIP_HTML },
 		{ "html-titleblock",	no_argument,	&afl, LOWDOWN_HTML_TITLEBLOCK },
 		{ "html-callout-mdn",	no_argument,	&afl, LOWDOWN_HTML_CALLOUT_MDN },
 		{ "html-callout-gfm",	no_argument,	&afl, LOWDOWN_HTML_CALLOUT_GFM },
 
 		{ "latex-no-numbered",	no_argument,	&rfl, LOWDOWN_LATEX_NUMBERED },
-		{ "latex-no-skiphtml",	no_argument,	&rfl, LOWDOWN_LATEX_SKIP_HTML },
+		{ "latex-no-skiphtml",	no_argument,	&rfl, LOWDOWN_SKIP_HTML },
 
 		{ "roff-traditional",	no_argument,	&rfl, LOWDOWN_NROFF_GROFF },
 		{ "roff-no-rellinks",	no_argument, 	&afl, LOWDOWN_NORELLINK },
 		{ "roff-no-links",	no_argument, 	&afl, LOWDOWN_NOLINK },
 		{ "roff-no-numbered",	no_argument,	&rfl, LOWDOWN_NROFF_NUMBERED },
 		{ "roff-short-links",	no_argument, 	&afl, LOWDOWN_SHORTLINK },
-		{ "roff-no-skiphtml",	no_argument,	&rfl, LOWDOWN_NROFF_SKIP_HTML },
+		{ "roff-no-skiphtml",	no_argument,	&rfl, LOWDOWN_SKIP_HTML },
 		{ "roff-endnotes",	no_argument,	&afl, LOWDOWN_NROFF_ENDNOTES },
 		{ "roff-code-font",	required_argument, NULL, 7 },
 
-		{ "odt-no-skiphtml",	no_argument,	&rfl, LOWDOWN_ODT_SKIP_HTML },
+		{ "odt-no-skiphtml",	no_argument,	&rfl, LOWDOWN_SKIP_HTML },
 		{ "odt-style",		required_argument, NULL, 6 },
 
 		{ "gemini-link-end",	no_argument, 	&afl, LOWDOWN_GEMINI_LINK_END },
@@ -389,8 +389,8 @@ main(int argc, char *argv[])
 		{ "nroff-no-numbered",	no_argument,	&rfl, LOWDOWN_NROFF_NUMBERED },
 		{ "nroff-shortlinks",	no_argument, 	&afl, LOWDOWN_SHORTLINK },
 		{ "nroff-no-shortlinks",no_argument, 	&rfl, LOWDOWN_SHORTLINK },
-		{ "nroff-skiphtml",	no_argument,	&afl, LOWDOWN_NROFF_SKIP_HTML },
-		{ "nroff-no-skiphtml",	no_argument,	&rfl, LOWDOWN_NROFF_SKIP_HTML },
+		{ "nroff-skiphtml",	no_argument,	&afl, LOWDOWN_SKIP_HTML },
+		{ "nroff-no-skiphtml",	no_argument,	&rfl, LOWDOWN_SKIP_HTML },
 		{ "nroff-endnotes",	no_argument,	&afl, LOWDOWN_NROFF_ENDNOTES },
 		{ "nroff-no-endnotes",	no_argument,	&rfl, LOWDOWN_NROFF_ENDNOTES },
 		{ "nroff-code-font",	required_argument, NULL, 7 },
@@ -414,15 +414,15 @@ main(int argc, char *argv[])
 		{ "gemini-no-link-roman", no_argument, 	&rfl, LOWDOWN_GEMINI_LINK_ROMAN },
 		{ "gemini-no-link-noref", no_argument, 	&rfl, LOWDOWN_GEMINI_LINK_NOREF },
 		{ "gemini-no-metadata",	no_argument, 	&rfl, LOWDOWN_GEMINI_METADATA },
-		{ "odt-skiphtml",	no_argument,	&afl, LOWDOWN_ODT_SKIP_HTML },
+		{ "odt-skiphtml",	no_argument,	&afl, LOWDOWN_SKIP_HTML },
 		{ "latex-numbered",	no_argument,	&afl, LOWDOWN_LATEX_NUMBERED },
-		{ "latex-skiphtml",	no_argument,	&afl, LOWDOWN_LATEX_SKIP_HTML },
+		{ "latex-skiphtml",	no_argument,	&afl, LOWDOWN_SKIP_HTML },
 		{ "html-escapehtml",	no_argument,	&afl, LOWDOWN_HTML_ESCAPE },
 		{ "html-no-hardwrap",	no_argument,	&rfl, LOWDOWN_HTML_HARD_WRAP },
 		{ "html-head-ids",	no_argument,	&afl, LOWDOWN_HTML_HEAD_IDS },
 		{ "html-num-ent",	no_argument,	&afl, LOWDOWN_HTML_NUM_ENT },
 		{ "html-owasp",		no_argument,	&afl, LOWDOWN_HTML_OWASP },
-		{ "html-skiphtml",	no_argument,	&afl, LOWDOWN_HTML_SKIP_HTML },
+		{ "html-skiphtml",	no_argument,	&afl, LOWDOWN_SKIP_HTML },
 		{ "html-no-titleblock",	no_argument,	&rfl, LOWDOWN_HTML_TITLEBLOCK },
 		{ "html-no-callout-mdn",no_argument,	&rfl, LOWDOWN_HTML_CALLOUT_MDN },
 		{ "html-no-callout-gfm",no_argument,	&rfl, LOWDOWN_HTML_CALLOUT_GFM },
@@ -488,12 +488,9 @@ main(int argc, char *argv[])
 		LOWDOWN_HTML_HEAD_IDS |
 		LOWDOWN_HTML_NUM_ENT |
 		LOWDOWN_HTML_OWASP |
-		LOWDOWN_HTML_SKIP_HTML |
+		LOWDOWN_SKIP_HTML |
 		LOWDOWN_NROFF_GROFF |
 		LOWDOWN_NROFF_NUMBERED |
-		LOWDOWN_NROFF_SKIP_HTML |
-		LOWDOWN_ODT_SKIP_HTML |
-		LOWDOWN_LATEX_SKIP_HTML |
 		LOWDOWN_LATEX_NUMBERED |
 		LOWDOWN_SMARTY;
 
