@@ -273,7 +273,7 @@ uninstall_shared: uninstall_lib_common
 	rm -f $(LIBDIR)/$(LIB_SOVER) $(LIBDIR)/$(LIB_SO)
 
 install_shared: $(LIB_SO) install_lib_common
-	$(INSTALL_LIB) $(LIB_SOVER) $(DESTDIR)$(LIBDIR)
+	$(INSTALL_LIB) $(LIB_SOVER) $(IMPLIB) $(DESTDIR)$(LIBDIR)
 	( cd $(DESTDIR)$(LIBDIR) && ln -sf $(LIB_SOVER) $(LIB_SO) )
 
 uninstall_static: uninstall_lib_common
