@@ -161,7 +161,7 @@ MAIN_OBJS	 = $(COMPAT_OBJS)
 
 # Mac OS X and other Unix systems use different conventions for
 # indicating shared library versions.
-.if $(LINKER_SOSUFFIX) == "dylib"
+.if $(LINKER_SOSUFFIX) == "dylib" || $(LINKER_SOSUFFIX) == "dll"
 LIB_SOVER	 = liblowdown.$(LIBVER).$(LINKER_SOSUFFIX)
 .else
 LIB_SOVER	 = liblowdown.$(LINKER_SOSUFFIX).$(LIBVER)
