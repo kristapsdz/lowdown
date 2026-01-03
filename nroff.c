@@ -32,6 +32,10 @@
 #include "lowdown.h"
 #include "extern.h"
 
+#define NODE_AFTER_HEAD(_n) \
+	(TAILQ_PREV((_n), lowdown_nodeq, entries) != NULL && \
+	 TAILQ_PREV((_n), lowdown_nodeq, entries)->type == LOWDOWN_HEADER)
+
 enum	nfont {
 	NFONT_ITALIC = 0, /* italic */
 	NFONT_BOLD, /* bold */
@@ -42,7 +46,7 @@ enum	nfont {
 struct 	nroff {
 	struct hentryq	 	  headers_used; /* headers we've seen */
 	enum lowdown_type	  type; /* man(7), ms(7), or mdoc(7) */
-	int			  post_para; /* man(7)/ms(7): PP/LP */
+	int			  use_lp; /* man(7)/ms(7): PP/LP */
 	unsigned int		  flags; /* output flags */
 	ssize_t			  headers_offs; /* header offset */
 	enum nfont		  fonts[NFONT__MAX]; /* see bqueue_font() */
@@ -565,7 +569,7 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 			return 0;
 
 		if ((ob = hbuf_new(32)) == NULL ||
-		    !bqueue_flush(st, ob, bq))
+		    (bq != NULL && !bqueue_flush(st, ob, bq)))
 			goto out;
 
 		cp1 = strndup(ob->data, ob->size);
@@ -921,12 +925,24 @@ static int
 rndr_list(struct nroff *st, struct bnodeq *obq, 
     const struct lowdown_node *n, struct bnodeq *bq)
 {
-	struct bnode	*bn;
-	const char	*type;
+	struct bnode			*bn;
+	const char			*type;
+	int				 compact;
+	const struct lowdown_node	*pn;
 
 	/* Lists for mdoc(7) are somewhat simple... */
 
 	if (st->type == LOWDOWN_MDOC) {
+		pn = TAILQ_FIRST(&n->children);
+
+		/* Output Pp prior to compact lists. */
+
+		compact = pn != NULL && pn->type == LOWDOWN_LISTITEM &&
+			(pn->rndr_listitem.flags & HLIST_FL_BLOCK);
+
+		if (compact && !NODE_AFTER_HEAD(n) &&
+		    bqueue_block(st, obq, ".Pp") == NULL)
+			return 0;
 		if (n->rndr_list.flags & HLIST_FL_DEF)
 			type = "-tag -width Ds";
 		else if (n->rndr_list.flags & HLIST_FL_ORDERED)
@@ -936,16 +952,12 @@ rndr_list(struct nroff *st, struct bnodeq *obq,
 		if ((bn = bqueue_block(st, obq, ".Bl")) == NULL)
 			return 0;
 		if (asprintf(&bn->nargs, "%s%s", type,
-		    (n->rndr_list.flags & HLIST_FL_BLOCK) ?
-		     "" : " -compact") == -1) {
+		    compact ?  " -compact" : "") == -1) {
 			bn->nargs = NULL;
 			return 0;
 		}
 		TAILQ_CONCAT(obq, bq, entries);
-		if (bqueue_block(st, obq, ".El") == NULL ||
-		    bqueue_block(st, obq, ".Pp") == NULL)
-			return 0;
-		return 1;
+		return bqueue_block(st, obq, ".El") != NULL;
 	}
 
 	/* 
@@ -964,7 +976,7 @@ rndr_list(struct nroff *st, struct bnodeq *obq,
 	if (n != NULL && bqueue_block(st, obq, ".RE") == NULL)
 		return 0;
 
-	st->post_para = 1;
+	st->use_lp = 1;
 	return 1;
 }
 
@@ -1058,7 +1070,7 @@ rndr_header(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 		}
 
 		TAILQ_CONCAT(obq, bq, entries);
-		st->post_para = 1;
+		st->use_lp = 1;
 		rc = 1;
 		goto out;
 	} else if (st->type == LOWDOWN_MDOC) {
@@ -1102,7 +1114,7 @@ rndr_header(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 		}
 
 	TAILQ_CONCAT(obq, bq, entries);
-	st->post_para = 1;
+	st->use_lp = 1;
 
 	/*
 	 * Used in -mspdf output for creating a TOC and intra-document
@@ -1285,15 +1297,16 @@ rndr_paragraph(struct nroff *st, const struct lowdown_node *n,
 				break;
 		if (n != NULL)
 			bn = bqueue_block(st, obq, ".IP");
-		else if (st->post_para)
+		else if (st->use_lp)
 			bn = bqueue_block(st, obq, ".LP");
 		else
 			bn = bqueue_block(st, obq, ".PP");
 		if (bn == NULL)
 			return 0;
-		st->post_para = 0;
+		st->use_lp = 0;
 	} else {
-		if ((bn = bqueue_block(st, obq, ".Pp")) == NULL)
+		if (!NODE_AFTER_HEAD(n) &&
+		    (bn = bqueue_block(st, obq, ".Pp")) == NULL)
 			return 0;
 	}
 
@@ -1321,18 +1334,20 @@ static int
 rndr_hrule(struct nroff *st, struct bnodeq *obq)
 {
 
-	if (st->type == LOWDOWN_MDOC)
-		return bqueue_block(st, obq, ".Pp") != NULL &&
-			bqueue_block(st, obq, "\\l\'2i'") != NULL;
+	if (st->type == LOWDOWN_MDOC) {
+		if (bqueue_block(st, obq, ".Pp") == NULL)
+			return 0;
+		return bqueue_block(st, obq, "\\l\'2i'") != NULL;
+	}
 
 	/* The LP is to reset the margins. */
 
 	if (bqueue_block(st, obq, ".LP") == NULL)
 		return 0;
 
-	/* Set post_para so we get a following LP not PP. */
+	/* Set use_lp so we get a following LP not PP. */
 
-	st->post_para = 1;
+	st->use_lp = 1;
 
 	if (st->type == LOWDOWN_MAN)
 		return bqueue_block(st, obq, "\\l\'2i'") != NULL;
@@ -1603,7 +1618,7 @@ rndr_footnote_def(struct nroff *st, struct bnodeq *obq,
 	if (st->type == LOWDOWN_MAN &&
 	    bqueue_block(st, obq, ".LP") == NULL)
 		return 0;
-	if (st->type == LOWDOWN_MDOC &&
+	if (st->type == LOWDOWN_MDOC && 
 	    bqueue_block(st, obq, ".Pp") == NULL)
 		return 0;
 	if ((bn = bqueue_span(obq, NULL)) == NULL)
@@ -2055,7 +2070,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	const struct lowdown_node *n, struct bnodeq *obq)
 {
 	const struct lowdown_node	*child;
-	int				 rc = 1, post_para = st->post_para;
+	int				 rc = 1, use_lp = st->use_lp;
 	enum nfont			 fonts[NFONT__MAX];
 	struct bnodeq			 tmpbq;
 	struct bnode			*bn;
@@ -2198,10 +2213,10 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		/*
 		 * Restore what subsequent paragraphs should do.  This
 		 * macro will create output that's delayed in being
-		 * shown.  It might set post_para, which we don't want
+		 * shown.  It might set use_lp, which we don't want
 		 * to propagate to the actual output that will follow.
 		 */
-		st->post_para = post_para;
+		st->use_lp = use_lp;
 		break;
 	case LOWDOWN_RAW_HTML:
 		rc = rndr_raw_html(st, obq, &n->rndr_raw_html);
@@ -2299,7 +2314,7 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 
 	memset(st->fonts, 0, sizeof(st->fonts));
 	st->headers_offs = 1;
-	st->post_para = 0;
+	st->use_lp = 0;
 
 	if (rndr(&metaq, st, n, &bq)) {
 		if ((tmp = hbuf_new(64)) == NULL)
