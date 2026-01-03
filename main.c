@@ -527,6 +527,8 @@ main(int argc, char *argv[])
 				opts.type = LOWDOWN_LATEX;
 			else if (strcasecmp(optarg, "man") == 0)
 				opts.type = LOWDOWN_MAN;
+			else if (strcasecmp(optarg, "mdoc") == 0)
+				opts.type = LOWDOWN_MDOC;
 			else if (strcasecmp(optarg, "fodt") == 0)
 				opts.type = LOWDOWN_FODT;
 			else if (strcasecmp(optarg, "term") == 0)
@@ -700,7 +702,9 @@ main(int argc, char *argv[])
 	 * "CR,CB".
 	 */
 
-	if ((opts.type == LOWDOWN_MAN || opts.type == LOWDOWN_NROFF) &&
+	if ((opts.type == LOWDOWN_MAN ||
+	     opts.type == LOWDOWN_MDOC ||
+	     opts.type == LOWDOWN_NROFF) &&
 	    nroffcodefn != NULL && *nroffcodefn != '\0') {
 		opts.nroff.cr = cp = nroffcodefn;
 		while (*cp != '\0' && *cp != ',')

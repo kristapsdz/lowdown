@@ -41,8 +41,8 @@ enum	nfont {
 
 struct 	nroff {
 	struct hentryq	 	  headers_used; /* headers we've seen */
-	int			  man; /* whether man(7) */
-	int			  post_para; /* for choosing PP/LP */
+	enum lowdown_type	  type; /* man(7), ms(7), or mdoc(7) */
+	int			  post_para; /* man(7)/ms(7): PP/LP */
 	unsigned int		  flags; /* output flags */
 	ssize_t			  headers_offs; /* header offset */
 	enum nfont		  fonts[NFONT__MAX]; /* see bqueue_font() */
@@ -253,7 +253,8 @@ bqueue_strip_paras(struct bnodeq *bq)
 			break;
 		if (strcmp(bn->nbuf, ".PP") &&
 		    strcmp(bn->nbuf, ".IP") &&
-		    strcmp(bn->nbuf, ".LP"))
+		    strcmp(bn->nbuf, ".LP") &&
+		    strcmp(bn->nbuf, ".Pp"))
 			break;
 		TAILQ_REMOVE(bq, bn, entries);
 		bnode_free(bn);
@@ -274,6 +275,10 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 	char			 trailingchar;
 
 	TAILQ_FOREACH(bn, bq, entries) {
+		if (bn->scope == BSCOPE_SEMI ||
+		    bn->scope == BSCOPE_SEMI_CLOSE)
+			assert(st->type != LOWDOWN_MDOC);
+
 		nextblk = 0;
 
 		/*
@@ -401,11 +406,11 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		    next->buf != NULL &&
 		    next->buf[0] != ' ' &&
 		    next->buf[0] != '\n') {
-			if (!st->man &&
+			if (st->type != LOWDOWN_MAN &&
 			    bn->scope == BSCOPE_SEMI &&
 			    !HBUF_PUTSL(ob, " -A \"\\c\""))
 				return 0;
-			if (st->man &&
+			if (st->type == LOWDOWN_MAN &&
 			    bn->scope == BSCOPE_SEMI_CLOSE &&
 			    !HBUF_PUTSL(ob, " \\c"))
 				return 0;
@@ -547,6 +552,40 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 	struct lowdown_buf	*ob = NULL;
 	struct bnode		*bn;
 	int			 rc = 0, classic = 0, inhibit = 0;
+	char			*cp1, *cp2;
+
+	/* Override type as e-mail if the link so resolves. */
+
+	if (type != HALINK_EMAIL && hbuf_strprefix(link, "mailto:"))
+		type = HALINK_EMAIL;
+
+	if (st->type == LOWDOWN_MDOC) {
+		if ((bn = bqueue_block(st, obq,
+		     type == HALINK_EMAIL ? ".Mt" : ".Lk")) == NULL)
+			return 0;
+
+		if ((ob = hbuf_new(32)) == NULL ||
+		    !bqueue_flush(st, ob, bq))
+			goto out;
+
+		cp1 = strndup(ob->data, ob->size);
+		cp2 = strndup(link->data, link->size);
+
+		if (cp1 == NULL || cp2 == NULL) {
+			free(cp1);
+			free(cp2);
+			goto out;
+		}
+		if (asprintf(&bn->args, "%s %s", cp2, cp1) == -1) {
+			free(cp1);
+			free(cp2);
+			bn->args = NULL;
+			goto out;
+		}
+
+		rc = 1;
+		goto out;
+	}
 
 	/*
 	 * Classic means traditional mode, inhibiting links entirely, or
@@ -558,7 +597,7 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 	 */
 
 	classic = !(st->flags & LOWDOWN_NROFF_GROFF);
-	if (st->man && (st->flags & LOWDOWN_NROFF_GROFF))
+	if (st->type == LOWDOWN_MAN && (st->flags & LOWDOWN_NROFF_GROFF))
 		for ( ; n != NULL && !classic; n = n->parent)
 			if (n->type == LOWDOWN_HEADER ||
 			    n->type == LOWDOWN_DEFINITION_TITLE)
@@ -570,11 +609,6 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 	    ((st->flags & LOWDOWN_NORELLINK) &&
 	     hbuf_isrellink(link)))
 		classic = inhibit = 1;
-
-	/* Override type as e-mail if the link so resolves. */
-
-	if (type != HALINK_EMAIL && hbuf_strprefix(link, "mailto:"))
-		type = HALINK_EMAIL;
 
 	if (classic) {
 		/*
@@ -653,7 +687,7 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 
 		rc = 1;
 		goto out;
-	} else if (st->man) {
+	} else if (st->type == LOWDOWN_MAN) {
 		/* 
 		 * For man(7) documents, use UR/UE or MT/ME.  According
 		 * to the groff documentation, these are supported by
@@ -786,23 +820,29 @@ rndr_blockcode(struct nroff *st, struct bnodeq *obq,
 {
 	struct bnode	*bn;
 
-	/*
-	 * XXX: intentionally don't use LD/DE because it introduces
-	 * vertical space.  This means that subsequent blocks
-	 * (paragraphs, etc.) will have a double-newline.
-	 */
 
-	if (bqueue_block(st, obq, ".LP") == NULL)
-		return 0;
-
-	if (st->man && (st->flags & LOWDOWN_NROFF_GROFF)) {
-		if (bqueue_block(st, obq, ".EX") == NULL)
+	if (st->type == LOWDOWN_MDOC) {
+		if ((bn = bqueue_block(st, obq, ".Bd")) == NULL ||
+		    (bn->nargs = strdup("-literal -offset indent")) == NULL)
 			return 0;
 	} else {
-		if (bqueue_block(st, obq, ".nf") == NULL)
+		/*
+		 * XXX: intentionally don't use LD/DE because it
+		 * introduces vertical space.  This means that
+		 * subsequent blocks (paragraphs, etc.) will have a
+		 * double-newline.
+		 */
+		if (bqueue_block(st, obq, ".LP") == NULL)
 			return 0;
-		if (bqueue_block(st, obq, ".ft CR") == NULL)
-			return 0;
+		if (st->type == LOWDOWN_MAN &&
+		    (st->flags & LOWDOWN_NROFF_GROFF)) {
+			if (bqueue_block(st, obq, ".EX") == NULL)
+				return 0;
+		} else {
+			if (bqueue_block(st, obq, ".nf") == NULL ||
+			    bqueue_block(st, obq, ".ft CR") == NULL)
+				return 0;
+		}
 	}
 
 	if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
@@ -813,32 +853,57 @@ rndr_blockcode(struct nroff *st, struct bnodeq *obq,
 	if (bn->buf == NULL)
 		return 0;
 
-	if (st->man && (st->flags & LOWDOWN_NROFF_GROFF))
-		return bqueue_block(st, obq, ".EE") != NULL;
-
-	if (bqueue_block(st, obq, ".ft") == NULL)
-		return 0;
-	return bqueue_block(st, obq, ".fi") != NULL;
+	if (st->type == LOWDOWN_MDOC) {
+		if ((bn = bqueue_block(st, obq, ".Ed")) == NULL)
+			return 0;
+	} else {
+		if (st->type == LOWDOWN_MAN &&
+		    (st->flags & LOWDOWN_NROFF_GROFF)) {
+			if (bqueue_block(st, obq, ".EE") == NULL)
+				return 0;
+		} else {
+			if (bqueue_block(st, obq, ".ft") == NULL ||
+			    bqueue_block(st, obq, ".fi") == NULL)
+				return 0;
+		}
+	}
+	return 1;
 }
 
 static int
 rndr_definition_title(struct nroff *st, struct bnodeq *obq,
      struct bnodeq *bq)
 {
-	char	 buf[32];
+	char			 nbuf[32];
+	struct bnode		*bn;
+	struct lowdown_buf	*buf = NULL;
+	int			 rc = 0;
 
-	snprintf(buf, sizeof(buf), ".TP %zu", st->indent);
+	if (st->type == LOWDOWN_MDOC) {
+		if ((bn = bqueue_block(st, obq, ".It")) == NULL ||
+		    (buf = hbuf_new(32)) == NULL ||
+		    !bqueue_flush(st, buf, bq) ||
+		    (bn->nargs = strndup(buf->data, buf->size)) == NULL)
+			goto out;
+	} else if (st->type == LOWDOWN_MAN) {
+		snprintf(nbuf, sizeof(nbuf), ".TP %zu", st->indent);
+		if (bqueue_block(st, obq, nbuf) == NULL)
+			return 0;
+		TAILQ_CONCAT(obq, bq, entries);
+		if (bqueue_span(obq, "\n") == NULL)
+			return 0;
+	} else {
+		if (bqueue_block(st, obq, ".XP") == NULL)
+			return 0;
+		TAILQ_CONCAT(obq, bq, entries);
+		if (bqueue_block(st, obq, ".br") == NULL)
+			return 0;
+	}
 
-	if (st->man && bqueue_block(st, obq, buf) == NULL)
-		return 0;
-	else if (!st->man && bqueue_block(st, obq, ".XP") == NULL)
-		return 0;
-	TAILQ_CONCAT(obq, bq, entries);
-	if (st->man && bqueue_span(obq, "\n") == NULL)
-		return 0;
-	else if (!st->man && bqueue_block(st, obq, ".br") == NULL)
-		return 0;
-	return 1;
+	rc = 1;
+out:
+	hbuf_free(buf);
+	return rc;
 }
 
 static int
@@ -856,8 +921,35 @@ static int
 rndr_list(struct nroff *st, struct bnodeq *obq, 
     const struct lowdown_node *n, struct bnodeq *bq)
 {
+	struct bnode	*bn;
+	const char	*type;
+
+	/* Lists for mdoc(7) are somewhat simple... */
+
+	if (st->type == LOWDOWN_MDOC) {
+		if (n->rndr_list.flags & HLIST_FL_DEF)
+			type = "-tag -width Ds";
+		else if (n->rndr_list.flags & HLIST_FL_ORDERED)
+			type = "-enum";
+		else
+			type = "-bullet";
+		if ((bn = bqueue_block(st, obq, ".Bl")) == NULL)
+			return 0;
+		if (asprintf(&bn->nargs, "%s%s", type,
+		    (n->rndr_list.flags & HLIST_FL_BLOCK) ?
+		     "" : " -compact") == -1) {
+			bn->nargs = NULL;
+			return 0;
+		}
+		TAILQ_CONCAT(obq, bq, entries);
+		if (bqueue_block(st, obq, ".El") == NULL ||
+		    bqueue_block(st, obq, ".Pp") == NULL)
+			return 0;
+		return 1;
+	}
+
 	/* 
-	 * If we have a nested list, we need to use RS/RE to indent the
+	 * For a nested man(7) or ms(7) list, use RS/RE to indent the
 	 * nested component.  Otherwise the "IP" used for the titles and
 	 * contained paragraphs won't indent properly.
 	 */
@@ -880,11 +972,25 @@ static int
 rndr_blockquote(struct nroff *st, struct bnodeq *obq,
     struct bnodeq *bq)
 {
+	struct bnode	*bn;
 
-	if (bqueue_block(st, obq, ".RS") == NULL)
-		return 0;
-	TAILQ_CONCAT(obq, bq, entries);
-	return bqueue_block(st, obq, ".RE") != NULL;
+	if (st->type == LOWDOWN_MDOC) {
+		if ((bn = bqueue_block(st, obq, ".Bd")) == NULL ||
+		    (bn->nargs = strdup("-ragged -offset indent")) == NULL)
+			return 0;
+		bqueue_strip_paras(bq);
+		TAILQ_CONCAT(obq, bq, entries);
+		if (bqueue_block(st, obq, ".Ed") == NULL)
+			return 0;
+	} else {
+		if (bqueue_block(st, obq, ".RS") == NULL)
+			return 0;
+		TAILQ_CONCAT(obq, bq, entries);
+		if (bqueue_block(st, obq, ".RE") == NULL)
+			return 0;
+	}
+
+	return 1;
 }
 
 static int
@@ -920,18 +1026,18 @@ rndr_header(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 	if (level < 1)
 		level = 1;
 
-	/*
-	 * For man(7), we use SH for the first-level section, SS for
-	 * other sections.  TODO: use PP then italics or something for
-	 * third-level etc.
-	 */
+	if (st->type == LOWDOWN_MAN) {
+		/*
+		 * For man(7), we use SH for the first-level section, SS
+		 * for other sections.  TODO: use PP then italics or
+		 * something for third-level etc.
+		 */
 
-	if (st->man) {
 		bn = level == 1 ?
 			bqueue_block(st, obq, ".SH") :
 			bqueue_block(st, obq, ".SS");
 		if (bn == NULL)
-			return 0;
+			goto out;
 
 		/*
 		 * Do a scan of the contents of the SH.  If there's only
@@ -953,7 +1059,27 @@ rndr_header(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 
 		TAILQ_CONCAT(obq, bq, entries);
 		st->post_para = 1;
-		return 1;
+		rc = 1;
+		goto out;
+	} else if (st->type == LOWDOWN_MDOC) {
+		/*
+		 * Similar to mdoc(7), only use Sh for the first-level
+		 * section, Ss for other sections.
+		 */
+
+		bn = level == 1 ?
+			bqueue_block(st, obq, ".Sh") :
+			bqueue_block(st, obq, ".Ss");
+		if (bn == NULL)
+			goto out;
+		if ((buf = hbuf_new(32)) == NULL)
+			goto out;
+		if (!bqueue_flush(st, buf, bq))
+			goto out;
+		if ((bn->nargs = strndup(buf->data, buf->size)) == NULL)
+			goto out;
+		rc = 1;
+		goto out;
 	} 
 
 	/*
@@ -1058,10 +1184,26 @@ rndr_listitem(struct nroff *st, struct bnodeq *obq,
 	const char	*box;
 	size_t		 total = 0, numsize;
 
+	/* List items for mdoc(7) are trivially easy... */
+
+	if (st->type == LOWDOWN_MDOC) {
+		if (n->parent != NULL &&
+		    n->parent->type == LOWDOWN_DEFINITION_DATA) {
+			TAILQ_CONCAT(obq, bq, entries);
+			return 1;
+		}
+		if ((bn = bqueue_block(st, obq, ".It")) == NULL)
+			return 0;
+		bqueue_strip_paras(bq);
+		TAILQ_CONCAT(obq, bq, entries);
+		return 1;
+	}
+
 	/*
-	 * When indenting for the number of bullet preceding the line of
-	 * text, use "indent" spaces as the default.  For ordered lists
-	 * stretching beyond the indent size, enlarge as necessary.
+	 * For man(7) and ms(7), when indenting for the number of bullet
+	 * preceding the line of text, use "indent" spaces as the
+	 * default.  For ordered lists stretching beyond the indent
+	 * size, enlarge as necessary.
 	 */
 
 	if (param->flags & HLIST_FL_ORDERED) {
@@ -1137,20 +1279,25 @@ rndr_paragraph(struct nroff *st, const struct lowdown_node *n,
 	 * that we don't reset our text indent by using an "IP".
 	 */
 
-	for ( ; n != NULL; n = n->parent)
-		if (n->type == LOWDOWN_LISTITEM)
-			break;
-	if (n != NULL)
-		bn = bqueue_block(st, obq, ".IP");
-	else if (st->post_para)
-		bn = bqueue_block(st, obq, ".LP");
-	else
-		bn = bqueue_block(st, obq, ".PP");
-	if (bn == NULL)
-		return 0;
+	if (st->type != LOWDOWN_MDOC) {
+		for ( ; n != NULL; n = n->parent)
+			if (n->type == LOWDOWN_LISTITEM)
+				break;
+		if (n != NULL)
+			bn = bqueue_block(st, obq, ".IP");
+		else if (st->post_para)
+			bn = bqueue_block(st, obq, ".LP");
+		else
+			bn = bqueue_block(st, obq, ".PP");
+		if (bn == NULL)
+			return 0;
+		st->post_para = 0;
+	} else {
+		if ((bn = bqueue_block(st, obq, ".Pp")) == NULL)
+			return 0;
+	}
 
 	TAILQ_CONCAT(obq, nbq, entries);
-	st->post_para = 0;
 	return 1;
 }
 
@@ -1174,6 +1321,10 @@ static int
 rndr_hrule(struct nroff *st, struct bnodeq *obq)
 {
 
+	if (st->type == LOWDOWN_MDOC)
+		return bqueue_block(st, obq, ".Pp") != NULL &&
+			bqueue_block(st, obq, "\\l\'2i'") != NULL;
+
 	/* The LP is to reset the margins. */
 
 	if (bqueue_block(st, obq, ".LP") == NULL)
@@ -1183,7 +1334,7 @@ rndr_hrule(struct nroff *st, struct bnodeq *obq)
 
 	st->post_para = 1;
 
-	if (st->man)
+	if (st->type == LOWDOWN_MAN)
 		return bqueue_block(st, obq, "\\l\'2i'") != NULL;
 
 	return bqueue_block(st, obq,
@@ -1205,7 +1356,7 @@ rndr_image(struct nroff *st, struct bnodeq *obq,
 	size_t		 sz;
 	struct bnode	*bn;
 
-	if (!st->man) {
+	if (st->type == LOWDOWN_NROFF) {
 		cp = memrchr(param->link.data, '.', param->link.size);
 		if (cp != NULL) {
 			cp++;
@@ -1282,8 +1433,8 @@ rndr_table(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq)
 {
 	const char	*macro;
 
-	macro = st->man || !(st->flags & LOWDOWN_NROFF_GROFF) ?
-		".TS" : ".TS H";
+	macro = st->type != LOWDOWN_NROFF ||
+		!(st->flags & LOWDOWN_NROFF_GROFF) ? ".TS" : ".TS H";
 	if (bqueue_block(st, obq, macro) == NULL)
 		return 0;
 	if (bqueue_block(st, obq, "tab(|) expand allbox;") == NULL)
@@ -1362,7 +1513,8 @@ rndr_table_header(struct nroff *st, struct bnodeq *obq,
 
 	TAILQ_CONCAT(obq, bq, entries);
 
-	if (!st->man && (st->flags & LOWDOWN_NROFF_GROFF) &&
+	if (st->type == LOWDOWN_NROFF &&
+	    (st->flags & LOWDOWN_NROFF_GROFF) &&
 	    bqueue_block(st, obq, ".TH") == NULL)
 		goto out;
 
@@ -1430,7 +1582,7 @@ rndr_footnote_def(struct nroff *st, struct bnodeq *obq,
 	 * ordering facilities.
 	 */
 
-	if (!st->man) {
+	if (st->type == LOWDOWN_NROFF) {
 		if (bqueue_block(st, obq, ".FS") == NULL)
 			return 0;
 		bn = bqueue_block(st, obq, ".pdfhref M");
@@ -1444,11 +1596,15 @@ rndr_footnote_def(struct nroff *st, struct bnodeq *obq,
 	}
 
 	/*
-	 * For man(7), just print as normal, with a leading footnote
-	 * number in italics and superscripted.
+	 * For man(7) and mdoc(7), just print as normal, with a leading
+	 * footnote number in italics and superscripted.
 	 */
 
-	if (bqueue_block(st, obq, ".LP") == NULL)
+	if (st->type == LOWDOWN_MAN &&
+	    bqueue_block(st, obq, ".LP") == NULL)
+		return 0;
+	if (st->type == LOWDOWN_MDOC &&
+	    bqueue_block(st, obq, ".Pp") == NULL)
 		return 0;
 	if ((bn = bqueue_span(obq, NULL)) == NULL)
 		return 0;
@@ -1481,16 +1637,16 @@ rndr_footnotes(struct nroff *st, struct bnodeq *obq, int fin)
 
 	/* Non-final and in -tman (-tman has only endnotes). */
 
-	if (!fin && st->man)
+	if (!fin && st->type != LOWDOWN_NROFF)
 		return 1;
 
 	/* Non-final and -tms with endnotes specified. */
 
-	if (!fin && !st->man && (st->flags & LOWDOWN_NROFF_ENDNOTES))
+	if (!fin && st->type == LOWDOWN_NROFF && (st->flags & LOWDOWN_NROFF_ENDNOTES))
 		return 1;
 
 	st->footdepth++;
-	if (st->man) {
+	if (st->type == LOWDOWN_MAN) {
 		if (bqueue_block(st, obq, ".LP") == NULL)
 			return 0;
 		if (bqueue_block(st, obq, ".sp 3") == NULL)
@@ -1522,7 +1678,7 @@ rndr_footnote_ref(struct nroff *st, struct bnodeq *obq,
 	 * reference number in small superscripts.
 	 */
 
-	if (st->man) {
+	if (st->type != LOWDOWN_NROFF) {
 		if ((bn = bqueue_span(obq, NULL)) == NULL)
 			return 0;
 		if (asprintf(&bn->nbuf, "\\u\\s-3%zu\\s+3\\d",
@@ -1744,7 +1900,7 @@ rndr_root(struct nroff *st, struct bnodeq *obq,
 	if (bn == NULL)
 		goto out;
 
-	if (!st->man) {
+	if (st->type == LOWDOWN_NROFF) {
 		if (copy != NULL) {
 			bn = bqueue_block(st, obq,
 				".ds LF Copyright \\(co");
@@ -1795,6 +1951,27 @@ rndr_root(struct nroff *st, struct bnodeq *obq,
 		if (!rndr_meta_multi(st, obq, author, ".AU"))
 			goto out;
 		if (!rndr_meta_multi(st, obq, affil, ".AI"))
+			goto out;
+	} else if (st->type == LOWDOWN_MDOC) {
+		//if (manheader != NULL &&
+		//    bqueue_block(st, obq, manheader) == NULL)
+		//	goto out;
+
+		if ((bn = bqueue_block(st, obq, ".Dd")) == NULL)
+			goto out;
+		if (date == NULL)
+			date = "$Mdocdate$";
+		if ((bn->args = strdup(date)) == NULL)
+			goto out;
+
+		if ((bn = bqueue_block(st, obq, ".Dt")) == NULL)
+			goto out;
+		if (asprintf(&bn->args, "%s %s",
+		    title != NULL ? title : "\"\"", sec) == -1) {
+			bn->args = NULL;
+			goto out;
+		}
+		if ((bn = bqueue_block(st, obq, ".Os")) == NULL)
 			goto out;
 	} else {
 		if (manheader != NULL &&
@@ -2161,7 +2338,7 @@ lowdown_nroff_new(const struct lowdown_opts *opts)
 		return NULL;
 
 	p->flags = opts != NULL ? opts->oflags : 0;
-	p->man = opts != NULL && opts->type == LOWDOWN_MAN;
+	p->type = opts == NULL ? LOWDOWN_NROFF : opts->type;
 	p->cr = opts != NULL ? opts->nroff.cr : NULL;
 	p->cb = opts != NULL ? opts->nroff.cb : NULL;
 	p->ci = opts != NULL ? opts->nroff.ci : NULL;
@@ -2190,7 +2367,7 @@ lowdown_nroff_new(const struct lowdown_opts *opts)
 	 * that'll usually be used for PDF with a variable-width font.
 	 */
 
-	p->indent = p->man ? 3 : 5;
+	p->indent = p->type == LOWDOWN_MAN ? 3 : 5;
 	return p;
 }
 
