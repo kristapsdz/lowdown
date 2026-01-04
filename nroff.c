@@ -1330,7 +1330,12 @@ static int
 rndr_paragraph(struct nroff *st, const struct lowdown_node *n,
     struct bnodeq *obq, struct bnodeq *nbq)
 {
-	struct bnode	*bn;
+	struct bnode			*bn;
+	struct lowdown_buf		*buf = NULL;
+	const struct lowdown_node	*prev, *next, *pn;
+	const char			*cp;
+	size_t				 count;
+	int				 rc = 0;
 
 	/* 
 	 * Subsequent paragraphs get a PP for the indentation; otherwise, use
@@ -1352,13 +1357,86 @@ rndr_paragraph(struct nroff *st, const struct lowdown_node *n,
 			return 0;
 		st->use_lp = 0;
 	} else {
+		prev = TAILQ_PREV(n, lowdown_nodeq, entries);
+
+		/*
+		 * Check if we're after the NAME section and before
+		 * another section (doesn't matter the name).  If so,
+		 * see if we can break down the paragraph into specific
+		 * parts.
+		 */
+
+		if (prev != NULL &&
+		    prev->type == LOWDOWN_HEADER &&
+		    (pn = TAILQ_FIRST(&prev->children)) != NULL &&
+		    pn->type == LOWDOWN_NORMAL_TEXT &&
+		    hbuf_streq(&pn->rndr_normal_text.text, "NAME") &&
+		    (next = TAILQ_NEXT(n, entries)) != NULL &&
+		    next->type == LOWDOWN_HEADER) {
+			count = 0;
+
+			/*
+			 * If we can break this down into the name, a
+			 * hyphen, then the description, re-write the
+			 * paragraph to be in the typical format used by
+			 * mdoc(7) manpages using Nm and Nd.
+			 */
+
+			TAILQ_FOREACH(bn, nbq, entries) {
+				if (bn->scope != BSCOPE_SPAN)
+					break;
+				if (bn->buf == NULL && bn->nbuf == NULL)
+					break;
+				if (count == 1) {
+					cp = bn->buf == NULL ?
+						bn->nbuf : bn->buf;
+					if (strcmp(cp, "-") != 0 &&
+					    strcmp(cp, "\\(en") != 0 &&
+					    strcmp(cp, "\\(em") != 0)
+						break;
+				}
+				count++;
+			}
+
+			if (bn == NULL && count > 1) {
+				bn = TAILQ_FIRST(nbq);
+				assert(bn != NULL);
+				TAILQ_REMOVE(nbq, bn, entries);
+				TAILQ_INSERT_TAIL(obq, bn, entries);
+				bn->nargs = bn->nbuf;
+				bn->scope = BSCOPE_BLOCK;
+				if ((bn->nbuf = strdup(".Nm ")) == NULL)
+					return 0;
+
+				bn = TAILQ_FIRST(nbq);
+				assert(bn != NULL);
+				TAILQ_REMOVE(nbq, bn, entries);
+				bnode_free(bn);
+
+		    		if ((buf = hbuf_new(32)) == NULL ||
+				    !bqueue_flush(st, buf, nbq, 1))
+					goto out;
+	    			bn = bqueue_block(st, obq, ".Nd");
+				if (bn == NULL)
+					goto out;
+			    	bn->nargs = strndup
+					(buf->data, buf->size);
+				if (bn->nargs == NULL)
+					goto out;
+				bqueue_free(nbq);
+			}
+		}
+
 		if (!NODE_AFTER_HEAD(n) &&
 		    (bn = bqueue_block(st, obq, ".Pp")) == NULL)
 			return 0;
 	}
 
 	TAILQ_CONCAT(obq, nbq, entries);
-	return 1;
+	rc = 1;
+out:
+	hbuf_free(buf);
+	return rc;
 }
 
 static int
@@ -1900,12 +1978,16 @@ rndr_meta(struct nroff *st, const struct lowdown_node *n,
 
 static int
 rndr_root(struct nroff *st, struct bnodeq *obq,
-    struct bnodeq *bq, const struct lowdown_metaq *mq)
+    const struct lowdown_node *n, struct bnodeq *bq,
+    const struct lowdown_metaq *mq)
 {
 	struct lowdown_buf		*ob = NULL;
+	const struct lowdown_node	*nn;
 	struct bnode			*bn;
 	const struct lowdown_meta	*m;
 	int				 rc = 0;
+	size_t				 sz;
+	char				*abuf = NULL, *cp;
 	const char			*author = NULL, *title = NULL,
 					*affil = NULL, *date = NULL,
 					*copy = NULL, *sec = NULL,
@@ -2015,21 +2097,53 @@ rndr_root(struct nroff *st, struct bnodeq *obq,
 		if (!rndr_meta_multi(st, obq, affil, ".AI"))
 			goto out;
 	} else if (st->type == LOWDOWN_MDOC) {
-		//if (manheader != NULL &&
-		//    bqueue_block(st, obq, manheader) == NULL)
-		//	goto out;
+		/*
+		 * If a title has been specified in the metadata,
+		 * uppercase it.  Otherwise, try to infer it from the
+		 * NAME section, if provided, by parsing out the first
+		 * text node of the first paragraph.  If found,
+		 * uppercase that as well.  If there's no title at all,
+		 * use UNKNOWN as a stand-in.
+		 */
 
-		if ((bn = bqueue_block(st, obq, ".Dd")) == NULL)
-			goto out;
+		if (title == NULL &&
+		    (n = TAILQ_FIRST(&n->children)) != NULL &&
+		    n->type == LOWDOWN_DOC_HEADER &&
+		    (n = TAILQ_NEXT(n, entries)) != NULL &&
+		    n->type == LOWDOWN_HEADER &&
+		    (nn = TAILQ_FIRST(&n->children)) != NULL &&
+		    nn->type == LOWDOWN_NORMAL_TEXT &&
+		    hbuf_streq(&nn->rndr_normal_text.text, "NAME") &&
+		    (n = TAILQ_NEXT(n, entries)) != NULL &&
+		    n->type == LOWDOWN_PARAGRAPH &&
+		    (nn = TAILQ_FIRST(&n->children)) != NULL &&
+		    nn->type == LOWDOWN_NORMAL_TEXT) {
+			abuf = strndup(nn->rndr_normal_text.text.data,
+				nn->rndr_normal_text.text.size);
+			if (abuf == NULL)
+				goto out;
+			if ((sz = strcspn(abuf, "-, ")) > 0)
+				abuf[sz] = '\0';
+			for (cp = abuf; *cp != '\0'; cp++)
+				*cp = toupper((unsigned char)*cp);
+			title = abuf;
+		} else if (title != NULL) {
+			if ((abuf = strdup(title)) == NULL)
+				goto out;
+			for (cp = abuf; *cp != '\0'; cp++)
+				*cp = toupper((unsigned char)*cp);
+			title = abuf;
+		} else
+			title = "UNKNOWN";
+
 		if (date == NULL)
 			date = "$Mdocdate$";
-		if ((bn->args = strdup(date)) == NULL)
+		if ((bn = bqueue_block(st, obq, ".Dd")) == NULL ||
+		    (bn->args = strdup(date)) == NULL)
 			goto out;
-
 		if ((bn = bqueue_block(st, obq, ".Dt")) == NULL)
 			goto out;
-		if (asprintf(&bn->args, "%s %s",
-		    title != NULL ? title : "\"\"", sec) == -1) {
+		if (asprintf(&bn->args, "%s %s", title, sec) == -1) {
 			bn->args = NULL;
 			goto out;
 		}
@@ -2103,6 +2217,7 @@ rndr_root(struct nroff *st, struct bnodeq *obq,
 out:
 	TAILQ_CONCAT(obq, bq, entries);
 	hbuf_free(ob);
+	free(abuf);
 	return rc;
 }
 
@@ -2227,7 +2342,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	case LOWDOWN_ROOT:
 		assert(st->footdepth == 0);
 		rc = rndr_footnotes(st, &tmpbq, 1) &&
-			rndr_root(st, obq, &tmpbq, mq);
+			rndr_root(st, obq, n, &tmpbq, mq);
 		break;
 	case LOWDOWN_BLOCKHTML:
 		rc = rndr_raw_block(st, obq, &n->rndr_blockhtml);
