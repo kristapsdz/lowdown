@@ -46,7 +46,7 @@ enum	nfont {
 struct 	nroff {
 	struct hentryq	 	  headers_used; /* headers we've seen */
 	enum lowdown_type	  type; /* man(7), ms(7), or mdoc(7) */
-	int			  use_lp; /* man(7)/ms(7): PP/LP */
+	int			  use_lp; /* man(7)/ms(7): use PP/LP */
 	unsigned int		  flags; /* output flags */
 	ssize_t			  headers_offs; /* header offset */
 	enum nfont		  fonts[NFONT__MAX]; /* see bqueue_font() */
@@ -78,22 +78,22 @@ enum	bscope {
  * nodes are aware of whether they need surrounding newlines.
  */
 struct	bnode {
-	char				*nbuf; /* (safe) 1st data */
-	char				*buf; /* (unsafe) 2nd data */
-	char				*nargs; /* (safe) 1st args */
-	char				*args; /* (unsafe) 2nd args */
-	int				 close; /* BNODE_COLOUR/FONT */
-	int				 tblhack; /* BSCOPE_SPAN */
-        int				 headerhack; /* BSCOPE_BLOCK */
-	enum bscope			 scope; /* scope */
-	unsigned int			 font; /* if BNODE_FONT */
-#define	BFONT_ITALIC			 0x01
-#define	BFONT_BOLD			 0x02
-#define	BFONT_FIXED			 0x04
-	unsigned int			 colour; /* if BNODE_COLOUR */
-#define	BFONT_BLUE			 0x01
-#define	BFONT_RED			 0x02
-	TAILQ_ENTRY(bnode)		 entries;
+	char			*nbuf; /* (safe) macro name or data */
+	char			*buf; /* (unsafe) macro name or data */
+	char			*nargs; /* (safe) blk/semi macro args */
+	char			*args; /* (unsafe) blk/semi macro args */
+	int			 close; /* BNODE_COLOUR/FONT */
+	int			 tblhack; /* BSCOPE_SPAN */
+        int			 headerhack; /* BSCOPE_BLOCK */
+	enum bscope		 scope; /* scope */
+	unsigned int		 font; /* if BNODE_FONT */
+#define	BFONT_ITALIC		 0x01
+#define	BFONT_BOLD		 0x02
+#define	BFONT_FIXED		 0x04
+	unsigned int		 colour; /* if BNODE_COLOUR */
+#define	BFONT_BLUE		 0x01
+#define	BFONT_RED		 0x02
+	TAILQ_ENTRY(bnode)	 entries;
 };
 
 TAILQ_HEAD(bnodeq, bnode);
@@ -268,14 +268,30 @@ bqueue_strip_paras(struct bnodeq *bq)
 /**
  * Flush nodes from "bq" into "ob".  This does not remove any nodes from
  * "bq" (hence it being const).
+ * 
+ * Flushing works by serialising blocks (line-starting macros),
+ * semiblocks (a block but having continuance from the last line, so
+ * needing \c prior to invocation), literals and spans (text), and fonts
+ * and colours (either line-starting or inline).  All of these are
+ * serialised into a single buffer, which may contain multiple lines.
+ *
+ * This has to handle mdoc(7), man(7), and ms(7), all of which are kinda
+ * different.  For example, man(7) and ms(7) don't allow macros to exist
+ * in-line, while mdoc(7) does.
+ *
+ * This isn't meant to be rigorous, but just to get the job done.
+ *
+ * Input is read from "bq" and serialised into "ob".  If "mdocline" is
+ * specified, an mdoc(7) context is assumed that's already open on the
+ * line, so subsequent macros have their leading periods stripped.
  */
 static int
 bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
-    const struct bnodeq *bq)
+    const struct bnodeq *bq, int mdocline)
 {
 	const struct bnode	*bn, *chk, *next;
 	const char		*cp;
-	int		 	 nextblk;
+	int		 	 nextblk, abuttingspan;
 	char			 trailingchar;
 
 	TAILQ_FOREACH(bn, bq, entries) {
@@ -283,7 +299,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		    bn->scope == BSCOPE_SEMI_CLOSE)
 			assert(st->type != LOWDOWN_MDOC);
 
-		nextblk = 0;
+		nextblk = abuttingspan = 0;
 
 		/*
 		 * The semi-block macro is a span (within text content),
@@ -310,10 +326,17 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		    bn->scope == BSCOPE_SEMI ||
 		    bn->scope == BSCOPE_SEMI_CLOSE ||
 		    bn->scope == BSCOPE_COLOUR) {
-			if (ob->size > 0 && 
-			    ob->data[ob->size - 1] != '\n' &&
-			    !hbuf_putc(ob, '\n'))
-				return 0;
+			if (mdocline) {
+				if (ob->size > 0 && 
+				    ob->data[ob->size - 1] != ' ' &&
+				    !hbuf_puts(ob, " Ns "))
+					return 0;
+			} else {
+				if (ob->size > 0 && 
+				    ob->data[ob->size - 1] != '\n' &&
+				    !hbuf_putc(ob, '\n'))
+					return 0;
+			}
 			nextblk = 1;
 		}
 
@@ -330,7 +353,8 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 			    (chk->scope == BSCOPE_SEMI ||
 			     chk->scope == BSCOPE_SEMI_CLOSE ||
 			     chk->scope == BSCOPE_BLOCK)) {
-				if (ob->size > 0 && 
+				if (!mdocline &&
+				    ob->size > 0 && 
 				    ob->data[ob->size - 1] != '\n' &&
 				    !hbuf_putc(ob, '\n'))
 					return 0;
@@ -340,7 +364,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 
 		/* Print font and colour escapes. */
 
-		if (bn->scope == BSCOPE_FONT && nextblk) {
+		if (bn->scope == BSCOPE_FONT && nextblk && !mdocline) {
 			if (!HBUF_PUTSL(ob, ".ft "))
 				return 0;
 			if (!nstate_font(st, ob, bn->font, 0))
@@ -351,6 +375,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 			if (!nstate_font(st, ob, bn->font, 1))
 				return 0;
 		} else if (bn->scope == BSCOPE_COLOUR) {
+			/* FIXME: mdocline for mdoc(7). */
 			assert(nextblk);
 			if (!hbuf_printf(ob, ".gcolor %s", 
 			    nstate_colour_buf(bn->colour)))
@@ -383,7 +408,13 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 
 		/* Safe data need not be escaped. */
 
-		if (bn->nbuf != NULL && !hbuf_puts(ob, bn->nbuf))
+		if (bn->scope == BSCOPE_BLOCK &&
+		    mdocline &&
+		    bn->nbuf != NULL &&
+		    bn->nbuf[0] == '.') {
+			if (!hbuf_puts(ob, bn->nbuf + 1))
+				return 0;
+		} else if (bn->nbuf != NULL && !hbuf_puts(ob, bn->nbuf))
 			return 0;
 
 		/* Unsafe data must be escaped. */
@@ -407,17 +438,22 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 
 		if ((next = TAILQ_NEXT(bn, entries)) != NULL &&
 		    next->scope == BSCOPE_SPAN &&
-		    next->buf != NULL &&
-		    next->buf[0] != ' ' &&
-		    next->buf[0] != '\n') {
-			if (st->type != LOWDOWN_MAN &&
-			    bn->scope == BSCOPE_SEMI &&
-			    !HBUF_PUTSL(ob, " -A \"\\c\""))
-				return 0;
-			if (st->type == LOWDOWN_MAN &&
-			    bn->scope == BSCOPE_SEMI_CLOSE &&
-			    !HBUF_PUTSL(ob, " \\c"))
-				return 0;
+		    next->buf != NULL) {
+			if (next->buf[0] != ' ' && next->buf[0] != '\n') {
+				if (st->type == LOWDOWN_NROFF &&
+				    bn->scope == BSCOPE_SEMI &&
+				    !HBUF_PUTSL(ob, " -A \"\\c\""))
+					return 0;
+				if (st->type == LOWDOWN_MAN &&
+				    bn->scope == BSCOPE_SEMI_CLOSE &&
+				    !HBUF_PUTSL(ob, " \\c"))
+					return 0;
+				if (bn->scope == BSCOPE_BLOCK)
+					abuttingspan = 1;
+			} else {
+				if (bn->scope == BSCOPE_BLOCK)
+					abuttingspan = 2;
+			}
 		}
 
 		/*
@@ -453,6 +489,20 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 			    strlen(bn->args), 1, 0))
 				return 0;
 		}
+
+		/*
+		 * If an mdoc(7) one-liner and the node after a block
+		 * node is a span, we either (1) inhibit space and end
+		 * the macro if there's no space after the block; or
+		 * (2), simply end the macro if there is a space.
+		 */
+
+		if (mdocline && abuttingspan == 1)
+			if (!hbuf_puts(ob, " Ns No "))
+				return 0;
+		if (mdocline && abuttingspan == 2)
+			if (!hbuf_puts(ob, " No "))
+				return 0;
 
 		/*
 		 * The "headerhack" is used by SH block macros to
@@ -569,7 +619,7 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 			return 0;
 
 		if ((ob = hbuf_new(32)) == NULL ||
-		    (bq != NULL && !bqueue_flush(st, ob, bq)))
+		    (bq != NULL && !bqueue_flush(st, ob, bq, 1)))
 			goto out;
 
 		cp1 = strndup(ob->data, ob->size);
@@ -580,7 +630,7 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 			free(cp2);
 			goto out;
 		}
-		if (asprintf(&bn->args, "%s %s", cp2, cp1) == -1) {
+		if (asprintf(&bn->nargs, "%s %s", cp2, cp1) == -1) {
 			free(cp1);
 			free(cp2);
 			bn->args = NULL;
@@ -771,7 +821,7 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 	if (bq == NULL && !rndr_url_content(ob, link, &type,
 	    st->flags & LOWDOWN_SHORTLINK))
 		goto out;
-	else if (bq != NULL && !bqueue_flush(st, ob, bq))
+	else if (bq != NULL && !bqueue_flush(st, ob, bq, 0))
 		goto out;
 
 	/*
@@ -886,7 +936,7 @@ rndr_definition_title(struct nroff *st, struct bnodeq *obq,
 	if (st->type == LOWDOWN_MDOC) {
 		if ((bn = bqueue_block(st, obq, ".It")) == NULL ||
 		    (buf = hbuf_new(32)) == NULL ||
-		    !bqueue_flush(st, buf, bq) ||
+		    !bqueue_flush(st, buf, bq, 1) ||
 		    (bn->nargs = strndup(buf->data, buf->size)) == NULL)
 			goto out;
 	} else if (st->type == LOWDOWN_MAN) {
@@ -1082,13 +1132,10 @@ rndr_header(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 		bn = level == 1 ?
 			bqueue_block(st, obq, ".Sh") :
 			bqueue_block(st, obq, ".Ss");
-		if (bn == NULL)
-			goto out;
-		if ((buf = hbuf_new(32)) == NULL)
-			goto out;
-		if (!bqueue_flush(st, buf, bq))
-			goto out;
-		if ((bn->nargs = strndup(buf->data, buf->size)) == NULL)
+		if (bn == NULL ||
+		    (buf = hbuf_new(32)) == NULL ||
+		    !bqueue_flush(st, buf, bq, 1) ||
+		    (bn->nargs = strndup(buf->data, buf->size)) == NULL)
 			goto out;
 		rc = 1;
 		goto out;
@@ -2319,7 +2366,7 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 	if (rndr(&metaq, st, n, &bq)) {
 		if ((tmp = hbuf_new(64)) == NULL)
 			goto out;
-		if (!bqueue_flush(st, tmp, &bq))
+		if (!bqueue_flush(st, tmp, &bq, 0))
 			goto out;
 		if (tmp->size && tmp->data[tmp->size - 1] != '\n' &&
 		    !hbuf_putc(tmp, '\n'))
