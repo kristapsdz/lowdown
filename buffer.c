@@ -498,6 +498,30 @@ hentryq_clear(struct hentryq *q)
 }
 
 /*
+ * Clone a (possibly binary) buffer as a NUL-terminated string.  Returns
+ * NULL on memory failure.
+ */
+char *
+hbuf_string(const struct lowdown_buf *buf)
+{
+
+	return hbuf_stringn(buf, 0, buf->size);
+}
+
+/*
+ * Clone a slice from "start" to "end" of a (possibly binary) buffer as
+ * a NUL-terminated string.  Returns NULL on memory failure.  The slice
+ * must be within the buffer.
+ */
+char *
+hbuf_stringn(const struct lowdown_buf *buf, size_t start, size_t end)
+{
+
+	assert(end <= buf->size);
+	return strndup(&buf->data[start], end - start);
+}
+
+/*
  * Determine whether a link URL is relative.  Use a simple heuristic to
  * accomplish this: a relative URL is one without a schema.  Returns
  * zero if not a relative link, non-zero if it is.

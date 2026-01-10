@@ -531,8 +531,7 @@ op_eval_function_escape_htmlurl(struct op_out *out,
 		if ((nres = calloc(1, sizeof(struct op_res))) == NULL)
 			goto err;
 		TAILQ_INSERT_TAIL(nq, nres, entries);
-		nres->res = strndup(buf->data, buf->size);
-		if (nres->res == NULL)
+		if ((nres->res = hbuf_string(buf)) == NULL)
 			goto err;
 	}
 	hbuf_free(buf);
@@ -569,8 +568,7 @@ op_eval_function_escape_htmlattr(struct op_out *out,
 		if ((nres = calloc(1, sizeof(struct op_res))) == NULL)
 			goto err;
 		TAILQ_INSERT_TAIL(nq, nres, entries);
-		nres->res = strndup(buf->data, buf->size);
-		if (nres->res == NULL)
+		if ((nres->res = hbuf_string(buf)) == NULL)
 			goto err;
 	}
 	hbuf_free(buf);
@@ -608,8 +606,7 @@ op_eval_function_escape_html(struct op_out *out,
 		if ((nres = calloc(1, sizeof(struct op_res))) == NULL)
 			goto err;
 		TAILQ_INSERT_TAIL(nq, nres, entries);
-		nres->res = strndup(buf->data, buf->size);
-		if (nres->res == NULL)
+		if ((nres->res = hbuf_string(buf)) == NULL)
 			goto err;
 	}
 	hbuf_free(buf);
@@ -646,8 +643,7 @@ op_eval_function_escape_latex(struct op_out *out,
 		if ((nres = calloc(1, sizeof(struct op_res))) == NULL)
 			goto err;
 		TAILQ_INSERT_TAIL(nq, nres, entries);
-		nres->res = strndup(buf->data, buf->size);
-		if (nres->res == NULL)
+		if ((nres->res = hbuf_string(buf)) == NULL)
 			goto err;
 	}
 	hbuf_free(buf);
@@ -686,8 +682,7 @@ op_eval_function_escape_gemini(struct op_out *out,
 		if ((nres = calloc(1, sizeof(struct op_res))) == NULL)
 			goto err;
 		TAILQ_INSERT_TAIL(nq, nres, entries);
-		nres->res = strndup(buf->data, buf->size);
-		if (nres->res == NULL)
+		if ((nres->res = hbuf_string(buf)) == NULL)
 			goto err;
 	}
 	hbuf_free(buf);
@@ -726,8 +721,7 @@ op_eval_function_escape_roff(struct op_out *out,
 		if ((nres = calloc(1, sizeof(struct op_res))) == NULL)
 			goto err;
 		TAILQ_INSERT_TAIL(nq, nres, entries);
-		nres->res = strndup(buf->data, buf->size);
-		if (nres->res == NULL)
+		if ((nres->res = hbuf_string(buf)) == NULL)
 			goto err;
 	}
 	hbuf_free(buf);
