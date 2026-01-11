@@ -32,6 +32,11 @@
 #include "lowdown.h"
 #include "extern.h"
 
+/*
+ * Expression for whether this node is after a header.  This is
+ * important in mdoc(7) to see if leading paragraphs would be
+ * suppressed.
+ */
 #define NODE_AFTER_HEAD(_n) \
 	(TAILQ_PREV((_n), lowdown_nodeq, entries) != NULL && \
 	 TAILQ_PREV((_n), lowdown_nodeq, entries)->type == LOWDOWN_HEADER)
@@ -44,22 +49,24 @@ enum	nfont {
 };
 
 struct 	nroff {
-	struct hentryq	 	  headers_used; /* headers we've seen */
-	enum lowdown_type	  type; /* man(7), ms(7), or mdoc(7) */
-	int			  use_lp; /* man(7)/ms(7): use PP/LP */
-	unsigned int		  flags; /* output flags */
-	ssize_t			  headers_offs; /* header offset */
-	enum nfont		  fonts[NFONT__MAX]; /* see bqueue_font() */
-	struct bnodeq		**foots; /* footnotes */
-	size_t			  footsz; /* footnote size */
-	size_t			  footpos; /* footnote position (-tms) */
-	size_t			  footdepth; /* printing/parsing footnotes */
-	size_t			  indent; /* indentation width */
-	const char		 *cr; /* fixed-width font */
-	const char		 *cb; /* fixed-width bold font */
-	const char		 *ci; /* fixed-width italic font */
-	const char		 *cbi; /* fixed-width bold-italic font */
-	const char		 *templ; /* output template */
+	struct hentryq	 	   headers_used; /* headers we've seen */
+	enum lowdown_type	   type; /* man(7), ms(7), or mdoc(7) */
+	int			   use_lp; /* man(7)/ms(7): use PP/LP */
+	unsigned int		   flags; /* output flags */
+	ssize_t			   headers_offs; /* header offset */
+	const char		  *headers_sec; /* section from metadata */
+	enum nfont		   fonts[NFONT__MAX]; /* see bqueue_font() */
+	struct bnodeq		 **foots; /* footnotes */
+	size_t			   footsz; /* footnote size */
+	size_t			   footpos; /* footnote position (-tms) */
+	size_t			   footdepth; /* printing/parsing footnotes */
+	size_t			   indent; /* indentation width */
+	const char		  *cr; /* fixed-width font */
+	const char		  *cb; /* fixed-width bold font */
+	const char		  *ci; /* fixed-width italic font */
+	const char		  *cbi; /* fixed-width bold-italic font */
+	const char		  *templ; /* output template */
+	const struct lowdown_node *lastsec; /* last section seen */
 };
 
 enum	bscope {
@@ -98,6 +105,11 @@ struct	bnode {
 
 TAILQ_HEAD(bnodeq, bnode);
 
+/*
+ * Return a static buffer with the colour name describing the given
+ * BFONT_xxx colour (e.g., BFONT_BLUE).  If the colour could not be
+ * looked up, this just returns "black".
+ */
 static const char *
 nstate_colour_buf(unsigned int ft)
 {
@@ -160,6 +172,12 @@ nstate_font(const struct nroff *st, struct lowdown_buf *ob,
 	return HBUF_PUTSL(ob, "(") && hbuf_puts(ob, font);
 }
 
+/*
+ * Add a colour change into the token queue.  If "close" is set, the
+ * colour reverts to standard; otherwise, it's set according to whether
+ * it's an insertion or deletion ("chng").  Returns zero on failure
+ * (memory), non-zero on success.  See bqueue_flush().
+ */
 static int
 bqueue_colour(struct bnodeq *bq, enum lowdown_chng chng, int close)
 {
@@ -176,6 +194,11 @@ bqueue_colour(struct bnodeq *bq, enum lowdown_chng chng, int close)
 	return 1;
 }
 
+/* 
+ * Add zero or more font changes into the font queue.  If "close" is
+ * set, the font reverts to the standard.  Returns zero on failure
+ * (memory), non-zero on success.  See bqueue_flush().
+ */
 static int
 bqueue_font(const struct nroff *st, struct bnodeq *bq, int close)
 {
@@ -195,6 +218,13 @@ bqueue_font(const struct nroff *st, struct bnodeq *bq, int close)
 	return 1;
 }
 
+/*
+ * Add a node with the given scope to the token queue.  If "text" is not
+ * NULL, it's added as a safe (nbuf) macro name or data, depending on
+ * the scope.  Returns the node on success or NULL on failure (memory).
+ * On success, the node has already been appended to the queue.  See
+ * bqueue_flush().
+ */
 static struct bnode *
 bqueue_node(struct bnodeq *bq, enum bscope scope, const char *text)
 {
@@ -211,6 +241,11 @@ bqueue_node(struct bnodeq *bq, enum bscope scope, const char *text)
 	return bn;
 }
 
+/*
+ * Add a span with optional safe text to the token queue and return the
+ * allocated node, returning NULL on failure (memory).  On success, the
+ * node has already been appended to the queue.  See bqueue_flush().
+ */
 static struct bnode *
 bqueue_span(struct bnodeq *bq, const char *text)
 {
@@ -218,6 +253,12 @@ bqueue_span(struct bnodeq *bq, const char *text)
 	return bqueue_node(bq, BSCOPE_SPAN, text);
 }
 
+/*
+ * Add a block with optional safe macro name to the token queue and
+ * return the allocated node, returning NULL on failure (memory).  On
+ * success, the node has already been appended to the queue.  See
+ * bqueue_flush().
+ */
 static struct bnode *
 bqueue_block(struct nroff *st, struct bnodeq *bq, const char *text)
 {
@@ -225,47 +266,39 @@ bqueue_block(struct nroff *st, struct bnodeq *bq, const char *text)
 	return bqueue_node(bq, BSCOPE_BLOCK, text);
 }
 
+/*
+ * Free individual node.  Safe to call with NULL node.
+ */
 static void
 bnode_free(struct bnode *bn)
 {
 
-	free(bn->args);
-	free(bn->nargs);
-	free(bn->nbuf);
-	free(bn->buf);
-	free(bn);
+	if (bn != NULL) {
+		free(bn->args);
+		free(bn->nargs);
+		free(bn->nbuf);
+		free(bn->buf);
+		free(bn);
+	}
 }
 
+/*
+ * Free node queue.  Safe to call with a NULL queue.  Does not free the
+ * queue pointer itself.
+ */
 static void
 bqueue_free(struct bnodeq *bq)
 {
 	struct bnode	*bn;
 
-	while ((bn = TAILQ_FIRST(bq)) != NULL) {
-		TAILQ_REMOVE(bq, bn, entries);
-		bnode_free(bn);
-	}
+	if (bq != NULL)
+		while ((bn = TAILQ_FIRST(bq)) != NULL) {
+			TAILQ_REMOVE(bq, bn, entries);
+			bnode_free(bn);
+		}
 }
 
-static void
-bqueue_strip_paras(struct bnodeq *bq)
-{
-	struct bnode	*bn;
-
-	while ((bn = TAILQ_FIRST(bq)) != NULL) {
-		if (bn->scope != BSCOPE_BLOCK || bn->nbuf == NULL)
-			break;
-		if (strcmp(bn->nbuf, ".PP") &&
-		    strcmp(bn->nbuf, ".IP") &&
-		    strcmp(bn->nbuf, ".LP") &&
-		    strcmp(bn->nbuf, ".Pp"))
-			break;
-		TAILQ_REMOVE(bq, bn, entries);
-		bnode_free(bn);
-	}
-}
-
-/**
+/*
  * Flush nodes from "bq" into "ob".  This does not remove any nodes from
  * "bq" (hence it being const).
  * 
@@ -526,12 +559,33 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 }
 
 /*
+ * If the queue starts with any known paragraph blocks, strip and free
+ * the block(s).
+ */
+static void
+bqueue_strip_paras(struct bnodeq *bq)
+{
+	struct bnode	*bn;
+
+	while ((bn = TAILQ_FIRST(bq)) != NULL) {
+		if (bn->scope != BSCOPE_BLOCK || bn->nbuf == NULL)
+			break;
+		if (strcmp(bn->nbuf, ".PP") &&
+		    strcmp(bn->nbuf, ".IP") &&
+		    strcmp(bn->nbuf, ".LP") &&
+		    strcmp(bn->nbuf, ".Pp"))
+			break;
+		TAILQ_REMOVE(bq, bn, entries);
+		bnode_free(bn);
+	}
+}
+
+/*
  * Convert a link into a short-link and place the escaped output into a
- * returned string.
- * Returns NULL on memory allocation failure.
+ * returned string.  Returns NULL on memory allocation failure.
  */
 static char *
-hbuf2shortlink(const struct lowdown_buf *link)
+rndr_shortlink(const struct lowdown_buf *link)
 {
 	struct lowdown_buf	*tmp = NULL, *slink = NULL;
 	char			*ret = NULL;
@@ -683,7 +737,7 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 			if ((bn = bqueue_span(obq, NULL)) == NULL)
 				goto out;
 			if (st->flags & LOWDOWN_SHORTLINK) {
-				bn->nbuf = hbuf2shortlink(link);
+				bn->nbuf = rndr_shortlink(link);
 				if (bn->nbuf == NULL)
 					goto out;
 			} else {
@@ -725,7 +779,7 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 		if ((bn = bqueue_span(obq, NULL)) == NULL)
 			goto out;
 		if (st->flags & LOWDOWN_SHORTLINK) {
-			bn->nbuf = hbuf2shortlink(link);
+			bn->nbuf = rndr_shortlink(link);
 			if (bn->nbuf == NULL)
 				goto out;
 		} else {
@@ -1084,6 +1138,8 @@ rndr_header(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 	int			 	 rc = 0;
         const struct lowdown_node	*child;
 
+	st->lastsec = n;
+
 	level = (ssize_t)n->rndr_header.level + st->headers_offs;
 	if (level < 1)
 		level = 1;
@@ -1326,21 +1382,521 @@ rndr_listitem(struct nroff *st, struct bnodeq *obq,
 	return 1;
 }
 
+static ssize_t
+rndr_mdoc_paragraph_synopsis_subexpr(struct nroff *st, struct bnodeq *nq,
+    size_t pos, const struct lowdown_buf *buf);
+
+static size_t
+rndr_mdoc_skip_word(const struct lowdown_buf *buf, size_t pos)
+{
+	int in_escape = 0;
+	for ( ; pos < buf->size; pos++) {
+		if ('\\' == buf->data[pos] && pos + 1 < buf->size && buf->data[pos + 1] == '[')
+			in_escape = 1;
+		if (buf->data[pos] == ']' && in_escape)
+			in_escape = 0;
+		else if (isspace((unsigned char)buf->data[pos]) || buf->data[pos] == ']')
+			break;
+	}
+	return pos;
+}
+
+static int
+rndr_mdoc_token(const struct lowdown_buf *buf, size_t pos,
+    const char *val)
+{
+	size_t	 sz;
+
+	sz = strlen(val);
+	return pos + sz <= buf->size &&
+		strncmp(&buf->data[pos], val, sz) == 0;
+}
+
+/*
+ * Parse a sequence \[xxx -yyy zzz] by enclosing the content with Oo/Oc
+ * macros.  Returns <0 on failure (memory), 0 if parsing fails, and the
+ * position otherwise.
+ */
+static ssize_t
+rndr_mdoc_paragraph_synopsis_op(struct nroff *st, struct bnodeq *nq,
+    size_t pos, const struct lowdown_buf *buf)
+{
+	struct bnodeq		 nnq;
+	ssize_t			 ssz;
+	struct lowdown_buf	*nbuf;
+	struct bnode		*bn;
+
+	pos++;
+	TAILQ_INIT(&nnq);
+
+	ssz = rndr_mdoc_paragraph_synopsis_subexpr(st, &nnq, pos, buf);
+	if (ssz <= 0) {
+		bqueue_free(&nnq);
+		return ssz;
+	}
+
+	pos = ssz;
+	assert(pos == buf->size || buf->data[pos] == ']');
+
+	if (pos < buf->size && buf->data[pos] == ']')
+		pos++;
+
+	if ((nbuf = hbuf_new(32)) == NULL ||
+	    !bqueue_flush(st, nbuf, &nnq, 1)) {
+		hbuf_free(nbuf);
+		bqueue_free(&nnq);
+		return -1;
+	}
+	bqueue_free(&nnq);
+
+	if ((bn = bqueue_block(st, nq, ".Oo")) == NULL) {
+		hbuf_free(nbuf);
+		return -1;
+	}
+	if (asprintf(&bn->nargs, "%s Oc", hbuf_string(nbuf)) == -1) {
+		bn->nargs = NULL;
+		hbuf_free(nbuf);
+		return -1;
+	}
+
+	for ( ; pos < buf->size; pos++)
+		if (!isspace((unsigned char)buf->data[pos]))
+			break;
+	return (pos == buf->size || buf->data[pos] == ']') ? pos :
+		rndr_mdoc_paragraph_synopsis_subexpr(st, nq, pos, buf);
+}
+
+/*
+ * Parse an opaque argument by enclosing the content with Ar.  There are
+ * some special cases like "file..." and such, and also the vertical
+ * bar.  Returns <0 on failure (memory), 0 if parsing fails, and the
+ * position otherwise.
+ */
+static ssize_t
+rndr_mdoc_paragraph_synopsis_ar(struct nroff *st, struct bnodeq *nq,
+    size_t pos, const struct lowdown_buf *buf)
+{
+	size_t	 	 i, str;
+	struct bnode	*bn;
+	int		 ns;
+
+	for ( ; pos < buf->size; pos++)
+		if (!isspace((unsigned char)buf->data[pos]))
+			break;
+
+	/*
+	 * Intercept some special cases of "file ..." or its
+	 * equivalents.
+	 */
+
+	if (rndr_mdoc_token(buf, pos, "file \\[u2026]")) {
+		pos += 13;
+		if ((bn = bqueue_block(st, nq, ".Ar")) == NULL)
+			return -1;
+	} else if (rndr_mdoc_token(buf, pos, "file\\[u2026]")) {
+		pos += 12;
+		if ((bn = bqueue_block(st, nq, ".Ar")) == NULL)
+			return -1;
+	} else if (rndr_mdoc_token(buf, pos, "\\[u2026]")) {
+		pos += 8;
+		if ((bn = bqueue_block(st, nq, ".Ar")) == NULL ||
+		    (bn->nargs = strdup("...")) == NULL)
+			return -1;
+	} else {
+		str = pos;
+		pos = rndr_mdoc_skip_word(buf, str);
+
+		/*
+		 * Scan ahead: is there an "OR" bar?  This is a common
+		 * idiom like [foo | bar].  Consume up to and including
+		 * the bar.
+		 */
+
+		ns = 0;
+		if (isspace((unsigned char)buf->data[pos])) {
+			for (i = pos; i < buf->size; i++)
+				if (!isspace
+				    ((unsigned char)buf->data[i]))
+					break;
+			if (i < buf->size && buf->data[i] == '|')
+				pos = ++i;
+
+			/* Suppress `Ns' after the bar? */
+
+			ns = i < buf->size &&
+			    isspace((unsigned char)buf->data[i]);
+		}
+		if ((bn = bqueue_block(st, nq, ".Ar")) == NULL ||
+		    (bn->nargs = hbuf_stringn(buf, str, pos)) == NULL)
+			return -1;
+		if (ns && bqueue_span(nq, " ") == NULL)
+			return -1;
+	}
+
+	/* Process any additional components after spaces. */
+
+	for ( ; pos < buf->size; pos++)
+		if (!isspace((unsigned char)buf->data[pos]))
+			break;
+	return (pos == buf->size || buf->data[pos] == ']') ? pos :
+		rndr_mdoc_paragraph_synopsis_subexpr(st, nq, pos, buf);
+}
+
+/*
+ * Parse a flag by enclosing the content with Fl.  Flags are longform if
+ * they start with \(en instead of -.  There are some special cases like
+ * the vertical bar.  Returns <0 on failure (memory), 0 if parsing
+ * fails, and the position otherwise.
+ */
+static ssize_t
+rndr_mdoc_paragraph_synopsis_fl(struct nroff *st, struct bnodeq *nq,
+    size_t pos, const struct lowdown_buf *buf, int longform)
+{
+	size_t	 	 str, i;
+	struct bnode	*bn;
+
+	/* Read until space or Oo/Oc close or open. */
+
+	pos += longform ? 4 : 1;
+	for (str = pos; pos < buf->size; pos++)
+		if (isspace((unsigned char)buf->data[pos]) ||
+		    buf->data[pos] == '=' ||
+		    buf->data[pos] == '[' ||
+		    buf->data[pos] == ']')
+			break;
+
+	/*
+	 * Scan ahead: is there an "OR" bar?  This is a common idiom
+	 * like [-v | --verbose].  Consume up to and including the bar.
+	 */
+
+	if (isspace((unsigned char)buf->data[pos])) {
+		for (i = pos; i < buf->size; i++)
+			if (!isspace((unsigned char)buf->data[i]))
+				break;
+		if (i < buf->size && buf->data[i] == '|')
+			pos = ++i;
+	}
+
+	/*
+	 * Output the flag with a leading space.  If this is a longform
+	 * \(en, then add back in the additional hyphen.
+	 */
+
+	if (bqueue_span(nq, " ") == NULL ||
+	    (bn = bqueue_block(st, nq, ".Fl")) == NULL)
+		return -1;
+	if (longform) {
+		if (asprintf(&bn->nargs, "-%s",
+		    hbuf_stringn(buf, str, pos)) == -1) {
+			bn->nargs = NULL;
+			return -1;
+		}
+	} else if ((bn->nargs = hbuf_stringn(buf, str, pos)) == NULL)
+		return -1;
+
+	/* Process any additional components after spaces. */
+
+	for (str = pos; pos < buf->size; pos++)
+		if (!isspace((unsigned char)buf->data[pos]))
+			break;
+	if (pos == buf->size || buf->data[pos] == ']')
+		return pos;
+	if (str < pos && bqueue_span(nq, " ") == NULL)
+		return -1;
+	return rndr_mdoc_paragraph_synopsis_subexpr(st, nq, pos, buf);
+}
+
+/*
+ * Parse a subexpression, which is basically anything that comes after
+ * the name invocation.  Returns <0 on failure (memory), 0 if parsing
+ * fails, and the position otherwise.
+ */
+static ssize_t
+rndr_mdoc_paragraph_synopsis_subexpr(struct nroff *st, struct bnodeq *nq,
+    size_t pos, const struct lowdown_buf *buf)
+{
+	ssize_t		 ssz;
+
+	/* Strip away leading space. */
+
+	for ( ; pos < buf->size; pos++)
+		if (!isspace((unsigned char)buf->data[pos]))
+			break;
+	if (pos == buf->size)
+		return pos;
+
+	/* Check illegal characters. */
+
+	if (buf->data[pos] == ']')
+		return 0;
+
+	/*
+	 * Subexpressions can either begin with a hyphen (or a long
+	 * hyphen) for Fl, a square bracket for Oo/Oc, or anything else
+	 * is routed to Ar.
+	 */
+
+	if (rndr_mdoc_token(buf, pos, "\\(en"))
+		ssz = rndr_mdoc_paragraph_synopsis_fl(st, nq,
+		    pos, buf, 1);
+	else if (buf->data[pos] == '[')
+		ssz = rndr_mdoc_paragraph_synopsis_op(st, nq,
+		    pos, buf);
+	else if (buf->data[pos] == '-')
+		ssz = rndr_mdoc_paragraph_synopsis_fl(st, nq,
+		    pos, buf, 0);
+	else
+		ssz = rndr_mdoc_paragraph_synopsis_ar(st, nq,
+		    pos, buf);
+
+	return ssz;
+}
+
+/*
+ * Parse a full synopsis expression. Returns <0 on failure (memory), 0
+ * if parsing fails, and the position otherwise.
+ */
+static ssize_t
+rndr_mdoc_paragraph_synopsis_expr(struct nroff *st, struct bnodeq *nq,
+    size_t pos, const struct lowdown_buf *buf)
+{
+	struct bnode	*bn;
+	size_t		 sta;
+	ssize_t		 ssz;
+
+	for ( ; pos < buf->size; pos++)
+		if (!isspace((unsigned char)buf->data[pos]))
+			break;
+	for (sta = pos; pos < buf->size; pos++)
+		if (isspace((unsigned char)buf->data[pos]))
+			break;
+	if (pos == buf->size)
+		return pos;
+
+	/*
+	 * Each synopsis expression consists of a name at the beginning
+	 * of the line, then arbitrary subexpression.
+	 */
+
+	if ((bn = bqueue_block(st, nq, ".Nm")) == NULL ||
+	    (bn->nargs = hbuf_stringn(buf, sta, pos)) == NULL)
+		return -1;
+
+	/* Keep returning tokens til a new expression or failure. */
+
+	while (pos < buf->size) {
+		ssz = rndr_mdoc_paragraph_synopsis_subexpr(st, nq,
+		    pos, buf);
+		if (ssz <= 0)
+			return ssz;
+		pos = ssz;
+	}
+	return pos;
+}
+
+/*
+ * SYNOPSIS sections in mdoc(7) have very special handling. Each manual section
+ * (1, 3, etc.) has its own way of behaving.  Try to parse the SYNOPSIS in its
+ * own special way.  If parsing fails, don't change the existing behaviour;
+ * otherwise, replace the child content with the newly-generated content.
+ * Returns 0 on failure (memory), 1 on success.  On success, the paragraph
+ * content may have been replaced.
+ */
+static int
+rndr_mdoc_paragraph_synopsis(struct nroff *st, const struct lowdown_node *n,
+    struct bnodeq *obq, struct bnodeq *nbq)
+{
+	int	 		 rc = 0;
+	struct lowdown_buf	*buf = NULL;
+	struct bnodeq		 nq;
+	ssize_t			 ret;
+
+	TAILQ_INIT(&nq);
+
+	if ((buf = hbuf_new(32)) != NULL &&
+	    bqueue_flush(st, buf, nbq, 1)) {
+		ret = rndr_mdoc_paragraph_synopsis_expr(st, &nq, 0,
+		    buf);
+		if (ret > 0) {
+			bqueue_free(nbq);
+			TAILQ_CONCAT(obq, &nq, entries);
+			rc = 1;
+		} else if (ret == 0)
+			rc = 1;
+	}
+
+	hbuf_free(buf);
+	bqueue_free(&nq);
+	return rc;
+}
+
+static int
+rndr_mdoc_paragraph_head(struct nroff *st, const struct lowdown_node *n,
+    struct bnodeq *obq, struct bnodeq *nbq)
+{
+	struct bnode		*bn;
+	struct lowdown_buf	*buf = NULL;
+	const char		*cp;
+	char			*nm, *delim, *onm = NULL;
+	size_t			 count = 0;
+	int			 rc = 0;
+
+	/*
+	 * If this can be broken into the non-empty name, a hyphen, then
+	 * the description, re-write the paragraph to be in the typical
+	 * format used by mdoc(7) manpages using "Nm" and "Nd".
+	 */
+
+	TAILQ_FOREACH(bn, nbq, entries) {
+		if (bn->scope != BSCOPE_SPAN)
+			break;
+		cp = bn->buf == NULL ? bn->nbuf : bn->buf;
+		if (cp == NULL)
+			break;
+		if (count == 0 && !isalpha((unsigned char)*cp))
+			break;
+		if (count == 1 &&
+		    strcmp(cp, "-") != 0 &&
+		    strcmp(cp, "\\(en") != 0 &&
+		    strcmp(cp, "\\(em") != 0)
+			break;
+		count++;
+	}
+
+	if (bn == NULL && count > 1) {
+		bn = TAILQ_FIRST(nbq);
+		assert(bn != NULL);
+		TAILQ_REMOVE(nbq, bn, entries);
+		/* Strip node but save content. */
+		onm = nm = bn->nbuf != NULL ? bn->nbuf : bn->buf;
+		bn->nbuf = bn->buf = NULL;
+		bnode_free(bn);
+
+		/* Output as many Nm's as comma-separated values. */
+
+		while (nm != NULL) {
+			while (*nm != '\0' && *nm == ' ')
+				nm++;
+			if (*nm == '\0')
+				break;
+			if ((delim = strchr(nm, ',')) != NULL) {
+				*delim = '\0';
+				if (delim == nm) {
+					nm = delim + 1;
+					continue;
+				}
+			}
+			bn = bqueue_block(st, obq, ".Nm");
+			if (bn == NULL)
+				goto out;
+			if (asprintf(&bn->args, "%s ,", nm) == -1) {
+				bn->args = NULL;
+				goto out;
+			}
+			nm = delim;
+			if (delim != NULL)
+				nm = delim + 1;
+		}
+
+		/* Strip off trailing ", " for the last Nm entry. */
+
+		bn = TAILQ_LAST(obq, bnodeq);
+		assert(bn != NULL);
+		assert(bn->scope == BSCOPE_BLOCK);
+		assert(strlen(bn->args) > 2);
+		bn->args[strlen(bn->args) - 2] = '\0';
+
+		/* Skip after the hyphen. */
+
+		bn = TAILQ_FIRST(nbq);
+		assert(bn != NULL);
+		TAILQ_REMOVE(nbq, bn, entries);
+		bnode_free(bn);
+
+		/* Copy all remaining data into Nd. */
+
+		if ((buf = hbuf_new(32)) == NULL ||
+		    !bqueue_flush(st, buf, nbq, 1))
+			goto out;
+	    	if ((bn = bqueue_block(st, obq, ".Nd")) == NULL)
+			goto out;
+		bn->nargs = strndup(buf->data, buf->size);
+		if (bn->nargs == NULL)
+			goto out;
+		bqueue_free(nbq);
+	}
+
+	rc = 1;
+out:
+	hbuf_free(buf);
+	free(onm);
+	return rc;
+}
+
+/*
+ * mdoc(7) paragraphs may have special handling depending on their prior
+ * section, the manual section, phase of the moon, etc.  If these conditions
+ * are met, "nbq" may be drained and new content generated and appended to
+ * "obq".
+ */
+static int
+rndr_mdoc_paragraph(struct nroff *st, const struct lowdown_node *n,
+    struct bnodeq *obq, struct bnodeq *nbq)
+{
+	const struct lowdown_node	*prev, *next, *pn;
+
+	prev = TAILQ_PREV(n, lowdown_nodeq, entries);
+
+	/*
+	 * Check if a NAME section is before another section (doesn't
+	 * matter the name).  If so, try to break down the paragraph
+	 * into specific parts.
+	 */
+
+	if (prev != NULL &&
+	    prev->type == LOWDOWN_HEADER &&
+	    (pn = TAILQ_FIRST(&prev->children)) != NULL &&
+	    pn->type == LOWDOWN_NORMAL_TEXT &&
+	    hbuf_streq(&pn->rndr_normal_text.text, "NAME") &&
+	    (next = TAILQ_NEXT(n, entries)) != NULL &&
+	    next->type == LOWDOWN_HEADER) {
+		if (!rndr_mdoc_paragraph_head(st, n, obq, nbq))
+			return -1;
+		return 0;
+	}
+
+	/*
+	 * Paragraphs within the SYNOPSIS are broken down in very
+	 * specific ways according to the manual section.
+	 */
+
+	if (st->lastsec != NULL &&
+	    (pn = TAILQ_FIRST(&st->lastsec->children)) != NULL &&
+	    pn->type == LOWDOWN_NORMAL_TEXT &&
+	    st->headers_sec != NULL &&
+	    st->headers_sec[0] == '1' &&
+	    hbuf_streq(&pn->rndr_normal_text.text, "SYNOPSIS")) {
+		if (!rndr_mdoc_paragraph_synopsis(st, n, obq, nbq))
+			return -1;
+		return 0;
+	}
+	return 1;
+}
+
 static int
 rndr_paragraph(struct nroff *st, const struct lowdown_node *n,
     struct bnodeq *obq, struct bnodeq *nbq)
 {
-	struct bnode			*bn;
-	struct lowdown_buf		*buf = NULL;
-	const struct lowdown_node	*prev, *next, *pn;
-	const char			*cp;
-	size_t				 count;
-	int				 rc = 0;
+	struct bnode	*bn;
+	int		 rc;
 
 	/* 
-	 * Subsequent paragraphs get a PP for the indentation; otherwise, use
-	 * LP and forego the indentation.  If we're in a list item, make sure
-	 * that we don't reset our text indent by using an "IP".
+	 * In man(7) and ms(7), subsequent paragraphs get a PP for the
+	 * indentation; otherwise, use LP and forego the indentation.
+	 * If we're in a list item, make sure that we don't reset our
+	 * text indent by using an "IP".  mdoc(7) simply uses "Pp";
+	 * however, individual paragraphs may have custom handling.
 	 */
 
 	if (st->type != LOWDOWN_MDOC) {
@@ -1357,86 +1913,21 @@ rndr_paragraph(struct nroff *st, const struct lowdown_node *n,
 			return 0;
 		st->use_lp = 0;
 	} else {
-		prev = TAILQ_PREV(n, lowdown_nodeq, entries);
-
 		/*
-		 * Check if we're after the NAME section and before
-		 * another section (doesn't matter the name).  If so,
-		 * see if we can break down the paragraph into specific
-		 * parts.
+		 * Paragraphs for mdoc(7) are complicated because the
+		 * content is re-written using mdoc(7) idioms.  Route to
+		 * a specific function for that.
 		 */
 
-		if (prev != NULL &&
-		    prev->type == LOWDOWN_HEADER &&
-		    (pn = TAILQ_FIRST(&prev->children)) != NULL &&
-		    pn->type == LOWDOWN_NORMAL_TEXT &&
-		    hbuf_streq(&pn->rndr_normal_text.text, "NAME") &&
-		    (next = TAILQ_NEXT(n, entries)) != NULL &&
-		    next->type == LOWDOWN_HEADER) {
-			count = 0;
-
-			/*
-			 * If we can break this down into the name, a
-			 * hyphen, then the description, re-write the
-			 * paragraph to be in the typical format used by
-			 * mdoc(7) manpages using Nm and Nd.
-			 */
-
-			TAILQ_FOREACH(bn, nbq, entries) {
-				if (bn->scope != BSCOPE_SPAN)
-					break;
-				if (bn->buf == NULL && bn->nbuf == NULL)
-					break;
-				if (count == 1) {
-					cp = bn->buf == NULL ?
-						bn->nbuf : bn->buf;
-					if (strcmp(cp, "-") != 0 &&
-					    strcmp(cp, "\\(en") != 0 &&
-					    strcmp(cp, "\\(em") != 0)
-						break;
-				}
-				count++;
-			}
-
-			if (bn == NULL && count > 1) {
-				bn = TAILQ_FIRST(nbq);
-				assert(bn != NULL);
-				TAILQ_REMOVE(nbq, bn, entries);
-				TAILQ_INSERT_TAIL(obq, bn, entries);
-				bn->nargs = bn->nbuf;
-				bn->scope = BSCOPE_BLOCK;
-				if ((bn->nbuf = strdup(".Nm ")) == NULL)
-					return 0;
-
-				bn = TAILQ_FIRST(nbq);
-				assert(bn != NULL);
-				TAILQ_REMOVE(nbq, bn, entries);
-				bnode_free(bn);
-
-		    		if ((buf = hbuf_new(32)) == NULL ||
-				    !bqueue_flush(st, buf, nbq, 1))
-					goto out;
-	    			bn = bqueue_block(st, obq, ".Nd");
-				if (bn == NULL)
-					goto out;
-			    	bn->nargs = strndup
-					(buf->data, buf->size);
-				if (bn->nargs == NULL)
-					goto out;
-				bqueue_free(nbq);
-			}
-		}
-
-		if (!NODE_AFTER_HEAD(n) &&
+		if ((rc = rndr_mdoc_paragraph(st, n, obq, nbq)) < 0)
+			return 0;
+		if (rc > 0 && !NODE_AFTER_HEAD(n) &&
 		    (bn = bqueue_block(st, obq, ".Pp")) == NULL)
 			return 0;
 	}
 
 	TAILQ_CONCAT(obq, nbq, entries);
-	rc = 1;
-out:
-	hbuf_free(buf);
-	return rc;
+	return 1;
 }
 
 static int
@@ -1538,7 +2029,7 @@ rndr_image(struct nroff *st, struct bnodeq *obq,
 	if ((bn = bqueue_span(obq, NULL)) == NULL)
 		return 0;
 	if (st->flags & LOWDOWN_SHORTLINK) {
-		bn->nbuf = hbuf2shortlink(&param->link);
+		bn->nbuf = rndr_shortlink(&param->link);
 		if (bn->nbuf == NULL)
 			return 0;
 	} else {
@@ -1963,15 +2454,16 @@ rndr_meta(struct nroff *st, const struct lowdown_node *n,
 	if ((m = lowdown_get_meta(n, mq)) == NULL)
 		return 0;
 
-	if (strcmp(m->key, "shiftheadinglevelby") == 0) {
+	if (strcasecmp(m->key, "shiftheadinglevelby") == 0) {
 		val = (ssize_t)strtonum(m->value, -100, 100, &ep);
 		if (ep == NULL)
 			st->headers_offs = val + 1;
-	} else if (strcmp(m->key, "baseheaderlevel") == 0) {
+	} else if (strcasecmp(m->key, "baseheaderlevel") == 0) {
 		val = (ssize_t)strtonum(m->value, 1, 100, &ep);
 		if (ep == NULL)
 			st->headers_offs = val;
-	}
+	} else if (strcasecmp(m->key, "section") == 0)
+		st->headers_sec = m->value;
 
 	return 1;
 }
