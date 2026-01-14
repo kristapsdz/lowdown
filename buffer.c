@@ -543,3 +543,27 @@ hbuf_isrellink(const struct lowdown_buf *link)
 	rem = colon - link->data;
 	return memchr(link->data, '/', rem) != NULL;
 }
+
+/*
+ * Like hbuf_strncasecmpat, but starting at the beginning of the buffer.
+ */
+int
+hbuf_strncasecmp(const struct lowdown_buf *buf, const char *val)
+{
+	return hbuf_strncasecmpat(buf, val, 0);
+}
+
+/*
+ * Checks if the position at "pos" contains the full case-insensitive
+ * text of "val".
+ */
+int
+hbuf_strncasecmpat(const struct lowdown_buf *buf, const char *val,
+    size_t pos)
+{
+	size_t	 sz;
+
+	sz = strlen(val);
+	return pos + sz <= buf->size &&
+		strncasecmp(&buf->data[pos], val, sz) == 0;
+}
