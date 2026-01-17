@@ -1383,9 +1383,8 @@ rndr_listitem(struct nroff *st, struct bnodeq *obq,
 }
 
 static ssize_t
-rndr_mdoc_paragraph_synopsis_subexpr(struct nroff *, struct bnodeq *,
+rndr_mdoc_synopsis_prog_subexpr(struct nroff *, struct bnodeq *,
     size_t, const struct lowdown_buf *);
-
 
 /*
  * Parse a sequence \[xxx -yyy zzz] by enclosing the content with Oo/Oc
@@ -1393,7 +1392,7 @@ rndr_mdoc_paragraph_synopsis_subexpr(struct nroff *, struct bnodeq *,
  * position otherwise.
  */
 static ssize_t
-rndr_mdoc_paragraph_synopsis_op(struct nroff *st, struct bnodeq *nq,
+rndr_mdoc_synopsis_prog_op(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf)
 {
 	struct bnode	*bn;
@@ -1404,8 +1403,7 @@ rndr_mdoc_paragraph_synopsis_op(struct nroff *st, struct bnodeq *nq,
 
 	pos++;
 	while (pos < buf->size) {
-		ssz = rndr_mdoc_paragraph_synopsis_subexpr(st, nq,
-		    pos, buf);
+		ssz = rndr_mdoc_synopsis_prog_subexpr(st, nq, pos, buf);
 		if (ssz <= 0)
 			return ssz;
 		pos = ssz;
@@ -1444,7 +1442,7 @@ rndr_mdoc_paragraph_synopsis_op(struct nroff *st, struct bnodeq *nq,
  * position otherwise.
  */
 static ssize_t
-rndr_mdoc_paragraph_synopsis_ar(struct nroff *st, struct bnodeq *nq,
+rndr_mdoc_synopsis_prog_ar(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf)
 {
 	size_t	 	 i, start;
@@ -1479,6 +1477,8 @@ rndr_mdoc_paragraph_synopsis_ar(struct nroff *st, struct bnodeq *nq,
 				for (++pos; pos < buf->size; pos++)
 					if (buf->data[pos] == ']')
 						break;
+				if (pos == buf->size)
+					break;
 				continue;
 			}
 			if (isspace((unsigned char)buf->data[pos]) ||
@@ -1527,7 +1527,7 @@ rndr_mdoc_paragraph_synopsis_ar(struct nroff *st, struct bnodeq *nq,
  * fails, and the position otherwise.
  */
 static ssize_t
-rndr_mdoc_paragraph_synopsis_fl(struct nroff *st, struct bnodeq *nq,
+rndr_mdoc_synopsis_prog_fl(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf, int longform)
 {
 	size_t			 start, i;
@@ -1589,9 +1589,10 @@ rndr_mdoc_paragraph_synopsis_fl(struct nroff *st, struct bnodeq *nq,
  * fails, and the position otherwise.
  */
 static ssize_t
-rndr_mdoc_paragraph_synopsis_subexpr(struct nroff *st, struct bnodeq *nq,
+rndr_mdoc_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf)
 {
+	ssize_t	 ssz;
 	/* Strip away leading space. */
 
 	for ( ; pos < buf->size; pos++)
@@ -1612,18 +1613,150 @@ rndr_mdoc_paragraph_synopsis_subexpr(struct nroff *st, struct bnodeq *nq,
 	 */
 
 	if (hbuf_strncasecmpat(buf, "\\(en", pos))
-		pos = rndr_mdoc_paragraph_synopsis_fl(st, nq,
+		ssz = rndr_mdoc_synopsis_prog_fl(st, nq,
 		    pos, buf, 1);
 	else if (buf->data[pos] == '-')
-		pos = rndr_mdoc_paragraph_synopsis_fl(st, nq,
+		ssz = rndr_mdoc_synopsis_prog_fl(st, nq,
 		    pos, buf, 0);
 	else if (buf->data[pos] == '[')
-		pos = rndr_mdoc_paragraph_synopsis_op(st, nq,
+		ssz = rndr_mdoc_synopsis_prog_op(st, nq,
 		    pos, buf);
 	else
-		pos = rndr_mdoc_paragraph_synopsis_ar(st, nq,
+		ssz = rndr_mdoc_synopsis_prog_ar(st, nq,
 		    pos, buf);
 
+	return ssz;
+}
+
+static ssize_t
+rndr_mdoc_synopsis_func_incl(struct nroff *st, struct bnodeq *nq,
+    size_t pos, const struct lowdown_buf *buf)
+{
+	struct bnode	*bn;
+	size_t		 i;
+
+	pos += 9;
+	while (pos < buf->size &&
+	    isspace((unsigned char)buf->data[pos]))
+		pos++;
+	if (pos < buf->size && buf->data[pos] == '<')
+		pos++;
+	i = buf->size;
+	if (i > 0 && buf->data[i - 1] == '>')
+		i--;
+	if ((bn = bqueue_block(st, nq, ".In")) == NULL ||
+	    (bn->nargs = hbuf_stringn(buf, pos, i)) == NULL)
+		return -1;
+	return buf->size;
+}
+
+static ssize_t
+rndr_mdoc_synopsis_func_decl(struct nroff *st, struct bnodeq *nq,
+    size_t pos, const struct lowdown_buf *buf)
+{
+	struct bnode	*bn;
+	size_t		 i, paren, arg;
+	char		*cp;
+
+	/* Skip over leading space. */
+
+	while (pos < buf->size &&
+	    isspace((unsigned char)buf->data[pos]))
+		pos++;
+
+	/* Get the start of the function part. */
+
+	for (paren = pos; paren < buf->size; paren++)
+		if (buf->data[paren] == '(')
+			break;
+
+	/* If found, backtrack to the function name start. */
+
+	if (paren < buf->size) {
+		for (i = paren; i > pos; i--)
+			if (isspace((unsigned char)buf->data[i]))
+				break;
+		if ((bn = bqueue_block(st, nq, ".Ft")) == NULL ||
+		    (bn->nargs = hbuf_stringn(buf, pos, i)) == NULL)
+			return -1;
+		pos = i + 1;
+	}
+
+	if ((bn = bqueue_block(st, nq, ".Fo")) == NULL ||
+	    (bn->nargs = hbuf_stringn(buf, pos, paren)) == NULL)
+		return -1;
+
+	if (paren == buf->size)
+		return paren;
+
+	for (arg = i = paren + 1; i < buf->size; i++) {
+		if (i + 1 < buf->size &&
+		    buf->data[i] == ')' &&
+		    buf->data[i + 1] == ';')
+			break;
+
+		if (buf->data[i] == ',') {
+			if ((bn = bqueue_block(st, nq, ".Fa")) == NULL ||
+			    (cp = hbuf_stringn(buf, arg, i)) == NULL)
+				return -1;
+			if (asprintf(&bn->nargs, "\"%s\"", cp) == -1) {
+				free(cp);
+				bn->nargs = NULL;
+				return -1;
+			}
+			free(cp);
+			arg = i + 1;
+		}
+	}
+
+	if (i > arg) {
+		if ((bn = bqueue_block(st, nq, ".Fa")) == NULL ||
+		    (cp = hbuf_stringn(buf, arg, i)) == NULL)
+			return -1;
+		if (asprintf(&bn->nargs, "\"%s\"", cp) == -1) {
+			free(cp);
+			bn->nargs = NULL;
+			return -1;
+		}
+		free(cp);
+	}
+
+
+	if (bqueue_block(st, nq, ".Fc") == NULL)
+		return -1;
+
+	if (i + 1 < buf->size &&
+	    buf->data[i] == ')' &&
+	    buf->data[i + 1] == ';')
+		return i + 2;
+
+	return i;
+}
+
+static ssize_t
+rndr_mdoc_synopsis_func_expr(struct nroff *st, struct bnodeq *nq,
+    size_t pos, const struct lowdown_buf *buf)
+{
+	ssize_t		 ssz;
+
+	for ( ; pos < buf->size; pos++)
+		if (!isspace((unsigned char)buf->data[pos]))
+			break;
+
+	/*
+	 * Following the name and any whitespace are the subexpressions
+	 * that define the arguments.  Consume all of them.
+	 */
+
+	while (pos < buf->size) {
+		if (hbuf_strncasecmp(buf, "#include "))
+			ssz = rndr_mdoc_synopsis_func_incl(st, nq, pos, buf);
+		else
+			ssz = rndr_mdoc_synopsis_func_decl(st, nq, pos, buf);
+		if (ssz <= 0)
+			return ssz;
+		pos = ssz;
+	}
 	return pos;
 }
 
@@ -1632,7 +1765,7 @@ rndr_mdoc_paragraph_synopsis_subexpr(struct nroff *st, struct bnodeq *nq,
  * if parsing fails, and the position otherwise.
  */
 static ssize_t
-rndr_mdoc_paragraph_synopsis_expr(struct nroff *st, struct bnodeq *nq,
+rndr_mdoc_synopsis_prog_expr(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf)
 {
 	struct bnode	*bn;
@@ -1663,8 +1796,7 @@ rndr_mdoc_paragraph_synopsis_expr(struct nroff *st, struct bnodeq *nq,
 	 */
 
 	while (pos < buf->size) {
-		ssz = rndr_mdoc_paragraph_synopsis_subexpr(st, nq,
-		    pos, buf);
+		ssz = rndr_mdoc_synopsis_prog_subexpr(st, nq, pos, buf);
 		if (ssz <= 0)
 			return ssz;
 		pos = ssz;
@@ -1681,7 +1813,7 @@ rndr_mdoc_paragraph_synopsis_expr(struct nroff *st, struct bnodeq *nq,
  * content may have been replaced.
  */
 static int
-rndr_mdoc_paragraph_synopsis(struct nroff *st, const struct lowdown_node *n,
+rndr_mdoc_synopsis_func(struct nroff *st, const struct lowdown_node *n,
     struct bnodeq *obq, struct bnodeq *nbq)
 {
 	int	 		 rc = 0;
@@ -1693,8 +1825,42 @@ rndr_mdoc_paragraph_synopsis(struct nroff *st, const struct lowdown_node *n,
 
 	if ((buf = hbuf_new(32)) != NULL &&
 	    bqueue_flush(st, buf, nbq, 1)) {
-		ret = rndr_mdoc_paragraph_synopsis_expr(st, &nq, 0,
-		    buf);
+		ret = rndr_mdoc_synopsis_func_expr(st, &nq, 0, buf);
+		if (ret > 0) {
+			bqueue_free(nbq);
+			TAILQ_CONCAT(obq, &nq, entries);
+			rc = 1;
+		} else if (ret == 0)
+			rc = 1;
+	}
+
+	hbuf_free(buf);
+	bqueue_free(&nq);
+	return rc;
+}
+
+/*
+ * SYNOPSIS sections in mdoc(7) have very special handling. Each manual section
+ * (1, 3, etc.) has its own way of behaving.  Try to parse the SYNOPSIS in its
+ * own special way.  If parsing fails, don't change the existing behaviour;
+ * otherwise, replace the child content with the newly-generated content.
+ * Returns 0 on failure (memory), 1 on success.  On success, the paragraph
+ * content may have been replaced.
+ */
+static int
+rndr_mdoc_synopsis_prog(struct nroff *st, const struct lowdown_node *n,
+    struct bnodeq *obq, struct bnodeq *nbq)
+{
+	int	 		 rc = 0;
+	struct lowdown_buf	*buf = NULL;
+	struct bnodeq		 nq;
+	ssize_t			 ret;
+
+	TAILQ_INIT(&nq);
+
+	if ((buf = hbuf_new(32)) != NULL &&
+	    bqueue_flush(st, buf, nbq, 1)) {
+		ret = rndr_mdoc_synopsis_prog_expr(st, &nq, 0, buf);
 		if (ret > 0) {
 			bqueue_free(nbq);
 			TAILQ_CONCAT(obq, &nq, entries);
@@ -1853,10 +2019,23 @@ rndr_mdoc_paragraph(struct nroff *st, const struct lowdown_node *n,
 	    (pn = TAILQ_FIRST(&st->lastsec->children)) != NULL &&
 	    pn->type == LOWDOWN_NORMAL_TEXT &&
 	    hbuf_streq(&pn->rndr_normal_text.text, "SYNOPSIS")) {
-		if (!rndr_mdoc_paragraph_synopsis(st, n, obq, nbq))
+		if (!rndr_mdoc_synopsis_prog(st, n, obq, nbq))
 			return -1;
 		return 0;
 	}
+
+	if (st->headers_sec != NULL &&
+	    (st->headers_sec[0] == '3' ||
+	     st->headers_sec[0] == '2') &&
+	    st->lastsec != NULL &&
+	    (pn = TAILQ_FIRST(&st->lastsec->children)) != NULL &&
+	    pn->type == LOWDOWN_NORMAL_TEXT &&
+	    hbuf_streq(&pn->rndr_normal_text.text, "SYNOPSIS")) {
+		if (!rndr_mdoc_synopsis_func(st, n, obq, nbq))
+			return -1;
+		return 0;
+	}
+
 	return 1;
 }
 
