@@ -315,12 +315,14 @@ bqueue_free(struct bnodeq *bq)
  * This isn't meant to be rigorous, but just to get the job done.
  *
  * Input is read from "bq" and serialised into "ob".  If "mdocline" is
- * specified, an mdoc(7) context is assumed that's already open on the
- * line, so subsequent macros have their leading periods stripped.
+ * set to 1, an mdoc(7) context is assumed that's already open on the
+ * line, so subsequent macros have their leading periods stripped.  If
+ * it's set to "2", the same happens, but colours and fonts are also
+ * stripped.
  */
 static int
 bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
-    const struct bnodeq *bq, int mdocline)
+    const struct bnodeq *bq, unsigned int mdocline)
 {
 	const struct bnode	*bn, *chk, *next;
 	const char		*cp;
@@ -328,6 +330,12 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 	char			 trailingchar;
 
 	TAILQ_FOREACH(bn, bq, entries) {
+		if (mdocline > 1 &&
+		    (bn->scope == BSCOPE_SEMI ||
+		     bn->scope == BSCOPE_SEMI_CLOSE ||
+		     bn->scope == BSCOPE_FONT ||
+		     bn->scope == BSCOPE_COLOUR))
+			continue;
 		if (bn->scope == BSCOPE_SEMI ||
 		    bn->scope == BSCOPE_SEMI_CLOSE)
 			assert(st->type != LOWDOWN_MDOC);
@@ -598,7 +606,7 @@ rndr_shortlink(const struct lowdown_buf *link)
 		goto out;
 	if (!lowdown_nroff_esc(slink, tmp->data, tmp->size, 1, 0))
 		goto out;
-	ret = strndup(slink->data, slink->size);
+	ret = hbuf_string(slink);
 out:
 	hbuf_free(tmp);
 	hbuf_free(slink);
@@ -920,62 +928,6 @@ rndr_autolink(struct nroff *st, struct bnodeq *obq,
 
 	return rndr_url(obq, st, n, &n->rndr_autolink.link, NULL, NULL,
 		n->rndr_autolink.type);
-}
-
-static int
-rndr_blockcode(struct nroff *st, struct bnodeq *obq,
-    const struct rndr_blockcode *param)
-{
-	struct bnode	*bn;
-
-
-	if (st->type == LOWDOWN_MDOC) {
-		if ((bn = bqueue_block(st, obq, ".Bd")) == NULL ||
-		    (bn->nargs = strdup("-literal -offset indent")) == NULL)
-			return 0;
-	} else {
-		/*
-		 * XXX: intentionally don't use LD/DE because it
-		 * introduces vertical space.  This means that
-		 * subsequent blocks (paragraphs, etc.) will have a
-		 * double-newline.
-		 */
-		if (bqueue_block(st, obq, ".LP") == NULL)
-			return 0;
-		if (st->type == LOWDOWN_MAN &&
-		    (st->flags & LOWDOWN_NROFF_GROFF)) {
-			if (bqueue_block(st, obq, ".EX") == NULL)
-				return 0;
-		} else {
-			if (bqueue_block(st, obq, ".nf") == NULL ||
-			    bqueue_block(st, obq, ".ft CR") == NULL)
-				return 0;
-		}
-	}
-
-	if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
-		return 0;
-	TAILQ_INSERT_TAIL(obq, bn, entries);
-	bn->scope = BSCOPE_LITERAL;
-	bn->buf = strndup(param->text.data, param->text.size);
-	if (bn->buf == NULL)
-		return 0;
-
-	if (st->type == LOWDOWN_MDOC) {
-		if ((bn = bqueue_block(st, obq, ".Ed")) == NULL)
-			return 0;
-	} else {
-		if (st->type == LOWDOWN_MAN &&
-		    (st->flags & LOWDOWN_NROFF_GROFF)) {
-			if (bqueue_block(st, obq, ".EE") == NULL)
-				return 0;
-		} else {
-			if (bqueue_block(st, obq, ".ft") == NULL ||
-			    bqueue_block(st, obq, ".fi") == NULL)
-				return 0;
-		}
-	}
-	return 1;
 }
 
 static int
@@ -1875,7 +1827,7 @@ rndr_mdoc_synopsis_func(struct nroff *st, const struct lowdown_node *n,
 	TAILQ_INIT(&nq);
 
 	if ((buf = hbuf_new(32)) != NULL &&
-	    bqueue_flush(st, buf, nbq, 1)) {
+	    bqueue_flush(st, buf, nbq, 2)) {
 		ret = rndr_mdoc_synopsis_func_expr(st, &nq, 0, buf);
 		if (ret > 0) {
 			bqueue_free(nbq);
@@ -1910,7 +1862,7 @@ rndr_mdoc_synopsis_prog(struct nroff *st, const struct lowdown_node *n,
 	TAILQ_INIT(&nq);
 
 	if ((buf = hbuf_new(32)) != NULL &&
-	    bqueue_flush(st, buf, nbq, 1)) {
+	    bqueue_flush(st, buf, nbq, 2)) {
 		ret = rndr_mdoc_synopsis_prog_expr(st, &nq, 0, buf);
 		if (ret > 0) {
 			bqueue_free(nbq);
@@ -2028,6 +1980,84 @@ out:
 	return rc;
 }
 
+static int
+rndr_mdoc_in_section(const struct nroff *st, const char *section)
+{
+	const struct lowdown_node	*pn;
+
+	return st->lastsec != NULL &&
+	    (pn = TAILQ_FIRST(&st->lastsec->children)) != NULL &&
+	    pn->type == LOWDOWN_NORMAL_TEXT &&
+	    hbuf_streq(&pn->rndr_normal_text.text, section);
+}
+
+static int
+rndr_blockcode(struct nroff *st, struct bnodeq *obq,
+    const struct lowdown_node *n)
+{
+	struct bnode	*bn;
+
+	if (st->type == LOWDOWN_MDOC) {
+		/*
+		 * SYNOPSIS blocks are not indented.
+		 */
+		if ((bn = bqueue_block(st, obq, ".Bd")) == NULL)
+			return 0;
+		bn->nargs = rndr_mdoc_in_section(st, "SYNOPSIS") ?
+		    strdup("-literal") : 
+		    strdup("-literal -offset indent");
+		if (bn->nargs == NULL)
+			return 0;
+	} else {
+		/*
+		 * XXX: intentionally don't use LD/DE because it
+		 * introduces vertical space.  This means that
+		 * subsequent blocks (paragraphs, etc.) will have a
+		 * double-newline.
+		 */
+		if (bqueue_block(st, obq, ".LP") == NULL)
+			return 0;
+		if (st->type == LOWDOWN_MAN &&
+		    (st->flags & LOWDOWN_NROFF_GROFF)) {
+			if (bqueue_block(st, obq, ".EX") == NULL)
+				return 0;
+		} else {
+			if (bqueue_block(st, obq, ".nf") == NULL ||
+			    bqueue_block(st, obq, ".ft CR") == NULL)
+				return 0;
+		}
+	}
+
+	if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
+		return 0;
+	TAILQ_INSERT_TAIL(obq, bn, entries);
+	bn->scope = BSCOPE_LITERAL;
+	if ((bn->buf = hbuf_string(&n->rndr_blockcode.text)) == NULL)
+		return 0;
+
+	if (st->type == LOWDOWN_MDOC) {
+		/*
+		 * SYNOPSIS blocks are followed by a paragraph.
+		 */
+		if ((bn = bqueue_block(st, obq, ".Ed")) == NULL)
+			return 0;
+		if (rndr_mdoc_in_section(st, "SYNOPSIS") &&
+		    bqueue_block(st, obq, ".Pp") == NULL)
+			return 0;
+	} else {
+		if (st->type == LOWDOWN_MAN &&
+		    (st->flags & LOWDOWN_NROFF_GROFF)) {
+			if (bqueue_block(st, obq, ".EE") == NULL)
+				return 0;
+		} else {
+			if (bqueue_block(st, obq, ".ft") == NULL ||
+			    bqueue_block(st, obq, ".fi") == NULL)
+				return 0;
+		}
+	}
+	return 1;
+}
+
 /*
  * mdoc(7) paragraphs may have special handling depending on their prior
  * section, the manual section, phase of the moon, etc.  If these conditions
@@ -2038,9 +2068,8 @@ static int
 rndr_mdoc_paragraph(struct nroff *st, const struct lowdown_node *n,
     struct bnodeq *obq, struct bnodeq *nbq)
 {
-	const struct lowdown_node	*prev, *next, *pn;
+	const struct lowdown_node	*prev, *next;
 
-	prev = TAILQ_PREV(n, lowdown_nodeq, entries);
 
 	/*
 	 * Check if a NAME section is before another section (doesn't
@@ -2048,13 +2077,11 @@ rndr_mdoc_paragraph(struct nroff *st, const struct lowdown_node *n,
 	 * into specific parts.
 	 */
 
-	if (prev != NULL &&
+	if ((prev = TAILQ_PREV(n, lowdown_nodeq, entries)) != NULL &&
 	    prev->type == LOWDOWN_HEADER &&
-	    (pn = TAILQ_FIRST(&prev->children)) != NULL &&
-	    pn->type == LOWDOWN_NORMAL_TEXT &&
-	    hbuf_streq(&pn->rndr_normal_text.text, "NAME") &&
 	    (next = TAILQ_NEXT(n, entries)) != NULL &&
-	    next->type == LOWDOWN_HEADER) {
+	    next->type == LOWDOWN_HEADER &&
+	    rndr_mdoc_in_section(st, "NAME")) {
 		if (!rndr_mdoc_paragraph_head(st, n, obq, nbq))
 			return -1;
 		return 0;
@@ -2065,23 +2092,21 @@ rndr_mdoc_paragraph(struct nroff *st, const struct lowdown_node *n,
 	 * specific ways according to the manual section.
 	 */
 
-	if (st->headers_sec != NULL && st->headers_sec[0] == '1' &&
-	    st->lastsec != NULL &&
-	    (pn = TAILQ_FIRST(&st->lastsec->children)) != NULL &&
-	    pn->type == LOWDOWN_NORMAL_TEXT &&
-	    hbuf_streq(&pn->rndr_normal_text.text, "SYNOPSIS")) {
+	if (st->headers_sec != NULL &&
+	    (st->headers_sec[0] == '1' ||
+	     st->headers_sec[0] == '6' ||
+	     st->headers_sec[0] == '8') &&
+	    rndr_mdoc_in_section(st, "SYNOPSIS")) {
 		if (!rndr_mdoc_synopsis_prog(st, n, obq, nbq))
 			return -1;
 		return 0;
 	}
 
 	if (st->headers_sec != NULL &&
-	    (st->headers_sec[0] == '3' ||
-	     st->headers_sec[0] == '2') &&
-	    st->lastsec != NULL &&
-	    (pn = TAILQ_FIRST(&st->lastsec->children)) != NULL &&
-	    pn->type == LOWDOWN_NORMAL_TEXT &&
-	    hbuf_streq(&pn->rndr_normal_text.text, "SYNOPSIS")) {
+	    (st->headers_sec[0] == '2' ||
+	     st->headers_sec[0] == '3' ||
+	     st->headers_sec[0] == '9') &&
+	    rndr_mdoc_in_section(st, "SYNOPSIS")) {
 		if (!rndr_mdoc_synopsis_func(st, n, obq, nbq))
 			return -1;
 		return 0;
@@ -2816,8 +2841,7 @@ rndr_root(struct nroff *st, struct bnodeq *obq,
 		    n->type == LOWDOWN_PARAGRAPH &&
 		    (nn = TAILQ_FIRST(&n->children)) != NULL &&
 		    nn->type == LOWDOWN_NORMAL_TEXT) {
-			abuf = strndup(nn->rndr_normal_text.text.data,
-				nn->rndr_normal_text.text.size);
+			abuf = hbuf_string(&nn->rndr_normal_text.text);
 			if (abuf == NULL)
 				goto out;
 			if ((sz = strcspn(abuf, "-, ")) > 0)
@@ -2907,7 +2931,7 @@ rndr_root(struct nroff *st, struct bnodeq *obq,
 			if (!HBUF_PUTSL(ob, "\""))
 				goto out;
 		}
-		if ((bn->nargs = strndup(ob->data, ob->size)) == NULL)
+		if ((bn->nargs = hbuf_string(ob)) == NULL)
 			goto out;
 	}
 
@@ -2988,7 +3012,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 
 	switch (n->type) {
 	case LOWDOWN_BLOCKCODE:
-		rc = rndr_blockcode(st, obq, &n->rndr_blockcode);
+		rc = rndr_blockcode(st, obq, n);
 		break;
 	case LOWDOWN_BLOCKQUOTE:
 		rc = rndr_blockquote(st, obq, &tmpbq);
@@ -3084,9 +3108,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	case LOWDOWN_NORMAL_TEXT:
 		if ((bn = bqueue_span(obq, NULL)) == NULL)
 			goto out;
-		bn->buf = strndup
-			(n->rndr_normal_text.text.data,
-			 n->rndr_normal_text.text.size);
+		bn->buf = hbuf_string(&n->rndr_normal_text.text);
 		if (bn->buf == NULL)
 			goto out;
 		break;
