@@ -1655,7 +1655,7 @@ rndr_mdoc_synopsis_func_decl(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf)
 {
 	struct bnode	*bn;
-	size_t		 i, paren, arg;
+	size_t		 i, paren, arg, nest;
 	char		*cp;
 
 	/* Skip over leading space. */
@@ -1664,73 +1664,124 @@ rndr_mdoc_synopsis_func_decl(struct nroff *st, struct bnodeq *nq,
 	    isspace((unsigned char)buf->data[pos]))
 		pos++;
 
-	/* Get the start of the function part. */
+	/*
+	 * Get the start of the function part.  If it doesn't exist,
+	 * assume that this is a variable type.
+	 */
 
 	for (paren = pos; paren < buf->size; paren++)
 		if (buf->data[paren] == '(')
 			break;
 
-	/* If found, backtrack to the function name start. */
+	if (paren == buf->size || paren == pos) {
+		if ((bn = bqueue_block(st, nq, ".Vt")) == NULL ||
+		    (bn->nargs = hbuf_stringn(buf, pos, buf->size)) == NULL)
+			return -1;
+		return buf->size;
+	}
 
-	if (paren < buf->size) {
-		for (i = paren; i > pos; i--)
-			if (isspace((unsigned char)buf->data[i]))
-				break;
+	/* Backtrack to the function name start. */
+
+	for (i = paren; i > pos; i--)
+		if (isspace((unsigned char)buf->data[i]))
+			break;
+
+	/*
+	 * The type is what came before the function name from the start
+	 * of the expression.  If doesn't need to exist.
+	 */
+
+	if (i > pos) {
 		if ((bn = bqueue_block(st, nq, ".Ft")) == NULL ||
 		    (bn->nargs = hbuf_stringn(buf, pos, i)) == NULL)
 			return -1;
 		pos = i + 1;
-	}
+	} 
+
+	/* Output the function name start. */
 
 	if ((bn = bqueue_block(st, nq, ".Fo")) == NULL ||
 	    (bn->nargs = hbuf_stringn(buf, pos, paren)) == NULL)
 		return -1;
 
-	if (paren == buf->size)
+	/* If the function is truncated, just close it out. */
+
+	if (paren == buf->size) {
+		if (bqueue_block(st, nq, ".Fc") == NULL)
+			return -1;
 		return paren;
+	}
 
-	for (arg = i = paren + 1; i < buf->size; i++) {
-		if (i + 1 < buf->size &&
-		    buf->data[i] == ')' &&
-		    buf->data[i + 1] == ';')
-			break;
+	/* Read each comma-separated argument. */
 
-		if (buf->data[i] == ',') {
-			if ((bn = bqueue_block(st, nq, ".Fa")) == NULL ||
-			    (cp = hbuf_stringn(buf, arg, i)) == NULL)
+	nest = 0;
+	for (pos = paren + 1, arg = pos; pos < buf->size; pos++) {
+		if (buf->data[pos] == ')' && nest > 0) {
+			nest--;
+			continue;
+		}
+		if (buf->data[pos] == '(')
+			nest++;
+		if (buf->data[pos] != ',' && buf->data[pos] != ')')
+			continue;
+
+		/*
+		 * The end of the sequence is a closing parenthesis
+		 * followed by optional space, then an optional
+		 * semicolon.  Preserve our position, because this
+		 * ending part shouldn't be in the trailing `Fa`.
+		 */
+
+		i = pos;
+
+		if (buf->data[i] == ')') {
+			assert(nest == 0);
+			for (++i; i < buf->size; i++)
+				if (!isspace
+				    ((unsigned char)buf->data[i]))
+					break;
+			if (i < buf->size && buf->data[i] == ';')
+				i++;
+			for ( ; i < buf->size; i++)
+				if (!isspace
+				    ((unsigned char)buf->data[i]))
+					break;
+			if (i < buf->size)
+				return 0;
+		}
+		
+		/*
+		 * From the last saved position, copy the text from then
+		 * til the comma and strip away any whitespace.  Elide
+		 * empty arguments.
+		 */
+
+	        if ((cp = hbuf_stringn_trim(buf, arg, pos)) == NULL)
+			return -1;
+		if (*cp != '\0') {
+			bn = bqueue_block(st, nq, ".Fa");
+			if (bn == NULL) {
+				free(cp);
 				return -1;
+			}
 			if (asprintf(&bn->nargs, "\"%s\"", cp) == -1) {
 				free(cp);
 				bn->nargs = NULL;
 				return -1;
 			}
-			free(cp);
-			arg = i + 1;
-		}
-	}
-
-	if (i > arg) {
-		if ((bn = bqueue_block(st, nq, ".Fa")) == NULL ||
-		    (cp = hbuf_stringn(buf, arg, i)) == NULL)
-			return -1;
-		if (asprintf(&bn->nargs, "\"%s\"", cp) == -1) {
-			free(cp);
-			bn->nargs = NULL;
-			return -1;
 		}
 		free(cp);
+
+		/*
+		 * Set the position to the end of the sequence, and arg
+		 * as the start of the next one.
+		 */
+
+		pos = i;
+		arg = pos + 1;
 	}
 
-
-	if (bqueue_block(st, nq, ".Fc") == NULL)
-		return -1;
-
-	if (i + 1 < buf->size &&
-	    buf->data[i] == ')' &&
-	    buf->data[i + 1] == ';')
-		return i + 2;
-
-	return i;
+	return bqueue_block(st, nq, ".Fc") == NULL ? -1 : pos;
 }
 
 static ssize_t

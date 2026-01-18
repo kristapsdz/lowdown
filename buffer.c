@@ -517,7 +517,27 @@ char *
 hbuf_stringn(const struct lowdown_buf *buf, size_t start, size_t end)
 {
 
-	assert(end <= buf->size);
+	assert(start <= end && end <= buf->size);
+	return strndup(&buf->data[start], end - start);
+}
+
+/*
+ * Clone a slice from "start" to "end" of a (possibly binary) buffer as
+ * a NUL-terminated string.  Returns NULL on memory failure.  The slice
+ * must be within the buffer.
+ */
+char *
+hbuf_stringn_trim(const struct lowdown_buf *buf, size_t start, size_t end)
+{
+
+	assert(start <= end && end <= buf->size);
+
+	for ( ; start < end; start++)
+		if (!isspace((unsigned char)buf->data[start]))
+			break;
+	for ( ; end > start; end--)
+		if (!isspace((unsigned char)buf->data[end - 1]))
+			break;
 	return strndup(&buf->data[start], end - start);
 }
 
