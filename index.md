@@ -4,9 +4,9 @@ author: Kristaps Dzonsons
 
 # [%title]
 
-*lowdown* is a Markdown translator producing HTML5, *roff* documents in
-the **ms** and **man** formats, LaTeX, gemini ("gemtext"), OpenDocument,
-and ANSI/UTF8 terminal output.
+*lowdown* is a Markdown translator producing HTML5; *roff* documents
+(the **ms**, **man**, and **mdoc** macros), LaTeX, gemini ("gemtext"),
+OpenDocument, and ANSI/UTF8 terminal output.
 The [open source](http://opensource.org/licenses/ISC) C source code has
 no dependencies.
 
@@ -57,12 +57,18 @@ reflects API changes in 1.4.0 that preceded.
 [LaTeX](https://www.latex-project.org/) documents with **-tlatex**,
 "flat" OpenDocument (version 1.3) documents with **-tfodt**, 
 [Gemini](https://gemini.circumlunar.space/docs/specification.html)
-("gemtext") with **-tgemini**, *roff* documents with **-tms** and
-**-tman**, or directly on ANSI terminals with **-tterm**.
+("gemtext") with **-tgemini**, *roff* documents with **-tms**, classic
+manpages with **-tman**, modern manpages with **-tmdoc**, or directly on
+ANSI terminals with **-tterm**.
 
 The **-tlatex** and **-tms** are commonly used for PDF documents,
-**-tfodt** for document processing, **-tman** for manpages, **-thtml**
-or **-tgemini** for web, and **-tterm** for the command line.
+**-tfodt** for document processing, **-tman** and **-tmdoc** for
+manpages, **-thtml** or **-tgemini** for web, and **-tterm** for the
+command line.
+
+If you're looking to write manpages, please see [writing
+manpages](mdoc.html), which has details on how to best write manpages using
+Markdown.
 
 By way of example: this page,
 [index.md](https://kristaps.bsd.lv/lowdown/index.md), renders as

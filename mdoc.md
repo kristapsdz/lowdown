@@ -9,7 +9,7 @@ css: https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.m
 
 # Introduction
 
-Manpages ("manual pages") are system documentation presented (usually) by the
+Manpages ("manual pages") are system documentation usually presented by the
 [man(1)](https://man.openbsd.org/man) utility.  Or, as is the case for the link
 just used, an HTML rendering of the same.  Manpages cover programming libraries
 (usually for the C and Perl programming language), command-line utilities,
@@ -17,31 +17,34 @@ device drivers, formats---most anything available on a modern Unix system.
 
 Manpages were traditionally written in the
 [roff(7)](https://man.openbsd.org/roff) language, usually using the
-[man(7)](https://man.openbsd.org/man) macro package.  After 1990 or so, authors
-switched by and large to Cynthia Livingston's
+[man(7)](https://man.openbsd.org/man) macro package.
+(Much like LaTeX and TeX, roff supports macro packages that have specific
+functionality above the base language.)
+After 1990 or so, authors switched by and large to Cynthia Livingston's
 [mdoc(7)](https://man.openbsd.org/mdoc) macro set.
 
-The mdoc(7) macro set is the more modern choice, and favours a semantic mark-up
+The **mdoc** macro set is the more modern choice, and favours a semantic mark-up
 approach that allows authors to focus on their content, and the renderer to
-adhere to output conventions.  It also allows indexers (like
-[apropos(1)](https://man.openbsd.org/apropos)) to store more contextual
-information that can be looked up by users, such as all manpages with function
-arguments matching a pattern.
+adhere to output conventions.  It also allows indexers like
+[apropos(1)](https://man.openbsd.org/apropos) and
+[whatis(1)](https://man.openbsd.org/whatis) to store more contextual
+information that can be looked up by users, such as all manpages with
+function arguments matching a pattern.
 
-On the other hand, man(7) is simpler with a more syntactic approach, requiring
+On the other hand, **man** is simpler with a more syntactic approach, requiring
 authors to format their manpages much more extensively.
 
-For example, the mdoc(7) way of decorating a function synopsis:
+For example, the **mdoc** way of decorating a function synopsis:
 
-```plaintext
+```
 .Sh SYNOPSIS
 .Ft int
 .Fn sprintf "char *restrict str" "const char *restrict format" ...
 ```
 
-The same but using man(7):
+The same but using **man**):
 
-```plaintext
+```
 .SH SYNOPSIS
 \fIint\fR
 .sp
@@ -52,9 +55,9 @@ The same but using man(7):
 These days, manpages are a mix of both---if they exist at all!
 
 One of the major complaints about authoring Unix manpages is the complexity of
-the roff(7) language, using either macro package.  Authors must either navigate
-a maze of macros and syntax rules in mdoc(7), or extensively (and usually
-inconsistently) manage styling in man(7).
+the **roff** language, using either macro package.  Authors must either navigate
+a maze of macros and syntax rules in **mdoc**, or extensively (and usually
+inconsistently) manage styling in **man**.
 
 **So... why not Markdown?**
 
@@ -67,10 +70,10 @@ inconsistently) manage styling in man(7).
 ```
 
 With [lowdown](https://kristaps.bsd.lv/lowdown), authors could translate the
-above into a man(7) document using the **-tman** output option.
+above into a **man** document using the **-tman** output option.
 
 As of version 3.0.0, authors can also use the **-tmdoc** output option, which
-attempts to convert into mdoc(7).  Since mdoc(7) has a richer set of macros, but
+attempts to convert into **mdoc**.  Since **mdoc** has a richer set of macros, but
 is more idiomatic in where those macros are used, this requires authors of
 Markdown manpages to be a little bit more attentive to the styling of their
 Markdown manual inputs.
@@ -289,13 +292,14 @@ manpage, look it over to make sure that it's well-formed.
 
 ## SEE ALSO
 
-References to other manpages.  List these first by section, then by alpha.  Each
-reference should be in italics to be recognised.
+References to other manpages.  List these first by section, then by alpha.
+Manpage references must be in the format of `page(section)`.
+Non-conforming paragraphs are left as-is.
 
 ```markdown
-SEE ALSO
+# SEE ALSO
 
-*foo(1)*, *bar(3)*, *baz(2)*
+foo(1), bar(3), baz(2)
 ```
 
 
