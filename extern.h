@@ -55,6 +55,7 @@ struct lowdown_buf
 struct lowdown_buf
 		*hbuf_dupname(const struct lowdown_buf *);
 char		*hbuf_string(const struct lowdown_buf *);
+char		*hbuf_string_trim(const struct lowdown_buf *);
 char		*hbuf_stringn(const struct lowdown_buf *, size_t, size_t);
 char		*hbuf_stringn_trim(const struct lowdown_buf *, size_t, size_t);
 int		 hbuf_printf(struct lowdown_buf *, const char *, ...) 

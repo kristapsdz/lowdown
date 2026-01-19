@@ -1819,7 +1819,7 @@ static int
 rndr_mdoc_synopsis_func(struct nroff *st, const struct lowdown_node *n,
     struct bnodeq *obq, struct bnodeq *nbq)
 {
-	int	 		 rc = 0;
+	int	 		 rc = -1;
 	struct lowdown_buf	*buf = NULL;
 	struct bnodeq		 nq;
 	ssize_t			 ret;
@@ -1834,9 +1834,103 @@ rndr_mdoc_synopsis_func(struct nroff *st, const struct lowdown_node *n,
 			TAILQ_CONCAT(obq, &nq, entries);
 			rc = 1;
 		} else if (ret == 0)
-			rc = 1;
+			rc = 0;
 	}
 
+	hbuf_free(buf);
+	bqueue_free(&nq);
+	return rc;
+}
+
+/*
+ * SEE ALSO sections in mdoc(7) conventionally contain only lists of
+ * other manpages.  They can, however, also contain actual content.  Try
+ * to catch the list of manpages and format them with `Xr` here.  Return
+ * -1 on total failure (memory), 0 if the paragraph was not a list of
+ *  manpages, and 1 if it was.
+ */
+static int
+rndr_mdoc_see_also(struct nroff *st, const struct lowdown_node *n,
+    struct bnodeq *obq, struct bnodeq *nbq)
+{
+	int	 		 rc = 0;
+	struct lowdown_buf	*buf = NULL;
+	struct bnodeq		 nq;
+	size_t			 pos, end, start;
+	const char		*openp;
+	struct bnode		*bn;
+
+	TAILQ_INIT(&nq);
+
+	if ((buf = hbuf_new(32)) == NULL ||
+	    !bqueue_flush(st, buf, nbq, 2))
+		goto out;
+
+	for (pos = 0; pos < buf->size; pos++)
+		if (!isspace((unsigned char)buf->data[pos]))
+			break;
+
+	/*
+	 * Tokenise along commas or the eoln, then break apart the
+	 * contents to see if it matches foo(section).  If a single
+	 * token doesn't, then bail out and assume this is a regular
+	 * paragraph.  Otherwise, format the link in an Xr.  Skip over
+	 * empty tokens.
+	 */
+
+	for (start = pos; pos <= buf->size; ) {
+		if (buf->data[pos] == ',' || pos == buf->size) {
+			if (pos == start) {
+				/* Skip empty tokens. */
+				for (++pos; pos < buf->size; pos++)
+					if (!isspace((unsigned char)
+					    buf->data[pos]))
+						break;
+				start = pos;
+				continue;
+			}
+			/* Trim trailing spaces. */
+			for (end = pos--; pos > start; pos--)
+				if (!isspace((unsigned char)
+				    buf->data[pos]))
+					break;
+			/* Make sure there are parentheses. */
+			if (buf->data[pos] != ')')
+				goto out;
+			openp = memchr(&buf->data[start], '(',
+			    pos - start);
+			if (openp == NULL)
+				goto out;
+			bn = bqueue_block(st, obq, ".Xr");
+			if (bn == NULL) {
+				rc = -1;
+				goto out;
+			}
+			if (asprintf(&bn->nargs, "%.*s %.*s%s",
+			    (int)(openp - &buf->data[start]),
+			    &buf->data[start],
+			    (int)(&buf->data[pos] - openp - 1),
+			    openp + 1,
+			    end < buf->size ? " ," : "") == -1) {
+				bn->nargs = NULL;
+				rc = -1;
+				goto out;
+			}
+			if (end == buf->size)
+				break;
+			/* Trim leading spaces. */
+			for (pos = end + 1; pos < buf->size; pos++)
+				if (!isspace((unsigned char)
+				    buf->data[pos]))
+					break;
+			start = pos;
+		} else
+			pos++;
+	}
+	TAILQ_CONCAT(obq, &nq, entries);
+	bqueue_free(nbq);
+	rc = 1;
+out:
 	hbuf_free(buf);
 	bqueue_free(&nq);
 	return rc;
@@ -1854,7 +1948,7 @@ static int
 rndr_mdoc_synopsis_prog(struct nroff *st, const struct lowdown_node *n,
     struct bnodeq *obq, struct bnodeq *nbq)
 {
-	int	 		 rc = 0;
+	int	 		 rc = -1;
 	struct lowdown_buf	*buf = NULL;
 	struct bnodeq		 nq;
 	ssize_t			 ret;
@@ -1869,7 +1963,7 @@ rndr_mdoc_synopsis_prog(struct nroff *st, const struct lowdown_node *n,
 			TAILQ_CONCAT(obq, &nq, entries);
 			rc = 1;
 		} else if (ret == 0)
-			rc = 1;
+			rc = 0;
 	}
 
 	hbuf_free(buf);
@@ -1967,8 +2061,7 @@ rndr_mdoc_paragraph_head(struct nroff *st, const struct lowdown_node *n,
 			goto out;
 	    	if ((bn = bqueue_block(st, obq, ".Nd")) == NULL)
 			goto out;
-		bn->nargs = strndup(buf->data, buf->size);
-		if (bn->nargs == NULL)
+		if ((bn->nargs = hbuf_string_trim(buf)) == NULL)
 			goto out;
 		bqueue_free(nbq);
 	}
@@ -2062,14 +2155,16 @@ rndr_blockcode(struct nroff *st, struct bnodeq *obq,
  * mdoc(7) paragraphs may have special handling depending on their prior
  * section, the manual section, phase of the moon, etc.  If these conditions
  * are met, "nbq" may be drained and new content generated and appended to
- * "obq".
+ * "obq".  This returns 0 if the paragraph content was replaced and no `Pp`
+ * should be output, <0 on fatal error, and >0 if the paragraph should be
+ * processed as usual.
  */
 static int
 rndr_mdoc_paragraph(struct nroff *st, const struct lowdown_node *n,
     struct bnodeq *obq, struct bnodeq *nbq)
 {
 	const struct lowdown_node	*prev, *next;
-
+	int				 rc;
 
 	/*
 	 * Check if a NAME section is before another section (doesn't
@@ -2087,6 +2182,14 @@ rndr_mdoc_paragraph(struct nroff *st, const struct lowdown_node *n,
 		return 0;
 	}
 
+	/* SEE ALSO manpage listings. */
+
+	if (rndr_mdoc_in_section(st, "SEE ALSO")) {
+		if ((rc = rndr_mdoc_see_also(st, n, obq, nbq)) < 0)
+			return rc;
+		return rc == 0 ? 1 : 0;
+	}
+
 	/*
 	 * Paragraphs within the SYNOPSIS are broken down in very
 	 * specific ways according to the manual section.
@@ -2097,9 +2200,9 @@ rndr_mdoc_paragraph(struct nroff *st, const struct lowdown_node *n,
 	     st->headers_sec[0] == '6' ||
 	     st->headers_sec[0] == '8') &&
 	    rndr_mdoc_in_section(st, "SYNOPSIS")) {
-		if (!rndr_mdoc_synopsis_prog(st, n, obq, nbq))
-			return -1;
-		return 0;
+		if ((rc = rndr_mdoc_synopsis_prog(st, n, obq, nbq)) < 0)
+			return rc;
+		return rc == 0 ? 1 : 0;
 	}
 
 	if (st->headers_sec != NULL &&
@@ -2107,9 +2210,9 @@ rndr_mdoc_paragraph(struct nroff *st, const struct lowdown_node *n,
 	     st->headers_sec[0] == '3' ||
 	     st->headers_sec[0] == '9') &&
 	    rndr_mdoc_in_section(st, "SYNOPSIS")) {
-		if (!rndr_mdoc_synopsis_func(st, n, obq, nbq))
-			return -1;
-		return 0;
+		if ((rc = rndr_mdoc_synopsis_func(st, n, obq, nbq)) < 0)
+			return rc;
+		return rc == 0 ? 1 : 0;
 	}
 
 	return 1;
@@ -2625,71 +2728,6 @@ rndr_entity(const struct nroff *st,
 }
 
 /*
- * Render an emphasis font: this either mimics the default behaviour
- * (concatenate the nodes) or, in the mdoc(7) SEE ALSO case, tries to
- * generate manpage links.  Returns FALSE on failure (memory), TRUE on
- * success.
- */
-static int
-rndr_font(struct nroff *st, const struct lowdown_node *n,
-    struct bnodeq *obq, struct bnodeq *nbq)
-{
-	struct lowdown_buf		*buf = NULL;
-	struct bnode			*bn;
-	int				 rc = 0, nospace = 0;
-	const struct lowdown_buf	*next;
-
-	/* Grab the next node, if text. */
-
-	next = TAILQ_NEXT(n, entries) != NULL &&
-	    TAILQ_NEXT(n, entries)->type == LOWDOWN_NORMAL_TEXT ?
-	    &TAILQ_NEXT(n, entries)->rndr_normal_text.text : NULL;
-
-	if (st->type == LOWDOWN_MDOC &&
-	    rndr_mdoc_in_section(st, "SEE ALSO")) {
-		/*
-		 * If the next node begins with non-whitespace, then
-		 * output an `Ns` at the end to prohibit subsequent
-		 * space.
-		 */
-
-		if (next != NULL && next->size > 0 &&
-		    !isspace((unsigned char)next->data[0]))
-			nospace = 1;
-
-		/*
-		 * See if the node looks like a manpage.  If it does,
-		 * then sub it into an `Xr` statement.
-		 */
-
-		if ((buf = hbuf_new(32)) == NULL ||
-		    !bqueue_flush(st, buf, nbq, 2))
-			goto out;
-		if (buf->size > 4 &&
-		    buf->data[buf->size - 1] == ')' &&
-		    isdigit((unsigned char)buf->data[buf->size - 2]) &&
-		    buf->data[buf->size - 3] == '(') {
-			if ((bn = bqueue_block(st, obq, ".Xr")) == NULL)
-				goto out;
-			if (asprintf(&bn->args, "%.*s %.1s%s",
-			    (int)(buf->size - 3), buf->data, 
-			    &buf->data[buf->size - 2],
-			    nospace ? " Ns" : "") == -1) {
-				bn->nargs = NULL;
-				goto out;
-			}
-			bqueue_free(nbq);
-		}
-	}
-
-	TAILQ_CONCAT(obq, nbq, entries);
-	rc = 1;
-out:
-	hbuf_free(buf);
-	return rc;
-}
-
-/*
  * Render a font prior to parsing child content.  This is because the
  * font stack must be set for decorating child content.  Returns FALSE
  * on failure (memory), TRUE on success.
@@ -2698,19 +2736,6 @@ static int
 rndr_font_pre(struct nroff *st, const struct lowdown_node *n,
     struct bnodeq *obq)
 {
-
-	/*
-	 * Italics in the SEE ALSO section are presumed to be manpage
-	 * links.  FIXME: in some cases, they won't be; but since 
-	 * the child content hasn't been parsed, this isn't yet known.
-	 * However, the font stack needs to be open for child content
-	 * processing.
-	 */
-
-	if (n->type == LOWDOWN_EMPHASIS &&
-	    st->type == LOWDOWN_MDOC &&
-	    rndr_mdoc_in_section(st, "SEE ALSO"))
-		return 1;
 
 	switch (n->type) {
 	case LOWDOWN_CODESPAN:
@@ -2742,13 +2767,6 @@ static int
 rndr_font_post(struct nroff *st, const struct lowdown_node *n,
     const enum nfont *fonts, struct bnodeq *obq)
 {
-
-	/* No fonts were opened in mdoc(7) mode. */
-
-	if (n->type == LOWDOWN_EMPHASIS &&
-	    st->type == LOWDOWN_MDOC &&
-	    rndr_mdoc_in_section(st, "SEE ALSO"))
-		return 1;
 
 	switch (n->type) {
 	case LOWDOWN_CODESPAN:
@@ -3141,9 +3159,6 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	/* Process each node, optionally passing child content. */
 
 	switch (n->type) {
-	case LOWDOWN_EMPHASIS:
-		rc = rndr_font(st, n, obq, &tmpbq);
-		break;
 	case LOWDOWN_BLOCKCODE:
 		rc = rndr_blockcode(st, obq, n);
 		break;
