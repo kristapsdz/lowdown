@@ -1971,105 +1971,92 @@ rndr_mdoc_synopsis_prog(struct nroff *st, const struct lowdown_node *n,
 	return rc;
 }
 
+/*
+ * The NAME section consists of one or more comma-separated names
+ * followed by a dash (or fancy dash) then a description.  Split the
+ * names into `Nm` statements and, if found, the description into an
+ * `Nd.  This returns FALSE on failure (memory), TRUE on success.  The
+ * regressive case of a single word with no hyphens is just the `Nm`.
+ */
 static int
-rndr_mdoc_paragraph_head(struct nroff *st, const struct lowdown_node *n,
+rndr_mdoc_name(struct nroff *st, const struct lowdown_node *n,
     struct bnodeq *obq, struct bnodeq *nbq)
 {
 	struct bnode		*bn;
 	struct lowdown_buf	*buf = NULL;
-	const char		*cp;
-	char			*nm, *delim, *onm = NULL;
-	size_t			 count = 0;
 	int			 rc = 0;
+	size_t			 pos, start;
+	char			*cp = NULL;
+
+	if ((buf = hbuf_new(32)) == NULL ||
+	    !bqueue_flush(st, buf, nbq, 2))
+		goto out;
 
 	/*
-	 * If this can be broken into the non-empty name, a hyphen, then
-	 * the description, re-write the paragraph to be in the typical
-	 * format used by mdoc(7) manpages using "Nm" and "Nd".
+	 * Skip white-space then output an `Nm` for each token leading
+	 * up to a comma, a hyphen (or pretty hyphen), or the end of
+	 * line.
 	 */
 
-	TAILQ_FOREACH(bn, nbq, entries) {
-		if (bn->scope != BSCOPE_SPAN)
+	for (pos = 0; pos < buf->size; pos++)
+		if (!isspace((unsigned char)buf->data[pos]))
 			break;
-		cp = bn->buf == NULL ? bn->nbuf : bn->buf;
-		if (cp == NULL)
-			break;
-		if (count == 0 && !isalpha((unsigned char)*cp))
-			break;
-		if (count == 1 &&
-		    strcmp(cp, "-") != 0 &&
-		    strcmp(cp, "\\(en") != 0 &&
-		    strcmp(cp, "\\(em") != 0)
-			break;
-		count++;
-	}
-
-	if (bn == NULL && count > 1) {
-		bn = TAILQ_FIRST(nbq);
-		assert(bn != NULL);
-		TAILQ_REMOVE(nbq, bn, entries);
-		/* Strip node but save content. */
-		onm = nm = bn->nbuf != NULL ? bn->nbuf : bn->buf;
-		bn->nbuf = bn->buf = NULL;
-		bnode_free(bn);
-
-		/* Output as many Nm's as comma-separated values. */
-
-		while (nm != NULL) {
-			while (*nm != '\0' && *nm == ' ')
-				nm++;
-			if (*nm == '\0')
+	for (start = pos; pos <= buf->size; )
+		if (pos == buf->size ||
+		    buf->data[pos] == ',' ||
+		    buf->data[pos] == '-' ||
+		    hbuf_strncasecmpat(buf, "\\(en", pos) ||
+		    hbuf_strncasecmpat(buf, "\\(em", pos)) {
+			cp = hbuf_stringn(buf, start, pos);
+			if (cp == NULL)
+				goto out;
+			if (*cp != '\0') {
+				bn = bqueue_block(st, obq, ".Nm");
+				if (bn == NULL)
+					goto out;
+				bn->nargs = cp;
+			} else
+				free(cp);
+			cp = NULL;
+			/* Stop: no more `Nm` tokens. */
+			if (buf->data[pos] != ',')
 				break;
-			if ((delim = strchr(nm, ',')) != NULL) {
-				*delim = '\0';
-				if (delim == nm) {
-					nm = delim + 1;
-					continue;
-				}
-			}
-			bn = bqueue_block(st, obq, ".Nm");
-			if (bn == NULL)
+			/* Read after whitespace. */
+			for (++pos; pos < buf->size; pos++)
+				if (!isspace((unsigned char)buf->data[pos]))
+					break;
+			start = pos;
+		} else
+			pos++;
+
+	/* Read past delimiter between `Nm` and `Nd`. */
+
+	if (pos < buf->size && buf->data[pos] == '-') {
+		while (pos < buf->size && buf->data[pos] == '-')
+			pos++;
+	} else if (pos < buf->size)
+		pos += 4;
+
+	/* Conditionally output `Nd`. */
+
+	if (pos < buf->size) {
+		cp = hbuf_stringn_trim(buf, pos, buf->size);
+		if (cp == NULL)
+			goto out;
+		if (*cp != '\0') {
+			if ((bn = bqueue_block(st, obq, ".Nd")) == NULL)
 				goto out;
-			if (asprintf(&bn->args, "%s ,", nm) == -1) {
-				bn->args = NULL;
-				goto out;
-			}
-			nm = delim;
-			if (delim != NULL)
-				nm = delim + 1;
-		}
-
-		/* Strip off trailing ", " for the last Nm entry. */
-
-		bn = TAILQ_LAST(obq, bnodeq);
-		assert(bn != NULL);
-		assert(bn->scope == BSCOPE_BLOCK);
-		assert(strlen(bn->args) > 2);
-		bn->args[strlen(bn->args) - 2] = '\0';
-
-		/* Skip after the hyphen. */
-
-		bn = TAILQ_FIRST(nbq);
-		assert(bn != NULL);
-		TAILQ_REMOVE(nbq, bn, entries);
-		bnode_free(bn);
-
-		/* Copy all remaining data into Nd. */
-
-		if ((buf = hbuf_new(32)) == NULL ||
-		    !bqueue_flush(st, buf, nbq, 1))
-			goto out;
-	    	if ((bn = bqueue_block(st, obq, ".Nd")) == NULL)
-			goto out;
-		if ((bn->nargs = hbuf_string_trim(buf)) == NULL)
-			goto out;
-		bqueue_free(nbq);
+			bn->nargs = cp;
+		} else
+			free(cp);
+		cp = NULL;
 	}
 
+	bqueue_free(nbq);
 	rc = 1;
 out:
 	hbuf_free(buf);
-	free(onm);
+	free(cp);
 	return rc;
 }
 
@@ -2177,7 +2164,7 @@ rndr_mdoc_paragraph(struct nroff *st, const struct lowdown_node *n,
 	    (next = TAILQ_NEXT(n, entries)) != NULL &&
 	    next->type == LOWDOWN_HEADER &&
 	    rndr_mdoc_in_section(st, "NAME")) {
-		if (!rndr_mdoc_paragraph_head(st, n, obq, nbq))
+		if (!rndr_mdoc_name(st, n, obq, nbq))
 			return -1;
 		return 0;
 	}
