@@ -1,0 +1,46 @@
+.Sh NAME
+.Nm foo 
+.Nd xyzzy
+.Sh SYNOPSIS
+.In stdio.h
+.Ft int
+.Fo sprintf
+.Fa "char * restrict str"
+.Fa "const char * restrict format"
+.Fa "..."
+.Fc
+.Ft int
+.Fo snprintf
+.Fa "char *restrict str"
+.Fa "size_t size"
+.Fa "const char *restrict format"
+.Fa "..."
+.Fc
+.In openssl/asn1.h
+.Bd -literal
+typedef struct {
+     int bitnum;
+     const char *lname;
+     const char *sname;
+} BIT_STRING_BITNAME;
+.Ed
+.Pp
+.Ft int
+.Fo ASN1_BIT_STRING_num_asc
+.Fa "const char *name"
+.Fa "BIT_STRING_BITNAME *table"
+.Fc
+.In unistd.h
+.Vt extern char *optarg;
+.Vt extern int opterr;
+.Vt extern int optind;
+.Vt extern int optopt;
+.Vt extern int optreset;
+.Ft int
+.Fo getopt
+.Fa "int argc"
+.Fa "char * const *argv"
+.Fa "const char *optstring"
+.Fc
+.Sh DESCRIPTION
+Blah.

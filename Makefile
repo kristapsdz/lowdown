@@ -513,7 +513,7 @@ regress:: bins
 	for f in regress/*.md ; do \
 		ff=regress/`basename $$f .md` ; \
 		echo "$$f" ; \
-		for type in html fodt latex ms man gemini term ; do \
+		for type in html fodt latex ms man mdoc gemini term ; do \
 			if [ -f $$ff.$$type ]; then \
 				$(REGRESS_ENV) $(VALGRIND) ./lowdown -t$$type $$f >$$tmp1 2>&1 ; \
 				diff -uw $$ff.$$type $$tmp1 || rc=$$((rc + 1)) ; \
