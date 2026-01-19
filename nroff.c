@@ -2625,6 +2625,146 @@ rndr_entity(const struct nroff *st,
 }
 
 /*
+ * Render an emphasis font: this either mimics the default behaviour
+ * (concatenate the nodes) or, in the mdoc(7) SEE ALSO case, tries to
+ * generate manpage links.  Returns FALSE on failure (memory), TRUE on
+ * success.
+ */
+static int
+rndr_font(struct nroff *st, const struct lowdown_node *n,
+    struct bnodeq *obq, struct bnodeq *nbq)
+{
+	struct lowdown_buf		*buf = NULL;
+	struct bnode			*bn;
+	int				 rc = 0, nospace = 0;
+	const struct lowdown_buf	*next;
+
+	/* Grab the next node, if text. */
+
+	next = TAILQ_NEXT(n, entries) != NULL &&
+	    TAILQ_NEXT(n, entries)->type == LOWDOWN_NORMAL_TEXT ?
+	    &TAILQ_NEXT(n, entries)->rndr_normal_text.text : NULL;
+
+	if (st->type == LOWDOWN_MDOC &&
+	    rndr_mdoc_in_section(st, "SEE ALSO")) {
+		/*
+		 * If the next node begins with non-whitespace, then
+		 * output an `Ns` at the end to prohibit subsequent
+		 * space.
+		 */
+
+		if (next != NULL && next->size > 0 &&
+		    !isspace((unsigned char)next->data[0]))
+			nospace = 1;
+
+		/*
+		 * See if the node looks like a manpage.  If it does,
+		 * then sub it into an `Xr` statement.
+		 */
+
+		if ((buf = hbuf_new(32)) == NULL ||
+		    !bqueue_flush(st, buf, nbq, 2))
+			goto out;
+		if (buf->size > 4 &&
+		    buf->data[buf->size - 1] == ')' &&
+		    isdigit((unsigned char)buf->data[buf->size - 2]) &&
+		    buf->data[buf->size - 3] == '(') {
+			if ((bn = bqueue_block(st, obq, ".Xr")) == NULL)
+				goto out;
+			if (asprintf(&bn->args, "%.*s %.1s%s",
+			    (int)(buf->size - 3), buf->data, 
+			    &buf->data[buf->size - 2],
+			    nospace ? " Ns" : "") == -1) {
+				bn->nargs = NULL;
+				goto out;
+			}
+			bqueue_free(nbq);
+		}
+	}
+
+	TAILQ_CONCAT(obq, nbq, entries);
+	rc = 1;
+out:
+	hbuf_free(buf);
+	return rc;
+}
+
+/*
+ * Render a font prior to parsing child content.  This is because the
+ * font stack must be set for decorating child content.  Returns FALSE
+ * on failure (memory), TRUE on success.
+ */
+static int
+rndr_font_pre(struct nroff *st, const struct lowdown_node *n,
+    struct bnodeq *obq)
+{
+
+	/*
+	 * Italics in the SEE ALSO section are presumed to be manpage
+	 * links.  FIXME: in some cases, they won't be; but since 
+	 * the child content hasn't been parsed, this isn't yet known.
+	 * However, the font stack needs to be open for child content
+	 * processing.
+	 */
+
+	if (n->type == LOWDOWN_EMPHASIS &&
+	    st->type == LOWDOWN_MDOC &&
+	    rndr_mdoc_in_section(st, "SEE ALSO"))
+		return 1;
+
+	switch (n->type) {
+	case LOWDOWN_CODESPAN:
+		st->fonts[NFONT_FIXED]++;
+		return bqueue_font(st, obq, 0);
+	case LOWDOWN_EMPHASIS:
+		st->fonts[NFONT_ITALIC]++;
+		return bqueue_font(st, obq, 0);
+	case LOWDOWN_HIGHLIGHT:
+	case LOWDOWN_DOUBLE_EMPHASIS:
+		st->fonts[NFONT_BOLD]++;
+		return bqueue_font(st, obq, 0);
+	case LOWDOWN_TRIPLE_EMPHASIS:
+		st->fonts[NFONT_ITALIC]++;
+		st->fonts[NFONT_BOLD]++;
+		return bqueue_font(st, obq, 0);
+	default:
+		break;
+	}
+	abort();
+}
+
+/*
+ * Reset the font stack to what it was entering the child content and
+ * close out the font.  Returns FALSE on failure (memory), TRUE on
+ * success.
+ */
+static int
+rndr_font_post(struct nroff *st, const struct lowdown_node *n,
+    const enum nfont *fonts, struct bnodeq *obq)
+{
+
+	/* No fonts were opened in mdoc(7) mode. */
+
+	if (n->type == LOWDOWN_EMPHASIS &&
+	    st->type == LOWDOWN_MDOC &&
+	    rndr_mdoc_in_section(st, "SEE ALSO"))
+		return 1;
+
+	switch (n->type) {
+	case LOWDOWN_CODESPAN:
+	case LOWDOWN_EMPHASIS:
+	case LOWDOWN_HIGHLIGHT:
+	case LOWDOWN_DOUBLE_EMPHASIS:
+	case LOWDOWN_TRIPLE_EMPHASIS:
+		memcpy(st->fonts, fonts, sizeof(st->fonts));
+		return bqueue_font(st, obq, 1);
+	default:
+		break;
+	}
+	abort();
+}
+
+/*
  * Split "b" at sequential white-space, outputting the results per-line,
  * after outputting the initial block macro.
  * The content in "b" has not been escaped.
@@ -2844,7 +2984,7 @@ rndr_root(struct nroff *st, struct bnodeq *obq,
 			abuf = hbuf_string(&nn->rndr_normal_text.text);
 			if (abuf == NULL)
 				goto out;
-			if ((sz = strcspn(abuf, "-, ")) > 0)
+			if ((sz = strcspn(abuf, "\\-, ")) > 0)
 				abuf[sz] = '\0';
 			for (cp = abuf; *cp != '\0'; cp++)
 				*cp = toupper((unsigned char)*cp);
@@ -2976,25 +3116,11 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 
 	switch (n->type) {
 	case LOWDOWN_CODESPAN:
-		st->fonts[NFONT_FIXED]++;
-		if (!bqueue_font(st, obq, 0))
-			goto out;
-		break;
 	case LOWDOWN_EMPHASIS:
-		st->fonts[NFONT_ITALIC]++;
-		if (!bqueue_font(st, obq, 0))
-			goto out;
-		break;
 	case LOWDOWN_HIGHLIGHT:
 	case LOWDOWN_DOUBLE_EMPHASIS:
-		st->fonts[NFONT_BOLD]++;
-		if (!bqueue_font(st, obq, 0))
-			goto out;
-		break;
 	case LOWDOWN_TRIPLE_EMPHASIS:
-		st->fonts[NFONT_ITALIC]++;
-		st->fonts[NFONT_BOLD]++;
-		if (!bqueue_font(st, obq, 0))
+		if (!rndr_font_pre(st, n, obq))
 			goto out;
 		break;
 	default:
@@ -3006,11 +3132,18 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	if (n->type == LOWDOWN_FOOTNOTE)
 		st->footdepth++;
 
+	/* Parse child content into a temporary queue. */
+
 	TAILQ_FOREACH(child, &n->children, entries)
 		if (!rndr(mq, st, child, &tmpbq))
 			goto out;
 
+	/* Process each node, optionally passing child content. */
+
 	switch (n->type) {
+	case LOWDOWN_EMPHASIS:
+		rc = rndr_font(st, n, obq, &tmpbq);
+		break;
 	case LOWDOWN_BLOCKCODE:
 		rc = rndr_blockcode(st, obq, n);
 		break;
@@ -3131,15 +3264,14 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	case LOWDOWN_HIGHLIGHT:
 	case LOWDOWN_DOUBLE_EMPHASIS:
 	case LOWDOWN_TRIPLE_EMPHASIS:
-		memcpy(st->fonts, fonts, sizeof(fonts));
-		if (!bqueue_font(st, obq, 1)) {
-			rc = 0;
+		if ((rc = rndr_font_post(st, n, fonts, obq)) == 0)
 			goto out;
-		}
 		break;
 	default:
 		break;
 	}
+
+	/* Process insert/delete content. */
 
 	if ((n->chng == LOWDOWN_CHNG_INSERT ||
 	     n->chng == LOWDOWN_CHNG_DELETE) &&

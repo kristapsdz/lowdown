@@ -56,7 +56,7 @@ the roff(7) language, using either macro package.  Authors must either navigate
 a maze of macros and syntax rules in mdoc(7), or extensively (and usually
 inconsistently) manage styling in man(7).
 
-So... why not Markdown?
+**So... why not Markdown?**
 
 ```markdown
 # SYNOPSIS
@@ -77,27 +77,36 @@ Markdown manual inputs.
 
 # Layout
 
-The general structure of a manpage should follow what's documented in mdoc(7).
+The general structure of a manpage should follow what's documented in
+[mdoc(7)](https://man.openbsd.org/mdoc).  This is basically a restatement of
+that document using Markdown syntax.
+
 Before starting, you'll need to classify the *section* of your manpage.
 Utilities are in section 1 or 8 (the latter more for system utilities, although
 the difference is ambiguous), games in 6, system calls in 2, and programming
-functions in 3.  For kernel work, section 4 is for device drivers and
-9 for kernel functions.  File and wire formats are in section 5.  Anything else
-goes into section 7.
+functions in 3.  For kernel work, section 4 is for device drivers and 9 for
+kernel functions.  File and wire formats are in section 5.  Anything else goes
+into section 7.
+
+Begin by setting the title and section.  This can either be directly in the
+document or passed in as meta-data.  If the title is omitted, it's filled in
+from the first entry in the NAME section.  The default section is 7.
 
 ```markdown
 title: progname
-section: (your manpage section)
+section: 1
 
 # NAME
 
-name - one line about what it does
+progname - one line about what it does
 
 # LIBRARY
 
 (For sections 2, 3, and 9 only.)
 
 # SYNOPSIS
+
+progname \[-abc] \[FILE]
 
 (See per-section documentation, below.)
 
@@ -139,7 +148,9 @@ For sections 2, 3, 4, and 9 errno settings only.
 
 # SEE ALSO
 
-**foo(1)**, **bar(2)**
+*foo(1)*, *bar(2)*
+
+(See per-section documentation, below.)
 
 # STANDARDS
 
@@ -156,7 +167,9 @@ For sections 2, 3, 4, and 9 errno settings only.
 
 Sections without content should be left blank.
 
-## Name
+The following sections show specific ways to fill in some special sections.
+
+## NAME
 
 The **NAME** section consists of one or more comma-separated components,
 followed by a hyphen or dash, then a one-line description without trailing
@@ -180,7 +193,7 @@ A simple utility might look like this:
 git --- the stupid content tracker
 ```
 
-## Synopsis
+## SYNOPSIS
 
 Manpages recognised by lowdown's **-tmdoc** are either programming functions
 (manual sections 2, 3, and 9) or programs (sections 1, 6, and 8).  This is
@@ -273,3 +286,16 @@ extern int optreset;
 If unexpected conditions are encountered that don't look like a utility or
 function synopsis, the block is formatted as-is.  If this happens to your
 manpage, look it over to make sure that it's well-formed.
+
+## SEE ALSO
+
+References to other manpages.  List these first by section, then by alpha.  Each
+reference should be in italics to be recognised.
+
+```markdown
+SEE ALSO
+
+*foo(1)*, *bar(3)*, *baz(2)*
+```
+
+
