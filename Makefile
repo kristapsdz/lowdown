@@ -44,6 +44,7 @@ HTMLS		 = archive.html \
 		   diff.html \
 		   diff.diff.html \
 		   index.html \
+		   mdoc.html \
 		   README.html \
 		   $(MANS)
 MANS		 = $(MAN1S) $(MAN3S) $(MAN5S)
@@ -334,6 +335,9 @@ atom.xml: atom-template.xml versions.xml
 
 diff.html: diff.md lowdown
 	./lowdown -s diff.md >$@
+
+mdoc.html: mdoc.md lowdown
+	./lowdown -s mdoc.md >$@
 
 diff.diff.html: diff.md diff.old.md lowdown-diff
 	./lowdown-diff -s diff.old.md diff.md >$@

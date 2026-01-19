@@ -3,19 +3,31 @@ Makefile.local
 Makefile.configure
 config.h
 config.log
-test-*.dSYM  # macOS only
 # object files
-*.[oa]
+*.o
+*.a
 *.so.*
 *.so
+*.dSYM
 # vi swap files
 *.swp
-# generated files
-index.html
+# www files
+*.html
+*.pdf
+*.aux
+*.log
+*.out
+*.jpg
 index.xml
+index.latex.latex
+mdoc.xml
+atom.xml
+diff.xml
+# binaries
 lowdown
 lowdown-diff
 lowdown.pc
+# archives
 lowdown.tar.gz
 lowdown.tar.gz.sha512
 # files for valgrind
