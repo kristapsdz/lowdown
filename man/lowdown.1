@@ -93,6 +93,10 @@ for ANSI-compatible UTF-8 terminal output,
 for roff output using the classic
 .Fl man
 package,
+.Ar mdoc
+for roff output using the modern
+.Fl mdoc
+package,
 .Ar tree ,
 to show the parse tree of the input document, and
 .Ar null
@@ -256,8 +260,9 @@ If any were parsed, format the title information (title, author, date)
 into a header element appearing first in the document.
 .El
 .Pp
-For both roff formats
-.Fl t Ns Ar man
+For roff formats
+.Fl t Ns Ar man ,
+.Fl t Ns Ar mdoc ,
 and
 .Fl t Ns Ar ms
 .Pq unless as noted ,
@@ -285,7 +290,9 @@ Only applies to
 .Fl t Ns Ar ms ,
 as
 .Fl t Ns Ar man
-only supports endnotes.
+and
+.Fl t Ns Ar mdoc
+only support endnotes.
 .It Fl -roff-no-numbered
 Don't output numbered headings
 .Po
@@ -531,8 +538,24 @@ macro package suitable for reading by
 .Xr groff 1 ,
 .Xr mandoc 1 ,
 Heirloom
-.Xr troff ,
+.Xr troff 1 ,
 or traditional
+.Xr troff 1 .
+Does not support equations and images.
+Table support is provided by
+.Xr tbl 1 .
+Since UTF-8 may be passed as input values,
+.Xr preconv 1
+may need to be used.
+.It Fl t Ns Ar mdoc
+The
+.Ar mdoc
+macro package suitable for reading by
+.Xr groff 1 ,
+.Xr mandoc 1 ,
+Heirloom
+.Xr troff 1 ,
+or (possibly?) traditional
 .Xr troff 1 .
 Does not support equations and images.
 Table support is provided by
@@ -609,7 +632,7 @@ statements, optional arbitrary content from metadata LaTeX header, then
 surrounding
 .Li begin{document}
 statements.
-.It Fl t Ns Ar man , Fl t Ns Ar ms
+.It Fl t Ns Ar man , Fl t Ns Ar mdoc , Fl t Ns Ar ms
 Prologue macros.
 .It Fl t Ns Ar term
 Prologue lines.
@@ -695,6 +718,7 @@ Used in
 .Fl t Ns Ar html ,
 .Fl t Ns Ar latex ,
 .Fl t Ns Ar man ,
+.Fl t Ns Ar mdoc ,
 .Fl t Ns Ar ms ,
 and
 .Fl t Ns Ar term .
@@ -761,7 +785,9 @@ Overrides
 Man page section, defaulting to
 .Dq 7 .
 Only used in
-.Fl t Ns Ar man .
+.Fl t Ns Ar man
+and
+.Fl t Ns Ar mdoc .
 .It Li shiftheadinglevelby
 Shift all headers by the given number.
 For example, a value of 1 causes headers originally at level 1
@@ -778,16 +804,21 @@ Used in
 .Fl t Ns Ar html ,
 .Fl t Ns Ar latex ,
 .Fl t Ns Ar man ,
+.Fl t Ns Ar mdoc ,
 and
 .Fl t Ns Ar ms .
 .It Li source
 Man page source (organisation providing the manual).
 Only used in
-.Fl t Ns Ar man .
+.Fl t Ns Ar man
+and
+.Fl t Ns Ar mdoc .
 .It Li volume
 Man page volume (describes the manual page section).
 Only used in
-.Fl t Ns Ar man .
+.Fl t Ns Ar man
+and
+.Fl t Ns Ar mdoc .
 .It Li title
 Document title.
 Used in
@@ -795,6 +826,7 @@ Used in
 .Fl t Ns Ar html ,
 .Fl t Ns Ar latex ,
 .Fl t Ns Ar man ,
+.Fl t Ns Ar mdoc ,
 .Fl t Ns Ar ms ,
 and
 .Fl t Ns Ar term .
@@ -845,7 +877,7 @@ evaluates to a non-empty string.
 Begins a block that is ended by a
 .Cm endif
 or end of file.
-Its contents are output only if the condition of a 
+Its contents are output only if the condition of a
 preceding
 .Cm ifdef
 evaluates to an empty string.
@@ -959,7 +991,7 @@ Escape list items for LaTeX
 body content.
 .It Cm escaperoff , escaperoffline
 Escape list items for roff
-.Pq Fl t Ns Ar ms , Fl t Ns Ar man ,
+.Pq Fl t Ns Ar ms , Fl t Ns Ar man , Fl t Ns Ar mdoc ,
 either for multiple lines or compressed to a single line.
 .Cm escaperoff
 also escapes initial roff delimiters and those after newlines.
@@ -1036,29 +1068,15 @@ To view a Markdown file on an ANSI-compatible, UTF-8 terminal:
 .Pp
 .Dl lowdown -tterm foo.md | less -R
 .Pp
-The terminal may also be used with
-.Xr groff 1
-or
-.Xr mandoc 1
-rendering:
-.Bd -literal -offset indent
-lowdown -stms foo.md | groff -itk -mspdf -Tutf8 | less -R
-lowdown -stman foo.md | groff -itk -man -Tutf8 | less -R
-lowdown -stman foo.md | mandoc | less
-.Ed
-.Pp
 To emit a standalone HTML5 document:
 .Pp
 .Dl lowdown -s foo.md > foo.html
 .Pp
 To use
 .Xr groff 1
-or
-.Xr mandoc 1
 to format as a PS file:
 .Bd -literal -offset indent
 lowdown -stms foo.md | groff -itk -mspdf > foo.ps
-lowdown -stman foo.md | mandoc -Tps > foo.ps
 .Ed
 .Pp
 Or with LaTeX:
@@ -1070,7 +1088,6 @@ pslatex foo.latex
 PDF generation follows similar logic:
 .Bd -literal -offset indent
 lowdown -stms foo.md | pdfroff -itk -mspdf > foo.pdf
-lowdown -stman foo.md | mandoc -Tpdf > foo.pdf
 lowdown -stlatex foo.md > foo.latex
 pdflatex foo.latex
 .Ed
@@ -1088,6 +1105,15 @@ font directory and are prefixed with
 .Sq U .
 .Bd -literal -offset indent
 lowdown -stms foo.md | pdfroff -itk -mspdf -FU-T > foo.pdf
+.Ed
+.Pp
+Manpages may be converted and viewed on the terminal using
+.Xr groff 1
+or
+.Xr mandoc 1 :
+.Bd -literal -offset indent
+lowdown -stmdoc foo.md | mandoc | less
+lowdown -stman foo.md | groff -itk -man -Tutf8 | less -R
 .Ed
 .Pp
 To list all metadata keys, then to extract the
