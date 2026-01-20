@@ -46,7 +46,8 @@ The output is written into
 which must be initialised and freed by the caller.
 .Pp
 The output consists of roff output using the
-.Ar ms
+.Ar ms ,
+.Ar mdoc ,
 or
 .Ar man
 macro packages.
@@ -99,6 +100,11 @@ and the
 .Ar man-ext
 groff extensions.
 Both are implemented in mandoc.
+.Pp
+The
+.Ar mdoc
+macros are defined in
+.Xr mdoc 7 .
 .Pp
 The troff
 .Ar ms

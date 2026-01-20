@@ -62,7 +62,8 @@ and
 The values recognised in
 .Fa opts->type
 are
-.Dv LOWDOWN_MAN
+.Dv LOWDOWN_MAN ,
+.Dv LOWDOWN_MDOC ,
 and
 .Dv LOWDODN_NROFF :
 anything else triggers
@@ -90,7 +91,9 @@ These are only supported by groff.
 delays printing of footnotes until the end of a document.
 Does not affect
 .Dv LOWDOWN_MAN
-documents, which structurally only supports endnotes.
+and
+.Dv LOWDOWN_MDOC
+documents, which structurally only support endnotes.
 .Pp
 The allocated rendered will use constant-width fonts
 .Qq CR
@@ -158,6 +161,11 @@ and the
 .Ar man-ext
 groff extensions.
 Both are implemented in mandoc.
+.Pp
+The
+.Ar mdoc
+macros are defined in
+.Xr mdoc 7 .
 .Pp
 The troff
 .Ar ms

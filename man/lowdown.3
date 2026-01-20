@@ -163,6 +163,10 @@ LaTeX
 roff
 .Fl m Ns Ar an
 macros
+.It Dv LOWDOWN_MDOC
+roff
+.Fl m Ns Ar doc
+macros
 .It Dv LOWDOWN_FODT
 .Dq flat
 OpenDocument
@@ -424,7 +428,8 @@ If not specified, these are inhibited.
 .El
 .Pp
 For
-.Dv LOWDOWN_MAN
+.Dv LOWDOWN_MAN ,
+.Dv LOWDOWN_MDOC ,
 and
 .Dv LOWDOWN_NROFF :
 .Pp
@@ -483,7 +488,8 @@ Most documents will have a parse depth in the single digits.
 If
 .Va type
 is
-.Dv LOWDOWN_MAN
+.Dv LOWDOWN_MAN ,
+.Dv LOWDOWN_MDOC ,
 or
 .Dv LOWDOWN_NROFF ,
 this contains constant-width font variants:
