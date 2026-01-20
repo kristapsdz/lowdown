@@ -42,7 +42,7 @@ For example, the **mdoc** way of decorating a function synopsis:
 .Fn sprintf "char *restrict str" "const char *restrict format" ...
 ```
 
-The same but using **man**):
+The same but using **man**:
 
 ```
 .SH SYNOPSIS
@@ -59,7 +59,7 @@ the **roff** language, using either macro package.  Authors must either navigate
 a maze of macros and syntax rules in **mdoc**, or extensively (and usually
 inconsistently) manage styling in **man**.
 
-**So... why not Markdown?**
+So... **why not Markdown**?
 
 ```markdown
 # SYNOPSIS
@@ -69,8 +69,8 @@ inconsistently) manage styling in **man**.
     *\.\.\.*);
 ```
 
-With [lowdown](https://kristaps.bsd.lv/lowdown), authors could translate the
-above into a **man** document using the **-tman** output option.
+With [lowdown](https://kristaps.bsd.lv/lowdown), authors could previously
+translate the above into a **man** document using the **-tman** output option.
 
 As of version 3.0.0, authors can also use the **-tmdoc** output option, which
 attempts to convert into **mdoc**.  Since **mdoc** has a richer set of macros, but
@@ -151,7 +151,7 @@ For sections 2, 3, 4, and 9 errno settings only.
 
 # SEE ALSO
 
-*foo(1)*, *bar(2)*
+foo(1), bar(2)
 
 (See per-section documentation, below.)
 
@@ -170,7 +170,8 @@ For sections 2, 3, 4, and 9 errno settings only.
 
 Sections without content should be left blank.
 
-The following sections show specific ways to fill in some special sections.
+The following sections show specific ways to fill in some special sections using
+Markdown.
 
 ## NAME
 
@@ -301,5 +302,3 @@ Non-conforming paragraphs are left as-is.
 
 foo(1), bar(3), baz(2)
 ```
-
-
