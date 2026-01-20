@@ -108,7 +108,8 @@ TAILQ_HEAD(bnodeq, bnode);
 /*
  * Return a static buffer with the colour name describing the given
  * BFONT_xxx colour (e.g., BFONT_BLUE).  If the colour could not be
- * looked up, this just returns "black".
+ * looked up, this just returns "default", which is the device's default
+ * colour according to the groff info page.
  */
 static const char *
 nstate_colour_buf(unsigned int ft)
@@ -121,7 +122,7 @@ nstate_colour_buf(unsigned int ft)
 	else if (ft == BFONT_RED)
 		strlcat(fonts, "red", sizeof(fonts));
 	else
-		strlcat(fonts, "black", sizeof(fonts));
+		strlcat(fonts, "default", sizeof(fonts));
 	return fonts;
 }
 
@@ -333,8 +334,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		if (mdocline > 1 &&
 		    (bn->scope == BSCOPE_SEMI ||
 		     bn->scope == BSCOPE_SEMI_CLOSE ||
-		     bn->scope == BSCOPE_FONT ||
-		     bn->scope == BSCOPE_COLOUR))
+		     bn->scope == BSCOPE_FONT))
 			continue;
 		if (bn->scope == BSCOPE_SEMI ||
 		    bn->scope == BSCOPE_SEMI_CLOSE)
@@ -365,8 +365,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 
 		if (bn->scope == BSCOPE_BLOCK ||
 		    bn->scope == BSCOPE_SEMI ||
-		    bn->scope == BSCOPE_SEMI_CLOSE ||
-		    bn->scope == BSCOPE_COLOUR) {
+		    bn->scope == BSCOPE_SEMI_CLOSE) {
 			if (mdocline) {
 				if (ob->size > 0 && 
 				    ob->data[ob->size - 1] != ' ' &&
@@ -386,7 +385,8 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		 * where they set relative to a macro block.
 		 */
 
-		if (bn->scope == BSCOPE_FONT) {
+		if (bn->scope == BSCOPE_FONT ||
+		    bn->scope == BSCOPE_COLOUR) {
 			chk = bn->close ?
 				TAILQ_PREV(bn, bnodeq, entries) :
 				TAILQ_NEXT(bn, entries);
@@ -415,10 +415,12 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 				return 0;
 			if (!nstate_font(st, ob, bn->font, 1))
 				return 0;
-		} else if (bn->scope == BSCOPE_COLOUR) {
-			/* FIXME: mdocline for mdoc(7). */
-			assert(nextblk);
+		} else if (bn->scope == BSCOPE_COLOUR && nextblk && !mdocline) {
 			if (!hbuf_printf(ob, ".gcolor %s", 
+			    nstate_colour_buf(bn->colour)))
+				return 0;
+		} else if (bn->scope == BSCOPE_COLOUR) {
+			if (!hbuf_printf(ob, "\\m[%s]", 
 			    nstate_colour_buf(bn->colour)))
 				return 0;
 		}

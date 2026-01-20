@@ -3,10 +3,4 @@
 .AU
 kristaps
 .PP
-.gcolor blue
-shmext
-.gcolor black
-.gcolor red
-text
-.gcolor black
-here
+\m[blue]shmext\m[default] \m[red]text\m[default] here
