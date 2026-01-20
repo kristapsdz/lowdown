@@ -1582,12 +1582,16 @@ rndr_mdoc_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
 	return ssz;
 }
 
+/*
+ * Parse a single #include statement.  Returns the position in the
+ * buffer if >0, 0 if the parse failed, or -1 on failure.
+ */
 static ssize_t
 rndr_mdoc_synopsis_func_incl(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf)
 {
 	struct bnode	*bn;
-	size_t		 i;
+	size_t		 start;
 
 	pos += 9;
 	while (pos < buf->size &&
@@ -1595,15 +1599,30 @@ rndr_mdoc_synopsis_func_incl(struct nroff *st, struct bnodeq *nq,
 		pos++;
 	if (pos < buf->size && buf->data[pos] == '<')
 		pos++;
-	i = buf->size;
-	if (i > 0 && buf->data[i - 1] == '>')
-		i--;
+
+	for (start = pos; pos < buf->size; pos++)
+		if (buf->data[pos] == '>' ||
+		    isspace((unsigned char)buf->data[pos]))
+			break;
+
 	if ((bn = bqueue_block(st, nq, ".In")) == NULL ||
-	    (bn->nargs = hbuf_stringn(buf, pos, i)) == NULL)
+	    (bn->nargs = hbuf_stringn(buf, start, pos)) == NULL)
 		return -1;
-	return buf->size;
+
+	if (pos < buf->size && buf->data[pos] == '>')
+		pos++;
+
+	while (pos < buf->size &&
+	    isspace((unsigned char)buf->data[pos]))
+		pos++;
+
+	return pos;
 }
 
+/*
+ * Parse a single function declaration.  Returns the position in the
+ * buffer if >0, 0 if the parse failed, or -1 on failure.
+ */
 static ssize_t
 rndr_mdoc_synopsis_func_decl(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf)
@@ -1738,6 +1757,12 @@ rndr_mdoc_synopsis_func_decl(struct nroff *st, struct bnodeq *nq,
 	return bqueue_block(st, nq, ".Fc") == NULL ? -1 : pos;
 }
 
+/*
+ * Parse an expression in a function SYNOPSIS, that is, an include
+ * statement or a function declaration.  Return -1 on failure (memory),
+ * 0 if the parse failed (not a valid expression), or the current
+ * position if >0 on success.
+ */
 static ssize_t
 rndr_mdoc_synopsis_func_expr(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf)
@@ -1754,7 +1779,7 @@ rndr_mdoc_synopsis_func_expr(struct nroff *st, struct bnodeq *nq,
 	 */
 
 	while (pos < buf->size) {
-		if (hbuf_strncasecmp(buf, "#include "))
+		if (hbuf_strncasecmpat(buf, "#include ", pos))
 			ssz = rndr_mdoc_synopsis_func_incl(st, nq, pos, buf);
 		else
 			ssz = rndr_mdoc_synopsis_func_decl(st, nq, pos, buf);
@@ -2021,7 +2046,7 @@ rndr_mdoc_name(struct nroff *st, const struct lowdown_node *n,
 				free(cp);
 			cp = NULL;
 			/* Stop: no more `Nm` tokens. */
-			if (buf->data[pos] != ',')
+			if (pos == buf->size || buf->data[pos] != ',')
 				break;
 			/* Read after whitespace. */
 			for (++pos; pos < buf->size; pos++)
@@ -2062,6 +2087,10 @@ out:
 	return rc;
 }
 
+/*
+ * Return TRUE if the parser is currently within a section, that is,
+ * check the given name in the last header.  Return FALSE if not.
+ */
 static int
 rndr_mdoc_in_section(const struct nroff *st, const char *section)
 {
