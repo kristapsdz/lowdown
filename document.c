@@ -4824,15 +4824,15 @@ parse_metadata_pandoc_val(const char *data, size_t *pos, size_t sz,
 	for ((*pos)++; *pos < sz; (*pos)++)
 		if (data[*pos] != ' ')
 			break;
-
 	/* Read until the next line that doesn't start with space. */
 
 	for (sv = *pos; *pos < sz; (*pos)++)
 		if (data[*pos] == '\n' &&
 		    (*pos + 1 >= sz || data[*pos + 1] != ' '))
 			break;
-
-	end = (*pos)++;
+	end = *pos;
+	if (*pos < sz)
+		(*pos)++;
 
 	/*
 	 * If we're stripping semicolons, double the amount of space
