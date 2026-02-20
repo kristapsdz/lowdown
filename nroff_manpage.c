@@ -433,7 +433,7 @@ nroff_manpage_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
 			cp = NULL;
 			st->fonts[NFONT_BOLD]--;
 			if (!bqueue_font(st, nq, 1) ||
-			    bqueue_span(nq, "\n") == NULL)
+			    (first && bqueue_span(nq, "\n") == NULL))
 				goto out;
 		} else if (buf->data[pos] == '[') {
 			ssz = nroff_manpage_synopsis_prog_op
@@ -444,7 +444,8 @@ nroff_manpage_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
 			    (cp != NULL && bqueue_span(nq, cp) == NULL))
 				goto out;
 			cp = NULL;
-			if (bqueue_span(nq, "]\n") == NULL)
+			if (bqueue_span(nq, "]") == NULL ||
+			    (first && bqueue_span(nq, "\n") == NULL))
 				goto out;
 		} else {
 			ssz = nroff_manpage_synopsis_prog_ar
@@ -458,7 +459,7 @@ nroff_manpage_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
 			cp = NULL;
 			st->fonts[NFONT_ITALIC]--;
 			if (!bqueue_font(st, nq, 1) ||
-			    bqueue_span(nq, "\n") == NULL)
+			    (first && bqueue_span(nq, "\n") == NULL))
 				goto out;
 		}
 	}
@@ -1192,6 +1193,8 @@ nroff_manpage_codespan_prog_expr(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf)
 {
 	ssize_t		 ssz;
+	char		*paren;
+	struct bnode	*bn;
 
 	for ( ; pos < buf->size; pos++)
 		if (!isspace((unsigned char)buf->data[pos]))
@@ -1199,6 +1202,26 @@ nroff_manpage_codespan_prog_expr(struct nroff *st, struct bnodeq *nq,
 
 	if (pos == buf->size)
 		return pos;
+
+	if ((pos - buf->size) > 3 && buf->data[buf->size - 1] == ')') {
+		paren = memchr(&buf->data[pos], '(', buf->size - pos);
+		if (paren != NULL) {
+			bn = st->type == LOWDOWN_MDOC ?
+			    bqueue_block(nq, ".Xr") :
+			    bqueue_block(nq, ".MR");
+			if (bn == NULL)
+				return -1;
+			if (asprintf(&bn->nargs, "%.*s %.*s",
+			    (int)(paren - &buf->data[pos]),
+			    &buf->data[pos],
+			    (int)(&buf->data[buf->size - 1] - (paren + 1)),
+			    paren + 1) == -1) {
+				bn->nargs = NULL;
+				return -1;
+			}
+		}
+		return buf->size;
+	}
 
 	while (pos < buf->size) {
 		ssz = nroff_manpage_synopsis_prog_subexpr(st, nq, pos, buf, 0);
@@ -1222,7 +1245,7 @@ int
 nroff_manpage_codespan(struct nroff *st, struct bnodeq *obq,
     const struct lowdown_buf *buf)
 {
-	int	 		 rc = 0;
+	int	 		 rc = 1;
 	struct bnodeq		 nq;
 	ssize_t			 ret;
 
@@ -1230,6 +1253,8 @@ nroff_manpage_codespan(struct nroff *st, struct bnodeq *obq,
 	    (st->headers_sec[0] == '1' ||
 	     st->headers_sec[0] == '6' ||
 	     st->headers_sec[0] == '8') &&
+	    !nroff_in_section(st, "SEE ALSO") &&
+	    !nroff_in_section(st, "NAME") &&
 	    !nroff_in_section(st, "SYNOPSIS")) {
 		TAILQ_INIT(&nq);
 		ret = nroff_manpage_codespan_prog_expr(st, &nq, 0, buf);
