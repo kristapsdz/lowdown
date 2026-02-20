@@ -518,7 +518,7 @@ main(int argc, char *argv[])
 			/* FALLTHROUGH */
 		case 'T':
 			if (strcasecmp(optarg, "ms") == 0)
-				opts.type = LOWDOWN_NROFF;
+				opts.type = LOWDOWN_MS;
 			else if (strcasecmp(optarg, "gemini") == 0)
 				opts.type = LOWDOWN_GEMINI;
 			else if (strcasecmp(optarg, "html") == 0)
@@ -704,7 +704,7 @@ main(int argc, char *argv[])
 
 	if ((opts.type == LOWDOWN_MAN ||
 	     opts.type == LOWDOWN_MDOC ||
-	     opts.type == LOWDOWN_NROFF) &&
+	     opts.type == LOWDOWN_MS) &&
 	    nroffcodefn != NULL && *nroffcodefn != '\0') {
 		opts.nroff.cr = cp = nroffcodefn;
 		while (*cp != '\0' && *cp != ',')

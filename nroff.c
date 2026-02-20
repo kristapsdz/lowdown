@@ -251,15 +251,15 @@ bqueue_free(struct bnodeq *bq)
  *
  * This isn't meant to be rigorous, but just to get the job done.
  *
- * Input is read from "bq" and serialised into "ob".  If "mdocline" is
- * set to 1, an mdoc(7) context is assumed that's already open on the
- * line, so subsequent macros have their leading periods stripped.  If
- * it's set to "2", the same happens, but colours and fonts are also
- * stripped.
+ * Input is read from "bq" and serialised into "ob".  If "linestrip" is
+ * set to 1, a (usually) mdoc(7) context is assumed that's already open
+ * on the line, so subsequent macros have their leading periods
+ * stripped.  If it's set to "2", the same happens, but colours and
+ * fonts are also stripped.
  */
 int
 bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
-    const struct bnodeq *bq, unsigned int mdocline)
+    const struct bnodeq *bq, unsigned int linestrip)
 {
 	const struct bnode	*bn, *chk, *next;
 	const char		*cp;
@@ -267,7 +267,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 	char			 trailingchar;
 
 	TAILQ_FOREACH(bn, bq, entries) {
-		if (mdocline > 1 &&
+		if (linestrip > 1 &&
 		    (bn->scope == BSCOPE_SEMI ||
 		     bn->scope == BSCOPE_SEMI_CLOSE ||
 		     bn->scope == BSCOPE_FONT))
@@ -302,7 +302,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		if (bn->scope == BSCOPE_BLOCK ||
 		    bn->scope == BSCOPE_SEMI ||
 		    bn->scope == BSCOPE_SEMI_CLOSE) {
-			if (mdocline) {
+			if (linestrip) {
 				if (ob->size > 0 && 
 				    ob->data[ob->size - 1] != ' ' &&
 				    !hbuf_puts(ob, " Ns "))
@@ -330,7 +330,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 			    (chk->scope == BSCOPE_SEMI ||
 			     chk->scope == BSCOPE_SEMI_CLOSE ||
 			     chk->scope == BSCOPE_BLOCK)) {
-				if (!mdocline &&
+				if (!linestrip &&
 				    ob->size > 0 && 
 				    ob->data[ob->size - 1] != '\n' &&
 				    !hbuf_putc(ob, '\n'))
@@ -341,7 +341,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 
 		/* Print font and colour escapes. */
 
-		if (bn->scope == BSCOPE_FONT && nextblk && !mdocline) {
+		if (bn->scope == BSCOPE_FONT && nextblk && !linestrip) {
 			if (!HBUF_PUTSL(ob, ".ft "))
 				return 0;
 			if (!nstate_font(st, ob, bn->font, 0))
@@ -351,7 +351,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 				return 0;
 			if (!nstate_font(st, ob, bn->font, 1))
 				return 0;
-		} else if (bn->scope == BSCOPE_COLOUR && nextblk && !mdocline) {
+		} else if (bn->scope == BSCOPE_COLOUR && nextblk && !linestrip) {
 			if (!hbuf_printf(ob, ".gcolor %s", 
 			    nstate_colour_buf(bn->colour)))
 				return 0;
@@ -388,7 +388,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		/* Safe data need not be escaped. */
 
 		if (bn->scope == BSCOPE_BLOCK &&
-		    mdocline &&
+		    linestrip &&
 		    bn->nbuf != NULL &&
 		    bn->nbuf[0] == '.') {
 			if (!hbuf_puts(ob, bn->nbuf + 1))
@@ -419,7 +419,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		    next->scope == BSCOPE_SPAN &&
 		    next->buf != NULL) {
 			if (next->buf[0] != ' ' && next->buf[0] != '\n') {
-				if (st->type == LOWDOWN_NROFF &&
+				if (st->type == LOWDOWN_MS &&
 				    bn->scope == BSCOPE_SEMI &&
 				    !HBUF_PUTSL(ob, " -A \"\\c\""))
 					return 0;
@@ -476,10 +476,10 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		 * (2), simply end the macro if there is a space.
 		 */
 
-		if (mdocline && abuttingspan == 1)
+		if (linestrip && abuttingspan == 1)
 			if (!hbuf_puts(ob, " Ns No "))
 				return 0;
-		if (mdocline && abuttingspan == 2)
+		if (linestrip && abuttingspan == 2)
 			if (!hbuf_puts(ob, " No "))
 				return 0;
 
@@ -1469,7 +1469,7 @@ rndr_image(struct nroff *st, struct bnodeq *obq,
 	size_t		 sz;
 	struct bnode	*bn;
 
-	if (st->type == LOWDOWN_NROFF) {
+	if (st->type == LOWDOWN_MS) {
 		cp = memrchr(param->link.data, '.', param->link.size);
 		if (cp != NULL) {
 			cp++;
@@ -1546,7 +1546,7 @@ rndr_table(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq)
 {
 	const char	*macro;
 
-	macro = st->type != LOWDOWN_NROFF ||
+	macro = st->type != LOWDOWN_MS ||
 		!(st->flags & LOWDOWN_NROFF_GROFF) ? ".TS" : ".TS H";
 	if (bqueue_block(obq, macro) == NULL)
 		return 0;
@@ -1626,7 +1626,7 @@ rndr_table_header(struct nroff *st, struct bnodeq *obq,
 
 	TAILQ_CONCAT(obq, bq, entries);
 
-	if (st->type == LOWDOWN_NROFF &&
+	if (st->type == LOWDOWN_MS &&
 	    (st->flags & LOWDOWN_NROFF_GROFF) &&
 	    bqueue_block(obq, ".TH") == NULL)
 		goto out;
@@ -1695,7 +1695,7 @@ rndr_footnote_def(struct nroff *st, struct bnodeq *obq,
 	 * ordering facilities.
 	 */
 
-	if (st->type == LOWDOWN_NROFF) {
+	if (st->type == LOWDOWN_MS) {
 		if (bqueue_block(obq, ".FS") == NULL)
 			return 0;
 		bn = bqueue_block(obq, ".pdfhref M");
@@ -1750,12 +1750,12 @@ rndr_footnotes(struct nroff *st, struct bnodeq *obq, int fin)
 
 	/* Non-final and in -tman (-tman has only endnotes). */
 
-	if (!fin && st->type != LOWDOWN_NROFF)
+	if (!fin && st->type != LOWDOWN_MS)
 		return 1;
 
 	/* Non-final and -tms with endnotes specified. */
 
-	if (!fin && st->type == LOWDOWN_NROFF && (st->flags & LOWDOWN_NROFF_ENDNOTES))
+	if (!fin && st->type == LOWDOWN_MS && (st->flags & LOWDOWN_NROFF_ENDNOTES))
 		return 1;
 
 	st->footdepth++;
@@ -1791,7 +1791,7 @@ rndr_footnote_ref(struct nroff *st, struct bnodeq *obq,
 	 * reference number in small superscripts.
 	 */
 
-	if (st->type != LOWDOWN_NROFF) {
+	if (st->type != LOWDOWN_MS) {
 		if ((bn = bqueue_span(obq, NULL)) == NULL)
 			return 0;
 		if (asprintf(&bn->nbuf, "\\u\\s-3%zu\\s+3\\d",
@@ -2079,7 +2079,7 @@ rndr_root(struct nroff *st, struct bnodeq *obq,
 	if (bn == NULL)
 		goto out;
 
-	if (st->type == LOWDOWN_NROFF) {
+	if (st->type == LOWDOWN_MS) {
 		if (copy != NULL) {
 			bn = bqueue_block(obq,
 				".ds LF Copyright \\(co");
@@ -2537,7 +2537,7 @@ lowdown_nroff_new(const struct lowdown_opts *opts)
 		return NULL;
 
 	p->flags = opts != NULL ? opts->oflags : 0;
-	p->type = opts == NULL ? LOWDOWN_NROFF : opts->type;
+	p->type = opts == NULL ? LOWDOWN_MS : opts->type;
 	p->cr = opts != NULL ? opts->nroff.cr : NULL;
 	p->cb = opts != NULL ? opts->nroff.cb : NULL;
 	p->ci = opts != NULL ? opts->nroff.ci : NULL;

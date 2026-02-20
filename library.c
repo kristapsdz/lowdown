@@ -70,6 +70,7 @@ lowdown_render(const struct lowdown_opts *opts,
 		break;
 	case LOWDOWN_MAN:
 	case LOWDOWN_MDOC:
+	case LOWDOWN_MS:
 	case LOWDOWN_NROFF:
 		if ((rndr = lowdown_nroff_new(opts)) == NULL)
 			return 0;
