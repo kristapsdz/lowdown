@@ -32,6 +32,7 @@ OBJS		 = autolink.o \
 		   libdiff.o \
 		   nroff.o \
 		   nroff_escape.o \
+		   nroff_manpage.o \
 		   odt.o \
 		   smartypants.o \
 		   template.o \
@@ -100,6 +101,7 @@ SOURCES		 = autolink.c \
 		   main.c \
 		   nroff.c \
 		   nroff_escape.c \
+		   nroff_manpage.c \
 		   odt.c \
 		   smartypants.c \
 		   template.c \
@@ -110,6 +112,7 @@ SOURCES		 = autolink.c \
 HEADERS 	 = extern.h \
 		   libdiff.h \
 		   lowdown.h \
+		   nroff.h \
 		   term.h
 PDFS		 = diff.pdf \
 		   diff.diff.pdf \

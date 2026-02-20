@@ -31,6 +31,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
+#include "nroff.h"
 
 /*
  * Expression for whether this node is after a header.  This is
@@ -40,71 +41,6 @@
 #define NODE_AFTER_HEAD(_n) \
 	(TAILQ_PREV((_n), lowdown_nodeq, entries) != NULL && \
 	 TAILQ_PREV((_n), lowdown_nodeq, entries)->type == LOWDOWN_HEADER)
-
-enum	nfont {
-	NFONT_ITALIC = 0, /* italic */
-	NFONT_BOLD, /* bold */
-	NFONT_FIXED, /* fixed-width */
-	NFONT__MAX
-};
-
-struct 	nroff {
-	struct hentryq	 	   headers_used; /* headers we've seen */
-	enum lowdown_type	   type; /* man(7), ms(7), or mdoc(7) */
-	int			   use_lp; /* man(7)/ms(7): use PP/LP */
-	unsigned int		   flags; /* output flags */
-	ssize_t			   headers_offs; /* header offset */
-	const char		  *headers_sec; /* section from metadata */
-	enum nfont		   fonts[NFONT__MAX]; /* see bqueue_font() */
-	struct bnodeq		 **foots; /* footnotes */
-	size_t			   footsz; /* footnote size */
-	size_t			   footpos; /* footnote position (-tms) */
-	size_t			   footdepth; /* printing/parsing footnotes */
-	size_t			   indent; /* indentation width */
-	const char		  *cr; /* fixed-width font */
-	const char		  *cb; /* fixed-width bold font */
-	const char		  *ci; /* fixed-width italic font */
-	const char		  *cbi; /* fixed-width bold-italic font */
-	const char		  *templ; /* output template */
-	const struct lowdown_node *lastsec; /* last section seen */
-};
-
-enum	bscope {
-	BSCOPE_BLOCK = 0,
-	BSCOPE_SPAN,
-	BSCOPE_SEMI,
-	BSCOPE_SEMI_CLOSE,
-	BSCOPE_LITERAL,
-	BSCOPE_FONT,
-	BSCOPE_COLOUR
-};
-
-/*
- * Instead of writing directly into the output buffer, we write
- * temporarily into bnodes, which are converted into output.  These
- * nodes are aware of whether they need surrounding newlines.
- */
-struct	bnode {
-	char			*nbuf; /* (safe) macro name or data */
-	char			*buf; /* (unsafe) macro name or data */
-	char			*nargs; /* (safe) blk/semi macro args */
-	char			*args; /* (unsafe) blk/semi macro args */
-	int			 close; /* BNODE_COLOUR/FONT */
-	int			 tblhack; /* BSCOPE_SPAN */
-        int			 headerhack; /* BSCOPE_BLOCK */
-	enum bscope		 scope; /* scope */
-	unsigned int		 font; /* if BNODE_FONT */
-#define	BFONT_ITALIC		 0x01
-#define	BFONT_BOLD		 0x02
-#define	BFONT_FIXED		 0x04
-	unsigned int		 colour; /* if BNODE_COLOUR */
-#define	BFONT_BLUE		 0x01
-#define	BFONT_RED		 0x02
-	TAILQ_ENTRY(bnode)	 entries;
-};
-
-TAILQ_HEAD(bnodeq, bnode);
-
 /*
  * Return a static buffer with the colour name describing the given
  * BFONT_xxx colour (e.g., BFONT_BLUE).  If the colour could not be
@@ -200,7 +136,7 @@ bqueue_colour(struct bnodeq *bq, enum lowdown_chng chng, int close)
  * set, the font reverts to the standard.  Returns zero on failure
  * (memory), non-zero on success.  See bqueue_flush().
  */
-static int
+int
 bqueue_font(const struct nroff *st, struct bnodeq *bq, int close)
 {
 	struct bnode	*bn;
@@ -247,7 +183,7 @@ bqueue_node(struct bnodeq *bq, enum bscope scope, const char *text)
  * allocated node, returning NULL on failure (memory).  On success, the
  * node has already been appended to the queue.  See bqueue_flush().
  */
-static struct bnode *
+struct bnode *
 bqueue_span(struct bnodeq *bq, const char *text)
 {
 
@@ -260,8 +196,8 @@ bqueue_span(struct bnodeq *bq, const char *text)
  * success, the node has already been appended to the queue.  See
  * bqueue_flush().
  */
-static struct bnode *
-bqueue_block(struct nroff *st, struct bnodeq *bq, const char *text)
+struct bnode *
+bqueue_block(struct bnodeq *bq, const char *text)
 {
 
 	return bqueue_node(bq, BSCOPE_BLOCK, text);
@@ -287,7 +223,7 @@ bnode_free(struct bnode *bn)
  * Free node queue.  Safe to call with a NULL queue.  Does not free the
  * queue pointer itself.
  */
-static void
+void
 bqueue_free(struct bnodeq *bq)
 {
 	struct bnode	*bn;
@@ -321,7 +257,7 @@ bqueue_free(struct bnodeq *bq)
  * it's set to "2", the same happens, but colours and fonts are also
  * stripped.
  */
-static int
+int
 bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
     const struct bnodeq *bq, unsigned int mdocline)
 {
@@ -678,7 +614,7 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 		type = HALINK_EMAIL;
 
 	if (st->type == LOWDOWN_MDOC) {
-		if ((bn = bqueue_block(st, obq,
+		if ((bn = bqueue_block(obq,
 		     type == HALINK_EMAIL ? ".Mt" : ".Lk")) == NULL)
 			return 0;
 
@@ -942,23 +878,23 @@ rndr_definition_title(struct nroff *st, struct bnodeq *obq,
 	int			 rc = 0;
 
 	if (st->type == LOWDOWN_MDOC) {
-		if ((bn = bqueue_block(st, obq, ".It")) == NULL ||
+		if ((bn = bqueue_block(obq, ".It")) == NULL ||
 		    (buf = hbuf_new(32)) == NULL ||
 		    !bqueue_flush(st, buf, bq, 1) ||
 		    (bn->nargs = strndup(buf->data, buf->size)) == NULL)
 			goto out;
 	} else if (st->type == LOWDOWN_MAN) {
 		snprintf(nbuf, sizeof(nbuf), ".TP %zu", st->indent);
-		if (bqueue_block(st, obq, nbuf) == NULL)
+		if (bqueue_block(obq, nbuf) == NULL)
 			return 0;
 		TAILQ_CONCAT(obq, bq, entries);
 		if (bqueue_span(obq, "\n") == NULL)
 			return 0;
 	} else {
-		if (bqueue_block(st, obq, ".XP") == NULL)
+		if (bqueue_block(obq, ".XP") == NULL)
 			return 0;
 		TAILQ_CONCAT(obq, bq, entries);
-		if (bqueue_block(st, obq, ".br") == NULL)
+		if (bqueue_block(obq, ".br") == NULL)
 			return 0;
 	}
 
@@ -999,7 +935,7 @@ rndr_list(struct nroff *st, struct bnodeq *obq,
 			(pn->rndr_listitem.flags & HLIST_FL_BLOCK);
 
 		if (compact && !NODE_AFTER_HEAD(n) &&
-		    bqueue_block(st, obq, ".Pp") == NULL)
+		    bqueue_block(obq, ".Pp") == NULL)
 			return 0;
 		if (n->rndr_list.flags & HLIST_FL_DEF)
 			type = "-tag -width Ds";
@@ -1007,7 +943,7 @@ rndr_list(struct nroff *st, struct bnodeq *obq,
 			type = "-enum";
 		else
 			type = "-bullet";
-		if ((bn = bqueue_block(st, obq, ".Bl")) == NULL)
+		if ((bn = bqueue_block(obq, ".Bl")) == NULL)
 			return 0;
 		if (asprintf(&bn->nargs, "%s%s", type,
 		    compact ?  " -compact" : "") == -1) {
@@ -1015,7 +951,7 @@ rndr_list(struct nroff *st, struct bnodeq *obq,
 			return 0;
 		}
 		TAILQ_CONCAT(obq, bq, entries);
-		return bqueue_block(st, obq, ".El") != NULL;
+		return bqueue_block(obq, ".El") != NULL;
 	}
 
 	/* 
@@ -1028,10 +964,10 @@ rndr_list(struct nroff *st, struct bnodeq *obq,
 		if (n->type == LOWDOWN_LISTITEM)
 			break;
 
-	if (n != NULL && bqueue_block(st, obq, ".RS") == NULL)
+	if (n != NULL && bqueue_block(obq, ".RS") == NULL)
 		return 0;
 	TAILQ_CONCAT(obq, bq, entries);
-	if (n != NULL && bqueue_block(st, obq, ".RE") == NULL)
+	if (n != NULL && bqueue_block(obq, ".RE") == NULL)
 		return 0;
 
 	st->use_lp = 1;
@@ -1045,18 +981,18 @@ rndr_blockquote(struct nroff *st, struct bnodeq *obq,
 	struct bnode	*bn;
 
 	if (st->type == LOWDOWN_MDOC) {
-		if ((bn = bqueue_block(st, obq, ".Bd")) == NULL ||
+		if ((bn = bqueue_block(obq, ".Bd")) == NULL ||
 		    (bn->nargs = strdup("-ragged -offset indent")) == NULL)
 			return 0;
 		bqueue_strip_paras(bq);
 		TAILQ_CONCAT(obq, bq, entries);
-		if (bqueue_block(st, obq, ".Ed") == NULL)
+		if (bqueue_block(obq, ".Ed") == NULL)
 			return 0;
 	} else {
-		if (bqueue_block(st, obq, ".RS") == NULL)
+		if (bqueue_block(obq, ".RS") == NULL)
 			return 0;
 		TAILQ_CONCAT(obq, bq, entries);
-		if (bqueue_block(st, obq, ".RE") == NULL)
+		if (bqueue_block(obq, ".RE") == NULL)
 			return 0;
 	}
 
@@ -1078,7 +1014,7 @@ static int
 rndr_linebreak(struct nroff *st, struct bnodeq *obq)
 {
 
-	return bqueue_block(st, obq, ".br") != NULL;
+	return bqueue_block(obq, ".br") != NULL;
 }
 
 static int
@@ -1106,8 +1042,8 @@ rndr_header(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 		 */
 
 		bn = level == 1 ?
-			bqueue_block(st, obq, ".SH") :
-			bqueue_block(st, obq, ".SS");
+			bqueue_block(obq, ".SH") :
+			bqueue_block(obq, ".SS");
 		if (bn == NULL)
 			goto out;
 
@@ -1140,8 +1076,8 @@ rndr_header(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 		 */
 
 		bn = level == 1 ?
-			bqueue_block(st, obq, ".Sh") :
-			bqueue_block(st, obq, ".Ss");
+			bqueue_block(obq, ".Sh") :
+			bqueue_block(obq, ".Ss");
 		if (bn == NULL ||
 		    (buf = hbuf_new(32)) == NULL ||
 		    !bqueue_flush(st, buf, bq, 1) ||
@@ -1158,8 +1094,8 @@ rndr_header(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 	 */
 
 	bn = (st->flags & LOWDOWN_NROFF_NUMBERED) ?
-		bqueue_block(st, obq, ".NH") :
-		bqueue_block(st, obq, ".SH");
+		bqueue_block(obq, ".NH") :
+		bqueue_block(obq, ".SH");
 	if (bn == NULL)
 		goto out;
 
@@ -1184,7 +1120,7 @@ rndr_header(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 		if (!hbuf_extract_text(buf, n))
 			goto out;
 
-		if ((bn = bqueue_block(st, obq, ".pdfhref")) == NULL)
+		if ((bn = bqueue_block(obq, ".pdfhref")) == NULL)
 			goto out;
 		if (asprintf(&bn->nargs, "O %zd", level) == -1) {
 			bn->nargs = NULL;
@@ -1201,7 +1137,7 @@ rndr_header(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 		if (bn->args == NULL)
 			goto out;
 
-		if ((bn = bqueue_block(st, obq, ".pdfhref M")) == NULL)
+		if ((bn = bqueue_block(obq, ".pdfhref M")) == NULL)
 			goto out;
 
 		/*
@@ -1261,7 +1197,7 @@ rndr_listitem(struct nroff *st, struct bnodeq *obq,
 			TAILQ_CONCAT(obq, bq, entries);
 			return 1;
 		}
-		if ((bn = bqueue_block(st, obq, ".It")) == NULL)
+		if ((bn = bqueue_block(obq, ".It")) == NULL)
 			return 0;
 		bqueue_strip_paras(bq);
 		TAILQ_CONCAT(obq, bq, entries);
@@ -1295,7 +1231,7 @@ rndr_listitem(struct nroff *st, struct bnodeq *obq,
 		if (numsize < st->indent)
 			numsize = st->indent;
 
-		if ((bn = bqueue_block(st, obq, ".IP")) == NULL)
+		if ((bn = bqueue_block(obq, ".IP")) == NULL)
 			return 0;
 		if (asprintf(&bn->nargs, 
 		    "\"%zu.\" %zu", param->num, numsize) == -1)
@@ -1307,7 +1243,7 @@ rndr_listitem(struct nroff *st, struct bnodeq *obq,
 			box = "[u2610]";
 		else
 			box = "(bu";
-		if ((bn = bqueue_block(st, obq, ".IP")) == NULL)
+		if ((bn = bqueue_block(obq, ".IP")) == NULL)
 			return 0;
 		if (asprintf(&bn->nargs, "\"\\%s\" %zu",
 		    box, st->indent) == -1)
@@ -1329,770 +1265,19 @@ rndr_listitem(struct nroff *st, struct bnodeq *obq,
 		return 1;
 
 	if (TAILQ_NEXT(n, entries) != NULL &&
-	    (bqueue_block(st, obq, ".if n \\\n.sp -1") == NULL ||
-	     bqueue_block(st, obq, ".if t \\\n.sp -0.25v\n") == NULL))
+	    (bqueue_block(obq, ".if n \\\n.sp -1") == NULL ||
+	     bqueue_block(obq, ".if t \\\n.sp -0.25v\n") == NULL))
 		return 0;
 
 	return 1;
-}
-
-static ssize_t
-rndr_mdoc_synopsis_prog_subexpr(struct nroff *, struct bnodeq *,
-    size_t, const struct lowdown_buf *);
-
-/*
- * Parse a sequence \[xxx -yyy zzz] by enclosing the content with Oo/Oc
- * macros.  Returns <0 on failure (memory), 0 if parsing fails, and the
- * position otherwise.
- */
-static ssize_t
-rndr_mdoc_synopsis_prog_op(struct nroff *st, struct bnodeq *nq,
-    size_t pos, const struct lowdown_buf *buf)
-{
-	struct bnode	*bn;
-	ssize_t		 ssz;
-
-	if (bqueue_block(st, nq, ".Oo") == NULL)
-		return -1;
-
-	pos++;
-	while (pos < buf->size) {
-		ssz = rndr_mdoc_synopsis_prog_subexpr(st, nq, pos, buf);
-		if (ssz <= 0)
-			return ssz;
-		pos = ssz;
-
-		/*
-		 * Skip over any spaces until the next token, then stop
-		 * if the token is a closing square brace.
-		 */
-
-		while (pos < buf->size &&
-		    isspace((unsigned char)buf->data[pos]))
-			pos++;
-		if (pos < buf->size && buf->data[pos] == ']') {
-			pos++;
-			break;
-		}
-	}
-
-	if ((bn = bqueue_block(st, nq, ".Oc")) == NULL)
-		return -1;
-
-	if (pos < buf->size && !isspace((unsigned char)buf->data[pos])) {
-		if ((bn->nargs = strdup("Ns")) == NULL) {
-			bn->nargs = NULL;
-			return -1;
-		}
-	}
-
-	return pos;
-}
-
-/*
- * Parse an opaque argument by enclosing the content with Ar.  There are
- * some special cases like "file..." and such, and also the vertical
- * bar.  Returns <0 on failure (memory), 0 if parsing fails, and the
- * position otherwise.
- */
-static ssize_t
-rndr_mdoc_synopsis_prog_ar(struct nroff *st, struct bnodeq *nq,
-    size_t pos, const struct lowdown_buf *buf)
-{
-	size_t	 	 i, start;
-	struct bnode	*bn;
-	char		*nargs = NULL;
-
-	for ( ; pos < buf->size; pos++)
-		if (!isspace((unsigned char)buf->data[pos]))
-			break;
-
-	if ((bn = bqueue_block(st, nq, ".Ar")) == NULL)
-		return -1;
-
-	/*
-	 * Intercept some special cases of "file ..." or its
-	 * equivalents.
-	 */
-
-	if (hbuf_strncasecmpat(buf, "file \\[u2026]", pos)) {
-		pos += 13;
-	} else if (hbuf_strncasecmpat(buf, "file\\[u2026]", pos)) {
-		pos += 12;
-	} else if (hbuf_strncasecmpat(buf, "\\[u2026]", pos)) {
-		pos += 8;
-		if ((nargs = strdup("...")) == NULL)
-			return -1;
-	} else {
-		for (start = pos; pos < buf->size; pos++) {
-			if ('\\' == buf->data[pos] &&
-			    pos + 1 < buf->size &&
-			    buf->data[pos + 1] == '[') {
-				for (++pos; pos < buf->size; pos++)
-					if (buf->data[pos] == ']')
-						break;
-				if (pos == buf->size)
-					break;
-				continue;
-			}
-			if (isspace((unsigned char)buf->data[pos]) ||
-			    buf->data[pos] == '[' ||
-			    buf->data[pos] == ']' ||
-			    buf->data[pos] == '|')
-				break;
-		}
-
-		/*
-		 * Scan ahead: is there an "OR" bar?  This is a common
-		 * idiom like [foo | bar].  Consume up to and including
-		 * the bar.
-		 */
-
-		if (pos < buf->size &&
-		    (isspace((unsigned char)buf->data[pos]) ||
-		     buf->data[pos] == '|')) {
-			for (i = pos; i < buf->size; i++)
-				if (!isspace((unsigned char)buf->data[i]))
-					break;
-			if (i < buf->size && buf->data[i] == '|')
-				pos = ++i;
-		}
-		if ((nargs = hbuf_stringn(buf, start, pos)) == NULL)
-			return -1;
-	}
-
-	if (pos < buf->size && !isspace((unsigned char)buf->data[pos])) {
-		if (asprintf(&bn->nargs, "%s Ns",
-		    nargs != NULL ? nargs : "") == -1) {
-			bn->nargs = NULL;
-			free(nargs);
-			return -1;
-		}
-	} else
-		bn->nargs = nargs;
-
-	return pos;
-}
-
-/*
- * Parse a flag by enclosing the content with Fl.  Flags are longform if
- * they start with \(en instead of -.  There are some special cases like
- * the vertical bar.  Returns <0 on failure (memory), 0 if parsing
- * fails, and the position otherwise.
- */
-static ssize_t
-rndr_mdoc_synopsis_prog_fl(struct nroff *st, struct bnodeq *nq,
-    size_t pos, const struct lowdown_buf *buf, int longform)
-{
-	size_t			 start, i;
-	struct bnode		*bn;
-	char			*nargs = NULL;
-
-	/* Read until space or Oo/Oc close or open. */
-
-	pos += longform ? 4 : 1;
-	for (start = pos; pos < buf->size; pos++)
-		if (isspace((unsigned char)buf->data[pos]) ||
-		    buf->data[pos] == '=' ||
-		    buf->data[pos] == '|' ||
-		    buf->data[pos] == '[' ||
-		    buf->data[pos] == ']')
-			break;
-
-	/*
-	 * Scan ahead: is there an "OR" bar?  This is a common idiom
-	 * like [-v | --verbose].  Consume up to and including the bar.
-	 */
-
-	if (pos < buf->size &&
-	    (isspace((unsigned char)buf->data[pos]) ||
-	     buf->data[pos] == '|')) {
-		for (i = pos; i < buf->size; i++)
-			if (!isspace((unsigned char)buf->data[i]))
-				break;
-		if (i < buf->size && buf->data[i] == '|')
-			pos = ++i;
-	}
-
-	if ((bn = bqueue_block(st, nq, ".Fl")) == NULL)
-		return -1;
-
-	if (longform && asprintf(&nargs, "-%s",
-	    hbuf_stringn(buf, start, pos)) == -1)
-		nargs = NULL;
-	else if (!longform)
-		nargs = hbuf_stringn(buf, start, pos);
-	if (nargs == NULL)
-		return -1;
-
-	if (pos < buf->size && !isspace((unsigned char)buf->data[pos])) {
-		if (asprintf(&bn->nargs, "%s Ns", nargs) == -1) {
-			bn->nargs = NULL;
-			free(nargs);
-			return -1;
-		}
-	} else
-		bn->nargs = nargs;
-
-	return pos;
-}
-
-/*
- * Parse a subexpression, which is basically anything that comes after
- * the name invocation.  Returns <0 on failure (memory), 0 if parsing
- * fails, and the position otherwise.
- */
-static ssize_t
-rndr_mdoc_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
-    size_t pos, const struct lowdown_buf *buf)
-{
-	ssize_t	 ssz;
-	/* Strip away leading space. */
-
-	for ( ; pos < buf->size; pos++)
-		if (!isspace((unsigned char)buf->data[pos]))
-			break;
-	if (pos == buf->size)
-		return pos;
-
-	/* Check illegal characters. */
-
-	if (buf->data[pos] == ']')
-		return 0;
-
-	/*
-	 * Subexpressions can either begin with a hyphen (or a long
-	 * hyphen) for Fl, a square bracket for Oo/Oc, or anything else
-	 * is routed to Ar.
-	 */
-
-	if (hbuf_strncasecmpat(buf, "\\(en", pos))
-		ssz = rndr_mdoc_synopsis_prog_fl(st, nq,
-		    pos, buf, 1);
-	else if (buf->data[pos] == '-')
-		ssz = rndr_mdoc_synopsis_prog_fl(st, nq,
-		    pos, buf, 0);
-	else if (buf->data[pos] == '[')
-		ssz = rndr_mdoc_synopsis_prog_op(st, nq,
-		    pos, buf);
-	else
-		ssz = rndr_mdoc_synopsis_prog_ar(st, nq,
-		    pos, buf);
-
-	return ssz;
-}
-
-/*
- * Parse a single #include statement.  Returns the position in the
- * buffer if >0, 0 if the parse failed, or -1 on failure.
- */
-static ssize_t
-rndr_mdoc_synopsis_func_incl(struct nroff *st, struct bnodeq *nq,
-    size_t pos, const struct lowdown_buf *buf)
-{
-	struct bnode	*bn;
-	size_t		 start;
-
-	pos += 9;
-	while (pos < buf->size &&
-	    isspace((unsigned char)buf->data[pos]))
-		pos++;
-	if (pos < buf->size && buf->data[pos] == '<')
-		pos++;
-
-	for (start = pos; pos < buf->size; pos++)
-		if (buf->data[pos] == '>' ||
-		    isspace((unsigned char)buf->data[pos]))
-			break;
-
-	if ((bn = bqueue_block(st, nq, ".In")) == NULL ||
-	    (bn->nargs = hbuf_stringn(buf, start, pos)) == NULL)
-		return -1;
-
-	if (pos < buf->size && buf->data[pos] == '>')
-		pos++;
-
-	while (pos < buf->size &&
-	    isspace((unsigned char)buf->data[pos]))
-		pos++;
-
-	return pos;
-}
-
-/*
- * Parse a single function declaration.  Returns the position in the
- * buffer if >0, 0 if the parse failed, or -1 on failure.
- */
-static ssize_t
-rndr_mdoc_synopsis_func_decl(struct nroff *st, struct bnodeq *nq,
-    size_t pos, const struct lowdown_buf *buf)
-{
-	struct bnode	*bn;
-	size_t		 i, paren, arg, nest;
-	char		*cp;
-
-	/* Skip over leading space. */
-
-	while (pos < buf->size &&
-	    isspace((unsigned char)buf->data[pos]))
-		pos++;
-
-	/*
-	 * Get the start of the function part.  If it doesn't exist,
-	 * assume that this is a variable type.
-	 */
-
-	for (paren = pos; paren < buf->size; paren++)
-		if (buf->data[paren] == '(')
-			break;
-
-	if (paren == buf->size || paren == pos) {
-		if ((bn = bqueue_block(st, nq, ".Vt")) == NULL ||
-		    (bn->nargs = hbuf_stringn(buf, pos, buf->size)) == NULL)
-			return -1;
-		return buf->size;
-	}
-
-	/* Backtrack to the function name start. */
-
-	for (i = paren; i > pos; i--)
-		if (isspace((unsigned char)buf->data[i]))
-			break;
-
-	/*
-	 * The type is what came before the function name from the start
-	 * of the expression.  If doesn't need to exist.
-	 */
-
-	if (i > pos) {
-		if ((bn = bqueue_block(st, nq, ".Ft")) == NULL ||
-		    (bn->nargs = hbuf_stringn(buf, pos, i)) == NULL)
-			return -1;
-		pos = i + 1;
-	} 
-
-	/* Output the function name start. */
-
-	if ((bn = bqueue_block(st, nq, ".Fo")) == NULL ||
-	    (bn->nargs = hbuf_stringn(buf, pos, paren)) == NULL)
-		return -1;
-
-	/* If the function is truncated, just close it out. */
-
-	if (paren == buf->size) {
-		if (bqueue_block(st, nq, ".Fc") == NULL)
-			return -1;
-		return paren;
-	}
-
-	/* Read each comma-separated argument. */
-
-	nest = 0;
-	for (pos = paren + 1, arg = pos; pos < buf->size; pos++) {
-		if (buf->data[pos] == ')' && nest > 0) {
-			nest--;
-			continue;
-		}
-		if (buf->data[pos] == '(')
-			nest++;
-		if (buf->data[pos] != ',' && buf->data[pos] != ')')
-			continue;
-
-		/*
-		 * The end of the sequence is a closing parenthesis
-		 * followed by optional space, then an optional
-		 * semicolon.  Preserve our position, because this
-		 * ending part shouldn't be in the trailing `Fa`.
-		 */
-
-		i = pos;
-
-		if (buf->data[i] == ')') {
-			assert(nest == 0);
-			for (++i; i < buf->size; i++)
-				if (!isspace
-				    ((unsigned char)buf->data[i]))
-					break;
-			if (i < buf->size && buf->data[i] == ';')
-				i++;
-			for ( ; i < buf->size; i++)
-				if (!isspace
-				    ((unsigned char)buf->data[i]))
-					break;
-			if (i < buf->size)
-				return 0;
-		}
-		
-		/*
-		 * From the last saved position, copy the text from then
-		 * til the comma and strip away any whitespace.  Elide
-		 * empty arguments.
-		 */
-
-	        if ((cp = hbuf_stringn_trim(buf, arg, pos)) == NULL)
-			return -1;
-		if (*cp != '\0') {
-			bn = bqueue_block(st, nq, ".Fa");
-			if (bn == NULL) {
-				free(cp);
-				return -1;
-			}
-			if (asprintf(&bn->nargs, "\"%s\"", cp) == -1) {
-				free(cp);
-				bn->nargs = NULL;
-				return -1;
-			}
-		}
-		free(cp);
-
-		/*
-		 * Set the position to the end of the sequence, and arg
-		 * as the start of the next one.
-		 */
-
-		pos = i;
-		arg = pos + 1;
-	}
-
-	return bqueue_block(st, nq, ".Fc") == NULL ? -1 : pos;
-}
-
-/*
- * Parse an expression in a function SYNOPSIS, that is, an include
- * statement or a function declaration.  Return -1 on failure (memory),
- * 0 if the parse failed (not a valid expression), or the current
- * position if >0 on success.
- */
-static ssize_t
-rndr_mdoc_synopsis_func_expr(struct nroff *st, struct bnodeq *nq,
-    size_t pos, const struct lowdown_buf *buf)
-{
-	ssize_t		 ssz;
-
-	for ( ; pos < buf->size; pos++)
-		if (!isspace((unsigned char)buf->data[pos]))
-			break;
-
-	/*
-	 * Following the name and any whitespace are the subexpressions
-	 * that define the arguments.  Consume all of them.
-	 */
-
-	while (pos < buf->size) {
-		if (hbuf_strncasecmpat(buf, "#include ", pos))
-			ssz = rndr_mdoc_synopsis_func_incl(st, nq, pos, buf);
-		else
-			ssz = rndr_mdoc_synopsis_func_decl(st, nq, pos, buf);
-		if (ssz <= 0)
-			return ssz;
-		pos = ssz;
-	}
-	return pos;
-}
-
-/*
- * Parse a full synopsis expression. Returns <0 on failure (memory), 0
- * if parsing fails, and the position otherwise.
- */
-static ssize_t
-rndr_mdoc_synopsis_prog_expr(struct nroff *st, struct bnodeq *nq,
-    size_t pos, const struct lowdown_buf *buf)
-{
-	struct bnode	*bn;
-	size_t		 sta;
-	ssize_t		 ssz;
-
-	/*
-	 * Each synopsis expression consists of a name at the beginning
-	 * of the line, possibly following whitespace.
-	 */
-
-	for ( ; pos < buf->size; pos++)
-		if (!isspace((unsigned char)buf->data[pos]))
-			break;
-	for (sta = pos; pos < buf->size; pos++)
-		if (isspace((unsigned char)buf->data[pos]))
-			break;
-	if (pos == buf->size)
-		return pos;
-
-	if ((bn = bqueue_block(st, nq, ".Nm")) == NULL ||
-	    (bn->nargs = hbuf_stringn(buf, sta, pos)) == NULL)
-		return -1;
-
-	/*
-	 * Following the name and any whitespace are the subexpressions
-	 * that define the arguments.  Consume all of them.
-	 */
-
-	while (pos < buf->size) {
-		ssz = rndr_mdoc_synopsis_prog_subexpr(st, nq, pos, buf);
-		if (ssz <= 0)
-			return ssz;
-		pos = ssz;
-	}
-	return pos;
-}
-
-/*
- * SYNOPSIS sections in mdoc(7) have very special handling. Each manual section
- * (1, 3, etc.) has its own way of behaving.  Try to parse the SYNOPSIS in its
- * own special way.  If parsing fails, don't change the existing behaviour;
- * otherwise, replace the child content with the newly-generated content.
- * Returns 0 on failure (memory), 1 on success.  On success, the paragraph
- * content may have been replaced.
- */
-static int
-rndr_mdoc_synopsis_func(struct nroff *st, const struct lowdown_node *n,
-    struct bnodeq *obq, struct bnodeq *nbq)
-{
-	int	 		 rc = -1;
-	struct lowdown_buf	*buf = NULL;
-	struct bnodeq		 nq;
-	ssize_t			 ret;
-
-	TAILQ_INIT(&nq);
-
-	if ((buf = hbuf_new(32)) != NULL &&
-	    bqueue_flush(st, buf, nbq, 2)) {
-		ret = rndr_mdoc_synopsis_func_expr(st, &nq, 0, buf);
-		if (ret > 0) {
-			bqueue_free(nbq);
-			TAILQ_CONCAT(obq, &nq, entries);
-			rc = 1;
-		} else if (ret == 0)
-			rc = 0;
-	}
-
-	hbuf_free(buf);
-	bqueue_free(&nq);
-	return rc;
-}
-
-/*
- * SEE ALSO sections in mdoc(7) conventionally contain only lists of
- * other manpages.  They can, however, also contain actual content.  Try
- * to catch the list of manpages and format them with `Xr` here.  Return
- * -1 on total failure (memory), 0 if the paragraph was not a list of
- *  manpages, and 1 if it was.
- */
-static int
-rndr_mdoc_see_also(struct nroff *st, const struct lowdown_node *n,
-    struct bnodeq *obq, struct bnodeq *nbq)
-{
-	int	 		 rc = 0;
-	struct lowdown_buf	*buf = NULL;
-	struct bnodeq		 nq;
-	size_t			 pos, end, start;
-	const char		*openp;
-	struct bnode		*bn;
-
-	TAILQ_INIT(&nq);
-
-	if ((buf = hbuf_new(32)) == NULL ||
-	    !bqueue_flush(st, buf, nbq, 2))
-		goto out;
-
-	for (pos = 0; pos < buf->size; pos++)
-		if (!isspace((unsigned char)buf->data[pos]))
-			break;
-
-	/*
-	 * Tokenise along commas or the eoln, then break apart the
-	 * contents to see if it matches foo(section).  If a single
-	 * token doesn't, then bail out and assume this is a regular
-	 * paragraph.  Otherwise, format the link in an Xr.  Skip over
-	 * empty tokens.
-	 */
-
-	for (start = pos; pos <= buf->size; ) {
-		if (buf->data[pos] == ',' || pos == buf->size) {
-			if (pos == start) {
-				/* Skip empty tokens. */
-				for (++pos; pos < buf->size; pos++)
-					if (!isspace((unsigned char)
-					    buf->data[pos]))
-						break;
-				start = pos;
-				continue;
-			}
-			/* Trim trailing spaces. */
-			for (end = pos--; pos > start; pos--)
-				if (!isspace((unsigned char)
-				    buf->data[pos]))
-					break;
-			/* Make sure there are parentheses. */
-			if (buf->data[pos] != ')')
-				goto out;
-			openp = memchr(&buf->data[start], '(',
-			    pos - start);
-			if (openp == NULL)
-				goto out;
-			bn = bqueue_block(st, obq, ".Xr");
-			if (bn == NULL) {
-				rc = -1;
-				goto out;
-			}
-			if (asprintf(&bn->nargs, "%.*s %.*s%s",
-			    (int)(openp - &buf->data[start]),
-			    &buf->data[start],
-			    (int)(&buf->data[pos] - openp - 1),
-			    openp + 1,
-			    end < buf->size ? " ," : "") == -1) {
-				bn->nargs = NULL;
-				rc = -1;
-				goto out;
-			}
-			if (end == buf->size)
-				break;
-			/* Trim leading spaces. */
-			for (pos = end + 1; pos < buf->size; pos++)
-				if (!isspace((unsigned char)
-				    buf->data[pos]))
-					break;
-			start = pos;
-		} else
-			pos++;
-	}
-	TAILQ_CONCAT(obq, &nq, entries);
-	bqueue_free(nbq);
-	rc = 1;
-out:
-	hbuf_free(buf);
-	bqueue_free(&nq);
-	return rc;
-}
-
-/*
- * SYNOPSIS sections in mdoc(7) have very special handling. Each manual section
- * (1, 3, etc.) has its own way of behaving.  Try to parse the SYNOPSIS in its
- * own special way.  If parsing fails, don't change the existing behaviour;
- * otherwise, replace the child content with the newly-generated content.
- * Returns 0 on failure (memory), 1 on success.  On success, the paragraph
- * content may have been replaced.
- */
-static int
-rndr_mdoc_synopsis_prog(struct nroff *st, const struct lowdown_node *n,
-    struct bnodeq *obq, struct bnodeq *nbq)
-{
-	int	 		 rc = -1;
-	struct lowdown_buf	*buf = NULL;
-	struct bnodeq		 nq;
-	ssize_t			 ret;
-
-	TAILQ_INIT(&nq);
-
-	if ((buf = hbuf_new(32)) != NULL &&
-	    bqueue_flush(st, buf, nbq, 2)) {
-		ret = rndr_mdoc_synopsis_prog_expr(st, &nq, 0, buf);
-		if (ret > 0) {
-			bqueue_free(nbq);
-			TAILQ_CONCAT(obq, &nq, entries);
-			rc = 1;
-		} else if (ret == 0)
-			rc = 0;
-	}
-
-	hbuf_free(buf);
-	bqueue_free(&nq);
-	return rc;
-}
-
-/*
- * The NAME section consists of one or more comma-separated names
- * followed by a dash (or fancy dash) then a description.  Split the
- * names into `Nm` statements and, if found, the description into an
- * `Nd.  This returns FALSE on failure (memory), TRUE on success.  The
- * regressive case of a single word with no hyphens is just the `Nm`.
- */
-static int
-rndr_mdoc_name(struct nroff *st, const struct lowdown_node *n,
-    struct bnodeq *obq, struct bnodeq *nbq)
-{
-	struct bnode		*bn;
-	struct lowdown_buf	*buf = NULL;
-	int			 rc = 0;
-	size_t			 pos, start;
-	char			*cp = NULL;
-
-	if ((buf = hbuf_new(32)) == NULL ||
-	    !bqueue_flush(st, buf, nbq, 2))
-		goto out;
-
-	/*
-	 * Skip white-space then output an `Nm` for each token leading
-	 * up to a comma, a hyphen (or pretty hyphen), or the end of
-	 * line.
-	 */
-
-	for (pos = 0; pos < buf->size; pos++)
-		if (!isspace((unsigned char)buf->data[pos]))
-			break;
-	for (start = pos; pos <= buf->size; )
-		if (pos == buf->size ||
-		    buf->data[pos] == ',' ||
-		    buf->data[pos] == '-' ||
-		    hbuf_strncasecmpat(buf, "\\(en", pos) ||
-		    hbuf_strncasecmpat(buf, "\\(em", pos)) {
-			cp = hbuf_stringn(buf, start, pos);
-			if (cp == NULL)
-				goto out;
-			if (*cp != '\0') {
-				bn = bqueue_block(st, obq, ".Nm");
-				if (bn == NULL)
-					goto out;
-				bn->nargs = cp;
-			} else
-				free(cp);
-			cp = NULL;
-			/* Stop: no more `Nm` tokens. */
-			if (pos == buf->size || buf->data[pos] != ',')
-				break;
-			/* Read after whitespace. */
-			for (++pos; pos < buf->size; pos++)
-				if (!isspace((unsigned char)buf->data[pos]))
-					break;
-			start = pos;
-		} else
-			pos++;
-
-	/* Read past delimiter between `Nm` and `Nd`. */
-
-	if (pos < buf->size && buf->data[pos] == '-') {
-		while (pos < buf->size && buf->data[pos] == '-')
-			pos++;
-	} else if (pos < buf->size)
-		pos += 4;
-
-	/* Conditionally output `Nd`. */
-
-	if (pos < buf->size) {
-		cp = hbuf_stringn_trim(buf, pos, buf->size);
-		if (cp == NULL)
-			goto out;
-		if (*cp != '\0') {
-			if ((bn = bqueue_block(st, obq, ".Nd")) == NULL)
-				goto out;
-			bn->nargs = cp;
-		} else
-			free(cp);
-		cp = NULL;
-	}
-
-	bqueue_free(nbq);
-	rc = 1;
-out:
-	hbuf_free(buf);
-	free(cp);
-	return rc;
 }
 
 /*
  * Return TRUE if the parser is currently within a section, that is,
  * check the given name in the last header.  Return FALSE if not.
  */
-static int
-rndr_mdoc_in_section(const struct nroff *st, const char *section)
+int
+nroff_in_section(const struct nroff *st, const char *section)
 {
 	const struct lowdown_node	*pn;
 
@@ -2112,9 +1297,9 @@ rndr_blockcode(struct nroff *st, struct bnodeq *obq,
 		/*
 		 * SYNOPSIS blocks are not indented.
 		 */
-		if ((bn = bqueue_block(st, obq, ".Bd")) == NULL)
+		if ((bn = bqueue_block(obq, ".Bd")) == NULL)
 			return 0;
-		bn->nargs = rndr_mdoc_in_section(st, "SYNOPSIS") ?
+		bn->nargs = nroff_in_section(st, "SYNOPSIS") ?
 		    strdup("-literal") : 
 		    strdup("-literal -offset indent");
 		if (bn->nargs == NULL)
@@ -2126,15 +1311,15 @@ rndr_blockcode(struct nroff *st, struct bnodeq *obq,
 		 * subsequent blocks (paragraphs, etc.) will have a
 		 * double-newline.
 		 */
-		if (bqueue_block(st, obq, ".LP") == NULL)
+		if (bqueue_block(obq, ".LP") == NULL)
 			return 0;
 		if (st->type == LOWDOWN_MAN &&
 		    (st->flags & LOWDOWN_NROFF_GROFF)) {
-			if (bqueue_block(st, obq, ".EX") == NULL)
+			if (bqueue_block(obq, ".EX") == NULL)
 				return 0;
 		} else {
-			if (bqueue_block(st, obq, ".nf") == NULL ||
-			    bqueue_block(st, obq, ".ft CR") == NULL)
+			if (bqueue_block(obq, ".nf") == NULL ||
+			    bqueue_block(obq, ".ft CR") == NULL)
 				return 0;
 		}
 	}
@@ -2150,89 +1335,22 @@ rndr_blockcode(struct nroff *st, struct bnodeq *obq,
 		/*
 		 * SYNOPSIS blocks are followed by a paragraph.
 		 */
-		if ((bn = bqueue_block(st, obq, ".Ed")) == NULL)
+		if ((bn = bqueue_block(obq, ".Ed")) == NULL)
 			return 0;
-		if (rndr_mdoc_in_section(st, "SYNOPSIS") &&
-		    bqueue_block(st, obq, ".Pp") == NULL)
+		if (nroff_in_section(st, "SYNOPSIS") &&
+		    bqueue_block(obq, ".Pp") == NULL)
 			return 0;
 	} else {
 		if (st->type == LOWDOWN_MAN &&
 		    (st->flags & LOWDOWN_NROFF_GROFF)) {
-			if (bqueue_block(st, obq, ".EE") == NULL)
+			if (bqueue_block(obq, ".EE") == NULL)
 				return 0;
 		} else {
-			if (bqueue_block(st, obq, ".ft") == NULL ||
-			    bqueue_block(st, obq, ".fi") == NULL)
+			if (bqueue_block(obq, ".ft") == NULL ||
+			    bqueue_block(obq, ".fi") == NULL)
 				return 0;
 		}
 	}
-	return 1;
-}
-
-/*
- * mdoc(7) paragraphs may have special handling depending on their prior
- * section, the manual section, phase of the moon, etc.  If these conditions
- * are met, "nbq" may be drained and new content generated and appended to
- * "obq".  This returns 0 if the paragraph content was replaced and no `Pp`
- * should be output, <0 on fatal error, and >0 if the paragraph should be
- * processed as usual.
- */
-static int
-rndr_mdoc_paragraph(struct nroff *st, const struct lowdown_node *n,
-    struct bnodeq *obq, struct bnodeq *nbq)
-{
-	const struct lowdown_node	*prev, *next;
-	int				 rc;
-
-	/*
-	 * Check if a NAME section is before another section (doesn't
-	 * matter the name).  If so, try to break down the paragraph
-	 * into specific parts.
-	 */
-
-	if ((prev = TAILQ_PREV(n, lowdown_nodeq, entries)) != NULL &&
-	    prev->type == LOWDOWN_HEADER &&
-	    (next = TAILQ_NEXT(n, entries)) != NULL &&
-	    next->type == LOWDOWN_HEADER &&
-	    rndr_mdoc_in_section(st, "NAME")) {
-		if (!rndr_mdoc_name(st, n, obq, nbq))
-			return -1;
-		return 0;
-	}
-
-	/* SEE ALSO manpage listings. */
-
-	if (rndr_mdoc_in_section(st, "SEE ALSO")) {
-		if ((rc = rndr_mdoc_see_also(st, n, obq, nbq)) < 0)
-			return rc;
-		return rc == 0 ? 1 : 0;
-	}
-
-	/*
-	 * Paragraphs within the SYNOPSIS are broken down in very
-	 * specific ways according to the manual section.
-	 */
-
-	if (st->headers_sec != NULL &&
-	    (st->headers_sec[0] == '1' ||
-	     st->headers_sec[0] == '6' ||
-	     st->headers_sec[0] == '8') &&
-	    rndr_mdoc_in_section(st, "SYNOPSIS")) {
-		if ((rc = rndr_mdoc_synopsis_prog(st, n, obq, nbq)) < 0)
-			return rc;
-		return rc == 0 ? 1 : 0;
-	}
-
-	if (st->headers_sec != NULL &&
-	    (st->headers_sec[0] == '2' ||
-	     st->headers_sec[0] == '3' ||
-	     st->headers_sec[0] == '9') &&
-	    rndr_mdoc_in_section(st, "SYNOPSIS")) {
-		if ((rc = rndr_mdoc_synopsis_func(st, n, obq, nbq)) < 0)
-			return rc;
-		return rc == 0 ? 1 : 0;
-	}
-
 	return 1;
 }
 
@@ -2241,40 +1359,42 @@ rndr_paragraph(struct nroff *st, const struct lowdown_node *n,
     struct bnodeq *obq, struct bnodeq *nbq)
 {
 	struct bnode	*bn;
-	int		 rc;
+	int		 rc = 1;
 
 	/* 
 	 * In man(7) and ms(7), subsequent paragraphs get a PP for the
 	 * indentation; otherwise, use LP and forego the indentation.
-	 * If we're in a list item, make sure that we don't reset our
-	 * text indent by using an "IP".  mdoc(7) simply uses "Pp";
-	 * however, individual paragraphs may have custom handling.
+	 * If in a list item, make sure not to reset the text indent by
+	 * using an "IP".  mdoc(7) simply uses "Pp".
+	 *
+	 * Both mdoc(7) and man(7) might override the paragraph content
+	 * if in manpage-specific context.
 	 */
 
 	if (st->type != LOWDOWN_MDOC) {
-		for ( ; n != NULL; n = n->parent)
-			if (n->type == LOWDOWN_LISTITEM)
-				break;
-		if (n != NULL)
-			bn = bqueue_block(st, obq, ".IP");
-		else if (st->use_lp)
-			bn = bqueue_block(st, obq, ".LP");
-		else
-			bn = bqueue_block(st, obq, ".PP");
-		if (bn == NULL)
+		rc = 1;
+		if (st->type == LOWDOWN_MAN &&
+		    (rc = nroff_manpage_paragraph(st, n, obq, nbq)) < 0)
 			return 0;
-		st->use_lp = 0;
+		if (rc > 0) {
+			for ( ; n != NULL; n = n->parent)
+				if (n->type == LOWDOWN_LISTITEM)
+					break;
+			if (n != NULL)
+				bn = bqueue_block(obq, ".IP");
+			else if (st->use_lp)
+				bn = bqueue_block(obq, ".LP");
+			else
+				bn = bqueue_block(obq, ".PP");
+			if (bn == NULL)
+				return 0;
+			st->use_lp = 0;
+		}
 	} else {
-		/*
-		 * Paragraphs for mdoc(7) are complicated because the
-		 * content is re-written using mdoc(7) idioms.  Route to
-		 * a specific function for that.
-		 */
-
-		if ((rc = rndr_mdoc_paragraph(st, n, obq, nbq)) < 0)
+		if ((rc = nroff_manpage_paragraph(st, n, obq, nbq)) < 0)
 			return 0;
 		if (rc > 0 && !NODE_AFTER_HEAD(n) &&
-		    (bn = bqueue_block(st, obq, ".Pp")) == NULL)
+		    bqueue_block(obq, ".Pp") == NULL)
 			return 0;
 	}
 
@@ -2303,14 +1423,14 @@ rndr_hrule(struct nroff *st, struct bnodeq *obq)
 {
 
 	if (st->type == LOWDOWN_MDOC) {
-		if (bqueue_block(st, obq, ".Pp") == NULL)
+		if (bqueue_block(obq, ".Pp") == NULL)
 			return 0;
-		return bqueue_block(st, obq, "\\l\'2i'") != NULL;
+		return bqueue_block(obq, "\\l\'2i'") != NULL;
 	}
 
 	/* The LP is to reset the margins. */
 
-	if (bqueue_block(st, obq, ".LP") == NULL)
+	if (bqueue_block(obq, ".LP") == NULL)
 		return 0;
 
 	/* Set use_lp so we get a following LP not PP. */
@@ -2318,9 +1438,9 @@ rndr_hrule(struct nroff *st, struct bnodeq *obq)
 	st->use_lp = 1;
 
 	if (st->type == LOWDOWN_MAN)
-		return bqueue_block(st, obq, "\\l\'2i'") != NULL;
+		return bqueue_block(obq, "\\l\'2i'") != NULL;
 
-	return bqueue_block(st, obq,
+	return bqueue_block(obq,
 	    ".ie d HR \\{\\\n"
 	    ".HR\n"
 	    "\\}\n"
@@ -2346,7 +1466,7 @@ rndr_image(struct nroff *st, struct bnodeq *obq,
 			sz = param->link.size - (cp - param->link.data);
 			if ((sz == 2 && memcmp(cp, "ps", 2) == 0) ||
 			    (sz == 3 && memcmp(cp, "eps", 3) == 0)) {
-				bn = bqueue_block(st, obq, ".PSPIC");
+				bn = bqueue_block(obq, ".PSPIC");
 				if (bn == NULL)
 					return 0;
 				bn->args = strndup(param->link.data,
@@ -2418,12 +1538,12 @@ rndr_table(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq)
 
 	macro = st->type != LOWDOWN_NROFF ||
 		!(st->flags & LOWDOWN_NROFF_GROFF) ? ".TS" : ".TS H";
-	if (bqueue_block(st, obq, macro) == NULL)
+	if (bqueue_block(obq, macro) == NULL)
 		return 0;
-	if (bqueue_block(st, obq, "tab(|) expand allbox;") == NULL)
+	if (bqueue_block(obq, "tab(|) expand allbox;") == NULL)
 		return 0;
 	TAILQ_CONCAT(obq, bq, entries);
-	return bqueue_block(st, obq, ".TE") != NULL;
+	return bqueue_block(obq, ".TE") != NULL;
 }
 
 static int
@@ -2443,7 +1563,7 @@ rndr_table_header(struct nroff *st, struct bnodeq *obq,
 	 * We make the header bold, but this is arbitrary.
 	 */
 
-	if ((bn = bqueue_block(st, obq, NULL)) == NULL)
+	if ((bn = bqueue_block(obq, NULL)) == NULL)
 		goto out;
 	for (i = 0; i < param->columns; i++) {
 		if (i > 0 && !HBUF_PUTSL(ob, " "))
@@ -2469,7 +1589,7 @@ rndr_table_header(struct nroff *st, struct bnodeq *obq,
 	/* Now the body layout. */
 
 	hbuf_truncate(ob);
-	if ((bn = bqueue_block(st, obq, NULL)) == NULL)
+	if ((bn = bqueue_block(obq, NULL)) == NULL)
 		goto out;
 	for (i = 0; i < param->columns; i++) {
 		if (i > 0 && !HBUF_PUTSL(ob, " "))
@@ -2498,7 +1618,7 @@ rndr_table_header(struct nroff *st, struct bnodeq *obq,
 
 	if (st->type == LOWDOWN_NROFF &&
 	    (st->flags & LOWDOWN_NROFF_GROFF) &&
-	    bqueue_block(st, obq, ".TH") == NULL)
+	    bqueue_block(obq, ".TH") == NULL)
 		goto out;
 
 	rc = 1;
@@ -2512,7 +1632,7 @@ rndr_table_row(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq)
 {
 
 	TAILQ_CONCAT(obq, bq, entries);
-	return bqueue_block(st, obq, NULL) != NULL;
+	return bqueue_block(obq, NULL) != NULL;
 }
 
 static int
@@ -2566,16 +1686,16 @@ rndr_footnote_def(struct nroff *st, struct bnodeq *obq,
 	 */
 
 	if (st->type == LOWDOWN_NROFF) {
-		if (bqueue_block(st, obq, ".FS") == NULL)
+		if (bqueue_block(obq, ".FS") == NULL)
 			return 0;
-		bn = bqueue_block(st, obq, ".pdfhref M");
+		bn = bqueue_block(obq, ".pdfhref M");
 		if (bn == NULL)
 			return 0;
 		if (asprintf(&bn->args, "footnote-%zu", num) == -1)
 			return 0;
 		bqueue_strip_paras(bq);
 		TAILQ_CONCAT(obq, bq, entries);
-		return bqueue_block(st, obq, ".FE") != NULL;
+		return bqueue_block(obq, ".FE") != NULL;
 	}
 
 	/*
@@ -2584,10 +1704,10 @@ rndr_footnote_def(struct nroff *st, struct bnodeq *obq,
 	 */
 
 	if (st->type == LOWDOWN_MAN &&
-	    bqueue_block(st, obq, ".LP") == NULL)
+	    bqueue_block(obq, ".LP") == NULL)
 		return 0;
 	if (st->type == LOWDOWN_MDOC && 
-	    bqueue_block(st, obq, ".Pp") == NULL)
+	    bqueue_block(obq, ".Pp") == NULL)
 		return 0;
 	if ((bn = bqueue_span(obq, NULL)) == NULL)
 		return 0;
@@ -2630,11 +1750,11 @@ rndr_footnotes(struct nroff *st, struct bnodeq *obq, int fin)
 
 	st->footdepth++;
 	if (st->type == LOWDOWN_MAN) {
-		if (bqueue_block(st, obq, ".LP") == NULL)
+		if (bqueue_block(obq, ".LP") == NULL)
 			return 0;
-		if (bqueue_block(st, obq, ".sp 3") == NULL)
+		if (bqueue_block(obq, ".sp 3") == NULL)
 			return 0;
-		if (bqueue_block(st, obq, "\\l\'2i'") == NULL)
+		if (bqueue_block(obq, "\\l\'2i'") == NULL)
 			return 0;
 	}
 
@@ -2818,7 +1938,7 @@ rndr_meta_multi(struct nroff *st, struct bnodeq *obq, const char *b,
 
 	bsz = strlen(b);
 
-	if (bqueue_block(st, obq, env) == NULL)
+	if (bqueue_block(obq, env) == NULL)
 		return 0;
 
 	for (i = 0; i < bsz; i++) {
@@ -2837,7 +1957,7 @@ rndr_meta_multi(struct nroff *st, struct bnodeq *obq, const char *b,
 		if ((sz = &b[i] - start) == 0)
 			continue;
 
-		if ((bn = bqueue_block(st, obq, NULL)) == NULL)
+		if ((bn = bqueue_block(obq, NULL)) == NULL)
 			return 0;
 		if ((bn->buf = strndup(start, sz)) == NULL)
 			return 0;
@@ -2938,14 +2058,14 @@ rndr_root(struct nroff *st, struct bnodeq *obq,
 	if (rcsauthor != NULL)
 		author = rcsauthor;
 
-	bn = bqueue_block(st, obq, 
+	bn = bqueue_block(obq, 
 		".\\\" -*- mode: troff; coding: utf-8 -*-");
 	if (bn == NULL)
 		goto out;
 
 	if (st->type == LOWDOWN_NROFF) {
 		if (copy != NULL) {
-			bn = bqueue_block(st, obq,
+			bn = bqueue_block(obq,
 				".ds LF Copyright \\(co");
 			if (bn == NULL)
 				goto out;
@@ -2954,9 +2074,9 @@ rndr_root(struct nroff *st, struct bnodeq *obq,
 		}
 		if (date != NULL) {
 			if (copy != NULL)
-				bn = bqueue_block(st, obq, ".ds RF");
+				bn = bqueue_block(obq, ".ds RF");
 			else
-				bn = bqueue_block(st, obq, ".DA");
+				bn = bqueue_block(obq, ".DA");
 			if (bn == NULL)
 				goto out;
 			if ((bn->args = strdup(date)) == NULL)
@@ -2964,7 +2084,7 @@ rndr_root(struct nroff *st, struct bnodeq *obq,
 		}
 
 		if (msheader != NULL &&
-		    bqueue_block(st, obq, msheader) == NULL)
+		    bqueue_block(obq, msheader) == NULL)
 			goto out;
 
 		/*
@@ -2974,7 +2094,7 @@ rndr_root(struct nroff *st, struct bnodeq *obq,
 		 * anyway.
 		 */
 
-		if (bqueue_block(st, obq, ".TL") == NULL)
+		if (bqueue_block(obq, ".TL") == NULL)
 			goto out;
 		if (title != NULL) {
 			if ((bn = bqueue_span(obq, NULL)) == NULL)
@@ -3036,20 +2156,20 @@ rndr_root(struct nroff *st, struct bnodeq *obq,
 
 		if (date == NULL)
 			date = "$Mdocdate$";
-		if ((bn = bqueue_block(st, obq, ".Dd")) == NULL ||
+		if ((bn = bqueue_block(obq, ".Dd")) == NULL ||
 		    (bn->args = strdup(date)) == NULL)
 			goto out;
-		if ((bn = bqueue_block(st, obq, ".Dt")) == NULL)
+		if ((bn = bqueue_block(obq, ".Dt")) == NULL)
 			goto out;
 		if (asprintf(&bn->args, "%s %s", title, sec) == -1) {
 			bn->args = NULL;
 			goto out;
 		}
-		if ((bn = bqueue_block(st, obq, ".Os")) == NULL)
+		if ((bn = bqueue_block(obq, ".Os")) == NULL)
 			goto out;
 	} else {
 		if (manheader != NULL &&
-		    bqueue_block(st, obq, manheader) == NULL)
+		    bqueue_block(obq, manheader) == NULL)
 			goto out;
 
 		if ((ob = hbuf_new(32)) == NULL)
@@ -3060,7 +2180,7 @@ rndr_root(struct nroff *st, struct bnodeq *obq,
 		 * TH name section date [source [volume]].
 		 */
 
-		if ((bn = bqueue_block(st, obq, ".TH")) == NULL)
+		if ((bn = bqueue_block(obq, ".TH")) == NULL)
 			goto out;
 		if (!HBUF_PUTSL(ob, "\""))
 			goto out;
