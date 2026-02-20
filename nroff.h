@@ -103,4 +103,8 @@ int
 nroff_manpage_paragraph(struct nroff *st, const struct lowdown_node *n,
     struct bnodeq *obq, struct bnodeq *nbq);
 
+int
+nroff_manpage_codespan(struct nroff *st, struct bnodeq *obq,
+    const struct lowdown_buf *);
+
 #endif /* !NROFF_H */

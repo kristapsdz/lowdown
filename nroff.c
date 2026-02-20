@@ -1000,9 +1000,19 @@ rndr_blockquote(struct nroff *st, struct bnodeq *obq,
 }
 
 static int
-rndr_codespan(struct bnodeq *obq, const struct rndr_codespan *param)
+rndr_codespan(struct nroff *st, struct bnodeq *obq,
+    const struct rndr_codespan *param)
 {
 	struct bnode	*bn;
+	int		 rc;
+
+	if (st->type == LOWDOWN_MDOC || st->type == LOWDOWN_MAN) {
+		rc = nroff_manpage_codespan(st, obq, &param->text);
+		if (rc < 0)
+			return 0;
+		else if (rc == 0)
+			return 1;
+	}
 
 	if ((bn = bqueue_span(obq, NULL)) == NULL)
 		return 0;
@@ -1877,6 +1887,9 @@ rndr_font_pre(struct nroff *st, const struct lowdown_node *n,
 
 	switch (n->type) {
 	case LOWDOWN_CODESPAN:
+		if (st->type == LOWDOWN_MDOC ||
+		    st->type == LOWDOWN_MAN)
+			return 1;
 		st->fonts[NFONT_FIXED]++;
 		return bqueue_font(st, obq, 0);
 	case LOWDOWN_EMPHASIS:
@@ -1908,6 +1921,9 @@ rndr_font_post(struct nroff *st, const struct lowdown_node *n,
 
 	switch (n->type) {
 	case LOWDOWN_CODESPAN:
+		if (st->type == LOWDOWN_MDOC ||
+		    st->type == LOWDOWN_MAN)
+			return 1;
 	case LOWDOWN_EMPHASIS:
 	case LOWDOWN_HIGHLIGHT:
 	case LOWDOWN_DOUBLE_EMPHASIS:
@@ -2359,7 +2375,7 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_autolink(st, obq, n);
 		break;
 	case LOWDOWN_CODESPAN:
-		rc = rndr_codespan(obq, &n->rndr_codespan);
+		rc = rndr_codespan(st, obq, &n->rndr_codespan);
 		break;
 	case LOWDOWN_IMAGE:
 		rc = rndr_image(st, obq, &n->rndr_image);
