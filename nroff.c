@@ -24,6 +24,7 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -132,6 +133,37 @@ bqueue_colour(struct bnodeq *bq, enum lowdown_chng chng, int close)
 }
 
 /* 
+ * Like bqueue_font(), but also pushing to or popping from the stack of
+ * open fonts.
+ */
+int
+bqueue_font_mod(struct nroff *st, struct bnodeq *bq, int close,
+    enum nfont font)
+{
+	struct bnode	*bn;
+
+	if ((bn = calloc(1, sizeof(struct bnode))) == NULL)
+		return 0;
+
+	if (close) {
+		assert(st->fonts[font] > 0);
+		st->fonts[font]--;
+	} else
+		st->fonts[font]++;
+
+	TAILQ_INSERT_TAIL(bq, bn, entries);
+	bn->scope = BSCOPE_FONT;
+	bn->close = close;
+	if (st->fonts[NFONT_FIXED])
+		bn->font |= BFONT_FIXED;
+	if (st->fonts[NFONT_BOLD])
+		bn->font |= BFONT_BOLD;
+	if (st->fonts[NFONT_ITALIC])
+		bn->font |= BFONT_ITALIC;
+	return 1;
+}
+
+/* 
  * Add zero or more font changes into the font queue.  If "close" is
  * set, the font reverts to the standard.  Returns zero on failure
  * (memory), non-zero on success.  See bqueue_flush().
@@ -204,6 +236,83 @@ bqueue_block(struct bnodeq *bq, const char *text)
 }
 
 /*
+ * Add a semiblock with optional safe macro name to the token queue and
+ * return the allocated node, returning NULL on failure (memory).  On
+ * success, the node has already been appended to the queue.  See
+ * bqueue_flush().
+ */
+struct bnode *
+bqueue_sblock(struct bnodeq *bq, const char *text)
+{
+
+	return bqueue_node(bq, BSCOPE_SEMI, text);
+}
+
+/*
+ * Like bqueue_sblock(), but accepting the "nargs" option.  If failure
+ * occurs, the "nargs" is freed.  If "nargs" is NULL, returns failure.
+ */
+struct bnode *
+bqueue_sblockn(struct bnodeq *bq, const char *text, char *nargs)
+{
+	struct bnode	*bn;
+
+	if (nargs == NULL)
+		return NULL;
+
+	if ((bn = bqueue_sblock(bq, text)) == NULL) {
+		free(nargs);
+		return NULL;
+	}
+	bn->nargs = nargs;
+	return bn;
+}
+
+/*
+ * Like bqueue_block(), but accepting the "nargs" option.  If failure
+ * occurs, the "nargs" is freed.  If "nargs" is NULL, returns failure.
+ */
+struct bnode *
+bqueue_blockn(struct bnodeq *bq, const char *text, char *nargs)
+{
+	struct bnode	*bn;
+
+	if (nargs == NULL)
+		return NULL;
+
+	if ((bn = bqueue_block(bq, text)) == NULL) {
+		free(nargs);
+		return NULL;
+	}
+	bn->nargs = nargs;
+	return bn;
+}
+
+/*
+ * Like bqueue_block(), but accepting variable arguments for the "nargs"
+ * option.
+ */
+struct bnode *
+bqueue_blocknv(struct bnodeq *bq, const char *text, const char *fmt, ...)
+{
+	struct bnode	*bn;
+	va_list		 ap;
+	int		 rc;
+
+	if ((bn = bqueue_block(bq, text)) == NULL)
+		return NULL;
+
+	va_start(ap, fmt);
+	rc = vasprintf(&bn->nargs, fmt, ap);
+	va_end(ap);
+	if (rc == -1) {
+		bn->nargs = NULL;
+		return NULL;
+	}
+	return bn;
+}
+
+/*
  * Free individual node.  Safe to call with NULL node.
  */
 static void
@@ -261,22 +370,22 @@ int
 bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
     const struct bnodeq *bq, unsigned int linestrip)
 {
-	const struct bnode	*bn, *chk, *next;
-	const char		*cp;
-	int		 	 nextblk, abuttingspan;
-	char			 trailingchar;
+	const struct bnode	*bn, /* current node */
+	      			*tmpbn; /* temporary node */
+	const char		*cp; /* temporary array */
+	int		 	 eoln, /* output eolnchar at end */
+				 eomacro; /* end of macro=1, 2=nosp */
+	char			 eolnchar; /* char at eoln */
 
 	TAILQ_FOREACH(bn, bq, entries) {
 		if (linestrip > 1 &&
-		    (bn->scope == BSCOPE_SEMI ||
-		     bn->scope == BSCOPE_SEMI_CLOSE ||
+		    ((st->type != LOWDOWN_MDOC &&
+		     (bn->scope == BSCOPE_SEMI ||
+		      bn->scope == BSCOPE_SEMI_CLOSE)) ||
 		     bn->scope == BSCOPE_FONT))
 			continue;
-		if (bn->scope == BSCOPE_SEMI ||
-		    bn->scope == BSCOPE_SEMI_CLOSE)
-			assert(st->type != LOWDOWN_MDOC);
 
-		nextblk = abuttingspan = 0;
+		eoln = eomacro = 0;
 
 		/*
 		 * The semi-block macro is a span (within text content),
@@ -284,7 +393,8 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		 * use "\c" to inhibit whitespace prior to the macro.
 		 */
 
-		if (bn->scope == BSCOPE_SEMI &&
+		if (st->type != LOWDOWN_MDOC &&
+		    bn->scope == BSCOPE_SEMI &&
 		    ob->size > 0 && 
 		    ob->data[ob->size - 1] != '\n' &&
 		    !hbuf_puts(ob, "\\c"))
@@ -313,7 +423,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 				    !hbuf_putc(ob, '\n'))
 					return 0;
 			}
-			nextblk = 1;
+			eoln = 1;
 		}
 
 		/* 
@@ -323,25 +433,25 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 
 		if (bn->scope == BSCOPE_FONT ||
 		    bn->scope == BSCOPE_COLOUR) {
-			chk = bn->close ?
+			tmpbn = bn->close ?
 				TAILQ_PREV(bn, bnodeq, entries) :
 				TAILQ_NEXT(bn, entries);
-			if (chk != NULL && 
-			    (chk->scope == BSCOPE_SEMI ||
-			     chk->scope == BSCOPE_SEMI_CLOSE ||
-			     chk->scope == BSCOPE_BLOCK)) {
+			if (tmpbn != NULL && 
+			    (tmpbn->scope == BSCOPE_SEMI ||
+			     tmpbn->scope == BSCOPE_SEMI_CLOSE ||
+			     tmpbn->scope == BSCOPE_BLOCK)) {
 				if (!linestrip &&
 				    ob->size > 0 && 
 				    ob->data[ob->size - 1] != '\n' &&
 				    !hbuf_putc(ob, '\n'))
 					return 0;
-				nextblk = 1;
+				eoln = 1;
 			}
 		}
 
 		/* Print font and colour escapes. */
 
-		if (bn->scope == BSCOPE_FONT && nextblk && !linestrip) {
+		if (bn->scope == BSCOPE_FONT && eoln && !linestrip) {
 			if (!HBUF_PUTSL(ob, ".ft "))
 				return 0;
 			if (!nstate_font(st, ob, bn->font, 0))
@@ -351,7 +461,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 				return 0;
 			if (!nstate_font(st, ob, bn->font, 1))
 				return 0;
-		} else if (bn->scope == BSCOPE_COLOUR && nextblk && !linestrip) {
+		} else if (bn->scope == BSCOPE_COLOUR && eoln && !linestrip) {
 			if (!hbuf_printf(ob, ".gcolor %s", 
 			    nstate_colour_buf(bn->colour)))
 				return 0;
@@ -387,14 +497,17 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 
 		/* Safe data need not be escaped. */
 
-		if (bn->scope == BSCOPE_BLOCK &&
-		    linestrip &&
-		    bn->nbuf != NULL &&
-		    bn->nbuf[0] == '.') {
+		if (linestrip &&
+		    (bn->scope == BSCOPE_BLOCK ||
+		     bn->scope == BSCOPE_SEMI) && 
+		    bn->nbuf != NULL && bn->nbuf[0] == '.') {
 			if (!hbuf_puts(ob, bn->nbuf + 1))
 				return 0;
-		} else if (bn->nbuf != NULL && !hbuf_puts(ob, bn->nbuf))
-			return 0;
+		} else {
+			if (bn->nbuf != NULL &&
+			    !hbuf_puts(ob, &bn->nbuf[0]))
+				return 0;
+		}
 
 		/* Unsafe data must be escaped. */
 
@@ -415,10 +528,10 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		 * the semi-block macro with "\c" to inhibit whitespace.
 		 */
 
-		if ((next = TAILQ_NEXT(bn, entries)) != NULL &&
-		    next->scope == BSCOPE_SPAN &&
-		    next->buf != NULL) {
-			if (next->buf[0] != ' ' && next->buf[0] != '\n') {
+		if ((tmpbn = TAILQ_NEXT(bn, entries)) != NULL &&
+		    tmpbn->scope == BSCOPE_SPAN &&
+		    tmpbn->buf != NULL) {
+			if (tmpbn->buf[0] != ' ' && tmpbn->buf[0] != '\n') {
 				if (st->type == LOWDOWN_MS &&
 				    bn->scope == BSCOPE_SEMI &&
 				    !HBUF_PUTSL(ob, " -A \"\\c\""))
@@ -427,11 +540,15 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 				    bn->scope == BSCOPE_SEMI_CLOSE &&
 				    !HBUF_PUTSL(ob, " \\c"))
 					return 0;
-				if (bn->scope == BSCOPE_BLOCK)
-					abuttingspan = 1;
+				if (st->type == LOWDOWN_MDOC &&
+				    (bn->scope == BSCOPE_BLOCK ||
+				     bn->scope == BSCOPE_SEMI))
+					eomacro = 1;
 			} else {
-				if (bn->scope == BSCOPE_BLOCK)
-					abuttingspan = 2;
+				if (st->type == LOWDOWN_MDOC &&
+				    (bn->scope == BSCOPE_BLOCK ||
+				     bn->scope == BSCOPE_SEMI))
+					eomacro = 2;
 			}
 		}
 
@@ -449,7 +566,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		if (bn->nargs != NULL &&
 		    (bn->scope == BSCOPE_BLOCK ||
 		     bn->scope == BSCOPE_SEMI)) {
-			assert(nextblk);
+			assert(eoln);
 			if (!hbuf_putc(ob, ' '))
 				return 0;
 			for (cp = bn->nargs; *cp != '\0'; cp++)
@@ -459,9 +576,9 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		}
 
 		if (bn->args != NULL) {
-			assert(nextblk);
+			assert(eoln);
 			assert(bn->scope == BSCOPE_BLOCK ||
-				bn->scope == BSCOPE_SEMI);
+			    bn->scope == BSCOPE_SEMI);
 			if (!hbuf_putc(ob, ' '))
 				return 0;
 			if (!lowdown_nroff_esc(ob, bn->args,
@@ -476,12 +593,33 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		 * (2), simply end the macro if there is a space.
 		 */
 
-		if (linestrip && abuttingspan == 1)
+		if (linestrip && eomacro == 1)
 			if (!hbuf_puts(ob, " Ns No "))
 				return 0;
-		if (linestrip && abuttingspan == 2)
+		if (linestrip && eomacro == 2)
 			if (!hbuf_puts(ob, " No "))
 				return 0;
+
+		/*
+		 * Semiblocks for mdoc(7) are within context, so examine
+		 * if the next node is a span with beginning
+		 * puncatuation.
+		 */
+
+		if (st->type == LOWDOWN_MDOC &&
+		    bn->scope == BSCOPE_SEMI &&
+		    (tmpbn = TAILQ_NEXT(bn, entries)) != NULL &&
+		    tmpbn->scope == BSCOPE_SPAN &&
+		    tmpbn->buf != NULL &&
+		    (tmpbn->buf[0] == ',' ||
+		     tmpbn->buf[0] == ';' ||
+		     tmpbn->buf[0] == ')' ||
+		     tmpbn->buf[0] == ':' ||
+		     tmpbn->buf[0] == '.') &&
+		    (tmpbn->buf[1] == '\0' ||
+		     isspace((unsigned char)tmpbn->buf[1]))) {
+			hbuf_puts(ob, " Ns");
+		}
 
 		/*
 		 * The "headerhack" is used by SH block macros to
@@ -493,11 +631,11 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		 * correctly parse empty SH properly.
 		 */
 
-		trailingchar = bn->headerhack ? ' ' : '\n';
+		eolnchar = bn->headerhack ? ' ' : '\n';
 
-		if (nextblk && ob->size > 0 && 
-		    ob->data[ob->size - 1] != trailingchar &&
-		    !hbuf_putc(ob, trailingchar))
+		if (eoln && ob->size > 0 && 
+		    ob->data[ob->size - 1] != eolnchar &&
+		    !hbuf_putc(ob, eolnchar))
 			return 0;
 	}
 
@@ -677,8 +815,7 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 			 * Ignore if inhibiting the link since there's
 			 * no content (show something).
 			 */
-			st->fonts[NFONT_ITALIC]++;
-			if (!bqueue_font(st, obq, 0))
+			if (!bqueue_font_mod(st, obq, 0, NFONT_ITALIC))
 				goto out;
 			if ((bn = bqueue_span(obq, NULL)) == NULL)
 				goto out;
@@ -691,8 +828,7 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 				if (bn->buf == NULL)
 					goto out;
 			}
-			st->fonts[NFONT_ITALIC]--;
-			if (!bqueue_font(st, obq, 1))
+			if (!bqueue_font_mod(st, obq, 1, NFONT_ITALIC))
 				goto out;
 			rc = 1;
 			goto out;
@@ -700,12 +836,10 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 
 		/* Link content exists: output it in bold. */
 
-		st->fonts[NFONT_BOLD]++;
-		if (!bqueue_font(st, obq, 0))
+		if (!bqueue_font_mod(st, obq, 0, NFONT_BOLD))
 			goto out;
 		TAILQ_CONCAT(obq, bq, entries);
-		st->fonts[NFONT_BOLD]--;
-		if (!bqueue_font(st, obq, 1))
+		if (!bqueue_font_mod(st, obq, 1, NFONT_BOLD))
 			goto out;
 
 		/* If inhibiting links, short-circuit here. */
@@ -719,8 +853,7 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 
 		if (bqueue_span(obq, " <") == NULL)
 			goto out;
-		st->fonts[NFONT_ITALIC]++;
-		if (!bqueue_font(st, obq, 0))
+		if (!bqueue_font_mod(st, obq, 0, NFONT_ITALIC))
 			goto out;
 		if ((bn = bqueue_span(obq, NULL)) == NULL)
 			goto out;
@@ -733,8 +866,7 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 			if (bn->buf == NULL)
 				goto out;
 		}
-		st->fonts[NFONT_ITALIC]--;
-		if (!bqueue_font(st, obq, 1))
+		if (!bqueue_font_mod(st, obq, 1, NFONT_ITALIC))
 			goto out;
 		if (bqueue_span(obq, ">") == NULL)
 			goto out;
@@ -999,20 +1131,38 @@ rndr_blockquote(struct nroff *st, struct bnodeq *obq,
 	return 1;
 }
 
+/*
+ * Return a font (e.g., *emphasis*).  Returns FALSE on failure, TRUE on
+ * success.  If this is a mdoc(7) or man(7) file, try to format as a
+ * manpage.  Failing that, just use a regular span of text.
+ */
+static int
+rndr_font(struct nroff *st, struct bnodeq *obq,
+    const struct lowdown_node *n, struct bnodeq *bq)
+{
+	int			 rc;
+
+	if (st->type != LOWDOWN_MDOC && st->type != LOWDOWN_MAN) {
+		TAILQ_CONCAT(obq, bq, entries);
+		return 1;
+	}
+	if ((rc = nroff_manpage_inline(st, n, obq, bq)) < 0)
+		return 0;
+	else if (rc == 0)
+		TAILQ_CONCAT(obq, bq, entries);
+	return 1;
+}
+
+/*
+ * Return a `codespan`.  Returns FALSE on failure, TRUE on success.  If
+ * this is a mdoc(7) or man(7) file, try to format as a manpage.
+ * Failing that, just use a regular span of text.
+ */
 static int
 rndr_codespan(struct nroff *st, struct bnodeq *obq,
     const struct rndr_codespan *param)
 {
 	struct bnode	*bn;
-	int		 rc;
-
-	if (st->type == LOWDOWN_MDOC || st->type == LOWDOWN_MAN) {
-		rc = nroff_manpage_codespan(st, obq, &param->text);
-		if (rc < 0)
-			return 0;
-		else if (rc == 0)
-			return 1;
-	}
 
 	if ((bn = bqueue_span(obq, NULL)) == NULL)
 		return 0;
@@ -1369,7 +1519,7 @@ rndr_paragraph(struct nroff *st, const struct lowdown_node *n,
     struct bnodeq *obq, struct bnodeq *nbq)
 {
 	struct bnode	*bn;
-	int		 rc = 1;
+	int		 rc = 0;
 
 	/* 
 	 * In man(7) and ms(7), subsequent paragraphs get a PP for the
@@ -1381,29 +1531,28 @@ rndr_paragraph(struct nroff *st, const struct lowdown_node *n,
 	 * if in manpage-specific context.
 	 */
 
+	if (st->type == LOWDOWN_MAN || st->type == LOWDOWN_MDOC)
+		rc = nroff_manpage_paragraph(st, n, obq, nbq);
+	if (rc > 0)
+		return 1;
+	else if (rc < 0)
+		return 0;
+
 	if (st->type != LOWDOWN_MDOC) {
-		rc = 1;
-		if (st->type == LOWDOWN_MAN &&
-		    (rc = nroff_manpage_paragraph(st, n, obq, nbq)) < 0)
+		for ( ; n != NULL; n = n->parent)
+			if (n->type == LOWDOWN_LISTITEM)
+				break;
+		if (n != NULL)
+			bn = bqueue_block(obq, ".IP");
+		else if (st->use_lp)
+			bn = bqueue_block(obq, ".LP");
+		else
+			bn = bqueue_block(obq, ".PP");
+		if (bn == NULL)
 			return 0;
-		if (rc > 0) {
-			for ( ; n != NULL; n = n->parent)
-				if (n->type == LOWDOWN_LISTITEM)
-					break;
-			if (n != NULL)
-				bn = bqueue_block(obq, ".IP");
-			else if (st->use_lp)
-				bn = bqueue_block(obq, ".LP");
-			else
-				bn = bqueue_block(obq, ".PP");
-			if (bn == NULL)
-				return 0;
-			st->use_lp = 0;
-		}
+		st->use_lp = 0;
 	} else {
-		if ((rc = nroff_manpage_paragraph(st, n, obq, nbq)) < 0)
-			return 0;
-		if (rc > 0 && !NODE_AFTER_HEAD(n) &&
+		if (!NODE_AFTER_HEAD(n) &&
 		    bqueue_block(obq, ".Pp") == NULL)
 			return 0;
 	}
@@ -1488,16 +1637,14 @@ rndr_image(struct nroff *st, struct bnodeq *obq,
 
 	/* In -Tman, we have no images: treat as a link. */
 
-	st->fonts[NFONT_BOLD]++;
-	if (!bqueue_font(st, obq, 0))
+	if (!bqueue_font_mod(st, obq, 0, NFONT_BOLD))
 		return 0;
 	if ((bn = bqueue_span(obq, NULL)) == NULL)
 		return 0;
 	bn->buf = strndup(param->alt.data, param->alt.size);
 	if (bn->buf == NULL)
 		return 0;
-	st->fonts[NFONT_BOLD]--;
-	if (!bqueue_font(st, obq, 1))
+	if (!bqueue_font_mod(st, obq, 1, NFONT_BOLD))
 		return 0;
 	if ((st->flags & LOWDOWN_NOLINK) ||
 	    ((st->flags & LOWDOWN_NORELLINK) &&
@@ -1505,8 +1652,7 @@ rndr_image(struct nroff *st, struct bnodeq *obq,
 		return bqueue_span(obq, " (Image)") != NULL;
 	if (bqueue_span(obq, " (Image: ") == NULL)
 		return 0;
-	st->fonts[NFONT_ITALIC]++;
-	if (!bqueue_font(st, obq, 0))
+	if (!bqueue_font_mod(st, obq, 0, NFONT_ITALIC))
 		return 0;
 	if ((bn = bqueue_span(obq, NULL)) == NULL)
 		return 0;
@@ -1519,8 +1665,7 @@ rndr_image(struct nroff *st, struct bnodeq *obq,
 		if (bn->buf == NULL)
 			return 0;
 	}
-	st->fonts[NFONT_ITALIC]--;
-	if (!bqueue_font(st, obq, 1))
+	if (!bqueue_font_mod(st, obq, 1, NFONT_ITALIC))
 		return 0;
 	return bqueue_span(obq, ")") != NULL;
 }
@@ -1884,21 +2029,32 @@ static int
 rndr_font_pre(struct nroff *st, const struct lowdown_node *n,
     struct bnodeq *obq)
 {
+	/*
+	 * mdoc(7) and man(7) passes font commands into the manpage
+	 * parser to determine the content type and response.  FIXME: if
+	 * the parser in nroff_manpage_inline() fails to convert, then
+	 * this strips away any formatting unilaterally.
+	 */
+
+	if (st->type == LOWDOWN_MDOC || st->type == LOWDOWN_MAN)
+		switch (n->type) {
+		case LOWDOWN_EMPHASIS:
+		case LOWDOWN_HIGHLIGHT:
+		case LOWDOWN_DOUBLE_EMPHASIS:
+		case LOWDOWN_TRIPLE_EMPHASIS:
+			return 1;
+		default:
+			break;
+		}
 
 	switch (n->type) {
 	case LOWDOWN_CODESPAN:
-		if (st->type == LOWDOWN_MDOC ||
-		    st->type == LOWDOWN_MAN)
-			return 1;
-		st->fonts[NFONT_FIXED]++;
-		return bqueue_font(st, obq, 0);
+		return bqueue_font_mod(st, obq, 0, NFONT_FIXED);
 	case LOWDOWN_EMPHASIS:
-		st->fonts[NFONT_ITALIC]++;
-		return bqueue_font(st, obq, 0);
+		return bqueue_font_mod(st, obq, 0, NFONT_ITALIC);
 	case LOWDOWN_HIGHLIGHT:
 	case LOWDOWN_DOUBLE_EMPHASIS:
-		st->fonts[NFONT_BOLD]++;
-		return bqueue_font(st, obq, 0);
+		return bqueue_font_mod(st, obq, 0, NFONT_BOLD);
 	case LOWDOWN_TRIPLE_EMPHASIS:
 		st->fonts[NFONT_ITALIC]++;
 		st->fonts[NFONT_BOLD]++;
@@ -1918,12 +2074,24 @@ static int
 rndr_font_post(struct nroff *st, const struct lowdown_node *n,
     const enum nfont *fonts, struct bnodeq *obq)
 {
+	/*
+	 * mdoc(7) and man(7) passes font commands into the manpage
+	 * parser to determine the content type and response.
+	 */
+
+	if (st->type == LOWDOWN_MDOC || st->type == LOWDOWN_MAN)
+		switch (n->type) {
+		case LOWDOWN_EMPHASIS:
+		case LOWDOWN_HIGHLIGHT:
+		case LOWDOWN_DOUBLE_EMPHASIS:
+		case LOWDOWN_TRIPLE_EMPHASIS:
+			return 1;
+		default:
+			break;
+		}
 
 	switch (n->type) {
 	case LOWDOWN_CODESPAN:
-		if (st->type == LOWDOWN_MDOC ||
-		    st->type == LOWDOWN_MAN)
-			return 1;
 	case LOWDOWN_EMPHASIS:
 	case LOWDOWN_HIGHLIGHT:
 	case LOWDOWN_DOUBLE_EMPHASIS:
@@ -2005,8 +2173,9 @@ rndr_meta(struct nroff *st, const struct lowdown_node *n,
 		val = (ssize_t)strtonum(m->value, 1, 100, &ep);
 		if (ep == NULL)
 			st->headers_offs = val;
-	} else if (strcasecmp(m->key, "section") == 0)
+	} else if (strcasecmp(m->key, "section") == 0) {
 		st->headers_sec = m->value;
+	}
 
 	return 1;
 }
@@ -2374,6 +2543,12 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 	case LOWDOWN_LINK_AUTO:
 		rc = rndr_autolink(st, obq, n);
 		break;
+	case LOWDOWN_EMPHASIS:
+	case LOWDOWN_HIGHLIGHT:
+	case LOWDOWN_DOUBLE_EMPHASIS:
+	case LOWDOWN_TRIPLE_EMPHASIS:
+		rc = rndr_font(st, obq, n, &tmpbq);
+		break;
 	case LOWDOWN_CODESPAN:
 		rc = rndr_codespan(st, obq, &n->rndr_codespan);
 		break;
@@ -2513,15 +2688,22 @@ lowdown_nroff_rndr(struct lowdown_buf *ob,
 	}
 
 out:
+	hbuf_free(tmp);
+
+	for (i = 0; i < st->namesz; i++)
+		free(st->names[i]);
+	free(st->names);
+	st->names = NULL;
+	st->namesz = 0;
+
 	for (i = 0; i < st->footsz; i++) {
 		bqueue_free(st->foots[i]);
 		free(st->foots[i]);
 	}
-
-	hbuf_free(tmp);
 	free(st->foots);
-	st->footsz = st->footpos = 0;
 	st->foots = NULL;
+	st->footsz = st->footpos = 0;
+
 	lowdown_metaq_free(&metaq);
 	bqueue_free(&bq);
 	hentryq_clear(&st->headers_used);

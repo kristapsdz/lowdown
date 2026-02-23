@@ -21,6 +21,7 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,6 +40,51 @@ nroff_manpage_synopsis_prog_ar(struct nroff *, struct bnodeq *, size_t,
     const struct lowdown_buf *, char **);
 
 /*
+ * Concatenate the formatted output of "fmt" onto "buf", which may or
+ * may not already have been allocated.  Returns TRUE on succes, FALSE
+ * on failure.  On failure, "buf" is freed and set to NULL.
+ */
+static int __attribute__((format(printf, 2, 3)))
+concatv(char **buf, const char *fmt, ...) 
+{
+	va_list	 ap;
+	char	*fbuf, *outbuf;
+	int	 rc;
+
+	assert(buf != NULL);
+
+	/* First, create the desired output. */
+
+	va_start(ap, fmt);
+	rc = vasprintf(&fbuf, fmt, ap);
+	va_end(ap);
+	if (rc == -1) {
+		free(*buf);
+		*buf = NULL;
+		return 0;
+	}
+
+	/* If the destination is not set, just copy into it. */
+
+	if (*buf == NULL) {
+		*buf = fbuf;
+		return 1;
+	}
+
+	/* Otherwise, concatenate into a new buffer and return it. */
+
+	rc = asprintf(&outbuf, "%s%s", *buf, fbuf);
+	free(fbuf);
+	free(*buf);
+	if (rc == -1) {
+		*buf = NULL;
+		return 0;
+	}
+	*buf = outbuf;
+	return 1;
+}
+
+/*
  * Parse a sequence [xxx -yyy zzz].  Returns <0 on failure (memory), 0
  * if parsing fails, and the position otherwise.  Set "out" to be the
  * allocated content or NULL if there's no content.
@@ -48,8 +94,9 @@ nroff_manpage_synopsis_prog_op(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf, char **out)
 {
 	ssize_t		 ssz;
-	char		*cp, *ncp, *nncp;
+	char		*cp, *ncp;
 	int		 rc;
+	size_t		 mspace = 0;
 
 	*out = NULL;
 
@@ -83,6 +130,10 @@ nroff_manpage_synopsis_prog_op(struct nroff *st, struct bnodeq *nq,
 				cp == NULL ? "" : cp) :
 			    asprintf(&ncp, "[%s]", 
 				cp == NULL ? "" : cp);
+		} else if (buf->data[pos] == '|') {
+			cp = NULL;
+			rc = (ncp = strdup("|")) == NULL ? -1 : 1;
+			ssz = pos + 1;
 		} else {
 			ssz = nroff_manpage_synopsis_prog_ar
 			    (st, nq, pos, buf, &cp);
@@ -94,7 +145,6 @@ nroff_manpage_synopsis_prog_op(struct nroff *st, struct bnodeq *nq,
 			    asprintf(&ncp, "\\fI%s\\fR",
 				cp == NULL ? "" : cp);
 		}
-
 		free(cp);
 		if (rc == -1) {
 			free(*out);
@@ -104,21 +154,26 @@ nroff_manpage_synopsis_prog_op(struct nroff *st, struct bnodeq *nq,
 		/* Either set "out" or concatenate to it. */
 
 		if (*out != NULL) {
-			rc = asprintf(&nncp, "%s %s", *out, ncp);
-			free(*out);
+			rc = st->type == LOWDOWN_MDOC ?
+			    concatv(out, "%s%s", mspace == 0 ?
+				" Ns " : " ", ncp) :
+			    concatv(out, "%s%s", mspace == 0 ?
+				"" : " ", ncp);
 			free(ncp);
-			if (rc == -1)
+			if (rc == 0)
 				return -1;
-			*out = nncp;
 		} else
 			*out = ncp;
 
 		/* Skip to the next non-space. */
 
+		mspace = 0;
 		pos = ssz;
 		while (pos < buf->size &&
-		    isspace((unsigned char)buf->data[pos]))
+		    isspace((unsigned char)buf->data[pos])) {
+			mspace++;
 			pos++;
+		}
 	}
 
 	/* Either have a matching bracket or bad data. */
@@ -141,7 +196,7 @@ static ssize_t
 nroff_manpage_synopsis_prog_ar(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf, char **out)
 {
-	size_t	 	 i, start;
+	size_t	 	 start;
 	char		*cp = NULL;
 
 	*out = NULL;
@@ -201,22 +256,6 @@ nroff_manpage_synopsis_prog_ar(struct nroff *st, struct bnodeq *nq,
 			    buf->data[pos] == '|')
 				break;
 		}
-
-		/*
-		 * Scan ahead: is there an "OR" bar?  This is a common
-		 * idiom like [foo | bar].  Consume up to and including
-		 * the bar.
-		 */
-
-		if (pos < buf->size &&
-		    (isspace((unsigned char)buf->data[pos]) ||
-		     buf->data[pos] == '|')) {
-			for (i = pos; i < buf->size; i++)
-				if (!isspace((unsigned char)buf->data[i]))
-					break;
-			if (i < buf->size && buf->data[i] == '|')
-				pos = ++i;
-		}
 		if ((cp = hbuf_stringn(buf, start, pos)) == NULL)
 			return -1;
 	}
@@ -229,20 +268,24 @@ nroff_manpage_synopsis_prog_ar(struct nroff *st, struct bnodeq *nq,
  * Parse a flag.  Flags are longform if they start with \(en or --
  * instead of -.  There are some special cases like the vertical bar.
  * Returns <0 on failure (memory), 0 if parsing fails, and the position
- * otherwise.
+ * otherwise.  The position should NOT skip over white-space.
  */
 static ssize_t
 nroff_manpage_synopsis_prog_fl(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf, char **out, int first)
 {
-	size_t	 start, i;
-	ssize_t	 ssz;
-	char	*cp = NULL, *ncp;
-	int	 ns = 0, rc, longform = 0;
+	size_t		 start, save_end;
+	ssize_t		 ssz;
+	char		*ncp;
+	int		 ns = 0, rc, longform = 0;
 
 	*out = NULL;
 
-	/* Whether starting with "-" or "--". */
+	/*
+	 * Whether starting with "-" or "--".  If this is man(7), print
+	 * all the "-".  In mdoc(7), the surrounding `Fl` will output
+	 * one. 
+	 */
 
 	if (hbuf_strncasecmpat(buf, "\\(en", pos)) {
 		longform = 1;
@@ -253,15 +296,14 @@ nroff_manpage_synopsis_prog_fl(struct nroff *st, struct bnodeq *nq,
 	} else
 		pos += 1;
 
-	/*
-	 * If this is man(7), print all the "-".  In mdoc(7), the
-	 * surrounding `Fl` will output one. 
-	 */
-
 	if (st->type == LOWDOWN_MAN)
 		longform++;
 
-	/* Read until space or Oo/Oc close or open. */
+	/*
+	 * Read until initial end-of-expression and allocate the flag.
+	 * The endpoint might be adjusted later when we test if there
+	 * are trailing flag expressions.
+	 */
 
 	for (start = pos; pos < buf->size; pos++)
 		if (isspace((unsigned char)buf->data[pos]) ||
@@ -271,34 +313,16 @@ nroff_manpage_synopsis_prog_fl(struct nroff *st, struct bnodeq *nq,
 		    buf->data[pos] == ']')
 			break;
 
-	/*
-	 * Scan ahead: is there an "OR" bar?  This is a common idiom
-	 * like [-v | --verbose].  Consume up to and including the bar.
-	 */
-
-	if (pos < buf->size &&
-	    (isspace((unsigned char)buf->data[pos]) ||
-	     buf->data[pos] == '|')) {
-		for (i = pos; i < buf->size; i++)
-			if (!isspace((unsigned char)buf->data[i]))
-				break;
-		if (i < buf->size && buf->data[i] == '|')
-			pos = ++i;
-	}
-
-	if (longform == 2 &&
-	    asprintf(&cp, "\\-\\-%s", hbuf_stringn(buf, start, pos)) == -1)
-		cp = NULL;
-	else if (longform == 1 &&
-	    asprintf(&cp, "\\-%s", hbuf_stringn(buf, start, pos)) == -1)
-		cp = NULL;
-	else if (longform == 0)
-		cp = hbuf_stringn(buf, start, pos);
-
-	if (cp == NULL)
+	save_end = pos;
+	if ((ncp = hbuf_stringn(buf, start, pos)) == NULL)
 		return -1;
-
-	*out = cp;
+	if (asprintf(out, "%s%s%s", longform > 1 ? "\\-" : "",
+	    longform > 0 ? "\\-" : "", ncp) == -1) {
+		*out = NULL;
+		free(ncp);
+		return -1;
+	}
+	free(ncp);
 
 	/*
 	 * Scan ahead: is there something after that's part of the flag?
@@ -321,7 +345,21 @@ nroff_manpage_synopsis_prog_fl(struct nroff *st, struct bnodeq *nq,
 	if (first && !ns)
 		return pos;
 
-	/* Continue with embedded options... */
+	/*
+	 * Special-case: if there's an equal sign flush-left like -f=foo
+	 * or -f=[bar], or really anything that's not white-space after
+	 * the equal sign, then don't render the equal sign as part of
+	 * the argument.
+	 */
+
+	if (ns && pos + 1 < buf->size && buf->data[pos] == '=' &&
+	    !isspace((unsigned char)buf->data[pos + 1])) {
+		pos++;
+		rc = st->type == LOWDOWN_MDOC ?
+		    concatv(out, " Ns =") : concatv(out, "=");
+	}
+
+	/* If followed by an option, consider it part of the flag. */
 
 	if (pos < buf->size && buf->data[pos] == '[') {
 		ssz = nroff_manpage_synopsis_prog_op(st, nq, pos,
@@ -329,41 +367,43 @@ nroff_manpage_synopsis_prog_fl(struct nroff *st, struct bnodeq *nq,
 		if (ssz <= 0)
 			return ssz;
 		rc = st->type == LOWDOWN_MDOC ?
-		    asprintf(&cp, "%s%sOo %s Oc", *out,
-			ns ?  " Ns " : " ", ncp == NULL ? "" : ncp) :
-		    asprintf(&cp, "%s%s[%s]", *out,
-			ns ? "" : " ", ncp == NULL ? "" : ncp);
+		    concatv(out, "%sOo %s Oc", ns ? " Ns " : " ",
+			ncp == NULL ? "" : ncp) :
+		    concatv(out, "%s[%s]", ns ? "" : " ",
+			ncp == NULL ? "" : ncp);
 		free(ncp);
-		free(*out);
-		if (rc == -1)
+		if (rc == 0)
 			return -1;
-		*out = cp;
 		return ssz;
 	}
 
-	/* Now just a trailing argument. */
+	/* If followed by an argument, consider it part of the flag. */
 
-	if (pos < buf->size && buf->data[pos] != '[' &&
-	    buf->data[pos] != ']' && buf->data[pos] != '-' &&
+	if (pos < buf->size &&
+	    buf->data[pos] != '[' && buf->data[pos] != ']' &&
+	    buf->data[pos] != '|' && buf->data[pos] != '-' &&
 	    !hbuf_strncasecmpat(buf, "\\(en", pos)) {
 		ssz = nroff_manpage_synopsis_prog_ar(st, nq, pos,
 		    buf, &ncp);
 		if (ssz <= 0)
 			return ssz;
 		rc = st->type == LOWDOWN_MDOC ?
-		    asprintf(&cp, "%s%sAr %s", *out,
-			ns ?  " Ns " : " ", ncp) :
-		    asprintf(&cp, "%s%s\\fI%s\\fR", *out,
-			ns ?  "" : " ", ncp);
+		    concatv(out, "%sAr %s", ns ? " Ns " : " ",
+			ncp == NULL ? "" : ncp) :
+		    concatv(out, "%s\\fI%s\\fR", ns ?  "" : " ",
+			ncp == NULL ? "" : ncp);
 		free(ncp);
-		free(*out);
-		if (rc == -1)
+		if (rc == 0)
 			return -1;
-		*out = cp;
 		return ssz;
 	}
 
-	return pos;
+	/*
+	 * If neither trailing options are correct, revert to the
+	 * initial saved ending point.
+	 */
+
+	return save_end;
 }
 
 /*
@@ -392,6 +432,12 @@ nroff_manpage_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
 	if (buf->data[pos] == ']')
 		return 0;
 
+	if (buf->data[pos] == '|') {
+		if (bqueue_span(nq, "|") == NULL)
+			return -1;
+		return pos + 1;
+	}
+
 	/*
 	 * Subexpressions can either begin with a hyphen (or a long
 	 * hyphen) for Fl, a square bracket for Oo/Oc, or anything else
@@ -401,17 +447,17 @@ nroff_manpage_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
 	if (st->type == LOWDOWN_MDOC) {
 		if (hbuf_strncasecmpat(buf, "\\(en", pos) ||
 		    buf->data[pos] == '-') {
-			if ((bn = bqueue_block(nq, ".Fl")) == NULL)
+			if ((bn = bqueue_sblock(nq, ".Fl")) == NULL)
 				goto out;
 			ssz = nroff_manpage_synopsis_prog_fl
 			    (st, nq, pos, buf, &cp, first);
 		} else if (buf->data[pos] == '[') {
-			if ((bn = bqueue_block(nq, ".Op")) == NULL)
+			if ((bn = bqueue_sblock(nq, ".Op")) == NULL)
 				goto out;
 			ssz = nroff_manpage_synopsis_prog_op
 			    (st, nq, pos, buf, &cp);
 		} else {
-			if ((bn = bqueue_block(nq, ".Ar")) == NULL)
+			if ((bn = bqueue_sblock(nq, ".Ar")) == NULL)
 				goto out;
 			ssz = nroff_manpage_synopsis_prog_ar
 			    (st, nq, pos, buf, &cp);
@@ -426,13 +472,11 @@ nroff_manpage_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
 			    (st, nq, pos, buf, &cp, first);
 			if (ssz <= 0)
 				goto out;
-			st->fonts[NFONT_BOLD]++;
-			if (!bqueue_font(st, nq, 0) ||
+			if (!bqueue_font_mod(st, nq, 0, NFONT_BOLD) ||
 			    (cp != NULL && bqueue_span(nq, cp) == NULL))
 				goto out;
 			cp = NULL;
-			st->fonts[NFONT_BOLD]--;
-			if (!bqueue_font(st, nq, 1) ||
+			if (!bqueue_font_mod(st, nq, 1, NFONT_BOLD) ||
 			    (first && bqueue_span(nq, "\n") == NULL))
 				goto out;
 		} else if (buf->data[pos] == '[') {
@@ -452,13 +496,11 @@ nroff_manpage_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
 			    (st, nq, pos, buf, &cp);
 			if (ssz <= 0)
 				goto out;
-			st->fonts[NFONT_ITALIC]++;
-			if (!bqueue_font(st, nq, 0) ||
+			if (!bqueue_font_mod(st, nq, 0, NFONT_ITALIC) ||
 			    (cp != NULL && bqueue_span(nq, cp) == NULL))
 				goto out;
 			cp = NULL;
-			st->fonts[NFONT_ITALIC]--;
-			if (!bqueue_font(st, nq, 1) ||
+			if (!bqueue_font_mod(st, nq, 1, NFONT_ITALIC) ||
 			    (first && bqueue_span(nq, "\n") == NULL))
 				goto out;
 		}
@@ -476,7 +518,6 @@ static ssize_t
 nroff_manpage_synopsis_func_incl(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf)
 {
-	struct bnode	*bn;
 	char		*cp;
 	size_t		 start;
 
@@ -495,26 +536,21 @@ nroff_manpage_synopsis_func_incl(struct nroff *st, struct bnodeq *nq,
 	if ((cp = hbuf_stringn(buf, start, pos)) == NULL)
 		return -1;
 	if (st->type == LOWDOWN_MDOC) {
-		if ((bn = bqueue_block(nq, ".In")) == NULL) {
-			free(cp);
+		if (bqueue_blockn(nq, ".In", cp) == NULL)
 			return -1;
-		}
-		bn->nargs = cp;
 	} else {
 		if (bqueue_block(nq, ".sp") == NULL) {
 			free(cp);
 			return -1;
 		}
-		st->fonts[NFONT_BOLD]++;
-		if (!bqueue_font(st, nq, 0) ||
+		if (!bqueue_font_mod(st, nq, 0, NFONT_BOLD) ||
 		    bqueue_span(nq, "#include <") == NULL ||
 		    bqueue_span(nq, cp) == NULL ||
 		    bqueue_span(nq, ">") == NULL) {
 			free(cp);
 			return -1;
 		}
-		st->fonts[NFONT_BOLD]--;
-		if (!bqueue_font(st, nq, 1) ||
+		if (!bqueue_font_mod(st, nq, 1, NFONT_BOLD) ||
 		    bqueue_span(nq, "\n") == NULL)
 			return -1;
 	}
@@ -537,7 +573,6 @@ static ssize_t
 nroff_manpage_synopsis_func_decl(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf)
 {
-	struct bnode	*bn;
 	size_t		 i, paren, arg, nest;
 	char		*cp, *ncp;
 	int		 first = 1;
@@ -558,8 +593,8 @@ nroff_manpage_synopsis_func_decl(struct nroff *st, struct bnodeq *nq,
 			break;
 
 	if (paren == buf->size || paren == pos) {
-		if ((bn = bqueue_block(nq, ".Vt")) == NULL ||
-		    (bn->nargs = hbuf_stringn(buf, pos, buf->size)) == NULL)
+		if (bqueue_blockn(nq, ".Vt",
+		    hbuf_stringn(buf, pos, buf->size)) == NULL)
 			return -1;
 		return buf->size;
 	}
@@ -583,20 +618,15 @@ nroff_manpage_synopsis_func_decl(struct nroff *st, struct bnodeq *nq,
 		if ((cp = hbuf_stringn(buf, pos, i)) == NULL)
 			return -1;
 		if (st->type == LOWDOWN_MDOC) {
-			if ((bn = bqueue_block(nq, ".Ft")) == NULL) {
-				free(cp);
+			if (bqueue_blockn(nq, ".Ft", cp) == NULL)
 				return -1;
-			}
-			bn->nargs = cp;
 		} else {
-			st->fonts[NFONT_ITALIC]++;
-			if (!bqueue_font(st, nq, 0) ||
+			if (!bqueue_font_mod(st, nq, 0, NFONT_ITALIC) ||
 			    bqueue_span(nq, cp) == NULL) {
 				free(cp);
 				return -1;
 			}
-			st->fonts[NFONT_ITALIC]--;
-			if (!bqueue_font(st, nq, 1) ||
+			if (!bqueue_font_mod(st, nq, 1, NFONT_ITALIC) ||
 			    bqueue_span(nq, "\n") == NULL ||
 			    bqueue_block(nq, ".br") == NULL ||
 			    bqueue_block(nq, ".in +4") == NULL ||
@@ -611,20 +641,15 @@ nroff_manpage_synopsis_func_decl(struct nroff *st, struct bnodeq *nq,
     	if ((cp = hbuf_stringn(buf, pos, paren)) == NULL)
 		return -1;
 	if (st->type == LOWDOWN_MDOC) {
-		if ((bn = bqueue_block(nq, ".Fo")) == NULL) {
-			free(cp);
+		if (bqueue_blockn(nq, ".Fo", cp) == NULL)
 			return -1;
-		}
-		bn->nargs = cp;
 	} else {
-		st->fonts[NFONT_BOLD]++;
-		if (!bqueue_font(st, nq, 0) ||
+		if (!bqueue_font_mod(st, nq, 0, NFONT_BOLD) ||
 		    bqueue_span(nq, cp) == NULL) {
 			free(cp);
 			return -1;
 		}
-		st->fonts[NFONT_BOLD]--;
-		if (!bqueue_font(st, nq, 1))
+		if (!bqueue_font_mod(st, nq, 1, NFONT_BOLD))
 			return -1;
 	}
 
@@ -688,14 +713,9 @@ nroff_manpage_synopsis_func_decl(struct nroff *st, struct bnodeq *nq,
 	        if ((cp = hbuf_stringn_trim(buf, arg, pos)) == NULL)
 			return -1;
 		if (*cp != '\0' && st->type == LOWDOWN_MDOC) {
-			bn = bqueue_block(nq, ".Fa");
-			if (bn == NULL) {
+			if (bqueue_blocknv(nq, ".Fa", "\"%s\"", cp) ==
+			    NULL) {
 				free(cp);
-				return -1;
-			}
-			if (asprintf(&bn->nargs, "\"%s\"", cp) == -1) {
-				free(cp);
-				bn->nargs = NULL;
 				return -1;
 			}
 		} else if (*cp != '\0' && st->type == LOWDOWN_MAN) {
@@ -772,7 +792,6 @@ static ssize_t
 nroff_manpage_synopsis_prog_expr(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf)
 {
-	struct bnode	*bn;
 	size_t		 sta;
 	ssize_t		 ssz;
 
@@ -793,10 +812,8 @@ nroff_manpage_synopsis_prog_expr(struct nroff *st, struct bnodeq *nq,
 	/* mdoc(7) has Nm followed by stuff; man(7) has SY. */
 	/* FIXME: man(7) use IP if traditional. */
 
-	bn = st->type == LOWDOWN_MDOC ?
-	    bqueue_block(nq, ".Nm") : bqueue_block(nq, ".SY");
-	if (bn == NULL ||
-	    (bn->nargs = hbuf_stringn(buf, sta, pos)) == NULL)
+	if (bqueue_blockn(nq, st->type == LOWDOWN_MDOC ? ".Nm" : ".SY",
+	    hbuf_stringn(buf, sta, pos)) == NULL)
 		return -1;
 
 	/*
@@ -826,7 +843,7 @@ nroff_manpage_synopsis_prog_expr(struct nroff *st, struct bnodeq *nq,
  */
 static int
 nroff_manpage_synopsis_func(struct nroff *st, const struct lowdown_node *n,
-    struct bnodeq *obq, struct bnodeq *nbq)
+    struct bnodeq *obq, const struct bnodeq *nbq)
 {
 	int	 		 rc = -1;
 	struct lowdown_buf	*buf = NULL;
@@ -839,7 +856,6 @@ nroff_manpage_synopsis_func(struct nroff *st, const struct lowdown_node *n,
 	    bqueue_flush(st, buf, nbq, 2)) {
 		ret = nroff_manpage_synopsis_func_expr(st, &nq, 0, buf);
 		if (ret > 0) {
-			bqueue_free(nbq);
 			TAILQ_CONCAT(obq, &nq, entries);
 			rc = 1;
 		} else if (ret == 0)
@@ -858,7 +874,7 @@ nroff_manpage_synopsis_func(struct nroff *st, const struct lowdown_node *n,
  */
 static int
 nroff_manpage_synopsis_prog(struct nroff *st, const struct lowdown_node *n,
-    struct bnodeq *obq, struct bnodeq *nbq)
+    struct bnodeq *obq, const struct bnodeq *nbq)
 {
 	int	 		 rc = -1;
 	struct lowdown_buf	*buf = NULL;
@@ -871,7 +887,6 @@ nroff_manpage_synopsis_prog(struct nroff *st, const struct lowdown_node *n,
 	    bqueue_flush(st, buf, nbq, 2)) {
 		ret = nroff_manpage_synopsis_prog_expr(st, &nq, 0, buf);
 		if (ret > 0) {
-			bqueue_free(nbq);
 			TAILQ_CONCAT(obq, &nq, entries);
 			rc = 1;
 		} else if (ret == 0)
@@ -892,7 +907,7 @@ nroff_manpage_synopsis_prog(struct nroff *st, const struct lowdown_node *n,
  */
 static int
 rndr_manpage_see_also(struct nroff *st, const struct lowdown_node *n,
-    struct bnodeq *obq, struct bnodeq *nbq)
+    struct bnodeq *obq, const struct bnodeq *nbq)
 {
 	int	 		 rc = 0;
 	struct lowdown_buf	*buf = NULL;
@@ -971,7 +986,6 @@ rndr_manpage_see_also(struct nroff *st, const struct lowdown_node *n,
 			pos++;
 	}
 	TAILQ_CONCAT(obq, &nq, entries);
-	bqueue_free(nbq);
 	rc = 1;
 out:
 	hbuf_free(buf);
@@ -990,13 +1004,14 @@ out:
  */
 static int
 rndr_manpage_name(struct nroff *st, const struct lowdown_node *n,
-    struct bnodeq *obq, struct bnodeq *nbq)
+    struct bnodeq *obq, const struct bnodeq *nbq)
 {
 	struct bnode		*bn;
 	struct lowdown_buf	*buf = NULL;
 	int			 rc = -1, has_next;
 	size_t			 pos, start;
 	char			*cp = NULL;
+	void			*p;
 
 	/* Flush everything into a single, un-decorated line. */
 
@@ -1035,26 +1050,24 @@ rndr_manpage_name(struct nroff *st, const struct lowdown_node *n,
 		if (cp == NULL)
 			goto out;
 
+		p = reallocarray(st->names, st->namesz + 1, sizeof(char *));
+		if (p == NULL)
+			goto out;
+		st->names = p;
+		if ((st->names[st->namesz++] = strdup(cp)) == NULL)
+			goto out;
+
 		/* For mdoc(7), use `Nm`; for man(7), bold. */
 
 		if (*cp != '\0' && st->type == LOWDOWN_MDOC) {
-			bn = bqueue_block(obq, ".Nm");
-			if (bn == NULL)
+			if (bqueue_blocknv(obq, ".Nm", "%s%s",
+			    cp, has_next ? " ," : "") == NULL)
 				goto out;
-			if (asprintf(&bn->nargs, "%s%s",
-			    cp, has_next ? " ," : "") == -1) {
-				bn->nargs = NULL;
-				goto out;
-			}
 		} else if (*cp != '\0' && st->type == LOWDOWN_MAN) {
-			st->fonts[NFONT_BOLD]++;
-			if (!bqueue_font(st, obq, 0) ||
-			    bqueue_span(obq, cp) == NULL) {
-				st->fonts[NFONT_BOLD]--;
+			if (!bqueue_font_mod(st, obq, 0, NFONT_BOLD) ||
+			    bqueue_span(obq, cp) == NULL)
 				goto out;
-			}
-			st->fonts[NFONT_BOLD]--;
-			if (!bqueue_font(st, obq, 1))
+			if (!bqueue_font_mod(st, obq, 1, NFONT_BOLD))
 				goto out;
 			free(cp);
 			if (has_next &&
@@ -1113,7 +1126,6 @@ rndr_manpage_name(struct nroff *st, const struct lowdown_node *n,
 		cp = NULL;
 	}
 
-	bqueue_free(nbq);
 	rc = 1;
 out:
 	hbuf_free(buf);
@@ -1122,77 +1134,15 @@ out:
 }
 
 /*
- * Manpage paragraphs may have special handling depending on their prior
- * section, the manual section, phase of the moon, etc.  If these
- * conditions are met, "nbq" may be drained and new content generated
- * and appended to "obq".  This returns 0 if the paragraph content was
- * replaced and no paragraph macro should be output, <0 on fatal error,
- * and >0 if the paragraph should be processed as usual.
- */
-int
-nroff_manpage_paragraph(struct nroff *st, const struct lowdown_node *n,
-    struct bnodeq *obq, struct bnodeq *nbq)
-{
-	const struct lowdown_node	*prev, *next;
-	int				 rc;
-
-	/* NAME for manpages is always a single paragraph. */
-
-	if ((prev = TAILQ_PREV(n, lowdown_nodeq, entries)) != NULL &&
-	    prev->type == LOWDOWN_HEADER &&
-	    (next = TAILQ_NEXT(n, entries)) != NULL &&
-	    next->type == LOWDOWN_HEADER &&
-	    nroff_in_section(st, "NAME")) {
-		if ((rc = rndr_manpage_name(st, n, obq, nbq)) < 0)
-			return rc;
-		return rc == 0 ? 1 : 0;
-	}
-
-	/* SEE ALSO manpage listings (can have multiple paragraphs). */
-
-	if (nroff_in_section(st, "SEE ALSO")) {
-		if ((rc = rndr_manpage_see_also(st, n, obq, nbq)) < 0)
-			return rc;
-		return rc == 0 ? 1 : 0;
-	}
-
-	/*
-	 * Paragraphs within the SYNOPSIS are broken down in very
-	 * specific ways according to the manual section.
-	 */
-
-	if (st->headers_sec != NULL &&
-	    (st->headers_sec[0] == '1' ||
-	     st->headers_sec[0] == '6' ||
-	     st->headers_sec[0] == '8') &&
-	    nroff_in_section(st, "SYNOPSIS")) {
-		if ((rc = nroff_manpage_synopsis_prog(st, n, obq, nbq)) < 0)
-			return rc;
-		return rc == 0 ? 1 : 0;
-	}
-
-	if (st->headers_sec != NULL &&
-	    (st->headers_sec[0] == '2' ||
-	     st->headers_sec[0] == '3' ||
-	     st->headers_sec[0] == '9') &&
-	    nroff_in_section(st, "SYNOPSIS")) {
-		if ((rc = nroff_manpage_synopsis_func(st, n, obq, nbq)) < 0)
-			return rc;
-		return rc == 0 ? 1 : 0;
-	}
-
-	return 1;
-}
-
-/*
  * Parse a full synopsis expression. Returns <0 on failure (memory), 0
  * if parsing fails, and the position otherwise.
  */
 static ssize_t
-nroff_manpage_codespan_prog_expr(struct nroff *st, struct bnodeq *nq,
+nroff_manpage_inline_prog(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf)
 {
 	ssize_t		 ssz;
+	size_t		 start;
 	char		*paren;
 	struct bnode	*bn;
 
@@ -1223,7 +1173,12 @@ nroff_manpage_codespan_prog_expr(struct nroff *st, struct bnodeq *nq,
 		return buf->size;
 	}
 
+	start = pos;
 	while (pos < buf->size) {
+		/* In-line man(7) needs a separator. */
+		if (pos > start && st->type == LOWDOWN_MAN &&
+		    bqueue_span(nq, " ") == NULL)
+			return -1;
 		ssz = nroff_manpage_synopsis_prog_subexpr(st, nq, pos, buf, 0);
 		if (ssz <= 0)
 			return ssz;
@@ -1234,34 +1189,143 @@ nroff_manpage_codespan_prog_expr(struct nroff *st, struct bnodeq *nq,
 }
 
 /*
- * Codespans trigger the "manpage" interpreter.  Assume that the span
- * contains a flag, argument, or option.  If these conditions are met,
- * generate new content and append to "obq".  This returns 0 if content
- * was added and the span should not be processed, <0 on fatal error,
- * and >0 if no content was processed and the span should be processed
- * by the caller.
+ * Check if the buffer matches any of the names for the manpage.  If it
+ * does, replace it with the correct invocation.  Returns -1 on failure,
+ * 0 if nothing was replaced, 1 if it was replaced.
  */
-int
-nroff_manpage_codespan(struct nroff *st, struct bnodeq *obq,
+static int
+nroff_manpage_inline_check_names(struct nroff *st, struct bnodeq *obq,
     const struct lowdown_buf *buf)
 {
-	int	 		 rc = 1;
-	struct bnodeq		 nq;
-	ssize_t			 ret;
+	size_t	 i;
+
+	for (i = 0; i < st->namesz; i++) {
+		if (!hbuf_streq(buf, st->names[i]))
+			continue;
+		if (st->type == LOWDOWN_MDOC &&
+		    bqueue_sblockn(obq, ".Nm",
+		     strdup(st->names[i])) == NULL)
+			return -1;
+		if (st->type == LOWDOWN_MAN &&
+		    (!bqueue_font_mod(st, obq, 0, NFONT_BOLD) ||
+		     bqueue_span(obq, st->names[i]) == NULL ||
+		     !bqueue_font_mod(st, obq, 1, NFONT_BOLD)))
+			return -1;
+		return 1;
+	}
+
+	return 0;
+}
+
+/*
+ * Manpage paragraphs may have special handling depending on their prior
+ * section, the manual section, phase of the moon, etc.  If these
+ * conditions are met, "nbq" may be drained and new content generated
+ * and appended to "obq".  This returns >0 if the paragraph content was
+ * replaced and no paragraph macro should be output, <0 on fatal error,
+ * and 0 if the paragraph should be processed as usual.
+ */
+int
+nroff_manpage_paragraph(struct nroff *st, const struct lowdown_node *n,
+    struct bnodeq *obq, const struct bnodeq *nbq)
+{
+	const struct lowdown_node	*prev, *next;
+	ssize_t				 rc;
+
+	/* NAME for manpages is always a single paragraph. */
+
+	if ((prev = TAILQ_PREV(n, lowdown_nodeq, entries)) != NULL &&
+	    prev->type == LOWDOWN_HEADER &&
+	    (next = TAILQ_NEXT(n, entries)) != NULL &&
+	    next->type == LOWDOWN_HEADER &&
+	    nroff_in_section(st, "NAME")) {
+		rc = rndr_manpage_name(st, n, obq, nbq);
+		return rc < 0 ? -1 : rc > 0 ? 1 : 0;
+	}
+
+	/* SEE ALSO manpage listings (can have multiple paragraphs). */
+
+	if (nroff_in_section(st, "SEE ALSO")) {
+		rc = rndr_manpage_see_also(st, n, obq, nbq);
+		return rc < 0 ? -1 : rc > 0 ? 1 : 0;
+	}
+
+	/*
+	 * Paragraphs within the SYNOPSIS are broken down in very
+	 * specific ways according to the manual section.
+	 */
 
 	if (st->headers_sec != NULL &&
 	    (st->headers_sec[0] == '1' ||
 	     st->headers_sec[0] == '6' ||
 	     st->headers_sec[0] == '8') &&
-	    !nroff_in_section(st, "SEE ALSO") &&
-	    !nroff_in_section(st, "NAME") &&
-	    !nroff_in_section(st, "SYNOPSIS")) {
+	    nroff_in_section(st, "SYNOPSIS")) {
+		rc = nroff_manpage_synopsis_prog(st, n, obq, nbq);
+		return rc < 0 ? -1 : rc > 0 ? 1 : 0;
+	}
+
+	if (st->headers_sec != NULL &&
+	    (st->headers_sec[0] == '2' ||
+	     st->headers_sec[0] == '3' ||
+	     st->headers_sec[0] == '9') &&
+	    nroff_in_section(st, "SYNOPSIS")) {
+		rc = nroff_manpage_synopsis_func(st, n, obq, nbq);
+		return rc < 0 ? -1 : rc > 0 ? 1 : 0;
+	}
+
+	return 0;
+}
+
+/*
+ * Predicating on the section type and the requested decoration, try to
+ * process the span as a flag, argument, or option.  If these conditions
+ * are met, generate new content and append to "obq".  This returns >0 if
+ * content was added and the "nbq" should be dropped, <0 on fatal error,
+ * and 0 if no content was processed and the span should be processed by
+ * the caller.
+ */
+int
+nroff_manpage_inline(struct nroff *st, const struct lowdown_node *n,
+    struct bnodeq *obq, const struct bnodeq *nbq)
+{
+	ssize_t	 		 rc = -1;
+	struct bnodeq		 nq;
+	struct lowdown_buf	*buf;
+
+	/* Ignore anything in a special section. */
+
+	if (nroff_in_section(st, "SEE ALSO") ||
+	    nroff_in_section(st, "NAME") ||
+	    nroff_in_section(st, "SYNOPSIS"))
+		return 0;
+	
+	/* Ignore anything without a section. */
+
+	if (st->headers_sec == NULL)
+		return 0;
+
+	if ((buf = hbuf_new(32)) == NULL ||
+	    !bqueue_flush(st, buf, nbq, 2)) {
+		hbuf_free(buf);
+		return -1;
+	}
+
+	if ((rc = nroff_manpage_inline_check_names(st, obq, buf)) != 0)
+		goto out;
+
+	if (st->headers_sec[0] == '1' ||
+	    st->headers_sec[0] == '6' ||
+	    st->headers_sec[0] == '8') {
 		TAILQ_INIT(&nq);
-		ret = nroff_manpage_codespan_prog_expr(st, &nq, 0, buf);
-		if (ret > 0)
+		rc = nroff_manpage_inline_prog(st, &nq, 0, buf);
+		if (rc > 0)
 			TAILQ_CONCAT(obq, &nq, entries);
 		bqueue_free(&nq);
-		rc = ret > 0 ? 0 : ret == 0 ? 1 : -1;
+		goto out;
 	}
-	return rc;
+
+	rc = 0;
+out:
+	hbuf_free(buf);
+	return rc < 0 ? -1 : rc > 0 ? 1 : 0;
 }

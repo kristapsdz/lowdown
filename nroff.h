@@ -24,10 +24,10 @@ enum	nfont {
 };
 
 enum	bscope {
-	BSCOPE_BLOCK = 0,
-	BSCOPE_SPAN,
-	BSCOPE_SEMI,
-	BSCOPE_SEMI_CLOSE,
+	BSCOPE_BLOCK = 0, /* macro breaking lines */
+	BSCOPE_SPAN, /* text */
+	BSCOPE_SEMI, /* macro within context */
+	BSCOPE_SEMI_CLOSE, /* like semi */
 	BSCOPE_LITERAL,
 	BSCOPE_FONT,
 	BSCOPE_COLOUR
@@ -51,6 +51,8 @@ struct 	nroff {
 	const char		  *ci; /* fixed-width italic font */
 	const char		  *cbi; /* fixed-width bold-italic font */
 	const char		  *templ; /* output template */
+	char			 **names;
+	size_t			   namesz;
 	const struct lowdown_node *lastsec; /* last section seen */
 };
 
@@ -86,8 +88,24 @@ bqueue_span(struct bnodeq *bq, const char *text);
 struct bnode *
 bqueue_block(struct bnodeq *bq, const char *text);
 
+struct bnode *
+bqueue_blocknv(struct bnodeq *bq, const char *text, const char *fmt, ...)
+    __attribute__((format(printf, 3, 4)));
+
+struct bnode *
+bqueue_blockn(struct bnodeq *bq, const char *text, char *nargs);
+
+struct bnode *
+bqueue_sblock(struct bnodeq *bq, const char *text);
+
+struct bnode *
+bqueue_sblockn(struct bnodeq *bq, const char *text, char *nargs);
+
 int
 bqueue_font(const struct nroff *st, struct bnodeq *bq, int close);
+
+int
+bqueue_font_mod(struct nroff *st, struct bnodeq *bq, int close, enum nfont);
 
 int
 bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
@@ -101,10 +119,10 @@ nroff_in_section(const struct nroff *st, const char *section);
 
 int
 nroff_manpage_paragraph(struct nroff *st, const struct lowdown_node *n,
-    struct bnodeq *obq, struct bnodeq *nbq);
+    struct bnodeq *obq, const struct bnodeq *nbq);
 
 int
-nroff_manpage_codespan(struct nroff *st, struct bnodeq *obq,
-    const struct lowdown_buf *);
+nroff_manpage_inline(struct nroff *st, const struct lowdown_node *n,
+    struct bnodeq *obq, const struct bnodeq *nbq);
 
 #endif /* !NROFF_H */
