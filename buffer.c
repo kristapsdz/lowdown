@@ -25,6 +25,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -573,6 +574,32 @@ hbuf_isrellink(const struct lowdown_buf *link)
 	assert(colon > link->data);
 	rem = colon - link->data;
 	return memchr(link->data, '/', rem) != NULL;
+}
+
+/*
+ * Test if "buf" looks like a manpage, e.g., strlcpy(3), filefuncs(3am).
+ * Really any word([0-9][a-z]{3}?).
+ */
+int
+hbuf_ismanpage(const struct lowdown_buf *buf)
+{
+	const char	*paren, *sv;
+
+	if (buf->size < 4)
+		return 0;
+	if (buf->data[buf->size - 1] != ')')
+		return 0;
+	if ((paren = memchr(buf->data, '(', buf->size)) == NULL)
+		return 0;
+	paren++;
+	if (!isdigit((unsigned char)*paren))
+		return 0;
+	for (sv = ++paren; *paren != ')'; paren++)
+		if (!isalpha((unsigned char)*paren))
+			return 0;
+	if ((ptrdiff_t)(paren - sv) > 3)
+		return 0;
+	return 1;
 }
 
 /*

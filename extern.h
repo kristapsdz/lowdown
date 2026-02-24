@@ -70,6 +70,7 @@ int		 hbuf_strncasecmpat(const struct lowdown_buf *, const char *, size_t);
 void		 hbuf_truncate(struct lowdown_buf *);
 int		 hbuf_shortlink(struct lowdown_buf *, const struct lowdown_buf *);
 int		 hbuf_isrellink(const struct lowdown_buf *);
+int		 hbuf_ismanpage(const struct lowdown_buf *);
 void		 hentryq_clear(struct hentryq *);
 
 #define 	 HBUF_PUTSL(output, literal) \

@@ -223,6 +223,30 @@ bqueue_span(struct bnodeq *bq, const char *text)
 }
 
 /*
+ * Like bqueue_span(), but from variable-length arguments.
+ */
+struct bnode *
+bqueue_spanv(struct bnodeq *bq, char *fmt, ...)
+{
+	struct bnode	*bn;
+	va_list		 ap;
+	int		 rc;
+
+	if ((bn = bqueue_span(bq, NULL)) == NULL)
+		return NULL;
+
+	va_start(ap, fmt);
+	rc = vasprintf(&bn->nbuf, fmt, ap);
+	va_end(ap);
+
+	if (rc == -1) {
+		bn->nbuf = NULL;
+		return NULL;
+	}
+	return bn;
+}
+
+/*
  * Add a block with optional safe macro name to the token queue and
  * return the allocated node, returning NULL on failure (memory).  On
  * success, the node has already been appended to the queue.  See
@@ -2322,7 +2346,7 @@ rndr_root(struct nroff *st, struct bnodeq *obq,
 		    n->type == LOWDOWN_PARAGRAPH &&
 		    (nn = TAILQ_FIRST(&n->children)) != NULL &&
 		    nn->type == LOWDOWN_NORMAL_TEXT) {
-			abuf = hbuf_string(&nn->rndr_normal_text.text);
+			abuf = hbuf_string_trim(&nn->rndr_normal_text.text);
 			if (abuf == NULL)
 				goto out;
 			if ((sz = strcspn(abuf, "\\-, ")) > 0)

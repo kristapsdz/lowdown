@@ -101,6 +101,10 @@ bqueue_sblock(struct bnodeq *bq, const char *text);
 struct bnode *
 bqueue_sblockn(struct bnodeq *bq, const char *text, char *nargs);
 
+struct bnode *
+bqueue_spanv(struct bnodeq *bq, char *fmt, ...)
+    __attribute__((format(printf, 2, 3)));
+
 int
 bqueue_font(const struct nroff *st, struct bnodeq *bq, int close);
 

@@ -958,8 +958,8 @@ rndr_manpage_see_also(struct nroff *st, const struct lowdown_node *n,
 			if (openp == NULL)
 				goto out;
 			bn = st->type == LOWDOWN_MDOC ?
-			    bqueue_block(obq, ".Xr") :
-			    bqueue_block(obq, ".MR");
+			    bqueue_sblock(obq, ".Xr") :
+			    bqueue_sblock(obq, ".MR");
 			if (bn == NULL) {
 				rc = -1;
 				goto out;
@@ -1133,6 +1133,93 @@ out:
 	return rc;
 }
 
+static ssize_t
+nroff_manpage_inline_func(struct nroff *st, struct bnodeq *nq,
+    size_t pos, const struct lowdown_buf *buf)
+{
+	char		*paren, *cp, *start;
+	struct bnode	*bn;
+
+	for ( ; pos < buf->size; pos++)
+		if (!isspace((unsigned char)buf->data[pos]))
+			break;
+
+	if (pos == buf->size)
+		return pos;
+
+	if (hbuf_ismanpage(buf)) {
+		paren = memchr(&buf->data[pos], '(', buf->size - pos);
+		assert(paren != NULL);
+		bn = st->type == LOWDOWN_MDOC ?
+		    bqueue_sblock(nq, ".Xr") :
+		    bqueue_block(nq, ".MR");
+		if (bn == NULL)
+			return -1;
+		if (asprintf(&bn->nargs, "%.*s %.*s",
+		    (int)(paren - &buf->data[pos]),
+		    &buf->data[pos],
+		    (int)(&buf->data[buf->size - 1] - (paren + 1)),
+		    paren + 1) == -1) {
+			bn->nargs = NULL;
+			return -1;
+		}
+		return buf->size;
+	}
+
+	if (buf->data[buf->size - 1] == ')') {
+		paren = memchr(&buf->data[pos], '(', buf->size - pos);
+		if (paren == NULL)
+			return 0;
+		cp = NULL;
+		if (!concatv(&cp, st->type == LOWDOWN_MDOC ?
+		    "%.*s" : "\\fB%.*s\\fP(",
+		    (int)(paren - &buf->data[pos]), &buf->data[pos]))
+			return -1;
+		paren++;
+		while (*paren != ')') {
+			while (isspace((unsigned char)*paren))
+				paren++;
+			start = paren;
+			while (*paren != ',' && *paren != ')')
+				paren++;
+			if (!concatv(&cp, st->type == LOWDOWN_MDOC ?
+			    " \"%.*s\"" : "\\fI%.*s\\fP,",
+			    (int)(paren - start), start))
+				return -1;
+			if (*paren != ')')
+				start = ++paren;
+		}
+		if (st->type == LOWDOWN_MAN) {
+			if (cp[strlen(cp) - 1] == ',')
+				cp[strlen(cp) - 1] = '\0';
+			if (!concatv(&cp, ")"))
+				return -1;
+			if (bqueue_span(nq, cp) == NULL) {
+				free(cp);
+				return -1;
+			}
+			free(cp);
+		} else
+			if (bqueue_sblockn(nq, ".Fn", cp) == NULL)
+				return -1;
+		return buf->size;
+	}
+
+	if (st->type == LOWDOWN_MDOC &&
+	    bqueue_sblockn(nq, ".Fa", hbuf_string_trim(buf)) == NULL)
+		return -1;
+	if (st->type == LOWDOWN_MAN) {
+		if ((cp = hbuf_string_trim(buf)) == NULL)
+			return -1;
+		bn = bqueue_spanv(nq, "\\fI%s\\fP", cp);
+		free(cp);
+		if (bn == NULL)
+			return -1;
+	}
+
+	return buf->size;
+}
+
 /*
  * Parse a full synopsis expression. Returns <0 on failure (memory), 0
  * if parsing fails, and the position otherwise.
@@ -1153,22 +1240,21 @@ nroff_manpage_inline_prog(struct nroff *st, struct bnodeq *nq,
 	if (pos == buf->size)
 		return pos;
 
-	if ((pos - buf->size) > 3 && buf->data[buf->size - 1] == ')') {
+	if (hbuf_ismanpage(buf)) {
 		paren = memchr(&buf->data[pos], '(', buf->size - pos);
-		if (paren != NULL) {
-			bn = st->type == LOWDOWN_MDOC ?
-			    bqueue_block(nq, ".Xr") :
-			    bqueue_block(nq, ".MR");
-			if (bn == NULL)
-				return -1;
-			if (asprintf(&bn->nargs, "%.*s %.*s",
-			    (int)(paren - &buf->data[pos]),
-			    &buf->data[pos],
-			    (int)(&buf->data[buf->size - 1] - (paren + 1)),
-			    paren + 1) == -1) {
-				bn->nargs = NULL;
-				return -1;
-			}
+		assert(paren != NULL);
+		bn = st->type == LOWDOWN_MDOC ?
+		    bqueue_sblock(nq, ".Xr") :
+		    bqueue_block(nq, ".MR");
+		if (bn == NULL)
+			return -1;
+		if (asprintf(&bn->nargs, "%.*s %.*s",
+		    (int)(paren - &buf->data[pos]),
+		    &buf->data[pos],
+		    (int)(&buf->data[buf->size - 1] - (paren + 1)),
+		    paren + 1) == -1) {
+			bn->nargs = NULL;
+			return -1;
 		}
 		return buf->size;
 	}
@@ -1318,6 +1404,17 @@ nroff_manpage_inline(struct nroff *st, const struct lowdown_node *n,
 	    st->headers_sec[0] == '8') {
 		TAILQ_INIT(&nq);
 		rc = nroff_manpage_inline_prog(st, &nq, 0, buf);
+		if (rc > 0)
+			TAILQ_CONCAT(obq, &nq, entries);
+		bqueue_free(&nq);
+		goto out;
+	}
+
+	if (st->headers_sec[0] == '2' ||
+	    st->headers_sec[0] == '3' ||
+	    st->headers_sec[0] == '9') {
+		TAILQ_INIT(&nq);
+		rc = nroff_manpage_inline_func(st, &nq, 0, buf);
 		if (rc > 0)
 			TAILQ_CONCAT(obq, &nq, entries);
 		bqueue_free(&nq);
