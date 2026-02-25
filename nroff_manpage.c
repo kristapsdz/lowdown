@@ -1318,6 +1318,9 @@ nroff_manpage_paragraph(struct nroff *st, const struct lowdown_node *n,
 	const struct lowdown_node	*prev, *next;
 	ssize_t				 rc;
 
+	if (!(st->flags & LOWDOWN_NROFF_MANPAGE))
+		return 0;
+
 	/* NAME for manpages is always a single paragraph. */
 
 	if ((prev = TAILQ_PREV(n, lowdown_nodeq, entries)) != NULL &&
@@ -1377,6 +1380,9 @@ nroff_manpage_inline(struct nroff *st, const struct lowdown_node *n,
 	ssize_t	 		 rc = -1;
 	struct bnodeq		 nq;
 	struct lowdown_buf	*buf;
+
+	if (!(st->flags & LOWDOWN_NROFF_MANPAGE))
+		return 0;
 
 	/* Ignore anything in a special section. */
 

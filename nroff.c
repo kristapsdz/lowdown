@@ -226,7 +226,7 @@ bqueue_span(struct bnodeq *bq, const char *text)
  * Like bqueue_span(), but from variable-length arguments.
  */
 struct bnode *
-bqueue_spanv(struct bnodeq *bq, char *fmt, ...)
+bqueue_spanv(struct bnodeq *bq, const char *fmt, ...)
 {
 	struct bnode	*bn;
 	va_list		 ap;
@@ -400,6 +400,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 	int		 	 eoln, /* output eolnchar at end */
 				 eomacro; /* end of macro=1, 2=nosp */
 	char			 eolnchar; /* char at eoln */
+	size_t			 offset = 0; /* offset in "buf" */
 
 	TAILQ_FOREACH(bn, bq, entries) {
 		if (linestrip > 1 &&
@@ -541,8 +542,8 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 			    strlen(bn->buf), 0, 1))
 				return 0;
 		} else if (bn->buf != NULL)
-			if (!lowdown_nroff_esc(ob, bn->buf,
-			    strlen(bn->buf), 0, 0))
+			if (!lowdown_nroff_esc(ob, &bn->buf[offset],
+			    strlen(bn->buf) - offset, 0, 0))
 				return 0;
 
 		/*
@@ -630,7 +631,10 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		 * puncatuation.
 		 */
 
-		if (st->type == LOWDOWN_MDOC &&
+		offset = 0;
+
+		if (linestrip == 0 &&
+		    st->type == LOWDOWN_MDOC &&
 		    bn->scope == BSCOPE_SEMI &&
 		    (tmpbn = TAILQ_NEXT(bn, entries)) != NULL &&
 		    tmpbn->scope == BSCOPE_SPAN &&
@@ -642,7 +646,12 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		     tmpbn->buf[0] == '.') &&
 		    (tmpbn->buf[1] == '\0' ||
 		     isspace((unsigned char)tmpbn->buf[1]))) {
-			hbuf_puts(ob, " Ns");
+			offset = 1;
+			HBUF_PUTSL(ob, " ");
+			hbuf_putc(ob, tmpbn->buf[0]);
+			while (tmpbn->buf[offset] != '\0' &&
+			    isspace((unsigned char)tmpbn->buf[offset]))
+				offset++;
 		}
 
 		/*
@@ -1166,7 +1175,8 @@ rndr_font(struct nroff *st, struct bnodeq *obq,
 {
 	int			 rc;
 
-	if (st->type != LOWDOWN_MDOC && st->type != LOWDOWN_MAN) {
+	if ((st->type != LOWDOWN_MDOC && st->type != LOWDOWN_MAN) ||
+	    !(st->flags & LOWDOWN_NROFF_MANPAGE)) {
 		TAILQ_CONCAT(obq, bq, entries);
 		return 1;
 	}
@@ -2060,7 +2070,8 @@ rndr_font_pre(struct nroff *st, const struct lowdown_node *n,
 	 * this strips away any formatting unilaterally.
 	 */
 
-	if (st->type == LOWDOWN_MDOC || st->type == LOWDOWN_MAN)
+	if ((st->type == LOWDOWN_MDOC || st->type == LOWDOWN_MAN) &&
+	    (st->flags & LOWDOWN_NROFF_MANPAGE))
 		switch (n->type) {
 		case LOWDOWN_EMPHASIS:
 		case LOWDOWN_HIGHLIGHT:
@@ -2103,7 +2114,8 @@ rndr_font_post(struct nroff *st, const struct lowdown_node *n,
 	 * parser to determine the content type and response.
 	 */
 
-	if (st->type == LOWDOWN_MDOC || st->type == LOWDOWN_MAN)
+	if ((st->type == LOWDOWN_MDOC || st->type == LOWDOWN_MAN) &&
+	    (st->flags & LOWDOWN_NROFF_MANPAGE))
 		switch (n->type) {
 		case LOWDOWN_EMPHASIS:
 		case LOWDOWN_HIGHLIGHT:

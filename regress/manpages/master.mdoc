@@ -1,0 +1,3211 @@
+.Sh NAME
+.Nm foo
+.Nd bar
+.Sh SYNOPSIS
+.Nm fdformat
+.Op Fl nqv
+.Op Fl c Ar cyls
+.Op Fl F Ar fillbyte
+.Op Fl g Ar gap3len
+.Op Fl h Ar heads
+.Op Fl i Ar intleave
+.Op Fl r Ar rate
+.Op Fl S Ar secshft
+.Op Fl s Ar secs
+.Op Fl t Ar steps_per_track
+.Ar device_name
+.Nm fdformat
+.Op Fl nqv
+.Op Fl c Ar cyls
+.Op Fl F Ar fillbyte
+.Op Fl g Ar gap3len
+.Op Fl h Ar heads
+.Op Fl i Ar intleave
+.Op Fl r Ar rate
+.Op Fl S Ar secshft
+.Op Fl s Ar secs
+.Op Fl t Ar steps_per_track
+.Ar device_name
+.Nm man
+.Op Fl acfhklw
+.Op Fl C Ar file
+.Op Fl M Ar path
+.Op Fl m Ar path
+.Op Fl S Ar subsection
+.Op Oo Fl s Oc Ar section
+.Ar name
+.Ar ...
+.Nm pkg_add
+.Op Fl acIimnqrsUuVvxz
+.Op Fl A Ar arch
+.Op Fl B Ar pkg-destdir
+.Op Fl D Ar name Ns Oo Ar =value Oc
+.Op Fl L Ar localbase
+.Op Fl l Ar file
+.Op Fl P Ar type
+.Op Ar pkg-name Ar ...
+.Nm fdformat
+.Op Fl nqv
+.Op Fl c Ar cyls
+.Op Fl F Ar fillbyte
+.Op Fl g Ar gap3len
+.Op Fl h Ar heads
+.Op Fl i Ar intleave
+.Op Fl r Ar rate
+.Op Fl S Ar secshft
+.Op Fl s Ar secs
+.Op Fl t Ar steps_per_track
+.Ar device_name
+.Nm mksuncd
+.Ar partition-letter
+.Ar isofile
+.Ar ufsfile
+.Nm addr2line
+.Op Fl a Ns | Ns Fl \-addresses
+.Op Fl b Ar bfdname Ns | Ns Fl \-target Ns = Ns Ar bfdname
+.Op Fl C Ns | Ns Fl \-demangle Ns Oo Ar =style Oc
+.Op Fl e Ar filename Ns | Ns Fl \-exe Ns = Ns Ar filename
+.Op Fl f Ns | Ns Fl \-functions
+.Op Fl s Ns | Ns Fl \-basename
+.Op Fl i Ns | Ns Fl \-inlines
+.Op Fl j Ns | Ns Fl \-section Ns = Ns Ar name
+.Op Fl H Ns | Ns Fl \-help
+.Op Fl V Ns | Ns Fl \-version
+.Op Ar addr Ar addr Ar ...
+.Nm llvm-ar
+.Op Fl 
+.Ar {dmpqrstx}
+.Op Ar abcDilLNoOPsSTuUvV
+.Op Ar relpos
+.Op Ar count
+.Ar archive
+.Op Ar files...
+.Nm as
+.Op Fl a Ns Oo Ar cdhlns Oc Ns Oo Ar =file Oc
+.Op Fl \-alternate
+.Op Fl D
+.Op Fl \-defsym Ar sym=val
+.Op Fl f
+.Op Fl g
+.Op Fl \-gstabs
+.Op Fl \-gstabs+
+.Op Fl \-gdwarf-2
+.Op Fl \-help
+.Op Fl I Ar dir
+.Op Fl J
+.Op Fl K
+.Op Fl L
+.Op Fl \-listing-lhs-width Ns = Ns Ar NUM
+.Op Fl \-listing-lhs-width2 Ns = Ns Ar NUM
+.Op Fl \-listing-rhs-width Ns = Ns Ar NUM
+.Op Fl \-listing-cont-lines Ns = Ns Ar NUM
+.Op Fl \-keep-locals
+.Op Fl o Ar objfile
+.Op Fl R
+.Op Fl \-reduce-memory-overheads
+.Op Fl \-statistics
+.Op Fl v
+.Op Fl version
+.Op Fl \-version
+.Op Fl W
+.Op Fl \-warn
+.Op Fl \-fatal-warnings
+.Op Fl w
+.Op Fl x
+.Op Fl Z
+.Op Ar @FILE
+.Op Fl \-target-help
+.Op Ar target-options
+.Op Fl \- Ns | Ns Ar files Ar ...
+.Nm clang
+.Op Ar options
+.Ar filename
+.Ar ...
+.Nm c++filt
+.Op Fl _ Ns | Ns Fl \-strip-underscores
+.Op Fl n Ns | Ns Fl \-no-strip-underscores
+.Op Fl p Ns | Ns Fl \-no-params
+.Op Fl t Ns | Ns Fl \-types
+.Op Fl i Ns | Ns Fl \-no-verbose
+.Op Fl s Ar format Ns | Ns Fl \-format Ns = Ns Ar format
+.Op Fl \-help
+.Op Fl \-version
+.Op Ar symbol...
+.Nm clang
+.Op Ar options
+.Ar filename
+.Ar ...
+.Nm clang
+.Op Ar options
+.Ar filename
+.Ar ...
+.Nm ctfconv
+.Op Fl d
+.Fl l
+.Ar label
+.Fl o
+.Ar outfile
+.Ar file
+.Nm ctfdump
+.Op Fl dfhlst
+.Ar
+.Nm ctfstrip
+.Op Fl S
+.Op Fl o Ar outfile
+.Ar file
+.Nm flex
+.Op Fl 78BbdFfhIiLlnpsTtVvw+?
+.Op Fl C Ns Oo Ar aeFfmr Oc
+.Op Fl \-help
+.Op Fl \-version
+.Op Fl ooutput
+.Op Fl Pprefix
+.Op Fl Sskeleton
+.Op Ar 
+.Nm gdb
+.Op Fl help
+.Op Fl nx
+.Op Fl q
+.Op Fl batch
+.Op Fl cd Ns = Ns Ar dir
+.Op Fl f
+.Op Fl bps
+.Op Fl tty Ns = Ns Ar dev
+.Op Fl s Ar symfile
+.Op Fl e Ar prog
+.Op Fl se Ar prog
+.Op Fl c Ar core
+.Op Fl x Ar cmds
+.Op Fl d Ar dir
+.Op Ar prog Ns Oo Ar core Ns | Ns Ar procID Oc
+.Nm gprof
+.Op Fl abcsz
+.Op Fl C Ar count
+.Op Fl E Ar name
+.Op Fl e Ar name
+.Op Fl F Ar name
+.Op Fl f Ar name
+.Op Fl k Ar from-name Ar to-name
+.Op Ar a.out Oo Ar gmon.progname.pid.out Ar ... Oc
+.Nm ld.lld
+.Op Ar options
+.Ar objfile
+.Ar ...
+.Nm ld
+.Op Ar options
+.Ar objfile
+.Ar ...
+.Nm ld.lld
+.Op Ar options
+.Ar objfile
+.Ar ...
+.Nm lldb
+.Op Ar options
+.Ar executable
+.Nm llvm-config
+.Ar option
+.Op Ar components...
+.Nm llvm-cov
+.Ar command
+.Op Ar args...
+.Nm llvm-objcopy
+.Op Ar options
+.Ar input
+.Op Ar output
+.Nm llvm-objdump
+.Op Ar commands
+.Op Ar options
+.Op Ar filenames...
+.Nm llvm-profdata
+.Ar command
+.Op Ar args...
+.Nm llvm-readelf
+.Op Ar options
+.Op Ar input...
+.Nm llvm-readobj
+.Op Ar options
+.Op Ar input...
+.Nm lorder
+.Ar
+.Nm objdump
+.Op Fl a Ns | Ns Fl \-archive-headers
+.Op Fl b Ar bfdname Ns | Ns Fl \-target Ns = Ns Ar bfdname
+.Op Fl C Ns | Ns Fl \-demangle Ns Oo Ar =style Oc
+.Op Fl d Ns | Ns Fl \-disassemble
+.Op Fl D Ns | Ns Fl \-disassemble-all
+.Op Fl z Ns | Ns Fl \-disassemble-zeroes
+.Op Fl EB Ns | Ns Fl EL Ns | Ns Fl \-endian Ns = Ns Ar {big | Ar little Ar }
+.Op Fl f Ns | Ns Fl \-file-headers
+.Op Fl \-file-start-context
+.Op Fl g Ns | Ns Fl \-debugging
+.Op Fl e Ns | Ns Fl \-debugging-tags
+.Op Fl h Ns | Ns Fl \-section-headers Ns | Ns Fl \-headers
+.Op Fl i Ns | Ns Fl \-info
+.Op Fl j Ar section Ns | Ns Fl \-section Ns = Ns Ar section
+.Op Fl l Ns | Ns Fl \-line-numbers
+.Op Fl S Ns | Ns Fl \-source
+.Op Fl m Ar machine Ns | Ns Fl \-architecture Ns = Ns Ar machine
+.Op Fl M Ar options Ns | Ns Fl \-disassembler-options Ns = Ns Ar options
+.Op Fl p Ns | Ns Fl \-private-headers
+.Op Fl r Ns | Ns Fl \-reloc
+.Op Fl R Ns | Ns Fl \-dynamic-reloc
+.Op Fl s Ns | Ns Fl \-full-contents
+.Op Fl W Ns | Ns Fl \-dwarf
+.Op Fl G Ns | Ns Fl \-stabs
+.Op Fl t Ns | Ns Fl \-syms
+.Op Fl T Ns | Ns Fl \-dynamic-syms
+.Op Fl x Ns | Ns Fl \-all-headers
+.Op Fl w Ns | Ns Fl \-wide
+.Op Fl \-start-address Ns = Ns Ar address
+.Op Fl \-stop-address Ns = Ns Ar address
+.Op Fl \-prefix-addresses
+.Op Fl \- Ns Oo Ar no- Oc Ns Ar show-raw-insn
+.Op Fl \-adjust-vma Ns = Ns Ar offset
+.Op Fl \-special-syms
+.Op Fl V Ns | Ns Fl \-version
+.Op Fl H Ns | Ns Fl \-help
+.Ar objfile...
+.Nm protoize
+.Op Fl CfgklNnqv
+.Op Fl B Ar directory
+.Op Fl c Ar COMPILATION-OPTIONS
+.Op Fl d Ar directory Ar ...
+.Op Fl i Ar string
+.Op Fl p Ar program
+.Op Fl x Ar 
+.Ar
+.Nm unprotoize
+.Op Fl fkNnqv
+.Op Fl c Ar COMPILATION-OPTIONS
+.Op Fl d Ar directory Ar ...
+.Op Fl i Ar string
+.Op Fl p Ar program
+.Op Fl x Ar 
+.Ar
+.Nm llvm-ranlib
+.Op Ar options
+.Ar archive...
+.Nm readelf
+.Op Fl a Ns | Ns Fl \-all
+.Op Fl h Ns | Ns Fl \-file-header
+.Op Fl l Ns | Ns Fl \-program-headers Ns | Ns Fl \-segments
+.Op Fl S Ns | Ns Fl \-section-headers Ns | Ns Fl \-sections
+.Op Fl g Ns | Ns Fl \-section-groups
+.Op Fl t Ns | Ns Fl \-section-details
+.Op Fl e Ns | Ns Fl \-headers
+.Op Fl s Ns | Ns Fl \-syms Ns | Ns Fl \-symbols
+.Op Fl n Ns | Ns Fl \-notes
+.Op Fl r Ns | Ns Fl \-relocs
+.Op Fl u Ns | Ns Fl \-unwind
+.Op Fl d Ns | Ns Fl \-dynamic
+.Op Fl V Ns | Ns Fl \-version-info
+.Op Fl A Ns | Ns Fl \-arch-specific
+.Op Fl D Ns | Ns Fl \-use-dynamic
+.Op Fl x Ar <number Ar or Ar name> Ns | Ns Fl \-hex-dump Ns = Ns Ar <number Ar or Ar name>
+.Op Fl w Ns Oo Ar liaprmfFsoR Oc Ns | Fl \-debug-dump Ns Oo Ar =line,=info,=abbrev,=pubnames,=aranges,=macro,=frames,=frames-interp,=str,=loc,=Ranges Oc
+.Op Fl I Ns | Ns Fl histogram
+.Op Fl v Ns | Ns Fl \-version
+.Op Fl W Ns | Ns Fl \-wide
+.Op Fl H Ns | Ns Fl \-help
+.Ar elffile...
+.Nm rpcgen
+.Op Fl aALTNbC
+.Op Fl Dname Ns Oo Ar =value Oc
+.Op Fl K Ar secs
+.Op Fl i Ar lines
+.Ar infile
+.Nm rpcgen
+.Fl c
+|
+.Fl h
+|
+.Fl l
+|
+.Fl m
+|
+.Fl t
+|
+.Fl Sc
+|
+.Fl Ss
+|
+.Op Fl o Ar outfile
+.Op Ar infile
+.Nm rpcgen
+.Fl c
+|
+.Ar nettype
+.Op Fl o Ar outfile
+.Op Ar infile
+.Nm llvm-strip
+.Op Ar options
+.Ar inputs...
+.Nm protoize
+.Op Fl CfgklNnqv
+.Op Fl B Ar directory
+.Op Fl c Ar COMPILATION-OPTIONS
+.Op Fl d Ar directory Ar ...
+.Op Fl i Ar string
+.Op Fl p Ar program
+.Op Fl x Ar 
+.Ar
+.Nm unprotoize
+.Op Fl fkNnqv
+.Op Fl c Ar COMPILATION-OPTIONS
+.Op Fl d Ar directory Ar ...
+.Op Fl i Ar string
+.Op Fl p Ar program
+.Op Fl x Ar 
+.Ar
+.Nm yacc
+.Op Fl dlrtv
+.Op Fl b Ar file_prefix
+.Op Fl o Ar output_file
+.Op Fl p Ar symbol_prefix
+.Ar file
+.Nm acme-client
+.Op Fl Fnrv
+.Op Fl f Ar configfile
+.Ar handle
+.Nm apply
+.Op Fl #
+.Op Fl d
+.Op Fl a Ar magic
+.Ar command
+.Ar argument
+.Ar ...
+.Nm apropos
+.Op Fl afk
+.Op Fl C Ar file
+.Op Fl M Ar path
+.Op Fl m Ar path
+.Op Fl O Ar outkey
+.Op Fl S Ar arch
+.Op Fl s Ar section
+.Ar expression
+.Ar ...
+.Nm arch
+.Op Fl ks
+.Nm machine
+.Op Fl a
+.Nm at
+.Op Fl bm
+.Op Fl f Ar file
+.Op Fl l Oo Ar job Ar ... Oc
+.Op Fl q Ar queue
+.Fl t
+.Ar time_arg
+|
+.Ar timespec
+.Nm at
+.Fl c
+|
+.Fl r
+.Ar job
+.Ar ...
+.Nm batch
+.Op Fl m
+.Op Fl f Ar file
+.Op Fl q Ar queue
+.Op Ar timespec
+.Nm atq
+.Op Fl cnv
+.Op Fl q Ar queue
+.Op Ar name Ar ...
+.Nm atrm
+.Op Fl afi
+.Op Oo Ar job Oc Oo Ar name Oc Ar ...
+.Nm aucat
+.Op Fl dn
+.Op Fl b Ar size
+.Op Fl c Ar channels
+.Op Fl e Ar enc
+.Op Fl f Ar device
+.Op Fl g Ar position
+.Op Fl h Ar fmt
+.Op Fl i Ar file
+.Op Fl m Ar min:max/min:max
+.Op Fl o Ar file
+.Op Fl p Ar position
+.Op Fl q Ar port
+.Op Fl r Ar rate
+.Op Fl v Ar volume
+.Nm awk
+.Op Fl safe
+.Op Fl V
+.Op Fl d Ns Oo Ar n Oc
+.Op Fl F Ar fs | Fl \-csv
+.Op Fl v Ar var=value
+.Op Ar prog | Fl f Ar progfile
+.Ar
+.Nm banner
+.Ar string
+.Ar ...
+.Nm basename
+.Ar string
+.Op Ar suffix
+.Nm bc
+.Op Fl cl
+.Op Fl e Ar expression
+.Op Ar 
+.Nm biff
+.Op Ar n | Ar y
+.Nm cal
+.Op Fl jmwy
+.Op Ar month
+.Op Ar year
+.Nm calendar
+.Op Fl abw
+.Op Fl A Ar num
+.Op Fl B Ar num
+.Op Fl f Ar calendarfile
+.Op Fl t Oo Oo Oo Ar cc Oc Ns Ar yy Oc Ns Ar mm Oc Ns Ar dd
+.Nm cap_mkdb
+.Op Fl v
+.Op Fl f Ar outfile
+.Ar file1
+.Op Ar file2 Ar ...
+.Nm captoinfo
+.Op Fl vn Ar width
+.Op Fl V
+.Op Fl 1
+.Op Fl w Ar width
+.Ar file
+.Ar .
+.Ar .
+.Ar .
+.Nm cat
+.Op Fl benstuv
+.Op Ar 
+.Nm cdio
+.Op Fl sv
+.Op Fl d Ar host:port
+.Op Fl f Ar device
+.Op Ar command Oo Ar arg Ar ... Oc
+.Nm check-lib-depends
+.Op Fl fimqx
+.Op Fl B Ar destdir
+.Op Fl d Ar pkgrepo
+.Op Fl D Ar directory
+.Op Fl F Ar missing
+.Op Fl O Ar dest
+.Op Fl S Ar VAR=value
+.Op Fl s Ar source
+.Op Ar package Ar ...
+.Nm chflags
+.Op Fl h
+.Op Fl R Oo Fl H | Fl L | Fl P Oc
+.Ar flags
+.Ar
+.Nm chgrp
+.Op Fl h
+.Op Fl R Oo Fl H | Fl L | Fl P Oc
+.Ar group
+.Ar
+.Nm chio
+.Op Fl f Ar changer
+.Ar command
+.Op Ar arg Ar ...
+.Nm chmod
+.Op Fl h
+.Op Fl R Oo Fl H | Fl L | Fl P Oc
+.Ar mode
+.Ar
+.Nm chpass
+.Op Fl s Ar newshell
+.Op Ar user
+.Nm chpass
+.Fl a
+.Ar list
+.Nm ci
+.Op Fl qV
+.Op Fl d Ns Oo Ar date Oc
+.Op Fl f Ns Oo Ar rev Oc
+.Op Fl I Ns Oo Ar rev Oc
+.Op Fl i Ns Oo Ar rev Oc
+.Op Fl j Ns Oo Ar rev Oc
+.Op Fl k Ns Oo Ar rev Oc
+.Op Fl l Ns Oo Ar rev Oc
+.Op Fl M Ns Oo Ar rev Oc
+.Op Fl mmsg
+.Op Fl Nsymbol
+.Op Fl nsymbol
+.Op Fl r Ns Oo Ar rev Oc
+.Op Fl sstate
+.Op Fl t Ns Oo Ar str Oc
+.Op Fl u Ns Oo Ar rev Oc
+.Op Fl wusername
+.Op Fl xsuffixes
+.Op Fl ztz
+.Ar
+.Nm cksum
+.Op Fl bcpqrtx
+.Op Fl a Ar algorithms
+.Op Fl C Ar checklist
+.Op Fl h Ar hashfile
+.Op Fl s Ar string
+.Op Ar 
+.Nm clean-old-distfiles
+.Op Fl mnvx
+.Op Fl e Ar except
+.Op Fl h Ar history
+.Op Ar timestamp
+.Nm cmp
+.Op Fl l | Fl s
+.Ar file1
+.Ar file2
+.Op Ar skip1 Oo Ar skip2 Oc
+.Nm co
+.Op Fl TV
+.Op Fl ddate
+.Op Fl f Ns Oo Ar rev Oc
+.Op Fl I Ns Oo Ar rev Oc
+.Op Fl kmode
+.Op Fl l Ns Oo Ar rev Oc
+.Op Fl M Ns Oo Ar rev Oc
+.Op Fl p Ns Oo Ar rev Oc
+.Op Fl q Ns Oo Ar rev Oc
+.Op Fl r Ns Oo Ar rev Oc
+.Op Fl sstate
+.Op Fl u Ns Oo Ar rev Oc
+.Op Fl w Ns Oo Ar user Oc
+.Op Fl xsuffixes
+.Op Fl ztz
+.Ar
+.Nm col
+.Op Fl bfhx
+.Op Fl l Ar num
+.Nm colrm
+.Op Ar start Oo Ar stop Oc
+.Nm column
+.Op Fl tx
+.Op Fl c Ar columns
+.Op Fl s Ar sep
+.Op Ar 
+.Nm comm
+.Op Fl 123f
+.Ar file1
+.Ar file2
+.Nm compress
+.Op Fl 123456789cdfghlNnOqrtv
+.Op Fl b Ar bits
+.Op Fl o Ar filename
+.Op Fl S Ar suffix
+.Op Ar 
+.Nm uncompress
+.Op Fl cfhlNnqrtv
+.Op Fl o Ar filename
+.Op Ar 
+.Nm zcat
+.Op Fl fghqr
+.Op Ar 
+.Nm cp
+.Op Fl afipv
+.Op Fl R Oo Fl H | Fl L | Fl P Oc
+.Ar source
+.Ar target
+.Nm cp
+.Op Fl afipv
+.Op Fl R Oo Fl H | Fl L | Fl P Oc
+.Ar source
+.Ar ...
+.Ar directory
+.Nm cpio
+.Fl o
+.Op Fl AaBcjLvZz
+.Op Fl C Ar bytes
+.Op Fl F Ar archive
+.Op Fl H Ar format
+.Op Fl O Ar archive
+.Ar <
+.Ar name-list
+.Op Ar > Ar archive
+.Nm cpio
+.Fl i
+.Op Fl 6BbcdfjmrSstuvZz
+.Op Fl C Ar bytes
+.Op Fl E Ar file
+.Op Fl F Ar archive
+.Op Fl H Ar format
+.Op Fl I Ar archive
+.Op Ar pattern Ar ...
+.Op Ar < Ar archive
+.Nm cpio
+.Fl p
+.Op Fl adLlmuv
+.Ar destination-directory
+.Ar <
+.Ar name-list
+.Nm clang
+.Op Ar options
+.Ar filename
+.Ar ...
+.Nm crontab
+.Op Fl u Ar user
+.Ar file
+.Nm crontab
+.Op Fl e | Fl l | Fl r
+.Op Fl u Ar user
+.Nm csh
+.Op Fl bcefimnstVvXx
+.Op Ar argument Ar ...
+.Nm csh
+.Op Fl l
+.Nm csplit
+.Op Fl ks
+.Op Fl f Ar prefix
+.Op Fl n Ar number
+.Ar file
+.Ar arg
+.Ar ...
+.Nm ctags
+.Op Fl aBdFuvwx
+.Op Fl f Ar tagsfile
+.Ar
+.Nm cu
+.Op Fl dr
+.Op Fl E Ar escape_char
+.Op Fl l Ar line
+.Op Fl s Ar speed | Fl speed
+.Nm cu
+.Op Ar host
+.Nm cut
+.Fl b
+.Ar list
+.Op Fl n
+.Op Ar 
+.Nm cut
+.Fl c
+.Ar list
+.Op Ar 
+.Nm cut
+.Fl f
+.Ar list
+.Op Fl s
+.Op Fl d Ar delim
+.Op Ar 
+.Nm date
+.Op Fl aju
+.Op Fl f Ar pformat
+.Op Fl r Ar seconds
+.Op Fl z Ar output_zone
+.Op Ar +format
+.Op Oo Oo Oo Oo Oo Ar cc Oc Ns Ar yy Oc Ns Ar mm Oc Ns Ar dd Oc Ns Ar HH Oc Ns Ar MM Ns Oo Ar .SS Oc
+.Nm dc
+.Op Fl x
+.Op Fl e Ar expression
+.Op Ar file
+.Nm dd
+.Op Ar operand Ar ...
+.Nm deroff
+.Op Fl ikpw
+.Op Fl m Ar a | Ar e | Ar l | Ar m | Ar s
+.Op Ar 
+.Nm df
+.Op Fl hiklnP
+.Op Fl t Ar type
+.Op Oo Ar file | Ar file_system Oc Ar ...
+.Nm diff
+.Op Fl abdipTtw
+.Op Fl c | Fl e | Fl f | Fl n | Fl q | Fl u
+.Op Fl I Ar pattern
+.Op Fl L Ar label
+.Ar file1
+.Ar file2
+.Nm diff
+.Op Fl abdipTtw
+.Op Fl I Ar pattern
+.Op Fl L Ar label
+.Fl C
+.Ar number
+.Ar file1
+.Ar file2
+.Nm diff
+.Op Fl abditw
+.Op Fl I Ar pattern
+.Fl D
+.Ar string
+.Ar file1
+.Ar file2
+.Nm diff
+.Op Fl abdipTtw
+.Op Fl I Ar pattern
+.Op Fl L Ar label
+.Fl U
+.Ar number
+.Ar file1
+.Ar file2
+.Nm diff
+.Op Fl abdiNPprsTtw
+.Op Fl c | Fl e | Fl f | Fl n | Fl q | Fl u
+.Op Fl I Ar pattern
+.Op Fl L Ar label
+.Op Fl S Ar name
+.Op Fl X Ar file
+.Op Fl x Ar pattern
+.Ar dir1
+.Ar dir2
+.Nm diff3
+.Op Fl 3aEeXx
+.Ar file1
+.Ar file2
+.Ar file3
+.Nm dig
+.Op Ar @server
+.Op Fl 46hiuv
+.Op Fl b Ar sourceaddr Ns Oo Ar #port Oc
+.Op Fl c Ar class
+.Op Fl f Ar file
+.Op Fl k Ar keyfile
+.Op Fl p Ar port
+.Op Fl q Ar name
+.Op Fl t Ar type
+.Op Fl x Ar addr
+.Op Fl y Oo Ar hmac: Oc Ns Ar name:key
+.Op Ar name
+.Op Ar type
+.Op Ar class
+.Op Ar +queryopt Ar ...
+.Nm dirname
+.Ar pathname
+.Nm doas
+.Op Fl Lns
+.Op Fl a Ar style
+.Op Fl C Ar config
+.Op Fl u Ar user
+.Ar command
+.Op Ar arg Ar ...
+.Nm domainname
+.Op Ar name-of-domain
+.Nm dpb-replay
+.Op Fl cC
+.Op Fl e Ar regexp
+.Op Fl s Ar speedup
+.Op Fl t Ar timestamp
+.Ar file
+.Nm dpb
+.Op Fl acemqRrsUuvx
+.Op Fl A Ar arch
+.Op Fl B Ar chroot
+.Op Fl b Ar logfile
+.Op Fl C Ar pathlist
+.Op Fl D Ar PARAM=value
+.Op Fl F Ar m
+.Op Fl f Ar m
+.Op Fl h Ar hosts
+.Op Fl I Ar pathlist
+.Op Fl J Ar p
+.Op Fl j Ar n
+.Op Fl L Ar logdir
+.Op Fl l Ar lockdir
+.Op Fl M Ar threshold
+.Op Fl P Ar pathlist
+.Op Fl p Ar parallel
+.Op Fl S Ar logfile
+.Op Fl X Ar pathlist
+.Op Ar pathlist Ar ...
+.Nm du
+.Op Fl achkrsx
+.Op Fl H | Fl L | Fl P
+.Op Fl d Ar depth
+.Op Ar 
+.Nm echo
+.Op Fl n
+.Op Ar string Ar ...
+.Nm ed
+.Op Fl 
+.Op Fl s
+.Op Fl p Ar string
+.Op Ar file
+.Nm enc2xs
+.Fl  Ns Oo Ar options Oc
+.Ar enc2xs
+.Fl M
+.Ar ModName
+.Ar mapfiles\[u2026]
+.Ar enc2xs
+.Fl C\(ga
+.Nm encguess
+.Op Ar switches
+.Ar filename\[u2026]\(ga
+.Nm encrypt
+.Op Fl b Ar rounds
+.Op Fl c Ar class
+.Op Fl p | Ar string
+.Nm env
+.Op Fl i
+.Op Fl u Ar name
+.Op Ar name=value Ar ...
+.Op Ar utility Oo Ar argument Ar ... Oc
+.Nm expand
+.Op Fl t Ar tablist
+.Op Ar 
+.Nm unexpand
+.Op Fl a
+.Op Ar 
+.Nm expr
+.Ar expression
+.Ar ...
+.Nm fgen
+.Op Fl d Ar level
+.Op Fl o Ar outfile
+.Ar infile
+.Nm file
+.Op Fl bchiLsW
+.Ar
+.Nm find
+.Op Fl dHhLXx
+.Op Fl f Ar path
+.Ar path
+.Ar ...
+.Op Ar expression
+.Nm finger
+.Op Fl hlMmops
+.Op Ar user Ar ...
+.Nm finger
+.Op Fl l
+.Op Ar user@host Ar ...
+.Nm fmt
+.Op Fl cmnps
+.Op Fl d Ar chars
+.Op Fl l Ar number
+.Op Fl t Ar number
+.Op Ar goal Oo Ar maximum Oc | Fl width | Fl w Ar width
+.Op Ar 
+.Nm fold
+.Op Fl bs
+.Op Fl w Ar width
+.Op Ar 
+.Nm from
+.Op Fl f Ar file
+.Op Fl s Ar sender
+.Op Ar user
+.Nm fstat
+.Op Fl fnosv
+.Op Fl M Ar core
+.Op Fl N Ar system
+.Op Fl p Ar pid
+.Op Fl u Ar user
+.Op Ar 
+.Nm ftp
+.Op Fl 46AadEegiMmnptVv
+.Op Fl D Ar title
+.Op Fl k Ar seconds
+.Op Fl P Ar port
+.Op Fl r Ar seconds
+.Op Fl s Ar sourceaddr
+.Op Ar host Oo Ar port Oc
+.Nm ftp
+.Op Fl C
+.Op Fl N Ar name
+.Op Fl o Ar output
+.Op Fl s Ar sourceaddr
+.Ar ftp://
+.Op Ar user:password@
+.Ar host
+.Op Ar :port
+.Ar /file
+.Op Ar /
+.Ar ...
+.Nm ftp
+.Op Fl CTu
+.Op Fl c Ar cookie
+.Op Fl N Ar name
+.Op Fl o Ar output
+.Op Fl S Ar ssl_options
+.Op Fl s Ar sourceaddr
+.Op Fl U Ar useragent
+.Op Fl w Ar seconds
+.Ar http
+.Op Ar s
+.Ar ://
+.Op Ar user:password@
+.Ar host
+.Op Ar :port
+.Ar /file
+.Ar ...
+.Nm ftp
+.Op Fl C
+.Op Fl N Ar name
+.Op Fl o Ar output
+.Op Fl s Ar sourceaddr
+.Ar file:file
+.Ar ...
+.Nm ftp
+.Op Fl C
+.Op Fl N Ar name
+.Op Fl o Ar output
+.Op Fl s Ar sourceaddr
+.Ar host:/file
+.Op Ar /
+.Ar ...
+.Nm fuser
+.Op Fl cfku
+.Op Fl M Ar core
+.Op Fl N Ar system
+.Op Fl s Ar signal
+.Ar
+.Nm gencat
+.Ar catfile
+.Ar msgfile
+.Ar ...
+.Nm getcap
+.Op Fl b Ar boolean | Fl c Ar capability | Fl n Ar number | Fl s Ar string
+.Fl f
+.Ar path
+.Fl a
+|
+.Ar record
+.Ar ...
+.Nm getconf
+.Op Fl Ll
+.Op Fl v Ar specification
+.Ar name
+.Op Ar pathname
+.Nm getent
+.Ar database
+.Op Ar key Ar ...
+.Nm getopt
+.Ar optstring
+.Ar $*
+.Nm grep
+.Op Fl abcEFGHhIiLlnoqRsUVvwxZ
+.Op Fl A Ar num
+.Op Fl B Ar num
+.Op Fl C Ns Oo Ar num Oc
+.Op Fl e Ar pattern
+.Op Fl f Ar file
+.Op Fl m Ar num
+.Op Fl \-binary-files Ns = Ns Ar value
+.Op Fl \-context Ns Oo Ar =num Oc
+.Op Fl \-label Ns = Ns Ar name
+.Op Fl \-line-buffered
+.Op Fl \-null
+.Op Ar pattern
+.Op Ar 
+.Nm groups
+.Op Ar user
+.Nm gzexe
+.Op Fl d
+.Ar
+.Nm gzip
+.Op Fl 123456789cdfhkLlNnOqrtVv
+.Op Fl b Ar bits
+.Op Fl o Ar filename
+.Op Fl S Ar suffix
+.Op Ar 
+.Nm gunzip
+.Op Fl cfhkLlNnqrtVv
+.Op Fl o Ar filename
+.Op Ar 
+.Nm gzcat
+.Op Fl fhqr
+.Op Ar 
+.Nm h2ph
+.Op Fl d Ar destination Ar directory
+.Op Fl r | Fl a
+.Op Fl l
+.Op Fl h
+.Op Fl e
+.Op Fl D
+.Op Fl Q
+.Op Ar headerfiles
+.Nm h2xs
+.Op Ar OPTIONS Ar ...
+.Op Ar headerfile Ar ... Oo Ar extra_libraries Oc
+.Nm h2xs
+.Fl h
+|
+.Fl ?
+|
+.Fl \-help
+.Nm head
+.Op Fl count | Fl n Ar count
+.Op Ar 
+.Nm hexdump
+.Op Fl bCcdovx
+.Op Fl e Ar format_string
+.Op Fl f Ar format_file
+.Op Fl n Ar length
+.Op Fl s Ar offset
+.Op Ar 
+.Nm host
+.Op Fl 46aCdilrsTVvw
+.Op Fl c Ar class
+.Op Fl m Ar flag
+.Op Fl N Ar ndots
+.Op Fl R Ar number
+.Op Fl t Ar type
+.Op Fl W Ar wait
+.Ar name
+.Op Ar server
+.Nm hostname
+.Op Fl s
+.Op Ar name-of-host
+.Nm htpasswd
+.Op Ar file
+.Ar login
+.Nm htpasswd
+.Fl I
+.Op Ar file
+.Nm id
+.Op Ar user
+.Nm id
+.Fl c
+.Op Ar user
+.Nm id
+.Fl G
+.Op Fl n
+.Op Ar user
+.Nm id
+.Fl g
+.Op Fl nr
+.Op Ar user
+.Nm id
+.Fl p
+.Op Ar user
+.Nm id
+.Fl R
+.Nm id
+.Fl u
+.Op Fl nr
+.Op Ar user
+.Nm ident
+.Op Fl qV
+.Op Ar 
+.Nm indent
+.Op Ar input-file Oo Ar output-file Oc
+.Op Fl bad | Fl nbad
+.Op Fl bap | Fl nbap
+.Op Fl bbb | Fl nbbb
+.Op Fl bc | Fl nbc
+.Op Fl bl | Fl br
+.Op Fl cn
+.Op Fl cdn
+.Op Fl cdb | Fl ncdb
+.Op Fl ce | Fl nce
+.Op Fl cin
+.Op Fl clin
+.Op Fl dn
+.Op Fl din
+.Op Fl dj | Fl ndj
+.Op Fl ei | Fl nei
+.Op Fl fc1 | Fl nfc1
+.Op Fl in
+.Op Fl ip | Fl nip
+.Op Fl ln
+.Op Fl lcn
+.Op Fl lp | Fl nlp
+.Op Fl npro
+.Op Fl pcs | Fl npcs
+.Op Fl psl | Fl npsl
+.Op Fl sc | Fl nsc
+.Op Fl sob | Fl nsob
+.Op Fl st
+.Op Fl Ttypename
+.Op Fl troff
+.Op Fl ut | Fl nut
+.Op Fl v | Fl nv
+.Nm info
+.Op Ar OPTION
+.Ar ...
+.Op Ar MENU-ITEM...
+.Nm infocmp
+.Op Fl 1CDEFGIKLTUVWcdegilnpqrtux
+.Op Fl v Ar n
+.Op Fl s Ar d Ns | Ar i Ns | Ar l Ns | Ar c
+.Op Fl Q Ar n
+.Op Fl R Ar subset
+.Op Fl wwidth
+.Op Fl Adirectory
+.Op Fl Bdirectory
+.Op Ar termname...
+.Nm infokey
+.Op Fl \-help
+.Op Fl \-version
+.Op Fl \-output Ar file
+.Op Ar input Ar file
+.Nm infotocap
+.Op Fl vn Ar width
+.Op Fl V
+.Op Fl 1
+.Op Fl w Ar width
+.Ar file
+.Ar .
+.Ar .
+.Ar .
+.Nm install-info
+.Op Ar OPTION
+.Ar ...
+.Op Ar INFO-FILE Oo Ar DIR-FILE Oc
+.Nm install
+.Op Fl bCcDdFpSs
+.Op Fl B Ar suffix
+.Op Fl f Ar flags
+.Op Fl g Ar group
+.Op Fl m Ar mode
+.Op Fl o Ar owner
+.Ar source
+.Ar ...
+.Ar target
+.Ar ...
+.Nm ipcrm
+.Op Fl M Ar shmkey
+.Op Fl m Ar shmid
+.Op Fl Q Ar msgkey
+.Op Fl q Ar msqid
+.Op Fl S Ar semkey
+.Op Fl s Ar semid
+.Ar ...
+.Nm ipcs
+.Op Fl abcMmopQqSsTt
+.Op Fl C Ar core
+.Op Fl N Ar system
+.Nm join
+.Op Fl 1 Ar field
+.Op Fl 2 Ar field
+.Op Fl a Ar file_number | Fl v Ar file_number
+.Op Fl e Ar string
+.Op Fl o Ar list
+.Op Fl t Ar char
+.Ar file1
+.Ar file2
+.Nm jot
+.Op Fl cnr
+.Op Fl b Ar word
+.Op Fl p Ar precision
+.Op Fl s Ar string
+.Op Fl w Ar word
+.Op Ar reps Oo Ar begin Oo Ar end Oo Ar step Oc Oc Oc
+.Nm kdump
+.Op Fl dHlnRTXx
+.Op Fl f Ar file
+.Op Fl m Ar maxdata
+.Op Fl P Ar program
+.Op Fl p Ar pid
+.Op Fl t Ar trstr
+.Op Fl u Ar label
+.Nm keynote
+.Ar keygen
+.Ar AlgorithmName
+.Ar KeySize
+.Ar PublicKeyFile
+.Ar PrivateKeyFile
+.Op Ar print-offset
+.Op Ar print-length
+.Nm keynote
+.Ar sign
+.Op Fl v
+.Ar AlgorithmName
+.Ar AssertionFile
+.Ar PrivateKeyFile
+.Op Ar print-offset
+.Op Ar print-length
+.Nm keynote
+.Ar sigver
+.Op Ar AssertionFile
+.Nm keynote
+.Ar verify
+.Op Fl h
+.Op Fl e Ar file
+.Op Fl k Ar file
+.Op Fl l Ar file
+.Fl r
+.Ar retlist
+.Op Ar 
+.Nm kill
+.Op Fl signal_number | Fl signal_name | Fl s Ar signal_name
+.Ar pid
+.Ar ...
+.Nm kill
+.Fl l
+.Op Ar exit_status
+.Nm ksh
+.Op Fl +abCefhiklmnpruvXx
+.Op Fl +o Ar option
+.Op Fl c Ar string | Fl s | Ar file Oo Ar argument Ar ... Oc
+.Nm kstat
+.Op Fl w Ar wait
+.Op Ar name | Ar provider:instance:name:unit
+.Ar ...
+.Nm ktrace
+.Op Fl aCcdi
+.Op Fl f Ar trfile
+.Op Fl g Ar pgid
+.Op Fl p Ar pid
+.Op Fl t Ar trstr
+.Nm ktrace
+.Op Fl aBdiT
+.Op Fl f Ar trfile
+.Op Fl t Ar trstr
+.Ar command
+.Nm lam
+.Op Fl F Ns | Ns Ar f Ar min.max
+.Op Fl P Ns | Ns Ar p Ar min.max
+.Op Fl S Ns | Ns Ar s Ar sepstring
+.Op Fl T Ns | Ns Ar t Ar c
+.Ar
+.Nm last
+.Op Fl csT
+.Op Fl d Ar date
+.Op Fl f Ar file
+.Op Fl h Ar host
+.Op Fl n Ar number
+.Op Fl t Ar tty
+.Op Ar user Ar ...
+.Nm lastcomm
+.Op Fl f Ar file
+.Op Ar command Ar ...
+.Op Ar user Ar ...
+.Op Ar terminal Ar ...
+.Nm w
+.Op Fl ahi
+.Op Fl M Ar core
+.Op Fl N Ar system
+.Op Ar user
+.Nm ldap
+.Ar search
+.Op Fl LvWxZ
+.Op Fl b Ar basedn
+.Op Fl c Ar CAfile
+.Op Fl D Ar binddn
+.Op Fl H Ar host
+.Op Fl l Ar timelimit
+.Op Fl s Ar scope
+.Op Fl w Ar secret
+.Op Fl y Ar secretfile
+.Op Fl z Ar sizelimit
+.Op Ar filter
+.Op Ar attributes Ar ...
+.Nm ldd
+.Ar program
+.Ar ...
+.Nm leave
+.Op Oo Ar + Oc Ns Ar hhmm
+.Nm less
+.Op Fl ?\(tiAaBCcdEeFfGgIiJKLMmNnQqRrSsUuVWwX
+.Op Fl b Ar n
+.Op Fl h Ar n
+.Op Fl j Ar n
+.Op Fl k Ar keyfile
+.Op Fl O | Fl o Ar logfile
+.Op Fl P Ar prompt
+.Op Fl p Ar pattern
+.Op Fl T Ar tagsfile
+.Op Fl t Ar tag
+.Op Fl x Ar n,...
+.Op Fl y Ar n
+.Op Fl z Ar n
+.Op Fl # Ar n
+.Op Ar 
+.Nm lesskey
+.Op Fl o Ar output | Fl \-output Ns = Ns Ar output
+.Op Ar input
+.Nm lesskey
+.Fl V
+|
+.Fl \-version
+.Nm ln
+.Op Fl fhLnPs
+.Ar source
+.Op Ar target
+.Nm ln
+.Op Fl fLPs
+.Ar source
+.Ar ...
+.Op Ar directory
+.Nm lndir
+.Op Fl is
+.Op Fl e Ar exceptfile
+.Ar fromdir
+.Op Ar todir
+.Nm locale
+.Op Fl a | Fl m | Ar charmap
+.Nm locate
+.Op Fl bciS
+.Op Fl d Ar database
+.Op Fl l Ar limit
+.Ar pattern
+.Ar ...
+.Nm lock
+.Op Fl np
+.Op Fl a Ar style
+.Op Fl t Ar timeout
+.Nm lockspool
+.Op Ar username
+.Nm logger
+.Op Fl cis
+.Op Fl f Ar file
+.Op Fl p Ar pri
+.Op Fl t Ar tag
+.Op Ar message Ar ...
+.Nm login
+.Op Fl fp
+.Op Fl h Ar hostname
+.Op Fl L Ar local-addr
+.Op Fl R Ar remote-addr
+.Op Fl u Ar username
+.Op Ar user
+.Nm look
+.Op Fl df
+.Op Fl t Ar termchar
+.Ar string
+.Op Ar file
+.Nm lpq
+.Op Fl al
+.Op Fl Pprinter
+.Op Ar job# Ar ...
+.Op Ar user Ar ...
+.Nm lpr
+.Op Fl cdfghlmnpqrstv
+.Op Fl #num
+.Op Fl 1234 Ar font
+.Op Fl C Ar class
+.Op Fl i Oo Ar numcols Oc
+.Op Fl J Ar job
+.Op Fl Pprinter
+.Op Fl T Ar title
+.Op Fl U Ar user
+.Op Fl wnum
+.Op Ar name Ar ...
+.Nm lprm
+.Op Fl 
+.Op Fl Pprinter
+.Op Oo Ar job# Ar ... Oc Oo Ar user Ar ... Oc
+.Nm ls
+.Op Fl 1AaCcdFfgHhikLlmnopqRrSsTtux
+.Op Ar 
+.Nm ltrace
+.Op Fl ai
+.Op Fl f Ar trfile
+.Op Fl t Ar trstr
+.Op Fl u Ar trspec
+.Ar command
+.Nm m4
+.Op Fl EgPs
+.Op Fl Dname Ns Oo Ar =value Oc
+.Op Fl d Ar flags
+.Op Fl I Ar dirname
+.Op Fl o Ar filename
+.Op Fl t Ar macro
+.Op Fl Uname
+.Op Ar 
+.Nm mail
+.Op Fl dEIinv
+.Op Fl b Ar list
+.Op Fl c Ar list
+.Op Fl r Ar from-addr
+.Op Fl s Ar subject
+.Ar to-addr
+.Ar ...
+.Nm mail
+.Op Fl dEIiNnv
+.Fl f
+.Op Ar file
+.Nm mail
+.Op Fl dEIiNnv
+.Op Fl u Ar user
+.Nm make
+.Op Fl BeiknpqrSst
+.Op Fl C Ar directory
+.Op Fl D Ar variable
+.Op Fl d Ar flags
+.Op Fl f Ar mk
+.Op Fl I Ar directory
+.Op Fl j Ar max_jobs
+.Op Fl m Ar directory
+.Op Fl V Ar variable
+.Op Ar NAME=value Ar ...
+.Op Ar target Ar ...
+.Nm makeinfo
+.Op Ar OPTION
+.Ar ...
+.Ar TEXINFO-FILE...
+.Nm mandoc
+.Op Fl ac
+.Op Fl I Ar os=name
+.Op Fl K Ar encoding
+.Op Fl mdoc | Fl man
+.Op Fl O Ar options
+.Op Fl T Ar output
+.Op Fl W Ar level
+.Op Ar 
+.Nm md5
+.Op Fl bcpqrtx
+.Op Fl C Ar checklist
+.Op Fl h Ar hashfile
+.Op Fl s Ar string
+.Op Ar 
+.Nm sha1
+.Op Fl bcpqrtx
+.Op Fl C Ar checklist
+.Op Fl h Ar hashfile
+.Op Fl s Ar string
+.Op Ar 
+.Nm sha256
+.Op Fl bcpqrtx
+.Op Fl C Ar checklist
+.Op Fl h Ar hashfile
+.Op Fl s Ar string
+.Op Ar 
+.Nm sha512
+.Op Fl bcpqrtx
+.Op Fl C Ar checklist
+.Op Fl h Ar hashfile
+.Op Fl s Ar string
+.Op Ar 
+.Nm merge
+.Op Fl EepqV
+.Op Fl L Ar label
+.Ar file1
+.Ar file2
+.Ar file3
+.Nm mesg
+.Op Ar n | Ar y
+.Nm mg
+.Op Fl nR
+.Op Fl b Ar file
+.Op Fl f Ar mode
+.Op Fl u Ar file
+.Op Ar +number
+.Op Ar 
+.Nm midicat
+.Op Fl d
+.Op Fl i Ar file
+.Op Fl o Ar file
+.Op Fl q Ar port
+.Nm mkdep
+.Op Fl ap
+.Op Fl f Ar file
+.Op Ar flags
+.Ar
+.Nm mkdir
+.Op Fl p
+.Op Fl m Ar mode
+.Ar directory
+.Ar ...
+.Nm mkfifo
+.Op Fl m Ar mode
+.Ar fifo_name
+.Ar ...
+.Nm mklocale
+.Op Fl d
+.Op Ar src-file
+.Ar language/LC_CTYPE
+.Nm mklocale
+.Op Fl d
+.Fl o
+.Ar language/LC_CTYPE
+.Ar src-file
+.Nm mktemp
+.Op Fl dqtu
+.Op Fl p Ar directory
+.Op Ar template
+.Nm mopa.out
+.Ar infile
+.Ar outfile
+.Nm mopchk
+.Op Fl av
+.Op Ar 
+.Nm mopprobe
+.Op Fl 3 | Fl 4
+.Op Fl aov
+.Ar interface
+.Nm moptrace
+.Op Fl 3 | Fl 4
+.Op Fl ad
+.Ar interface
+.Nm more
+.Op Fl ceisu
+.Op Fl n Ar number
+.Op Fl p Ar command
+.Op Fl t Ar tag
+.Op Ar 
+.Nm mt
+.Op Fl f Ar device
+.Ar command
+.Op Ar count
+.Nm eject
+.Op Fl t
+.Ar device
+.Nm mv
+.Op Fl fiv
+.Ar source
+.Ar target
+.Nm mv
+.Op Fl fiv
+.Ar source
+.Ar ...
+.Ar directory
+.Nm nc
+.Op Fl 46cDdFhklNnrStUuvz
+.Op Fl C Ar certfile
+.Op Fl e Ar name
+.Op Fl H Ar hash
+.Op Fl I Ar length
+.Op Fl i Ar interval
+.Op Fl K Ar keyfile
+.Op Fl M Ar ttl
+.Op Fl m Ar minttl
+.Op Fl O Ar length
+.Op Fl o Ar staplefile
+.Op Fl P Ar proxy_username
+.Op Fl p Ar source_port
+.Op Fl R Ar CAfile
+.Op Fl s Ar sourceaddr
+.Op Fl T Ar keyword
+.Op Fl V Ar rtable
+.Op Fl W Ar recvlimit
+.Op Fl w Ar timeout
+.Op Fl X Ar proxy_protocol
+.Op Fl x Ar proxy_address Ns Oo Ar :port Oc
+.Op Fl Z Ar peercertfile
+.Op Ar destination
+.Op Ar port
+.Nm netstat
+.Op Fl AaBln
+.Op Fl M Ar core
+.Op Fl N Ar system
+.Op Fl p Ar protocol
+.Op Fl T Ar rtable
+.Nm netstat
+.Fl W
+.Ar interface
+.Nm netstat
+.Fl m
+.Nm netstat
+.Fl I
+.Ar interface
+|
+.Fl i
+.Op Fl bdehnq
+.Nm netstat
+.Fl w
+.Ar wait
+.Op Fl bdehnq
+.Op Fl c Ar count
+.Op Fl I Ar interface
+.Nm netstat
+.Fl s
+.Op Fl gru
+.Op Fl f Ar address_family
+.Op Fl p Ar protocol
+.Nm netstat
+.Fl g
+.Op Fl lnu
+.Op Fl f Ar address_family
+.Nm netstat
+.Fl R
+.Nm netstat
+.Fl r
+.Op Fl AFu
+.Op Fl f Ar address_family
+.Op Fl M Ar core
+.Op Fl N Ar system
+.Op Fl T Ar rtable
+.Nm netstat
+.Fl P
+.Ar pcbaddr
+.Op Fl v
+.Op Fl M Ar core
+.Op Fl N Ar system
+.Nm nfsstat
+.Op Fl cs
+.Op Fl M Ar core
+.Op Fl N Ar system
+.Op Fl w Ar wait
+.Nm nice
+.Op Fl n Ar increment
+.Ar utility
+.Op Ar argument Ar ...
+.Nm nl
+.Op Fl p
+.Op Fl b Ar type
+.Op Fl d Ar delim
+.Op Fl f Ar type
+.Op Fl h Ar type
+.Op Fl i Ar incr
+.Op Fl l Ar num
+.Op Fl n Ar format
+.Op Fl s Ar sep
+.Op Fl v Ar startnum
+.Op Fl w Ar width
+.Op Ar file
+.Nm nm
+.Op Fl AaCDegnoPprsuw
+.Op Fl t Ar d Ns | Ns Ar o Ns | Ns Ar x
+.Op Ar 
+.Nm nohup
+.Ar utility
+.Op Ar arg Ar ...
+.Nm nslookup
+.Op Fl option
+.Op Ar name | Fl 
+.Op Ar server
+.Nm objcopy
+.Op Fl F Ar bfdname Ns | Ns Fl \-target Ns = Ns Ar bfdname
+.Op Fl I Ar bfdname Ns | Ns Fl \-input-target Ns = Ns Ar bfdname
+.Op Fl O Ar bfdname Ns | Ns Fl \-output-target Ns = Ns Ar bfdname
+.Op Fl B Ar bfdarch Ns | Ns Fl \-binary-architecture Ns = Ns Ar bfdarch
+.Op Fl S Ns | Ns Fl \-strip-all
+.Op Fl g Ns | Ns Fl \-strip-debug
+.Op Fl K Ar symbolname Ns | Ns Fl \-keep-symbol Ns = Ns Ar symbolname
+.Op Fl N Ar symbolname Ns | Ns Fl \-strip-symbol Ns = Ns Ar symbolname
+.Op Fl \-strip-unneeded-symbol Ns = Ns Ar symbolname
+.Op Fl G Ar symbolname Ns | Ns Fl \-keep-global-symbol Ns = Ns Ar symbolname
+.Op Fl \-localize-hidden
+.Op Fl L Ar symbolname Ns | Ns Fl \-localize-symbol Ns = Ns Ar symbolname
+.Op Fl \-globalize-symbol Ns = Ns Ar symbolname
+.Op Fl W Ar symbolname Ns | Ns Fl \-weaken-symbol Ns = Ns Ar symbolname
+.Op Fl w Ns | Ns Fl \-wildcard
+.Op Fl x Ns | Ns Fl \-discard-all
+.Op Fl X Ns | Ns Fl \-discard-locals
+.Op Fl b Ar byte Ns | Ns Fl \-byte Ns = Ns Ar byte
+.Op Fl i Ar interleave Ns | Ns Fl \-interleave Ns = Ns Ar interleave
+.Op Fl j Ar sectionname Ns | Ns Fl \-only-section Ns = Ns Ar sectionname
+.Op Fl R Ar sectionname Ns | Ns Fl \-remove-section Ns = Ns Ar sectionname
+.Op Fl p Ns | Ns Fl \-preserve-dates
+.Op Fl \-debugging
+.Op Fl \-gap-fill Ns = Ns Ar val
+.Op Fl \-pad-to Ns = Ns Ar address
+.Op Fl \-set-start Ns = Ns Ar val
+.Op Fl \-adjust-start Ns = Ns Ar incr
+.Op Fl \-change-addresses Ns = Ns Ar incr
+.Op Fl \-change-section-address Ar section{=,+,-}val
+.Op Fl \-change-section-lma Ar section{=,+,-}val
+.Op Fl \-change-section-vma Ar section{=,+,-}val
+.Op Fl \-change-warnings
+.Op Fl \-no-change-warnings
+.Op Fl \-set-section-flags Ar section=flags
+.Op Fl \-add-section Ar sectionname=filename
+.Op Fl \-rename-section Ar oldname=newname Ns Oo Ar ,flags Oc
+.Op Fl \-change-leading-char
+.Op Fl \-remove-leading-char
+.Op Fl \-srec-len Ns = Ns Ar ival
+.Op Fl \-srec-forceS3
+.Op Fl \-redefine-sym Ar old=new
+.Op Fl \-redefine-syms Ns = Ns Ar filename
+.Op Fl \-weaken
+.Op Fl \-keep-symbols Ns = Ns Ar filename
+.Op Fl \-strip-symbols Ns = Ns Ar filename
+.Op Fl \-strip-unneeded-symbols Ns = Ns Ar filename
+.Op Fl \-keep-global-symbols Ns = Ns Ar filename
+.Op Fl \-localize-symbols Ns = Ns Ar filename
+.Op Fl \-globalize-symbols Ns = Ns Ar filename
+.Op Fl \-weaken-symbols Ns = Ns Ar filename
+.Op Fl \-alt-machine-code Ns = Ns Ar index
+.Op Fl \-prefix-symbols Ns = Ns Ar string
+.Op Fl \-prefix-sections Ns = Ns Ar string
+.Op Fl \-prefix-alloc-sections Ns = Ns Ar string
+.Op Fl \-add-gnu-debuglink Ns = Ns Ar path-to-file
+.Op Fl \-keep-file-symbols
+.Op Fl \-only-keep-debug
+.Op Fl \-writable-text
+.Op Fl \-readonly-text
+.Op Fl \-pure
+.Op Fl \-impure
+.Op Fl v Ns | Ns Fl \-verbose
+.Op Fl V Ns | Ns Fl \-version
+.Op Fl \-help
+.Op Fl \-info
+.Ar infile
+.Op Ar outfile
+.Nm od
+.Op Fl aBbcDdeFfHhIiLlOosvXx
+.Op Fl A Ar base
+.Op Fl j Ar offset
+.Op Fl N Ar length
+.Op Fl t Ar type_string
+.Op Ar 
+.Nm openrsync
+.Op Fl aDgIJlnOoprtVvx
+.Op Fl e Ar program
+.Op Fl \-address Ns = Ns Ar sourceaddr
+.Op Fl \-compare-dest Ns = Ns Ar directory
+.Op Fl \-contimeout Ns = Ns Ar seconds
+.Op Fl \-del
+.Op Fl \-exclude Ar pattern
+.Op Fl \-exclude-from Ns = Ns Ar file
+.Op Fl \-include Ar pattern
+.Op Fl \-include-from Ns = Ns Ar file
+.Op Fl \-max-size Ns = Ns Ar size
+.Op Fl \-min-size Ns = Ns Ar size
+.Op Fl \-no-motd
+.Op Fl \-numeric-ids
+.Op Fl \-port Ns = Ns Ar service
+.Op Fl \-rsync-path Ns = Ns Ar program
+.Op Fl \-size-only
+.Op Fl \-timeout Ns = Ns Ar seconds
+.Ar source
+.Ar ...
+.Ar directory
+.Nm openssl
+.Ar command
+.Op Ar command_opt Ar ...
+.Op Ar command_arg Ar ...
+.Nm openssl
+.Ar list-standard-commands
+|
+.Ar list-message-digest-commands
+|
+.Ar list-cipher-commands
+|
+.Ar list-cipher-algorithms
+|
+.Ar list-message-digest-algorithms
+|
+.Ar list-public-key-algorithms
+.Nm openssl
+.Ar no-command
+.Nm outdated-perl-ports
+.Op Fl d
+.Op Fl m Ar maintainer
+.Nm passwd
+.Op Ar user
+.Nm paste
+.Op Fl s
+.Op Fl d Ar list
+.Ar
+.Nm patch
+.Op Fl bCcEeflNnRstuv
+.Op Fl B Ar backup-prefix
+.Op Fl D Ar symbol
+.Op Fl d Ar directory
+.Op Fl F Ar max-fuzz
+.Op Fl i Ar patchfile
+.Op Fl o Ar out-file
+.Op Fl p Ar strip-count
+.Op Fl r Ar rej-name
+.Op Fl V Ar t | Ar nil | Ar never | Ar none
+.Op Fl x Ar number
+.Op Fl z Ar backup-ext
+.Op Fl \-posix
+.Op Ar origfile Oo Ar patchfile Oc
+.Nm patch
+.Ar <patchfile
+.Nm pax
+.Op Fl 0cdjnOvz
+.Op Fl E Ar limit
+.Op Fl f Ar archive
+.Op Fl G Ar group
+.Op Fl s Ar replstr
+.Op Fl T Ar range
+.Op Fl U Ar user
+.Op Ar pattern Ar ...
+.Nm pax
+.Fl r
+.Op Fl 0cDdijknOuvYZz
+.Op Fl E Ar limit
+.Op Fl f Ar archive
+.Op Fl G Ar group
+.Op Fl o Ar options
+.Op Fl p Ar string
+.Op Fl s Ar replstr
+.Op Fl T Ar range
+.Op Fl U Ar user
+.Op Ar pattern Ar ...
+.Nm pax
+.Fl w
+.Op Fl 0adHijLOPtuvXz
+.Op Fl B Ar bytes
+.Op Fl b Ar blocksize
+.Op Fl f Ar archive
+.Op Fl G Ar group
+.Op Fl o Ar options
+.Op Fl s Ar replstr
+.Op Fl T Ar range
+.Op Fl U Ar user
+.Op Fl x Ar format
+.Op Ar 
+.Nm pax
+.Fl rw
+.Op Fl 0DdHijkLlnOPtuvXYZ
+.Op Fl G Ar group
+.Op Fl p Ar string
+.Op Fl s Ar replstr
+.Op Fl T Ar range
+.Op Fl U Ar user
+.Op Ar 
+.Ar directory
+.Nm pctr
+.Op Fl AEeIiklMSu
+.Op Fl f Ar funct
+.Op Fl m Ar umask
+.Op Fl s Ar ctr
+.Op Fl t Ar thold
+.Nm piconv
+.Op Fl f Ar from_encoding
+.Op Fl t Ar to_encoding
+.Op Fl p Ns | Ns Fl \-perlqq Ns | Ns Fl \-htmlcref Ns | Ns Fl \-xmlcref
+.Op Fl C Ar N Ns | Ns Fl c
+.Op Fl D
+.Op Fl S Ar scheme
+.Op Fl s Ar string Ns | Ns Ar 
+.Nm piconv
+.Fl l
+.Nm piconv
+.Fl r
+.Ar encoding_alias
+.Nm piconv
+.Fl h
+.Nm pgrep
+.Op Fl flnoqvx
+.Op Fl d Ar delim
+.Op Fl G Ar gid
+.Op Fl g Ar pgrp
+.Op Fl P Ar ppid
+.Op Fl s Ar sid
+.Op Fl T Ar rtable
+.Op Fl t Ar tty
+.Op Fl U Ar uid
+.Op Fl u Ar euid
+.Op Ar pattern Ar ...
+.Nm pkill
+.Op Fl signal
+.Op Fl fIlnoqvx
+.Op Fl G Ar gid
+.Op Fl g Ar pgrp
+.Op Fl P Ar ppid
+.Op Fl s Ar sid
+.Op Fl T Ar rtable
+.Op Fl t Ar tty
+.Op Fl U Ar uid
+.Op Fl u Ar euid
+.Op Ar pattern Ar ...
+.Nm pkg-config
+.Op Ar options
+.Ar module
+.Ar ...
+.Nm pkg_check-manpages
+.Op Fl p
+.Op Ar pkgname Ar ...
+.Nm pkg_check-problems
+.Op Fl CDesv
+.Op Fl d Ar plist_dir
+.Op Fl o Ar output
+.Op Fl p Ar ports_dir
+.Op Ar pkgname Ar ...
+.Nm pkg_check-version
+.Op Fl Hv
+.Ar pkgname
+.Ar ...
+.Nm pkg_create
+.Op Fl mnQqSvx
+.Op Fl A Ar arches
+.Op Fl B Ar pkg-destdir
+.Op Fl D Ar name Ns Oo Ar =value Oc
+.Op Fl L Ar localbase
+.Op Fl M Ar displayfile
+.Op Fl P Ar pkgpath:pkgspec:default
+.Op Fl U Ar undisplayfile
+.Op Fl u Ar userlist
+.Op Fl V Ar n
+.Op Fl W Ar libspec
+.Fl d
+.Ar desc
+.Fl D
+.Ar COMMENT=value
+.Fl D
+.Ar FULLPKGPATH=value
+.Fl D
+.Ar PORTSDIR=value
+.Fl f
+.Ar packinglist
+.Fl p
+.Ar prefix
+.Ar pkg-name
+.Nm pkg_create
+.Fl f
+.Ar packinglist
+.Nm pkg_delete
+.Op Fl acIimnqsVvXx
+.Op Fl B Ar pkg-destdir
+.Op Fl D Ar name Ns Oo Ar =value Oc
+.Op Ar pkg-name Ar ...
+.Nm pkg_info
+.Op Fl AaCcdfIKLMmPqRSstUvz
+.Op Fl D Ar name Ns Oo Ar =value Oc
+.Op Fl E Ar filename
+.Op Fl e Ar pkg-name
+.Op Fl l Ar str
+.Op Fl Q Ar substring
+.Op Fl r Ar pkgspec
+.Op Ar pkg-name Ar ...
+.Nm pkg_mklocatedb
+.Op Fl aKnPqu
+.Op Fl d Ar repository
+.Op Fl p Ar portsdir
+.Op Ar pkg-name Ar ...
+.Nm pkg_outdated
+.Op Fl mqvx
+.Nm pkg_sign
+.Op Fl Cvi
+.Op Fl D Ar name Ns Oo Ar =value Oc
+.Op Fl j Ar maxjobs
+.Op Fl o Ar dir
+.Fl s
+.Ar signify2
+.Fl s
+.Ar privkey
+.Op Fl S Ar source
+.Op Ar pkg-name Ar ...
+.Nm pkg_subst
+.Op Fl ci
+.Op Fl B Ar basedir
+.Op Fl D Ar name Ns Oo Ar =value Oc
+.Op Fl g Ar group
+.Op Fl m Ar mode
+.Op Fl o Ar owner
+.Op Ar 
+.Nm pl2pm
+.Ar files
+.Nm pod2html
+.Fl \-help
+.Fl \-htmldir Ns = Ns Ar <name>
+.Fl \-htmlroot Ns = Ns Ar <URL>
+.Fl \-infile Ns = Ns Ar <name>
+.Fl \-outfile Ns = Ns Ar <name>
+.Fl \-podpath Ns = Ns Ar <name>:...:<name>
+.Fl \-podroot Ns = Ns Ar <name>
+.Fl \-cachedir Ns = Ns Ar <name>
+.Fl \-flush
+.Fl \-recurse
+.Fl \-norecurse
+.Fl \-quiet
+.Fl \-noquiet
+.Fl \-verbose
+.Fl \-noverbose
+.Fl \-index
+.Fl \-noindex
+.Fl \-backlink
+.Fl \-nobacklink
+.Fl \-header
+.Fl \-noheader
+.Fl \-poderrors
+.Fl \-nopoderrors
+.Fl \-css Ns = Ns Ar <URL>
+.Fl \-title Ns = Ns Ar <name>
+.Nm pod2man
+.Op Fl \-center Ns = Ns Ar string
+.Op Fl \-date Ns = Ns Ar string
+.Op Fl \-encoding Ns = Ns Ar encoding
+.Op Fl \-errors Ns = Ns Ar style
+.Op Fl \-fixed Ns = Ns Ar font
+.Op Fl \-fixedbold Ns = Ns Ar font
+.Op Fl \-fixeditalic Ns = Ns Ar font
+.Op Fl \-fixedbolditalic Ns = Ns Ar font
+.Op Fl \-guesswork Ns = Ns Ar rule Ns Oo Ar ,rule... Oc
+.Op Fl \-name Ns = Ns Ar name
+.Op Fl \-nourls
+.Op Fl \-official
+.Op Fl \-release Ns = Ns Ar version
+.Op Fl \-section Ns = Ns Ar manext
+.Op Fl \-quotes Ns = Ns Ar quotes
+.Op Fl \-lquote Ns = Ns Ar quote
+.Op Fl \-rquote Ns = Ns Ar quote
+.Op Fl \-stderr
+.Op Fl \-utf8
+.Op Fl \-verbose
+.Op Ar input Oo Ar output Oc Ar ...
+.Nm pod2man
+.Fl \-help
+.Nm pod2text
+.Op Fl aclostu
+.Op Fl \-code
+.Op Fl eencoding
+.Op Fl \-errors Ns = Ns Ar style
+.Op Fl \-guesswork Ns = Ns Ar rule Ns Oo Ar ,rule... Oc
+.Op Fl iindent
+.Op Fl qquotes
+.Op Fl \-nourls
+.Op Fl \-stderr
+.Op Fl wwidth
+.Op Ar input Oo Ar output Ar ... Oc
+.Nm pod2text
+.Fl h
+.Nm pod2usage
+.Op Fl help
+.Op Fl man
+.Op Fl exitexitval
+.Op Fl outputoutfile
+.Op Fl verbose Ar level
+.Op Fl pathlist Ar dirlist
+.Op Fl formatter Ar module
+.Op Fl utf8
+.Ar file
+.Nm podchecker
+.Op Fl help
+.Op Fl man
+.Op Fl (no)warnings
+.Op Ar 
+.Nm port-getpkgpath-helper
+.Ar dir
+.Nm port-resolve-lib-helper
+.Op Fl needed
+.Op Fl silent
+.Ar spec
+.Ar ...
+.Nm port-search-helper
+.Ar index=file
+.Op Ar category=cat
+.Op Ar maintainer=person
+.Op Ar key=value
+.Nm portbump
+.Op Fl lMmnrv
+.Op Fl W Ar wlib
+.Op Fl w Ar wlib
+.Op Ar portref Ar ...
+.Nm portbump
+.Fl o
+.Ar file
+.Op Fl lMmnrv
+.Op Fl W Ar addlib
+.Op Fl w Ar rmlib
+.Op Ar portref Ar ...
+.Nm portcheck
+.Op Fl dNP
+.Op Fl p Ar portsdir
+.Op Fl x Ar pattern
+.Nm portcheck
+.Fl A
+.Op Fl dP
+.Op Fl p Ar portsdir
+.Op Fl x Ar pattern
+.Op Ar subdir Ar ...
+.Nm portgen
+.Op Fl m Ar makeopt
+.Ar type
+.Ar module-name
+.Nm portimport
+.Op Fl p Ar portsdir
+.Op Fl u Ar username
+.Nm portlock
+.Op Fl g Ar group
+.Op Fl m Ar mode
+.Ar lockname
+.Op Ar comment Ar ...
+.Nm portslogger
+.Op Fl s
+.Ar directory
+.Nm pr
+.Op Ar +page
+.Op Fl column
+.Op Fl adFfmrt
+.Op Fl e Ns Oo Ar char Oc Ns Oo Ar gap Oc
+.Op Fl h Ar header
+.Op Fl i Ns Oo Ar char Oc Ns Oo Ar gap Oc
+.Op Fl l Ar lines
+.Op Fl n Ns Oo Ar char Oc Ns Oo Ar width Oc
+.Op Fl o Ar offset
+.Op Fl s Ns Oo Ar char Oc
+.Op Fl w Ar width
+.Op Ar 
+.Nm printenv
+.Op Ar name
+.Nm printf
+.Ar format
+.Op Ar argument Ar ...
+.Nm procmap
+.Op Fl AadlmPsv
+.Op Fl D Ar number
+.Op Fl M Ar core
+.Op Fl N Ar system
+.Op Fl p Ar pid
+.Op Ar pid Ar ...
+.Nm proot
+.Op Fl B Ar chroot
+.Op Fl c Ar configfile
+.Op Fl S Ar srcroot
+.Op Ar attribute=value Ar ...
+.Nm ps
+.Op Oo Fl  Oc Ns Ar AacefHhjkLlmrSTuvwx
+.Op Fl M Ar core
+.Op Fl N Ar system
+.Op Fl O Ar fmt
+.Op Fl o Ar fmt
+.Op Fl p Ar pid
+.Op Fl t Ar tty
+.Op Fl U Ar user
+.Op Fl W Ar swap
+.Nm pwd
+.Op Fl LP
+.Nm quota
+.Op Fl q | Fl v
+.Op Fl gu
+.Nm quota
+.Op Fl q | Fl v
+.Fl g
+.Ar group
+.Ar ...
+.Nm quota
+.Op Fl q | Fl v
+.Fl u
+.Ar user
+.Ar ...
+.Nm radioctl
+.Op Fl anv
+.Op Fl f Ar file
+.Nm radioctl
+.Op Fl nv
+.Op Fl f Ar file
+.Ar name
+.Nm radioctl
+.Op Fl n
+.Op Fl f Ar file
+.Ar name=value
+.Nm rcs
+.Op Fl IiLqTUV
+.Op Fl Aoldfile
+.Op Fl ausers
+.Op Fl b Ns Oo Ar rev Oc
+.Op Fl cstring
+.Op Fl e Ns Oo Ar users Oc
+.Op Fl kmode
+.Op Fl l Ns Oo Ar rev Oc
+.Op Fl mrev:msg
+.Op Fl orev
+.Op Fl t Ns Oo Ar str Oc
+.Op Fl u Ns Oo Ar rev Oc
+.Op Fl xsuffixes
+.Ar
+.Nm rcs2log
+.Op Fl c Ar changelog
+.Op Fl h Ar hostname
+.Op Fl i Ar indent
+.Op Fl l Ar length
+.Op Fl R
+.Op Fl r Ar option
+.Op Fl t Ar tabwidth
+.Op Fl u Ar login<TAB>fullname<TAB>mailaddr
+.Op Fl v
+.Op Fl \-help
+.Op Fl \-version
+.Op Ar 
+.Nm rcsclean
+.Op Fl TV
+.Op Fl kmode
+.Op Fl n Ns Oo Ar rev Oc
+.Op Fl q Ns Oo Ar rev Oc
+.Op Fl r Ns Oo Ar rev Oc
+.Op Fl u Ns Oo Ar rev Oc
+.Op Fl xsuffixes
+.Op Fl ztz
+.Op Ar 
+.Nm rcsdiff
+.Op Fl cnquV
+.Op Fl kmode
+.Op Fl rrev
+.Op Fl xsuffixes
+.Op Fl ztz
+.Op Ar diff_options
+.Ar
+.Nm rcsmerge
+.Op Fl EV
+.Op Fl kmode
+.Op Fl p Ns Oo Ar rev Oc
+.Op Fl q Ns Oo Ar rev Oc
+.Op Fl xsuffixes
+.Op Fl ztz
+.Fl rrev
+.Ar
+.Nm rdist
+.Op Fl DFnV
+.Op Fl A Ar num
+.Op Fl a Ar num
+.Op Fl c Ar mini_distfile
+.Op Fl d Ar var=value
+.Op Fl f Ar distfile
+.Op Fl L Ar remote_logopts
+.Op Fl l Ar local_logopts
+.Op Fl M Ar maxproc
+.Op Fl m Ar host
+.Op Fl o Ar distopts
+.Op Fl P Ar rsh-path
+.Op Fl p Ar rdistd-path
+.Op Fl t Ar timeout
+.Op Ar name Ar ...
+.Nm rdistd
+.Op Fl DV
+.Fl S
+.Nm readlink
+.Op Fl fn
+.Ar file
+.Nm realpath
+.Op Fl q
+.Ar file
+.Nm register-plist
+.Op Fl n
+.Op Fl s Ar snapdir
+.Ar dir
+.Op Ar pkgname Ar ...
+.Nm register-plist
+.Fl p
+.Ar dir
+.Nm register-plist
+.Fl t
+.Ar p1
+.Ar p2
+.Nm rev
+.Op Ar 
+.Nm rlog
+.Op Fl bhLNRtV
+.Op Fl ddates
+.Op Fl Eendsep
+.Op Fl l Ns Oo Ar lockers Oc
+.Op Fl r Ns Oo Ar revs Oc
+.Op Fl Srevsep
+.Op Fl sstates
+.Op Fl w Ns Oo Ar logins Oc
+.Op Fl xsuffixes
+.Op Fl ztz
+.Ar
+.Nm rm
+.Op Fl dfiPRrv
+.Ar
+.Nm rmdir
+.Op Fl p
+.Ar directory
+.Ar ...
+.Nm rs
+.Op Fl CcSs Ns Oo Ar x Oc
+.Op Fl GgKkw Ar N
+.Op Fl EeHhjmnTtyz
+.Op Ar rows Oo Ar cols Oc
+.Nm rup
+.Op Fl dhlt
+.Op Ar host Ar ...
+.Nm rusers
+.Op Fl al
+.Op Fl h | Fl i | Fl u
+.Op Ar hosts Ar ...
+.Nm rwall
+.Ar host
+.Op Ar file
+.Nm scp
+.Op Fl 346ABCOpqRrsTv
+.Op Fl c Ar cipher
+.Op Fl D Ar sftp_server_path
+.Op Fl F Ar ssh_config
+.Op Fl i Ar identity_file
+.Op Fl J Ar destination
+.Op Fl l Ar limit
+.Op Fl o Ar ssh_option
+.Op Fl P Ar port
+.Op Fl S Ar program
+.Op Fl X Ar sftp_option
+.Ar source
+.Ar ...
+.Ar target
+.Nm script
+.Op Fl a
+.Op Fl c Ar command
+.Op Ar file
+.Nm sdiff
+.Op Fl abdilstW
+.Op Fl I Ar regexp
+.Op Fl o Ar outfile
+.Op Fl w Ar width
+.Ar file1
+.Ar file2
+.Nm sed
+.Op Fl aEnru
+.Op Fl i Ns Oo Ar extension Oc
+.Ar command
+.Op Ar 
+.Nm sed
+.Op Fl aEnru
+.Op Fl e Ar command
+.Op Fl f Ar command_file
+.Op Fl i Ns Oo Ar extension Oc
+.Op Ar 
+.Nm sendbug
+.Op Fl DEP
+.Nm seq
+.Op Fl w
+.Op Fl f Ar format
+.Op Fl s Ar string
+.Op Ar first Oo Ar incr Oc
+.Ar last
+.Nm sftp
+.Op Fl 46AaCfNpqrv
+.Op Fl B Ar buffer_size
+.Op Fl b Ar batchfile
+.Op Fl c Ar cipher
+.Op Fl D Ar sftp_server_command
+.Op Fl F Ar ssh_config
+.Op Fl i Ar identity_file
+.Op Fl J Ar destination
+.Op Fl l Ar limit
+.Op Fl o Ar ssh_option
+.Op Fl P Ar port
+.Op Fl R Ar num_requests
+.Op Fl S Ar program
+.Op Fl s Ar subsystem | Ar sftp_server
+.Op Fl X Ar sftp_option
+.Ar destination
+.Nm sh
+.Op Fl abCefhimnuvx
+.Op Fl o Ar option
+.Op Fl c Ar string | Fl s | Ar file
+.Nm shar
+.Ar
+.Nm signify
+.Fl C
+.Op Fl q
+.Op Fl p Ar pubkey
+.Op Fl t Ar keytype
+.Fl x
+.Ar sigfile
+.Op Ar 
+.Nm signify
+.Fl G
+.Op Fl n
+.Op Fl c Ar comment
+.Fl p
+.Ar pubkey
+.Fl s
+.Ar seckey
+.Nm signify
+.Fl S
+.Op Fl enz
+.Op Fl x Ar sigfile
+.Fl s
+.Ar seckey
+.Fl m
+.Ar message
+.Nm signify
+.Fl V
+.Op Fl eqz
+.Op Fl p Ar pubkey
+.Op Fl t Ar keytype
+.Op Fl x Ar sigfile
+.Fl m
+.Ar message
+.Nm size
+.Op Fl tw
+.Op Ar 
+.Nm skey
+.Op Fl x
+.Op Fl md5 | Fl rmd160 | Fl sha1
+.Op Fl n Ar count
+.Op Fl p Ar passphrase
+.Ar sequence#
+.Op Ar /
+.Ar key
+.Nm skeyaudit
+.Op Fl ai
+.Op Fl l Ar limit
+.Nm skeyinfo
+.Op Fl v
+.Op Ar user
+.Nm skeyinit
+.Op Fl DErsx
+.Op Fl a Ar auth-type
+.Op Fl n Ar count
+.Op Fl md5 | Fl rmd160 | Fl sha1
+.Op Ar user
+.Nm sleep
+.Ar seconds
+.Nm smtp
+.Op Fl Chnv
+.Op Fl a Ar authfile
+.Op Fl F Ar from
+.Op Fl H Ar helo
+.Op Fl s Ar server
+.Op Fl T Ar params
+.Op Ar recipient Ar ...
+.Nm sndioctl
+.Op Fl dimnqv
+.Op Fl f Ar device
+.Op Ar command Ar ...
+.Nm snmp
+.Ar get
+|
+.Ar getnext
+|
+.Ar bulkget
+.Op Ar options
+.Ar agent
+.Ar oid
+.Ar ...
+.Nm snmp
+.Ar walk
+|
+.Ar bulkwalk
+.Op Ar options
+.Ar agent
+.Op Ar oid
+.Nm snmp
+.Ar set
+.Op Ar options
+.Ar agent
+.Ar varoid
+.Ar type
+.Ar value
+.Op Ar varoid Ar type Ar value
+.Ar ...
+.Nm snmp
+.Ar trap
+.Op Ar options
+.Ar agent
+.Ar uptime
+.Ar trapoid
+.Op Ar varoid Ar type Ar value
+.Ar ...
+.Nm snmp
+.Ar df
+.Op Ar options
+.Ar agent
+.Nm snmp
+.Ar mibtree
+.Op Fl O Ar fns
+.Op Ar oid Ar ...
+.Nm sort
+.Op Fl bCcdfgHhiMmnRrsuVz
+.Op Fl k Ar field1 Ns Oo Ar ,field2 Oc
+.Op Fl o Ar output
+.Op Fl S Ar size
+.Op Fl T Ar dir
+.Op Fl t Ar char
+.Op Ar 
+.Nm spell
+.Op Fl biltvx
+.Op Fl d Ar list
+.Op Fl h Ar spellhist
+.Op Fl m Ar a | Ar e | Ar l | Ar m | Ar s
+.Op Fl s Ar list
+.Op Ar +extra_list
+.Op Ar 
+.Nm split
+.Op Fl a Ar suffix_length
+.Op Fl b Ar byte_count Ns Oo Ar k Ns | Ns Ar m Oc | Fl l Ar line_count | Fl p Ar pattern
+.Op Ar file Oo Ar name Oc
+.Nm ssh-add
+.Op Fl CcDdKkLlNqvXx
+.Op Fl E Ar fingerprint_hash
+.Op Fl H Ar hostkey_file
+.Op Fl h Ar destination_constraint
+.Op Fl S Ar provider
+.Op Fl t Ar life
+.Op Ar 
+.Nm ssh-add
+.Fl s
+.Ar pkcs11
+.Op Fl Cv
+.Op Ar certificate Ar ...
+.Nm ssh-add
+.Fl e
+.Ar pkcs11
+.Nm ssh-add
+.Fl T
+.Ar pubkey
+.Ar ...
+.Nm ssh-agent
+.Op Fl c | Fl s
+.Op Fl DdTU
+.Op Fl a Ar bind_address
+.Op Fl E Ar fingerprint_hash
+.Op Fl O Ar option
+.Op Fl P Ar allowed_providers
+.Op Fl t Ar life
+.Nm ssh-agent
+.Op Fl TU
+.Op Fl a Ar bind_address
+.Op Fl E Ar fingerprint_hash
+.Op Fl O Ar option
+.Op Fl P Ar allowed_providers
+.Op Fl t Ar life
+.Ar command
+.Op Ar arg Ar ...
+.Nm ssh-agent
+.Op Fl c | Fl s
+.Fl k
+.Nm ssh-agent
+.Fl u
+.Nm ssh-keygen
+.Op Fl q
+.Op Fl a Ar rounds
+.Op Fl b Ar bits
+.Op Fl C Ar comment
+.Op Fl f Ar output_keyfile
+.Op Fl m Ar format
+.Op Fl N Ar new_passphrase
+.Op Fl O Ar option
+.Op Fl t Ar ecdsa | Ar ecdsa-sk | Ar ed25519 | Ar ed25519-sk | Ar rsa
+.Op Fl w Ar provider
+.Op Fl Z Ar cipher
+.Nm ssh-keygen
+.Fl p
+.Op Fl a Ar rounds
+.Op Fl f Ar keyfile
+.Op Fl m Ar format
+.Op Fl N Ar new_passphrase
+.Op Fl P Ar old_passphrase
+.Op Fl Z Ar cipher
+.Nm ssh-keygen
+.Fl i
+.Op Fl f Ar input_keyfile
+.Op Fl m Ar key_format
+.Nm ssh-keygen
+.Fl e
+.Op Fl f Ar input_keyfile
+.Op Fl m Ar key_format
+.Nm ssh-keygen
+.Fl y
+.Op Fl f Ar input_keyfile
+.Nm ssh-keygen
+.Fl c
+.Op Fl a Ar rounds
+.Op Fl C Ar comment
+.Op Fl f Ar keyfile
+.Op Fl P Ar passphrase
+.Nm ssh-keygen
+.Fl l
+.Op Fl v
+.Op Fl E Ar fingerprint_hash
+.Op Fl f Ar input_keyfile
+.Nm ssh-keygen
+.Fl B
+.Op Fl f Ar input_keyfile
+.Nm ssh-keygen
+.Fl D
+.Ar pkcs11
+.Nm ssh-keygen
+.Fl F
+.Ar hostname
+.Op Fl lv
+.Op Fl f Ar known_hosts_file
+.Nm ssh-keygen
+.Fl H
+.Op Fl f Ar known_hosts_file
+.Nm ssh-keygen
+.Fl K
+.Op Fl a Ar rounds
+.Op Fl w Ar provider
+.Nm ssh-keygen
+.Fl R
+.Ar hostname
+.Op Fl f Ar known_hosts_file
+.Nm ssh-keygen
+.Fl r
+.Ar hostname
+.Op Fl g
+.Op Fl f Ar input_keyfile
+.Nm ssh-keygen
+.Fl M
+.Ar generate
+.Op Fl O Ar option
+.Ar output_file
+.Nm ssh-keygen
+.Fl M
+.Ar screen
+.Op Fl f Ar input_file
+.Op Fl O Ar option
+.Ar output_file
+.Nm ssh-keygen
+.Fl I
+.Ar certificate_identity
+.Fl s
+.Ar ca_key
+.Op Fl hU
+.Op Fl D Ar pkcs11_provider
+.Op Fl n Ar principals
+.Op Fl O Ar option
+.Op Fl V Ar validity_interval
+.Op Fl z Ar serial_number
+.Ar
+.Nm ssh-keygen
+.Fl L
+.Op Fl f Ar input_keyfile
+.Nm ssh-keygen
+.Fl A
+.Op Fl a Ar rounds
+.Op Fl f Ar prefix_path
+.Nm ssh-keygen
+.Fl k
+.Fl f
+.Ar krl_file
+.Op Fl u
+.Op Fl s Ar ca_public
+.Op Fl z Ar version_number
+.Ar
+.Nm ssh-keygen
+.Fl Q
+.Op Fl l
+.Fl f
+.Ar krl_file
+.Ar
+.Nm ssh-keygen
+.Fl Y
+.Ar find-principals
+.Op Fl O Ar option
+.Fl s
+.Ar signature_file
+.Fl f
+.Ar allowed_signers_file
+.Nm ssh-keygen
+.Fl Y
+.Ar match-principals
+.Fl I
+.Ar signer_identity
+.Fl f
+.Ar allowed_signers_file
+.Nm ssh-keygen
+.Fl Y
+.Ar check-novalidate
+.Op Fl O Ar option
+.Fl n
+.Ar namespace
+.Fl s
+.Ar signature_file
+.Nm ssh-keygen
+.Fl Y
+.Ar sign
+.Op Fl O Ar option
+.Fl f
+.Ar key_file
+.Fl n
+.Ar namespace
+.Ar
+.Nm ssh-keygen
+.Fl Y
+.Ar verify
+.Op Fl O Ar option
+.Fl f
+.Ar allowed_signers_file
+.Fl I
+.Ar signer_identity
+.Fl n
+.Ar namespace
+.Fl s
+.Ar signature_file
+.Op Fl r Ar revocation_file
+.Nm ssh-keyscan
+.Op Fl 46cDHqv
+.Op Fl f Ar file
+.Op Fl O Ar option
+.Op Fl p Ar port
+.Op Fl T Ar timeout
+.Op Fl t Ar type
+.Op Ar host | Ar addrlist Ar namelist
+.Nm ssh
+.Op Fl 46AaCfGgKkMNnqsTtVvXxYy
+.Op Fl B Ar bind_interface
+.Op Fl b Ar bind_address
+.Op Fl c Ar cipher_spec
+.Op Fl D Oo Ar bind_address: Oc Ns Ar port
+.Op Fl E Ar log_file
+.Op Fl e Ar escape_char
+.Op Fl F Ar configfile
+.Op Fl I Ar pkcs11
+.Op Fl i Ar identity_file
+.Op Fl J Ar destination
+.Op Fl L Ar address
+.Op Fl l Ar login_name
+.Op Fl m Ar mac_spec
+.Op Fl O Ar ctl_cmd
+.Op Fl o Ar option
+.Op Fl P Ar tag
+.Op Fl p Ar port
+.Op Fl R Ar address
+.Op Fl S Ar ctl_path
+.Op Fl W Ar host:port
+.Op Fl w Ar local_tun Ns Oo Ar :remote_tun Oc
+.Ar destination
+.Op Ar command Oo Ar argument Ar ... Oc
+.Nm ssh
+.Op Fl Q Ar query_option
+.Nm stat
+.Op Fl FLnq
+.Op Fl f Ar format | Fl l | Fl r | Fl s | Fl x
+.Op Fl t Ar timefmt
+.Op Ar 
+.Nm strings
+.Op Fl afov
+.Op Fl min-len
+.Op Fl n Ar min-len
+.Op Fl \-bytes Ns = Ns Ar min-len
+.Op Fl t Ar radix
+.Op Fl \-radix Ns = Ns Ar radix
+.Op Fl e Ar encoding
+.Op Fl \-encoding Ns = Ns Ar encoding
+.Op Fl 
+.Op Fl \-all
+.Op Fl \-print-file-name
+.Op Fl \-target Ns = Ns Ar bfdname
+.Op Fl \-help
+.Op Fl \-version
+.Ar
+.Nm stty
+.Op Fl a | Fl e | Fl g
+.Op Fl f Ar file
+.Op Ar operands
+.Nm su
+.Op Fl fKLlm
+.Op Fl a Ar auth-type
+.Op Fl c Ar login-class
+.Op Fl s Ar login-shell
+.Op Ar login Oo Ar shell-argument Ar ... Oc
+.Nm systat
+.Op Fl aBbhiNn
+.Op Fl d Ar count
+.Op Fl s Ar delay
+.Op Fl w Ar width
+.Op Ar view
+.Op Ar delay
+.Nm tail
+.Op Fl f | Fl r
+.Op Fl b Ar number | Fl c Ar number | Fl n Ar number | Fl number
+.Op Ar 
+.Nm talk
+.Op Fl Hs
+.Ar person
+.Op Ar ttyname
+.Nm tar
+.Ar {crtux}
+.Op Ar 014578beFfHhjLmNOoPpqsvwXZz
+.Op Ar blocking-factor | Ar format | Ar archive | Ar replstr
+.Op Fl C Ar directory
+.Op Fl I Ar file
+.Op Ar 
+.Nm tar
+.Ar {-crtux}
+.Op Fl 014578eHhjLmNOoPpqvwXZz
+.Op Fl b Ar blocking-factor
+.Op Fl C Ar directory
+.Op Fl F Ar format
+.Op Fl f Ar archive
+.Op Fl I Ar file
+.Op Fl s Ar replstr
+.Op Ar 
+.Nm tcpbench
+.Fl l
+.Nm tcpbench
+.Op Fl 46cDRUuv
+.Op Fl B Ar buf
+.Op Fl b Ar sourceaddr
+.Op Fl k Ar kvars
+.Op Fl n Ar connections
+.Op Fl p Ar port
+.Op Fl r Ar interval
+.Op Fl S Ar space
+.Op Fl T Ar keyword
+.Op Fl t Ar secs
+.Op Fl V Ar rtable
+.Ar hostname
+.Nm tcpbench
+.Fl s
+.Op Fl 46cDUuv
+.Op Fl B Ar buf
+.Op Fl C Ar certfile Fl K Ar keyfile
+.Op Fl k Ar kvars
+.Op Fl p Ar port
+.Op Fl r Ar interval
+.Op Fl S Ar space
+.Op Fl T Ar keyword
+.Op Fl V Ar rtable
+.Op Ar hostname
+.Nm tee
+.Op Fl ai
+.Op Ar 
+.Nm telnet
+.Op Fl 4678acDEKLr
+.Op Fl b Ar hostalias
+.Op Fl e Ar escapechar
+.Op Fl l Ar user
+.Op Fl n Ar tracefile
+.Op Fl V Ar rtable
+.Op Ar host Oo Ar port Oc
+.Nm test
+.Ar expression
+.Op Ar expression
+.Nm texi2dvi
+.Op Ar OPTION
+.Ar ...
+.Ar
+.Nm texi2pdf
+.Op Ar option Ar ...
+.Op Ar 
+.Nm texindex
+.Op Ar OPTION
+.Ar ...
+.Ar
+.Nm tftp
+.Op Ar host Oo Ar port Oc
+.Nm tic
+.Op Fl 01CDGIKLNTUVWacfgqrstx
+.Op Fl e Ar names
+.Op Fl o Ar dir
+.Op Fl Q Ns Oo Ar n Oc
+.Op Fl R Ar subset
+.Op Fl v Ns Oo Ar n Oc
+.Op Fl w Ns Oo Ar n Oc
+.Ar file
+.Nm time
+.Op Fl lp
+.Ar utility
+.Op Ar argument Ar ...
+.Nm timeout
+.Op Fl fp
+.Op Fl k Ar time
+.Op Fl s Ar signal
+.Ar duration
+.Ar command
+.Op Ar arg Ar ...
+.Nm tmux
+.Op Fl 2CDhlNuVv
+.Op Fl c Ar shell-command
+.Op Fl f Ar file
+.Op Fl L Ar socket-name
+.Op Fl S Ar socket-path
+.Op Fl T Ar features
+.Op Ar command Oo Ar flags Oc
+.Nm top
+.Op Fl 1bCHIinqStu
+.Op Fl d Ar count
+.Op Fl g Ar string
+.Op Fl o Oo Fl  Oc Ns Ar field
+.Op Fl p Ar pid
+.Op Fl s Ar time
+.Op Fl T Oo Fl  Oc Ns Ar rtable
+.Op Fl U Oo Fl  Oc Ns Ar user
+.Op Ar number
+.Nm touch
+.Op Fl acm
+.Op Fl d Ar ccyy-mm-ddTHH:MM:SS Ns Oo Ar .frac Oc Ns Oo Ar Z Oc
+.Op Fl r Ar file
+.Op Fl t Oo Oo Ar cc Oc Ns Ar yy Oc Ns Ar mmddHHMM Ns Oo Ar .SS Oc
+.Ar
+.Nm tput
+.Op Fl Ttype
+.Ar capname
+.Op Ar parameters
+.Nm tput
+.Op Fl Ttype
+.Op Fl x
+.Ar clear
+.Nm tput
+.Op Fl Ttype
+.Ar init
+.Nm tput
+.Op Fl Ttype
+.Ar reset
+.Nm tput
+.Op Fl Ttype
+.Ar longname
+.Nm tput
+.Fl S
+.Ar <<
+.Nm tput
+.Fl V
+.Nm tr
+.Op Fl Ccs
+.Ar string1
+.Ar string2
+.Nm tr
+.Op Fl Cc
+.Fl d
+.Ar string1
+.Nm tr
+.Op Fl Cc
+.Fl s
+.Ar string1
+.Nm tr
+.Op Fl Cc
+.Fl ds
+.Ar string1
+.Ar string2
+.Nm tradcpp
+.Op Fl options
+.Op Ar input-file Oo Ar output-file Oc
+.Nm ts
+.Op Fl i | Fl s
+.Op Fl m
+.Op Ar format
+.Nm tset
+.Op Fl IQVcqrsw
+.Op Fl 
+.Op Fl e Ar ch
+.Op Fl i Ar ch
+.Op Fl k Ar ch
+.Op Fl m Ar mapping
+.Op Ar terminal
+.Nm reset
+.Op Fl IQVcqrsw
+.Op Fl 
+.Op Fl e Ar ch
+.Op Fl i Ar ch
+.Op Fl k Ar ch
+.Op Fl m Ar mapping
+.Op Ar terminal
+.Nm tsort
+.Op Fl flqrvw
+.Op Fl h Ar file
+.Op Ar file
+.Nm tty
+.Op Fl s
+.Nm ul
+.Op Fl i
+.Op Fl t Ar terminal
+.Op Ar 
+.Nm uname
+.Op Fl amnprsv
+.Nm unbound-host
+.Op Fl C Ar configfile
+.Op Fl vdhr46D
+.Op Fl c Ar class
+.Op Fl t Ar type
+.Op Fl y Ar key
+.Op Fl f
+.Nm keyfile]
+.Op Fl F Ar namedkeyfile
+.Ar hostname
+.Nm unifdef
+.Op Fl BbcdehKkmnSstV
+.Op Fl  Ns Oo Ar i Oc Ns Ar Dsym Ns Oo Ar =val Oc
+.Op Fl  Ns Oo Ar i Oc Ns Ar Usym
+.Op Fl f Ar defile
+.Op Fl M Ar backext
+.Op Fl o Ar outfile
+.Op Fl x Ar 0 | Ar 1 | Ar 2
+.Ar
+.Nm uniq
+.Op Fl ci
+.Op Fl d | Fl u
+.Op Fl f Ar fields
+.Op Fl s Ar chars
+.Op Ar input_file Oo Ar output_file Oc
+.Nm units
+.Op Fl qv
+.Op Fl f Ar filename
+.Op Oo Ar count Oc Ar from-unit Ar to-unit
+.Nm unvis
+.Op Ar 
+.Nm update-plist
+.Op Fl Ffmnqrvx
+.Op Fl C Ar dir
+.Op Fl c Ar var
+.Op Fl E Ar ext
+.Op Fl e Ar ext
+.Op Fl I Ar var
+.Op Fl i Ar var
+.Op Fl j Ar jobs
+.Op Fl S Ar var
+.Op Fl s Ar var
+.Op Fl X Ar path
+.Op Fl w Ar suffix
+.Fl \-
+.Ar pkg_create_args
+.Ar ...
+.Nm usbhidaction
+.Op Fl div
+.Fl c
+.Ar config-file
+.Fl f
+.Ar device
+.Ar arg
+.Ar ...
+.Nm usbhidctl
+.Fl f
+.Ar device
+.Op Fl t Ar table
+.Op Fl alv
+.Nm usbhidctl
+.Fl f
+.Ar device
+.Op Fl t Ar table
+.Op Fl v
+.Fl r
+.Nm usbhidctl
+.Fl f
+.Ar device
+.Op Fl t Ar table
+.Op Fl lnv
+.Ar name
+.Ar ...
+.Nm usbhidctl
+.Fl f
+.Ar device
+.Op Fl t Ar table
+.Fl w
+.Ar name=value
+.Ar ...
+.Nm usbhidctl
+.Fl f
+.Ar device
+.Fl R
+.Nm uuencode
+.Op Fl m
+.Op Fl o Ar output_file
+.Op Ar file
+.Ar name
+.Nm uudecode
+.Op Fl cimprs
+.Op Ar 
+.Nm uudecode
+.Op Fl i
+.Fl o
+.Ar output_file
+.Op Ar file
+.Nm b64encode
+.Op Fl o Ar output_file
+.Op Ar file
+.Ar name
+.Nm b64decode
+.Op Fl ciprs
+.Op Ar 
+.Nm b64decode
+.Op Fl i
+.Fl o
+.Ar output_file
+.Op Ar file
+.Nm vacation
+.Fl i
+.Op Fl r Ar interval
+.Nm vacation
+.Op Fl a Ar alias
+.Ar login
+.Nm ex
+.Op Fl FRrSsv
+.Op Fl c Ar cmd
+.Op Fl t Ar tag
+.Op Fl w Ar size
+.Op Ar 
+.Nm vi[-eFRrS]
+.Op Fl c Ar cmd
+.Op Fl t Ar tag
+.Op Fl w Ar size
+.Op Ar 
+.Nm view
+.Op Fl eFrS
+.Op Fl c Ar cmd
+.Op Fl t Ar tag
+.Op Fl w Ar size
+.Op Ar 
+.Nm vis
+.Op Fl abcflnostw
+.Op Fl F Ar foldwidth
+.Op Ar 
+.Nm wall
+.Op Fl g Ar group
+.Op Ar file
+.Nm wc
+.Op Fl c | Fl m
+.Op Fl hlw
+.Op Ar 
+.Nm what
+.Op Fl s
+.Ar
+.Nm whereis
+.Op Fl a
+.Ar name
+.Ar ...
+.Nm which
+.Op Fl a
+.Ar name
+.Ar ...
+.Nm who
+.Op Fl HmqTu
+.Op Ar file
+.Nm who
+.Ar am
+.Ar i
+.Nm whois
+.Op Fl AadgIilmQRrS
+.Op Fl c Ar country-code | Fl h Ar host
+.Op Fl p Ar port
+.Ar name
+.Ar ...
+.Nm write
+.Ar user
+.Op Ar ttyname
+.Nm x99token
+.Op Fl d
+.Op Fl k Ar keyfile
+.Op Fl n Ar count
+.Nm x99token
+.Fl i
+.Op Fl k Ar keyfile
+.Nm xargs
+.Op Fl 0oprt
+.Op Fl E Ar eofstr
+.Op Fl I Ar replstr Oo Fl R Ar replacements Oc
+.Op Fl J Ar replstr
+.Op Fl L Ar number
+.Op Fl n Ar number Oo Fl x Oc
+.Op Fl P Ar maxprocs
+.Op Fl s Ar size
+.Op Ar utility Oo Ar argument Ar ... Oc
+.Nm xsubpp
+.Op Fl v
+.Op Fl except
+.Op Fl s Ar pattern
+.Op Fl prototypes
+.Op Fl noversioncheck
+.Op Fl nolinenumbers
+.Op Fl nooptimize
+.Op Fl typemap Ar typemap
+.Op Fl output Ar filename
+.Ar ...
+.Nm yes
+.Op Ar expletive
+.Nm ypcat
+.Op Fl kt
+.Op Fl d Ar domainname
+.Ar mapname
+.Nm ypcat
+.Fl x
+.Nm ypmatch
+.Op Fl kt
+.Op Fl d Ar domainname
+.Ar key
+.Ar ...
+.Ar mapname
+.Nm ypmatch
+.Fl x
+.Nm ypwhich
+.Op Fl t
+.Op Fl d Ar domain
+.Op Oo Fl h Oc Ar host
+.Nm ypwhich
+.Op Fl t
+.Op Fl d Ar domain
+.Op Fl h Ar host
+.Fl m
+.Op Ar mname
+.Nm ypwhich
+.Fl x
+.Nm yyfix
+.Ar file
+.Op Ar tables
+.Nm zcmp
+.Op Ar options
+.Ar file1
+.Op Ar file2
+.Nm zdiff
+.Op Ar options
+.Ar file1
+.Op Ar file2
+.Nm zforce
+.Ar
+.Nm zmore
+.Op Ar flags
+.Op Ar 
+.Nm zless
+.Op Ar flags
+.Op Ar 
+.Nm znew
+.Op Fl 9fKtv
+.Ar
+.Nm llvm-addr2line
+.Op Ar options
+.Nm llvm-symbolizer
+.Op Ar options
+.Op Ar addresses...
+.Nm watch
+.Op Fl celwx
+.Op Fl s Ar seconds
+.Ar command
+.Op Ar arg Ar ...
+.Sh DESCRIPTION
+Ugh.

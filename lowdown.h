@@ -367,7 +367,7 @@ struct	lowdown_opts {
 #define LOWDOWN_SHORTLINK	  0x400 /* shorten URLs */
 #define	LOWDOWN_HTML_OWASP	  0x800 /* use OWASP escaping */
 #define	LOWDOWN_HTML_NUM_ENT	  0x1000 /* use &#nn; if possible */
-/* Missing			  0x2000 */
+#define LOWDOWN_NROFF_MANPAGE	  0x2000 /* enable manpage parsing */
 #define LOWDOWN_LATEX_NUMBERED	  0x4000 /* numbered sections */
 #define	LOWDOWN_GEMINI_LINK_END	  0x8000 /* links at end */
 #define	LOWDOWN_GEMINI_LINK_IN	  0x10000 /* links inline */

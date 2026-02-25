@@ -102,7 +102,7 @@ struct bnode *
 bqueue_sblockn(struct bnodeq *bq, const char *text, char *nargs);
 
 struct bnode *
-bqueue_spanv(struct bnodeq *bq, char *fmt, ...)
+bqueue_spanv(struct bnodeq *bq, const char *fmt, ...)
     __attribute__((format(printf, 2, 3)));
 
 int

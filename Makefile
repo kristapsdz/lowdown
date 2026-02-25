@@ -381,6 +381,7 @@ lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/regress/metadata
 	mkdir -p .dist/lowdown-$(VERSION)/regress/original
 	mkdir -p .dist/lowdown-$(VERSION)/regress/standalone
+	mkdir -p .dist/lowdown-$(VERSION)/regress/manpages
 	mkdir -p .dist/lowdown-$(VERSION)/regress/template
 	mkdir -p .dist/lowdown-$(VERSION)/regress/diff
 	$(INSTALL) -m 0644 $(HEADERS) .dist/lowdown-$(VERSION)
@@ -399,6 +400,7 @@ lowdown.tar.gz:
 	$(INSTALL) -m 644 regress/html/* .dist/lowdown-$(VERSION)/regress/html
 	$(INSTALL) -m 644 regress/metadata/* .dist/lowdown-$(VERSION)/regress/metadata
 	$(INSTALL) -m 644 regress/standalone/* .dist/lowdown-$(VERSION)/regress/standalone
+	$(INSTALL) -m 644 regress/manpages/* .dist/lowdown-$(VERSION)/regress/manpages
 	$(INSTALL) -m 644 regress/template/* .dist/lowdown-$(VERSION)/regress/template
 	( cd .dist/ && tar zcf ../$@ lowdown-$(VERSION) )
 	rm -rf .dist/
@@ -408,6 +410,8 @@ $(OBJS) $(COMPAT_OBJS) main.o: config.h
 $(OBJS): extern.h lowdown.h
 
 term.o: term.h
+
+nroff.o nroff_manpage.o: nroff.h
 
 main.o: lowdown.h
 
@@ -516,9 +520,19 @@ regress:: bins
 	for f in regress/*.md ; do \
 		ff=regress/`basename $$f .md` ; \
 		echo "$$f" ; \
-		for type in html fodt latex ms man mdoc gemini term ; do \
+		for type in html fodt latex ms man gemini term ; do \
 			if [ -f $$ff.$$type ]; then \
 				$(REGRESS_ENV) $(VALGRIND) ./lowdown -t$$type $$f >$$tmp1 2>&1 ; \
+				diff -uw $$ff.$$type $$tmp1 || rc=$$((rc + 1)) ; \
+			fi ; \
+		done ; \
+	done ; \
+	for f in regress/manpages/*.md ; do \
+		ff=regress/manpages/`basename $$f .md` ; \
+		echo "$$f" ; \
+		for type in man mdoc ; do \
+			if [ -f $$ff.$$type ]; then \
+				$(REGRESS_ENV) $(VALGRIND) ./lowdown --roff-manpage -t$$type $$f >$$tmp1 2>&1 ; \
 				diff -uw $$ff.$$type $$tmp1 || rc=$$((rc + 1)) ; \
 			fi ; \
 		done ; \

@@ -1,0 +1,3707 @@
+.SH NAME
+\fBfoo\fR \(en bar
+.SH SYNOPSIS
+.SY fdformat
+[\fB\-nqv\fR]
+[\fB\-c \fIcyls\fR\fR]
+[\fB\-F \fIfillbyte\fR\fR]
+[\fB\-g \fIgap3len\fR\fR]
+[\fB\-h \fIheads\fR\fR]
+[\fB\-i \fIintleave\fR\fR]
+[\fB\-r \fIrate\fR\fR]
+[\fB\-S \fIsecshft\fR\fR]
+[\fB\-s \fIsecs\fR\fR]
+[\fB\-t \fIsteps_per_track\fR\fR]
+\fIdevice_name\fR
+.YS
+.SY fdformat
+[\fB\-nqv\fR]
+[\fB\-c \fIcyls\fR\fR]
+[\fB\-F \fIfillbyte\fR\fR]
+[\fB\-g \fIgap3len\fR\fR]
+[\fB\-h \fIheads\fR\fR]
+[\fB\-i \fIintleave\fR\fR]
+[\fB\-r \fIrate\fR\fR]
+[\fB\-S \fIsecshft\fR\fR]
+[\fB\-s \fIsecs\fR\fR]
+[\fB\-t \fIsteps_per_track\fR\fR]
+\fIdevice_name\fR
+.YS
+.SY man
+[\fB\-acfhklw\fR]
+[\fB\-C \fIfile\fR\fR]
+[\fB\-M \fIpath\fR\fR]
+[\fB\-m \fIpath\fR\fR]
+[\fB\-S \fIsubsection\fR\fR]
+[[\fB\-s\fR] \fIsection\fR]
+\fIname\fR
+\fI...\fR
+.YS
+.SY pkg_add
+[\fB\-acIimnqrsUuVvxz\fR]
+[\fB\-A \fIarch\fR\fR]
+[\fB\-B \fIpkg-destdir\fR\fR]
+[\fB\-D \fIname\fR\fR[\fI=value\fR]]
+[\fB\-L \fIlocalbase\fR\fR]
+[\fB\-l \fIfile\fR\fR]
+[\fB\-P \fItype\fR\fR]
+[\fIpkg-name\fR \fI...\fR]
+.YS
+.SY fdformat
+[\fB\-nqv\fR]
+[\fB\-c \fIcyls\fR\fR]
+[\fB\-F \fIfillbyte\fR\fR]
+[\fB\-g \fIgap3len\fR\fR]
+[\fB\-h \fIheads\fR\fR]
+[\fB\-i \fIintleave\fR\fR]
+[\fB\-r \fIrate\fR\fR]
+[\fB\-S \fIsecshft\fR\fR]
+[\fB\-s \fIsecs\fR\fR]
+[\fB\-t \fIsteps_per_track\fR\fR]
+\fIdevice_name\fR
+.YS
+.SY mksuncd
+\fIpartition-letter\fR
+\fIisofile\fR
+\fIufsfile\fR
+.YS
+.SY addr2line
+[\fB\-a\fR|\fB\-\-addresses\fR]
+[\fB\-b \fIbfdname\fR\fR|\fB\-\-target=\fIbfdname\fR\fR]
+[\fB\-C\fR|\fB\-\-demangle[\fI=style\fR]\fR]
+[\fB\-e \fIfilename\fR\fR|\fB\-\-exe=\fIfilename\fR\fR]
+[\fB\-f\fR|\fB\-\-functions\fR]
+[\fB\-s\fR|\fB\-\-basename\fR]
+[\fB\-i\fR|\fB\-\-inlines\fR]
+[\fB\-j\fR|\fB\-\-section=\fIname\fR\fR]
+[\fB\-H\fR|\fB\-\-help\fR]
+[\fB\-V\fR|\fB\-\-version\fR]
+[\fIaddr\fR \fIaddr\fR \fI...\fR]
+.YS
+.SY llvm-ar
+[\fB\-\fR]
+\fI{dmpqrstx}\fR
+[\fIabcDilLNoOPsSTuUvV\fR]
+[\fIrelpos\fR]
+[\fIcount\fR]
+\fIarchive\fR
+[\fIfiles...\fR]
+.YS
+.SY as
+[\fB\-a[\fIcdhlns\fR]\fR[\fI=file\fR]]
+[\fB\-\-alternate\fR]
+[\fB\-D\fR]
+[\fB\-\-defsym \fIsym=val\fR\fR]
+[\fB\-f\fR]
+[\fB\-g\fR]
+[\fB\-\-gstabs\fR]
+[\fB\-\-gstabs+\fR]
+[\fB\-\-gdwarf-2\fR]
+[\fB\-\-help\fR]
+[\fB\-I \fIdir\fR\fR]
+[\fB\-J\fR]
+[\fB\-K\fR]
+[\fB\-L\fR]
+[\fB\-\-listing-lhs-width=\fINUM\fR\fR]
+[\fB\-\-listing-lhs-width2=\fINUM\fR\fR]
+[\fB\-\-listing-rhs-width=\fINUM\fR\fR]
+[\fB\-\-listing-cont-lines=\fINUM\fR\fR]
+[\fB\-\-keep-locals\fR]
+[\fB\-o \fIobjfile\fR\fR]
+[\fB\-R\fR]
+[\fB\-\-reduce-memory-overheads\fR]
+[\fB\-\-statistics\fR]
+[\fB\-v\fR]
+[\fB\-version\fR]
+[\fB\-\-version\fR]
+[\fB\-W\fR]
+[\fB\-\-warn\fR]
+[\fB\-\-fatal-warnings\fR]
+[\fB\-w\fR]
+[\fB\-x\fR]
+[\fB\-Z\fR]
+[\fI@FILE\fR]
+[\fB\-\-target-help\fR]
+[\fItarget-options\fR]
+[\fB\-\-\fR|\fIfiles\fR \fI...\fR]
+.YS
+.SY clang
+[\fIoptions\fR]
+\fIfilename\fR
+\fI...\fR
+.YS
+.SY c++filt
+[\fB\-_\fR|\fB\-\-strip-underscores\fR]
+[\fB\-n\fR|\fB\-\-no-strip-underscores\fR]
+[\fB\-p\fR|\fB\-\-no-params\fR]
+[\fB\-t\fR|\fB\-\-types\fR]
+[\fB\-i\fR|\fB\-\-no-verbose\fR]
+[\fB\-s \fIformat\fR\fR|\fB\-\-format=\fIformat\fR\fR]
+[\fB\-\-help\fR]
+[\fB\-\-version\fR]
+[\fIsymbol...\fR]
+.YS
+.SY clang
+[\fIoptions\fR]
+\fIfilename\fR
+\fI...\fR
+.YS
+.SY clang
+[\fIoptions\fR]
+\fIfilename\fR
+\fI...\fR
+.YS
+.SY ctfconv
+[\fB\-d\fR]
+\fB\-l\fR
+\fIlabel\fR
+\fB\-o\fR
+\fIoutfile\fR
+\fIfile\fR
+.YS
+.SY ctfdump
+[\fB\-dfhlst\fR]
+\fIfile ...\fR
+.YS
+.SY ctfstrip
+[\fB\-S\fR]
+[\fB\-o \fIoutfile\fR\fR]
+\fIfile\fR
+.YS
+.SY flex
+[\fB\-78BbdFfhIiLlnpsTtVvw+?\fR]
+[\fB\-C[\fIaeFfmr\fR]\fR]
+[\fB\-\-help\fR]
+[\fB\-\-version\fR]
+[\fB\-ooutput\fR]
+[\fB\-Pprefix\fR]
+[\fB\-Sskeleton\fR]
+[\fIfile ...\fR]
+.YS
+.SY gdb
+[\fB\-help\fR]
+[\fB\-nx\fR]
+[\fB\-q\fR]
+[\fB\-batch\fR]
+[\fB\-cd=\fIdir\fR\fR]
+[\fB\-f\fR]
+[\fB\-bps\fR]
+[\fB\-tty=\fIdev\fR\fR]
+[\fB\-s \fIsymfile\fR\fR]
+[\fB\-e \fIprog\fR\fR]
+[\fB\-se \fIprog\fR\fR]
+[\fB\-c \fIcore\fR\fR]
+[\fB\-x \fIcmds\fR\fR]
+[\fB\-d \fIdir\fR\fR]
+[\fIprog\fR[\fIcore\fR|\fIprocID\fR]]
+.YS
+.SY gprof
+[\fB\-abcsz\fR]
+[\fB\-C \fIcount\fR\fR]
+[\fB\-E \fIname\fR\fR]
+[\fB\-e \fIname\fR\fR]
+[\fB\-F \fIname\fR\fR]
+[\fB\-f \fIname\fR\fR]
+[\fB\-k \fIfrom-name\fR\fR \fIto-name\fR]
+[\fIa.out\fR [\fIgmon.progname.pid.out\fR \fI...\fR]]
+.YS
+.SY ld.lld
+[\fIoptions\fR]
+\fIobjfile\fR
+\fI...\fR
+.YS
+.SY ld
+[\fIoptions\fR]
+\fIobjfile\fR
+\fI...\fR
+.YS
+.SY ld.lld
+[\fIoptions\fR]
+\fIobjfile\fR
+\fI...\fR
+.YS
+.SY lldb
+[\fIoptions\fR]
+\fIexecutable\fR
+.YS
+.SY llvm-config
+\fIoption\fR
+[\fIcomponents...\fR]
+.YS
+.SY llvm-cov
+\fIcommand\fR
+[\fIargs...\fR]
+.YS
+.SY llvm-objcopy
+[\fIoptions\fR]
+\fIinput\fR
+[\fIoutput\fR]
+.YS
+.SY llvm-objdump
+[\fIcommands\fR]
+[\fIoptions\fR]
+[\fIfilenames...\fR]
+.YS
+.SY llvm-profdata
+\fIcommand\fR
+[\fIargs...\fR]
+.YS
+.SY llvm-readelf
+[\fIoptions\fR]
+[\fIinput...\fR]
+.YS
+.SY llvm-readobj
+[\fIoptions\fR]
+[\fIinput...\fR]
+.YS
+.SY lorder
+\fIfile ...\fR
+.YS
+.SY objdump
+[\fB\-a\fR|\fB\-\-archive-headers\fR]
+[\fB\-b \fIbfdname\fR\fR|\fB\-\-target=\fIbfdname\fR\fR]
+[\fB\-C\fR|\fB\-\-demangle[\fI=style\fR]\fR]
+[\fB\-d\fR|\fB\-\-disassemble\fR]
+[\fB\-D\fR|\fB\-\-disassemble-all\fR]
+[\fB\-z\fR|\fB\-\-disassemble-zeroes\fR]
+[\fB\-EB\fR|\fB\-EL\fR|\fB\-\-endian=\fI{big\fR\fR | \fIlittle\fR \fI}\fR]
+[\fB\-f\fR|\fB\-\-file-headers\fR]
+[\fB\-\-file-start-context\fR]
+[\fB\-g\fR|\fB\-\-debugging\fR]
+[\fB\-e\fR|\fB\-\-debugging-tags\fR]
+[\fB\-h\fR|\fB\-\-section-headers\fR|\fB\-\-headers\fR]
+[\fB\-i\fR|\fB\-\-info\fR]
+[\fB\-j \fIsection\fR\fR|\fB\-\-section=\fIsection\fR\fR]
+[\fB\-l\fR|\fB\-\-line-numbers\fR]
+[\fB\-S\fR|\fB\-\-source\fR]
+[\fB\-m \fImachine\fR\fR|\fB\-\-architecture=\fImachine\fR\fR]
+[\fB\-M \fIoptions\fR\fR|\fB\-\-disassembler-options=\fIoptions\fR\fR]
+[\fB\-p\fR|\fB\-\-private-headers\fR]
+[\fB\-r\fR|\fB\-\-reloc\fR]
+[\fB\-R\fR|\fB\-\-dynamic-reloc\fR]
+[\fB\-s\fR|\fB\-\-full-contents\fR]
+[\fB\-W\fR|\fB\-\-dwarf\fR]
+[\fB\-G\fR|\fB\-\-stabs\fR]
+[\fB\-t\fR|\fB\-\-syms\fR]
+[\fB\-T\fR|\fB\-\-dynamic-syms\fR]
+[\fB\-x\fR|\fB\-\-all-headers\fR]
+[\fB\-w\fR|\fB\-\-wide\fR]
+[\fB\-\-start-address=\fIaddress\fR\fR]
+[\fB\-\-stop-address=\fIaddress\fR\fR]
+[\fB\-\-prefix-addresses\fR]
+[\fB\-\-[\fIno-\fR]\fR\fIshow-raw-insn\fR]
+[\fB\-\-adjust-vma=\fIoffset\fR\fR]
+[\fB\-\-special-syms\fR]
+[\fB\-V\fR|\fB\-\-version\fR]
+[\fB\-H\fR|\fB\-\-help\fR]
+\fIobjfile...\fR
+.YS
+.SY protoize
+[\fB\-CfgklNnqv\fR]
+[\fB\-B \fIdirectory\fR\fR]
+[\fB\-c \fICOMPILATION-OPTIONS\fR\fR]
+[\fB\-d \fIdirectory\fR\fR \fI...\fR]
+[\fB\-i \fIstring\fR\fR]
+[\fB\-p \fIprogram\fR\fR]
+[\fB\-x \fIfile ...\fR\fR]
+\fIfile ...\fR
+.YS
+.SY unprotoize
+[\fB\-fkNnqv\fR]
+[\fB\-c \fICOMPILATION-OPTIONS\fR\fR]
+[\fB\-d \fIdirectory\fR\fR \fI...\fR]
+[\fB\-i \fIstring\fR\fR]
+[\fB\-p \fIprogram\fR\fR]
+[\fB\-x \fIfile ...\fR\fR]
+\fIfile ...\fR
+.YS
+.SY llvm-ranlib
+[\fIoptions\fR]
+\fIarchive...\fR
+.YS
+.SY readelf
+[\fB\-a\fR|\fB\-\-all\fR]
+[\fB\-h\fR|\fB\-\-file-header\fR]
+[\fB\-l\fR|\fB\-\-program-headers\fR|\fB\-\-segments\fR]
+[\fB\-S\fR|\fB\-\-section-headers\fR|\fB\-\-sections\fR]
+[\fB\-g\fR|\fB\-\-section-groups\fR]
+[\fB\-t\fR|\fB\-\-section-details\fR]
+[\fB\-e\fR|\fB\-\-headers\fR]
+[\fB\-s\fR|\fB\-\-syms\fR|\fB\-\-symbols\fR]
+[\fB\-n\fR|\fB\-\-notes\fR]
+[\fB\-r\fR|\fB\-\-relocs\fR]
+[\fB\-u\fR|\fB\-\-unwind\fR]
+[\fB\-d\fR|\fB\-\-dynamic\fR]
+[\fB\-V\fR|\fB\-\-version-info\fR]
+[\fB\-A\fR|\fB\-\-arch-specific\fR]
+[\fB\-D\fR|\fB\-\-use-dynamic\fR]
+[\fB\-x \fI<number\fR\fR \fIor\fR \fIname>\fR|\fB\-\-hex-dump=\fI<number\fR\fR \fIor\fR \fIname>\fR]
+[\fB\-w[\fIliaprmfFsoR\fR]\fR| \fB\-\-debug-dump[\fI=line,=info,=abbrev,=pubnames,=aranges,=macro,=frames,=frames-interp,=str,=loc,=Ranges\fR]\fR]
+[\fB\-I\fR|\fB\-histogram\fR]
+[\fB\-v\fR|\fB\-\-version\fR]
+[\fB\-W\fR|\fB\-\-wide\fR]
+[\fB\-H\fR|\fB\-\-help\fR]
+\fIelffile...\fR
+.YS
+.SY rpcgen
+[\fB\-aALTNbC\fR]
+[\fB\-Dname[\fI=value\fR]\fR]
+[\fB\-K \fIsecs\fR\fR]
+[\fB\-i \fIlines\fR\fR]
+\fIinfile\fR
+.YS
+.SY rpcgen
+\fB\-c\fR
+|\fB\-h\fR
+|\fB\-l\fR
+|\fB\-m\fR
+|\fB\-t\fR
+|\fB\-Sc\fR
+|\fB\-Ss\fR
+|[\fB\-o \fIoutfile\fR\fR]
+[\fIinfile\fR]
+.YS
+.SY rpcgen
+\fB\-c\fR
+|\fInettype\fR
+[\fB\-o \fIoutfile\fR\fR]
+[\fIinfile\fR]
+.YS
+.SY llvm-strip
+[\fIoptions\fR]
+\fIinputs...\fR
+.YS
+.SY protoize
+[\fB\-CfgklNnqv\fR]
+[\fB\-B \fIdirectory\fR\fR]
+[\fB\-c \fICOMPILATION-OPTIONS\fR\fR]
+[\fB\-d \fIdirectory\fR\fR \fI...\fR]
+[\fB\-i \fIstring\fR\fR]
+[\fB\-p \fIprogram\fR\fR]
+[\fB\-x \fIfile ...\fR\fR]
+\fIfile ...\fR
+.YS
+.SY unprotoize
+[\fB\-fkNnqv\fR]
+[\fB\-c \fICOMPILATION-OPTIONS\fR\fR]
+[\fB\-d \fIdirectory\fR\fR \fI...\fR]
+[\fB\-i \fIstring\fR\fR]
+[\fB\-p \fIprogram\fR\fR]
+[\fB\-x \fIfile ...\fR\fR]
+\fIfile ...\fR
+.YS
+.SY yacc
+[\fB\-dlrtv\fR]
+[\fB\-b \fIfile_prefix\fR\fR]
+[\fB\-o \fIoutput_file\fR\fR]
+[\fB\-p \fIsymbol_prefix\fR\fR]
+\fIfile\fR
+.YS
+.SY acme-client
+[\fB\-Fnrv\fR]
+[\fB\-f \fIconfigfile\fR\fR]
+\fIhandle\fR
+.YS
+.SY apply
+[\fB\-#\fR]
+[\fB\-d\fR]
+[\fB\-a \fImagic\fR\fR]
+\fIcommand\fR
+\fIargument\fR
+\fI...\fR
+.YS
+.SY apropos
+[\fB\-afk\fR]
+[\fB\-C \fIfile\fR\fR]
+[\fB\-M \fIpath\fR\fR]
+[\fB\-m \fIpath\fR\fR]
+[\fB\-O \fIoutkey\fR\fR]
+[\fB\-S \fIarch\fR\fR]
+[\fB\-s \fIsection\fR\fR]
+\fIexpression\fR
+\fI...\fR
+.YS
+.SY arch
+[\fB\-ks\fR]
+.YS
+.SY machine
+[\fB\-a\fR]
+.YS
+.SY at
+[\fB\-bm\fR]
+[\fB\-f \fIfile\fR\fR]
+[\fB\-l [\fIjob\fR \fI...\fR]\fR]
+[\fB\-q \fIqueue\fR\fR]
+\fB\-t\fR
+\fItime_arg\fR
+|\fItimespec\fR
+.YS
+.SY at
+\fB\-c\fR
+|\fB\-r\fR
+\fIjob\fR
+\fI...\fR
+.YS
+.SY batch
+[\fB\-m\fR]
+[\fB\-f \fIfile\fR\fR]
+[\fB\-q \fIqueue\fR\fR]
+[\fItimespec\fR]
+.YS
+.SY atq
+[\fB\-cnv\fR]
+[\fB\-q \fIqueue\fR\fR]
+[\fIname\fR \fI...\fR]
+.YS
+.SY atrm
+[\fB\-afi\fR]
+[[\fIjob\fR] [\fIname\fR] \fI...\fR]
+.YS
+.SY aucat
+[\fB\-dn\fR]
+[\fB\-b \fIsize\fR\fR]
+[\fB\-c \fIchannels\fR\fR]
+[\fB\-e \fIenc\fR\fR]
+[\fB\-f \fIdevice\fR\fR]
+[\fB\-g \fIposition\fR\fR]
+[\fB\-h \fIfmt\fR\fR]
+[\fB\-i \fIfile\fR\fR]
+[\fB\-m \fImin:max/min:max\fR\fR]
+[\fB\-o \fIfile\fR\fR]
+[\fB\-p \fIposition\fR\fR]
+[\fB\-q \fIport\fR\fR]
+[\fB\-r \fIrate\fR\fR]
+[\fB\-v \fIvolume\fR\fR]
+.YS
+.SY awk
+[\fB\-safe\fR]
+[\fB\-V\fR]
+[\fB\-d[\fIn\fR]\fR]
+[\fB\-F \fIfs\fR\fR | \fB\-\-csv\fR]
+[\fB\-v \fIvar=value\fR\fR]
+[\fIprog\fR | \fB\-f \fIprogfile\fR\fR]
+\fIfile ...\fR
+.YS
+.SY banner
+\fIstring\fR
+\fI...\fR
+.YS
+.SY basename
+\fIstring\fR
+[\fIsuffix\fR]
+.YS
+.SY bc
+[\fB\-cl\fR]
+[\fB\-e \fIexpression\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY biff
+[\fIn\fR | \fIy\fR]
+.YS
+.SY cal
+[\fB\-jmwy\fR]
+[\fImonth\fR]
+[\fIyear\fR]
+.YS
+.SY calendar
+[\fB\-abw\fR]
+[\fB\-A \fInum\fR\fR]
+[\fB\-B \fInum\fR\fR]
+[\fB\-f \fIcalendarfile\fR\fR]
+[\fB\-t [[[\fIcc\fR]\fIyy\fR]\fImm\fR]\fR\fIdd\fR]
+.YS
+.SY cap_mkdb
+[\fB\-v\fR]
+[\fB\-f \fIoutfile\fR\fR]
+\fIfile1\fR
+[\fIfile2\fR \fI...\fR]
+.YS
+.SY captoinfo
+[\fB\-vn \fIwidth\fR\fR]
+[\fB\-V\fR]
+[\fB\-1\fR]
+[\fB\-w \fIwidth\fR\fR]
+\fIfile\fR
+\fI.\fR
+\fI.\fR
+\fI.\fR
+.YS
+.SY cat
+[\fB\-benstuv\fR]
+[\fIfile ...\fR]
+.YS
+.SY cdio
+[\fB\-sv\fR]
+[\fB\-d \fIhost:port\fR\fR]
+[\fB\-f \fIdevice\fR\fR]
+[\fIcommand\fR [\fIarg\fR \fI...\fR]]
+.YS
+.SY check-lib-depends
+[\fB\-fimqx\fR]
+[\fB\-B \fIdestdir\fR\fR]
+[\fB\-d \fIpkgrepo\fR\fR]
+[\fB\-D \fIdirectory\fR\fR]
+[\fB\-F \fImissing\fR\fR]
+[\fB\-O \fIdest\fR\fR]
+[\fB\-S \fIVAR=value\fR\fR]
+[\fB\-s \fIsource\fR\fR]
+[\fIpackage\fR \fI...\fR]
+.YS
+.SY chflags
+[\fB\-h\fR]
+[\fB\-R [\fB\-H\fR | \fB\-L\fR | \fB\-P\fR]\fR]
+\fIflags\fR
+\fIfile ...\fR
+.YS
+.SY chgrp
+[\fB\-h\fR]
+[\fB\-R [\fB\-H\fR | \fB\-L\fR | \fB\-P\fR]\fR]
+\fIgroup\fR
+\fIfile ...\fR
+.YS
+.SY chio
+[\fB\-f \fIchanger\fR\fR]
+\fIcommand\fR
+[\fIarg\fR \fI...\fR]
+.YS
+.SY chmod
+[\fB\-h\fR]
+[\fB\-R [\fB\-H\fR | \fB\-L\fR | \fB\-P\fR]\fR]
+\fImode\fR
+\fIfile ...\fR
+.YS
+.SY chpass
+[\fB\-s \fInewshell\fR\fR]
+[\fIuser\fR]
+.YS
+.SY chpass
+\fB\-a\fR
+\fIlist\fR
+.YS
+.SY ci
+[\fB\-qV\fR]
+[\fB\-d[\fIdate\fR]\fR]
+[\fB\-f[\fIrev\fR]\fR]
+[\fB\-I[\fIrev\fR]\fR]
+[\fB\-i[\fIrev\fR]\fR]
+[\fB\-j[\fIrev\fR]\fR]
+[\fB\-k[\fIrev\fR]\fR]
+[\fB\-l[\fIrev\fR]\fR]
+[\fB\-M[\fIrev\fR]\fR]
+[\fB\-mmsg\fR]
+[\fB\-Nsymbol\fR]
+[\fB\-nsymbol\fR]
+[\fB\-r[\fIrev\fR]\fR]
+[\fB\-sstate\fR]
+[\fB\-t[\fIstr\fR]\fR]
+[\fB\-u[\fIrev\fR]\fR]
+[\fB\-wusername\fR]
+[\fB\-xsuffixes\fR]
+[\fB\-ztz\fR]
+\fIfile ...\fR
+.YS
+.SY cksum
+[\fB\-bcpqrtx\fR]
+[\fB\-a \fIalgorithms\fR\fR]
+[\fB\-C \fIchecklist\fR\fR]
+[\fB\-h \fIhashfile\fR\fR]
+[\fB\-s \fIstring\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY clean-old-distfiles
+[\fB\-mnvx\fR]
+[\fB\-e \fIexcept\fR\fR]
+[\fB\-h \fIhistory\fR\fR]
+[\fItimestamp\fR]
+.YS
+.SY cmp
+[\fB\-l\fR | \fB\-s\fR]
+\fIfile1\fR
+\fIfile2\fR
+[\fIskip1\fR [\fIskip2\fR]]
+.YS
+.SY co
+[\fB\-TV\fR]
+[\fB\-ddate\fR]
+[\fB\-f[\fIrev\fR]\fR]
+[\fB\-I[\fIrev\fR]\fR]
+[\fB\-kmode\fR]
+[\fB\-l[\fIrev\fR]\fR]
+[\fB\-M[\fIrev\fR]\fR]
+[\fB\-p[\fIrev\fR]\fR]
+[\fB\-q[\fIrev\fR]\fR]
+[\fB\-r[\fIrev\fR]\fR]
+[\fB\-sstate\fR]
+[\fB\-u[\fIrev\fR]\fR]
+[\fB\-w[\fIuser\fR]\fR]
+[\fB\-xsuffixes\fR]
+[\fB\-ztz\fR]
+\fIfile ...\fR
+.YS
+.SY col
+[\fB\-bfhx\fR]
+[\fB\-l \fInum\fR\fR]
+.YS
+.SY colrm
+[\fIstart\fR [\fIstop\fR]]
+.YS
+.SY column
+[\fB\-tx\fR]
+[\fB\-c \fIcolumns\fR\fR]
+[\fB\-s \fIsep\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY comm
+[\fB\-123f\fR]
+\fIfile1\fR
+\fIfile2\fR
+.YS
+.SY compress
+[\fB\-123456789cdfghlNnOqrtv\fR]
+[\fB\-b \fIbits\fR\fR]
+[\fB\-o \fIfilename\fR\fR]
+[\fB\-S \fIsuffix\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY uncompress
+[\fB\-cfhlNnqrtv\fR]
+[\fB\-o \fIfilename\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY zcat
+[\fB\-fghqr\fR]
+[\fIfile ...\fR]
+.YS
+.SY cp
+[\fB\-afipv\fR]
+[\fB\-R [\fB\-H\fR | \fB\-L\fR | \fB\-P\fR]\fR]
+\fIsource\fR
+\fItarget\fR
+.YS
+.SY cp
+[\fB\-afipv\fR]
+[\fB\-R [\fB\-H\fR | \fB\-L\fR | \fB\-P\fR]\fR]
+\fIsource\fR
+\fI...\fR
+\fIdirectory\fR
+.YS
+.SY cpio
+\fB\-o\fR
+[\fB\-AaBcjLvZz\fR]
+[\fB\-C \fIbytes\fR\fR]
+[\fB\-F \fIarchive\fR\fR]
+[\fB\-H \fIformat\fR\fR]
+[\fB\-O \fIarchive\fR\fR]
+\fI<\fR
+\fIname-list\fR
+[\fI>\fR \fIarchive\fR]
+.YS
+.SY cpio
+\fB\-i\fR
+[\fB\-6BbcdfjmrSstuvZz\fR]
+[\fB\-C \fIbytes\fR\fR]
+[\fB\-E \fIfile\fR\fR]
+[\fB\-F \fIarchive\fR\fR]
+[\fB\-H \fIformat\fR\fR]
+[\fB\-I \fIarchive\fR\fR]
+[\fIpattern\fR \fI...\fR]
+[\fI<\fR \fIarchive\fR]
+.YS
+.SY cpio
+\fB\-p\fR
+[\fB\-adLlmuv\fR]
+\fIdestination-directory\fR
+\fI<\fR
+\fIname-list\fR
+.YS
+.SY clang
+[\fIoptions\fR]
+\fIfilename\fR
+\fI...\fR
+.YS
+.SY crontab
+[\fB\-u \fIuser\fR\fR]
+\fIfile\fR
+.YS
+.SY crontab
+[\fB\-e\fR | \fB\-l\fR | \fB\-r\fR]
+[\fB\-u \fIuser\fR\fR]
+.YS
+.SY csh
+[\fB\-bcefimnstVvXx\fR]
+[\fIargument\fR \fI...\fR]
+.YS
+.SY csh
+[\fB\-l\fR]
+.YS
+.SY csplit
+[\fB\-ks\fR]
+[\fB\-f \fIprefix\fR\fR]
+[\fB\-n \fInumber\fR\fR]
+\fIfile\fR
+\fIarg\fR
+\fI...\fR
+.YS
+.SY ctags
+[\fB\-aBdFuvwx\fR]
+[\fB\-f \fItagsfile\fR\fR]
+\fIfile ...\fR
+.YS
+.SY cu
+[\fB\-dr\fR]
+[\fB\-E \fIescape_char\fR\fR]
+[\fB\-l \fIline\fR\fR]
+[\fB\-s \fIspeed\fR\fR | \fB\-speed\fR]
+.YS
+.SY cu
+[\fIhost\fR]
+.YS
+.SY cut
+\fB\-b\fR
+\fIlist\fR
+[\fB\-n\fR]
+[\fIfile ...\fR]
+.YS
+.SY cut
+\fB\-c\fR
+\fIlist\fR
+[\fIfile ...\fR]
+.YS
+.SY cut
+\fB\-f\fR
+\fIlist\fR
+[\fB\-s\fR]
+[\fB\-d \fIdelim\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY date
+[\fB\-aju\fR]
+[\fB\-f \fIpformat\fR\fR]
+[\fB\-r \fIseconds\fR\fR]
+[\fB\-z \fIoutput_zone\fR\fR]
+[\fI+format\fR]
+[[[[[[\fIcc\fR]\fIyy\fR]\fImm\fR]\fIdd\fR]\fIHH\fR]\fIMM\fR[\fI.SS\fR]]
+.YS
+.SY dc
+[\fB\-x\fR]
+[\fB\-e \fIexpression\fR\fR]
+[\fIfile\fR]
+.YS
+.SY dd
+[\fIoperand\fR \fI...\fR]
+.YS
+.SY deroff
+[\fB\-ikpw\fR]
+[\fB\-m \fIa\fR\fR | \fIe\fR | \fIl\fR | \fIm\fR | \fIs\fR]
+[\fIfile ...\fR]
+.YS
+.SY df
+[\fB\-hiklnP\fR]
+[\fB\-t \fItype\fR\fR]
+[[\fIfile\fR | \fIfile_system\fR] \fI...\fR]
+.YS
+.SY diff
+[\fB\-abdipTtw\fR]
+[\fB\-c\fR | \fB\-e\fR | \fB\-f\fR | \fB\-n\fR | \fB\-q\fR | \fB\-u\fR]
+[\fB\-I \fIpattern\fR\fR]
+[\fB\-L \fIlabel\fR\fR]
+\fIfile1\fR
+\fIfile2\fR
+.YS
+.SY diff
+[\fB\-abdipTtw\fR]
+[\fB\-I \fIpattern\fR\fR]
+[\fB\-L \fIlabel\fR\fR]
+\fB\-C\fR
+\fInumber\fR
+\fIfile1\fR
+\fIfile2\fR
+.YS
+.SY diff
+[\fB\-abditw\fR]
+[\fB\-I \fIpattern\fR\fR]
+\fB\-D\fR
+\fIstring\fR
+\fIfile1\fR
+\fIfile2\fR
+.YS
+.SY diff
+[\fB\-abdipTtw\fR]
+[\fB\-I \fIpattern\fR\fR]
+[\fB\-L \fIlabel\fR\fR]
+\fB\-U\fR
+\fInumber\fR
+\fIfile1\fR
+\fIfile2\fR
+.YS
+.SY diff
+[\fB\-abdiNPprsTtw\fR]
+[\fB\-c\fR | \fB\-e\fR | \fB\-f\fR | \fB\-n\fR | \fB\-q\fR | \fB\-u\fR]
+[\fB\-I \fIpattern\fR\fR]
+[\fB\-L \fIlabel\fR\fR]
+[\fB\-S \fIname\fR\fR]
+[\fB\-X \fIfile\fR\fR]
+[\fB\-x \fIpattern\fR\fR]
+\fIdir1\fR
+\fIdir2\fR
+.YS
+.SY diff3
+[\fB\-3aEeXx\fR]
+\fIfile1\fR
+\fIfile2\fR
+\fIfile3\fR
+.YS
+.SY dig
+[\fI@server\fR]
+[\fB\-46hiuv\fR]
+[\fB\-b \fIsourceaddr\fR\fR[\fI#port\fR]]
+[\fB\-c \fIclass\fR\fR]
+[\fB\-f \fIfile\fR\fR]
+[\fB\-k \fIkeyfile\fR\fR]
+[\fB\-p \fIport\fR\fR]
+[\fB\-q \fIname\fR\fR]
+[\fB\-t \fItype\fR\fR]
+[\fB\-x \fIaddr\fR\fR]
+[\fB\-y [\fIhmac:\fR]\fR\fIname:key\fR]
+[\fIname\fR]
+[\fItype\fR]
+[\fIclass\fR]
+[\fI+queryopt\fR \fI...\fR]
+.YS
+.SY dirname
+\fIpathname\fR
+.YS
+.SY doas
+[\fB\-Lns\fR]
+[\fB\-a \fIstyle\fR\fR]
+[\fB\-C \fIconfig\fR\fR]
+[\fB\-u \fIuser\fR\fR]
+\fIcommand\fR
+[\fIarg\fR \fI...\fR]
+.YS
+.SY domainname
+[\fIname-of-domain\fR]
+.YS
+.SY dpb-replay
+[\fB\-cC\fR]
+[\fB\-e \fIregexp\fR\fR]
+[\fB\-s \fIspeedup\fR\fR]
+[\fB\-t \fItimestamp\fR\fR]
+\fIfile\fR
+.YS
+.SY dpb
+[\fB\-acemqRrsUuvx\fR]
+[\fB\-A \fIarch\fR\fR]
+[\fB\-B \fIchroot\fR\fR]
+[\fB\-b \fIlogfile\fR\fR]
+[\fB\-C \fIpathlist\fR\fR]
+[\fB\-D \fIPARAM=value\fR\fR]
+[\fB\-F \fIm\fR\fR]
+[\fB\-f \fIm\fR\fR]
+[\fB\-h \fIhosts\fR\fR]
+[\fB\-I \fIpathlist\fR\fR]
+[\fB\-J \fIp\fR\fR]
+[\fB\-j \fIn\fR\fR]
+[\fB\-L \fIlogdir\fR\fR]
+[\fB\-l \fIlockdir\fR\fR]
+[\fB\-M \fIthreshold\fR\fR]
+[\fB\-P \fIpathlist\fR\fR]
+[\fB\-p \fIparallel\fR\fR]
+[\fB\-S \fIlogfile\fR\fR]
+[\fB\-X \fIpathlist\fR\fR]
+[\fIpathlist\fR \fI...\fR]
+.YS
+.SY du
+[\fB\-achkrsx\fR]
+[\fB\-H\fR | \fB\-L\fR | \fB\-P\fR]
+[\fB\-d \fIdepth\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY echo
+[\fB\-n\fR]
+[\fIstring\fR \fI...\fR]
+.YS
+.SY ed
+[\fB\-\fR]
+[\fB\-s\fR]
+[\fB\-p \fIstring\fR\fR]
+[\fIfile\fR]
+.YS
+.SY enc2xs
+\fB\-[\fIoptions\fR]\fR
+\fIenc2xs\fR
+\fB\-M\fR
+\fIModName\fR
+\fImapfiles\[u2026]\fR
+\fIenc2xs\fR
+\fB\-C\(ga\fR
+.YS
+.SY encguess
+[\fIswitches\fR]
+\fIfilename\[u2026]\(ga\fR
+.YS
+.SY encrypt
+[\fB\-b \fIrounds\fR\fR]
+[\fB\-c \fIclass\fR\fR]
+[\fB\-p\fR | \fIstring\fR]
+.YS
+.SY env
+[\fB\-i\fR]
+[\fB\-u \fIname\fR\fR]
+[\fIname=value\fR \fI...\fR]
+[\fIutility\fR [\fIargument\fR \fI...\fR]]
+.YS
+.SY expand
+[\fB\-t \fItablist\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY unexpand
+[\fB\-a\fR]
+[\fIfile ...\fR]
+.YS
+.SY expr
+\fIexpression\fR
+\fI...\fR
+.YS
+.SY fgen
+[\fB\-d \fIlevel\fR\fR]
+[\fB\-o \fIoutfile\fR\fR]
+\fIinfile\fR
+.YS
+.SY file
+[\fB\-bchiLsW\fR]
+\fIfile ...\fR
+.YS
+.SY find
+[\fB\-dHhLXx\fR]
+[\fB\-f \fIpath\fR\fR]
+\fIpath\fR
+\fI...\fR
+[\fIexpression\fR]
+.YS
+.SY finger
+[\fB\-hlMmops\fR]
+[\fIuser\fR \fI...\fR]
+.YS
+.SY finger
+[\fB\-l\fR]
+[\fIuser@host\fR \fI...\fR]
+.YS
+.SY fmt
+[\fB\-cmnps\fR]
+[\fB\-d \fIchars\fR\fR]
+[\fB\-l \fInumber\fR\fR]
+[\fB\-t \fInumber\fR\fR]
+[\fIgoal\fR [\fImaximum\fR] | \fB\-width\fR | \fB\-w \fIwidth\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY fold
+[\fB\-bs\fR]
+[\fB\-w \fIwidth\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY from
+[\fB\-f \fIfile\fR\fR]
+[\fB\-s \fIsender\fR\fR]
+[\fIuser\fR]
+.YS
+.SY fstat
+[\fB\-fnosv\fR]
+[\fB\-M \fIcore\fR\fR]
+[\fB\-N \fIsystem\fR\fR]
+[\fB\-p \fIpid\fR\fR]
+[\fB\-u \fIuser\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY ftp
+[\fB\-46AadEegiMmnptVv\fR]
+[\fB\-D \fItitle\fR\fR]
+[\fB\-k \fIseconds\fR\fR]
+[\fB\-P \fIport\fR\fR]
+[\fB\-r \fIseconds\fR\fR]
+[\fB\-s \fIsourceaddr\fR\fR]
+[\fIhost\fR [\fIport\fR]]
+.YS
+.SY ftp
+[\fB\-C\fR]
+[\fB\-N \fIname\fR\fR]
+[\fB\-o \fIoutput\fR\fR]
+[\fB\-s \fIsourceaddr\fR\fR]
+\fIftp://\fR
+[\fIuser:password@\fR]
+\fIhost\fR
+[\fI:port\fR]
+\fI/file\fR
+[\fI/\fR]
+\fI...\fR
+.YS
+.SY ftp
+[\fB\-CTu\fR]
+[\fB\-c \fIcookie\fR\fR]
+[\fB\-N \fIname\fR\fR]
+[\fB\-o \fIoutput\fR\fR]
+[\fB\-S \fIssl_options\fR\fR]
+[\fB\-s \fIsourceaddr\fR\fR]
+[\fB\-U \fIuseragent\fR\fR]
+[\fB\-w \fIseconds\fR\fR]
+\fIhttp\fR
+[\fIs\fR]
+\fI://\fR
+[\fIuser:password@\fR]
+\fIhost\fR
+[\fI:port\fR]
+\fI/file\fR
+\fI...\fR
+.YS
+.SY ftp
+[\fB\-C\fR]
+[\fB\-N \fIname\fR\fR]
+[\fB\-o \fIoutput\fR\fR]
+[\fB\-s \fIsourceaddr\fR\fR]
+\fIfile:file\fR
+\fI...\fR
+.YS
+.SY ftp
+[\fB\-C\fR]
+[\fB\-N \fIname\fR\fR]
+[\fB\-o \fIoutput\fR\fR]
+[\fB\-s \fIsourceaddr\fR\fR]
+\fIhost:/file\fR
+[\fI/\fR]
+\fI...\fR
+.YS
+.SY fuser
+[\fB\-cfku\fR]
+[\fB\-M \fIcore\fR\fR]
+[\fB\-N \fIsystem\fR\fR]
+[\fB\-s \fIsignal\fR\fR]
+\fIfile ...\fR
+.YS
+.SY gencat
+\fIcatfile\fR
+\fImsgfile\fR
+\fI...\fR
+.YS
+.SY getcap
+[\fB\-b \fIboolean\fR\fR | \fB\-c \fIcapability\fR\fR | \fB\-n \fInumber\fR\fR | \fB\-s \fIstring\fR\fR]
+\fB\-f\fR
+\fIpath\fR
+\fB\-a\fR
+|\fIrecord\fR
+\fI...\fR
+.YS
+.SY getconf
+[\fB\-Ll\fR]
+[\fB\-v \fIspecification\fR\fR]
+\fIname\fR
+[\fIpathname\fR]
+.YS
+.SY getent
+\fIdatabase\fR
+[\fIkey\fR \fI...\fR]
+.YS
+.SY getopt
+\fIoptstring\fR
+\fI$*\fR
+.YS
+.SY grep
+[\fB\-abcEFGHhIiLlnoqRsUVvwxZ\fR]
+[\fB\-A \fInum\fR\fR]
+[\fB\-B \fInum\fR\fR]
+[\fB\-C[\fInum\fR]\fR]
+[\fB\-e \fIpattern\fR\fR]
+[\fB\-f \fIfile\fR\fR]
+[\fB\-m \fInum\fR\fR]
+[\fB\-\-binary-files=\fIvalue\fR\fR]
+[\fB\-\-context[\fI=num\fR]\fR]
+[\fB\-\-label=\fIname\fR\fR]
+[\fB\-\-line-buffered\fR]
+[\fB\-\-null\fR]
+[\fIpattern\fR]
+[\fIfile ...\fR]
+.YS
+.SY groups
+[\fIuser\fR]
+.YS
+.SY gzexe
+[\fB\-d\fR]
+\fIfile ...\fR
+.YS
+.SY gzip
+[\fB\-123456789cdfhkLlNnOqrtVv\fR]
+[\fB\-b \fIbits\fR\fR]
+[\fB\-o \fIfilename\fR\fR]
+[\fB\-S \fIsuffix\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY gunzip
+[\fB\-cfhkLlNnqrtVv\fR]
+[\fB\-o \fIfilename\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY gzcat
+[\fB\-fhqr\fR]
+[\fIfile ...\fR]
+.YS
+.SY h2ph
+[\fB\-d \fIdestination\fR\fR \fIdirectory\fR]
+[\fB\-r\fR | \fB\-a\fR]
+[\fB\-l\fR]
+[\fB\-h\fR]
+[\fB\-e\fR]
+[\fB\-D\fR]
+[\fB\-Q\fR]
+[\fIheaderfiles\fR]
+.YS
+.SY h2xs
+[\fIOPTIONS\fR \fI...\fR]
+[\fIheaderfile\fR \fI...\fR [\fIextra_libraries\fR]]
+.YS
+.SY h2xs
+\fB\-h\fR
+|\fB\-?\fR
+|\fB\-\-help\fR
+.YS
+.SY head
+[\fB\-count\fR | \fB\-n \fIcount\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY hexdump
+[\fB\-bCcdovx\fR]
+[\fB\-e \fIformat_string\fR\fR]
+[\fB\-f \fIformat_file\fR\fR]
+[\fB\-n \fIlength\fR\fR]
+[\fB\-s \fIoffset\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY host
+[\fB\-46aCdilrsTVvw\fR]
+[\fB\-c \fIclass\fR\fR]
+[\fB\-m \fIflag\fR\fR]
+[\fB\-N \fIndots\fR\fR]
+[\fB\-R \fInumber\fR\fR]
+[\fB\-t \fItype\fR\fR]
+[\fB\-W \fIwait\fR\fR]
+\fIname\fR
+[\fIserver\fR]
+.YS
+.SY hostname
+[\fB\-s\fR]
+[\fIname-of-host\fR]
+.YS
+.SY htpasswd
+[\fIfile\fR]
+\fIlogin\fR
+.YS
+.SY htpasswd
+\fB\-I\fR
+[\fIfile\fR]
+.YS
+.SY id
+[\fIuser\fR]
+.YS
+.SY id
+\fB\-c\fR
+[\fIuser\fR]
+.YS
+.SY id
+\fB\-G\fR
+[\fB\-n\fR]
+[\fIuser\fR]
+.YS
+.SY id
+\fB\-g\fR
+[\fB\-nr\fR]
+[\fIuser\fR]
+.YS
+.SY id
+\fB\-p\fR
+[\fIuser\fR]
+.YS
+.SY id
+\fB\-R\fR
+.YS
+.SY id
+\fB\-u\fR
+[\fB\-nr\fR]
+[\fIuser\fR]
+.YS
+.SY ident
+[\fB\-qV\fR]
+[\fIfile ...\fR]
+.YS
+.SY indent
+[\fIinput-file\fR [\fIoutput-file\fR]]
+[\fB\-bad\fR | \fB\-nbad\fR]
+[\fB\-bap\fR | \fB\-nbap\fR]
+[\fB\-bbb\fR | \fB\-nbbb\fR]
+[\fB\-bc\fR | \fB\-nbc\fR]
+[\fB\-bl\fR | \fB\-br\fR]
+[\fB\-cn\fR]
+[\fB\-cdn\fR]
+[\fB\-cdb\fR | \fB\-ncdb\fR]
+[\fB\-ce\fR | \fB\-nce\fR]
+[\fB\-cin\fR]
+[\fB\-clin\fR]
+[\fB\-dn\fR]
+[\fB\-din\fR]
+[\fB\-dj\fR | \fB\-ndj\fR]
+[\fB\-ei\fR | \fB\-nei\fR]
+[\fB\-fc1\fR | \fB\-nfc1\fR]
+[\fB\-in\fR]
+[\fB\-ip\fR | \fB\-nip\fR]
+[\fB\-ln\fR]
+[\fB\-lcn\fR]
+[\fB\-lp\fR | \fB\-nlp\fR]
+[\fB\-npro\fR]
+[\fB\-pcs\fR | \fB\-npcs\fR]
+[\fB\-psl\fR | \fB\-npsl\fR]
+[\fB\-sc\fR | \fB\-nsc\fR]
+[\fB\-sob\fR | \fB\-nsob\fR]
+[\fB\-st\fR]
+[\fB\-Ttypename\fR]
+[\fB\-troff\fR]
+[\fB\-ut\fR | \fB\-nut\fR]
+[\fB\-v\fR | \fB\-nv\fR]
+.YS
+.SY info
+[\fIOPTION\fR]
+\fI...\fR
+[\fIMENU-ITEM...\fR]
+.YS
+.SY infocmp
+[\fB\-1CDEFGIKLTUVWcdegilnpqrtux\fR]
+[\fB\-v \fIn\fR\fR]
+[\fB\-s \fId\fR\fR| \fIi\fR| \fIl\fR| \fIc\fR]
+[\fB\-Q \fIn\fR\fR]
+[\fB\-R \fIsubset\fR\fR]
+[\fB\-wwidth\fR]
+[\fB\-Adirectory\fR]
+[\fB\-Bdirectory\fR]
+[\fItermname...\fR]
+.YS
+.SY infokey
+[\fB\-\-help\fR]
+[\fB\-\-version\fR]
+[\fB\-\-output \fIfile\fR\fR]
+[\fIinput\fR \fIfile\fR]
+.YS
+.SY infotocap
+[\fB\-vn \fIwidth\fR\fR]
+[\fB\-V\fR]
+[\fB\-1\fR]
+[\fB\-w \fIwidth\fR\fR]
+\fIfile\fR
+\fI.\fR
+\fI.\fR
+\fI.\fR
+.YS
+.SY install-info
+[\fIOPTION\fR]
+\fI...\fR
+[\fIINFO-FILE\fR [\fIDIR-FILE\fR]]
+.YS
+.SY install
+[\fB\-bCcDdFpSs\fR]
+[\fB\-B \fIsuffix\fR\fR]
+[\fB\-f \fIflags\fR\fR]
+[\fB\-g \fIgroup\fR\fR]
+[\fB\-m \fImode\fR\fR]
+[\fB\-o \fIowner\fR\fR]
+\fIsource\fR
+\fI...\fR
+\fItarget\fR
+\fI...\fR
+.YS
+.SY ipcrm
+[\fB\-M \fIshmkey\fR\fR]
+[\fB\-m \fIshmid\fR\fR]
+[\fB\-Q \fImsgkey\fR\fR]
+[\fB\-q \fImsqid\fR\fR]
+[\fB\-S \fIsemkey\fR\fR]
+[\fB\-s \fIsemid\fR\fR]
+\fI...\fR
+.YS
+.SY ipcs
+[\fB\-abcMmopQqSsTt\fR]
+[\fB\-C \fIcore\fR\fR]
+[\fB\-N \fIsystem\fR\fR]
+.YS
+.SY join
+[\fB\-1 \fIfield\fR\fR]
+[\fB\-2 \fIfield\fR\fR]
+[\fB\-a \fIfile_number\fR\fR | \fB\-v \fIfile_number\fR\fR]
+[\fB\-e \fIstring\fR\fR]
+[\fB\-o \fIlist\fR\fR]
+[\fB\-t \fIchar\fR\fR]
+\fIfile1\fR
+\fIfile2\fR
+.YS
+.SY jot
+[\fB\-cnr\fR]
+[\fB\-b \fIword\fR\fR]
+[\fB\-p \fIprecision\fR\fR]
+[\fB\-s \fIstring\fR\fR]
+[\fB\-w \fIword\fR\fR]
+[\fIreps\fR [\fIbegin\fR [\fIend\fR [\fIstep\fR]]]]
+.YS
+.SY kdump
+[\fB\-dHlnRTXx\fR]
+[\fB\-f \fIfile\fR\fR]
+[\fB\-m \fImaxdata\fR\fR]
+[\fB\-P \fIprogram\fR\fR]
+[\fB\-p \fIpid\fR\fR]
+[\fB\-t \fItrstr\fR\fR]
+[\fB\-u \fIlabel\fR\fR]
+.YS
+.SY keynote
+\fIkeygen\fR
+\fIAlgorithmName\fR
+\fIKeySize\fR
+\fIPublicKeyFile\fR
+\fIPrivateKeyFile\fR
+[\fIprint-offset\fR]
+[\fIprint-length\fR]
+.YS
+.SY keynote
+\fIsign\fR
+[\fB\-v\fR]
+\fIAlgorithmName\fR
+\fIAssertionFile\fR
+\fIPrivateKeyFile\fR
+[\fIprint-offset\fR]
+[\fIprint-length\fR]
+.YS
+.SY keynote
+\fIsigver\fR
+[\fIAssertionFile\fR]
+.YS
+.SY keynote
+\fIverify\fR
+[\fB\-h\fR]
+[\fB\-e \fIfile\fR\fR]
+[\fB\-k \fIfile\fR\fR]
+[\fB\-l \fIfile\fR\fR]
+\fB\-r\fR
+\fIretlist\fR
+[\fIfile ...\fR]
+.YS
+.SY kill
+[\fB\-signal_number\fR | \fB\-signal_name\fR | \fB\-s \fIsignal_name\fR\fR]
+\fIpid\fR
+\fI...\fR
+.YS
+.SY kill
+\fB\-l\fR
+[\fIexit_status\fR]
+.YS
+.SY ksh
+[\fB\-+abCefhiklmnpruvXx\fR]
+[\fB\-+o \fIoption\fR\fR]
+[\fB\-c \fIstring\fR\fR | \fB\-s\fR | \fIfile\fR [\fIargument\fR \fI...\fR]]
+.YS
+.SY kstat
+[\fB\-w \fIwait\fR\fR]
+[\fIname\fR | \fIprovider:instance:name:unit\fR]
+\fI...\fR
+.YS
+.SY ktrace
+[\fB\-aCcdi\fR]
+[\fB\-f \fItrfile\fR\fR]
+[\fB\-g \fIpgid\fR\fR]
+[\fB\-p \fIpid\fR\fR]
+[\fB\-t \fItrstr\fR\fR]
+.YS
+.SY ktrace
+[\fB\-aBdiT\fR]
+[\fB\-f \fItrfile\fR\fR]
+[\fB\-t \fItrstr\fR\fR]
+\fIcommand\fR
+.YS
+.SY lam
+[\fB\-F\fR|\fIf\fR \fImin.max\fR]
+[\fB\-P\fR|\fIp\fR \fImin.max\fR]
+[\fB\-S\fR|\fIs\fR \fIsepstring\fR]
+[\fB\-T\fR|\fIt\fR \fIc\fR]
+\fIfile ...\fR
+.YS
+.SY last
+[\fB\-csT\fR]
+[\fB\-d \fIdate\fR\fR]
+[\fB\-f \fIfile\fR\fR]
+[\fB\-h \fIhost\fR\fR]
+[\fB\-n \fInumber\fR\fR]
+[\fB\-t \fItty\fR\fR]
+[\fIuser\fR \fI...\fR]
+.YS
+.SY lastcomm
+[\fB\-f \fIfile\fR\fR]
+[\fIcommand\fR \fI...\fR]
+[\fIuser\fR \fI...\fR]
+[\fIterminal\fR \fI...\fR]
+.YS
+.SY w
+[\fB\-ahi\fR]
+[\fB\-M \fIcore\fR\fR]
+[\fB\-N \fIsystem\fR\fR]
+[\fIuser\fR]
+.YS
+.SY ldap
+\fIsearch\fR
+[\fB\-LvWxZ\fR]
+[\fB\-b \fIbasedn\fR\fR]
+[\fB\-c \fICAfile\fR\fR]
+[\fB\-D \fIbinddn\fR\fR]
+[\fB\-H \fIhost\fR\fR]
+[\fB\-l \fItimelimit\fR\fR]
+[\fB\-s \fIscope\fR\fR]
+[\fB\-w \fIsecret\fR\fR]
+[\fB\-y \fIsecretfile\fR\fR]
+[\fB\-z \fIsizelimit\fR\fR]
+[\fIfilter\fR]
+[\fIattributes\fR \fI...\fR]
+.YS
+.SY ldd
+\fIprogram\fR
+\fI...\fR
+.YS
+.SY leave
+[[\fI+\fR]\fIhhmm\fR]
+.YS
+.SY less
+[\fB\-?\(tiAaBCcdEeFfGgIiJKLMmNnQqRrSsUuVWwX\fR]
+[\fB\-b \fIn\fR\fR]
+[\fB\-h \fIn\fR\fR]
+[\fB\-j \fIn\fR\fR]
+[\fB\-k \fIkeyfile\fR\fR]
+[\fB\-O\fR | \fB\-o \fIlogfile\fR\fR]
+[\fB\-P \fIprompt\fR\fR]
+[\fB\-p \fIpattern\fR\fR]
+[\fB\-T \fItagsfile\fR\fR]
+[\fB\-t \fItag\fR\fR]
+[\fB\-x \fIn,...\fR\fR]
+[\fB\-y \fIn\fR\fR]
+[\fB\-z \fIn\fR\fR]
+[\fB\-# \fIn\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY lesskey
+[\fB\-o \fIoutput\fR\fR | \fB\-\-output=\fIoutput\fR\fR]
+[\fIinput\fR]
+.YS
+.SY lesskey
+\fB\-V\fR
+|\fB\-\-version\fR
+.YS
+.SY ln
+[\fB\-fhLnPs\fR]
+\fIsource\fR
+[\fItarget\fR]
+.YS
+.SY ln
+[\fB\-fLPs\fR]
+\fIsource\fR
+\fI...\fR
+[\fIdirectory\fR]
+.YS
+.SY lndir
+[\fB\-is\fR]
+[\fB\-e \fIexceptfile\fR\fR]
+\fIfromdir\fR
+[\fItodir\fR]
+.YS
+.SY locale
+[\fB\-a\fR | \fB\-m\fR | \fIcharmap\fR]
+.YS
+.SY locate
+[\fB\-bciS\fR]
+[\fB\-d \fIdatabase\fR\fR]
+[\fB\-l \fIlimit\fR\fR]
+\fIpattern\fR
+\fI...\fR
+.YS
+.SY lock
+[\fB\-np\fR]
+[\fB\-a \fIstyle\fR\fR]
+[\fB\-t \fItimeout\fR\fR]
+.YS
+.SY lockspool
+[\fIusername\fR]
+.YS
+.SY logger
+[\fB\-cis\fR]
+[\fB\-f \fIfile\fR\fR]
+[\fB\-p \fIpri\fR\fR]
+[\fB\-t \fItag\fR\fR]
+[\fImessage\fR \fI...\fR]
+.YS
+.SY login
+[\fB\-fp\fR]
+[\fB\-h \fIhostname\fR\fR]
+[\fB\-L \fIlocal-addr\fR\fR]
+[\fB\-R \fIremote-addr\fR\fR]
+[\fB\-u \fIusername\fR\fR]
+[\fIuser\fR]
+.YS
+.SY look
+[\fB\-df\fR]
+[\fB\-t \fItermchar\fR\fR]
+\fIstring\fR
+[\fIfile\fR]
+.YS
+.SY lpq
+[\fB\-al\fR]
+[\fB\-Pprinter\fR]
+[\fIjob#\fR \fI...\fR]
+[\fIuser\fR \fI...\fR]
+.YS
+.SY lpr
+[\fB\-cdfghlmnpqrstv\fR]
+[\fB\-#num\fR]
+[\fB\-1234 \fIfont\fR\fR]
+[\fB\-C \fIclass\fR\fR]
+[\fB\-i [\fInumcols\fR]\fR]
+[\fB\-J \fIjob\fR\fR]
+[\fB\-Pprinter\fR]
+[\fB\-T \fItitle\fR\fR]
+[\fB\-U \fIuser\fR\fR]
+[\fB\-wnum\fR]
+[\fIname\fR \fI...\fR]
+.YS
+.SY lprm
+[\fB\-\fR]
+[\fB\-Pprinter\fR]
+[[\fIjob#\fR \fI...\fR] [\fIuser\fR \fI...\fR]]
+.YS
+.SY ls
+[\fB\-1AaCcdFfgHhikLlmnopqRrSsTtux\fR]
+[\fIfile ...\fR]
+.YS
+.SY ltrace
+[\fB\-ai\fR]
+[\fB\-f \fItrfile\fR\fR]
+[\fB\-t \fItrstr\fR\fR]
+[\fB\-u \fItrspec\fR\fR]
+\fIcommand\fR
+.YS
+.SY m4
+[\fB\-EgPs\fR]
+[\fB\-Dname[\fI=value\fR]\fR]
+[\fB\-d \fIflags\fR\fR]
+[\fB\-I \fIdirname\fR\fR]
+[\fB\-o \fIfilename\fR\fR]
+[\fB\-t \fImacro\fR\fR]
+[\fB\-Uname\fR]
+[\fIfile ...\fR]
+.YS
+.SY mail
+[\fB\-dEIinv\fR]
+[\fB\-b \fIlist\fR\fR]
+[\fB\-c \fIlist\fR\fR]
+[\fB\-r \fIfrom-addr\fR\fR]
+[\fB\-s \fIsubject\fR\fR]
+\fIto-addr\fR
+\fI...\fR
+.YS
+.SY mail
+[\fB\-dEIiNnv\fR]
+\fB\-f\fR
+[\fIfile\fR]
+.YS
+.SY mail
+[\fB\-dEIiNnv\fR]
+[\fB\-u \fIuser\fR\fR]
+.YS
+.SY make
+[\fB\-BeiknpqrSst\fR]
+[\fB\-C \fIdirectory\fR\fR]
+[\fB\-D \fIvariable\fR\fR]
+[\fB\-d \fIflags\fR\fR]
+[\fB\-f \fImk\fR\fR]
+[\fB\-I \fIdirectory\fR\fR]
+[\fB\-j \fImax_jobs\fR\fR]
+[\fB\-m \fIdirectory\fR\fR]
+[\fB\-V \fIvariable\fR\fR]
+[\fINAME=value\fR \fI...\fR]
+[\fItarget\fR \fI...\fR]
+.YS
+.SY makeinfo
+[\fIOPTION\fR]
+\fI...\fR
+\fITEXINFO-FILE...\fR
+.YS
+.SY mandoc
+[\fB\-ac\fR]
+[\fB\-I \fIos=name\fR\fR]
+[\fB\-K \fIencoding\fR\fR]
+[\fB\-mdoc\fR | \fB\-man\fR]
+[\fB\-O \fIoptions\fR\fR]
+[\fB\-T \fIoutput\fR\fR]
+[\fB\-W \fIlevel\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY md5
+[\fB\-bcpqrtx\fR]
+[\fB\-C \fIchecklist\fR\fR]
+[\fB\-h \fIhashfile\fR\fR]
+[\fB\-s \fIstring\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY sha1
+[\fB\-bcpqrtx\fR]
+[\fB\-C \fIchecklist\fR\fR]
+[\fB\-h \fIhashfile\fR\fR]
+[\fB\-s \fIstring\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY sha256
+[\fB\-bcpqrtx\fR]
+[\fB\-C \fIchecklist\fR\fR]
+[\fB\-h \fIhashfile\fR\fR]
+[\fB\-s \fIstring\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY sha512
+[\fB\-bcpqrtx\fR]
+[\fB\-C \fIchecklist\fR\fR]
+[\fB\-h \fIhashfile\fR\fR]
+[\fB\-s \fIstring\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY merge
+[\fB\-EepqV\fR]
+[\fB\-L \fIlabel\fR\fR]
+\fIfile1\fR
+\fIfile2\fR
+\fIfile3\fR
+.YS
+.SY mesg
+[\fIn\fR | \fIy\fR]
+.YS
+.SY mg
+[\fB\-nR\fR]
+[\fB\-b \fIfile\fR\fR]
+[\fB\-f \fImode\fR\fR]
+[\fB\-u \fIfile\fR\fR]
+[\fI+number\fR]
+[\fIfile ...\fR]
+.YS
+.SY midicat
+[\fB\-d\fR]
+[\fB\-i \fIfile\fR\fR]
+[\fB\-o \fIfile\fR\fR]
+[\fB\-q \fIport\fR\fR]
+.YS
+.SY mkdep
+[\fB\-ap\fR]
+[\fB\-f \fIfile\fR\fR]
+[\fIflags\fR]
+\fIfile ...\fR
+.YS
+.SY mkdir
+[\fB\-p\fR]
+[\fB\-m \fImode\fR\fR]
+\fIdirectory\fR
+\fI...\fR
+.YS
+.SY mkfifo
+[\fB\-m \fImode\fR\fR]
+\fIfifo_name\fR
+\fI...\fR
+.YS
+.SY mklocale
+[\fB\-d\fR]
+[\fIsrc-file\fR]
+\fIlanguage/LC_CTYPE\fR
+.YS
+.SY mklocale
+[\fB\-d\fR]
+\fB\-o\fR
+\fIlanguage/LC_CTYPE\fR
+\fIsrc-file\fR
+.YS
+.SY mktemp
+[\fB\-dqtu\fR]
+[\fB\-p \fIdirectory\fR\fR]
+[\fItemplate\fR]
+.YS
+.SY mopa.out
+\fIinfile\fR
+\fIoutfile\fR
+.YS
+.SY mopchk
+[\fB\-av\fR]
+[\fIfile ...\fR]
+.YS
+.SY mopprobe
+[\fB\-3\fR | \fB\-4\fR]
+[\fB\-aov\fR]
+\fIinterface\fR
+.YS
+.SY moptrace
+[\fB\-3\fR | \fB\-4\fR]
+[\fB\-ad\fR]
+\fIinterface\fR
+.YS
+.SY more
+[\fB\-ceisu\fR]
+[\fB\-n \fInumber\fR\fR]
+[\fB\-p \fIcommand\fR\fR]
+[\fB\-t \fItag\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY mt
+[\fB\-f \fIdevice\fR\fR]
+\fIcommand\fR
+[\fIcount\fR]
+.YS
+.SY eject
+[\fB\-t\fR]
+\fIdevice\fR
+.YS
+.SY mv
+[\fB\-fiv\fR]
+\fIsource\fR
+\fItarget\fR
+.YS
+.SY mv
+[\fB\-fiv\fR]
+\fIsource\fR
+\fI...\fR
+\fIdirectory\fR
+.YS
+.SY nc
+[\fB\-46cDdFhklNnrStUuvz\fR]
+[\fB\-C \fIcertfile\fR\fR]
+[\fB\-e \fIname\fR\fR]
+[\fB\-H \fIhash\fR\fR]
+[\fB\-I \fIlength\fR\fR]
+[\fB\-i \fIinterval\fR\fR]
+[\fB\-K \fIkeyfile\fR\fR]
+[\fB\-M \fIttl\fR\fR]
+[\fB\-m \fIminttl\fR\fR]
+[\fB\-O \fIlength\fR\fR]
+[\fB\-o \fIstaplefile\fR\fR]
+[\fB\-P \fIproxy_username\fR\fR]
+[\fB\-p \fIsource_port\fR\fR]
+[\fB\-R \fICAfile\fR\fR]
+[\fB\-s \fIsourceaddr\fR\fR]
+[\fB\-T \fIkeyword\fR\fR]
+[\fB\-V \fIrtable\fR\fR]
+[\fB\-W \fIrecvlimit\fR\fR]
+[\fB\-w \fItimeout\fR\fR]
+[\fB\-X \fIproxy_protocol\fR\fR]
+[\fB\-x \fIproxy_address\fR\fR[\fI:port\fR]]
+[\fB\-Z \fIpeercertfile\fR\fR]
+[\fIdestination\fR]
+[\fIport\fR]
+.YS
+.SY netstat
+[\fB\-AaBln\fR]
+[\fB\-M \fIcore\fR\fR]
+[\fB\-N \fIsystem\fR\fR]
+[\fB\-p \fIprotocol\fR\fR]
+[\fB\-T \fIrtable\fR\fR]
+.YS
+.SY netstat
+\fB\-W\fR
+\fIinterface\fR
+.YS
+.SY netstat
+\fB\-m\fR
+.YS
+.SY netstat
+\fB\-I\fR
+\fIinterface\fR
+|\fB\-i\fR
+[\fB\-bdehnq\fR]
+.YS
+.SY netstat
+\fB\-w\fR
+\fIwait\fR
+[\fB\-bdehnq\fR]
+[\fB\-c \fIcount\fR\fR]
+[\fB\-I \fIinterface\fR\fR]
+.YS
+.SY netstat
+\fB\-s\fR
+[\fB\-gru\fR]
+[\fB\-f \fIaddress_family\fR\fR]
+[\fB\-p \fIprotocol\fR\fR]
+.YS
+.SY netstat
+\fB\-g\fR
+[\fB\-lnu\fR]
+[\fB\-f \fIaddress_family\fR\fR]
+.YS
+.SY netstat
+\fB\-R\fR
+.YS
+.SY netstat
+\fB\-r\fR
+[\fB\-AFu\fR]
+[\fB\-f \fIaddress_family\fR\fR]
+[\fB\-M \fIcore\fR\fR]
+[\fB\-N \fIsystem\fR\fR]
+[\fB\-T \fIrtable\fR\fR]
+.YS
+.SY netstat
+\fB\-P\fR
+\fIpcbaddr\fR
+[\fB\-v\fR]
+[\fB\-M \fIcore\fR\fR]
+[\fB\-N \fIsystem\fR\fR]
+.YS
+.SY nfsstat
+[\fB\-cs\fR]
+[\fB\-M \fIcore\fR\fR]
+[\fB\-N \fIsystem\fR\fR]
+[\fB\-w \fIwait\fR\fR]
+.YS
+.SY nice
+[\fB\-n \fIincrement\fR\fR]
+\fIutility\fR
+[\fIargument\fR \fI...\fR]
+.YS
+.SY nl
+[\fB\-p\fR]
+[\fB\-b \fItype\fR\fR]
+[\fB\-d \fIdelim\fR\fR]
+[\fB\-f \fItype\fR\fR]
+[\fB\-h \fItype\fR\fR]
+[\fB\-i \fIincr\fR\fR]
+[\fB\-l \fInum\fR\fR]
+[\fB\-n \fIformat\fR\fR]
+[\fB\-s \fIsep\fR\fR]
+[\fB\-v \fIstartnum\fR\fR]
+[\fB\-w \fIwidth\fR\fR]
+[\fIfile\fR]
+.YS
+.SY nm
+[\fB\-AaCDegnoPprsuw\fR]
+[\fB\-t \fId\fR\fR|\fIo\fR|\fIx\fR]
+[\fIfile ...\fR]
+.YS
+.SY nohup
+\fIutility\fR
+[\fIarg\fR \fI...\fR]
+.YS
+.SY nslookup
+[\fB\-option\fR]
+[\fIname\fR | \fB\-\fR]
+[\fIserver\fR]
+.YS
+.SY objcopy
+[\fB\-F \fIbfdname\fR\fR|\fB\-\-target=\fIbfdname\fR\fR]
+[\fB\-I \fIbfdname\fR\fR|\fB\-\-input-target=\fIbfdname\fR\fR]
+[\fB\-O \fIbfdname\fR\fR|\fB\-\-output-target=\fIbfdname\fR\fR]
+[\fB\-B \fIbfdarch\fR\fR|\fB\-\-binary-architecture=\fIbfdarch\fR\fR]
+[\fB\-S\fR|\fB\-\-strip-all\fR]
+[\fB\-g\fR|\fB\-\-strip-debug\fR]
+[\fB\-K \fIsymbolname\fR\fR|\fB\-\-keep-symbol=\fIsymbolname\fR\fR]
+[\fB\-N \fIsymbolname\fR\fR|\fB\-\-strip-symbol=\fIsymbolname\fR\fR]
+[\fB\-\-strip-unneeded-symbol=\fIsymbolname\fR\fR]
+[\fB\-G \fIsymbolname\fR\fR|\fB\-\-keep-global-symbol=\fIsymbolname\fR\fR]
+[\fB\-\-localize-hidden\fR]
+[\fB\-L \fIsymbolname\fR\fR|\fB\-\-localize-symbol=\fIsymbolname\fR\fR]
+[\fB\-\-globalize-symbol=\fIsymbolname\fR\fR]
+[\fB\-W \fIsymbolname\fR\fR|\fB\-\-weaken-symbol=\fIsymbolname\fR\fR]
+[\fB\-w\fR|\fB\-\-wildcard\fR]
+[\fB\-x\fR|\fB\-\-discard-all\fR]
+[\fB\-X\fR|\fB\-\-discard-locals\fR]
+[\fB\-b \fIbyte\fR\fR|\fB\-\-byte=\fIbyte\fR\fR]
+[\fB\-i \fIinterleave\fR\fR|\fB\-\-interleave=\fIinterleave\fR\fR]
+[\fB\-j \fIsectionname\fR\fR|\fB\-\-only-section=\fIsectionname\fR\fR]
+[\fB\-R \fIsectionname\fR\fR|\fB\-\-remove-section=\fIsectionname\fR\fR]
+[\fB\-p\fR|\fB\-\-preserve-dates\fR]
+[\fB\-\-debugging\fR]
+[\fB\-\-gap-fill=\fIval\fR\fR]
+[\fB\-\-pad-to=\fIaddress\fR\fR]
+[\fB\-\-set-start=\fIval\fR\fR]
+[\fB\-\-adjust-start=\fIincr\fR\fR]
+[\fB\-\-change-addresses=\fIincr\fR\fR]
+[\fB\-\-change-section-address \fIsection{=,+,-}val\fR\fR]
+[\fB\-\-change-section-lma \fIsection{=,+,-}val\fR\fR]
+[\fB\-\-change-section-vma \fIsection{=,+,-}val\fR\fR]
+[\fB\-\-change-warnings\fR]
+[\fB\-\-no-change-warnings\fR]
+[\fB\-\-set-section-flags \fIsection=flags\fR\fR]
+[\fB\-\-add-section \fIsectionname=filename\fR\fR]
+[\fB\-\-rename-section \fIoldname=newname\fR\fR[\fI,flags\fR]]
+[\fB\-\-change-leading-char\fR]
+[\fB\-\-remove-leading-char\fR]
+[\fB\-\-srec-len=\fIival\fR\fR]
+[\fB\-\-srec-forceS3\fR]
+[\fB\-\-redefine-sym \fIold=new\fR\fR]
+[\fB\-\-redefine-syms=\fIfilename\fR\fR]
+[\fB\-\-weaken\fR]
+[\fB\-\-keep-symbols=\fIfilename\fR\fR]
+[\fB\-\-strip-symbols=\fIfilename\fR\fR]
+[\fB\-\-strip-unneeded-symbols=\fIfilename\fR\fR]
+[\fB\-\-keep-global-symbols=\fIfilename\fR\fR]
+[\fB\-\-localize-symbols=\fIfilename\fR\fR]
+[\fB\-\-globalize-symbols=\fIfilename\fR\fR]
+[\fB\-\-weaken-symbols=\fIfilename\fR\fR]
+[\fB\-\-alt-machine-code=\fIindex\fR\fR]
+[\fB\-\-prefix-symbols=\fIstring\fR\fR]
+[\fB\-\-prefix-sections=\fIstring\fR\fR]
+[\fB\-\-prefix-alloc-sections=\fIstring\fR\fR]
+[\fB\-\-add-gnu-debuglink=\fIpath-to-file\fR\fR]
+[\fB\-\-keep-file-symbols\fR]
+[\fB\-\-only-keep-debug\fR]
+[\fB\-\-writable-text\fR]
+[\fB\-\-readonly-text\fR]
+[\fB\-\-pure\fR]
+[\fB\-\-impure\fR]
+[\fB\-v\fR|\fB\-\-verbose\fR]
+[\fB\-V\fR|\fB\-\-version\fR]
+[\fB\-\-help\fR]
+[\fB\-\-info\fR]
+\fIinfile\fR
+[\fIoutfile\fR]
+.YS
+.SY od
+[\fB\-aBbcDdeFfHhIiLlOosvXx\fR]
+[\fB\-A \fIbase\fR\fR]
+[\fB\-j \fIoffset\fR\fR]
+[\fB\-N \fIlength\fR\fR]
+[\fB\-t \fItype_string\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY openrsync
+[\fB\-aDgIJlnOoprtVvx\fR]
+[\fB\-e \fIprogram\fR\fR]
+[\fB\-\-address=\fIsourceaddr\fR\fR]
+[\fB\-\-compare-dest=\fIdirectory\fR\fR]
+[\fB\-\-contimeout=\fIseconds\fR\fR]
+[\fB\-\-del\fR]
+[\fB\-\-exclude \fIpattern\fR\fR]
+[\fB\-\-exclude-from=\fIfile\fR\fR]
+[\fB\-\-include \fIpattern\fR\fR]
+[\fB\-\-include-from=\fIfile\fR\fR]
+[\fB\-\-max-size=\fIsize\fR\fR]
+[\fB\-\-min-size=\fIsize\fR\fR]
+[\fB\-\-no-motd\fR]
+[\fB\-\-numeric-ids\fR]
+[\fB\-\-port=\fIservice\fR\fR]
+[\fB\-\-rsync-path=\fIprogram\fR\fR]
+[\fB\-\-size-only\fR]
+[\fB\-\-timeout=\fIseconds\fR\fR]
+\fIsource\fR
+\fI...\fR
+\fIdirectory\fR
+.YS
+.SY openssl
+\fIcommand\fR
+[\fIcommand_opt\fR \fI...\fR]
+[\fIcommand_arg\fR \fI...\fR]
+.YS
+.SY openssl
+\fIlist-standard-commands\fR
+|\fIlist-message-digest-commands\fR
+|\fIlist-cipher-commands\fR
+|\fIlist-cipher-algorithms\fR
+|\fIlist-message-digest-algorithms\fR
+|\fIlist-public-key-algorithms\fR
+.YS
+.SY openssl
+\fIno-command\fR
+.YS
+.SY outdated-perl-ports
+[\fB\-d\fR]
+[\fB\-m \fImaintainer\fR\fR]
+.YS
+.SY passwd
+[\fIuser\fR]
+.YS
+.SY paste
+[\fB\-s\fR]
+[\fB\-d \fIlist\fR\fR]
+\fIfile ...\fR
+.YS
+.SY patch
+[\fB\-bCcEeflNnRstuv\fR]
+[\fB\-B \fIbackup-prefix\fR\fR]
+[\fB\-D \fIsymbol\fR\fR]
+[\fB\-d \fIdirectory\fR\fR]
+[\fB\-F \fImax-fuzz\fR\fR]
+[\fB\-i \fIpatchfile\fR\fR]
+[\fB\-o \fIout-file\fR\fR]
+[\fB\-p \fIstrip-count\fR\fR]
+[\fB\-r \fIrej-name\fR\fR]
+[\fB\-V \fIt\fR\fR | \fInil\fR | \fInever\fR | \fInone\fR]
+[\fB\-x \fInumber\fR\fR]
+[\fB\-z \fIbackup-ext\fR\fR]
+[\fB\-\-posix\fR]
+[\fIorigfile\fR [\fIpatchfile\fR]]
+.YS
+.SY patch
+\fI<patchfile\fR
+.YS
+.SY pax
+[\fB\-0cdjnOvz\fR]
+[\fB\-E \fIlimit\fR\fR]
+[\fB\-f \fIarchive\fR\fR]
+[\fB\-G \fIgroup\fR\fR]
+[\fB\-s \fIreplstr\fR\fR]
+[\fB\-T \fIrange\fR\fR]
+[\fB\-U \fIuser\fR\fR]
+[\fIpattern\fR \fI...\fR]
+.YS
+.SY pax
+\fB\-r\fR
+[\fB\-0cDdijknOuvYZz\fR]
+[\fB\-E \fIlimit\fR\fR]
+[\fB\-f \fIarchive\fR\fR]
+[\fB\-G \fIgroup\fR\fR]
+[\fB\-o \fIoptions\fR\fR]
+[\fB\-p \fIstring\fR\fR]
+[\fB\-s \fIreplstr\fR\fR]
+[\fB\-T \fIrange\fR\fR]
+[\fB\-U \fIuser\fR\fR]
+[\fIpattern\fR \fI...\fR]
+.YS
+.SY pax
+\fB\-w\fR
+[\fB\-0adHijLOPtuvXz\fR]
+[\fB\-B \fIbytes\fR\fR]
+[\fB\-b \fIblocksize\fR\fR]
+[\fB\-f \fIarchive\fR\fR]
+[\fB\-G \fIgroup\fR\fR]
+[\fB\-o \fIoptions\fR\fR]
+[\fB\-s \fIreplstr\fR\fR]
+[\fB\-T \fIrange\fR\fR]
+[\fB\-U \fIuser\fR\fR]
+[\fB\-x \fIformat\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY pax
+\fB\-rw\fR
+[\fB\-0DdHijkLlnOPtuvXYZ\fR]
+[\fB\-G \fIgroup\fR\fR]
+[\fB\-p \fIstring\fR\fR]
+[\fB\-s \fIreplstr\fR\fR]
+[\fB\-T \fIrange\fR\fR]
+[\fB\-U \fIuser\fR\fR]
+[\fIfile ...\fR]
+\fIdirectory\fR
+.YS
+.SY pctr
+[\fB\-AEeIiklMSu\fR]
+[\fB\-f \fIfunct\fR\fR]
+[\fB\-m \fIumask\fR\fR]
+[\fB\-s \fIctr\fR\fR]
+[\fB\-t \fIthold\fR\fR]
+.YS
+.SY piconv
+[\fB\-f \fIfrom_encoding\fR\fR]
+[\fB\-t \fIto_encoding\fR\fR]
+[\fB\-p\fR|\fB\-\-perlqq\fR|\fB\-\-htmlcref\fR|\fB\-\-xmlcref\fR]
+[\fB\-C \fIN\fR\fR|\fB\-c\fR]
+[\fB\-D\fR]
+[\fB\-S \fIscheme\fR\fR]
+[\fB\-s \fIstring\fR\fR|\fIfile...\fR]
+.YS
+.SY piconv
+\fB\-l\fR
+.YS
+.SY piconv
+\fB\-r\fR
+\fIencoding_alias\fR
+.YS
+.SY piconv
+\fB\-h\fR
+.YS
+.SY pgrep
+[\fB\-flnoqvx\fR]
+[\fB\-d \fIdelim\fR\fR]
+[\fB\-G \fIgid\fR\fR]
+[\fB\-g \fIpgrp\fR\fR]
+[\fB\-P \fIppid\fR\fR]
+[\fB\-s \fIsid\fR\fR]
+[\fB\-T \fIrtable\fR\fR]
+[\fB\-t \fItty\fR\fR]
+[\fB\-U \fIuid\fR\fR]
+[\fB\-u \fIeuid\fR\fR]
+[\fIpattern\fR \fI...\fR]
+.YS
+.SY pkill
+[\fB\-signal\fR]
+[\fB\-fIlnoqvx\fR]
+[\fB\-G \fIgid\fR\fR]
+[\fB\-g \fIpgrp\fR\fR]
+[\fB\-P \fIppid\fR\fR]
+[\fB\-s \fIsid\fR\fR]
+[\fB\-T \fIrtable\fR\fR]
+[\fB\-t \fItty\fR\fR]
+[\fB\-U \fIuid\fR\fR]
+[\fB\-u \fIeuid\fR\fR]
+[\fIpattern\fR \fI...\fR]
+.YS
+.SY pkg-config
+[\fIoptions\fR]
+\fImodule\fR
+\fI...\fR
+.YS
+.SY pkg_check-manpages
+[\fB\-p\fR]
+[\fIpkgname\fR \fI...\fR]
+.YS
+.SY pkg_check-problems
+[\fB\-CDesv\fR]
+[\fB\-d \fIplist_dir\fR\fR]
+[\fB\-o \fIoutput\fR\fR]
+[\fB\-p \fIports_dir\fR\fR]
+[\fIpkgname\fR \fI...\fR]
+.YS
+.SY pkg_check-version
+[\fB\-Hv\fR]
+\fIpkgname\fR
+\fI...\fR
+.YS
+.SY pkg_create
+[\fB\-mnQqSvx\fR]
+[\fB\-A \fIarches\fR\fR]
+[\fB\-B \fIpkg-destdir\fR\fR]
+[\fB\-D \fIname\fR\fR[\fI=value\fR]]
+[\fB\-L \fIlocalbase\fR\fR]
+[\fB\-M \fIdisplayfile\fR\fR]
+[\fB\-P \fIpkgpath:pkgspec:default\fR\fR]
+[\fB\-U \fIundisplayfile\fR\fR]
+[\fB\-u \fIuserlist\fR\fR]
+[\fB\-V \fIn\fR\fR]
+[\fB\-W \fIlibspec\fR\fR]
+\fB\-d\fR
+\fIdesc\fR
+\fB\-D\fR
+\fICOMMENT=value\fR
+\fB\-D\fR
+\fIFULLPKGPATH=value\fR
+\fB\-D\fR
+\fIPORTSDIR=value\fR
+\fB\-f\fR
+\fIpackinglist\fR
+\fB\-p\fR
+\fIprefix\fR
+\fIpkg-name\fR
+.YS
+.SY pkg_create
+\fB\-f\fR
+\fIpackinglist\fR
+.YS
+.SY pkg_delete
+[\fB\-acIimnqsVvXx\fR]
+[\fB\-B \fIpkg-destdir\fR\fR]
+[\fB\-D \fIname\fR\fR[\fI=value\fR]]
+[\fIpkg-name\fR \fI...\fR]
+.YS
+.SY pkg_info
+[\fB\-AaCcdfIKLMmPqRSstUvz\fR]
+[\fB\-D \fIname\fR\fR[\fI=value\fR]]
+[\fB\-E \fIfilename\fR\fR]
+[\fB\-e \fIpkg-name\fR\fR]
+[\fB\-l \fIstr\fR\fR]
+[\fB\-Q \fIsubstring\fR\fR]
+[\fB\-r \fIpkgspec\fR\fR]
+[\fIpkg-name\fR \fI...\fR]
+.YS
+.SY pkg_mklocatedb
+[\fB\-aKnPqu\fR]
+[\fB\-d \fIrepository\fR\fR]
+[\fB\-p \fIportsdir\fR\fR]
+[\fIpkg-name\fR \fI...\fR]
+.YS
+.SY pkg_outdated
+[\fB\-mqvx\fR]
+.YS
+.SY pkg_sign
+[\fB\-Cvi\fR]
+[\fB\-D \fIname\fR\fR[\fI=value\fR]]
+[\fB\-j \fImaxjobs\fR\fR]
+[\fB\-o \fIdir\fR\fR]
+\fB\-s\fR
+\fIsignify2\fR
+\fB\-s\fR
+\fIprivkey\fR
+[\fB\-S \fIsource\fR\fR]
+[\fIpkg-name\fR \fI...\fR]
+.YS
+.SY pkg_subst
+[\fB\-ci\fR]
+[\fB\-B \fIbasedir\fR\fR]
+[\fB\-D \fIname\fR\fR[\fI=value\fR]]
+[\fB\-g \fIgroup\fR\fR]
+[\fB\-m \fImode\fR\fR]
+[\fB\-o \fIowner\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY pl2pm
+\fIfiles\fR
+.YS
+.SY pod2html
+\fB\-\-help\fR
+\fB\-\-htmldir=\fI<name>\fR\fR
+\fB\-\-htmlroot=\fI<URL>\fR\fR
+\fB\-\-infile=\fI<name>\fR\fR
+\fB\-\-outfile=\fI<name>\fR\fR
+\fB\-\-podpath=\fI<name>:...:<name>\fR\fR
+\fB\-\-podroot=\fI<name>\fR\fR
+\fB\-\-cachedir=\fI<name>\fR\fR
+\fB\-\-flush\fR
+\fB\-\-recurse\fR
+\fB\-\-norecurse\fR
+\fB\-\-quiet\fR
+\fB\-\-noquiet\fR
+\fB\-\-verbose\fR
+\fB\-\-noverbose\fR
+\fB\-\-index\fR
+\fB\-\-noindex\fR
+\fB\-\-backlink\fR
+\fB\-\-nobacklink\fR
+\fB\-\-header\fR
+\fB\-\-noheader\fR
+\fB\-\-poderrors\fR
+\fB\-\-nopoderrors\fR
+\fB\-\-css=\fI<URL>\fR\fR
+\fB\-\-title=\fI<name>\fR\fR
+.YS
+.SY pod2man
+[\fB\-\-center=\fIstring\fR\fR]
+[\fB\-\-date=\fIstring\fR\fR]
+[\fB\-\-encoding=\fIencoding\fR\fR]
+[\fB\-\-errors=\fIstyle\fR\fR]
+[\fB\-\-fixed=\fIfont\fR\fR]
+[\fB\-\-fixedbold=\fIfont\fR\fR]
+[\fB\-\-fixeditalic=\fIfont\fR\fR]
+[\fB\-\-fixedbolditalic=\fIfont\fR\fR]
+[\fB\-\-guesswork=\fIrule\fR\fR[\fI,rule...\fR]]
+[\fB\-\-name=\fIname\fR\fR]
+[\fB\-\-nourls\fR]
+[\fB\-\-official\fR]
+[\fB\-\-release=\fIversion\fR\fR]
+[\fB\-\-section=\fImanext\fR\fR]
+[\fB\-\-quotes=\fIquotes\fR\fR]
+[\fB\-\-lquote=\fIquote\fR\fR]
+[\fB\-\-rquote=\fIquote\fR\fR]
+[\fB\-\-stderr\fR]
+[\fB\-\-utf8\fR]
+[\fB\-\-verbose\fR]
+[\fIinput\fR [\fIoutput\fR] \fI...\fR]
+.YS
+.SY pod2man
+\fB\-\-help\fR
+.YS
+.SY pod2text
+[\fB\-aclostu\fR]
+[\fB\-\-code\fR]
+[\fB\-eencoding\fR]
+[\fB\-\-errors=\fIstyle\fR\fR]
+[\fB\-\-guesswork=\fIrule\fR\fR[\fI,rule...\fR]]
+[\fB\-iindent\fR]
+[\fB\-qquotes\fR]
+[\fB\-\-nourls\fR]
+[\fB\-\-stderr\fR]
+[\fB\-wwidth\fR]
+[\fIinput\fR [\fIoutput\fR \fI...\fR]]
+.YS
+.SY pod2text
+\fB\-h\fR
+.YS
+.SY pod2usage
+[\fB\-help\fR]
+[\fB\-man\fR]
+[\fB\-exitexitval\fR]
+[\fB\-outputoutfile\fR]
+[\fB\-verbose \fIlevel\fR\fR]
+[\fB\-pathlist \fIdirlist\fR\fR]
+[\fB\-formatter \fImodule\fR\fR]
+[\fB\-utf8\fR]
+\fIfile\fR
+.YS
+.SY podchecker
+[\fB\-help\fR]
+[\fB\-man\fR]
+[\fB\-(no)warnings\fR]
+[\fIfile...\fR]
+.YS
+.SY port-getpkgpath-helper
+\fIdir\fR
+.YS
+.SY port-resolve-lib-helper
+[\fB\-needed\fR]
+[\fB\-silent\fR]
+\fIspec\fR
+\fI...\fR
+.YS
+.SY port-search-helper
+\fIindex=file\fR
+[\fIcategory=cat\fR]
+[\fImaintainer=person\fR]
+[\fIkey=value\fR]
+.YS
+.SY portbump
+[\fB\-lMmnrv\fR]
+[\fB\-W \fIwlib\fR\fR]
+[\fB\-w \fIwlib\fR\fR]
+[\fIportref\fR \fI...\fR]
+.YS
+.SY portbump
+\fB\-o\fR
+\fIfile\fR
+[\fB\-lMmnrv\fR]
+[\fB\-W \fIaddlib\fR\fR]
+[\fB\-w \fIrmlib\fR\fR]
+[\fIportref\fR \fI...\fR]
+.YS
+.SY portcheck
+[\fB\-dNP\fR]
+[\fB\-p \fIportsdir\fR\fR]
+[\fB\-x \fIpattern\fR\fR]
+.YS
+.SY portcheck
+\fB\-A\fR
+[\fB\-dP\fR]
+[\fB\-p \fIportsdir\fR\fR]
+[\fB\-x \fIpattern\fR\fR]
+[\fIsubdir\fR \fI...\fR]
+.YS
+.SY portgen
+[\fB\-m \fImakeopt\fR\fR]
+\fItype\fR
+\fImodule-name\fR
+.YS
+.SY portimport
+[\fB\-p \fIportsdir\fR\fR]
+[\fB\-u \fIusername\fR\fR]
+.YS
+.SY portlock
+[\fB\-g \fIgroup\fR\fR]
+[\fB\-m \fImode\fR\fR]
+\fIlockname\fR
+[\fIcomment\fR \fI...\fR]
+.YS
+.SY portslogger
+[\fB\-s\fR]
+\fIdirectory\fR
+.YS
+.SY pr
+[\fI+page\fR]
+[\fB\-column\fR]
+[\fB\-adFfmrt\fR]
+[\fB\-e[\fIchar\fR]\fR[\fIgap\fR]]
+[\fB\-h \fIheader\fR\fR]
+[\fB\-i[\fIchar\fR]\fR[\fIgap\fR]]
+[\fB\-l \fIlines\fR\fR]
+[\fB\-n[\fIchar\fR]\fR[\fIwidth\fR]]
+[\fB\-o \fIoffset\fR\fR]
+[\fB\-s[\fIchar\fR]\fR]
+[\fB\-w \fIwidth\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY printenv
+[\fIname\fR]
+.YS
+.SY printf
+\fIformat\fR
+[\fIargument\fR \fI...\fR]
+.YS
+.SY procmap
+[\fB\-AadlmPsv\fR]
+[\fB\-D \fInumber\fR\fR]
+[\fB\-M \fIcore\fR\fR]
+[\fB\-N \fIsystem\fR\fR]
+[\fB\-p \fIpid\fR\fR]
+[\fIpid\fR \fI...\fR]
+.YS
+.SY proot
+[\fB\-B \fIchroot\fR\fR]
+[\fB\-c \fIconfigfile\fR\fR]
+[\fB\-S \fIsrcroot\fR\fR]
+[\fIattribute=value\fR \fI...\fR]
+.YS
+.SY ps
+[[\fB\-\fR]\fIAacefHhjkLlmrSTuvwx\fR]
+[\fB\-M \fIcore\fR\fR]
+[\fB\-N \fIsystem\fR\fR]
+[\fB\-O \fIfmt\fR\fR]
+[\fB\-o \fIfmt\fR\fR]
+[\fB\-p \fIpid\fR\fR]
+[\fB\-t \fItty\fR\fR]
+[\fB\-U \fIuser\fR\fR]
+[\fB\-W \fIswap\fR\fR]
+.YS
+.SY pwd
+[\fB\-LP\fR]
+.YS
+.SY quota
+[\fB\-q\fR | \fB\-v\fR]
+[\fB\-gu\fR]
+.YS
+.SY quota
+[\fB\-q\fR | \fB\-v\fR]
+\fB\-g\fR
+\fIgroup\fR
+\fI...\fR
+.YS
+.SY quota
+[\fB\-q\fR | \fB\-v\fR]
+\fB\-u\fR
+\fIuser\fR
+\fI...\fR
+.YS
+.SY radioctl
+[\fB\-anv\fR]
+[\fB\-f \fIfile\fR\fR]
+.YS
+.SY radioctl
+[\fB\-nv\fR]
+[\fB\-f \fIfile\fR\fR]
+\fIname\fR
+.YS
+.SY radioctl
+[\fB\-n\fR]
+[\fB\-f \fIfile\fR\fR]
+\fIname=value\fR
+.YS
+.SY rcs
+[\fB\-IiLqTUV\fR]
+[\fB\-Aoldfile\fR]
+[\fB\-ausers\fR]
+[\fB\-b[\fIrev\fR]\fR]
+[\fB\-cstring\fR]
+[\fB\-e[\fIusers\fR]\fR]
+[\fB\-kmode\fR]
+[\fB\-l[\fIrev\fR]\fR]
+[\fB\-mrev:msg\fR]
+[\fB\-orev\fR]
+[\fB\-t[\fIstr\fR]\fR]
+[\fB\-u[\fIrev\fR]\fR]
+[\fB\-xsuffixes\fR]
+\fIfile ...\fR
+.YS
+.SY rcs2log
+[\fB\-c \fIchangelog\fR\fR]
+[\fB\-h \fIhostname\fR\fR]
+[\fB\-i \fIindent\fR\fR]
+[\fB\-l \fIlength\fR\fR]
+[\fB\-R\fR]
+[\fB\-r \fIoption\fR\fR]
+[\fB\-t \fItabwidth\fR\fR]
+[\fB\-u \fIlogin<TAB>fullname<TAB>mailaddr\fR\fR]
+[\fB\-v\fR]
+[\fB\-\-help\fR]
+[\fB\-\-version\fR]
+[\fIfile ...\fR]
+.YS
+.SY rcsclean
+[\fB\-TV\fR]
+[\fB\-kmode\fR]
+[\fB\-n[\fIrev\fR]\fR]
+[\fB\-q[\fIrev\fR]\fR]
+[\fB\-r[\fIrev\fR]\fR]
+[\fB\-u[\fIrev\fR]\fR]
+[\fB\-xsuffixes\fR]
+[\fB\-ztz\fR]
+[\fIfile ...\fR]
+.YS
+.SY rcsdiff
+[\fB\-cnquV\fR]
+[\fB\-kmode\fR]
+[\fB\-rrev\fR]
+[\fB\-xsuffixes\fR]
+[\fB\-ztz\fR]
+[\fIdiff_options\fR]
+\fIfile ...\fR
+.YS
+.SY rcsmerge
+[\fB\-EV\fR]
+[\fB\-kmode\fR]
+[\fB\-p[\fIrev\fR]\fR]
+[\fB\-q[\fIrev\fR]\fR]
+[\fB\-xsuffixes\fR]
+[\fB\-ztz\fR]
+\fB\-rrev\fR
+\fIfile ...\fR
+.YS
+.SY rdist
+[\fB\-DFnV\fR]
+[\fB\-A \fInum\fR\fR]
+[\fB\-a \fInum\fR\fR]
+[\fB\-c \fImini_distfile\fR\fR]
+[\fB\-d \fIvar=value\fR\fR]
+[\fB\-f \fIdistfile\fR\fR]
+[\fB\-L \fIremote_logopts\fR\fR]
+[\fB\-l \fIlocal_logopts\fR\fR]
+[\fB\-M \fImaxproc\fR\fR]
+[\fB\-m \fIhost\fR\fR]
+[\fB\-o \fIdistopts\fR\fR]
+[\fB\-P \fIrsh-path\fR\fR]
+[\fB\-p \fIrdistd-path\fR\fR]
+[\fB\-t \fItimeout\fR\fR]
+[\fIname\fR \fI...\fR]
+.YS
+.SY rdistd
+[\fB\-DV\fR]
+\fB\-S\fR
+.YS
+.SY readlink
+[\fB\-fn\fR]
+\fIfile\fR
+.YS
+.SY realpath
+[\fB\-q\fR]
+\fIfile\fR
+.YS
+.SY register-plist
+[\fB\-n\fR]
+[\fB\-s \fIsnapdir\fR\fR]
+\fIdir\fR
+[\fIpkgname\fR \fI...\fR]
+.YS
+.SY register-plist
+\fB\-p\fR
+\fIdir\fR
+.YS
+.SY register-plist
+\fB\-t\fR
+\fIp1\fR
+\fIp2\fR
+.YS
+.SY rev
+[\fIfile ...\fR]
+.YS
+.SY rlog
+[\fB\-bhLNRtV\fR]
+[\fB\-ddates\fR]
+[\fB\-Eendsep\fR]
+[\fB\-l[\fIlockers\fR]\fR]
+[\fB\-r[\fIrevs\fR]\fR]
+[\fB\-Srevsep\fR]
+[\fB\-sstates\fR]
+[\fB\-w[\fIlogins\fR]\fR]
+[\fB\-xsuffixes\fR]
+[\fB\-ztz\fR]
+\fIfile ...\fR
+.YS
+.SY rm
+[\fB\-dfiPRrv\fR]
+\fIfile ...\fR
+.YS
+.SY rmdir
+[\fB\-p\fR]
+\fIdirectory\fR
+\fI...\fR
+.YS
+.SY rs
+[\fB\-CcSs[\fIx\fR]\fR]
+[\fB\-GgKkw \fIN\fR\fR]
+[\fB\-EeHhjmnTtyz\fR]
+[\fIrows\fR [\fIcols\fR]]
+.YS
+.SY rup
+[\fB\-dhlt\fR]
+[\fIhost\fR \fI...\fR]
+.YS
+.SY rusers
+[\fB\-al\fR]
+[\fB\-h\fR | \fB\-i\fR | \fB\-u\fR]
+[\fIhosts\fR \fI...\fR]
+.YS
+.SY rwall
+\fIhost\fR
+[\fIfile\fR]
+.YS
+.SY scp
+[\fB\-346ABCOpqRrsTv\fR]
+[\fB\-c \fIcipher\fR\fR]
+[\fB\-D \fIsftp_server_path\fR\fR]
+[\fB\-F \fIssh_config\fR\fR]
+[\fB\-i \fIidentity_file\fR\fR]
+[\fB\-J \fIdestination\fR\fR]
+[\fB\-l \fIlimit\fR\fR]
+[\fB\-o \fIssh_option\fR\fR]
+[\fB\-P \fIport\fR\fR]
+[\fB\-S \fIprogram\fR\fR]
+[\fB\-X \fIsftp_option\fR\fR]
+\fIsource\fR
+\fI...\fR
+\fItarget\fR
+.YS
+.SY script
+[\fB\-a\fR]
+[\fB\-c \fIcommand\fR\fR]
+[\fIfile\fR]
+.YS
+.SY sdiff
+[\fB\-abdilstW\fR]
+[\fB\-I \fIregexp\fR\fR]
+[\fB\-o \fIoutfile\fR\fR]
+[\fB\-w \fIwidth\fR\fR]
+\fIfile1\fR
+\fIfile2\fR
+.YS
+.SY sed
+[\fB\-aEnru\fR]
+[\fB\-i[\fIextension\fR]\fR]
+\fIcommand\fR
+[\fIfile ...\fR]
+.YS
+.SY sed
+[\fB\-aEnru\fR]
+[\fB\-e \fIcommand\fR\fR]
+[\fB\-f \fIcommand_file\fR\fR]
+[\fB\-i[\fIextension\fR]\fR]
+[\fIfile ...\fR]
+.YS
+.SY sendbug
+[\fB\-DEP\fR]
+.YS
+.SY seq
+[\fB\-w\fR]
+[\fB\-f \fIformat\fR\fR]
+[\fB\-s \fIstring\fR\fR]
+[\fIfirst\fR [\fIincr\fR]]
+\fIlast\fR
+.YS
+.SY sftp
+[\fB\-46AaCfNpqrv\fR]
+[\fB\-B \fIbuffer_size\fR\fR]
+[\fB\-b \fIbatchfile\fR\fR]
+[\fB\-c \fIcipher\fR\fR]
+[\fB\-D \fIsftp_server_command\fR\fR]
+[\fB\-F \fIssh_config\fR\fR]
+[\fB\-i \fIidentity_file\fR\fR]
+[\fB\-J \fIdestination\fR\fR]
+[\fB\-l \fIlimit\fR\fR]
+[\fB\-o \fIssh_option\fR\fR]
+[\fB\-P \fIport\fR\fR]
+[\fB\-R \fInum_requests\fR\fR]
+[\fB\-S \fIprogram\fR\fR]
+[\fB\-s \fIsubsystem\fR\fR | \fIsftp_server\fR]
+[\fB\-X \fIsftp_option\fR\fR]
+\fIdestination\fR
+.YS
+.SY sh
+[\fB\-abCefhimnuvx\fR]
+[\fB\-o \fIoption\fR\fR]
+[\fB\-c \fIstring\fR\fR | \fB\-s\fR | \fIfile\fR]
+.YS
+.SY shar
+\fIfile ...\fR
+.YS
+.SY signify
+\fB\-C\fR
+[\fB\-q\fR]
+[\fB\-p \fIpubkey\fR\fR]
+[\fB\-t \fIkeytype\fR\fR]
+\fB\-x\fR
+\fIsigfile\fR
+[\fIfile ...\fR]
+.YS
+.SY signify
+\fB\-G\fR
+[\fB\-n\fR]
+[\fB\-c \fIcomment\fR\fR]
+\fB\-p\fR
+\fIpubkey\fR
+\fB\-s\fR
+\fIseckey\fR
+.YS
+.SY signify
+\fB\-S\fR
+[\fB\-enz\fR]
+[\fB\-x \fIsigfile\fR\fR]
+\fB\-s\fR
+\fIseckey\fR
+\fB\-m\fR
+\fImessage\fR
+.YS
+.SY signify
+\fB\-V\fR
+[\fB\-eqz\fR]
+[\fB\-p \fIpubkey\fR\fR]
+[\fB\-t \fIkeytype\fR\fR]
+[\fB\-x \fIsigfile\fR\fR]
+\fB\-m\fR
+\fImessage\fR
+.YS
+.SY size
+[\fB\-tw\fR]
+[\fIfile ...\fR]
+.YS
+.SY skey
+[\fB\-x\fR]
+[\fB\-md5\fR | \fB\-rmd160\fR | \fB\-sha1\fR]
+[\fB\-n \fIcount\fR\fR]
+[\fB\-p \fIpassphrase\fR\fR]
+\fIsequence#\fR
+[\fI/\fR]
+\fIkey\fR
+.YS
+.SY skeyaudit
+[\fB\-ai\fR]
+[\fB\-l \fIlimit\fR\fR]
+.YS
+.SY skeyinfo
+[\fB\-v\fR]
+[\fIuser\fR]
+.YS
+.SY skeyinit
+[\fB\-DErsx\fR]
+[\fB\-a \fIauth-type\fR\fR]
+[\fB\-n \fIcount\fR\fR]
+[\fB\-md5\fR | \fB\-rmd160\fR | \fB\-sha1\fR]
+[\fIuser\fR]
+.YS
+.SY sleep
+\fIseconds\fR
+.YS
+.SY smtp
+[\fB\-Chnv\fR]
+[\fB\-a \fIauthfile\fR\fR]
+[\fB\-F \fIfrom\fR\fR]
+[\fB\-H \fIhelo\fR\fR]
+[\fB\-s \fIserver\fR\fR]
+[\fB\-T \fIparams\fR\fR]
+[\fIrecipient\fR \fI...\fR]
+.YS
+.SY sndioctl
+[\fB\-dimnqv\fR]
+[\fB\-f \fIdevice\fR\fR]
+[\fIcommand\fR \fI...\fR]
+.YS
+.SY snmp
+\fIget\fR
+|\fIgetnext\fR
+|\fIbulkget\fR
+[\fIoptions\fR]
+\fIagent\fR
+\fIoid\fR
+\fI...\fR
+.YS
+.SY snmp
+\fIwalk\fR
+|\fIbulkwalk\fR
+[\fIoptions\fR]
+\fIagent\fR
+[\fIoid\fR]
+.YS
+.SY snmp
+\fIset\fR
+[\fIoptions\fR]
+\fIagent\fR
+\fIvaroid\fR
+\fItype\fR
+\fIvalue\fR
+[\fIvaroid\fR \fItype\fR \fIvalue\fR]
+\fI...\fR
+.YS
+.SY snmp
+\fItrap\fR
+[\fIoptions\fR]
+\fIagent\fR
+\fIuptime\fR
+\fItrapoid\fR
+[\fIvaroid\fR \fItype\fR \fIvalue\fR]
+\fI...\fR
+.YS
+.SY snmp
+\fIdf\fR
+[\fIoptions\fR]
+\fIagent\fR
+.YS
+.SY snmp
+\fImibtree\fR
+[\fB\-O \fIfns\fR\fR]
+[\fIoid\fR \fI...\fR]
+.YS
+.SY sort
+[\fB\-bCcdfgHhiMmnRrsuVz\fR]
+[\fB\-k \fIfield1\fR\fR[\fI,field2\fR]]
+[\fB\-o \fIoutput\fR\fR]
+[\fB\-S \fIsize\fR\fR]
+[\fB\-T \fIdir\fR\fR]
+[\fB\-t \fIchar\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY spell
+[\fB\-biltvx\fR]
+[\fB\-d \fIlist\fR\fR]
+[\fB\-h \fIspellhist\fR\fR]
+[\fB\-m \fIa\fR\fR | \fIe\fR | \fIl\fR | \fIm\fR | \fIs\fR]
+[\fB\-s \fIlist\fR\fR]
+[\fI+extra_list\fR]
+[\fIfile ...\fR]
+.YS
+.SY split
+[\fB\-a \fIsuffix_length\fR\fR]
+[\fB\-b \fIbyte_count\fR\fR[\fIk\fR|\fIm\fR] | \fB\-l \fIline_count\fR\fR | \fB\-p \fIpattern\fR\fR]
+[\fIfile\fR [\fIname\fR]]
+.YS
+.SY ssh-add
+[\fB\-CcDdKkLlNqvXx\fR]
+[\fB\-E \fIfingerprint_hash\fR\fR]
+[\fB\-H \fIhostkey_file\fR\fR]
+[\fB\-h \fIdestination_constraint\fR\fR]
+[\fB\-S \fIprovider\fR\fR]
+[\fB\-t \fIlife\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY ssh-add
+\fB\-s\fR
+\fIpkcs11\fR
+[\fB\-Cv\fR]
+[\fIcertificate\fR \fI...\fR]
+.YS
+.SY ssh-add
+\fB\-e\fR
+\fIpkcs11\fR
+.YS
+.SY ssh-add
+\fB\-T\fR
+\fIpubkey\fR
+\fI...\fR
+.YS
+.SY ssh-agent
+[\fB\-c\fR | \fB\-s\fR]
+[\fB\-DdTU\fR]
+[\fB\-a \fIbind_address\fR\fR]
+[\fB\-E \fIfingerprint_hash\fR\fR]
+[\fB\-O \fIoption\fR\fR]
+[\fB\-P \fIallowed_providers\fR\fR]
+[\fB\-t \fIlife\fR\fR]
+.YS
+.SY ssh-agent
+[\fB\-TU\fR]
+[\fB\-a \fIbind_address\fR\fR]
+[\fB\-E \fIfingerprint_hash\fR\fR]
+[\fB\-O \fIoption\fR\fR]
+[\fB\-P \fIallowed_providers\fR\fR]
+[\fB\-t \fIlife\fR\fR]
+\fIcommand\fR
+[\fIarg\fR \fI...\fR]
+.YS
+.SY ssh-agent
+[\fB\-c\fR | \fB\-s\fR]
+\fB\-k\fR
+.YS
+.SY ssh-agent
+\fB\-u\fR
+.YS
+.SY ssh-keygen
+[\fB\-q\fR]
+[\fB\-a \fIrounds\fR\fR]
+[\fB\-b \fIbits\fR\fR]
+[\fB\-C \fIcomment\fR\fR]
+[\fB\-f \fIoutput_keyfile\fR\fR]
+[\fB\-m \fIformat\fR\fR]
+[\fB\-N \fInew_passphrase\fR\fR]
+[\fB\-O \fIoption\fR\fR]
+[\fB\-t \fIecdsa\fR\fR | \fIecdsa-sk\fR | \fIed25519\fR | \fIed25519-sk\fR | \fIrsa\fR]
+[\fB\-w \fIprovider\fR\fR]
+[\fB\-Z \fIcipher\fR\fR]
+.YS
+.SY ssh-keygen
+\fB\-p\fR
+[\fB\-a \fIrounds\fR\fR]
+[\fB\-f \fIkeyfile\fR\fR]
+[\fB\-m \fIformat\fR\fR]
+[\fB\-N \fInew_passphrase\fR\fR]
+[\fB\-P \fIold_passphrase\fR\fR]
+[\fB\-Z \fIcipher\fR\fR]
+.YS
+.SY ssh-keygen
+\fB\-i\fR
+[\fB\-f \fIinput_keyfile\fR\fR]
+[\fB\-m \fIkey_format\fR\fR]
+.YS
+.SY ssh-keygen
+\fB\-e\fR
+[\fB\-f \fIinput_keyfile\fR\fR]
+[\fB\-m \fIkey_format\fR\fR]
+.YS
+.SY ssh-keygen
+\fB\-y\fR
+[\fB\-f \fIinput_keyfile\fR\fR]
+.YS
+.SY ssh-keygen
+\fB\-c\fR
+[\fB\-a \fIrounds\fR\fR]
+[\fB\-C \fIcomment\fR\fR]
+[\fB\-f \fIkeyfile\fR\fR]
+[\fB\-P \fIpassphrase\fR\fR]
+.YS
+.SY ssh-keygen
+\fB\-l\fR
+[\fB\-v\fR]
+[\fB\-E \fIfingerprint_hash\fR\fR]
+[\fB\-f \fIinput_keyfile\fR\fR]
+.YS
+.SY ssh-keygen
+\fB\-B\fR
+[\fB\-f \fIinput_keyfile\fR\fR]
+.YS
+.SY ssh-keygen
+\fB\-D\fR
+\fIpkcs11\fR
+.YS
+.SY ssh-keygen
+\fB\-F\fR
+\fIhostname\fR
+[\fB\-lv\fR]
+[\fB\-f \fIknown_hosts_file\fR\fR]
+.YS
+.SY ssh-keygen
+\fB\-H\fR
+[\fB\-f \fIknown_hosts_file\fR\fR]
+.YS
+.SY ssh-keygen
+\fB\-K\fR
+[\fB\-a \fIrounds\fR\fR]
+[\fB\-w \fIprovider\fR\fR]
+.YS
+.SY ssh-keygen
+\fB\-R\fR
+\fIhostname\fR
+[\fB\-f \fIknown_hosts_file\fR\fR]
+.YS
+.SY ssh-keygen
+\fB\-r\fR
+\fIhostname\fR
+[\fB\-g\fR]
+[\fB\-f \fIinput_keyfile\fR\fR]
+.YS
+.SY ssh-keygen
+\fB\-M\fR
+\fIgenerate\fR
+[\fB\-O \fIoption\fR\fR]
+\fIoutput_file\fR
+.YS
+.SY ssh-keygen
+\fB\-M\fR
+\fIscreen\fR
+[\fB\-f \fIinput_file\fR\fR]
+[\fB\-O \fIoption\fR\fR]
+\fIoutput_file\fR
+.YS
+.SY ssh-keygen
+\fB\-I\fR
+\fIcertificate_identity\fR
+\fB\-s\fR
+\fIca_key\fR
+[\fB\-hU\fR]
+[\fB\-D \fIpkcs11_provider\fR\fR]
+[\fB\-n \fIprincipals\fR\fR]
+[\fB\-O \fIoption\fR\fR]
+[\fB\-V \fIvalidity_interval\fR\fR]
+[\fB\-z \fIserial_number\fR\fR]
+\fIfile ...\fR
+.YS
+.SY ssh-keygen
+\fB\-L\fR
+[\fB\-f \fIinput_keyfile\fR\fR]
+.YS
+.SY ssh-keygen
+\fB\-A\fR
+[\fB\-a \fIrounds\fR\fR]
+[\fB\-f \fIprefix_path\fR\fR]
+.YS
+.SY ssh-keygen
+\fB\-k\fR
+\fB\-f\fR
+\fIkrl_file\fR
+[\fB\-u\fR]
+[\fB\-s \fIca_public\fR\fR]
+[\fB\-z \fIversion_number\fR\fR]
+\fIfile ...\fR
+.YS
+.SY ssh-keygen
+\fB\-Q\fR
+[\fB\-l\fR]
+\fB\-f\fR
+\fIkrl_file\fR
+\fIfile ...\fR
+.YS
+.SY ssh-keygen
+\fB\-Y\fR
+\fIfind-principals\fR
+[\fB\-O \fIoption\fR\fR]
+\fB\-s\fR
+\fIsignature_file\fR
+\fB\-f\fR
+\fIallowed_signers_file\fR
+.YS
+.SY ssh-keygen
+\fB\-Y\fR
+\fImatch-principals\fR
+\fB\-I\fR
+\fIsigner_identity\fR
+\fB\-f\fR
+\fIallowed_signers_file\fR
+.YS
+.SY ssh-keygen
+\fB\-Y\fR
+\fIcheck-novalidate\fR
+[\fB\-O \fIoption\fR\fR]
+\fB\-n\fR
+\fInamespace\fR
+\fB\-s\fR
+\fIsignature_file\fR
+.YS
+.SY ssh-keygen
+\fB\-Y\fR
+\fIsign\fR
+[\fB\-O \fIoption\fR\fR]
+\fB\-f\fR
+\fIkey_file\fR
+\fB\-n\fR
+\fInamespace\fR
+\fIfile ...\fR
+.YS
+.SY ssh-keygen
+\fB\-Y\fR
+\fIverify\fR
+[\fB\-O \fIoption\fR\fR]
+\fB\-f\fR
+\fIallowed_signers_file\fR
+\fB\-I\fR
+\fIsigner_identity\fR
+\fB\-n\fR
+\fInamespace\fR
+\fB\-s\fR
+\fIsignature_file\fR
+[\fB\-r \fIrevocation_file\fR\fR]
+.YS
+.SY ssh-keyscan
+[\fB\-46cDHqv\fR]
+[\fB\-f \fIfile\fR\fR]
+[\fB\-O \fIoption\fR\fR]
+[\fB\-p \fIport\fR\fR]
+[\fB\-T \fItimeout\fR\fR]
+[\fB\-t \fItype\fR\fR]
+[\fIhost\fR | \fIaddrlist\fR \fInamelist\fR]
+.YS
+.SY ssh
+[\fB\-46AaCfGgKkMNnqsTtVvXxYy\fR]
+[\fB\-B \fIbind_interface\fR\fR]
+[\fB\-b \fIbind_address\fR\fR]
+[\fB\-c \fIcipher_spec\fR\fR]
+[\fB\-D [\fIbind_address:\fR]\fR\fIport\fR]
+[\fB\-E \fIlog_file\fR\fR]
+[\fB\-e \fIescape_char\fR\fR]
+[\fB\-F \fIconfigfile\fR\fR]
+[\fB\-I \fIpkcs11\fR\fR]
+[\fB\-i \fIidentity_file\fR\fR]
+[\fB\-J \fIdestination\fR\fR]
+[\fB\-L \fIaddress\fR\fR]
+[\fB\-l \fIlogin_name\fR\fR]
+[\fB\-m \fImac_spec\fR\fR]
+[\fB\-O \fIctl_cmd\fR\fR]
+[\fB\-o \fIoption\fR\fR]
+[\fB\-P \fItag\fR\fR]
+[\fB\-p \fIport\fR\fR]
+[\fB\-R \fIaddress\fR\fR]
+[\fB\-S \fIctl_path\fR\fR]
+[\fB\-W \fIhost:port\fR\fR]
+[\fB\-w \fIlocal_tun\fR\fR[\fI:remote_tun\fR]]
+\fIdestination\fR
+[\fIcommand\fR [\fIargument\fR \fI...\fR]]
+.YS
+.SY ssh
+[\fB\-Q \fIquery_option\fR\fR]
+.YS
+.SY stat
+[\fB\-FLnq\fR]
+[\fB\-f \fIformat\fR\fR | \fB\-l\fR | \fB\-r\fR | \fB\-s\fR | \fB\-x\fR]
+[\fB\-t \fItimefmt\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY strings
+[\fB\-afov\fR]
+[\fB\-min-len\fR]
+[\fB\-n \fImin-len\fR\fR]
+[\fB\-\-bytes=\fImin-len\fR\fR]
+[\fB\-t \fIradix\fR\fR]
+[\fB\-\-radix=\fIradix\fR\fR]
+[\fB\-e \fIencoding\fR\fR]
+[\fB\-\-encoding=\fIencoding\fR\fR]
+[\fB\-\fR]
+[\fB\-\-all\fR]
+[\fB\-\-print-file-name\fR]
+[\fB\-\-target=\fIbfdname\fR\fR]
+[\fB\-\-help\fR]
+[\fB\-\-version\fR]
+\fIfile...\fR
+.YS
+.SY stty
+[\fB\-a\fR | \fB\-e\fR | \fB\-g\fR]
+[\fB\-f \fIfile\fR\fR]
+[\fIoperands\fR]
+.YS
+.SY su
+[\fB\-fKLlm\fR]
+[\fB\-a \fIauth-type\fR\fR]
+[\fB\-c \fIlogin-class\fR\fR]
+[\fB\-s \fIlogin-shell\fR\fR]
+[\fIlogin\fR [\fIshell-argument\fR \fI...\fR]]
+.YS
+.SY systat
+[\fB\-aBbhiNn\fR]
+[\fB\-d \fIcount\fR\fR]
+[\fB\-s \fIdelay\fR\fR]
+[\fB\-w \fIwidth\fR\fR]
+[\fIview\fR]
+[\fIdelay\fR]
+.YS
+.SY tail
+[\fB\-f\fR | \fB\-r\fR]
+[\fB\-b \fInumber\fR\fR | \fB\-c \fInumber\fR\fR | \fB\-n \fInumber\fR\fR | \fB\-number\fR]
+[\fIfile ...\fR]
+.YS
+.SY talk
+[\fB\-Hs\fR]
+\fIperson\fR
+[\fIttyname\fR]
+.YS
+.SY tar
+\fI{crtux}\fR
+[\fI014578beFfHhjLmNOoPpqsvwXZz\fR]
+[\fIblocking-factor\fR | \fIformat\fR | \fIarchive\fR | \fIreplstr\fR]
+[\fB\-C \fIdirectory\fR\fR]
+[\fB\-I \fIfile\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY tar
+\fI{-crtux}\fR
+[\fB\-014578eHhjLmNOoPpqvwXZz\fR]
+[\fB\-b \fIblocking-factor\fR\fR]
+[\fB\-C \fIdirectory\fR\fR]
+[\fB\-F \fIformat\fR\fR]
+[\fB\-f \fIarchive\fR\fR]
+[\fB\-I \fIfile\fR\fR]
+[\fB\-s \fIreplstr\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY tcpbench
+\fB\-l\fR
+.YS
+.SY tcpbench
+[\fB\-46cDRUuv\fR]
+[\fB\-B \fIbuf\fR\fR]
+[\fB\-b \fIsourceaddr\fR\fR]
+[\fB\-k \fIkvars\fR\fR]
+[\fB\-n \fIconnections\fR\fR]
+[\fB\-p \fIport\fR\fR]
+[\fB\-r \fIinterval\fR\fR]
+[\fB\-S \fIspace\fR\fR]
+[\fB\-T \fIkeyword\fR\fR]
+[\fB\-t \fIsecs\fR\fR]
+[\fB\-V \fIrtable\fR\fR]
+\fIhostname\fR
+.YS
+.SY tcpbench
+\fB\-s\fR
+[\fB\-46cDUuv\fR]
+[\fB\-B \fIbuf\fR\fR]
+[\fB\-C \fIcertfile\fR\fR \fB\-K \fIkeyfile\fR\fR]
+[\fB\-k \fIkvars\fR\fR]
+[\fB\-p \fIport\fR\fR]
+[\fB\-r \fIinterval\fR\fR]
+[\fB\-S \fIspace\fR\fR]
+[\fB\-T \fIkeyword\fR\fR]
+[\fB\-V \fIrtable\fR\fR]
+[\fIhostname\fR]
+.YS
+.SY tee
+[\fB\-ai\fR]
+[\fIfile ...\fR]
+.YS
+.SY telnet
+[\fB\-4678acDEKLr\fR]
+[\fB\-b \fIhostalias\fR\fR]
+[\fB\-e \fIescapechar\fR\fR]
+[\fB\-l \fIuser\fR\fR]
+[\fB\-n \fItracefile\fR\fR]
+[\fB\-V \fIrtable\fR\fR]
+[\fIhost\fR [\fIport\fR]]
+.YS
+.SY test
+\fIexpression\fR
+[\fIexpression\fR]
+.YS
+.SY texi2dvi
+[\fIOPTION\fR]
+\fI...\fR
+\fIfile...\fR
+.YS
+.SY texi2pdf
+[\fIoption\fR \fI...\fR]
+[\fIfile ...\fR]
+.YS
+.SY texindex
+[\fIOPTION\fR]
+\fI...\fR
+\fIfile...\fR
+.YS
+.SY tftp
+[\fIhost\fR [\fIport\fR]]
+.YS
+.SY tic
+[\fB\-01CDGIKLNTUVWacfgqrstx\fR]
+[\fB\-e \fInames\fR\fR]
+[\fB\-o \fIdir\fR\fR]
+[\fB\-Q[\fIn\fR]\fR]
+[\fB\-R \fIsubset\fR\fR]
+[\fB\-v[\fIn\fR]\fR]
+[\fB\-w[\fIn\fR]\fR]
+\fIfile\fR
+.YS
+.SY time
+[\fB\-lp\fR]
+\fIutility\fR
+[\fIargument\fR \fI...\fR]
+.YS
+.SY timeout
+[\fB\-fp\fR]
+[\fB\-k \fItime\fR\fR]
+[\fB\-s \fIsignal\fR\fR]
+\fIduration\fR
+\fIcommand\fR
+[\fIarg\fR \fI...\fR]
+.YS
+.SY tmux
+[\fB\-2CDhlNuVv\fR]
+[\fB\-c \fIshell-command\fR\fR]
+[\fB\-f \fIfile\fR\fR]
+[\fB\-L \fIsocket-name\fR\fR]
+[\fB\-S \fIsocket-path\fR\fR]
+[\fB\-T \fIfeatures\fR\fR]
+[\fIcommand\fR [\fIflags\fR]]
+.YS
+.SY top
+[\fB\-1bCHIinqStu\fR]
+[\fB\-d \fIcount\fR\fR]
+[\fB\-g \fIstring\fR\fR]
+[\fB\-o [\fB\-\fR]\fR\fIfield\fR]
+[\fB\-p \fIpid\fR\fR]
+[\fB\-s \fItime\fR\fR]
+[\fB\-T [\fB\-\fR]\fR\fIrtable\fR]
+[\fB\-U [\fB\-\fR]\fR\fIuser\fR]
+[\fInumber\fR]
+.YS
+.SY touch
+[\fB\-acm\fR]
+[\fB\-d \fIccyy-mm-ddTHH:MM:SS\fR\fR[\fI.frac\fR][\fIZ\fR]]
+[\fB\-r \fIfile\fR\fR]
+[\fB\-t [[\fIcc\fR]\fIyy\fR]\fR\fImmddHHMM\fR[\fI.SS\fR]]
+\fIfile ...\fR
+.YS
+.SY tput
+[\fB\-Ttype\fR]
+\fIcapname\fR
+[\fIparameters\fR]
+.YS
+.SY tput
+[\fB\-Ttype\fR]
+[\fB\-x\fR]
+\fIclear\fR
+.YS
+.SY tput
+[\fB\-Ttype\fR]
+\fIinit\fR
+.YS
+.SY tput
+[\fB\-Ttype\fR]
+\fIreset\fR
+.YS
+.SY tput
+[\fB\-Ttype\fR]
+\fIlongname\fR
+.YS
+.SY tput
+\fB\-S\fR
+\fI<<\fR
+.YS
+.SY tput
+\fB\-V\fR
+.YS
+.SY tr
+[\fB\-Ccs\fR]
+\fIstring1\fR
+\fIstring2\fR
+.YS
+.SY tr
+[\fB\-Cc\fR]
+\fB\-d\fR
+\fIstring1\fR
+.YS
+.SY tr
+[\fB\-Cc\fR]
+\fB\-s\fR
+\fIstring1\fR
+.YS
+.SY tr
+[\fB\-Cc\fR]
+\fB\-ds\fR
+\fIstring1\fR
+\fIstring2\fR
+.YS
+.SY tradcpp
+[\fB\-options\fR]
+[\fIinput-file\fR [\fIoutput-file\fR]]
+.YS
+.SY ts
+[\fB\-i\fR | \fB\-s\fR]
+[\fB\-m\fR]
+[\fIformat\fR]
+.YS
+.SY tset
+[\fB\-IQVcqrsw\fR]
+[\fB\-\fR]
+[\fB\-e \fIch\fR\fR]
+[\fB\-i \fIch\fR\fR]
+[\fB\-k \fIch\fR\fR]
+[\fB\-m \fImapping\fR\fR]
+[\fIterminal\fR]
+.YS
+.SY reset
+[\fB\-IQVcqrsw\fR]
+[\fB\-\fR]
+[\fB\-e \fIch\fR\fR]
+[\fB\-i \fIch\fR\fR]
+[\fB\-k \fIch\fR\fR]
+[\fB\-m \fImapping\fR\fR]
+[\fIterminal\fR]
+.YS
+.SY tsort
+[\fB\-flqrvw\fR]
+[\fB\-h \fIfile\fR\fR]
+[\fIfile\fR]
+.YS
+.SY tty
+[\fB\-s\fR]
+.YS
+.SY ul
+[\fB\-i\fR]
+[\fB\-t \fIterminal\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY uname
+[\fB\-amnprsv\fR]
+.YS
+.SY unbound-host
+[\fB\-C \fIconfigfile\fR\fR]
+[\fB\-vdhr46D\fR]
+[\fB\-c \fIclass\fR\fR]
+[\fB\-t \fItype\fR\fR]
+[\fB\-y \fIkey\fR\fR]
+[\fB\-f\fR]
+.YS
+.SY keyfile]
+[\fB\-F \fInamedkeyfile\fR\fR]
+\fIhostname\fR
+.YS
+.SY unifdef
+[\fB\-BbcdehKkmnSstV\fR]
+[\fB\-[\fIi\fR]\fR\fIDsym\fR[\fI=val\fR]]
+[\fB\-[\fIi\fR]\fR\fIUsym\fR]
+[\fB\-f \fIdefile\fR\fR]
+[\fB\-M \fIbackext\fR\fR]
+[\fB\-o \fIoutfile\fR\fR]
+[\fB\-x \fI0\fR\fR | \fI1\fR | \fI2\fR]
+\fIfile ...\fR
+.YS
+.SY uniq
+[\fB\-ci\fR]
+[\fB\-d\fR | \fB\-u\fR]
+[\fB\-f \fIfields\fR\fR]
+[\fB\-s \fIchars\fR\fR]
+[\fIinput_file\fR [\fIoutput_file\fR]]
+.YS
+.SY units
+[\fB\-qv\fR]
+[\fB\-f \fIfilename\fR\fR]
+[[\fIcount\fR] \fIfrom-unit\fR \fIto-unit\fR]
+.YS
+.SY unvis
+[\fIfile ...\fR]
+.YS
+.SY update-plist
+[\fB\-Ffmnqrvx\fR]
+[\fB\-C \fIdir\fR\fR]
+[\fB\-c \fIvar\fR\fR]
+[\fB\-E \fIext\fR\fR]
+[\fB\-e \fIext\fR\fR]
+[\fB\-I \fIvar\fR\fR]
+[\fB\-i \fIvar\fR\fR]
+[\fB\-j \fIjobs\fR\fR]
+[\fB\-S \fIvar\fR\fR]
+[\fB\-s \fIvar\fR\fR]
+[\fB\-X \fIpath\fR\fR]
+[\fB\-w \fIsuffix\fR\fR]
+\fB\-\-\fR
+\fIpkg_create_args\fR
+\fI...\fR
+.YS
+.SY usbhidaction
+[\fB\-div\fR]
+\fB\-c\fR
+\fIconfig-file\fR
+\fB\-f\fR
+\fIdevice\fR
+\fIarg\fR
+\fI...\fR
+.YS
+.SY usbhidctl
+\fB\-f\fR
+\fIdevice\fR
+[\fB\-t \fItable\fR\fR]
+[\fB\-alv\fR]
+.YS
+.SY usbhidctl
+\fB\-f\fR
+\fIdevice\fR
+[\fB\-t \fItable\fR\fR]
+[\fB\-v\fR]
+\fB\-r\fR
+.YS
+.SY usbhidctl
+\fB\-f\fR
+\fIdevice\fR
+[\fB\-t \fItable\fR\fR]
+[\fB\-lnv\fR]
+\fIname\fR
+\fI...\fR
+.YS
+.SY usbhidctl
+\fB\-f\fR
+\fIdevice\fR
+[\fB\-t \fItable\fR\fR]
+\fB\-w\fR
+\fIname=value\fR
+\fI...\fR
+.YS
+.SY usbhidctl
+\fB\-f\fR
+\fIdevice\fR
+\fB\-R\fR
+.YS
+.SY uuencode
+[\fB\-m\fR]
+[\fB\-o \fIoutput_file\fR\fR]
+[\fIfile\fR]
+\fIname\fR
+.YS
+.SY uudecode
+[\fB\-cimprs\fR]
+[\fIfile ...\fR]
+.YS
+.SY uudecode
+[\fB\-i\fR]
+\fB\-o\fR
+\fIoutput_file\fR
+[\fIfile\fR]
+.YS
+.SY b64encode
+[\fB\-o \fIoutput_file\fR\fR]
+[\fIfile\fR]
+\fIname\fR
+.YS
+.SY b64decode
+[\fB\-ciprs\fR]
+[\fIfile ...\fR]
+.YS
+.SY b64decode
+[\fB\-i\fR]
+\fB\-o\fR
+\fIoutput_file\fR
+[\fIfile\fR]
+.YS
+.SY vacation
+\fB\-i\fR
+[\fB\-r \fIinterval\fR\fR]
+.YS
+.SY vacation
+[\fB\-a \fIalias\fR\fR]
+\fIlogin\fR
+.YS
+.SY ex
+[\fB\-FRrSsv\fR]
+[\fB\-c \fIcmd\fR\fR]
+[\fB\-t \fItag\fR\fR]
+[\fB\-w \fIsize\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY vi[-eFRrS]
+[\fB\-c \fIcmd\fR\fR]
+[\fB\-t \fItag\fR\fR]
+[\fB\-w \fIsize\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY view
+[\fB\-eFrS\fR]
+[\fB\-c \fIcmd\fR\fR]
+[\fB\-t \fItag\fR\fR]
+[\fB\-w \fIsize\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY vis
+[\fB\-abcflnostw\fR]
+[\fB\-F \fIfoldwidth\fR\fR]
+[\fIfile ...\fR]
+.YS
+.SY wall
+[\fB\-g \fIgroup\fR\fR]
+[\fIfile\fR]
+.YS
+.SY wc
+[\fB\-c\fR | \fB\-m\fR]
+[\fB\-hlw\fR]
+[\fIfile ...\fR]
+.YS
+.SY what
+[\fB\-s\fR]
+\fIfile ...\fR
+.YS
+.SY whereis
+[\fB\-a\fR]
+\fIname\fR
+\fI...\fR
+.YS
+.SY which
+[\fB\-a\fR]
+\fIname\fR
+\fI...\fR
+.YS
+.SY who
+[\fB\-HmqTu\fR]
+[\fIfile\fR]
+.YS
+.SY who
+\fIam\fR
+\fIi\fR
+.YS
+.SY whois
+[\fB\-AadgIilmQRrS\fR]
+[\fB\-c \fIcountry-code\fR\fR | \fB\-h \fIhost\fR\fR]
+[\fB\-p \fIport\fR\fR]
+\fIname\fR
+\fI...\fR
+.YS
+.SY write
+\fIuser\fR
+[\fIttyname\fR]
+.YS
+.SY x99token
+[\fB\-d\fR]
+[\fB\-k \fIkeyfile\fR\fR]
+[\fB\-n \fIcount\fR\fR]
+.YS
+.SY x99token
+\fB\-i\fR
+[\fB\-k \fIkeyfile\fR\fR]
+.YS
+.SY xargs
+[\fB\-0oprt\fR]
+[\fB\-E \fIeofstr\fR\fR]
+[\fB\-I \fIreplstr\fR\fR [\fB\-R \fIreplacements\fR\fR]]
+[\fB\-J \fIreplstr\fR\fR]
+[\fB\-L \fInumber\fR\fR]
+[\fB\-n \fInumber\fR\fR [\fB\-x\fR]]
+[\fB\-P \fImaxprocs\fR\fR]
+[\fB\-s \fIsize\fR\fR]
+[\fIutility\fR [\fIargument\fR \fI...\fR]]
+.YS
+.SY xsubpp
+[\fB\-v\fR]
+[\fB\-except\fR]
+[\fB\-s \fIpattern\fR\fR]
+[\fB\-prototypes\fR]
+[\fB\-noversioncheck\fR]
+[\fB\-nolinenumbers\fR]
+[\fB\-nooptimize\fR]
+[\fB\-typemap \fItypemap\fR\fR]
+[\fB\-output \fIfilename\fR\fR]
+\fI...\fR
+.YS
+.SY yes
+[\fIexpletive\fR]
+.YS
+.SY ypcat
+[\fB\-kt\fR]
+[\fB\-d \fIdomainname\fR\fR]
+\fImapname\fR
+.YS
+.SY ypcat
+\fB\-x\fR
+.YS
+.SY ypmatch
+[\fB\-kt\fR]
+[\fB\-d \fIdomainname\fR\fR]
+\fIkey\fR
+\fI...\fR
+\fImapname\fR
+.YS
+.SY ypmatch
+\fB\-x\fR
+.YS
+.SY ypwhich
+[\fB\-t\fR]
+[\fB\-d \fIdomain\fR\fR]
+[[\fB\-h\fR] \fIhost\fR]
+.YS
+.SY ypwhich
+[\fB\-t\fR]
+[\fB\-d \fIdomain\fR\fR]
+[\fB\-h \fIhost\fR\fR]
+\fB\-m\fR
+[\fImname\fR]
+.YS
+.SY ypwhich
+\fB\-x\fR
+.YS
+.SY yyfix
+\fIfile\fR
+[\fItables\fR]
+.YS
+.SY zcmp
+[\fIoptions\fR]
+\fIfile1\fR
+[\fIfile2\fR]
+.YS
+.SY zdiff
+[\fIoptions\fR]
+\fIfile1\fR
+[\fIfile2\fR]
+.YS
+.SY zforce
+\fIfile ...\fR
+.YS
+.SY zmore
+[\fIflags\fR]
+[\fIfile ...\fR]
+.YS
+.SY zless
+[\fIflags\fR]
+[\fIfile ...\fR]
+.YS
+.SY znew
+[\fB\-9fKtv\fR]
+\fIfile ...\fR
+.YS
+.SY llvm-addr2line
+[\fIoptions\fR]
+.YS
+.SY llvm-symbolizer
+[\fIoptions\fR]
+[\fIaddresses...\fR]
+.YS
+.SY watch
+[\fB\-celwx\fR]
+[\fB\-s \fIseconds\fR\fR]
+\fIcommand\fR
+[\fIarg\fR \fI...\fR]
+.YS
+.SH DESCRIPTION
+.LP
+Ugh.

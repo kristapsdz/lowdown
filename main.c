@@ -316,6 +316,8 @@ main(int argc, char *argv[])
 		{ "latex-no-numbered",	no_argument,	&rfl, LOWDOWN_LATEX_NUMBERED },
 		{ "latex-no-skiphtml",	no_argument,	&rfl, LOWDOWN_SKIP_HTML },
 
+		{ "roff-manpage",	no_argument,	&afl, LOWDOWN_NROFF_MANPAGE },
+		{ "roff-no-manpage",	no_argument,	&rfl, LOWDOWN_NROFF_MANPAGE },
 		{ "roff-traditional",	no_argument,	&rfl, LOWDOWN_NROFF_GROFF },
 		{ "roff-no-rellinks",	no_argument, 	&afl, LOWDOWN_NORELLINK },
 		{ "roff-no-links",	no_argument, 	&afl, LOWDOWN_NOLINK },
