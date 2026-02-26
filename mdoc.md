@@ -15,8 +15,8 @@ just used, an HTML rendering of the same.  Manpages cover programming libraries
 (usually for the C and Perl programming language), command-line utilities,
 device drivers, formats---most anything available on a modern Unix system.
 
-Manpages were traditionally written in the
-[roff(7)](https://man.openbsd.org/roff) language, usually using the
+Manpages are written in the
+[roff(7)](https://man.openbsd.org/roff) language, traditionally using the
 [man(7)](https://man.openbsd.org/man) macro package.
 (Much like LaTeX and TeX, roff supports macro packages that have specific
 functionality above the base language.)
@@ -39,7 +39,7 @@ For example, the **mdoc** way of decorating a function synopsis:
 ```
 .Sh SYNOPSIS
 .Ft int
-.Fn sprintf "char *restrict str" "const char *restrict format" ...
+.Fn printf "const char *restrict format" "..."
 ```
 
 The same but using **man**:
@@ -48,8 +48,7 @@ The same but using **man**:
 .SH SYNOPSIS
 \fIint\fR
 .sp
-\fBsprintf\fR(\fIchar *restrict str\fR, \fIconst char *restrict format\fR,
-    \fI...\fR);
+\fBprintf\fR(\fIconst char *restrict format\fR, \fI...\fR);
 ```
 
 These days, manpages are a mix of both---if they exist at all!
@@ -57,26 +56,55 @@ These days, manpages are a mix of both---if they exist at all!
 One of the major complaints about authoring Unix manpages is the complexity of
 the **roff** language, using either macro package.  Authors must either navigate
 a maze of macros and syntax rules in **mdoc**, or extensively (and usually
-inconsistently) manage styling in **man**.
+inconsistently) manage styling in **man**.  Unfortunately, the result is
+that many authors just don't write manpages.
 
 So... **why not Markdown**?
+
+Quick example: [strlcpy.md](mdoc-strlcpy.md.txt) rendered as
+[strlcpy.html](mdoc-strlcpy.html) and [grep.md](mdoc-grep.md.txt) rendered
+as [grep.html](mdoc-grep.html).
 
 ```markdown
 # SYNOPSIS
 
-*int*
-**sprintf**(*char \* restrict str*, *const char \* restrict format*,
-    *\.\.\.*);
+`int
+printf(const char * restrict format, ...);`
+
+# DESCRIPTION
+
+The *printf()* family of functions produce output according to the given
+*format* as described below.
 ```
+
+Writing markdown (or any other non-**roff**) language requires a
+preprocessor to convert from the origin into either **man** or **mdoc**.
+With **man**, this is possible by styling the markdown page *exactly* as
+the manpage should render.  However, this burdens the author to already
+know exactly how manpages should look in the first place, when one of
+the most powerful parts of the manpage system is consistency.
 
 With [lowdown](https://kristaps.bsd.lv/lowdown), authors could previously
 translate the above into a **man** document using the **-tman** output option.
 
-As of version 3.0.0, authors can also use the **-tmdoc** output option, which
-attempts to convert into **mdoc**.  Since **mdoc** has a richer set of macros, but
-is more idiomatic in where those macros are used, this requires authors of
-Markdown manpages to be a little bit more attentive to the styling of their
-Markdown manual inputs.
+**mdoc**, however, is a far more difficult case.  Whereas **man** can
+simply substitute font modes, **mdoc** is a semantic language that's not
+expressed by markdown alone.
+
+Until now...  as of version 3.0.0, authors can also use the **-tmdoc**
+output option, which attempts to convert into **mdoc**.  With the
+additional **--roff-manpage** option, lowdown attempts to create
+well-formed, semantic **mdoc** by understanding the context in which
+statements are specified.
+
+How?
+
+Just make your Markdown document look like your manpage.  Use a font
+mode (emphasis or double emphasis) for all the content that's usually
+rendered differently from normal text: program flags, functions,
+arguments, variables, flag arguments, etc., etc.
+
+More specifically....
 
 # Layout
 
@@ -109,13 +137,22 @@ progname - one line about what it does
 
 # SYNOPSIS
 
-progname \[-abc] \[FILE]
+`progname [-abc] [--baz foo] [FILE]`
 
 (See per-section documentation, below.)
 
 # DESCRIPTION
 
-The **progname** utility processes files...
+The *progname* utility processes with the following:
+
+*-a*, *-b*, *-c*
+: Three flags, one being *-a*, doing something.
+
+*--baz foo*
+: Long flag with argument *foo*.
+
+*FILE*
+: The optional file.
 
 # CONTEXT
 
@@ -211,8 +248,8 @@ each separated by a blank line).
 ```markdown
 # SYNOPSIS
 
-apropos \[-afk] \[-C file] \[-M path] \[-m path] \[-O outkey]
-    \[-S arch] \[-s section] expression \.\.\.
+`apropos [-afk] [-C file] [-M path] [-m path] [-O outkey]
+    [-S arch] [-s section] expression ...`
 
 `addr2line [-a|--addresses]
     [-b bfdname|--target=bfdname]
@@ -235,10 +272,7 @@ characters.  Again, any fonts, colours, or extra whitespace will be elided.
 ```markdown
 # SYNOPSIS
 
-\#include \<stdio.h>
-
-int
-sprintf(char \* restrict str, const char \* restrict format, \.\.\.);
+`#include <stdio.h>`
 
 `int
 snprintf(char *restrict str, size_t size, const char *restrict format, ...);`
@@ -272,17 +306,17 @@ the synopsis section.
 ```markdown
 # SYNOPSIS
 
-\#include \<unistd.h>
+`#include <unistd.h>`
 
-extern char *optarg;
+`extern char *optarg;`
 
-extern int opterr;
+`extern int opterr;`
 
-extern int optind;
+`extern int optind;`
 
-extern int optopt;
+`extern int optopt;`
 
-extern int optreset;
+`extern int optreset;`
 
 `int getopt(int argc, char * const *argv, const char *optstring);`
 ```

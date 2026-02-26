@@ -46,6 +46,8 @@ HTMLS		 = archive.html \
 		   diff.diff.html \
 		   index.html \
 		   mdoc.html \
+		   mdoc-grep.html \
+		   mdoc-strlcpy.html \
 		   README.html \
 		   $(MANS)
 MANS		 = $(MAN1S) $(MAN3S) $(MAN5S)
@@ -119,7 +121,12 @@ PDFS		 = diff.pdf \
 		   index.latex.pdf \
 		   index.mandoc.pdf \
 		   index.nroff.pdf
-MDS		 = index.md README.md
+MDS		 = index.md \
+		   mdoc-grep.md \
+		   mdoc-strlcpy.md \
+		   README.md
+TEXTS		 = mdoc-grep.md.txt \
+		   mdoc-strlcpy.md.txt
 CSSS		 = diff.css template.css
 JSS		 = diff.js
 IMAGES		 = screen-mandoc.png \
@@ -196,11 +203,11 @@ REGRESS_ENV	 = LC_ALL=en_US.UTF-8
 all: bins lowdown.pc $(LIB_SO)
 bins: lowdown lowdown-diff
 
-www: all $(HTMLS) $(PDFS) $(THUMBS) lowdown.tar.gz lowdown.tar.gz.sha512
+www: all $(HTMLS) $(PDFS) $(THUMBS) $(TEXTS) lowdown.tar.gz lowdown.tar.gz.sha512
 
 installwww: www
 	mkdir -p $(WWWDIR)/snapshots
-	$(INSTALL) -m 0444 $(THUMBS) $(IMAGES) $(MDS) $(HTMLS) $(CSSS) $(JSS) $(PDFS) $(WWWDIR)
+	$(INSTALL) -m 0444 $(THUMBS) $(IMAGES) $(MDS) $(TEXTS) $(HTMLS) $(CSSS) $(JSS) $(PDFS) $(WWWDIR)
 	$(INSTALL) -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots/lowdown-$(VERSION).tar.gz
 	$(INSTALL) -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots/lowdown-$(VERSION).tar.gz.sha512
 	$(INSTALL) -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots
@@ -310,10 +317,6 @@ $(PDFS) index.xml README.xml: lowdown
 
 index.html README.html: template.xml
 
-.md.pdf:
-	./lowdown --roff-no-numbered -s -tms $< | \
-		pdfroff -i -mspdf -t -k > $@
-
 index.latex.pdf: index.md $(THUMBS)
 	./lowdown -s -tlatex index.md >index.latex.latex
 	pdflatex index.latex.latex
@@ -327,9 +330,6 @@ index.nroff.pdf: index.md
 	./lowdown --roff-no-numbered -s -tms index.md | \
 		pdfroff -i -mspdf -t -k > $@
 
-.xml.html:
-	sblg -t template.xml -s date -o $@ -C $< $< versions.xml
-
 archive.html: archive.xml versions.xml
 	sblg -t archive.xml -s date -o $@ versions.xml
 
@@ -342,6 +342,18 @@ diff.html: diff.md lowdown
 mdoc.html: mdoc.md lowdown
 	./lowdown -s mdoc.md >$@
 
+mdoc-grep.html: mdoc-grep.md lowdown
+	./lowdown -s -tmdoc --roff-manpage mdoc-grep.md | mandoc -Thtml >$@
+
+mdoc-grep.md.txt: mdoc-grep.md
+	cp mdoc-grep.md mdoc-grep.md.txt
+
+mdoc-strlcpy.html: mdoc-strlcpy.md lowdown
+	./lowdown -s -tmdoc --roff-manpage mdoc-strlcpy.md | mandoc -Thtml >$@
+
+mdoc-strlcpy.md.txt: mdoc-strlcpy.md
+	cp mdoc-strlcpy.md mdoc-strlcpy.md.txt
+
 diff.diff.html: diff.md diff.old.md lowdown-diff
 	./lowdown-diff -s diff.old.md diff.md >$@
 
@@ -350,6 +362,13 @@ diff.diff.pdf: diff.md diff.old.md lowdown-diff
 		pdfroff -i -mspdf -t -k > $@
 
 $(HTMLS): versions.xml lowdown
+
+.md.pdf:
+	./lowdown --roff-no-numbered -s -tms $< | \
+		pdfroff -i -mspdf -t -k > $@
+
+.xml.html:
+	sblg -t template.xml -s date -o $@ -C $< $< versions.xml
 
 .md.xml: lowdown
 	( echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>" ; \
@@ -420,7 +439,7 @@ clean:
 	rm -f lowdown lowdown-diff lowdown.pc
 	rm -f $(LIB_ST) $(LIB_SO) $(LIB_SOVER)
 	rm -f index.xml diff.xml diff.diff.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
-	rm -f $(PDFS) $(HTMLS) $(THUMBS)
+	rm -f $(PDFS) $(HTMLS) $(THUMBS) $(TEXTS)
 	rm -f index.latex.aux index.latex.latex index.latex.log index.latex.out
 
 distclean: clean

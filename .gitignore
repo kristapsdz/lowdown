@@ -18,6 +18,7 @@ config.log
 *.log
 *.out
 *.jpg
+*.md.txt
 index.xml
 index.latex.latex
 mdoc.xml
