@@ -1066,22 +1066,28 @@ rndr_manpage_name(struct nroff *st, const struct lowdown_node *n,
 			if (bqueue_blocknv(obq, ".Nm", "%s%s",
 			    cp, has_next ? " ," : "") == NULL)
 				goto out;
+			free(cp);
+			cp = NULL;
 		} else if (*cp != '\0' && st->type == LOWDOWN_MAN) {
-			if (!bqueue_font_mod(st, obq, 0, NFONT_BOLD) ||
-			    bqueue_span(obq, cp) == NULL)
+			if (!bqueue_font_mod(st, obq, 0, NFONT_BOLD))
 				goto out;
+			if (bqueue_spann(obq, cp) == NULL) {
+				cp = NULL;
+				goto out;
+			}
+			cp = NULL;
 			if (!bqueue_font_mod(st, obq, 1, NFONT_BOLD))
 				goto out;
-			free(cp);
 			if (has_next &&
 			    bqueue_span(obq, ",\n") == NULL)
 				goto out;
-		} else
+		} else {
 			free(cp);
+			cp = NULL;
+		}
 
 		/* Stop if no more name tokens. */
 
-		cp = NULL;
 		if (pos == buf->size || buf->data[pos] != ',')
 			break;
 
