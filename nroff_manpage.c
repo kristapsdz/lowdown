@@ -938,7 +938,7 @@ rndr_manpage_see_also(struct nroff *st, const struct lowdown_node *n,
 	 */
 
 	for (start = pos; pos <= buf->size; ) {
-		if (buf->data[pos] == ',' || pos == buf->size) {
+		if (pos == buf->size || buf->data[pos] == ',') {
 			if (pos == start) {
 				/* Skip empty tokens. */
 				for (++pos; pos < buf->size; pos++)
