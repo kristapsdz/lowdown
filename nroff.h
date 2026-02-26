@@ -86,6 +86,9 @@ struct bnode *
 bqueue_span(struct bnodeq *bq, const char *text);
 
 struct bnode *
+bqueue_spann(struct bnodeq *bq, char *text);
+
+struct bnode *
 bqueue_block(struct bnodeq *bq, const char *text);
 
 struct bnode *

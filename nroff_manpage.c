@@ -473,7 +473,7 @@ nroff_manpage_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
 			if (ssz <= 0)
 				goto out;
 			if (!bqueue_font_mod(st, nq, 0, NFONT_BOLD) ||
-			    (cp != NULL && bqueue_span(nq, cp) == NULL))
+			    (cp != NULL && bqueue_spann(nq, cp) == NULL))
 				goto out;
 			cp = NULL;
 			if (!bqueue_font_mod(st, nq, 1, NFONT_BOLD) ||
@@ -485,7 +485,7 @@ nroff_manpage_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
 			if (ssz <= 0)
 				goto out;
 			if (bqueue_span(nq, "[") == NULL ||
-			    (cp != NULL && bqueue_span(nq, cp) == NULL))
+			    (cp != NULL && bqueue_spann(nq, cp) == NULL))
 				goto out;
 			cp = NULL;
 			if (bqueue_span(nq, "]") == NULL ||
@@ -497,7 +497,7 @@ nroff_manpage_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
 			if (ssz <= 0)
 				goto out;
 			if (!bqueue_font_mod(st, nq, 0, NFONT_ITALIC) ||
-			    (cp != NULL && bqueue_span(nq, cp) == NULL))
+			    (cp != NULL && bqueue_spann(nq, cp) == NULL))
 				goto out;
 			cp = NULL;
 			if (!bqueue_font_mod(st, nq, 1, NFONT_ITALIC) ||
@@ -621,12 +621,12 @@ nroff_manpage_synopsis_func_decl(struct nroff *st, struct bnodeq *nq,
 			if (bqueue_blockn(nq, ".Ft", cp) == NULL)
 				return -1;
 		} else {
-			if (!bqueue_font_mod(st, nq, 0, NFONT_ITALIC) ||
-			    bqueue_span(nq, cp) == NULL) {
+			if (!bqueue_font_mod(st, nq, 0, NFONT_ITALIC)) {
 				free(cp);
 				return -1;
 			}
-			if (!bqueue_font_mod(st, nq, 1, NFONT_ITALIC) ||
+			if (bqueue_span(nq, cp) == NULL ||
+			    !bqueue_font_mod(st, nq, 1, NFONT_ITALIC) ||
 			    bqueue_span(nq, "\n") == NULL ||
 			    bqueue_block(nq, ".br") == NULL ||
 			    bqueue_block(nq, ".in +4") == NULL ||
@@ -741,8 +741,11 @@ nroff_manpage_synopsis_func_decl(struct nroff *st, struct bnodeq *nq,
 		arg = pos + 1;
 	}
 
-	if (st->type == LOWDOWN_MDOC)
-		return bqueue_block(nq, ".Fc") == NULL ? -1 : pos;
+	if (st->type == LOWDOWN_MDOC) {
+		if (bqueue_block(nq, ".Fc") == NULL)
+			return -1;
+		return pos;
+	}
 
 	if (bqueue_span(nq, ");\n") == NULL ||
 	    bqueue_block(nq, ".in -4") == NULL)

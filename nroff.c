@@ -223,6 +223,27 @@ bqueue_span(struct bnodeq *bq, const char *text)
 }
 
 /*
+ * Like bqueue_span(), but accepting the "nbuf" option.  If failure
+ * occurs, the "nbuf" is freed.  If "nbuf" is NULL, returns failure.
+ */
+struct bnode *
+bqueue_spann(struct bnodeq *bq, char *nbuf)
+{
+	struct bnode	*bn;
+
+	if (nbuf == NULL)
+		return NULL;
+
+	if ((bn = bqueue_node(bq, BSCOPE_SPAN, NULL)) == NULL) {
+		free(nbuf);
+		return NULL;
+	}
+
+	bn->nbuf = nbuf;
+	return bn;
+}
+
+/*
  * Like bqueue_span(), but from variable-length arguments.
  */
 struct bnode *
