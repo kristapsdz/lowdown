@@ -13,8 +13,8 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-#ifndef NROFF_H
-#define NROFF_H
+#ifndef ROFF_H
+#define ROFF_H
 
 enum	nfont {
 	NFONT_ITALIC = 0, /* italic */
@@ -122,14 +122,14 @@ void
 bqueue_free(struct bnodeq *bq);
 
 int
-nroff_in_section(const struct nroff *st, const char *section);
+roff_in_section(const struct nroff *st, const char *section);
 
 int
-nroff_manpage_paragraph(struct nroff *st, const struct lowdown_node *n,
+roff_manpage_paragraph(struct nroff *st, const struct lowdown_node *n,
     struct bnodeq *obq, const struct bnodeq *nbq);
 
 int
-nroff_manpage_inline(struct nroff *st, const struct lowdown_node *n,
+roff_manpage_inline(struct nroff *st, const struct lowdown_node *n,
     struct bnodeq *obq, const struct bnodeq *nbq);
 
-#endif /* !NROFF_H */
+#endif /* !ROFF_H */

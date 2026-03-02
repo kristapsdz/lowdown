@@ -97,11 +97,11 @@ OpenDocument:
 roff:
 .Bl -item -compact
 .It
-.Xr lowdown_nroff_free 3
+.Xr lowdown_roff_free 3
 .It
-.Xr lowdown_nroff_new 3
+.Xr lowdown_roff_new 3
 .It
-.Xr lowdown_nroff_rndr 3
+.Xr lowdown_roff_rndr 3
 .El
 .It
 UTF-8 ANSI terminal:
@@ -176,7 +176,7 @@ ANSI-compatible UTF-8 terminal output
 Gemini
 .Dq gemtext
 format
-.It Dv LOWDOWN_NROFF
+.It Dv LOWDOWN_MS
 roff
 .Fl m Ns Ar s
 macros
@@ -291,7 +291,7 @@ This may be combined with
 to also shorten autolinks.
 Only applies to
 .Dv LOWDOWN_MAN ,
-.Dv LOWDOWN_NROFF ,
+.Dv LOWDOWN_MS ,
 and
 .Dv LOWDOWN_TERM .
 .It Dv LOWDOWN_NORELLINK
@@ -306,7 +306,7 @@ This may be combined with
 to only show shortened autolinks.
 Only applies to
 .Dv LOWDOWN_MAN ,
-.Dv LOWDOWN_NROFF ,
+.Dv LOWDOWN_MS ,
 and
 .Dv LOWDOWN_TERM .
 .It Dv LOWDOWN_SKIP_HTML
@@ -318,7 +318,7 @@ Applies to
 .Dv LOWDOWN_LATEX ,
 .Dv LOWDOWN_MAN ,
 and
-.Dv LOWDOWN_NROFF .
+.Dv LOWDOWN_MS .
 .It Dv LOWDOWN_SMARTY
 Don't use smart typography formatting.
 .It Dv LOWDOWN_STANDALONE
@@ -431,7 +431,7 @@ For
 .Dv LOWDOWN_MAN ,
 .Dv LOWDOWN_MDOC ,
 and
-.Dv LOWDOWN_NROFF :
+.Dv LOWDOWN_MS :
 .Pp
 .Bl -tag -width Ds -compact
 .It Dv LOWDOWN_NROFF_GROFF
@@ -447,18 +447,18 @@ or
 instead of
 .Fl m Ns Ar s
 for
-.Dv LOWDOWN_NROFF .
+.Dv LOWDOWN_MS .
 Applies to the
 .Dv LOWDOWN_MAN
 and
-.Dv LOWDOWN_NROFF
+.Dv LOWDOWN_MS
 output types.
 .It Dv LOWDOWN_NROFF_NUMBERED
 Use numbered sections if
 .Dv LOWDOWON_NROFF_GROFF
 is not specified.
 Only applies to the
-.Dv LOWDOWN_NROFF
+.Dv LOWDOWN_MS
 output type.
 .El
 .Pp
@@ -491,7 +491,7 @@ is
 .Dv LOWDOWN_MAN ,
 .Dv LOWDOWN_MDOC ,
 or
-.Dv LOWDOWN_NROFF ,
+.Dv LOWDOWN_MS ,
 this contains constant-width font variants:
 .Vt "const char *cr"
 for roman constant-width,
@@ -1160,9 +1160,9 @@ may appear anywhere in the document and contains block nodes.
 .Xr lowdown_latex_new 3 ,
 .Xr lowdown_latex_rndr 3 ,
 .Xr lowdown_metaq_free 3 ,
-.Xr lowdown_nroff_free 3 ,
-.Xr lowdown_nroff_new 3 ,
-.Xr lowdown_nroff_rndr 3 ,
+.Xr lowdown_roff_free 3 ,
+.Xr lowdown_roff_new 3 ,
+.Xr lowdown_roff_rndr 3 ,
 .Xr lowdown_odt_free 3 ,
 .Xr lowdown_odt_new 3 ,
 .Xr lowdown_odt_rndr 3 ,

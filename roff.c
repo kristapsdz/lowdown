@@ -32,7 +32,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
-#include "nroff.h"
+#include "roff.h"
 
 /*
  * Expression for whether this node is after a header.  This is
@@ -559,11 +559,11 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 
 		if (bn->scope == BSCOPE_LITERAL) {
 			assert(bn->buf != NULL);
-			if (!lowdown_nroff_esc(ob, bn->buf,
+			if (!lowdown_roff_esc(ob, bn->buf,
 			    strlen(bn->buf), 0, 1))
 				return 0;
 		} else if (bn->buf != NULL)
-			if (!lowdown_nroff_esc(ob, &bn->buf[offset],
+			if (!lowdown_roff_esc(ob, &bn->buf[offset],
 			    strlen(bn->buf) - offset, 0, 0))
 				return 0;
 
@@ -627,7 +627,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 			    bn->scope == BSCOPE_SEMI);
 			if (!hbuf_putc(ob, ' '))
 				return 0;
-			if (!lowdown_nroff_esc(ob, bn->args,
+			if (!lowdown_roff_esc(ob, bn->args,
 			    strlen(bn->args), 1, 0))
 				return 0;
 		}
@@ -734,7 +734,7 @@ rndr_shortlink(const struct lowdown_buf *link)
 		goto out;
 	if (!hbuf_shortlink(tmp, link))
 		goto out;
-	if (!lowdown_nroff_esc(slink, tmp->data, tmp->size, 1, 0))
+	if (!lowdown_roff_esc(slink, tmp->data, tmp->size, 1, 0))
 		goto out;
 	ret = hbuf_string(slink);
 out:
@@ -1201,7 +1201,7 @@ rndr_font(struct nroff *st, struct bnodeq *obq,
 		TAILQ_CONCAT(obq, bq, entries);
 		return 1;
 	}
-	if ((rc = nroff_manpage_inline(st, n, obq, bq)) < 0)
+	if ((rc = roff_manpage_inline(st, n, obq, bq)) < 0)
 		return 0;
 	else if (rc == 0)
 		TAILQ_CONCAT(obq, bq, entries);
@@ -1492,7 +1492,7 @@ rndr_listitem(struct nroff *st, struct bnodeq *obq,
  * check the given name in the last header.  Return FALSE if not.
  */
 int
-nroff_in_section(const struct nroff *st, const char *section)
+roff_in_section(const struct nroff *st, const char *section)
 {
 	const struct lowdown_node	*pn;
 
@@ -1514,7 +1514,7 @@ rndr_blockcode(struct nroff *st, struct bnodeq *obq,
 		 */
 		if ((bn = bqueue_block(obq, ".Bd")) == NULL)
 			return 0;
-		bn->nargs = nroff_in_section(st, "SYNOPSIS") ?
+		bn->nargs = roff_in_section(st, "SYNOPSIS") ?
 		    strdup("-literal") : 
 		    strdup("-literal -offset indent");
 		if (bn->nargs == NULL)
@@ -1552,7 +1552,7 @@ rndr_blockcode(struct nroff *st, struct bnodeq *obq,
 		 */
 		if ((bn = bqueue_block(obq, ".Ed")) == NULL)
 			return 0;
-		if (nroff_in_section(st, "SYNOPSIS") &&
+		if (roff_in_section(st, "SYNOPSIS") &&
 		    bqueue_block(obq, ".Pp") == NULL)
 			return 0;
 	} else {
@@ -1587,7 +1587,7 @@ rndr_paragraph(struct nroff *st, const struct lowdown_node *n,
 	 */
 
 	if (st->type == LOWDOWN_MAN || st->type == LOWDOWN_MDOC)
-		rc = nroff_manpage_paragraph(st, n, obq, nbq);
+		rc = roff_manpage_paragraph(st, n, obq, nbq);
 	if (rc > 0)
 		return 1;
 	else if (rc < 0)
@@ -2087,7 +2087,7 @@ rndr_font_pre(struct nroff *st, const struct lowdown_node *n,
 	/*
 	 * mdoc(7) and man(7) passes font commands into the manpage
 	 * parser to determine the content type and response.  FIXME: if
-	 * the parser in nroff_manpage_inline() fails to convert, then
+	 * the parser in roff_manpage_inline() fails to convert, then
 	 * this strips away any formatting unilaterally.
 	 */
 
@@ -2427,11 +2427,11 @@ rndr_root(struct nroff *st, struct bnodeq *obq,
 		if (!HBUF_PUTSL(ob, "\""))
 			goto out;
 		if (title != NULL &&
-		    !lowdown_nroff_esc(ob, title, strlen(title), 1, 0))
+		    !lowdown_roff_esc(ob, title, strlen(title), 1, 0))
 			goto out;
 		if (!HBUF_PUTSL(ob, "\" \""))
 			goto out;
-		if (!lowdown_nroff_esc(ob, sec, strlen(sec), 1, 0))
+		if (!lowdown_roff_esc(ob, sec, strlen(sec), 1, 0))
 			goto out;
 		if (!HBUF_PUTSL(ob, "\" \""))
 			goto out;
@@ -2442,7 +2442,7 @@ rndr_root(struct nroff *st, struct bnodeq *obq,
 		 */
 
 		if (date != NULL &&
-		    !lowdown_nroff_esc(ob, date, strlen(date), 1, 0))
+		    !lowdown_roff_esc(ob, date, strlen(date), 1, 0))
 			goto out;
 		if (!HBUF_PUTSL(ob, "\""))
 			goto out;
@@ -2456,14 +2456,14 @@ rndr_root(struct nroff *st, struct bnodeq *obq,
 		if (source != NULL || volume != NULL) {
 			if (!HBUF_PUTSL(ob, " \""))
 				goto out;
-			if (source != NULL && !lowdown_nroff_esc
+			if (source != NULL && !lowdown_roff_esc
 			    (ob, source, strlen(source), 1, 0))
 				goto out;
 			if (!HBUF_PUTSL(ob, "\""))
 				goto out;
 			if (!HBUF_PUTSL(ob, " \""))
 				goto out;
-			if (volume != NULL && !lowdown_nroff_esc
+			if (volume != NULL && !lowdown_roff_esc
 			    (ob, volume, strlen(volume), 1, 0))
 				goto out;
 			if (!HBUF_PUTSL(ob, "\""))
@@ -2489,7 +2489,7 @@ out:
  */
 static int
 rndr(struct lowdown_metaq *mq, struct nroff *st,
-	const struct lowdown_node *n, struct bnodeq *obq)
+    const struct lowdown_node *n, struct bnodeq *obq)
 {
 	const struct lowdown_node	*child;
 	int				 rc = 1, use_lp = st->use_lp;
@@ -2713,8 +2713,8 @@ out:
 }
 
 int
-lowdown_nroff_rndr(struct lowdown_buf *ob,
-	void *arg, const struct lowdown_node *n)
+lowdown_roff_rndr(struct lowdown_buf *ob, void *arg,
+    const struct lowdown_node *n)
 {
 	struct nroff		*st = arg;
 	struct lowdown_buf	*tmp = NULL;
@@ -2768,7 +2768,7 @@ out:
 }
 
 void *
-lowdown_nroff_new(const struct lowdown_opts *opts)
+lowdown_roff_new(const struct lowdown_opts *opts)
 {
 	struct nroff 	*p;
 
@@ -2810,10 +2810,30 @@ lowdown_nroff_new(const struct lowdown_opts *opts)
 }
 
 void
-lowdown_nroff_free(void *arg)
+lowdown_roff_free(void *arg)
 {
 
 	/* No need to check NULL: pass directly to free(). */
 
 	free(arg);
 }
+
+void *
+lowdown_nroff_new(const struct lowdown_opts *opts)
+{
+	return lowdown_roff_new(opts);
+}
+
+void
+lowdown_nroff_free(void *arg)
+{
+	lowdown_roff_free(arg);
+}
+
+int
+lowdown_nroff_rndr(struct lowdown_buf *ob, void *arg,
+    const struct lowdown_node *n)
+{
+	return lowdown_roff_rndr(ob, arg, n);
+}
+

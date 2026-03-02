@@ -29,14 +29,14 @@
 
 #include "lowdown.h"
 #include "extern.h"
-#include "nroff.h"
+#include "roff.h"
 
 static ssize_t
-nroff_manpage_synopsis_prog_fl(struct nroff *, struct bnodeq *, size_t,
+roff_manpage_synopsis_prog_fl(struct nroff *, struct bnodeq *, size_t,
     const struct lowdown_buf *, char **, int);
 
 static ssize_t
-nroff_manpage_synopsis_prog_ar(struct nroff *, struct bnodeq *, size_t,
+roff_manpage_synopsis_prog_ar(struct nroff *, struct bnodeq *, size_t,
     const struct lowdown_buf *, char **);
 
 /*
@@ -90,7 +90,7 @@ concatv(char **buf, const char *fmt, ...)
  * allocated content or NULL if there's no content.
  */
 static ssize_t
-nroff_manpage_synopsis_prog_op(struct nroff *st, struct bnodeq *nq,
+roff_manpage_synopsis_prog_op(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf, char **out)
 {
 	ssize_t		 ssz;
@@ -111,7 +111,7 @@ nroff_manpage_synopsis_prog_op(struct nroff *st, struct bnodeq *nq,
 	while (pos < buf->size && buf->data[pos] != ']') {
 		if (hbuf_strncasecmpat(buf, "\\(en", pos) ||
 		    buf->data[pos] == '-') {
-			ssz = nroff_manpage_synopsis_prog_fl
+			ssz = roff_manpage_synopsis_prog_fl
 			    (st, nq, pos, buf, &cp, 0);
 			if (ssz <= 0)
 				return ssz;
@@ -121,7 +121,7 @@ nroff_manpage_synopsis_prog_op(struct nroff *st, struct bnodeq *nq,
 			    asprintf(&ncp, "\\fB%s\\fR",
 				cp == NULL ? "" : cp);
 		} else if (buf->data[pos] == '[') {
-			ssz = nroff_manpage_synopsis_prog_op
+			ssz = roff_manpage_synopsis_prog_op
 			    (st, nq, pos, buf, &cp);
 			if (ssz <= 0)
 				return ssz;
@@ -135,7 +135,7 @@ nroff_manpage_synopsis_prog_op(struct nroff *st, struct bnodeq *nq,
 			rc = (ncp = strdup("|")) == NULL ? -1 : 1;
 			ssz = pos + 1;
 		} else {
-			ssz = nroff_manpage_synopsis_prog_ar
+			ssz = roff_manpage_synopsis_prog_ar
 			    (st, nq, pos, buf, &cp);
 			if (ssz <= 0)
 				return ssz;
@@ -193,7 +193,7 @@ nroff_manpage_synopsis_prog_op(struct nroff *st, struct bnodeq *nq,
  * to be the allocated content or NULL if there's no content.
  */
 static ssize_t
-nroff_manpage_synopsis_prog_ar(struct nroff *st, struct bnodeq *nq,
+roff_manpage_synopsis_prog_ar(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf, char **out)
 {
 	size_t	 	 start;
@@ -271,7 +271,7 @@ nroff_manpage_synopsis_prog_ar(struct nroff *st, struct bnodeq *nq,
  * otherwise.  The position should NOT skip over white-space.
  */
 static ssize_t
-nroff_manpage_synopsis_prog_fl(struct nroff *st, struct bnodeq *nq,
+roff_manpage_synopsis_prog_fl(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf, char **out, int first)
 {
 	size_t		 start, save_end;
@@ -362,7 +362,7 @@ nroff_manpage_synopsis_prog_fl(struct nroff *st, struct bnodeq *nq,
 	/* If followed by an option, consider it part of the flag. */
 
 	if (pos < buf->size && buf->data[pos] == '[') {
-		ssz = nroff_manpage_synopsis_prog_op(st, nq, pos,
+		ssz = roff_manpage_synopsis_prog_op(st, nq, pos,
 		    buf, &ncp);
 		if (ssz <= 0)
 			return ssz;
@@ -383,7 +383,7 @@ nroff_manpage_synopsis_prog_fl(struct nroff *st, struct bnodeq *nq,
 	    buf->data[pos] != '[' && buf->data[pos] != ']' &&
 	    buf->data[pos] != '|' && buf->data[pos] != '-' &&
 	    !hbuf_strncasecmpat(buf, "\\(en", pos)) {
-		ssz = nroff_manpage_synopsis_prog_ar(st, nq, pos,
+		ssz = roff_manpage_synopsis_prog_ar(st, nq, pos,
 		    buf, &ncp);
 		if (ssz <= 0)
 			return ssz;
@@ -412,7 +412,7 @@ nroff_manpage_synopsis_prog_fl(struct nroff *st, struct bnodeq *nq,
  * fails, and the position otherwise.
  */
 static ssize_t
-nroff_manpage_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
+roff_manpage_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf, int first)
 {
 	ssize_t		 ssz = -1;
@@ -449,17 +449,17 @@ nroff_manpage_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
 		    buf->data[pos] == '-') {
 			if ((bn = bqueue_sblock(nq, ".Fl")) == NULL)
 				goto out;
-			ssz = nroff_manpage_synopsis_prog_fl
+			ssz = roff_manpage_synopsis_prog_fl
 			    (st, nq, pos, buf, &cp, first);
 		} else if (buf->data[pos] == '[') {
 			if ((bn = bqueue_sblock(nq, ".Op")) == NULL)
 				goto out;
-			ssz = nroff_manpage_synopsis_prog_op
+			ssz = roff_manpage_synopsis_prog_op
 			    (st, nq, pos, buf, &cp);
 		} else {
 			if ((bn = bqueue_sblock(nq, ".Ar")) == NULL)
 				goto out;
-			ssz = nroff_manpage_synopsis_prog_ar
+			ssz = roff_manpage_synopsis_prog_ar
 			    (st, nq, pos, buf, &cp);
 		}
 		if (ssz > 0)
@@ -468,7 +468,7 @@ nroff_manpage_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
 	} else {
 		if (hbuf_strncasecmpat(buf, "\\(en", pos) ||
 		    buf->data[pos] == '-') {
-			ssz = nroff_manpage_synopsis_prog_fl
+			ssz = roff_manpage_synopsis_prog_fl
 			    (st, nq, pos, buf, &cp, first);
 			if (ssz <= 0)
 				goto out;
@@ -480,7 +480,7 @@ nroff_manpage_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
 			    (first && bqueue_span(nq, "\n") == NULL))
 				goto out;
 		} else if (buf->data[pos] == '[') {
-			ssz = nroff_manpage_synopsis_prog_op
+			ssz = roff_manpage_synopsis_prog_op
 			    (st, nq, pos, buf, &cp);
 			if (ssz <= 0)
 				goto out;
@@ -492,7 +492,7 @@ nroff_manpage_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
 			    (first && bqueue_span(nq, "\n") == NULL))
 				goto out;
 		} else {
-			ssz = nroff_manpage_synopsis_prog_ar
+			ssz = roff_manpage_synopsis_prog_ar
 			    (st, nq, pos, buf, &cp);
 			if (ssz <= 0)
 				goto out;
@@ -515,7 +515,7 @@ out:
  * buffer if >0, 0 if the parse failed, or -1 on failure.
  */
 static ssize_t
-nroff_manpage_synopsis_func_incl(struct nroff *st, struct bnodeq *nq,
+roff_manpage_synopsis_func_incl(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf)
 {
 	char		*cp;
@@ -570,7 +570,7 @@ nroff_manpage_synopsis_func_incl(struct nroff *st, struct bnodeq *nq,
  * buffer if >0, 0 if the parse failed, or -1 on failure.
  */
 static ssize_t
-nroff_manpage_synopsis_func_decl(struct nroff *st, struct bnodeq *nq,
+roff_manpage_synopsis_func_decl(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf)
 {
 	size_t		 i, paren, arg, nest;
@@ -761,7 +761,7 @@ nroff_manpage_synopsis_func_decl(struct nroff *st, struct bnodeq *nq,
  * position if >0 on success.
  */
 static ssize_t
-nroff_manpage_synopsis_func_expr(struct nroff *st, struct bnodeq *nq,
+roff_manpage_synopsis_func_expr(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf)
 {
 	ssize_t		 ssz;
@@ -777,9 +777,9 @@ nroff_manpage_synopsis_func_expr(struct nroff *st, struct bnodeq *nq,
 
 	while (pos < buf->size) {
 		if (hbuf_strncasecmpat(buf, "#include ", pos))
-			ssz = nroff_manpage_synopsis_func_incl(st, nq, pos, buf);
+			ssz = roff_manpage_synopsis_func_incl(st, nq, pos, buf);
 		else
-			ssz = nroff_manpage_synopsis_func_decl(st, nq, pos, buf);
+			ssz = roff_manpage_synopsis_func_decl(st, nq, pos, buf);
 		if (ssz <= 0)
 			return ssz;
 		pos = ssz;
@@ -792,7 +792,7 @@ nroff_manpage_synopsis_func_expr(struct nroff *st, struct bnodeq *nq,
  * if parsing fails, and the position otherwise.
  */
 static ssize_t
-nroff_manpage_synopsis_prog_expr(struct nroff *st, struct bnodeq *nq,
+roff_manpage_synopsis_prog_expr(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf)
 {
 	size_t		 sta;
@@ -825,7 +825,7 @@ nroff_manpage_synopsis_prog_expr(struct nroff *st, struct bnodeq *nq,
 	 */
 
 	while (pos < buf->size) {
-		ssz = nroff_manpage_synopsis_prog_subexpr(st, nq, pos, buf, 1);
+		ssz = roff_manpage_synopsis_prog_subexpr(st, nq, pos, buf, 1);
 		if (ssz <= 0)
 			return ssz;
 		pos = ssz;
@@ -840,12 +840,12 @@ nroff_manpage_synopsis_prog_expr(struct nroff *st, struct bnodeq *nq,
 }
 
 /*
- * Route into nroff_manpage_synopsis_func_expr() with parsed buffer.
+ * Route into roff_manpage_synopsis_func_expr() with parsed buffer.
  * Returns 0 on failure (memory), 1 on success.  On success, the
  * paragraph content may have been replaced.
  */
 static int
-nroff_manpage_synopsis_func(struct nroff *st, const struct lowdown_node *n,
+roff_manpage_synopsis_func(struct nroff *st, const struct lowdown_node *n,
     struct bnodeq *obq, const struct bnodeq *nbq)
 {
 	int	 		 rc = -1;
@@ -857,7 +857,7 @@ nroff_manpage_synopsis_func(struct nroff *st, const struct lowdown_node *n,
 
 	if ((buf = hbuf_new(32)) != NULL &&
 	    bqueue_flush(st, buf, nbq, 2)) {
-		ret = nroff_manpage_synopsis_func_expr(st, &nq, 0, buf);
+		ret = roff_manpage_synopsis_func_expr(st, &nq, 0, buf);
 		if (ret > 0) {
 			TAILQ_CONCAT(obq, &nq, entries);
 			rc = 1;
@@ -871,12 +871,12 @@ nroff_manpage_synopsis_func(struct nroff *st, const struct lowdown_node *n,
 }
 
 /*
- * Route into nroff_manpage_synopsis_prog_expr() with parsed buffer.
+ * Route into roff_manpage_synopsis_prog_expr() with parsed buffer.
  * Returns 0 on failure (memory), 1 on success.  On success, the
  * paragraph content may have been replaced.
  */
 static int
-nroff_manpage_synopsis_prog(struct nroff *st, const struct lowdown_node *n,
+roff_manpage_synopsis_prog(struct nroff *st, const struct lowdown_node *n,
     struct bnodeq *obq, const struct bnodeq *nbq)
 {
 	int	 		 rc = -1;
@@ -888,7 +888,7 @@ nroff_manpage_synopsis_prog(struct nroff *st, const struct lowdown_node *n,
 
 	if ((buf = hbuf_new(32)) != NULL &&
 	    bqueue_flush(st, buf, nbq, 2)) {
-		ret = nroff_manpage_synopsis_prog_expr(st, &nq, 0, buf);
+		ret = roff_manpage_synopsis_prog_expr(st, &nq, 0, buf);
 		if (ret > 0) {
 			TAILQ_CONCAT(obq, &nq, entries);
 			rc = 1;
@@ -1143,7 +1143,7 @@ out:
 }
 
 static ssize_t
-nroff_manpage_inline_func(struct nroff *st, struct bnodeq *nq,
+roff_manpage_inline_func(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf)
 {
 	char		*paren, *cp, *start;
@@ -1234,7 +1234,7 @@ nroff_manpage_inline_func(struct nroff *st, struct bnodeq *nq,
  * if parsing fails, and the position otherwise.
  */
 static ssize_t
-nroff_manpage_inline_prog(struct nroff *st, struct bnodeq *nq,
+roff_manpage_inline_prog(struct nroff *st, struct bnodeq *nq,
     size_t pos, const struct lowdown_buf *buf)
 {
 	ssize_t		 ssz;
@@ -1274,7 +1274,7 @@ nroff_manpage_inline_prog(struct nroff *st, struct bnodeq *nq,
 		if (pos > start && st->type == LOWDOWN_MAN &&
 		    bqueue_span(nq, " ") == NULL)
 			return -1;
-		ssz = nroff_manpage_synopsis_prog_subexpr(st, nq, pos, buf, 0);
+		ssz = roff_manpage_synopsis_prog_subexpr(st, nq, pos, buf, 0);
 		if (ssz <= 0)
 			return ssz;
 		pos = ssz;
@@ -1289,7 +1289,7 @@ nroff_manpage_inline_prog(struct nroff *st, struct bnodeq *nq,
  * 0 if nothing was replaced, 1 if it was replaced.
  */
 static int
-nroff_manpage_inline_check_names(struct nroff *st, struct bnodeq *obq,
+roff_manpage_inline_check_names(struct nroff *st, struct bnodeq *obq,
     const struct lowdown_buf *buf)
 {
 	size_t	 i;
@@ -1321,7 +1321,7 @@ nroff_manpage_inline_check_names(struct nroff *st, struct bnodeq *obq,
  * and 0 if the paragraph should be processed as usual.
  */
 int
-nroff_manpage_paragraph(struct nroff *st, const struct lowdown_node *n,
+roff_manpage_paragraph(struct nroff *st, const struct lowdown_node *n,
     struct bnodeq *obq, const struct bnodeq *nbq)
 {
 	const struct lowdown_node	*prev, *next;
@@ -1336,14 +1336,14 @@ nroff_manpage_paragraph(struct nroff *st, const struct lowdown_node *n,
 	    prev->type == LOWDOWN_HEADER &&
 	    (next = TAILQ_NEXT(n, entries)) != NULL &&
 	    next->type == LOWDOWN_HEADER &&
-	    nroff_in_section(st, "NAME")) {
+	    roff_in_section(st, "NAME")) {
 		rc = rndr_manpage_name(st, n, obq, nbq);
 		return rc < 0 ? -1 : rc > 0 ? 1 : 0;
 	}
 
 	/* SEE ALSO manpage listings (can have multiple paragraphs). */
 
-	if (nroff_in_section(st, "SEE ALSO")) {
+	if (roff_in_section(st, "SEE ALSO")) {
 		rc = rndr_manpage_see_also(st, n, obq, nbq);
 		return rc < 0 ? -1 : rc > 0 ? 1 : 0;
 	}
@@ -1357,8 +1357,8 @@ nroff_manpage_paragraph(struct nroff *st, const struct lowdown_node *n,
 	    (st->headers_sec[0] == '1' ||
 	     st->headers_sec[0] == '6' ||
 	     st->headers_sec[0] == '8') &&
-	    nroff_in_section(st, "SYNOPSIS")) {
-		rc = nroff_manpage_synopsis_prog(st, n, obq, nbq);
+	    roff_in_section(st, "SYNOPSIS")) {
+		rc = roff_manpage_synopsis_prog(st, n, obq, nbq);
 		return rc < 0 ? -1 : rc > 0 ? 1 : 0;
 	}
 
@@ -1366,8 +1366,8 @@ nroff_manpage_paragraph(struct nroff *st, const struct lowdown_node *n,
 	    (st->headers_sec[0] == '2' ||
 	     st->headers_sec[0] == '3' ||
 	     st->headers_sec[0] == '9') &&
-	    nroff_in_section(st, "SYNOPSIS")) {
-		rc = nroff_manpage_synopsis_func(st, n, obq, nbq);
+	    roff_in_section(st, "SYNOPSIS")) {
+		rc = roff_manpage_synopsis_func(st, n, obq, nbq);
 		return rc < 0 ? -1 : rc > 0 ? 1 : 0;
 	}
 
@@ -1383,7 +1383,7 @@ nroff_manpage_paragraph(struct nroff *st, const struct lowdown_node *n,
  * the caller.
  */
 int
-nroff_manpage_inline(struct nroff *st, const struct lowdown_node *n,
+roff_manpage_inline(struct nroff *st, const struct lowdown_node *n,
     struct bnodeq *obq, const struct bnodeq *nbq)
 {
 	ssize_t	 		 rc = -1;
@@ -1395,9 +1395,9 @@ nroff_manpage_inline(struct nroff *st, const struct lowdown_node *n,
 
 	/* Ignore anything in a special section. */
 
-	if (nroff_in_section(st, "SEE ALSO") ||
-	    nroff_in_section(st, "NAME") ||
-	    nroff_in_section(st, "SYNOPSIS"))
+	if (roff_in_section(st, "SEE ALSO") ||
+	    roff_in_section(st, "NAME") ||
+	    roff_in_section(st, "SYNOPSIS"))
 		return 0;
 	
 	/* Ignore anything without a section. */
@@ -1411,14 +1411,14 @@ nroff_manpage_inline(struct nroff *st, const struct lowdown_node *n,
 		return -1;
 	}
 
-	if ((rc = nroff_manpage_inline_check_names(st, obq, buf)) != 0)
+	if ((rc = roff_manpage_inline_check_names(st, obq, buf)) != 0)
 		goto out;
 
 	if (st->headers_sec[0] == '1' ||
 	    st->headers_sec[0] == '6' ||
 	    st->headers_sec[0] == '8') {
 		TAILQ_INIT(&nq);
-		rc = nroff_manpage_inline_prog(st, &nq, 0, buf);
+		rc = roff_manpage_inline_prog(st, &nq, 0, buf);
 		if (rc > 0)
 			TAILQ_CONCAT(obq, &nq, entries);
 		bqueue_free(&nq);
@@ -1429,7 +1429,7 @@ nroff_manpage_inline(struct nroff *st, const struct lowdown_node *n,
 	    st->headers_sec[0] == '3' ||
 	    st->headers_sec[0] == '9') {
 		TAILQ_INIT(&nq);
-		rc = nroff_manpage_inline_func(st, &nq, 0, buf);
+		rc = roff_manpage_inline_func(st, &nq, 0, buf);
 		if (rc > 0)
 			TAILQ_CONCAT(obq, &nq, entries);
 		bqueue_free(&nq);

@@ -90,7 +90,7 @@ int		 lowdown_html_esc_href(struct lowdown_buf *,
 			const char *, size_t);
 int		 lowdown_latex_esc(struct lowdown_buf *,
 			const char *, size_t);
-int		 lowdown_nroff_esc(struct lowdown_buf *,
+int		 lowdown_roff_esc(struct lowdown_buf *,
 			const char *, size_t, int, int);
 
 char		*rcsdate2str(const char *);

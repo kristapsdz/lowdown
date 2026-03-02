@@ -30,10 +30,10 @@ OBJS		 = autolink.o \
 		   latex_escape.o \
 		   library.o \
 		   libdiff.o \
-		   nroff.o \
-		   nroff_escape.o \
-		   nroff_manpage.o \
 		   odt.o \
+		   roff.o \
+		   roff_escape.o \
+		   roff_manpage.o \
 		   smartypants.o \
 		   template.o \
 		   term.o \
@@ -76,9 +76,9 @@ MAN3S = 	   man/lowdown.3.html \
 		   man/lowdown_latex_rndr.3.html \
 		   man/lowdown_metaq_free.3.html \
 		   man/lowdown_node_free.3.html \
-		   man/lowdown_nroff_free.3.html \
-		   man/lowdown_nroff_new.3.html \
-		   man/lowdown_nroff_rndr.3.html \
+		   man/lowdown_roff_free.3.html \
+		   man/lowdown_roff_new.3.html \
+		   man/lowdown_roff_rndr.3.html \
 		   man/lowdown_odt_free.3.html \
 		   man/lowdown_odt_new.3.html \
 		   man/lowdown_odt_rndr.3.html \
@@ -101,10 +101,10 @@ SOURCES		 = autolink.c \
 		   libdiff.c \
 		   library.c \
 		   main.c \
-		   nroff.c \
-		   nroff_escape.c \
-		   nroff_manpage.c \
 		   odt.c \
+		   roff.c \
+		   roff_escape.c \
+		   roff_manpage.c \
 		   smartypants.c \
 		   template.c \
 		   term.c \
@@ -114,7 +114,7 @@ SOURCES		 = autolink.c \
 HEADERS 	 = extern.h \
 		   libdiff.h \
 		   lowdown.h \
-		   nroff.h \
+		   roff.h \
 		   term.h
 PDFS		 = diff.pdf \
 		   diff.diff.pdf \
@@ -430,7 +430,7 @@ $(OBJS): extern.h lowdown.h
 
 term.o: term.h
 
-nroff.o nroff_manpage.o: nroff.h
+roff.o roff_manpage.o: roff.h
 
 main.o: lowdown.h
 

@@ -293,6 +293,24 @@ as
 and
 .Fl t Ns Ar mdoc
 only support endnotes.
+.It Fl -roff-manpage
+Format output as a manpage.
+This re-formats paragraphs under the
+.Li NAME ,
+.Li SYNOPSIS ,
+and
+.Li SEE ALSO
+sections in the canonical form used by manpages.
+The way the document is formatted depends upon the section metadata: 1,
+6, and 8 for program-style; 2, 3, and 9 for function-style.
+Program style re-formats flags and arguments, while function style
+re-formats function names, variables, arguments.
+Any content in font spans (e.g., emphasis or double emphasis) in other
+sections is stripped of the font and re-formatted in the same way.
+Only applies to
+.Fl t Ns Ar man
+and
+.Fl t Ns Ar mdoc .
 .It Fl -roff-no-numbered
 Don't output numbered headings
 .Po

@@ -72,10 +72,10 @@ lowdown_render(const struct lowdown_opts *opts,
 	case LOWDOWN_MDOC:
 	case LOWDOWN_MS:
 	case LOWDOWN_NROFF:
-		if ((rndr = lowdown_nroff_new(opts)) == NULL)
+		if ((rndr = lowdown_roff_new(opts)) == NULL)
 			return 0;
-		c = lowdown_nroff_rndr(ob, rndr, n);
-		lowdown_nroff_free(rndr);
+		c = lowdown_roff_rndr(ob, rndr, n);
+		lowdown_roff_free(rndr);
 		break;
 	case LOWDOWN_FODT:
 		if ((rndr = lowdown_odt_new(opts)) == NULL)

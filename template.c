@@ -715,7 +715,7 @@ op_eval_function_escape_roff(struct op_out *out,
 
 	TAILQ_FOREACH(res, input, entries) {
 		hbuf_truncate(buf);
-		if (!lowdown_nroff_esc(buf, res->res, strlen(res->res),
+		if (!lowdown_roff_esc(buf, res->res, strlen(res->res),
 		    oneline, 0))
 			goto err;
 		if ((nres = calloc(1, sizeof(struct op_res))) == NULL)

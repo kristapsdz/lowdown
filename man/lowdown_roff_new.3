@@ -13,10 +13,10 @@
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
 .Dd $Mdocdate$
-.Dt LOWDOWN_NROFF_NEW 3
+.Dt LOWDOWN_ROFF_NEW 3
 .Os
 .Sh NAME
-.Nm lowdown_nroff_new
+.Nm lowdown_roff_new
 .Nd allocate a roff renderer for lowdown documents
 .Sh LIBRARY
 .Lb liblowdown
@@ -25,7 +25,7 @@
 .In stdio.h
 .In lowdown.h
 .Ft void *
-.Fo lowdown_nroff_new
+.Fo lowdown_roff_new
 .Fa "const struct lowdown_opts *opts"
 .Fc
 .Sh DESCRIPTION
@@ -34,7 +34,7 @@ Allocates a roff renderer using
 and
 .Fa opts->type ,
 or zero and
-.Dv LOWDODN_NROFF ,
+.Dv LOWDODN_MS ,
 respectively, if
 .Fa opts
 is
@@ -42,9 +42,9 @@ is
 These are documented in
 .Xr lowdown 3 .
 The returned pointer may be used with multiple invocations of
-.Xr lowdown_nroff_rndr 3
+.Xr lowdown_roff_rndr 3
 and must be freed with
-.Xr lowdown_nroff_free 3 .
+.Xr lowdown_roff_free 3 .
 .Pp
 The bits recognised in
 .Fa opts->oflags
@@ -65,9 +65,9 @@ are
 .Dv LOWDOWN_MAN ,
 .Dv LOWDOWN_MDOC ,
 and
-.Dv LOWDODN_NROFF :
+.Dv LOWDODN_MS :
 anything else triggers
-.Dv LOWDODN_NROFF .
+.Dv LOWDODN_MS .
 .Pp
 If
 .Dv LOWDOWN_NROFF_GROFF
@@ -80,7 +80,7 @@ package as well as the original
 are used in output.
 These are supported by both groff and mandoc.
 If in
-.Dv LOWDODN_NROFF
+.Dv LOWDODN_MS
 mode, GNU extensions to
 .Ar ms
 are used along with
@@ -108,12 +108,15 @@ and
 Override the defaults with variables in the
 .Vt "struct lowdown_opts_nroff"
 structure.
+.Pp
+This function used to be called
+.Fn lowdown_nroff_new .
 .Sh RETURN VALUES
 Returns a pointer to the renderer or
 .Dv NULL
 on memory failure.
 The returned pointer must be freed with
-.Xr lowdown_nroff_free 3 .
+.Xr lowdown_roff_free 3 .
 .Sh EXAMPLES
 The following parses
 .Va b
@@ -134,22 +137,22 @@ if ((n = lowdown_doc_parse(doc, NULL, b, bsz, NULL)) == NULL)
 	err(1, NULL);
 if ((out = lowdown_buf_new(256)) == NULL)
 	err(1, NULL);
-if ((rndr = lowdown_nroff_new(NULL)) == NULL)
+if ((rndr = lowdown_roff_new(NULL)) == NULL)
 	err(1, NULL);
-if (!lowdown_nroff_rndr(out, rndr, n))
+if (!lowdown_roff_rndr(out, rndr, n))
 	err(1, NULL);
 
 fwrite(out->data, 1, out->size, stdout);
 
-lowdown_nroff_free(rndr);
+lowdown_roff_free(rndr);
 lowdown_buf_free(out);
 lowdown_node_free(n);
 lowdown_doc_free(doc);
 .Ed
 .Sh SEE ALSO
 .Xr lowdown 3 ,
-.Xr lowdown_nroff_free 3 ,
-.Xr lowdown_nroff_rndr 3 ,
+.Xr lowdown_roff_free 3 ,
+.Xr lowdown_roff_rndr 3 ,
 .Pp
 This uses both the original troff
 .Ar man

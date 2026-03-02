@@ -42,7 +42,7 @@
  * Return zero on failure, non-zero on success.
  */
 int
-lowdown_nroff_esc(struct lowdown_buf *ob, const char *data, size_t size,
+lowdown_roff_esc(struct lowdown_buf *ob, const char *data, size_t size,
     int oneline, int literal)
 {
 	size_t	 	i = 0;

@@ -13,10 +13,10 @@
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
 .Dd $Mdocdate$
-.Dt LOWDOWN_NROFF_FREE 3
+.Dt LOWDOWN_ROFF_FREE 3
 .Os
 .Sh NAME
-.Nm lowdown_nroff_free
+.Nm lowdown_roff_free
 .Nd free a Markdown roff renderer
 .Sh LIBRARY
 .Lb liblowdown
@@ -25,17 +25,20 @@
 .In stdio.h
 .In lowdown.h
 .Ft void
-.Fo lowdown_nroff_free
+.Fo lowdown_roff_free
 .Fa "void *arg"
 .Fc
 .Sh DESCRIPTION
 Frees the roff renderer created with
-.Xr lowdown_nroff_new 3 .
+.Xr lowdown_roff_new 3 .
 If
 .Va arg
 is
 .Dv NULL ,
 the function does nothing.
+.Pp
+This function used to be called
+.Fn lowdown_nroff_free .
 .Sh EXAMPLES
 The following parses
 .Va b
@@ -56,21 +59,21 @@ if ((n = lowdown_doc_parse(doc, NULL, b, bsz, NULL)) == NULL)
 	err(1, NULL);
 if ((out = lowdown_buf_new(256)) == NULL)
 	err(1, NULL);
-if ((rndr = lowdown_nroff_new(NULL)) == NULL)
+if ((rndr = lowdown_roff_new(NULL)) == NULL)
 	err(1, NULL);
-if (!lowdown_nroff_rndr(out, rndr, n))
+if (!lowdown_roff_rndr(out, rndr, n))
 	err(1, NULL);
 
 fwrite(out->data, 1, out->size, stdout);
 
-lowdown_nroff_free(rndr);
+lowdown_roff_free(rndr);
 lowdown_buf_free(out);
 lowdown_node_free(n);
 lowdown_doc_free(doc);
 .Ed
 .Sh SEE ALSO
 .Xr lowdown 3 ,
-.Xr lowdown_nroff_new 3
+.Xr lowdown_roff_new 3
 .Pp
 This uses both the original troff
 .Ar man

@@ -13,10 +13,10 @@
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
 .Dd $Mdocdate$
-.Dt LOWDOWN_NROFF_RNDR 3
+.Dt LOWDOWN_ROFF_RNDR 3
 .Os
 .Sh NAME
-.Nm lowdown_nroff_rndr
+.Nm lowdown_roff_rndr
 .Nd render Markdown into roff
 .Sh LIBRARY
 .Lb liblowdown
@@ -25,7 +25,7 @@
 .In stdio.h
 .In lowdown.h
 .Ft int
-.Fo lowdown_nroff_rndr
+.Fo lowdown_roff_rndr
 .Fa "struct lowdown_buf *out"
 .Fa "void *arg"
 .Fa "const struct lowdown_node *n"
@@ -40,7 +40,7 @@ or
 using the roff renderer
 .Fa arg
 as returned by
-.Xr lowdown_nroff_new 3 .
+.Xr lowdown_roff_new 3 .
 The output is written into
 .Fa out ,
 which must be initialised and freed by the caller.
@@ -51,6 +51,9 @@ The output consists of roff output using the
 or
 .Ar man
 macro packages.
+.Pp
+This function used to be called
+.Fn lowdown_nroff_rndr .
 .Sh RETURN VALUES
 Returns zero on failure to allocate memory, non-zero on success.
 .Sh EXAMPLES
@@ -73,22 +76,22 @@ if ((n = lowdown_doc_parse(doc, NULL, b, bsz, NULL)) == NULL)
 	err(1, NULL);
 if ((out = lowdown_buf_new(256)) == NULL)
 	err(1, NULL);
-if ((rndr = lowdown_nroff_new(NULL)) == NULL)
+if ((rndr = lowdown_roff_new(NULL)) == NULL)
 	err(1, NULL);
-if (!lowdown_nroff_rndr(out, rndr, n))
+if (!lowdown_roff_rndr(out, rndr, n))
 	err(1, NULL);
 
 fwrite(out->data, 1, out->size, stdout);
 
-lowdown_nroff_free(rndr);
+lowdown_roff_free(rndr);
 lowdown_buf_free(out);
 lowdown_node_free(n);
 lowdown_doc_free(doc);
 .Ed
 .Sh SEE ALSO
 .Xr lowdown 3 ,
-.Xr lowdown_nroff_free 3 ,
-.Xr lowdown_nroff_new 3
+.Xr lowdown_roff_free 3 ,
+.Xr lowdown_roff_new 3
 .Pp
 This uses both the original troff
 .Ar man

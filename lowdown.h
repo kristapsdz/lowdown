@@ -450,9 +450,17 @@ void	*lowdown_term_new(const struct lowdown_opts *);
 int 	 lowdown_term_rndr(struct lowdown_buf *, void *, 
 		const struct lowdown_node *);
 
-void	 lowdown_nroff_free(void *);
-void	*lowdown_nroff_new(const struct lowdown_opts *);
+void	 lowdown_nroff_free(void *)
+		__attribute__((deprecated("Use lowdown_roff_free() instead")));
+void	*lowdown_nroff_new(const struct lowdown_opts *)
+		__attribute__((deprecated("Use lowdown_roff_new() instead")));
 int 	 lowdown_nroff_rndr(struct lowdown_buf *, void *, 
+		const struct lowdown_node *)
+		__attribute__((deprecated("Use lowdown_roff_rndr() instead")));
+
+void	 lowdown_roff_free(void *);
+void	*lowdown_roff_new(const struct lowdown_opts *);
+int 	 lowdown_roff_rndr(struct lowdown_buf *, void *, 
 		const struct lowdown_node *);
 
 int 	 lowdown_tree_rndr(struct lowdown_buf *, 
