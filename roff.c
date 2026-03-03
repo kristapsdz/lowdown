@@ -422,6 +422,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 				 eomacro; /* end of macro=1, 2=nosp */
 	char			 eolnchar; /* char at eoln */
 	size_t			 offset = 0; /* offset in "buf" */
+	size_t			 sz; /* temporary size */
 
 	TAILQ_FOREACH(bn, bq, entries) {
 		if (linestrip > 1 &&
@@ -562,10 +563,34 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 			if (!lowdown_roff_esc(ob, bn->buf,
 			    strlen(bn->buf), 0, 1))
 				return 0;
-		} else if (bn->buf != NULL)
-			if (!lowdown_roff_esc(ob, &bn->buf[offset],
-			    strlen(bn->buf) - offset, 0, 0))
-				return 0;
+		} else if (bn->buf != NULL) {
+			/*
+			 * For safe data in mdoc(7), see if the last
+			 * character is opening punctuation.  Use
+			 * mdoc(7)'s "Delimiters" as a guide.
+			 * XXX: multiple delimiters...?
+			 */
+			sz = strlen(bn->buf);
+			if (sz - 1 > offset &&
+			    st->type == LOWDOWN_MDOC &&
+		  	    (tmpbn = TAILQ_NEXT(bn, entries)) != NULL &&
+			     tmpbn->scope == BSCOPE_SEMI &&
+			     (bn->buf[sz - 1] == '(' ||
+			      bn->buf[sz - 1] == '[')) {
+				if (!lowdown_roff_esc(ob,
+				    &bn->buf[offset], sz - offset - 1,
+				    0, 0))
+					return 0;
+				if (!hbuf_printf(ob, "\n.No %c Ns",
+				    bn->buf[sz - 1]))
+					return 0;
+			} else {
+				if (!lowdown_roff_esc(ob,
+				    &bn->buf[offset], sz - offset,
+				    0, 0))
+					return 0;
+			}
+		}
 
 		/*
 		 * Special handling of the semi-blocks, specifically
@@ -648,8 +673,9 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 
 		/*
 		 * Semiblocks for mdoc(7) are within context, so examine
-		 * if the next node is a span with beginning
-		 * puncatuation.
+		 * if the next node is a span with closing puncatuation.
+		 * Use mdoc(7)'s "Delimiters" section for which to use.
+		 * XXX: multiple delimiters...?
 		 */
 
 		offset = 0;
@@ -660,11 +686,13 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		    (tmpbn = TAILQ_NEXT(bn, entries)) != NULL &&
 		    tmpbn->scope == BSCOPE_SPAN &&
 		    tmpbn->buf != NULL &&
-		    (tmpbn->buf[0] == ',' ||
+		    (tmpbn->buf[0] == '.' ||
+		     tmpbn->buf[0] == ',' ||
 		     tmpbn->buf[0] == ';' ||
 		     tmpbn->buf[0] == ')' ||
-		     tmpbn->buf[0] == ':' ||
-		     tmpbn->buf[0] == '.') &&
+		     tmpbn->buf[0] == ']' ||
+		     tmpbn->buf[0] == '?' ||
+		     tmpbn->buf[0] == '!') &&
 		    (tmpbn->buf[1] == '\0' ||
 		     isspace((unsigned char)tmpbn->buf[1]))) {
 			offset = 1;
