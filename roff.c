@@ -842,8 +842,8 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 	 * in the subsequent body.
 	 */
 
-	classic = !(st->flags & LOWDOWN_NROFF_GROFF);
-	if (st->type == LOWDOWN_MAN && (st->flags & LOWDOWN_NROFF_GROFF))
+	classic = !(st->flags & LOWDOWN_ROFF_GROFF);
+	if (st->type == LOWDOWN_MAN && (st->flags & LOWDOWN_ROFF_GROFF))
 		for ( ; n != NULL && !classic; n = n->parent)
 			if (n->type == LOWDOWN_HEADER ||
 			    n->type == LOWDOWN_DEFINITION_TITLE)
@@ -1197,7 +1197,7 @@ rndr_font(struct nroff *st, struct bnodeq *obq,
 	int			 rc;
 
 	if ((st->type != LOWDOWN_MDOC && st->type != LOWDOWN_MAN) ||
-	    !(st->flags & LOWDOWN_NROFF_MANPAGE)) {
+	    !(st->flags & LOWDOWN_ROFF_MANPAGE)) {
 		TAILQ_CONCAT(obq, bq, entries);
 		return 1;
 	}
@@ -1308,14 +1308,14 @@ rndr_header(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 	 * If we're numbered ms(7), use NH.
 	 */
 
-	bn = (st->flags & LOWDOWN_NROFF_NUMBERED) ?
+	bn = (st->flags & LOWDOWN_ROFF_NUMBERED) ?
 		bqueue_block(obq, ".NH") :
 		bqueue_block(obq, ".SH");
 	if (bn == NULL)
 		goto out;
 
-	if ((st->flags & LOWDOWN_NROFF_NUMBERED) ||
-	    (st->flags & LOWDOWN_NROFF_GROFF)) 
+	if ((st->flags & LOWDOWN_ROFF_NUMBERED) ||
+	    (st->flags & LOWDOWN_ROFF_GROFF)) 
 		if (asprintf(&bn->nargs, "%zd", level) == -1) {
 			bn->nargs = NULL;
 			goto out;
@@ -1329,7 +1329,7 @@ rndr_header(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 	 * linking.
 	 */
 
-	if (st->flags & LOWDOWN_NROFF_GROFF) {
+	if (st->flags & LOWDOWN_ROFF_GROFF) {
 		if ((buf = hbuf_new(32)) == NULL)
 			goto out;
 		if (!hbuf_extract_text(buf, n))
@@ -1529,7 +1529,7 @@ rndr_blockcode(struct nroff *st, struct bnodeq *obq,
 		if (bqueue_block(obq, ".LP") == NULL)
 			return 0;
 		if (st->type == LOWDOWN_MAN &&
-		    (st->flags & LOWDOWN_NROFF_GROFF)) {
+		    (st->flags & LOWDOWN_ROFF_GROFF)) {
 			if (bqueue_block(obq, ".EX") == NULL)
 				return 0;
 		} else {
@@ -1557,7 +1557,7 @@ rndr_blockcode(struct nroff *st, struct bnodeq *obq,
 			return 0;
 	} else {
 		if (st->type == LOWDOWN_MAN &&
-		    (st->flags & LOWDOWN_NROFF_GROFF)) {
+		    (st->flags & LOWDOWN_ROFF_GROFF)) {
 			if (bqueue_block(obq, ".EE") == NULL)
 				return 0;
 		} else {
@@ -1747,7 +1747,7 @@ rndr_table(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq)
 	const char	*macro;
 
 	macro = st->type != LOWDOWN_MS ||
-		!(st->flags & LOWDOWN_NROFF_GROFF) ? ".TS" : ".TS H";
+		!(st->flags & LOWDOWN_ROFF_GROFF) ? ".TS" : ".TS H";
 	if (bqueue_block(obq, macro) == NULL)
 		return 0;
 	if (bqueue_block(obq, "tab(|) expand allbox;") == NULL)
@@ -1827,7 +1827,7 @@ rndr_table_header(struct nroff *st, struct bnodeq *obq,
 	TAILQ_CONCAT(obq, bq, entries);
 
 	if (st->type == LOWDOWN_MS &&
-	    (st->flags & LOWDOWN_NROFF_GROFF) &&
+	    (st->flags & LOWDOWN_ROFF_GROFF) &&
 	    bqueue_block(obq, ".TH") == NULL)
 		goto out;
 
@@ -1955,7 +1955,8 @@ rndr_footnotes(struct nroff *st, struct bnodeq *obq, int fin)
 
 	/* Non-final and -tms with endnotes specified. */
 
-	if (!fin && st->type == LOWDOWN_MS && (st->flags & LOWDOWN_NROFF_ENDNOTES))
+	if (!fin && st->type == LOWDOWN_MS &&
+	    (st->flags & LOWDOWN_ROFF_ENDNOTES))
 		return 1;
 
 	st->footdepth++;
@@ -2057,7 +2058,7 @@ rndr_entity(const struct nroff *st,
 			snprintf(buf, sizeof(buf), "\\[%s]", ent);
 		return bqueue_span(obq, buf) != NULL;
 	} else if (iso > 0 && iso > 126) {
-		if (st->flags & LOWDOWN_NROFF_GROFF)
+		if (st->flags & LOWDOWN_ROFF_GROFF)
 			snprintf(buf, sizeof(buf), "\\[u%.4llX]", 
 				(unsigned long long)iso);
 		else
@@ -2092,7 +2093,7 @@ rndr_font_pre(struct nroff *st, const struct lowdown_node *n,
 	 */
 
 	if ((st->type == LOWDOWN_MDOC || st->type == LOWDOWN_MAN) &&
-	    (st->flags & LOWDOWN_NROFF_MANPAGE))
+	    (st->flags & LOWDOWN_ROFF_MANPAGE))
 		switch (n->type) {
 		case LOWDOWN_EMPHASIS:
 		case LOWDOWN_HIGHLIGHT:
@@ -2136,7 +2137,7 @@ rndr_font_post(struct nroff *st, const struct lowdown_node *n,
 	 */
 
 	if ((st->type == LOWDOWN_MDOC || st->type == LOWDOWN_MAN) &&
-	    (st->flags & LOWDOWN_NROFF_MANPAGE))
+	    (st->flags & LOWDOWN_ROFF_MANPAGE))
 		switch (n->type) {
 		case LOWDOWN_EMPHASIS:
 		case LOWDOWN_HIGHLIGHT:

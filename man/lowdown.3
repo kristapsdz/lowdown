@@ -434,7 +434,7 @@ and
 .Dv LOWDOWN_MS :
 .Pp
 .Bl -tag -width Ds -compact
-.It Dv LOWDOWN_NROFF_GROFF
+.It Dv LOWDOWN_ROFF_GROFF
 Use GNU extensions (i.e., for
 .Xr groff 1 )
 when rendering output.
@@ -453,13 +453,31 @@ Applies to the
 and
 .Dv LOWDOWN_MS
 output types.
-.It Dv LOWDOWN_NROFF_NUMBERED
+.It Dv LOWDOWN_ROFF_NUMBERED
 Use numbered sections if
-.Dv LOWDOWON_NROFF_GROFF
+.Dv LOWDOWON_ROFF_GROFF
 is not specified.
 Only applies to the
 .Dv LOWDOWN_MS
 output type.
+.It Dv LOWDOWN_ROFF_MANPAGE
+For
+.Dv LOWDOWN_MAN
+and
+.Dv LOWDOWN_MDOC ,
+re-format the
+.Li NAME ,
+.Li SYNOPSIS
+and
+.Li SEE ALSO
+sections to conform to the proper macros for those sections.
+Also interpret font spans in other sections to be manpage-specific, such
+as command flags and arguments (when in a command manual section) or
+variables and functions (a function manual section).
+.It Dv LOWDOWN_ROFF_ENDNOTES
+For
+.Dv LOWDOWN_MS ,
+use endnotes instead of footnotes.
 .El
 .Pp
 For

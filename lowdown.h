@@ -359,15 +359,15 @@ struct	lowdown_opts {
 #define LOWDOWN_HTML_HARD_WRAP	  0x04 /* paragraph line breaks */
 /* Missing                        0x08 */
 #define LOWDOWN_NORELLINK	  0x10 /* don't show relative links */
-#define LOWDOWN_NROFF_GROFF	  0x20 /* use groff extensions */
+#define LOWDOWN_ROFF_GROFF	  0x20 /* use groff extensions */
 #define	LOWDOWN_SMARTY	  	  0x40 /* smart typography */
-#define LOWDOWN_NROFF_NUMBERED	  0x80 /* numbered section headers */
+#define LOWDOWN_ROFF_NUMBERED	  0x80 /* numbered section headers */
 #define LOWDOWN_HTML_HEAD_IDS	  0x100 /* <hN id="the_name"> */
 #define LOWDOWN_STANDALONE	  0x200 /* emit complete document */
 #define LOWDOWN_SHORTLINK	  0x400 /* shorten URLs */
 #define	LOWDOWN_HTML_OWASP	  0x800 /* use OWASP escaping */
 #define	LOWDOWN_HTML_NUM_ENT	  0x1000 /* use &#nn; if possible */
-#define LOWDOWN_NROFF_MANPAGE	  0x2000 /* enable manpage parsing */
+#define LOWDOWN_ROFF_MANPAGE	  0x2000 /* enable manpage parsing */
 #define LOWDOWN_LATEX_NUMBERED	  0x4000 /* numbered sections */
 #define	LOWDOWN_GEMINI_LINK_END	  0x8000 /* links at end */
 #define	LOWDOWN_GEMINI_LINK_IN	  0x10000 /* links inline */
@@ -384,13 +384,19 @@ struct	lowdown_opts {
 #define LOWDOWN_HTML_CALLOUT_GFM  0x8000000 /* GFM callouts */
 #define LOWDOWN_HTML_CALLOUT_MDN  0x10000000 /* MDN callouts */
 #define LOWDOWN_TERM_ALL_META	  0x20000000 /* show all metadata */
-#define LOWDOWN_NROFF_ENDNOTES	  0x40000000 /* endnotes for -tms */
+#define LOWDOWN_ROFF_ENDNOTES	  0x40000000 /* endnotes for -tms */
+/* Compatibility with old names... */
+#define LOWDOWN_NROFF_GROFF	  LOWDOWN_ROFF_GROFF
+#define LOWDOWN_NROFF_NUMBERED	  LOWDOWN_ROFF_NUMBERED
+#define LOWDOWN_NROFF_MANPAGE	  LOWDOWN_ROFF_MANPAGE
+#define LOWDOWN_NROFF_ENDNOTES	  LOWDOWN_ROFF_ENDNOTES
 	char			**meta;
 	size_t			  metasz;
 	char			**metaovr;
 	size_t			  metaovrsz;
 	const char		 *templ;
 };
+
 
 struct lowdown_doc;
 

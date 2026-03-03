@@ -316,15 +316,15 @@ main(int argc, char *argv[])
 		{ "latex-no-numbered",	no_argument,	&rfl, LOWDOWN_LATEX_NUMBERED },
 		{ "latex-no-skiphtml",	no_argument,	&rfl, LOWDOWN_SKIP_HTML },
 
-		{ "roff-manpage",	no_argument,	&afl, LOWDOWN_NROFF_MANPAGE },
-		{ "roff-no-manpage",	no_argument,	&rfl, LOWDOWN_NROFF_MANPAGE },
-		{ "roff-traditional",	no_argument,	&rfl, LOWDOWN_NROFF_GROFF },
+		{ "roff-manpage",	no_argument,	&afl, LOWDOWN_ROFF_MANPAGE },
+		{ "roff-no-manpage",	no_argument,	&rfl, LOWDOWN_ROFF_MANPAGE },
+		{ "roff-traditional",	no_argument,	&rfl, LOWDOWN_ROFF_GROFF },
 		{ "roff-no-rellinks",	no_argument, 	&afl, LOWDOWN_NORELLINK },
 		{ "roff-no-links",	no_argument, 	&afl, LOWDOWN_NOLINK },
-		{ "roff-no-numbered",	no_argument,	&rfl, LOWDOWN_NROFF_NUMBERED },
+		{ "roff-no-numbered",	no_argument,	&rfl, LOWDOWN_ROFF_NUMBERED },
 		{ "roff-short-links",	no_argument, 	&afl, LOWDOWN_SHORTLINK },
 		{ "roff-no-skiphtml",	no_argument,	&rfl, LOWDOWN_SKIP_HTML },
-		{ "roff-endnotes",	no_argument,	&afl, LOWDOWN_NROFF_ENDNOTES },
+		{ "roff-endnotes",	no_argument,	&afl, LOWDOWN_ROFF_ENDNOTES },
 		{ "roff-code-font",	required_argument, NULL, 7 },
 
 		{ "odt-no-skiphtml",	no_argument,	&rfl, LOWDOWN_SKIP_HTML },
@@ -381,20 +381,20 @@ main(int argc, char *argv[])
 		 * --nroff-xyz to --roff-xyz in 1.4.0.
 		 */
 
-		{ "nroff-traditional",	no_argument,	&rfl, LOWDOWN_NROFF_GROFF },
-		{ "nroff-no-traditional",no_argument,	&afl, LOWDOWN_NROFF_GROFF },
-		{ "nroff-no-groff",	no_argument,	&rfl, LOWDOWN_NROFF_GROFF },
-		{ "nroff-groff",	no_argument,	&afl, LOWDOWN_NROFF_GROFF },
+		{ "nroff-traditional",	no_argument,	&rfl, LOWDOWN_ROFF_GROFF },
+		{ "nroff-no-traditional",no_argument,	&afl, LOWDOWN_ROFF_GROFF },
+		{ "nroff-no-groff",	no_argument,	&rfl, LOWDOWN_ROFF_GROFF },
+		{ "nroff-groff",	no_argument,	&afl, LOWDOWN_ROFF_GROFF },
 		{ "nroff-nolinks",	no_argument, 	&afl, LOWDOWN_NOLINK },
 		{ "nroff-no-nolinks",	no_argument, 	&rfl, LOWDOWN_NOLINK },
-		{ "nroff-numbered",	no_argument,	&afl, LOWDOWN_NROFF_NUMBERED },
-		{ "nroff-no-numbered",	no_argument,	&rfl, LOWDOWN_NROFF_NUMBERED },
+		{ "nroff-numbered",	no_argument,	&afl, LOWDOWN_ROFF_NUMBERED },
+		{ "nroff-no-numbered",	no_argument,	&rfl, LOWDOWN_ROFF_NUMBERED },
 		{ "nroff-shortlinks",	no_argument, 	&afl, LOWDOWN_SHORTLINK },
 		{ "nroff-no-shortlinks",no_argument, 	&rfl, LOWDOWN_SHORTLINK },
 		{ "nroff-skiphtml",	no_argument,	&afl, LOWDOWN_SKIP_HTML },
 		{ "nroff-no-skiphtml",	no_argument,	&rfl, LOWDOWN_SKIP_HTML },
-		{ "nroff-endnotes",	no_argument,	&afl, LOWDOWN_NROFF_ENDNOTES },
-		{ "nroff-no-endnotes",	no_argument,	&rfl, LOWDOWN_NROFF_ENDNOTES },
+		{ "nroff-endnotes",	no_argument,	&afl, LOWDOWN_ROFF_ENDNOTES },
+		{ "nroff-no-endnotes",	no_argument,	&rfl, LOWDOWN_ROFF_ENDNOTES },
 		{ "nroff-code-font",	required_argument, NULL, 7 },
 
 		/*
@@ -491,8 +491,8 @@ main(int argc, char *argv[])
 		LOWDOWN_HTML_NUM_ENT |
 		LOWDOWN_HTML_OWASP |
 		LOWDOWN_SKIP_HTML |
-		LOWDOWN_NROFF_GROFF |
-		LOWDOWN_NROFF_NUMBERED |
+		LOWDOWN_ROFF_GROFF |
+		LOWDOWN_ROFF_NUMBERED |
 		LOWDOWN_LATEX_NUMBERED |
 		LOWDOWN_SMARTY;
 

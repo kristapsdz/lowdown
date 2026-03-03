@@ -49,13 +49,14 @@ and must be freed with
 The bits recognised in
 .Fa opts->oflags
 are
-.Dv LOWDOWN_NROFF_ENDNOTES ,
-.Dv LOWDOWN_NROFF_GROFF ,
+.Dv LOWDOWN_ROFF_ENDNOTES ,
+.Dv LOWDOWN_ROFF_GROFF ,
 .Dv LOWDOWN_NOLINK ,
 .Dv LOWDOWN_NORELLINK ,
-.Dv LOWDOWN_NROFF_NUMBERED ,
+.Dv LOWDOWN_ROFF_NUMBERED ,
 .Dv LOWDOWN_SHORTLINK ,
 .Dv LOWDOWN_SKIP_HTML ,
+.Dv LOWDOWN_ROFF_MANPAGE ,
 and
 .Dv LOWDOWN_STANDALONE .
 .Pp
@@ -70,7 +71,7 @@ anything else triggers
 .Dv LOWDODN_MS .
 .Pp
 If
-.Dv LOWDOWN_NROFF_GROFF
+.Dv LOWDOWN_ROFF_GROFF
 is set in
 .Dv LOWDOWN_MAN
 mode, macros from the
@@ -87,7 +88,7 @@ are used along with
 .Ar mspdf .
 These are only supported by groff.
 .Pp
-.Dv LOWDOWN_NROFF_ENDNOTES
+.Dv LOWDOWN_ROFF_ENDNOTES
 delays printing of footnotes until the end of a document.
 Does not affect
 .Dv LOWDOWN_MAN
