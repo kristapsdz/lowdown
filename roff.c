@@ -1914,22 +1914,20 @@ static int
 rndr_footnote_def(struct nroff *st, struct bnodeq *obq,
     struct bnodeq *bq, size_t num)
 {
-	struct bnode	*bn;
-
 	/* 
 	 * Use groff_ms(7)-style footnotes.
 	 * We know that the definitions are delivered in the same order
 	 * as the footnotes are made, so we can use the automatic
 	 * ordering facilities.
+	 * If not in traditional mode, also put a pdfhref anchor.
 	 */
 
 	if (st->type == LOWDOWN_MS) {
 		if (bqueue_block(obq, ".FS") == NULL)
 			return 0;
-		bn = bqueue_block(obq, ".pdfhref M");
-		if (bn == NULL)
-			return 0;
-		if (asprintf(&bn->args, "footnote-%zu", num) == -1)
+		if ((st->flags & LOWDOWN_ROFF_GROFF) &&
+		    (bqueue_blocknv(obq, ".pdfhref M", "footnote-%zu",
+		     num) == NULL))
 			return 0;
 		bqueue_strip_paras(bq);
 		TAILQ_CONCAT(obq, bq, entries);
@@ -1947,13 +1945,9 @@ rndr_footnote_def(struct nroff *st, struct bnodeq *obq,
 	if (st->type == LOWDOWN_MDOC && 
 	    bqueue_block(obq, ".Pp") == NULL)
 		return 0;
-	if ((bn = bqueue_span(obq, NULL)) == NULL)
+	if (bqueue_spanv(obq, "\\0\\fI\\u\\s-3%zu\\s+3\\d\\fP\\0",
+	    num) == NULL)
 		return 0;
-	if (asprintf(&bn->nbuf, 
-	    "\\0\\fI\\u\\s-3%zu\\s+3\\d\\fP\\0", num) == -1) {
-		bn->nbuf = NULL;
-		return 0;
-	}
 	bqueue_strip_paras(bq);
 	TAILQ_CONCAT(obq, bq, entries);
 	return 1;
@@ -2016,17 +2010,18 @@ rndr_footnote_ref(struct nroff *st, struct bnodeq *obq,
 	size_t		 num = st->footsz + 1;
 
 	/* 
-	 * Use groff_ms(7)-style automatic footnoting, else just put a
-	 * reference number in small superscripts.
+	 * If not groff_ms(7), put a reference number in small
+	 * superscripts.  Otherwise, if in traidtional mode, simply
+	 * output the automatic numbering.  In full mode, also render
+	 * the numbering in a reference.
 	 */
 
 	if (st->type != LOWDOWN_MS) {
-		if ((bn = bqueue_span(obq, NULL)) == NULL)
+		if (bqueue_spanv(obq, "\\u\\s-3%zu\\s+3\\d",
+		    num) == NULL)
 			return 0;
-		if (asprintf(&bn->nbuf, "\\u\\s-3%zu\\s+3\\d",
-		    num) == -1)
-			bn->nbuf = NULL;
-		if (bn->nbuf == NULL)
+	} else if (!(st->flags & LOWDOWN_ROFF_GROFF)) {
+		if (bqueue_span(obq, "\\**") == NULL)
 			return 0;
 	} else {
 		bn = bqueue_node(obq, BSCOPE_SEMI, ".pdfhref L");

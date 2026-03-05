@@ -84,17 +84,17 @@ for the Gemini
 .Dq gemtext
 format,
 .Ar ms
-for roff output using the classic (i.e., no-extension)
-.Fl ms
+for roff output using the
+.Fl mspdf
 package and needing table support,
 .Ar term
 for ANSI-compatible UTF-8 terminal output,
 .Ar man
-for roff output using the classic
+for roff output using the
 .Fl man
 package,
 .Ar mdoc
-for roff output using the modern
+for roff output using the
 .Fl mdoc
 package,
 .Ar tree ,
@@ -339,7 +339,13 @@ Overrides
 When possible, shorten URLs for images, links, and autolinks to only the
 domain name and final path.
 .It Fl -roff-traditional
-Don't use hyperlink macros
+Output traditional
+.Fl ms
+.Pq not Fl mspdf
+and
+.Fl man
+without extensions.
+Specifically, don't use hyperlink macros
 .Po
 .Li .pdfhref ,
 .Li .UR ,
