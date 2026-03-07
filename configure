@@ -15,9 +15,93 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-OCONFIGURE_VERSION="1.0.0"
+# Which version of oconfigure is this?
+# shellcheck disable=SC2034
+OCONFIGURE_VERSION="2.0.0"
 
-#
+# Number of parallel processes used for configuring.  If set to less
+# than or including zero, the maximum number of processes on the host is
+# used.
+NPROCS=1
+
+# Print a lengthy usage message to stdout.
+usage() {
+	echo "Usage: configure [-j NCPU] KEYS..."
+	echo
+	echo "Options:"
+	echo "  -j NCPU         parallel tasks (<=0 to auto-detect)"
+	echo
+	echo "Build key-value pairs and their defaults:"
+	echo "  AR              archiver (system default)"
+	echo "  CC              C compiler (system default)"
+	echo "  CFLAGS          C compiler flags (system default)"
+	echo "  CPPFLAGS        C preprocessor flags"
+	echo "  LDADD           linked libraries and flags"
+	echo "  LDFLAGS         linker flags used"
+	echo "  LDLIBS          shared library libraries and flags"
+	echo "  LINKER_SOFLAG   flag to create shared libraries (-shared or -dynamiclib)"
+	echo "  LINKER_SONAME   flag to name shared libraries (-soname or -install_name)"
+	echo "  LINKER_SOSUFFIX suffix for shared libraries (so or dylib)"
+	echo
+	echo "Install directory key-value pairs and their defaults:"
+	echo "  BINDIR          binaries (PREFIX/bin)"
+	echo "  DESTDIR         install root prefix"
+	echo "  INCLUDEDIR      header files (PREFIX/include)"
+	echo "  LIBDIR          libraries (PREFIX/lib)"
+	echo "  MANDIR          manpages (PREFIX/man)"
+	echo "  PREFIX          install root (/usr/local)"
+	echo "  SBINDIR         system binaries (PREFIX/sbin)"
+	echo "  SHAREDIR        shared files (PREFIX/share)"
+	echo
+	echo "See <https://github.com/kristapsdz/oconfigure> for detailed docs."
+}
+
+# Parse command line arguments without getopt.  The reason getopt is not
+# used is because it will munge the common idiom of
+#   ./configure CFLAGS="a b c"
+# into stripping the trailing quotes.
+
+while [ $# -ne 0 ]
+do
+	case "$1" in
+	-h)
+		usage 1>&2
+		exit 0
+		;;
+	-j*)
+		# Handle -j0, -j=0, -j 0.
+		if [ "$1" = "-j" ]
+		then
+			shift
+			OPT="$1"
+		elif [ "$1" != "${1#-j=}" ]
+	        then
+			OPT="${1#-j=}"
+		else
+			OPT="${1#-j}"
+		fi
+		NPROCS="$OPT"
+		shift
+		;;
+	-*)
+		echo "$1: option not recognised" 1>&2
+		usage 1>&2
+		exit 1
+		;;
+	*)
+		break
+		;;
+	esac
+done
+
+# Put all scratch files in a temporary directory which is blown away on
+# exit.  This simplifies the script from needing to tidy up everything
+# directly.
+
+TMPROOT=$(mktemp -d) || exit 1
+# shellcheck disable=SC2064
+trap "rm -rf \"$TMPROOT\"" EXIT
+
 # This script outputs two files: config.h and Makefile.configure.
 # It tries to read from configure.local, which contains predefined
 # values we won't autoconfigure.
@@ -32,27 +116,51 @@ OCONFIGURE_VERSION="1.0.0"
 #
 # If it exists, configure was run; otherwise, it wasn't.
 #
-# You'll probably want to change parts of this file.  I've noted the
-# parts that you'll probably change in the section documentation.
-#
 # See https://github.com/kristapsdz/oconfigure for more.
 
 set -e
 
-#----------------------------------------------------------------------
 # Prepare for running: move aside previous configure runs.
 # Output file descriptor usage:
 #  1 (stdout): config.h or Makefile.configure
 #  2 (stderr): original stderr, usually to the console
 #  3: config.log
-# You DO NOT want to change this.
-#----------------------------------------------------------------------
 
 [ -w config.log ] && mv config.log config.log.old
 [ -w config.h   ] && mv config.h config.h.old
 
 exec 3> config.log
 echo "config.log: writing..."
+
+# Log a message to both the config.log file and stderr.
+
+log() {
+	echo "$@" 1>&2
+	echo "$@" 1>&3
+}
+
+# Log a message to config.log
+
+configlog() {
+	echo "$@" 1>&3
+}
+
+# If parallelism has been requested without an explicit number of
+# processors, try to infer how many are available by using a
+# cross-platform attempt.
+
+[ "$NPROCS" -le 0 ] && \
+	NPROCS=$(getconf NPROCESSORS_ONLN 2>/dev/null || echo 0)
+[ "$NPROCS" -le 0 ] && \
+	NPROCS=$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 0)
+[ "$NPROCS" -le 0 ] && \
+	NPROCS=$(nproc 2>/dev/null || exit 0)
+[ "$NPROCS" -le 0 ] && \
+	NPROCS=$(syscl -n hw.ncpu 2>/dev/null || exit 0)
+[ "$NPROCS" -le 0 ] && \
+	NPROCS=1
+
+configlog "NPROCS: using $NPROCS parallel processes"
 
 # GNU submake prints different output if invoked recursively, which
 # messes up CC and CFLAGS detection.  Pass --no-print-directory if
@@ -68,25 +176,20 @@ if [ -n "${MAKELEVEL}" ]; then
 	fi
 fi
 
-if [ -n "$MAKE_FLAGS" ]; then 
-	echo "GNU submake detected: using --no-print-directory" 1>&2
-	echo "GNU submake detected: using --no-print-directory" 1>&3
-fi
+[ -n "$MAKE_FLAGS" ] && log "GNU submake: using --no-print-directory"
 
-#----------------------------------------------------------------------
 # Initialise all variables here such that nothing can leak in from the
 # environment except for AR, CC and CFLAGS, which we might have passed
 # in.  Allow these to be overridden by the command line forms.
-#----------------------------------------------------------------------
 
 for keyvals in "$@"
 do
-	key=`echo $keyvals | cut -s -d '=' -f 1`
+	key=$(echo "$keyvals" | cut -s -d '=' -f 1)
 	if [ -z "$key" ]
 	then
 		continue
 	fi
-	val=`echo $keyvals | cut -d '=' -f 2-`
+	val=$(echo "$keyvals" | cut -d '=' -f 2-)
 	# Re-export these variables now so that they override whatever
 	# was passed in from the environment.
 	case "$key" in
@@ -106,11 +209,11 @@ done
 # will ultimately be used in the event that none were passed in.
 
 PASSED_IN_CFLAGS=$CFLAGS
-AR=`printf "all:\\n\\t@echo \\\$(AR)\\n" | make ${MAKE_FLAGS} -sf -`
-CC=`printf "all:\\n\\t@echo \\\$(CC)\\n" | make ${MAKE_FLAGS} -sf -`
-CFLAGS=`printf "all:\\n\\t@echo \\\$(CFLAGS)\\n" | make ${MAKE_FLAGS} -sf -`
+AR=$(printf "all:\n\t@echo \$(AR)\n" | make ${MAKE_FLAGS} -sf -)
+CC=$(printf "all:\n\t@echo \$(CC)\n" | make ${MAKE_FLAGS} -sf -)
+CFLAGS=$(printf "all:\n\t@echo \$(CFLAGS)\n" | make ${MAKE_FLAGS} -sf -)
 
-# If there are no passed-in CFLAGS, so the CFLAGS are coming from `make,
+# If there are no passed-in CFLAGS, so the CFLAGS are coming from make,
 # add some additional useful defaults.
 
 if [ -z "$PASSED_IN_CFLAGS" ]
@@ -156,35 +259,29 @@ EXTRA_VARS=
 # It does have gcc, so try that instead.
 # Prefer clang, though.
 
-command -v ${CC} 2>/dev/null 1>&2 || {
-	echo "${CC} not found: trying clang" 1>&2
-	echo "${CC} not found: trying clang" 1>&3
+command -v "$CC" 2>/dev/null 1>&2 || {
 	CC=clang
-	command -v ${CC} 2>/dev/null 1>&2 || {
-		echo "${CC} not found: trying gcc" 1>&2
-		echo "${CC} not found: trying gcc" 1>&3
+	command -v "$CC" 2>/dev/null 1>&2 || {
 		CC=gcc
-		command -v ${CC} 2>/dev/null 1>&2 || {
-			echo "gcc not found: giving up" 1>&2
-			echo "gcc not found: giving up" 1>&3
+		command -v "$CC" 2>/dev/null 1>&2 || {
+			log "CC not found: giving up"
 			exit 1
 		}
 	}
+	log "CC: using $CC"
 }
 
-#----------------------------------------------------------------------
 # Allow certain variables to be overriden on the command line.
-#----------------------------------------------------------------------
 
 for keyvals in "$@"
 do
-	key=`echo $keyvals | cut -s -d '=' -f 1`
+	key=$(echo "$keyvals" | cut -s -d '=' -f 1)
 	if [ -z "$key" ]
 	then
 		echo "$0: invalid key-value: $keyvals" 1>&2
 		exit 1
 	fi
-	val=`echo $keyvals | cut -d '=' -f 2-`
+	val=$(echo "$keyvals" | cut -d '=' -f 2-)
 	case "$key" in
 	CC|CFLAGS|AR)
 		;;
@@ -223,7 +320,6 @@ do
 	esac
 done
 
-#----------------------------------------------------------------------
 # If the user doesn't specify how to link shared libraries, try
 # "-shared" or "-dynamiclib", the latter of which is Mac OS X only at
 # the moment.  Also set the proper shared library suffix.
@@ -234,47 +330,38 @@ done
 
 if [ -z "$LINKER_SOFLAG" ]
 then
-	test_soname="`mktemp`" || {
-		echo "mktemp: failed" 1>&2
-		echo "mktemp: failed" 1>&3
+	configlog "LINKER_SOSOFLAG: testing..."
+	test_soname=$(mktemp "$TMPROOT/XXXXXXXX") || {
+		log "mktemp: failed"
 		exit 1
 	}
-	echo "int foo(void) { return 1; }" > "${test_soname}.c"
-	${CC} -fPIC -o ${test_soname}.o -c ${test_soname}.c || {
-		echo "${CC} -fPIC -o ${test_soname}.o -c ${test_soname}.c: failed" 1>&2
-		echo "${CC} -fPIC -o ${test_soname}.o -c ${test_soname}.c: failed" 1>&3
-	}
+	echo "int foo(void) { return 1; }" > "$test_soname".c
+	"$CC" -fPIC -o "$test_soname".o -c "$test_soname".c ||
+		log "${CC} -fPIC -o $test_soname.o -c $test_soname.c: failed"
 	LINKER_SOFLAG="-dynamiclib"
 	LINKER_SOSUFFIX="dylib"
-	echo "LINKER_SOSUFFIX: testing ${LINKER_SOFLAG}" 1>&3
-	${CC} ${LINKER_SOFLAG} -o ${test_soname}.${LINKER_SOSUFFIX}.0 \
-	    ${test_soname}.o 2>/dev/null || {
+	configlog "LINKER_SOFLAG: testing $LINKER_SOFLAG"
+	"$CC" "$LINKER_SOFLAG" -o "$test_soname"."$LINKER_SOSUFFIX".0 \
+	    "$test_soname".o 2>/dev/null || {
 		LINKER_SOFLAG="-shared"
 		LINKER_SOSUFFIX="so"
-		echo "LINKER_SOFLAG: testing ${LINKER_SOFLAG}" 1>&3
-		${CC} ${LINKER_SOFLAG} -o ${test_soname}.${LINKER_SOSUFFIX}.0 \
-		    ${test_soname}.o || {
-			echo "LINKER_SOFLAG: cannot determine: default to -shared" 1>&2
-			echo "LINKER_SOFLAG: cannot determine: default to -shared" 1>&3
-		}
+		configlog "LINKER_SOFLAG: testing $LINKER_SOFLAG"
+		"$CC" "$LINKER_SOFLAG" -o "$test_soname"."$LINKER_SOSUFFIX".0 \
+		    "$test_soname".o ||
+			log "LINKER_SOFLAG: cannot determine: default to -shared"
 	}
-	echo "LINKER_SOFLAG: $LINKER_SOFLAG" 1>&3
-	echo "LINKER_SOSUFFIX: $LINKER_SOSUFFIX" 1>&3
-	rm -f "$test_soname" "${test_soname}.*"
+	log "LINKER_SOFLAG: using $LINKER_SOFLAG"
+	log "LINKER_SOSUFFIX: using $LINKER_SOSUFFIX"
 fi
 
 if [ -z "$LINKER_SOSUFFIX" ]
 then
-	if [ "$LINKER_SOFLAG" = "-shared" ]
-	then
-		LINKER_SOSUFFIX="so"
-	else
-		LINKER_SOSUFFIX="dylib"
-	fi
-	echo "LINKER_SOSUFFIX: $LINKER_SOSUFFIX" 1>&3
+	configlog "LINKER_SOSUFFIX: testing..."
+	LINKER_SOSUFFIX="so"
+	[ "$LINKER_SOFLAG" = "-shared" ] || LINKER_SOSUFFIX="dylib"
+	log "LINKER_SOSUFFIX: using $LINKER_SOSUFFIX"
 fi
 
-#----------------------------------------------------------------------
 # If the user doesn't specify whether we want "-soname" or
 # "-install_name" for the linker option to generate shared libraries,
 # try to figure it out here.  If we can't figure it out, just set it to
@@ -282,40 +369,33 @@ fi
 
 if [ -z "$LINKER_SONAME" ]
 then
-	test_soname="`mktemp`" || {
-		echo "mktemp: failed" 1>&2
-		echo "mktemp: failed" 1>&3
+	configlog "LINKER_SONAME: testing..."
+	test_soname=$(mktemp "$TMPROOT/XXXXXXXX") || {
+		log "mktemp: failed"
 		exit 1
 	}
 	echo "int foo(void) { return 1; }" > "${test_soname}.c"
-	${CC} -fPIC -o ${test_soname}.o -c ${test_soname}.c || {
-		echo "${CC} -fPIC -o ${test_soname}.o -c ${test_soname}.c: failed" 1>&2
-		echo "${CC} -fPIC -o ${test_soname}.o -c ${test_soname}.c: failed" 1>&3
-	}
+	"$CC" -fPIC -o "$test_soname".o -c "$test_soname".c ||
+		log "${CC} -fPIC -o $test_soname.o -c $test_soname.c: failed"
 	LINKER_SONAME="-soname"
-	echo "LINKER_SONAME: testing -soname" 1>&3
-	${CC} -shared -o ${test_soname}.so.0 ${test_soname}.o \
-	    -Wl,${LINKER_SONAME},${test_soname}.so.0 2>/dev/null || {
+	configlog "LINKER_SONAME: testing -soname"
+	"$CC" -shared -o "$test_soname".so.0 "$test_soname".o \
+	    -Wl,"$LINKER_SONAME","$test_soname".so.0 2>/dev/null || {
 		LINKER_SONAME="-install_name"
-		echo "LINKER_SONAME: testing -install_name" 1>&3
-		${CC} -shared -o ${test_soname}.so.0 ${test_soname}.o \
-		    -Wl,-install_name,${test_soname}.so.0 || {
-			echo "LINKER_SONAME: cannot determine: default to -soname" 1>&2
-			echo "LINKER_SONAME: cannot determine: default to -soname" 1>&3
+		configlog "LINKER_SONAME: testing -install_name"
+		"$CC" -shared -o "$test_soname".so.0 "$test_soname".o \
+		    -Wl,-install_name,"$test_soname".so.0 || {
+			log "LINKER_SONAME: cannot determine: default to -soname"
 			LINKER_SONAME="-soname"
 		}
 	}
-	echo "LINKER_SONAME: $LINKER_SONAME" 1>&3
-	rm -f "$test_soname" "${test_soname}.*"
+	log "LINKER_SONAME: using $LINKER_SONAME"
 fi
 
-#----------------------------------------------------------------------
 # These are the values that will be pushed into config.h after we test
 # for whether they're supported or not.
 # Each of these must have a runtest(), below.
 # Please sort by alpha, for clarity.
-# You WANT to change this.
-#----------------------------------------------------------------------
 
 HAVE_ARC4RANDOM=
 HAVE_B64_NTOP=
@@ -351,7 +431,6 @@ HAVE_SETRESGID=
 HAVE_SETRESUID=
 HAVE_SOCK_NONBLOCK=
 HAVE_SHA2=
-HAVE_SHA2_H=
 HAVE_STRLCAT=
 HAVE_STRLCPY=
 HAVE_STRNDUP=
@@ -361,7 +440,7 @@ HAVE_SYS_BYTEORDER_H=
 HAVE_SYS_ENDIAN_H=
 HAVE_SYS_MKDEV_H=
 HAVE_SYS_QUEUE=
-HAVE_SYS_SYSMACROS=
+HAVE_SYS_SYSMACROS_H=
 HAVE_SYS_TREE=
 HAVE_SYSTRACE=0
 HAVE_TERMIOS=
@@ -370,44 +449,17 @@ HAVE_UNVEIL=
 HAVE_WAIT_ANY=
 HAVE___PROGNAME=
 
-#----------------------------------------------------------------------
 # Allow configure.local to override all variables, default settings,
 # command-line arguments, and tested features, above.
-# You PROBABLY DO NOT want to change this.
-#----------------------------------------------------------------------
 
 if [ -r ./configure.local ]; then
-	echo "configure.local: reading..." 1>&2
-	echo "configure.local: reading..." 1>&3
+	log "configure.local: reading..." 
 	cat ./configure.local 1>&3
+	# shellcheck disable=SC1091
 	. ./configure.local
 else
-	echo "configure.local: no (fully automatic configuration)" 1>&2
-	echo "configure.local: no (fully automatic configuration)" 1>&3
+	log "configure.local: no (fully automatic configuration)"
 fi
-
-echo 1>&3
-
-#----------------------------------------------------------------------
-# Infrastructure for running tests.
-# These consists of a series of functions that will attempt to run the
-# given test file and record its exit into a HAVE_xxx variable.
-# You DO NOT want to change this.
-#----------------------------------------------------------------------
-
-COMP="${CC} ${CFLAGS} ${CPPFLAGS} -Wno-unused -Werror"
-
-# Check whether this HAVE_ setting is manually overridden.
-# If yes, use the override, if no, do not decide anything yet.
-# Arguments: lower-case test name, manual value
-
-ismanual() {
-	[ -z "${3}" ] && return 1
-	echo "${1}: manual (HAVE_${2}=${3})" 1>&2
-	echo "${1}: manual (HAVE_${2}=${3})" 1>&3
-	echo 1>&3
-	return 0
-}
 
 # Run a single autoconfiguration test.
 # In case of success, enable the feature.
@@ -415,50 +467,52 @@ ismanual() {
 # Arguments: lower-case test name, upper-case test name, additional
 # CFLAGS, additional LIBS.
 
+COMP="$CC $CFLAGS $CPPFLAGS -Wno-unused -Werror"
+
 singletest() {
+	logfile="$1"
+	shift
+	exec 3>"$logfile"
 	extralib=""
-	cat 1>&3 << __HEREDOC__
-${1}: testing...
-${COMP} -DTEST_${2} ${3} -o test-${1} tests.c ${LDFLAGS} ${4}
-__HEREDOC__
-	if ${COMP} -DTEST_${2} ${3} -o "test-${1}" tests.c ${LDFLAGS} ${4} 1>&3 2>&3; then
-		echo "${1}: ${CC} succeeded" 1>&3
+	configlog "$1: testing..."
+	configlog "$COMP -DTEST_$2 $3 -o $TMPROOT/test-$1 tests.c $LDFLAGS $4"
+	# shellcheck disable=SC2086
+	if $COMP "-DTEST_$2" $3 -o "$TMPROOT/test-$1" tests.c $LDFLAGS $4 1>&3 2>&3
+	then
+		configlog "$1: $CC succeeded"
 	else 
-		if [ -n "${5}" ] ; then
-			echo "${1}: ${CC} failed with $? (retrying)" 1>&3
-			cat 1>&3 << __HEREDOC__
-${1}: testing...
-${COMP} -DTEST_${2} ${3} -o test-${1} tests.c ${LDFLAGS} ${5}
-__HEREDOC__
-			if ${COMP} -DTEST_${2} ${3} -o "test-${1}" tests.c ${LDFLAGS} ${5} 1>&3 2>&3; then
-				echo "${1}: ${CC} succeeded" 1>&3
-				extralib="(with ${5})"
+		if [ -n "$5" ]
+		then
+			configlog "$1: $CC failed (retrying)"
+			configlog "$1: testing..."
+			configlog "$COMP -DTEST_$2 $3 -o $TMPROOT/test-$1 tests.c $LDFLAGS $5"
+			# shellcheck disable=SC2086
+			if $COMP "-DTEST_$2" $3 -o "$TMPROOT/test-$1" tests.c $LDFLAGS $5 1>&3 2>&3
+			then
+				configlog "$1: $CC succeeded"
+				extralib="(with $5)"
 			else 
-				echo "${1}: ${CC} failed with $?" 1>&3
-				echo 1>&3
-				return 1
+				configlog "$1: $CC failed with $?"
+				echo "HAVE_${2}=0"
+				return
 			fi
 		else
-			echo "${1}: ${CC} failed with $?" 1>&3
-			echo 1>&3
-			return 1
+			configlog "$1: $CC failed"
+			echo "HAVE_${2}=0"
+			return
 		fi
 	fi
 
-	if [ -n "${extralib}" ] 
+	if [ -n "$extralib" ] 
 	then
-		eval "LDADD_${2}=\"${5}\""
-	elif [ -n "${4}" ]
+		echo "LDADD_${2}=\"$5\""
+	elif [ -n "$4" ]
 	then
-		eval "LDADD_${2}=\"${4}\""
+		echo "LDADD_${2}=\"$4\""
 	fi
 
-	echo "${1}: yes ${extralib}" 1>&2
-	echo "${1}: yes ${extralib}" 1>&3
-	echo 1>&3
-	eval HAVE_${2}=1
-	rm "test-${1}"
-	return 0
+	configlog "$1: yes $extralib"
+	echo "HAVE_${2}=1"
 }
 
 # Run a complete autoconfiguration test, including the check for
@@ -466,16 +520,56 @@ __HEREDOC__
 # Arguments: lower case name, upper case name, additional CFLAGS, 
 # additional LDADD, alternative LDADD.
 
-runtest() {
-	eval _manual=\${HAVE_${2}}
-	ismanual "${1}" "${2}" "${_manual}" && return 0
-	singletest "${1}" "${2}" "${3}" "${4}" "${5}" && return 0
-	echo "${1}: no" 1>&2
-	eval HAVE_${2}=0
-	return 1
+runtest_process() {
+	logfile="$1"
+	shift
+	pendingfile="$1"
+	shift
+	finished="$1"
+	shift
+	eval _manual=\$HAVE_"$2"
+
+	# Check whether this HAVE_ setting is manually overridden.
+	# If yes, use the override, if no, do not decide anything yet.
+	# Arguments: lower-case test name, manual value
+
+	if [ -n "${_manual}" ]
+	then
+		echo "$1: manual (HAVE_${2}=$_manual)" >"$logfile"
+		echo "HAVE_${2}=$_manual" >"$pendingfile"
+		mv "$pendingfile" "$finished"
+		return
+	fi
+
+	singletest "$logfile" "$1" "$2" "$3" "$4" "$5" >"$pendingfile"
+	mv "$pendingfile" "$finished"
 }
 
-#----------------------------------------------------------------------
+reap() {
+	wait
+	ls "$TMPROOT"/result.* >/dev/null 2>&1 || return
+	for finished in "$TMPROOT"/result.*
+	do
+		pendingfile=$(echo "$finished" | sed 's!result!lock!')
+		logfile=$(echo "$finished" | sed 's!result!log!')
+		cat "$finished" 1>&2
+		# shellcheck disable=SC1090
+		. "$finished"
+		cat "$logfile" 1>&3
+		rm -f "$finished"
+		PENDING_TESTS=$(( PENDING_TESTS - 1 ))
+	done
+}
+
+runtest() {
+	logfile=$(mktemp "$TMPROOT/log.XXXXXXXX")
+	pendingfile=$(echo "$logfile" | sed 's!log!lock!')
+	finished=$(echo "$logfile" | sed 's!log!result!')
+	runtest_process "$logfile" "$pendingfile" "$finished" "$1" "$2" "$3" "$4" "$5" &
+	PENDING_TESTS=$(( PENDING_TESTS + 1 ))
+	[ $PENDING_TESTS -lt "$NPROCS" ] || reap
+}
+
 # Begin running the tests themselves.
 # All of your tests must be defined here.
 # Please sort as the HAVE_xxxx values were defined.
@@ -487,7 +581,6 @@ runtest() {
 #    (3) argument to cc *before* -o
 #    (4) argument to cc *after* 
 #    (5) alternative argument to cc *after* 
-#----------------------------------------------------------------------
 
 runtest arc4random	ARC4RANDOM			  || true
 runtest blowfish	BLOWFISH		  	  || true
@@ -542,6 +635,9 @@ runtest timingsafe_bcmp	TIMINGSAFE_BCMP			  || true
 runtest unveil		UNVEIL				  || true
 runtest WAIT_ANY	WAIT_ANY			  || true
 runtest __progname	__PROGNAME			  || true
+
+# Claim any stragglers.
+reap                                                      || true
 
 #----------------------------------------------------------------------
 # Output writing: generate the config.h file.
@@ -648,66 +744,66 @@ __HEREDOC__
 # someting that pulls in support for size_t.
 # Our function declarations are standalone, so specify them here.
 
-if [ ${HAVE_ARC4RANDOM} -eq 0 -o \
-     ${HAVE_BLOWFISH} -eq 0 -o \
-     ${HAVE_FTS} -eq 0 -o \
-     ${HAVE_MD5} -eq 0 -o \
-     ${HAVE_MEMMEM} -eq 0 -o \
-     ${HAVE_MEMRCHR} -eq 0 -o \
-     ${HAVE_MKFIFOAT} -eq 0 -o \
-     ${HAVE_MKNODAT} -eq 0 -o \
-     ${HAVE_READPASSPHRASE} -eq 0 -o \
-     ${HAVE_REALLOCARRAY} -eq 0 -o \
-     ${HAVE_RECALLOCARRAY} -eq 0 -o \
-     ${HAVE_SETRESGID} -eq 0 -o \
-     ${HAVE_SETRESUID} -eq 0 -o \
-     ${HAVE_SHA2} -eq 0 -o \
-     ${HAVE_STRLCAT} -eq 0 -o \
-     ${HAVE_STRLCPY} -eq 0 -o \
-     ${HAVE_STRNDUP} -eq 0 -o \
-     ${HAVE_STRNLEN} -eq 0 ]
+if [ "$HAVE_ARC4RANDOM" -eq 0 ] || \
+   [ "$HAVE_BLOWFISH" -eq 0 ] || \
+   [ "$HAVE_FTS" -eq 0 ] || \
+   [ "$HAVE_MD5" -eq 0 ] || \
+   [ "$HAVE_MEMMEM" -eq 0 ] || \
+   [ "$HAVE_MEMRCHR" -eq 0 ] || \
+   [ "$HAVE_MKFIFOAT" -eq 0 ] || \
+   [ "$HAVE_MKNODAT" -eq 0 ] || \
+   [ "$HAVE_READPASSPHRASE" -eq 0 ] || \
+   [ "$HAVE_REALLOCARRAY" -eq 0 ] || \
+   [ "$HAVE_RECALLOCARRAY" -eq 0 ] || \
+   [ "$HAVE_SETRESGID" -eq 0 ] || \
+   [ "$HAVE_SETRESUID" -eq 0 ] || \
+   [ "$HAVE_SHA2" -eq 0 ] || \
+   [ "$HAVE_STRLCAT" -eq 0 ] || \
+   [ "$HAVE_STRLCPY" -eq 0 ] || \
+   [ "$HAVE_STRNDUP" -eq 0 ] || \
+   [ "$HAVE_STRNLEN" -eq 0 ]
 then
 	echo "#include <sys/types.h> /* size_t, mode_t, dev_t */ "
 fi
 
-if [ ${HAVE_ARC4RANDOM} -eq 0 -o \
-     ${HAVE_BLOWFISH} -eq 0 -o \
-     ${HAVE_MD5} -eq 0 -o \
-     ${HAVE_SHA2} -eq 0 ]
+if [ "$HAVE_ARC4RANDOM" -eq 0 ] || \
+   [ "$HAVE_BLOWFISH" -eq 0 ] || \
+   [ "$HAVE_MD5" -eq 0 ] || \
+   [ "$HAVE_SHA2" -eq 0 ]
 then
 	echo "#include <stdint.h> /* C99 [u]int[nn]_t types */"
 fi
 
-if [ ${HAVE_ERR} -eq 0 ]
+if [ "$HAVE_ERR" -eq 0 ]
 then
 	echo "#include <stdarg.h> /* err(3) */"
 fi
 
-if [ ${HAVE_PATH_MAX} -eq 0 ]
+if [ "$HAVE_PATH_MAX" -eq 0 ]
 then
 	echo "#define PATH_MAX 4096"
 fi
 
-if [ ${HAVE_WAIT_ANY} -eq 0 ]
+if [ "$HAVE_WAIT_ANY" -eq 0 ]
 then
 	echo "#define WAIT_ANY (-1) /* sys/wait.h */"
 	echo "#define WAIT_MYPGRP 0"
 fi
 
-if [ ${HAVE_PASSWORD_LEN} -eq 0 ]
+if [ "$HAVE_PASSWORD_LEN" -eq 0 ]
 then
 	echo "#define _PASSWORD_LEN (128) /* pwd.h */"
 fi
 
-if [ ${HAVE_INFTIM} -eq 0 ]
+if [ "$HAVE_INFTIM" -eq 0 ]
 then
 	echo "#define INFTIM (-1) /* poll.h */"
 fi
 
-if [ ${HAVE_OSBYTEORDER_H} -eq 1 -a \
-     ${HAVE_ENDIAN_H} -eq 0 -a \
-     ${HAVE_SYS_BYTEORDER_H} -eq 0 -a \
-     ${HAVE_SYS_ENDIAN_H} -eq 0 ]
+if [ "$HAVE_OSBYTEORDER_H" -eq 1 ] && \
+   [ "$HAVE_ENDIAN_H" -eq 0 ] && \
+   [ "$HAVE_SYS_BYTEORDER_H" -eq 0 ] && \
+   [ "$HAVE_SYS_ENDIAN_H" -eq 0 ]
 then
 	cat << __HEREDOC__
 #define htobe16(x) OSSwapHostToBigInt16(x)
@@ -725,10 +821,10 @@ then
 __HEREDOC__
 fi
 
-if [ ${HAVE_SYS_BYTEORDER_H} -eq 1 -a \
-     ${HAVE_ENDIAN_H} -eq 0 -a \
-     ${HAVE_OSBYTEORDER_H} -eq 0 -a \
-     ${HAVE_SYS_ENDIAN_H} -eq 0 ]
+if [ "$HAVE_SYS_BYTEORDER_H" -eq 1 ] && \
+   [ "$HAVE_ENDIAN_H" -eq 0 ] && \
+   [ "$HAVE_OSBYTEORDER_H" -eq 0 ] && \
+   [ "$HAVE_SYS_ENDIAN_H" -eq 0 ]
 then
 	cat << __HEREDOC__
 #define htobe16(x) BE_16(x)
@@ -779,7 +875,7 @@ __HEREDOC__
 
 # Now we do our function declarations for missing functions.
 
-if [ ${HAVE_ERR} -eq 0 ]
+if [ "$HAVE_ERR" -eq 0 ]
 then
 	cat << __HEREDOC__
 extern void err(int, const char *, ...) __attribute__((noreturn));
@@ -797,7 +893,7 @@ extern void vwarnx(const char *, va_list);
 __HEREDOC__
 fi
 
-if [ ${HAVE_MD5} -eq 0 ]
+if [ "$HAVE_MD5" -eq 0 ]
 then
 	cat << __HEREDOC__
 #define MD5_BLOCK_LENGTH 64
@@ -817,7 +913,7 @@ extern void MD5Final(uint8_t [MD5_DIGEST_LENGTH], MD5_CTX *);
 __HEREDOC__
 fi
 
-if [ ${HAVE_SHA2} -eq 0 ]
+if [ "$HAVE_SHA2" -eq 0 ]
 then
 	cat << __HEREDOC__
 #define SHA256_BLOCK_LENGTH		64
@@ -870,7 +966,7 @@ char *SHA512Data(const uint8_t *, size_t, char *);
 __HEREDOC__
 fi
 
-if [ ${HAVE_SECCOMP_FILTER} -eq 1 ]
+if [ "$HAVE_SECCOMP_FILTER" -eq 1 ]
 then
 	seccomp_audit_arch=
 	arch=$(uname -m 2>/dev/null || echo unknown)
@@ -920,7 +1016,7 @@ then
 #define SECCOMP_AUDIT_ARCH $seccomp_audit_arch
 __HEREDOC__
 	else
-		echo "seccomp-arch: disabling (unknown: `uname -m`)" 1>&2
+		echo "seccomp-arch: disabling (unknown: $(uname -m))" 1>&2
 		cat << __HEREDOC__
 /**
  * Seccomp is available, but not with a recognised architecture.
@@ -936,7 +1032,7 @@ else
 __HEREDOC__
 fi
 
-if [ ${HAVE_B64_NTOP} -eq 0 ]
+if [ "$HAVE_B64_NTOP" -eq 0 ]
 then
 	cat << __HEREDOC__
 extern int b64_ntop(unsigned char const *, size_t, char *, size_t);
@@ -944,7 +1040,7 @@ extern int b64_pton(char const *, unsigned char *, size_t);
 __HEREDOC__
 fi
 
-if [ ${HAVE_SCAN_SCALED} -eq 0 ]
+if [ "$HAVE_SCAN_SCALED" -eq 0 ]
 then
 	cat << __HEREDOC__
 #define	FMT_SCALED_STRSIZE	7 /* minus sign, 4 digits, suffix, null byte */
@@ -953,35 +1049,35 @@ int scan_scaled(char *, long long *);
 __HEREDOC__
 fi
 
-if [ ${HAVE_EXPLICIT_BZERO} -eq 0 ]
+if [ "$HAVE_EXPLICIT_BZERO" -eq 0 ]
 then
 	cat << __HEREDOC__
 extern void explicit_bzero(void *, size_t);
 __HEREDOC__
 fi
 
-if [ ${HAVE_MEMMEM} -eq 0 ]
+if [ "$HAVE_MEMMEM" -eq 0 ]
 then
 	cat << __HEREDOC__
 void *memmem(const void *, size_t, const void *, size_t);
 __HEREDOC__
 fi
 
-if [ ${HAVE_MEMRCHR} -eq 0 ]
+if [ "$HAVE_MEMRCHR" -eq 0 ]
 then
 	cat << __HEREDOC__
 void *memrchr(const void *b, int, size_t);
 __HEREDOC__
 fi
 
-if [ ${HAVE_GETPROGNAME} -eq 0 ]
+if [ "$HAVE_GETPROGNAME" -eq 0 ]
 then
 	cat << __HEREDOC__
 extern const char *getprogname(void);
 __HEREDOC__
 fi
 
-if [ ${HAVE_READPASSPHRASE} -eq 0 ]
+if [ "$HAVE_READPASSPHRASE" -eq 0 ]
 then
 	cat << __HEREDOC__
 #define RPP_ECHO_OFF 0x00
@@ -995,84 +1091,84 @@ char *readpassphrase(const char *, char *, size_t, int);
 __HEREDOC__
 fi
 
-if [ ${HAVE_REALLOCARRAY} -eq 0 ]
+if [ "$HAVE_REALLOCARRAY" -eq 0 ]
 then
 	cat << __HEREDOC__
 extern void *reallocarray(void *, size_t, size_t);
 __HEREDOC__
 fi
 
-if [ ${HAVE_RECALLOCARRAY} -eq 0 ]
+if [ "$HAVE_RECALLOCARRAY" -eq 0 ]
 then
 	cat << __HEREDOC__
 extern void *recallocarray(void *, size_t, size_t, size_t);
 __HEREDOC__
 fi
 
-if [ ${HAVE_STRLCAT} -eq 0 ]
+if [ "$HAVE_STRLCAT" -eq 0 ]
 then
 	cat << __HEREDOC__
 extern size_t strlcat(char *, const char *, size_t);
 __HEREDOC__
 fi
 
-if [ ${HAVE_STRLCPY} -eq 0 ]
+if [ "$HAVE_STRLCPY" -eq 0 ]
 then
 	cat << __HEREDOC__
 extern size_t strlcpy(char *, const char *, size_t);
 __HEREDOC__
 fi
 
-if [ ${HAVE_STRNDUP} -eq 0 ]
+if [ "$HAVE_STRNDUP" -eq 0 ]
 then
 	cat << __HEREDOC__
 extern char *strndup(const char *, size_t);
 __HEREDOC__
 fi
 
-if [ ${HAVE_STRNLEN} -eq 0 ]
+if [ "$HAVE_STRNLEN" -eq 0 ]
 then
 	cat << __HEREDOC__
 extern size_t strnlen(const char *, size_t);
 __HEREDOC__
 fi
 
-if [ ${HAVE_STRTONUM} -eq 0 ]
+if [ "$HAVE_STRTONUM" -eq 0 ]
 then
 	cat << __HEREDOC__
 extern long long strtonum(const char *, long long, long long, const char **);
 __HEREDOC__
 fi
 
-if [ ${HAVE_MKFIFOAT} -eq 0 ]
+if [ "$HAVE_MKFIFOAT" -eq 0 ]
 then
 	cat << __HEREDOC__
 int mkfifoat(int, const char *, mode_t);
 __HEREDOC__
 fi
 
-if [ ${HAVE_MKNODAT} -eq 0 ]
+if [ "$HAVE_MKNODAT" -eq 0 ]
 then
 	cat << __HEREDOC__
 int mknodat(int, const char *, mode_t, dev_t);
 __HEREDOC__
 fi
 
-if [ ${HAVE_SETRESGID} -eq 0 ]
+if [ "$HAVE_SETRESGID" -eq 0 ]
 then
 	cat << __HEREDOC__
 int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 __HEREDOC__
 fi
 
-if [ ${HAVE_SETRESUID} -eq 0 ]
+if [ "$HAVE_SETRESUID" -eq 0 ]
 then
 	cat << __HEREDOC__
 int setresuid(uid_t ruid, uid_t euid, uid_t suid);
 __HEREDOC__
 fi
 
-if [ ${HAVE_SYS_QUEUE} -eq 0 ]
+if [ "$HAVE_SYS_QUEUE" -eq 0 ]
 then
 	cat << __HEREDOC__
 /*
@@ -1694,7 +1790,7 @@ struct {								\\
 __HEREDOC__
 fi
 
-if [ ${HAVE_SYS_TREE} -eq 0 ]
+if [ "$HAVE_SYS_TREE" -eq 0 ]
 then
 	cat << __HEREDOC__
 /*
@@ -2444,7 +2540,7 @@ name##_RB_MINMAX(struct name *head, int val)				\\
 __HEREDOC__
 fi
 
-if [ ${HAVE_FTS} -eq 0 ]
+if [ "$HAVE_FTS" -eq 0 ]
 then
 	cat << __HEREDOC__
 typedef struct {
@@ -2523,7 +2619,7 @@ int	 fts_set(FTS *, FTSENT *, int);
 __HEREDOC__
 fi
 
-if [ ${HAVE_CRYPT_NEWHASH} -eq 0 ]
+if [ "$HAVE_CRYPT_NEWHASH" -eq 0 ]
 then
 	cat << __HEREDOC__
 int crypt_newhash(const char *, const char *, char *, size_t);
@@ -2531,7 +2627,7 @@ int crypt_checkpass(const char *, const char *);
 __HEREDOC__
 fi
 
-if [ ${HAVE_BLOWFISH} -eq 0 ]
+if [ "$HAVE_BLOWFISH" -eq 0 ]
 then
 	cat << __HEREDOC__
 #define BLF_N	16
@@ -2558,7 +2654,7 @@ void blf_cbc_decrypt(blf_ctx *, uint8_t *, uint8_t *, uint32_t);
 __HEREDOC__
 fi
 
-if [ ${HAVE_TIMINGSAFE_BCMP} -eq 0 ]
+if [ "$HAVE_TIMINGSAFE_BCMP" -eq 0 ]
 then
 	cat << __HEREDOC__
 int timingsafe_bcmp(const void *, const void *, size_t);
@@ -2566,7 +2662,7 @@ int timingsafe_memcmp(const void *, const void *, size_t);
 __HEREDOC__
 fi
 
-if [ ${HAVE_ARC4RANDOM} -eq 0 ]
+if [ "$HAVE_ARC4RANDOM" -eq 0 ]
 then
 	cat << __HEREDOC__
 uint32_t arc4random(void);
@@ -2621,6 +2717,7 @@ LDFLAGS		 = ${LDFLAGS}
 LINKER_SOFLAG	 = ${LINKER_SOFLAG}
 LINKER_SONAME	 = ${LINKER_SONAME}
 LINKER_SOSUFFIX	 = ${LINKER_SOSUFFIX}
+DESTDIR          = ${DESTDIR}
 PREFIX		 = ${PREFIX}
 BINDIR		 = ${BINDIR}
 SHAREDIR	 = ${SHAREDIR}
