@@ -1842,4 +1842,87 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>3.0.0</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2026-03-07">2026-03-07</time>
+		</header>
+		<aside>
+			<p>
+				Added initial support for outputting modern Unix manpages with
+				<b>-tmdoc</b>.
+				This is intended as a replacement for the legacy
+				<b>-tman</b>.
+				Supplement this with <b>--roff-manpage</b>, which accepts a markdown
+				file that looks like a Unix manpage and attempts to convert it into
+				a well-formed
+				<a href="https://man.openbsd.org/mdoc.7">mdoc</a> or
+				<a href="https://man.openbsd.org/man.7">man</a>.
+				Most of this is purely syntactic, but several sections in Unix
+				manpages (e.g., the <code>NAME</code> and <code>SYNOPSIS</code>)
+				have a rigorous syntax that this mode attempts to output.
+			</p>
+			<p>
+				Several minor (but breaking) changes to the API to take up fewer
+				bits in the <code>oflags</code> field of
+				<code>struct lowdown_opts</code>: consolidate all
+				<code>XXX_NOLINK</code>, <code>XXX_RELLINK</code>, and
+				<code>XXX_SHORTLINK</code> as <code>LOWDOWN_NOLINK</code>,
+				<code>LOWDOWN_RELLINK</code>, and <code>LOWDOWN_SHORTLINK</code>.
+				This only applies to the <code>LOWDOWN_MAN</code>,
+				<code>LOWDOWN_MS</code>, and <code>LOWDOWN_TERM</code>
+				output modes.  The earlier <code>LOWDOWN_NROFF</code> output mode is
+				deprecated and is now an alias for <code>LOWDOWN_MS</code>, which
+				should be used moving forward.
+			</p>
+			<p>
+				Do the same with the various <code>XXX_SKIP_HTML</code> bits.
+			</p>
+			<p>
+				Deprecate the <code>lowdown_nroff_xxx</code> in favour of
+				<code>lowdown_roff_xxx</code>.  The functions remain as deprecated
+				and passing through to the new equivalents.
+			</p>
+			<p>
+				Deprecate the macro variables 
+				<code>LOWDOWN_NROFF_GROFF</code>
+				<code>LOWDOWN_NROFF_NUMBERED</code>
+				<code>LOWDOWN_NROFF_MANPAGE</code>
+				<code>LOWDOWN_NROFF_ENDNOTES</code>
+				in favour of their <code>ROFF</code> names.
+				The old macros are aliased for compatibility.
+			</p>
+			<p>
+				Library bumped from version 2 to 3 for those reasons.
+			</p>
+			<p>
+				Tweak the behaviour of  <b>-tterm</b> and <b>--term-no-links</b> (or
+				<b>--term-no-rellinks</b>) with respect to embedded images and no
+				text so that there's always a clickable link and image component, if
+				possible.
+			</p>
+			<p>
+				Add <b>--roff-no-rellinks</b>, similar to <b>--term-no-rellinks</b>.
+				Respect <b>--roff-short-links</b> in more cases as well.
+			</p>
+			<p>
+				Change the behaviour of  <b>-tms</b> and <b>-tman</b> where
+				<b>--roff-no-links</b> (or the new <b>--roff-no-rellinks</b>) will
+				have consistent behaviour even if <b>--roff-traditional</b> is not
+				specified.
+			</p>
+			<p>
+				Fix that, when using <b>lowdown-diff</b> for the terminal, resetting
+				the colour after an insertion or delete would trigger the black
+				colour, which obviously doesn't work with a black background.
+				Instead, use the default colour.
+			</p>
+			<p>
+				When generating header identifiers in <b>-thtml</b>, incorporate
+				codespan text as well.  This is the same as pandoc's default
+				behaviour as well.
+			</p>
+		</aside>
+	</article>
 </articles>
