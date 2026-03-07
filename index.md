@@ -146,6 +146,12 @@ The same can be effected with systems using
 lowdown -s -tman README.md | mandoc -Tpdf > README.pdf
 ```
 
+Or if you have a [manapge](mdoc.html):
+
+```sh
+lowdown -s -tmdoc --roff-manpage strlcpy.md | mandoc | less
+```
+
 More support for PDF (and other print formats) is available with the
 **-tlatex** output.
 
@@ -242,8 +248,8 @@ construct output depth-first.
 There are a variety of renderers supported:
 [html.c](https://github.com/kristapsdz/lowdown/blob/master/html.c) for
 HTML5 output,
-[nroff.c](https://github.com/kristapsdz/lowdown/blob/master/nroff.c) for
-**-ms** and **-man** output,
+[roff.c](https://github.com/kristapsdz/lowdown/blob/master/roff.c) for
+**-ms**, **-man**, and **-mdoc** output,
 [latex.c](https://github.com/kristapsdz/lowdown/blob/master/latex.c) for
 LaTeX,
 [gemini.c](https://github.com/kristapsdz/lowdown/blob/master/gemini.c) for

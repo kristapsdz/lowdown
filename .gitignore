@@ -12,7 +12,8 @@ config.log
 # vi swap files
 *.swp
 # www files
-./*.html
+/*.html
+man/*.html
 *.pdf
 *.aux
 *.log
@@ -20,6 +21,8 @@ config.log
 *.jpg
 *.md.txt
 index.xml
+mdoc-grep.xml
+mdoc-strlcpy.xml
 index.latex.latex
 mdoc.xml
 atom.xml
