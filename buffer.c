@@ -406,6 +406,9 @@ hbuf_extract_text(struct lowdown_buf *ob, const struct lowdown_node *n)
 	if (n->type == LOWDOWN_LINK_AUTO)
 		if (!hbuf_putb(ob, &n->rndr_autolink.link))
 			return 0;
+	if (n->type == LOWDOWN_CODESPAN)
+		if (!hbuf_putb(ob, &n->rndr_codespan.text))
+			return 0;
 	TAILQ_FOREACH(child, &n->children, entries)
 		if (!hbuf_extract_text(ob, child))
 			return 0;

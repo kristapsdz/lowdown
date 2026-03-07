@@ -12,7 +12,7 @@ config.log
 # vi swap files
 *.swp
 # www files
-*.html
+./*.html
 *.pdf
 *.aux
 *.log
