@@ -198,7 +198,7 @@ REGRESS_ARGS	+= "--parse-no-autolink"
 REGRESS_ARGS	+= "--parse-no-cmark"
 REGRESS_ARGS	+= "--parse-no-deflists"
 
-REGRESS_ENV	 = LC_ALL=en_US.UTF-8
+REGRESS_ENV	 = LC_ALL=C.UTF-8
 
 all: bins lowdown.pc $(LIB_SO)
 bins: lowdown lowdown-diff
