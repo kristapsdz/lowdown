@@ -153,6 +153,8 @@ The *progname* utility processes with the following:
 *FILE*
 : The optional file.
 
+  This option's description has two paragraphs.
+
 # CONTEXT
 
 For section 9 functions only.
