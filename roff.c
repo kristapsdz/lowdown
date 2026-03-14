@@ -422,7 +422,7 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 				 eomacro; /* end of macro=1, 2=nosp */
 	char			 eolnchar; /* char at eoln */
 	size_t			 offset = 0; /* offset in "buf" */
-	size_t			 sz; /* temporary size */
+	size_t			 i, sz; /* temporary */
 
 	TAILQ_FOREACH(bn, bq, entries) {
 		if (linestrip > 1 &&
@@ -673,34 +673,69 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 
 		/*
 		 * Semiblocks for mdoc(7) are within context, so examine
-		 * if the next node is a span with closing puncatuation.
-		 * Use mdoc(7)'s "Delimiters" section for which to use.
-		 * XXX: multiple delimiters...?
+		 * if the next node is a span with closing puncatuation
+		 * or flush against the semiblock.  If so, append it to
+		 * the current macro with spaces between the delimiters
+		 * or use `Ns`, respectively.  For the former, draw from
+		 * mdoc(7)'s "Delimiters" section for delimiters.
+		 * TODO: consecutive semiblocks.
 		 */
 
 		offset = 0;
-
 		if (linestrip == 0 &&
 		    st->type == LOWDOWN_MDOC &&
 		    bn->scope == BSCOPE_SEMI &&
 		    (tmpbn = TAILQ_NEXT(bn, entries)) != NULL &&
 		    tmpbn->scope == BSCOPE_SPAN &&
-		    tmpbn->buf != NULL &&
-		    (tmpbn->buf[0] == '.' ||
-		     tmpbn->buf[0] == ',' ||
-		     tmpbn->buf[0] == ';' ||
-		     tmpbn->buf[0] == ')' ||
-		     tmpbn->buf[0] == ']' ||
-		     tmpbn->buf[0] == '?' ||
-		     tmpbn->buf[0] == '!') &&
-		    (tmpbn->buf[1] == '\0' ||
-		     isspace((unsigned char)tmpbn->buf[1]))) {
-			offset = 1;
-			HBUF_PUTSL(ob, " ");
-			hbuf_putc(ob, tmpbn->buf[0]);
-			while (tmpbn->buf[offset] != '\0' &&
-			    isspace((unsigned char)tmpbn->buf[offset]))
-				offset++;
+		    (tmpbn->buf != NULL || tmpbn->nbuf != NULL)) {
+			/* Use safe or unsafe: doesn't matter. */
+			cp = tmpbn->buf != NULL ?
+				tmpbn->buf : tmpbn->nbuf;
+			/* Read after consecutive delimiters. */
+			for (offset = 0; ; offset++) {
+				if (cp[offset] != '.' &&
+				    cp[offset] != ',' &&
+				    cp[offset] != ':' &&
+				    cp[offset] != ';' &&
+				    cp[offset] != ')' &&
+				    cp[offset] != ']' &&
+				    cp[offset] != '?' &&
+				    cp[offset] != '!') {
+					offset = 0;
+					break;
+				}
+				/*
+				 * Only applicable at end of token or
+				 * with following whitespace.
+				 */
+				if (cp[offset + 1] == '\0' ||
+				    isspace((unsigned char)cp[offset + 1])) {
+					offset++;
+					break;
+				}
+			}
+			/* Output the delimiters, space-separated. */
+			for (i = 0; i < offset; i++)
+				if (!HBUF_PUTSL(ob, " ") ||
+				    !hbuf_putc(ob, cp[i]))
+					return 0;
+
+			/*
+			 * Regardless of whether offset, examine the
+			 * next character to see if it should be flush
+			 * against the semiblock.
+			 */
+
+			if (cp[offset] != '\0' &&
+			    !isspace((unsigned char)cp[offset]) &&
+			    !HBUF_PUTSL(ob, " Ns"))
+				return 0;
+
+			/* If offset, read after remaining spaces. */
+			if (offset > 0)
+				while (cp[offset] != '\0' &&
+				    isspace((unsigned char)cp[offset]))
+					offset++;
 		}
 
 		/*
@@ -2664,6 +2699,13 @@ rndr(struct lowdown_metaq *mq, struct nroff *st,
 		rc = rndr_raw_html(st, obq, &n->rndr_raw_html);
 		break;
 	case LOWDOWN_NORMAL_TEXT:
+		/*
+		 * Don't create a zero-length node: it will confuse
+		 * bqueue_flush(), which looks-ahead to see what's in
+		 * the next node.
+		 */
+		if (n->rndr_normal_text.text.size == 0)
+			break;
 		if ((bn = bqueue_span(obq, NULL)) == NULL)
 			goto out;
 		bn->buf = hbuf_string(&n->rndr_normal_text.text);

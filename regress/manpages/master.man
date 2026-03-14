@@ -352,18 +352,18 @@
 .YS
 .SY rpcgen
 \fB\-c\fR
-|\fB\-h\fR
-|\fB\-l\fR
-|\fB\-m\fR
-|\fB\-t\fR
-|\fB\-Sc\fR
-|\fB\-Ss\fR
-|[\fB\-o \fIoutfile\fR\fR]
+| \fB\-h\fR
+| \fB\-l\fR
+| \fB\-m\fR
+| \fB\-t\fR
+| \fB\-Sc\fR
+| \fB\-Ss\fR
+| [\fB\-o \fIoutfile\fR\fR]
 [\fIinfile\fR]
 .YS
 .SY rpcgen
 \fB\-c\fR
-|\fInettype\fR
+| \fInettype\fR
 [\fB\-o \fIoutfile\fR\fR]
 [\fIinfile\fR]
 .YS
@@ -434,11 +434,11 @@
 [\fB\-q \fIqueue\fR\fR]
 \fB\-t\fR
 \fItime_arg\fR
-|\fItimespec\fR
+| \fItimespec\fR
 .YS
 .SY at
 \fB\-c\fR
-|\fB\-r\fR
+| \fB\-r\fR
 \fIjob\fR
 \fI...\fR
 .YS
@@ -1087,7 +1087,7 @@
 \fB\-f\fR
 \fIpath\fR
 \fB\-a\fR
-|\fIrecord\fR
+| \fIrecord\fR
 \fI...\fR
 .YS
 .SY getconf
@@ -1159,8 +1159,8 @@
 .YS
 .SY h2xs
 \fB\-h\fR
-|\fB\-?\fR
-|\fB\-\-help\fR
+| \fB\-?\fR
+| \fB\-\-help\fR
 .YS
 .SY head
 [\fB\-count\fR | \fB\-n \fIcount\fR\fR]
@@ -1491,7 +1491,7 @@
 .YS
 .SY lesskey
 \fB\-V\fR
-|\fB\-\-version\fR
+| \fB\-\-version\fR
 .YS
 .SY ln
 [\fB\-fhLnPs\fR]
@@ -1813,7 +1813,7 @@
 .SY netstat
 \fB\-I\fR
 \fIinterface\fR
-|\fB\-i\fR
+| \fB\-i\fR
 [\fB\-bdehnq\fR]
 .YS
 .SY netstat
@@ -1998,11 +1998,11 @@
 .YS
 .SY openssl
 \fIlist-standard-commands\fR
-|\fIlist-message-digest-commands\fR
-|\fIlist-cipher-commands\fR
-|\fIlist-cipher-algorithms\fR
-|\fIlist-message-digest-algorithms\fR
-|\fIlist-public-key-algorithms\fR
+| \fIlist-message-digest-commands\fR
+| \fIlist-cipher-commands\fR
+| \fIlist-cipher-algorithms\fR
+| \fIlist-message-digest-algorithms\fR
+| \fIlist-public-key-algorithms\fR
 .YS
 .SY openssl
 \fIno-command\fR
@@ -2772,8 +2772,8 @@
 .YS
 .SY snmp
 \fIget\fR
-|\fIgetnext\fR
-|\fIbulkget\fR
+| \fIgetnext\fR
+| \fIbulkget\fR
 [\fIoptions\fR]
 \fIagent\fR
 \fIoid\fR
@@ -2781,7 +2781,7 @@
 .YS
 .SY snmp
 \fIwalk\fR
-|\fIbulkwalk\fR
+| \fIbulkwalk\fR
 [\fIoptions\fR]
 \fIagent\fR
 [\fIoid\fR]

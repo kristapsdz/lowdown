@@ -432,8 +432,22 @@ roff_manpage_synopsis_prog_subexpr(struct nroff *st, struct bnodeq *nq,
 	if (buf->data[pos] == ']')
 		return 0;
 
+	/*
+	 * A difficult case.  The vertical bar is on the top-level of the
+	 * flags, so something like `foo -s | -v`.  This isn't handled
+	 * in the Fl case because it doesn't look ahead to the
+	 * subsequent -v, so it's handled here.  Don't use just a
+	 * vertical bar because that will confuse the "magic" in
+	 * bqueue_flush(), which looks at the span after a semiblock to
+	 * see if it should output `Ns`.
+	 */
+
 	if (buf->data[pos] == '|') {
-		if (bqueue_span(nq, "|") == NULL)
+		if (st->type == LOWDOWN_MDOC &&
+		    bqueue_sblock(nq, ".No |") == NULL)
+			return -1;
+		if (st->type == LOWDOWN_MAN &&
+		    bqueue_span(nq, "| ") == NULL)
 			return -1;
 		return pos + 1;
 	}

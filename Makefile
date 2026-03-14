@@ -479,6 +479,22 @@ regen_regress: bins
 			fi ; \
 		done ; \
 	done ; \
+	for f in regress/manpages/*.md ; do \
+		ff=regress/manpages/`basename $$f .md` ; \
+		echo "$$f" ; \
+		for type in man mdoc ; do \
+			if [ -f $$ff.$$type ]; then \
+				./lowdown --roff-manpage -t$$type $$f >$$tmp1 2>&1 ; \
+				diff -u $$ff.$$type $$tmp1 ; \
+				[ $$? -eq 0 ] || { \
+					echo "$$f" ; \
+					echo -n "Replace? " ; \
+					read ; \
+					mv $$tmp1 $$ff.$$type ; \
+				} ; \
+			fi ; \
+		done ; \
+	done ; \
 	for f in regress/standalone/*.md ; do \
 		ff=regress/standalone/`basename $$f .md` ; \
 		for type in html fodt latex ms man gemini term ; do \
@@ -552,7 +568,7 @@ regress:: bins
 		for type in man mdoc ; do \
 			if [ -f $$ff.$$type ]; then \
 				$(REGRESS_ENV) $(VALGRIND) ./lowdown --roff-manpage -t$$type $$f >$$tmp1 2>&1 ; \
-				diff -uw $$ff.$$type $$tmp1 || rc=$$((rc + 1)) ; \
+				diff -u $$ff.$$type $$tmp1 || rc=$$((rc + 1)) ; \
 			fi ; \
 		done ; \
 	done ; \

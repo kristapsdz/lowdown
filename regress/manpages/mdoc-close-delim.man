@@ -1,0 +1,7 @@
+.SH NAME
+\fBfoo\fR \(en bar
+.SH DESCRIPTION
+.LP
+this \fIb\fR: a
+.PP
+that
