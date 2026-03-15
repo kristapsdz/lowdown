@@ -1,0 +1,44 @@
+.PP
+a
+.IP "\(bu" 3
+a
+.if n \
+.sp -1
+.if t \
+.sp -0.25v
+.IP "\(bu" 3
+b
+.if n \
+.sp -1
+.if t \
+.sp -0.25v
+.RS
+.IP "\(bu" 3
+d
+.if n \
+.sp -1
+.if t \
+.sp -0.25v
+.IP "\(bu" 3
+e
+.if n \
+.sp -1
+.if t \
+.sp -0.25v
+.IP "\(bu" 3
+d
+.if n \
+.sp -1
+.if t \
+.sp -0.25v
+.IP "\(bu" 3
+e
+.RE
+.if n \
+.sp -1
+.if t \
+.sp -0.25v
+.IP "\(bu" 3
+c
+.LP
+d

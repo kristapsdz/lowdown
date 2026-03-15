@@ -1164,44 +1164,74 @@ rndr_definition_data(const struct nroff *st, struct bnodeq *obq,
 	return 1;
 }
 
+/*
+ * Render list or definition list.  Return FALSE on failure, TRUE on
+ * success.
+ */
 static int
 rndr_list(struct nroff *st, struct bnodeq *obq, 
     const struct lowdown_node *n, struct bnodeq *bq)
 {
-	struct bnode			*bn;
 	const char			*type;
 	int				 compact;
-	const struct lowdown_node	*pn;
+	const struct lowdown_node	*prev;
 
-	/* Lists for mdoc(7) are somewhat simple... */
+	prev = TAILQ_PREV(n, lowdown_nodeq, entries);
+	compact = !(n->rndr_list.flags & HLIST_FL_DEF) &&
+	    !(n->rndr_list.flags & HLIST_FL_BLOCK);
 
 	if (st->type == LOWDOWN_MDOC) {
-		pn = TAILQ_FIRST(&n->children);
+		/*
+		 * In mdoc(7), compact lists don't output leading
+		 * vertical space, so add it in here if necessary.  The
+		 * only time this is *not* done is if there's a
+		 * block prior to this.
+		 */
 
-		/* Output Pp prior to compact lists. */
-
-		compact = pn != NULL && pn->type == LOWDOWN_LISTITEM &&
-			(pn->rndr_listitem.flags & HLIST_FL_BLOCK);
-
-		if (compact && !NODE_AFTER_HEAD(n) &&
+		if (compact &&
+		    prev != NULL &&
+		    (prev->type == LOWDOWN_BLOCKCODE ||
+		     prev->type == LOWDOWN_LIST ||
+		     prev->type == LOWDOWN_DEFINITION ||
+		     prev->type == LOWDOWN_PARAGRAPH) &&
 		    bqueue_block(obq, ".Pp") == NULL)
 			return 0;
+
+		/* Handle various types of list. */
+
 		if (n->rndr_list.flags & HLIST_FL_DEF)
 			type = "-tag -width Ds";
 		else if (n->rndr_list.flags & HLIST_FL_ORDERED)
 			type = "-enum";
 		else
 			type = "-bullet";
-		if ((bn = bqueue_block(obq, ".Bl")) == NULL)
+		if (bqueue_blocknv(obq, ".Bl", "%s%s", type,
+		    compact ? " -compact" : "") == NULL)
 			return 0;
-		if (asprintf(&bn->nargs, "%s%s", type,
-		    compact ?  " -compact" : "") == -1) {
-			bn->nargs = NULL;
-			return 0;
-		}
+
+		/* List content. */
+
 		TAILQ_CONCAT(obq, bq, entries);
 		return bqueue_block(obq, ".El") != NULL;
 	}
+
+	/*
+	 * In man(7), vertical space needs to be taken out for compact
+	 * lists instead of the opposite as with mdoc(7).  Take out
+	 * vertical space if in a compact list without a prior
+	 * block.  (This also needs to happen for each list item: see
+	 * rndr_listitem()).
+	 */
+
+	if (compact &&
+	    (prev == NULL ||
+	     (prev->type != LOWDOWN_BLOCKCODE &&
+	      prev->type != LOWDOWN_LIST &&
+	      prev->type != LOWDOWN_DEFINITION &&
+	      prev->type != LOWDOWN_PARAGRAPH)) &&
+	    (bqueue_block(obq, ".if n \\\n.sp -1") == NULL ||
+	     bqueue_block(obq, ".if t \\\n.sp -0.25v\n") == NULL))
+		return 0;
 
 	/* 
 	 * For a nested man(7) or ms(7) list, use RS/RE to indent the
@@ -1212,6 +1242,8 @@ rndr_list(struct nroff *st, struct bnodeq *obq,
 	for (n = n->parent; n != NULL; n = n->parent)
 		if (n->type == LOWDOWN_LISTITEM)
 			break;
+
+	/* List content optionally sandwiched in RS/RE. */
 
 	if (n != NULL && bqueue_block(obq, ".RS") == NULL)
 		return 0;
@@ -1482,6 +1514,21 @@ rndr_listitem(struct nroff *st, struct bnodeq *obq,
 		return 1;
 	}
 
+	/* 
+	 * Suppress leading space if we're not in a block and there's a
+	 * list item that comes after us (i.e., anything after us).
+	 */
+
+	if (TAILQ_PREV(n, lowdown_nodeq, entries) != NULL &&
+	    n->parent != NULL &&
+	    n->parent->type == LOWDOWN_LIST &&
+	    !(n->parent->rndr_list.flags & HLIST_FL_BLOCK) &&
+	    !(n->parent->rndr_list.flags & HLIST_FL_DEF) &&
+	    (bqueue_block(obq, ".if n \\\n.sp -1") == NULL ||
+	     bqueue_block(obq, ".if t \\\n.sp -0.25v\n") == NULL))
+		return 0;
+
+
 	/*
 	 * For man(7) and ms(7), when indenting for the number of bullet
 	 * preceding the line of text, use "indent" spaces as the
@@ -1532,21 +1579,6 @@ rndr_listitem(struct nroff *st, struct bnodeq *obq,
 
 	bqueue_strip_paras(bq);
 	TAILQ_CONCAT(obq, bq, entries);
-
-	/* 
-	 * Suppress trailing space if we're not in a block and there's a
-	 * list item that comes after us (i.e., anything after us).
-	 */
-
-	if ((n->rndr_listitem.flags & HLIST_FL_BLOCK) ||
-	    (n->rndr_listitem.flags & HLIST_FL_DEF))
-		return 1;
-
-	if (TAILQ_NEXT(n, entries) != NULL &&
-	    (bqueue_block(obq, ".if n \\\n.sp -1") == NULL ||
-	     bqueue_block(obq, ".if t \\\n.sp -0.25v\n") == NULL))
-		return 0;
-
 	return 1;
 }
 
