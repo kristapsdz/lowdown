@@ -548,14 +548,14 @@ regress:: bins
 		$(REGRESS_ENV) $(VALGRIND) ./lowdown $(REGRESS_ARGS) "$$f" | \
 			sed -e 's!	! !g' | sed -e '/^[ ]*$$/d' > $$tmp2 ; \
 		diff -uw $$tmp1 $$tmp2 || rc=$$((rc + 1)) ; \
-		for type in html fodt latex ms man gemini term tree ; do \
+		for type in html fodt latex ms man mdoc gemini term tree ; do \
 			$(REGRESS_ENV) $(VALGRIND) ./lowdown -s -t$$type "$$f" >/dev/null 2>&1 ; \
 		done ; \
 	done  ; \
 	for f in regress/*.md ; do \
 		ff=regress/`basename $$f .md` ; \
 		echo "$$f" ; \
-		for type in html fodt latex ms man gemini term ; do \
+		for type in html fodt latex ms man mdoc gemini term ; do \
 			if [ -f $$ff.$$type ]; then \
 				$(REGRESS_ENV) $(VALGRIND) ./lowdown -t$$type $$f >$$tmp1 2>&1 ; \
 				diff -uw $$ff.$$type $$tmp1 || rc=$$((rc + 1)) ; \
@@ -575,7 +575,7 @@ regress:: bins
 	for f in regress/standalone/*.md ; do \
 		ff=regress/standalone/`basename $$f .md` ; \
 		echo "$$f" ; \
-		for type in html fodt latex ms man gemini term ; do \
+		for type in html fodt latex ms man mdoc gemini term ; do \
 			if [ -f $$ff.$$type ]; then \
 				$(REGRESS_ENV) $(VALGRIND) ./lowdown -s -t$$type $$f >$$tmp1 2>&1 ; \
 				diff -uw $$ff.$$type $$tmp1 || rc=$$((rc + 1)) ; \
@@ -607,7 +607,7 @@ regress:: bins
 	for f in regress/diff/*.old.md ; do \
 		bf=`dirname $$f`/`basename $$f .old.md` ; \
 		echo "$$f -> $$bf.new.md" ; \
-		for type in html fodt latex ms man gemini term ; do \
+		for type in html fodt latex ms man mdoc gemini term ; do \
 			if [ -f $$bf.$$type ]; then \
 				$(REGRESS_ENV) $(VALGRIND) ./lowdown-diff -s -t$$type $$f $$bf.new.md >$$tmp1 2>&1 ; \
 				diff -uw $$bf.$$type $$tmp1 || rc=$$((rc + 1)) ; \
