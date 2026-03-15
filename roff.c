@@ -861,7 +861,6 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 	struct lowdown_buf	*ob = NULL;
 	struct bnode		*bn;
 	int			 rc = 0, classic = 0, inhibit = 0;
-	char			*cp1, *cp2;
 
 	/* Override type as e-mail if the link so resolves. */
 
@@ -869,29 +868,15 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 		type = HALINK_EMAIL;
 
 	if (st->type == LOWDOWN_MDOC) {
-		if ((bn = bqueue_block(obq,
-		     type == HALINK_EMAIL ? ".Mt" : ".Lk")) == NULL)
-			return 0;
-
 		if ((ob = hbuf_new(32)) == NULL ||
 		    (bq != NULL && !bqueue_flush(st, ob, bq, 1)))
 			goto out;
-
-		cp1 = strndup(ob->data, ob->size);
-		cp2 = strndup(link->data, link->size);
-
-		if (cp1 == NULL || cp2 == NULL) {
-			free(cp1);
-			free(cp2);
-			goto out;
-		}
-		if (asprintf(&bn->nargs, "%s %s", cp2, cp1) == -1) {
-			free(cp1);
-			free(cp2);
-			bn->args = NULL;
-			goto out;
-		}
-
+		if (bqueue_blocknv(obq,
+		    type == HALINK_EMAIL ? ".Mt" : ".Lk",
+		    "%.*s %.*s",
+		    (int)link->size, link->data,
+		    (int)ob->size, ob->data) == NULL)
+			return 0;
 		rc = 1;
 		goto out;
 	}
