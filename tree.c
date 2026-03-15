@@ -341,16 +341,17 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			return 0;
 		break;
 	case LOWDOWN_LIST:
-		if (!rndr_indent(ob, indent + 1))
-			return 0;
-		if (!hbuf_printf(ob, "list type: %s\n",
-		    HLIST_FL_ORDERED & root->rndr_list.flags ? 
-		    "ordered" : "unordered"))
-			return 0;
-		if (!rndr_indent(ob, indent + 1))
-			return 0;
-		if (!hbuf_printf(ob, "list items: %zu\n",
-		    root->rndr_list.items))
+		if (!rndr_indent(ob, indent + 1) ||
+		    !hbuf_printf(ob, "list type: %s\n",
+		     (root->rndr_list.flags & HLIST_FL_ORDERED) ?
+		      "ordered" : "unordered") ||
+		    !rndr_indent(ob, indent + 1) ||
+		    !hbuf_printf(ob, "scope: %s\n",
+		     (root->rndr_list.flags & HLIST_FL_BLOCK) ?
+		      "block" : "span") ||
+		    !rndr_indent(ob, indent + 1) ||
+		    !hbuf_printf(ob, "list items: %zu\n",
+		     root->rndr_list.items))
 			return 0;
 		break;
 	case LOWDOWN_META:
