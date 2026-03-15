@@ -314,6 +314,30 @@ bqueue_sblockn(struct bnodeq *bq, const char *text, char *nargs)
 }
 
 /*
+ * Like bqueue_sblock(), but accepting variable arguments for the "nargs"
+ * option.
+ */
+static struct bnode *
+bqueue_sblocknv(struct bnodeq *bq, const char *text, const char *fmt, ...)
+{
+	struct bnode	*bn;
+	va_list		 ap;
+	int		 rc;
+
+	if ((bn = bqueue_sblock(bq, text)) == NULL)
+		return NULL;
+
+	va_start(ap, fmt);
+	rc = vasprintf(&bn->nargs, fmt, ap);
+	va_end(ap);
+	if (rc == -1) {
+		bn->nargs = NULL;
+		return NULL;
+	}
+	return bn;
+}
+
+/*
  * Like bqueue_block(), but accepting the "nargs" option.  If failure
  * occurs, the "nargs" is freed.  If "nargs" is NULL, returns failure.
  */
@@ -559,35 +583,64 @@ bqueue_flush(const struct nroff *st, struct lowdown_buf *ob,
 		/* Unsafe data must be escaped. */
 
 		if (bn->scope == BSCOPE_LITERAL) {
-			assert(bn->buf != NULL);
-			if (!lowdown_roff_esc(ob, bn->buf,
-			    strlen(bn->buf), 0, 1))
+			cp = bn->buf;
+			assert(cp != NULL);
+			sz = strlen(cp);
+			if (!lowdown_roff_esc(ob, cp, sz, 0, 1))
 				return 0;
 		} else if (bn->buf != NULL) {
+			cp = bn->buf;
+			sz = strlen(cp);
+			
 			/*
-			 * For safe data in mdoc(7), see if the last
-			 * character is opening punctuation.  Use
-			 * mdoc(7)'s "Delimiters" as a guide.
-			 * XXX: multiple delimiters...?
+			 * For mdoc(7), prepare for flushing a span
+			 * against the coming semiblock macro.  Unlike
+			 * below where mdoc(7) delimiters need to be
+			 * accounted for, here just see if the last
+			 * character is non-space and use the correct
+			 * `Ns` output.
 			 */
-			sz = strlen(bn->buf);
-			if (sz - 1 > offset &&
-			    st->type == LOWDOWN_MDOC &&
+
+			if (st->type == LOWDOWN_MDOC &&
+			    sz > offset &&
+			    !isspace((unsigned char)cp[sz - 1]) &&
 		  	    (tmpbn = TAILQ_NEXT(bn, entries)) != NULL &&
-			     tmpbn->scope == BSCOPE_SEMI &&
-			     (bn->buf[sz - 1] == '(' ||
-			      bn->buf[sz - 1] == '[')) {
-				if (!lowdown_roff_esc(ob,
-				    &bn->buf[offset], sz - offset - 1,
-				    0, 0))
-					return 0;
-				if (!hbuf_printf(ob, "\n.No %c Ns",
-				    bn->buf[sz - 1]))
+			     tmpbn->scope == BSCOPE_SEMI) {
+				for (i = sz - 1; i > offset; i--)
+					if (isspace((unsigned char)cp[i]))
+						break;
+				/*
+				 * If there's no space, just print the
+				 * string as-is within an `No`.
+				 * Otherwise, chop the string up into
+				 * before the space and after.
+				 */
+				if (i == offset) {
+					if (!hbuf_printf(ob, ".No ") ||
+					    !lowdown_roff_esc(ob,
+					     &cp[offset],
+					     sz - offset, 0, 0))
+						return 0;
+				} else {
+					if (!lowdown_roff_esc(ob,
+					    &cp[offset],
+					    i - offset, 0, 0))
+						return 0;
+					if (ob->size > 0 &&
+					    ob->data[ob->size - 1] != '\n' &&
+					    !HBUF_PUTSL(ob, "\n"))
+						return 0;
+					if (!hbuf_printf(ob, ".No ") ||
+					    !lowdown_roff_esc(ob,
+					     &cp[i + 1],
+					     sz - i - 1, 0, 0))
+						return 0;
+				}
+				if (!hbuf_printf(ob, " Ns"))
 					return 0;
 			} else {
-				if (!lowdown_roff_esc(ob,
-				    &bn->buf[offset], sz - offset,
-				    0, 0))
+				if (!lowdown_roff_esc(ob, &cp[offset],
+				    sz - offset, 0, 0))
 					return 0;
 			}
 		}
@@ -997,11 +1050,9 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 
 		/* Either MT or UR depending on if a URL. */
 
-		bn = bqueue_node(obq, BSCOPE_SEMI, type == HALINK_EMAIL ?
-			".MT" : ".UR");
-		if (bn == NULL)
-			goto out;
-		if ((bn->nargs = strndup(ob->data, ob->size)) == NULL)
+		if (bqueue_sblocknv(obq,
+		    type == HALINK_EMAIL ? ".MT" : ".UR",
+		    "%.*s", (int)ob->size, ob->data) == NULL)
 			goto out;
 
 		/*
@@ -1014,9 +1065,8 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 
 		/* Close out the link content. */
 
-		bn = bqueue_node(obq, BSCOPE_SEMI_CLOSE,
-			type == HALINK_EMAIL ?  ".ME" : ".UE");
-		if (bn == NULL)
+		if (bqueue_node(obq, BSCOPE_SEMI_CLOSE,
+		    type == HALINK_EMAIL ?  ".ME" : ".UE") == NULL)
 			goto out;
 
 		rc = 1;
@@ -1075,13 +1125,11 @@ rndr_url(struct bnodeq *obq, struct nroff *st,
 
 	/* Finally, emit the external or in-page link contents. */
 
-	bn = bqueue_node(obq, BSCOPE_SEMI,
-		(type != HALINK_EMAIL && link->size > 0 &&
-		 link->data[0] == '#') ?
-		".pdfhref L" : ".pdfhref W");
-	if (bn == NULL)
-		goto out;
-	if ((bn->nargs = strndup(ob->data, ob->size)) == NULL)
+	if (bqueue_sblocknv(obq,
+	    (type != HALINK_EMAIL &&
+	     link->size > 0 && link->data[0] == '#') ?
+	    ".pdfhref L" : ".pdfhref W",
+	    "%.*s", (int)ob->size, ob->data) == NULL)
 		goto out;
 
 	rc = 1;
@@ -1879,8 +1927,6 @@ rndr_table_header(struct nroff *st, struct bnodeq *obq,
 	/* Now the body layout. */
 
 	hbuf_truncate(ob);
-	if ((bn = bqueue_block(obq, NULL)) == NULL)
-		goto out;
 	for (i = 0; i < param->columns; i++) {
 		if (i > 0 && !HBUF_PUTSL(ob, " "))
 			goto out;
@@ -1901,7 +1947,8 @@ rndr_table_header(struct nroff *st, struct bnodeq *obq,
 	}
 	if (!hbuf_putc(ob, '.'))
 		goto out;
-	if ((bn->nbuf = strndup(ob->data, ob->size)) == NULL)
+	if (bqueue_blocknv(obq, NULL, "%.*s",
+	    (int)ob->size, ob->data) == NULL)
 		goto out;
 
 	TAILQ_CONCAT(obq, bq, entries);
