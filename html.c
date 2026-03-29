@@ -671,7 +671,7 @@ rndr_image(struct lowdown_buf *ob, const struct rndr_image *param,
 
 	/* Require an "alt", even if blank. */
 
-	if (!HBUF_PUTSL(ob, "<img src=\"") ||
+	if (!HBUF_PUTSL(ob, "<img loading=\"lazy\" src=\"") ||
 	    !escape_href(ob, &param->link, st) ||
 	    !HBUF_PUTSL(ob, "\" alt=\"") ||
 	    !escape_attr(ob, &param->alt) ||
