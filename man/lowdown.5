@@ -783,6 +783,10 @@ are interpreted as HTML (CSS) or OpenDocument classes, and values with
 a leading pound symbol
 .Pq Qq \&#id
 are interpreted as in-document link identifiers.
+Furthermore, common HTML attributes like rel, download, referrerpolicy, and
+ping are also accepted.
+Custom attributes are conditionally accepted.
+Implementation of these depends on the output medium.
 .Pp
 Nested links are disallowed by CommonMark and will result in unportable
 behaviour if used.
@@ -864,6 +868,11 @@ anywhere in relation to each other.
 .Pp
 Images may also be followed by PHP Extra attributes for classes,
 identifiers, and width and height.
+This follows the same syntax for links.
+Furthermore, common HTML attributes like
+loading, ismap, usemap, crossorigin, referrerpolicy, sizes, and srcset
+are also accepted.
+Custom attributes are conditionally accepted.
 Implementation of these depends on the output medium.
 .Bd -literal -offset indent
 ![Picard](https://bsd.lv/picard.jpg){width=20% .class}

@@ -1,0 +1,13 @@
+.PP
+a
+b\fIfoo\fR]): bar
+.PP
+a b\fIfoo\fR]): bar
+.PP
+b\fIfoo\fR]): bar
+.PP
+bb\fIfoo\fR]): bar
+.PP
+\fIfoo\fR]): bar
+.PP
+a \fIfoo\fR]): bar

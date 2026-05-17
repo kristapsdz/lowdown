@@ -610,6 +610,41 @@ The metadata value.
 This may be an empty string.
 .El
 .Pp
+Attributes (including extended attributes) for links, headers, and
+images are held in key-value
+.Vt "struct lowdown_attr" ,
+which is always specified as a sized array indexed to the enumeration
+items in
+.Vt "enum lowdown_attr_type" .
+.Bl -tag -width Ds
+.It Va char *key
+If not
+.Dv NULL ,
+the attribute key like
+.Li class
+or
+.Li target .
+This may be zero-length.
+.It Va struct lowdown_buf *value
+If not
+.Dv NULL ,
+the attribute value.
+This may be zero-length.
+.El
+.Pp
+If the array is non-empty, it will contain at least
+.Dv LOWDOWN_ATTR_CUSTOM
+buckets for quick indexing.
+Including and following the
+.Dv LOWDOWN_ATTR_CUSTOM
+bucket are unindexed
+.Pq unrecognised
+attributes.
+The bucket is valid if its
+.Va value
+is not
+.Dv NULL .
+.Pp
 The abstract syntax tree is encoded in
 .Vt struct lowdown_node ,
 which consists of the following.
@@ -814,11 +849,14 @@ For
 the
 .Va level
 of the header starting at zero (this value is relative to the metadata
-base header level, defaulting to one), optional space-separated class
-list
-.Va attr_cls ,
-and optional single identifier
-.Va attr_id .
+base header level, defaulting to one).
+Arbitrary key-value attributes are stored in
+.Va attrs
+of length
+.Va attrsz ,
+which are
+.Dv NULL
+and 0, respectively, if there are no attributes.
 .It Va rndr_image
 For
 .Dv LOWDOWN_IMAGE ,
@@ -830,23 +868,25 @@ dimensions NxN (width by height) in
 .Va dims ,
 and alternate text
 .Va alt .
-CSS in-line style for width and height may be given in
-.Va attr_width
-and/or
-.Va attr_height ,
-and a space-separated list of classes may be in
-.Va attr_cls
-and a single identifier may be in
-.Va attr_id .
+Arbitrary key-value attributes are stored in
+.Va attrs
+of length
+.Va attrsz ,
+which are
+.Dv NULL
+and 0, respectively, if there are no attributes.
 .It Va rndr_link
 Like
 .Va rndr_autolink ,
 but without a type and further defining an optional link title
-.Va title ,
-optional space-separated class list
-.Va attr_cls ,
-and optional single identifier
-.Va attr_id .
+.Va title .
+Arbitrary key-value attributes are stored in
+.Va attrs
+of length
+.Va attrsz ,
+which are
+.Dv NULL
+and 0, respectively, if there are no attributes.
 .It Va rndr_list
 For
 .Dv LOWDOWN_LIST ,
