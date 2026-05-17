@@ -303,6 +303,7 @@ main(int argc, char *argv[])
 		{ "out-no-smarty",	no_argument,	&rfl, LOWDOWN_SMARTY },
 		{ "out-standalone",	no_argument,	&afl, LOWDOWN_STANDALONE },
 
+		{ "html-custom-attributes", no_argument,&afl, LOWDOWN_HTML_CUSTOM_ATTRS },
 		{ "html-no-escapehtml",	no_argument,	&rfl, LOWDOWN_HTML_ESCAPE },
 		{ "html-hardwrap",	no_argument,	&afl, LOWDOWN_HTML_HARD_WRAP },
 		{ "html-no-head-ids",	no_argument,	&rfl, LOWDOWN_HTML_HEAD_IDS },

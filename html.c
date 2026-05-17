@@ -354,8 +354,10 @@ static int
 rndr_header(struct lowdown_buf *ob, const struct lowdown_buf *content,
     const struct lowdown_node *n, struct html *st)
 {
-	ssize_t			  level;
-	const struct lowdown_buf *v;
+	ssize_t			   level;
+	const struct lowdown_buf  *buf;
+	const struct lowdown_attr *v;
+	size_t			   i;
 
 	/*
 	 * The <hN> level take into account shifteheadinglevelby
@@ -378,27 +380,46 @@ rndr_header(struct lowdown_buf *ob, const struct lowdown_buf *content,
 	 * computed from the content of the header.
 	 */
 
-	if (n->rndr_header.attrsz &&
-	    (v = n->rndr_header.attrs[LOWDOWN_ATTR_ID].value) != NULL) {
+	if (n->rndr_header.attrsz > 0 &&
+	    (buf = n->rndr_header.attrs[LOWDOWN_ATTR_ID].value) != NULL) {
 		if (!HBUF_PUTSL(ob, " id=\"") ||
-		    !escape_attr(ob, v) ||
+		    !escape_attr(ob, buf) ||
 		    !HBUF_PUTSL(ob, "\""))
 			return 0;
 	} else if (st->flags & LOWDOWN_HTML_HEAD_IDS)
 		if (!HBUF_PUTSL(ob, " id=\"") ||
-		    (v = hbuf_id(NULL, n, &st->headers_used)) == NULL ||
-		    !hbuf_putb(ob, v) ||
+		    (buf = hbuf_id(NULL, n, &st->headers_used)) == NULL ||
+		    !hbuf_putb(ob, buf) ||
 		    !HBUF_PUTSL(ob, "\""))
 			return 0;
 
 	/* Optional header class. */
 
-	if (n->rndr_header.attrsz &&
-	    (v = n->rndr_header.attrs[LOWDOWN_ATTR_CLASS].value) != NULL)
+	if (n->rndr_header.attrsz > 0 &&
+	    (buf = n->rndr_header.attrs[LOWDOWN_ATTR_CLASS].value) != NULL)
 		if (!HBUF_PUTSL(ob, " class=\"") ||
-		    !escape_attr(ob, v) ||
+		    !escape_attr(ob, buf) ||
 		    !HBUF_PUTSL(ob, "\""))
 			return 0;
+
+	/* Unrecognised attributes. */
+
+	if (n->rndr_header.attrsz >= LOWDOWN_ATTR_CUSTOM &&
+	    (st->flags & LOWDOWN_HTML_CUSTOM_ATTRS))
+		for (i = LOWDOWN_ATTR_CUSTOM;
+		     i < n->rndr_header.attrsz; i++) {
+			v = &n->rndr_header.attrs[i];
+			if (v->value == NULL)
+				continue;
+			if (v->value->size == 0 &&
+			    !hbuf_printf(ob, " %s", v->key))
+				return 0;
+			if (v->value->size &&
+			    (!hbuf_printf(ob, " %s=\"", v->key) ||
+			     !escape_attr(ob, v->value) ||
+	    		     !HBUF_PUTSL(ob, "\"")))
+				return 0;
+		}
 
 	if (!HBUF_PUTSL(ob, ">"))
 		return 0;
@@ -448,6 +469,22 @@ rndr_link(struct lowdown_buf *ob, const struct lowdown_buf *content,
 	if (param->attrsz > 0)
 		for (i = 0; attrs[i] != LOWDOWN_ATTR_CUSTOM; i++) {
 			v = &param->attrs[attrs[i]];
+			if (v->value == NULL)
+				continue;
+			if (v->value->size == 0 &&
+			    !hbuf_printf(ob, " %s", v->key))
+				return 0;
+			if (v->value->size &&
+			    (!hbuf_printf(ob, " %s=\"", v->key) ||
+			     !escape_attr(ob, v->value) ||
+	    		     !HBUF_PUTSL(ob, "\"")))
+				return 0;
+		}
+
+	if (param->attrsz >= LOWDOWN_ATTR_CUSTOM &&
+	    (st->flags & LOWDOWN_HTML_CUSTOM_ATTRS))
+		for (i = LOWDOWN_ATTR_CUSTOM; i < param->attrsz; i++) {
+			v = &param->attrs[i];
 			if (v->value == NULL)
 				continue;
 			if (v->value->size == 0 &&
@@ -766,6 +803,22 @@ rndr_image(struct lowdown_buf *ob, const struct rndr_image *param,
 		    (rc > 1 && !hbuf_printf(ob, " height=\"%u\"", y)))
 			return 0;
 	}
+
+	if (param->attrsz >= LOWDOWN_ATTR_CUSTOM &&
+	    (st->flags & LOWDOWN_HTML_CUSTOM_ATTRS))
+		for (i = LOWDOWN_ATTR_CUSTOM; i < param->attrsz; i++) {
+			v = &param->attrs[i];
+			if (v->value == NULL)
+				continue;
+			if (v->value->size == 0 &&
+			    !hbuf_printf(ob, " %s", v->key))
+				return 0;
+			if (v->value->size &&
+			    (!hbuf_printf(ob, " %s=\"", v->key) ||
+			     !escape_attr(ob, v->value) ||
+	    		     !HBUF_PUTSL(ob, "\"")))
+				return 0;
+		}
 
 	/* If specified, print the image title. */
 

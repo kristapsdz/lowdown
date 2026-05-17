@@ -337,6 +337,13 @@ For
 .Bl -tag -width Ds -compact
 .It Dv LOWDOWN_HTML_CALLOUT_MDN , LOWDOWN_HTML_CALLOUT_GFM
 Output MDN and/or GFM-style callout syntax.
+.It Dv LOWDOWN_HTML_CUSTOM_ATTRS
+Output unrecognised HTML attributes as well as recognised.
+For example
+.Li rel
+is a recognised HTML attribute, while
+.Li data-rel
+is not.
 .It Dv LOWDOWN_HTML_ESCAPE
 If
 .Dv LOWDOWN_SKIP_HTML

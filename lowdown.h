@@ -394,7 +394,7 @@ struct	lowdown_opts {
 #define	LOWDOWN_GEMINI_LINK_END	  0x8000 /* links at end */
 #define	LOWDOWN_GEMINI_LINK_IN	  0x10000 /* links inline */
 #define LOWDOWN_NOLINK	  	  0x20000 /* don't show URLs */
-/* Missing			  0x40000 */
+#define LOWDOWN_HTML_CUSTOM_ATTRS 0x40000 /* unknown HTML attrs */
 /* Missing			  0x80000 */
 #define LOWDOWN_GEMINI_METADATA	  0x100000 /* show metadata */
 #define	LOWDOWN_GEMINI_LINK_NOREF 0x200000 /* for !inline, no names */
