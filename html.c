@@ -423,6 +423,8 @@ rndr_link(struct lowdown_buf *ob, const struct lowdown_buf *content,
 		LOWDOWN_ATTR_ID,
 		LOWDOWN_ATTR_REL,
 		LOWDOWN_ATTR_DOWNLOAD,
+		LOWDOWN_ATTR_REFERRERPOLICY,
+		LOWDOWN_ATTR_PING,
 		LOWDOWN_ATTR_CUSTOM
 	};
 

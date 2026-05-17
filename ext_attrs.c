@@ -45,6 +45,7 @@ static const char *strattrs[] = {
 	"target", /* LOWDOWN_ATTR_TARGET */
 	"download", /* LOWDOWN_ATTR_DOWLOAD */
 	"loading", /* LOWDOWN_ATTR_LOADING */
+	"ping", /* LOWDOWN_ATTR_PING */
 	NULL, /* LOWDOWN_ATTR_CUSTOM */
 };
 
