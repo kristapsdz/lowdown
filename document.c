@@ -1478,6 +1478,19 @@ char_image(struct lowdown_doc *doc,
 	return ret <= 0 ? ret : ret + 1;
 }
 
+static void
+lowdown_attrs_free(struct lowdown_attr *attrs, size_t attrsz)
+{
+	size_t	 i;
+
+	for (i = 0; i < attrsz; i++) {
+		free(attrs[i].key);
+		hbuf_free(attrs[i].value);
+	}
+	free(attrs);
+}
+
+
 /*
  * Add an HTML attribute named "key" with value "val" to the list of
  * attributes attached to a node.
@@ -1492,7 +1505,7 @@ char_image(struct lowdown_doc *doc,
  */
 static int
 lowdown_attrs_add(struct lowdown_attr **attrs, size_t *attrsz,
-    const char *key, const struct lowdown_buf *val)
+    const char *key, const char *val, size_t valsz)
 {
 	enum lowdown_attr_type	 type = LOWDOWN_ATTR_CUSTOM;
 	void			*p;
@@ -1526,7 +1539,7 @@ lowdown_attrs_add(struct lowdown_attr **attrs, size_t *attrsz,
 			return 0;
 		*attrs = p;
 		if (((*attrs)[*attrsz].key = strdup(key)) == NULL ||
-		    ((*attrs)[*attrsz].value = hbuf_dup(val)) == NULL)
+		    ((*attrs)[*attrsz].value = hbuf_strndup(val, valsz)) == NULL)
 			return 0;
 		(*attrsz)++;
 		return 1;
@@ -1541,10 +1554,10 @@ lowdown_attrs_add(struct lowdown_attr **attrs, size_t *attrsz,
 			return 0;
 		if ((*attrs)[type].value != NULL &&
 		    (!HBUF_PUTSL((*attrs)[type].value, " ") ||
-		     !hbuf_putb((*attrs)[type].value, val)))
+		     !hbuf_put((*attrs)[type].value, val, valsz)))
 			return 0;
 		if ((*attrs)[type].value == NULL &&
-		    ((*attrs)[type].value = hbuf_dup(val)) == NULL)
+		    ((*attrs)[type].value = hbuf_strndup(val, valsz)) == NULL)
 			return 0;
 	} else {
 		if ((*attrs)[type].key == NULL)
@@ -1552,13 +1565,12 @@ lowdown_attrs_add(struct lowdown_attr **attrs, size_t *attrsz,
 		if ((*attrs)[type].key == NULL)
 			return 0;
 		hbuf_free((*attrs)[type].value);
-		if (((*attrs)[type].value = hbuf_dup(val)) == NULL)
+		if (((*attrs)[type].value = hbuf_strndup(val, valsz)) == NULL)
 			return 0;
 	}
 
 	return 1;
 }
-
 
 /*
  * Parse extended attributes from the buffer "data".  The buffer should
@@ -1566,11 +1578,8 @@ lowdown_attrs_add(struct lowdown_attr **attrs, size_t *attrsz,
  * failure or position of *next* word.
  */
 static size_t
-parse_ext_attrs(const char *data, size_t size, struct lowdown_attr **attrs, size_t *attrsz,
-	struct lowdown_buf **attrid,
-	struct lowdown_buf **attrcls,
-	struct lowdown_buf **attrwidth,
-	struct lowdown_buf **attrheight)
+parse_ext_attrs(const char *data, size_t size,
+    struct lowdown_attr **attrs, size_t *attrsz)
 {
 	size_t	 word_b, word_e;
 
@@ -1583,56 +1592,30 @@ parse_ext_attrs(const char *data, size_t size, struct lowdown_attr **attrs, size
 		while (word_e < size && data[word_e] != ' ')
 		     word_e++;
 
-		/* Classes. */
+		if (word_e > word_b + 1 &&
+		    data[word_b] == '#' &&
+		    !lowdown_attrs_add(attrs, attrsz, "id",
+		     data + word_b + 1, word_e - word_b - 1))
+			return 0;
 
-		if (attrid != NULL &&
-		    word_e > word_b + 1 &&
-		    data[word_b] == '#') {
-			if (*attrid == NULL &&
-			    (*attrid = hbuf_new(64)) == NULL)
-				return 0;
-			hbuf_truncate(*attrid);
-			if (!hbuf_put(*attrid,
-			     data + word_b + 1, word_e - word_b - 1))
-				return 0;
-		}
+		if (word_e > word_b + 7 &&
+	  	    strncasecmp(&data[word_b], "width=", 6) == 0 &&
+		    !lowdown_attrs_add(attrs, attrsz, "width",
+		     data + word_b + 6, word_e - word_b - 6))
+			return 0;
 
-		if (attrwidth != NULL &&
-		    word_e > word_b + 7 &&
-	  	    strncasecmp(&data[word_b], "width=", 6) == 0) {
-			if (*attrwidth == NULL &&
-			    (*attrwidth = hbuf_new(64)) == NULL)
-				return 0;
-			hbuf_truncate(*attrwidth);
-			if (!hbuf_put(*attrwidth,
-			     data + word_b + 6, word_e - word_b - 6))
-				return 0;
-		}
-		if (attrheight != NULL &&
-		    word_e > word_b + 8 &&
-	  	    strncasecmp(&data[word_b], "height=", 7) == 0) {
-			if (*attrheight == NULL &&
-			    (*attrheight = hbuf_new(64)) == NULL)
-				return 0;
-			hbuf_truncate(*attrheight);
-			if (!hbuf_put(*attrheight,
-			     data + word_b + 7, word_e - word_b - 7))
-				return 0;
-		}
+		if (word_e > word_b + 8 &&
+	  	    strncasecmp(&data[word_b], "height=", 7) == 0 &&
+		    !lowdown_attrs_add(attrs, attrsz, "height",
+		     data + word_b + 7, word_e - word_b - 7))
+			return 0;
 
-		if (attrcls != NULL &&
-		    word_e > word_b + 1 &&
-		    data[word_b] == '.') {
-			if (*attrcls != NULL &&
-			    !hbuf_putc(*attrcls, ' '))
-				return 0;
-			if (*attrcls == NULL &&
-			    (*attrcls = hbuf_new(64)) == NULL)
-				return 0;
-			if (!hbuf_put(*attrcls,
-			     data + word_b + 1, word_e - word_b - 1))
-				return 0;
-		}
+		if (word_e > word_b + 1 &&
+		    data[word_b] == '.' &&
+		    !lowdown_attrs_add(attrs, attrsz, "class",
+		     data + word_b + 1, word_e - word_b - 1))
+			return 0;
+
 		word_b = word_e + 1;
 	}
 
@@ -1647,7 +1630,7 @@ static int
 parse_header_ext_attrs(struct lowdown_node *n)
 {
 	struct lowdown_node	*nn;
-	struct lowdown_buf	*b, *attrid = NULL, *attrcls = NULL;
+	struct lowdown_buf	*b;
 	size_t			 i;
 	int			 rc = 0;
 
@@ -1677,16 +1660,7 @@ parse_header_ext_attrs(struct lowdown_node *n)
 	/* Parse the extended attributes. */
 
 	if (!parse_ext_attrs(&b->data[i + 1], b->size - i - 2,
-	    NULL, NULL, &attrid, &attrcls, NULL, NULL))
-		goto out;
-
-	if (attrid != NULL &&
-	    !lowdown_attrs_add(&n->rndr_header.attrs,
-	     &n->rndr_header.attrsz, "id", attrid))
-		goto out;
-	if (attrcls != NULL &&
-	    !lowdown_attrs_add(&n->rndr_header.attrs,
-	     &n->rndr_header.attrsz, "class", attrcls))
+	    &n->rndr_header.attrs, &n->rndr_header.attrsz))
 		goto out;
 
 	b->size = i;
@@ -1702,8 +1676,6 @@ parse_header_ext_attrs(struct lowdown_node *n)
 
 	rc = 1;
 out:
-	hbuf_free(attrid);
-	hbuf_free(attrcls);
 	return rc;
 }
 
@@ -1717,9 +1689,7 @@ char_link(struct lowdown_doc *doc,
 	struct lowdown_buf	*content = NULL, *link = NULL,
 				*title = NULL, *u_link = NULL,
 				*dims = NULL, *idp = NULL,
-				*linkp = NULL, *titlep = NULL,
-				*attrcls = NULL, *attrid = NULL,
-				*attrwidth = NULL, *attrheight = NULL;
+				*linkp = NULL, *titlep = NULL;
 	size_t			 i = 1, j, txt_e, link_b = 0, link_e = 0,
 				 title_b = 0, title_e = 0, nb_p,
 				 dims_b = 0, dims_e = 0;
@@ -2071,9 +2041,10 @@ again:
 
 		link = lr->link;
 		title = lr->title;
-		if (lr->attrs != NULL && parse_ext_attrs
-		    (lr->attrs->data, lr->attrs->size, &attrs, &attrsz,
-		     &attrid, &attrcls, &attrwidth, &attrheight) == 0)
+
+		if (lr->attrs != NULL &&
+		    !parse_ext_attrs(lr->attrs->data, lr->attrs->size,
+		     &attrs, &attrsz))
 			goto err;
 		i++;
 	} else {
@@ -2098,9 +2069,9 @@ again:
 
 		link = lr->link;
 		title = lr->title;
-		if (lr->attrs != NULL && parse_ext_attrs
-		    (lr->attrs->data, lr->attrs->size, &attrs, &attrsz,
-		     &attrid, &attrcls, &attrwidth, &attrheight) == 0)
+		if (lr->attrs != NULL &&
+		    !parse_ext_attrs(lr->attrs->data, lr->attrs->size,
+		     &attrs, &attrsz))
 			goto err;
 
 		/* Rewinding the spacing. */
@@ -2118,8 +2089,7 @@ again:
 
 		for (j = i; j < size && data[j] != '}'; j++)
 			continue;
-		j = parse_ext_attrs(&data[i], j - i, &attrs, &attrsz,
-			&attrid, &attrcls, &attrwidth, &attrheight);
+		j = parse_ext_attrs(&data[i], j - i, &attrs, &attrsz);
 		if (j == 0)
 			goto err;
 		i += j;
@@ -2176,22 +2146,8 @@ again:
 		if (content != NULL &&
 		    !hbuf_createb(&n->rndr_image.alt, content))
 			goto err;
-		if (attrwidth != NULL &&
-		    !lowdown_attrs_add(&n->rndr_image.attrs,
-		     &n->rndr_image.attrsz, "width", attrwidth))
-			goto err;
-		if (attrheight != NULL &&
-		    !lowdown_attrs_add(&n->rndr_image.attrs,
-		     &n->rndr_image.attrsz, "height", attrheight))
-			goto err;
-		if (attrcls != NULL &&
-		    !lowdown_attrs_add(&n->rndr_image.attrs,
-		     &n->rndr_image.attrsz, "class", attrcls))
-			goto err;
-		if (attrid != NULL &&
-		    !lowdown_attrs_add(&n->rndr_image.attrs,
-		     &n->rndr_image.attrsz, "id", attrid))
-			goto err;
+		n->rndr_image.attrs = attrs;
+		n->rndr_image.attrsz = attrsz;
 		ret = 1;
 	} else {
 		if (u_link != NULL &&
@@ -2200,26 +2156,20 @@ again:
 		if (title != NULL &&
 		    !hbuf_createb(&n->rndr_link.title, title))
 			goto err;
-		if (attrcls != NULL &&
-		    !lowdown_attrs_add(&n->rndr_link.attrs,
-		     &n->rndr_link.attrsz, "class", attrcls))
-			goto err;
-		if (attrid != NULL &&
-		    !lowdown_attrs_add(&n->rndr_link.attrs,
-		     &n->rndr_link.attrsz, "id", attrid))
-			goto err;
+		n->rndr_link.attrs = attrs;
+		n->rndr_link.attrsz = attrsz;
 		ret = 1;
 	}
+
+	attrs = NULL;
+	attrsz = 0;
 
 	popnode(doc, n);
 	goto cleanup;
 err:
 	ret = -1;
 cleanup:
-	hbuf_free(attrid);
-	hbuf_free(attrcls);
-	hbuf_free(attrheight);
-	hbuf_free(attrwidth);
+	lowdown_attrs_free(attrs, attrsz);
 	hbuf_free(linkp);
 	hbuf_free(titlep);
 	hbuf_free(dims);
@@ -5284,18 +5234,6 @@ out:
 		root = NULL;
 	}
 	return root;
-}
-
-static void
-lowdown_attrs_free(struct lowdown_attr *attrs, size_t attrsz)
-{
-	size_t	 i;
-
-	for (i = 0; i < attrsz; i++) {
-		free(attrs[i].key);
-		hbuf_free(attrs[i].value);
-	}
-	free(attrs);
 }
 
 void

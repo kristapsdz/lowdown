@@ -62,6 +62,23 @@ hbuf_dup(const struct lowdown_buf *buf)
 }
 
 /*
+ * Like hbuf_dup(), but creating a buffer from a sized buffer.
+ */
+struct lowdown_buf *
+hbuf_strndup(const char *val, size_t valsz)
+{
+	struct lowdown_buf	*v;
+
+	if ((v = hbuf_new(32)) == NULL)
+		return NULL;
+	if (!hbuf_put(v, val, valsz)) {
+		hbuf_free(v);
+		return NULL;
+	}
+	return v;
+}
+
+/*
  * Deep-copies "buf" into "v", wiping its contents.  Returns TRUE on
  * success or FALSE on memory allocation failure.
  */

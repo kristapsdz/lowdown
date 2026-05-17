@@ -46,6 +46,8 @@ int		 hbuf_grow(struct lowdown_buf *, size_t);
 int		 hbuf_clone(const struct lowdown_buf *, struct lowdown_buf *);
 struct lowdown_buf
 		*hbuf_dup(const struct lowdown_buf *);
+struct lowdown_buf
+		*hbuf_strndup(const char *, size_t);
 int		 hbuf_extract_text(struct lowdown_buf *, const struct lowdown_node *);
 const struct lowdown_buf
 		*hbuf_id(const struct lowdown_buf *, const struct lowdown_node *,
