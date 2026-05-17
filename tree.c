@@ -111,8 +111,29 @@ rndr_short(struct lowdown_buf *ob, const struct lowdown_buf *b)
 }
 
 static int
+rndr_attrs(struct lowdown_buf *ob, size_t indent,
+    const struct lowdown_attr *attrs, size_t attrsz)
+{
+	size_t i;
+
+	for (i = 0; i < attrsz; i++) {
+		if (attrs[i].value == NULL)
+			continue;
+		if (!rndr_indent(ob, indent + 1))
+			return 0;
+		if (!hbuf_printf(ob, "%s: ", attrs[i].key))
+			return 0;
+		if (!hbuf_putb(ob, attrs[i].value))
+			return 0;
+		if (!HBUF_PUTSL(ob, "\n"))
+			return 0;
+	}
+	return 1;
+}
+
+static int
 rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
-	const struct lowdown_node *root, size_t indent)
+    const struct lowdown_node *root, size_t indent)
 {
 	const struct lowdown_node	*n;
 	struct lowdown_buf		*tmp;
@@ -186,46 +207,9 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			if (!HBUF_PUTSL(ob, "\n"))
 				return 0;
 		}
-		if (root->rndr_image.attr_width.size) {
-			if (!rndr_indent(ob, indent + 1))
-				return 0;
-			if (!hbuf_printf(ob, "width (extended): "))
-				return 0;
-			if (!rndr_short(ob, &root->rndr_image.attr_width))
-				return 0;
-			if (!HBUF_PUTSL(ob, "\n"))
-				return 0;
-		}
-		if (root->rndr_image.attr_height.size) {
-			if (!rndr_indent(ob, indent + 1))
-				return 0;
-			if (!hbuf_printf(ob, "height (extended): "))
-				return 0;
-			if (!rndr_short(ob, &root->rndr_image.attr_height))
-				return 0;
-			if (!HBUF_PUTSL(ob, "\n"))
-				return 0;
-		}
-		if (root->rndr_image.attr_cls.size > 0) {
-			if (!rndr_indent(ob, indent + 1))
-				return 0;
-			if (!HBUF_PUTSL(ob, "class: "))
-				return 0;
-			if (!hbuf_putb(ob, &root->rndr_image.attr_cls))
-				return 0;
-			if (!HBUF_PUTSL(ob, "\n"))
-				return 0;
-		}
-		if (root->rndr_image.attr_id.size > 0) {
-			if (!rndr_indent(ob, indent + 1))
-				return 0;
-			if (!HBUF_PUTSL(ob, "id: "))
-				return 0;
-			if (!hbuf_putb(ob, &root->rndr_image.attr_id))
-				return 0;
-			if (!HBUF_PUTSL(ob, "\n"))
-				return 0;
-		}
+		if (!rndr_attrs(ob, indent, root->rndr_image.attrs,
+		    root->rndr_image.attrsz))
+			return 0;
 		break;
 	case LOWDOWN_HEADER:
 		if (!rndr_indent(ob, indent + 1))
@@ -233,26 +217,9 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 		if (!hbuf_printf(ob, "level: %zu\n",
 		    root->rndr_header.level))
 			return 0;
-		if (root->rndr_header.attr_cls.size > 0) {
-			if (!rndr_indent(ob, indent + 1))
-				return 0;
-			if (!HBUF_PUTSL(ob, "class: "))
-				return 0;
-			if (!hbuf_putb(ob, &root->rndr_header.attr_cls))
-				return 0;
-			if (!HBUF_PUTSL(ob, "\n"))
-				return 0;
-		}
-		if (root->rndr_header.attr_id.size > 0) {
-			if (!rndr_indent(ob, indent + 1))
-				return 0;
-			if (!HBUF_PUTSL(ob, "id: "))
-				return 0;
-			if (!hbuf_putb(ob, &root->rndr_header.attr_id))
-				return 0;
-			if (!HBUF_PUTSL(ob, "\n"))
-				return 0;
-		}
+		if (!rndr_attrs(ob, indent, root->rndr_header.attrs,
+		    root->rndr_header.attrsz))
+			return 0;
 		break;
 	case LOWDOWN_RAW_HTML:
 		if (!rndr_indent(ob, indent + 1))
@@ -426,26 +393,9 @@ rndr(struct lowdown_buf *ob, struct lowdown_metaq *mq,
 			if (!HBUF_PUTSL(ob, "\n"))
 				return 0;
 		}
-		if (root->rndr_link.attr_cls.size > 0) {
-			if (!rndr_indent(ob, indent + 1))
-				return 0;
-			if (!HBUF_PUTSL(ob, "class: "))
-				return 0;
-			if (!hbuf_putb(ob, &root->rndr_link.attr_cls))
-				return 0;
-			if (!HBUF_PUTSL(ob, "\n"))
-				return 0;
-		}
-		if (root->rndr_link.attr_id.size > 0) {
-			if (!rndr_indent(ob, indent + 1))
-				return 0;
-			if (!HBUF_PUTSL(ob, "id: "))
-				return 0;
-			if (!hbuf_putb(ob, &root->rndr_link.attr_id))
-				return 0;
-			if (!HBUF_PUTSL(ob, "\n"))
-				return 0;
-		}
+		if (!rndr_attrs(ob, indent, root->rndr_link.attrs,
+		    root->rndr_link.attrsz))
+			return 0;
 		break;
 	case LOWDOWN_NORMAL_TEXT:
 		if (!rndr_indent(ob, indent + 1))

@@ -1367,7 +1367,7 @@ rndr_header(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 	ssize_t				 level;
 	struct bnode			*bn;
 	struct lowdown_buf		*buf = NULL;
-	const struct lowdown_buf	*nbuf;
+	const struct lowdown_buf	*nbuf, *v;
 	int			 	 rc = 0;
         const struct lowdown_node	*child;
 
@@ -1489,10 +1489,9 @@ rndr_header(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 		 * the hbuf_id() function will take care of it.
 		 */
 
-		if (n->rndr_header.attr_id.size) {
-			bn->args = strndup
-				(n->rndr_header.attr_id.data,
-				 n->rndr_header.attr_id.size);
+		if (n->rndr_header.attrsz &&
+		    (v = n->rndr_header.attrs[LOWDOWN_ATTR_ID].value) != NULL) {
+			bn->args = strndup(v->data, v->size);
 			if (bn->args == NULL)
 				goto out;
 		} else {
@@ -1520,7 +1519,11 @@ rndr_link(struct nroff *st, struct bnodeq *obq, struct bnodeq *bq,
 {
 
 	return rndr_url(obq, st, n, &n->rndr_link.link,
-		&n->rndr_link.attr_id, bq, HALINK_NORMAL);
+		n->rndr_link.attrsz &&
+		n->rndr_link.attrs[LOWDOWN_ATTR_ID].value != NULL ?
+		n->rndr_link.attrs[LOWDOWN_ATTR_ID].value :
+		NULL, 
+		bq, HALINK_NORMAL);
 }
 
 static int

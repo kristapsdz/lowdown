@@ -1479,12 +1479,94 @@ char_image(struct lowdown_doc *doc,
 }
 
 /*
+ * Add an HTML attribute named "key" with value "val" to the list of
+ * attributes attached to a node.
+ * The attribute list is guaranteed to be either of size 0 or at least
+ * LOWDOWN_ATTR_CUSTOM.
+ * This makes it possible to do instant lookups on known attributes,
+ * while allowing iteration over un-known attributes.
+ * If the attribute is a custom (unrecognised), duplicates are allowed;
+ * if the attribute is a class, it's appended to the existing classes;
+ * and otherwise, the attribute replaces what's currently there.
+ * Returns FALSE on failure (memory), TRUE on success.
+ */
+static int
+lowdown_attrs_add(struct lowdown_attr **attrs, size_t *attrsz,
+    const char *key, const struct lowdown_buf *val)
+{
+	enum lowdown_attr_type	 type = LOWDOWN_ATTR_CUSTOM;
+	void			*p;
+
+	/* Map attribute into a known type of just CUSTOM. */
+
+	if (strcmp(key, "id") == 0)
+		type = LOWDOWN_ATTR_ID;
+	else if (strcmp(key, "class") == 0)
+		type = LOWDOWN_ATTR_CLASS;
+	else if (strcmp(key, "width") == 0)
+		type = LOWDOWN_ATTR_WIDTH;
+	else if (strcmp(key, "height") == 0)
+		type = LOWDOWN_ATTR_HEIGHT;
+
+	/* Initialise all known types. */
+
+	if (*attrsz == 0) {
+		*attrsz = LOWDOWN_ATTR_CUSTOM;
+		*attrs = calloc(*attrsz, sizeof(struct lowdown_attr));
+		if (*attrs == NULL)
+			return 0;
+	}
+
+	/* If a custom attribute, append to the array, allowing dupes. */
+
+	if (type == LOWDOWN_ATTR_CUSTOM) {
+		p = recallocarray(*attrs, *attrsz, *attrsz + 1,
+			sizeof(struct lowdown_attr));
+		if (p == NULL)
+			return 0;
+		*attrs = p;
+		if (((*attrs)[*attrsz].key = strdup(key)) == NULL ||
+		    ((*attrs)[*attrsz].value = hbuf_dup(val)) == NULL)
+			return 0;
+		(*attrsz)++;
+		return 1;
+	}
+
+	/* The "class" attribute is appended to; others are replaced. */
+
+	if (type == LOWDOWN_ATTR_CLASS) {
+		if ((*attrs)[type].key == NULL)
+			(*attrs)[type].key = strdup(key);
+		if ((*attrs)[type].key == NULL)
+			return 0;
+		if ((*attrs)[type].value != NULL &&
+		    (!HBUF_PUTSL((*attrs)[type].value, " ") ||
+		     !hbuf_putb((*attrs)[type].value, val)))
+			return 0;
+		if ((*attrs)[type].value == NULL &&
+		    ((*attrs)[type].value = hbuf_dup(val)) == NULL)
+			return 0;
+	} else {
+		if ((*attrs)[type].key == NULL)
+			(*attrs)[type].key = strdup(key);
+		if ((*attrs)[type].key == NULL)
+			return 0;
+		hbuf_free((*attrs)[type].value);
+		if (((*attrs)[type].value = hbuf_dup(val)) == NULL)
+			return 0;
+	}
+
+	return 1;
+}
+
+
+/*
  * Parse extended attributes from the buffer "data".  The buffer should
  * not have any enclosing characters, e.g., { foo }.  Return 0 on
  * failure or position of *next* word.
  */
 static size_t
-parse_ext_attrs(const char *data, size_t size,
+parse_ext_attrs(const char *data, size_t size, struct lowdown_attr **attrs, size_t *attrsz,
 	struct lowdown_buf **attrid,
 	struct lowdown_buf **attrcls,
 	struct lowdown_buf **attrwidth,
@@ -1595,14 +1677,16 @@ parse_header_ext_attrs(struct lowdown_node *n)
 	/* Parse the extended attributes. */
 
 	if (!parse_ext_attrs(&b->data[i + 1], b->size - i - 2,
-	    &attrid, &attrcls, NULL, NULL))
+	    NULL, NULL, &attrid, &attrcls, NULL, NULL))
 		goto out;
 
 	if (attrid != NULL &&
-	    !hbuf_createb(&n->rndr_header.attr_id, attrid))
+	    !lowdown_attrs_add(&n->rndr_header.attrs,
+	     &n->rndr_header.attrsz, "id", attrid))
 		goto out;
 	if (attrcls != NULL &&
-	    !hbuf_createb(&n->rndr_header.attr_cls, attrcls))
+	    !lowdown_attrs_add(&n->rndr_header.attrs,
+	     &n->rndr_header.attrsz, "class", attrcls))
 		goto out;
 
 	b->size = i;
@@ -1641,6 +1725,8 @@ char_link(struct lowdown_doc *doc,
 				 dims_b = 0, dims_e = 0;
 	int 	 		 ret = 0, in_title = 0, qtype = 0,
 				 is_img, is_footnote, is_metadata;
+	struct lowdown_attr	*attrs = NULL;
+	size_t			 attrsz = 0;
 	struct lowdown_buf	 id;
 	struct link_ref 	*lr = NULL;
 	struct foot_ref	 	*fr;
@@ -1986,7 +2072,7 @@ again:
 		link = lr->link;
 		title = lr->title;
 		if (lr->attrs != NULL && parse_ext_attrs
-		    (lr->attrs->data, lr->attrs->size,
+		    (lr->attrs->data, lr->attrs->size, &attrs, &attrsz,
 		     &attrid, &attrcls, &attrwidth, &attrheight) == 0)
 			goto err;
 		i++;
@@ -2013,7 +2099,7 @@ again:
 		link = lr->link;
 		title = lr->title;
 		if (lr->attrs != NULL && parse_ext_attrs
-		    (lr->attrs->data, lr->attrs->size,
+		    (lr->attrs->data, lr->attrs->size, &attrs, &attrsz,
 		     &attrid, &attrcls, &attrwidth, &attrheight) == 0)
 			goto err;
 
@@ -2032,7 +2118,7 @@ again:
 
 		for (j = i; j < size && data[j] != '}'; j++)
 			continue;
-		j = parse_ext_attrs(&data[i], j - i,
+		j = parse_ext_attrs(&data[i], j - i, &attrs, &attrsz,
 			&attrid, &attrcls, &attrwidth, &attrheight);
 		if (j == 0)
 			goto err;
@@ -2090,17 +2176,21 @@ again:
 		if (content != NULL &&
 		    !hbuf_createb(&n->rndr_image.alt, content))
 			goto err;
-		if (attrcls != NULL &&
-		    !hbuf_createb(&n->rndr_image.attr_cls, attrcls))
-			goto err;
-		if (attrid != NULL &&
-		    !hbuf_createb(&n->rndr_image.attr_id, attrid))
-			goto err;
 		if (attrwidth != NULL &&
-		    !hbuf_createb(&n->rndr_image.attr_width, attrwidth))
+		    !lowdown_attrs_add(&n->rndr_image.attrs,
+		     &n->rndr_image.attrsz, "width", attrwidth))
 			goto err;
 		if (attrheight != NULL &&
-		    !hbuf_createb(&n->rndr_image.attr_height, attrheight))
+		    !lowdown_attrs_add(&n->rndr_image.attrs,
+		     &n->rndr_image.attrsz, "height", attrheight))
+			goto err;
+		if (attrcls != NULL &&
+		    !lowdown_attrs_add(&n->rndr_image.attrs,
+		     &n->rndr_image.attrsz, "class", attrcls))
+			goto err;
+		if (attrid != NULL &&
+		    !lowdown_attrs_add(&n->rndr_image.attrs,
+		     &n->rndr_image.attrsz, "id", attrid))
 			goto err;
 		ret = 1;
 	} else {
@@ -2111,10 +2201,12 @@ again:
 		    !hbuf_createb(&n->rndr_link.title, title))
 			goto err;
 		if (attrcls != NULL &&
-		    !hbuf_createb(&n->rndr_link.attr_cls, attrcls))
+		    !lowdown_attrs_add(&n->rndr_link.attrs,
+		     &n->rndr_link.attrsz, "class", attrcls))
 			goto err;
 		if (attrid != NULL &&
-		    !hbuf_createb(&n->rndr_link.attr_id, attrid))
+		    !lowdown_attrs_add(&n->rndr_link.attrs,
+		     &n->rndr_link.attrsz, "id", attrid))
 			goto err;
 		ret = 1;
 	}
@@ -5194,6 +5286,18 @@ out:
 	return root;
 }
 
+static void
+lowdown_attrs_free(struct lowdown_attr *attrs, size_t attrsz)
+{
+	size_t	 i;
+
+	for (i = 0; i < attrsz; i++) {
+		free(attrs[i].key);
+		hbuf_free(attrs[i].value);
+	}
+	free(attrs);
+}
+
 void
 lowdown_node_free(struct lowdown_node *p)
 {
@@ -5217,24 +5321,22 @@ lowdown_node_free(struct lowdown_node *p)
 		hbuf_free(&p->rndr_entity.text);
 		break;
 	case LOWDOWN_HEADER:
-		hbuf_free(&p->rndr_header.attr_cls);
-		hbuf_free(&p->rndr_header.attr_id);
+		lowdown_attrs_free(p->rndr_header.attrs,
+			p->rndr_header.attrsz);
 		break;
 	case LOWDOWN_IMAGE:
 		hbuf_free(&p->rndr_image.link);
 		hbuf_free(&p->rndr_image.title);
 		hbuf_free(&p->rndr_image.dims);
 		hbuf_free(&p->rndr_image.alt);
-		hbuf_free(&p->rndr_image.attr_width);
-		hbuf_free(&p->rndr_image.attr_height);
-		hbuf_free(&p->rndr_image.attr_cls);
-		hbuf_free(&p->rndr_image.attr_id);
+		lowdown_attrs_free(p->rndr_image.attrs,
+			p->rndr_image.attrsz);
 		break;
 	case LOWDOWN_LINK:
 		hbuf_free(&p->rndr_link.link);
 		hbuf_free(&p->rndr_link.title);
-		hbuf_free(&p->rndr_link.attr_cls);
-		hbuf_free(&p->rndr_link.attr_id);
+		lowdown_attrs_free(p->rndr_link.attrs,
+			p->rndr_link.attrsz);
 		break;
 	case LOWDOWN_LINK_AUTO:
 		hbuf_free(&p->rndr_autolink.link);

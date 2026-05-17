@@ -354,8 +354,8 @@ static int
 rndr_header(struct lowdown_buf *ob, const struct lowdown_buf *content,
     const struct lowdown_node *n, struct html *st)
 {
-	ssize_t				 level;
-	const struct lowdown_buf	*buf;
+	ssize_t			  level;
+	const struct lowdown_buf *v;
 
 	/*
 	 * The <hN> level take into account shifteheadinglevelby
@@ -378,35 +378,27 @@ rndr_header(struct lowdown_buf *ob, const struct lowdown_buf *content,
 	 * computed from the content of the header.
 	 */
 
-	if (n->rndr_header.attr_id.size) {
-		if (!HBUF_PUTSL(ob, " id=\""))
+	if (n->rndr_header.attrsz &&
+	    (v = n->rndr_header.attrs[LOWDOWN_ATTR_ID].value) != NULL) {
+		if (!HBUF_PUTSL(ob, " id=\"") ||
+		    !escape_attr(ob, v) ||
+		    !HBUF_PUTSL(ob, "\""))
 			return 0;
-		if (!escape_href(ob, &n->rndr_header.attr_id, st))
+	} else if (st->flags & LOWDOWN_HTML_HEAD_IDS)
+		if (!HBUF_PUTSL(ob, " id=\"") ||
+		    (v = hbuf_id(NULL, n, &st->headers_used)) == NULL ||
+		    !hbuf_putb(ob, v) ||
+		    !HBUF_PUTSL(ob, "\""))
 			return 0;
-		if (!HBUF_PUTSL(ob, "\""))
-			return 0;
-	} else if (st->flags & LOWDOWN_HTML_HEAD_IDS) {
-		if (!HBUF_PUTSL(ob, " id=\""))
-			return 0;
-		buf = hbuf_id(NULL, n, &st->headers_used);
-		if (buf == NULL)
-			return 0;
-		if (!hbuf_putb(ob, buf))
-			return 0;
-		if (!HBUF_PUTSL(ob, "\""))
-			return 0;
-	}
 
 	/* Optional header class. */
 
-	if (n->rndr_header.attr_cls.size) {
-		if (!HBUF_PUTSL(ob, " class=\""))
+	if (n->rndr_header.attrsz &&
+	    (v = n->rndr_header.attrs[LOWDOWN_ATTR_CLASS].value) != NULL)
+		if (!HBUF_PUTSL(ob, " class=\"") ||
+		    !escape_attr(ob, v) ||
+		    !HBUF_PUTSL(ob, "\""))
 			return 0;
-	    	if (!escape_attr(ob, &n->rndr_header.attr_cls))
-			return 0;
-		if (!HBUF_PUTSL(ob, "\""))
-			return 0;
-	}
 
 	if (!HBUF_PUTSL(ob, ">"))
 		return 0;
@@ -419,6 +411,7 @@ static int
 rndr_link(struct lowdown_buf *ob, const struct lowdown_buf *content,
     const struct rndr_link *param, const struct html *st)
 {
+	const struct lowdown_buf *v;
 
 	if (!HBUF_PUTSL(ob, "<a href=\"") ||
 	    !escape_href(ob, &param->link, st))
@@ -428,15 +421,16 @@ rndr_link(struct lowdown_buf *ob, const struct lowdown_buf *content,
 		if (!HBUF_PUTSL(ob, "\" title=\"") ||
 		    !escape_attr(ob, &param->title))
 			return 0;
-	if (param->attr_cls.size)
+	if (param->attrsz &&
+	    (v = param->attrs[LOWDOWN_ATTR_CLASS].value) != NULL)
 		if (!HBUF_PUTSL(ob, "\" class=\"") ||
-		    !escape_attr(ob, &param->attr_cls))
+		    !escape_attr(ob, v))
 			return 0;
-	if (param->attr_id.size)
+	if (param->attrsz  &&
+	    (v = param->attrs[LOWDOWN_ATTR_ID].value) != NULL)
 		if (!HBUF_PUTSL(ob, "\" id=\"") ||
-		    !escape_attr(ob, &param->attr_id))
+		    !escape_attr(ob, v))
 			return 0;
-
 	if (!HBUF_PUTSL(ob, "\">") ||
 	    !hbuf_putb(ob, content) ||
 	    !HBUF_PUTSL(ob, "</a>"))
@@ -652,9 +646,10 @@ static int
 rndr_image(struct lowdown_buf *ob, const struct rndr_image *param,
     const struct html *st)
 {
-	char		 dimbuf[32];
-	unsigned int	 x, y;
-	int		 rc = 0;
+	char			  dimbuf[32];
+	unsigned int		  x, y;
+	int			  rc = 0;
+	const struct lowdown_buf *v;
 
 	/*
 	 * Scan in our dimensions, if applicable.
@@ -678,30 +673,36 @@ rndr_image(struct lowdown_buf *ob, const struct rndr_image *param,
 	    !HBUF_PUTSL(ob, "\""))
 		return 0;
 
-	if (param->attr_cls.size)
-		if (!HBUF_PUTSL(ob, " class=\"") ||
-		    !escape_attr(ob, &param->attr_cls) ||
-		    !HBUF_PUTSL(ob, "\""))
-			return 0;
-	if (param->attr_id.size)
-		if (!HBUF_PUTSL(ob, " id=\"") ||
-		    !escape_attr(ob, &param->attr_id) ||
-		    !HBUF_PUTSL(ob, "\""))
-			return 0;
+	if (param->attrsz &&
+	    (v = param->attrs[LOWDOWN_ATTR_CLASS].value) != NULL &&
+	    (!HBUF_PUTSL(ob, " class=\"") ||
+	     !escape_attr(ob, v) ||
+	     !HBUF_PUTSL(ob, "\"")))
+		return 0;
+	if (param->attrsz  &&
+	    (v = param->attrs[LOWDOWN_ATTR_ID].value) != NULL &&
+	    (!HBUF_PUTSL(ob, " id=\"") ||
+	     !escape_attr(ob, v) ||
+	     !HBUF_PUTSL(ob, "\"")))
+		return 0;
 
-	if (param->attr_width.size || param->attr_height.size) {
+	if (param->attrsz &&
+	    (param->attrs[LOWDOWN_ATTR_WIDTH].value != NULL ||
+	     param->attrs[LOWDOWN_ATTR_HEIGHT].value != NULL)) {
 		if (!HBUF_PUTSL(ob, " style=\""))
 			return 0;
-		if (param->attr_width.size)
-			if (!HBUF_PUTSL(ob, "width:") ||
-			    !escape_attr(ob, &param->attr_width) ||
-			    !HBUF_PUTSL(ob, ";"))
-				return 0;
-		if (param->attr_height.size)
-			if (!HBUF_PUTSL(ob, "height:") ||
-			    !escape_attr(ob, &param->attr_height) ||
-			    !HBUF_PUTSL(ob, ";"))
-				return 0;
+	     	v = param->attrs[LOWDOWN_ATTR_WIDTH].value;
+		if (v != NULL &&
+		    (!HBUF_PUTSL(ob, "width:") ||
+		     !escape_attr(ob, v) ||
+		     !HBUF_PUTSL(ob, ";")))
+			return 0;
+	     	v = param->attrs[LOWDOWN_ATTR_HEIGHT].value;
+		if (v != NULL &&
+	 	    (!HBUF_PUTSL(ob, "height:") ||
+		     !escape_attr(ob, v) ||
+		     !HBUF_PUTSL(ob, ";")))
+			return 0;
 		if (!HBUF_PUTSL(ob, "\""))
 			return 0;
 	} else if (param->dims.size && rc > 0) {

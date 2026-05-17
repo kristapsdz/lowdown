@@ -276,14 +276,14 @@ rndr_header(struct latex *st, struct lowdown_buf *ob,
 {
 	const char			*type;
 	ssize_t				 level;
-	struct lowdown_buf		*buf = NULL;
+	struct lowdown_buf		*buf = NULL, *v;
 	const struct lowdown_buf	*id;
 	int				 rc = 0;
 
-	if (n->rndr_header.attr_id.size) {
-		if ((buf = hbuf_new(32)) == NULL)
-			goto out;
-		if (!rndr_escape(st, buf, &n->rndr_header.attr_id))
+	if (n->rndr_header.attrsz &&
+	    (v = n->rndr_header.attrs[LOWDOWN_ATTR_ID].value) != NULL) {
+		if ((buf = hbuf_new(32)) == NULL ||
+		    !rndr_escape(st, buf, v))
 			goto out;
 		id = buf;
 	} else {
@@ -354,10 +354,11 @@ rndr_link(const struct latex *st, struct lowdown_buf *ob,
 	loc = param->link.size > 0 &&
 		param->link.data[0] == '#';
 
-	if (param->attr_id.size > 0) {
+	if (param->attrsz &&
+	    param->attrs[LOWDOWN_ATTR_ID].value != NULL) {
 		if (!HBUF_PUTSL(ob, "\\hypertarget{"))
 			return 0;
-		if (!hbuf_putb(ob, &param->attr_id))
+		if (!hbuf_putb(ob, param->attrs[LOWDOWN_ATTR_ID].value))
 			return 0;
 		if (!HBUF_PUTSL(ob, "}{%\n"))
 			return 0;
@@ -376,7 +377,9 @@ rndr_link(const struct latex *st, struct lowdown_buf *ob,
 		return 0;
 	if (!hbuf_putb(ob, content))
 		return 0;
-	if (param->attr_id.size > 0 && !HBUF_PUTSL(ob, "}"))
+	if (param->attrsz &&
+	    param->attrs[LOWDOWN_ATTR_ID].value != NULL &&
+	    !HBUF_PUTSL(ob, "}"))
 		return 0;
 	return HBUF_PUTSL(ob, "}");
 }
@@ -496,11 +499,12 @@ static int
 rndr_image(const struct latex *st, struct lowdown_buf *ob,
     const struct rndr_image *param)
 {
-	const char	*cp;
-	char		 dimbuf[32];
-	unsigned int	 x, y;
-	float		 pct;
-	int		 rc = 0;
+	const char		 *cp;
+	char			  dimbuf[32];
+	unsigned int		  x, y;
+	float			  pct;
+	int			  rc = 0;
+	const struct lowdown_buf *vw, *vh;
 
 	/*
 	 * Scan in our dimensions, if applicable.
@@ -519,12 +523,16 @@ rndr_image(const struct latex *st, struct lowdown_buf *ob,
 
 	if (!HBUF_PUTSL(ob, "\\includegraphics["))
 		return 0;
-	if (param->attr_width.size || param->attr_height.size) {
-		if (param->attr_width.size &&
-		    param->attr_width.size < sizeof(dimbuf) - 1) {
+
+	if (param->attrsz &&
+	    (param->attrs[LOWDOWN_ATTR_WIDTH].value != NULL ||
+	     param->attrs[LOWDOWN_ATTR_HEIGHT].value != NULL)) {
+	    	vw = param->attrs[LOWDOWN_ATTR_WIDTH].value;
+		if (vw != NULL &&
+		    vw->size &&
+		    vw->size < sizeof(dimbuf) - 1) {
 			memset(dimbuf, 0, sizeof(dimbuf));
-			memcpy(dimbuf, param->attr_width.data, 
-				param->attr_width.size);
+			memcpy(dimbuf, vw->data, vw->size);
 
 			/* Try to parse as a percentage. */
 
@@ -534,19 +542,19 @@ rndr_image(const struct latex *st, struct lowdown_buf *ob,
 					return 0;
 			} else {
 				if (!hbuf_printf(ob, "width=%.*s", 
-				    (int)param->attr_width.size, 
-				    param->attr_width.data))
+				    (int)vw->size, vw->data))
 					return 0;
 			}
 		}
-		if (param->attr_height.size &&
-		    param->attr_height.size < sizeof(dimbuf) - 1) {
-			if (param->attr_width.size && 
+	    	vh = param->attrs[LOWDOWN_ATTR_HEIGHT].value;
+		if (vh != NULL &&
+		    vh->size &&
+		    vh->size < sizeof(dimbuf) - 1) {
+			if (vw != NULL && vw->size && 
 			    !HBUF_PUTSL(ob, ", "))
 				return 0;
 			if (!hbuf_printf(ob, "height=%.*s", 
-			    (int)param->attr_height.size, 
-			    param->attr_height.data))
+			    (int)vh->size, vh->data))
 				return 0;
 		}
 	} else if (rc > 0) {

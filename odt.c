@@ -1225,17 +1225,17 @@ rndr_linebreak(struct lowdown_buf *ob)
  * Return FALSE on failure, TRUE on success.
  */
 static int
-rndr_header(struct lowdown_buf *ob,
-	const struct lowdown_buf *content,
-	const struct lowdown_node *n, 
-	struct odt *st)
+rndr_header(struct lowdown_buf *ob, const struct lowdown_buf *content,
+    const struct lowdown_node *n, struct odt *st)
 {
 	struct odt_sty			*sty;
 	ssize_t				 level;
 	size_t				 i;
 	int				 fl, rc = 0;
-	const struct lowdown_buf	*buf;
+	const struct lowdown_buf	*buf, *v;
 	struct lowdown_buf		*nbuf = NULL;
+
+	/* Use a maximum of three levels deep. */
 
 	level = (ssize_t)n->rndr_header.level + st->headers_offs;
 	if (level < 1)
@@ -1249,6 +1249,7 @@ rndr_header(struct lowdown_buf *ob,
 		fl = ODT_STY_H2;
 	else
 		fl = ODT_STY_H3;
+
 	for (i = 0; i < st->stysz; i++)
 		if (st->stys[i].type == LOWDOWN_HEADER &&
 		    st->stys[i].fmt == fl)
@@ -1272,44 +1273,34 @@ rndr_header(struct lowdown_buf *ob,
 	     level, sty->name))
 		return 0;
 
-	if (n->rndr_header.attr_cls.size > 0) {
-		if (!HBUF_PUTSL(ob, " text:class-names=\""))
-			return 0;
-		if (!hbuf_putb(ob, &n->rndr_header.attr_cls))
-			return 0;
-		if (!HBUF_PUTSL(ob, "\""))
-			return 0;
-	}
+	if (n->rndr_header.attrsz &&
+	    (v = n->rndr_header.attrs[LOWDOWN_ATTR_CLASS].value) != NULL &&
+	    (!HBUF_PUTSL(ob, " text:class-names=\"") ||
+	     !hbuf_putb(ob, v) ||
+	     !HBUF_PUTSL(ob, "\"")))
+		return 0;
 
 	if (!HBUF_PUTSL(ob, ">"))
 		return 0;
 
-	if (n->rndr_header.attr_id.size) {
-		if ((nbuf = hbuf_new(32)) == NULL)
-			goto out;
-		if (!escape_href(nbuf, &n->rndr_header.attr_id, st))
+	if (n->rndr_header.attrsz &&
+	    (v = n->rndr_header.attrs[LOWDOWN_ATTR_ID].value) != NULL) {
+		if ((nbuf = hbuf_new(32)) == NULL ||
+		    !escape_href(nbuf, v, st))
 			goto out;
 		buf = nbuf;
 	} else
 		buf = hbuf_id(NULL, n, &st->headers_used);
 
-	if (buf == NULL)
-		goto out;
-	if (!HBUF_PUTSL(ob, "<text:bookmark-start text:name=\""))
-		goto out;
-	if (!hbuf_putb(ob, buf))
-		goto out;
-	if (!HBUF_PUTSL(ob, "\" />"))
-		goto out;
-	if (!hbuf_putb(ob, content))
-		goto out;
-	if (!HBUF_PUTSL(ob, "<text:bookmark-end text:name=\""))
-		goto out;
-	if (!hbuf_putb(ob, buf))
-		goto out;
-	if (!HBUF_PUTSL(ob, "\" />"))
-		goto out;
-	if (!HBUF_PUTSL(ob, "</text:h>\n"))
+	if (buf == NULL ||
+	    !HBUF_PUTSL(ob, "<text:bookmark-start text:name=\"") ||
+	    !hbuf_putb(ob, buf) ||
+	    !HBUF_PUTSL(ob, "\" />") ||
+	    !hbuf_putb(ob, content) ||
+	    !HBUF_PUTSL(ob, "<text:bookmark-end text:name=\"") ||
+	    !hbuf_putb(ob, buf) ||
+	    !HBUF_PUTSL(ob, "\" />") ||
+	    !HBUF_PUTSL(ob, "</text:h>\n"))
 		goto out;
 	rc = 1;
 out:
@@ -1327,10 +1318,11 @@ rndr_link(struct lowdown_buf *ob,
 	struct odt *st)
 {
 
-	if (param->attr_id.size > 0) {
+	if (param->attrsz &&
+	    param->attrs[LOWDOWN_ATTR_ID].value != NULL) {
 		if (!HBUF_PUTSL(ob, "<text:bookmark-start text:name=\""))
 			return 0;
-		if (!hbuf_putb(ob, &param->attr_id))
+		if (!hbuf_putb(ob, param->attrs[LOWDOWN_ATTR_ID].value))
 			return 0;
 		if (!HBUF_PUTSL(ob, "\" />"))
 			return 0;
@@ -1342,10 +1334,11 @@ rndr_link(struct lowdown_buf *ob,
 	    " text:style-name=\"Internet_20_Link\""))
 		return 0;
 
-	if (param->attr_cls.size > 0) {
+	if (param->attrsz &&
+	    param->attrs[LOWDOWN_ATTR_CLASS].value != NULL) {
 		if (!HBUF_PUTSL(ob, " text:class-names=\""))
 			return 0;
-		if (!hbuf_putb(ob, &param->attr_cls))
+		if (!hbuf_putb(ob, param->attrs[LOWDOWN_ATTR_CLASS].value))
 			return 0;
 		if (!HBUF_PUTSL(ob, "\""))
 			return 0;
@@ -1359,10 +1352,11 @@ rndr_link(struct lowdown_buf *ob,
 	    !HBUF_PUTSL(ob, "</text:a>"))
 		return 0;
 
-	if (param->attr_id.size > 0) {
+	if (param->attrsz &&
+	    param->attrs[LOWDOWN_ATTR_ID].value != NULL) {
 		if (!HBUF_PUTSL(ob, "<text:bookmark-end text:name=\""))
 			return 0;
-		if (!hbuf_putb(ob, &param->attr_id))
+		if (!hbuf_putb(ob, param->attrs[LOWDOWN_ATTR_ID].value))
 			return 0;
 		if (!HBUF_PUTSL(ob, "\" />"))
 			return 0;
@@ -1562,8 +1556,9 @@ rndr_image(struct lowdown_buf *ob,
 	const struct rndr_image *param, 
 	const struct odt *st)
 {
-	unsigned int	 x = 0, y = 0;
-	char		 dimbuf[32];
+	unsigned int		   x = 0, y = 0;
+	char			  dimbuf[32];
+	const struct lowdown_buf *v;
 
 	/*
 	 * Scan in our dimensions, if applicable.
@@ -1587,26 +1582,28 @@ rndr_image(struct lowdown_buf *ob,
 	    " draw:style-name=\"Graphics\""))
 		return 0;
 
-	if (param->attr_cls.size > 0) {
-		if (!HBUF_PUTSL(ob, " draw:class-names=\""))
-			return 0;
-		if (!hbuf_putb(ob, &param->attr_cls))
-			return 0;
-		if (!HBUF_PUTSL(ob, "\""))
-			return 0;
-	}
+	if (param->attrsz &&
+	    (v = param->attrs[LOWDOWN_ATTR_CLASS].value) != NULL &&
+	    (!HBUF_PUTSL(ob, " draw:class-names=\"") ||
+	     !escape_attr(ob, v) ||
+	     !HBUF_PUTSL(ob, "\"")))
+		return 0;
 
-	if (param->attr_width.size || param->attr_height.size) {
-		if (param->attr_width.size)
-			if (!HBUF_PUTSL(ob, " svg:width=\"") ||
-			    !escape_attr(ob, &param->attr_width) ||
-			    !HBUF_PUTSL(ob, "\""))
-				return 0;
-		if (param->attr_height.size)
-			if (!HBUF_PUTSL(ob, " svg:height=\"") ||
-			    !escape_attr(ob, &param->attr_height) ||
-			    !HBUF_PUTSL(ob, "\""))
-				return 0;
+	if (param->attrsz &&
+	    (param->attrs[LOWDOWN_ATTR_WIDTH].value != NULL ||
+	     param->attrs[LOWDOWN_ATTR_HEIGHT].value != NULL)) {
+	     	v = param->attrs[LOWDOWN_ATTR_WIDTH].value;
+		if (v != NULL &&
+		    (!HBUF_PUTSL(ob, " svg:width=\"") ||
+		     !escape_attr(ob, v) ||
+		     !HBUF_PUTSL(ob, "\"")))
+			return 0;
+	     	v = param->attrs[LOWDOWN_ATTR_HEIGHT].value;
+		if (v != NULL &&
+	 	    (!HBUF_PUTSL(ob, " svg:height=\"") ||
+		     !escape_attr(ob, v) ||
+		     !HBUF_PUTSL(ob, "\"")))
+			return 0;
 	} else if (x > 0 && y > 0) {
 		if (!hbuf_printf(ob,
 		    " svg:width=\"%u px\""

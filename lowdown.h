@@ -162,6 +162,19 @@ enum	lowdown_chng {
 	LOWDOWN_CHNG_DELETE,
 };
 
+enum	lowdown_attr_type {
+	LOWDOWN_ATTR_ID = 0,
+	LOWDOWN_ATTR_CLASS,
+	LOWDOWN_ATTR_WIDTH,
+	LOWDOWN_ATTR_HEIGHT,
+	LOWDOWN_ATTR_CUSTOM,
+};
+
+struct	lowdown_attr {
+	char			*key;
+	struct lowdown_buf	*value;
+};
+
 struct	rndr_meta {
 	struct lowdown_buf key;
 };
@@ -191,10 +204,10 @@ struct	rndr_raw_html {
 };
 
 struct	rndr_link {
-	struct lowdown_buf link;
-	struct lowdown_buf title;
-	struct lowdown_buf attr_cls;
-	struct lowdown_buf attr_id;
+	struct lowdown_buf	 link;
+	struct lowdown_buf	 title;
+	struct lowdown_attr 	*attrs;
+	size_t			 attrsz;
 };
 
 struct	rndr_blockcode {
@@ -246,20 +259,18 @@ struct	rndr_listitem {
 };
 
 struct	rndr_header{
-	size_t level;
-	struct lowdown_buf attr_cls;
-	struct lowdown_buf attr_id;
+	size_t 			 level;
+	struct lowdown_attr 	*attrs;
+	size_t			 attrsz;
 };
 
 struct	rndr_image {
-	struct lowdown_buf link;
-	struct lowdown_buf title;
-	struct lowdown_buf dims;
-	struct lowdown_buf alt;
-	struct lowdown_buf attr_width;
-	struct lowdown_buf attr_height;
-	struct lowdown_buf attr_cls;
-	struct lowdown_buf attr_id;
+	struct lowdown_buf	 link;
+	struct lowdown_buf	 title;
+	struct lowdown_buf	 dims;
+	struct lowdown_buf	 alt;
+	struct lowdown_attr 	*attrs;
+	size_t			 attrsz;
 };
 
 struct rndr_math {
