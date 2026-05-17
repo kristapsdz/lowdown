@@ -116,16 +116,18 @@ rndr_attrs(struct lowdown_buf *ob, size_t indent,
 {
 	size_t i;
 
+	if (attrsz &&
+	    (!rndr_indent(ob, indent + 1) ||
+	     !HBUF_PUTSL(ob, "attributes\n")))
+		return 0;
+
 	for (i = 0; i < attrsz; i++) {
 		if (attrs[i].value == NULL)
 			continue;
-		if (!rndr_indent(ob, indent + 1))
-			return 0;
-		if (!hbuf_printf(ob, "%s: ", attrs[i].key))
-			return 0;
-		if (!hbuf_putb(ob, attrs[i].value))
-			return 0;
-		if (!HBUF_PUTSL(ob, "\n"))
+		if (!rndr_indent(ob, indent + 2) ||
+		    !hbuf_printf(ob, "%s: ", attrs[i].key) ||
+		    !hbuf_putb(ob, attrs[i].value) ||
+		    !HBUF_PUTSL(ob, "\n"))
 			return 0;
 	}
 	return 1;

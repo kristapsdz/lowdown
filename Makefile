@@ -22,6 +22,7 @@ OBJS		 = autolink.o \
 		   diff.o \
 		   document.o \
 		   entity.o \
+		   ext_attrs.o \
 		   gemini.o \
 		   gemini_escape.o \
 		   html.o \
@@ -92,6 +93,7 @@ SOURCES		 = autolink.c \
 		   diff.c \
 		   document.c \
 		   entity.c \
+		   ext_attrs.c \
 		   gemini.c \
 		   gemini_escape.c \
 		   html.c \

@@ -407,31 +407,60 @@ rndr_header(struct lowdown_buf *ob, const struct lowdown_buf *content,
 	return hbuf_printf(ob, "</h%zu>\n", level);
 }
 
+/*
+ * Print a link <a href="">content</a>, all Markdown attributes (e.g.,
+ * title), and all extended attributes.
+ * Return FALSE on failure (memory), TRUE on success.
+ */
 static int
 rndr_link(struct lowdown_buf *ob, const struct lowdown_buf *content,
     const struct rndr_link *param, const struct html *st)
 {
-	const struct lowdown_buf *v;
+	const struct lowdown_attr 	*v;
+	size_t				 i;
+	const enum lowdown_attr_type	 attrs[] = {
+		LOWDOWN_ATTR_CLASS,
+		LOWDOWN_ATTR_ID,
+		LOWDOWN_ATTR_REL,
+		LOWDOWN_ATTR_DOWNLOAD,
+		LOWDOWN_ATTR_CUSTOM
+	};
+
+	/* Print the start of the link. */
 
 	if (!HBUF_PUTSL(ob, "<a href=\"") ||
-	    !escape_href(ob, &param->link, st))
+	    !escape_href(ob, &param->link, st) ||
+	    !HBUF_PUTSL(ob, "\""))
 		return 0;
 
+	/* If specified, print the link title. */
+
 	if (param->title.size)
-		if (!HBUF_PUTSL(ob, "\" title=\"") ||
-		    !escape_attr(ob, &param->title))
+		if (!HBUF_PUTSL(ob, " title=\"") ||
+		    !escape_attr(ob, &param->title) ||
+		    !HBUF_PUTSL(ob, "\""))
 			return 0;
-	if (param->attrsz &&
-	    (v = param->attrs[LOWDOWN_ATTR_CLASS].value) != NULL)
-		if (!HBUF_PUTSL(ob, "\" class=\"") ||
-		    !escape_attr(ob, v))
-			return 0;
-	if (param->attrsz  &&
-	    (v = param->attrs[LOWDOWN_ATTR_ID].value) != NULL)
-		if (!HBUF_PUTSL(ob, "\" id=\"") ||
-		    !escape_attr(ob, v))
-			return 0;
-	if (!HBUF_PUTSL(ob, "\">") ||
+
+	/* Print all standard HTML attributes, if specified. */
+
+	if (param->attrsz > 0)
+		for (i = 0; attrs[i] != LOWDOWN_ATTR_CUSTOM; i++) {
+			v = &param->attrs[attrs[i]];
+			if (v->value == NULL)
+				continue;
+			if (v->value->size == 0 &&
+			    !hbuf_printf(ob, " %s", v->key))
+				return 0;
+			if (v->value->size &&
+			    (!hbuf_printf(ob, " %s=\"", v->key) ||
+			     !escape_attr(ob, v->value) ||
+	    		     !HBUF_PUTSL(ob, "\"")))
+				return 0;
+		}
+
+	/* Close the link start, print the content, close the link. */
+
+	if (!HBUF_PUTSL(ob, ">") ||
 	    !hbuf_putb(ob, content) ||
 	    !HBUF_PUTSL(ob, "</a>"))
 		return 0;
@@ -642,14 +671,27 @@ rndr_hrule(struct lowdown_buf *ob)
 	return hbuf_puts(ob, "<hr/>\n");
 }
 
+/*
+ * Print an image <img src="" />, all Markdown attributes (e.g., title),
+ * and all extended attributes.
+ * Return FALSE on failure (memory), TRUE on success.
+ */
 static int
 rndr_image(struct lowdown_buf *ob, const struct rndr_image *param,
     const struct html *st)
 {
-	char			  dimbuf[32];
-	unsigned int		  x, y;
-	int			  rc = 0;
-	const struct lowdown_buf *v;
+	char				 dimbuf[32];
+	unsigned int			 x, y;
+	int				 rc = 0;
+	const struct lowdown_buf 	*buf;
+	const struct lowdown_attr 	*v;
+	size_t				 i;
+	const enum lowdown_attr_type	 attrs[] = {
+		LOWDOWN_ATTR_CLASS,
+		LOWDOWN_ATTR_ID,
+		LOWDOWN_ATTR_LOADING,
+		LOWDOWN_ATTR_CUSTOM
+	};
 
 	/*
 	 * Scan in our dimensions, if applicable.
@@ -673,50 +715,57 @@ rndr_image(struct lowdown_buf *ob, const struct rndr_image *param,
 	    !HBUF_PUTSL(ob, "\""))
 		return 0;
 
-	if (param->attrsz &&
-	    (v = param->attrs[LOWDOWN_ATTR_CLASS].value) != NULL &&
-	    (!HBUF_PUTSL(ob, " class=\"") ||
-	     !escape_attr(ob, v) ||
-	     !HBUF_PUTSL(ob, "\"")))
-		return 0;
-	if (param->attrsz  &&
-	    (v = param->attrs[LOWDOWN_ATTR_ID].value) != NULL &&
-	    (!HBUF_PUTSL(ob, " id=\"") ||
-	     !escape_attr(ob, v) ||
-	     !HBUF_PUTSL(ob, "\"")))
-		return 0;
+	/* Print all standard HTML attributes, if specified. */
+
+	if (param->attrsz > 0)
+		for (i = 0; attrs[i] != LOWDOWN_ATTR_CUSTOM; i++) {
+			v = &param->attrs[attrs[i]];
+			if (v->value == NULL)
+				continue;
+			if (v->value->size == 0 &&
+			    !hbuf_printf(ob, " %s", v->key))
+				return 0;
+			if (v->value->size &&
+			    (!hbuf_printf(ob, " %s=\"", v->key) ||
+			     !escape_attr(ob, v->value) ||
+	    		     !HBUF_PUTSL(ob, "\"")))
+				return 0;
+		}
+
+	/* Special handling for width and height. */
 
 	if (param->attrsz &&
 	    (param->attrs[LOWDOWN_ATTR_WIDTH].value != NULL ||
 	     param->attrs[LOWDOWN_ATTR_HEIGHT].value != NULL)) {
 		if (!HBUF_PUTSL(ob, " style=\""))
 			return 0;
-	     	v = param->attrs[LOWDOWN_ATTR_WIDTH].value;
-		if (v != NULL &&
+	     	buf = param->attrs[LOWDOWN_ATTR_WIDTH].value;
+		if (buf != NULL &&
 		    (!HBUF_PUTSL(ob, "width:") ||
-		     !escape_attr(ob, v) ||
+		     !escape_attr(ob, buf) ||
 		     !HBUF_PUTSL(ob, ";")))
 			return 0;
-	     	v = param->attrs[LOWDOWN_ATTR_HEIGHT].value;
-		if (v != NULL &&
+	     	buf = param->attrs[LOWDOWN_ATTR_HEIGHT].value;
+		if (buf != NULL &&
 	 	    (!HBUF_PUTSL(ob, "height:") ||
-		     !escape_attr(ob, v) ||
+		     !escape_attr(ob, buf) ||
 		     !HBUF_PUTSL(ob, ";")))
 			return 0;
 		if (!HBUF_PUTSL(ob, "\""))
 			return 0;
 	} else if (param->dims.size && rc > 0) {
-		if (!hbuf_printf(ob, " width=\"%u\"", x))
-			return 0;
-		if (rc > 1 && !hbuf_printf(ob, " height=\"%u\"", y))
+		if (!hbuf_printf(ob, " width=\"%u\"", x) ||
+		    (rc > 1 && !hbuf_printf(ob, " height=\"%u\"", y)))
 			return 0;
 	}
 
-	if (param->title.size)
-		if (!HBUF_PUTSL(ob, " title=\"") ||
-		    !escape_htmlb(ob, &param->title, st) ||
-		    !HBUF_PUTSL(ob, "\""))
-			return 0;
+	/* If specified, print the image title. */
+
+	if (param->title.size &&
+	    (!HBUF_PUTSL(ob, " title=\"") ||
+	     !escape_htmlb(ob, &param->title, st) ||
+	     !HBUF_PUTSL(ob, "\"")))
+		return 0;
 
 	return hbuf_puts(ob, " />");
 }
