@@ -33,6 +33,12 @@
 static const char *strattrs[] = {
 	"id", /* LOWDOWN_ATTR_ID */
 	"class", /* LOWDOWN_ATTR_CLASS */
+	"crossorigin", /* LOWDOWN_ATTR_CROSSORIGIN */
+	"referrerpolicy", /* LOWDOWN_ATTR_REFERRERPOLICY */
+	"ismap", /* LOWDOWN_ATTR_ISMAP */
+	"usemap", /* LOWDOWN_ATTR_USEMAP */
+	"sizes", /* LOWDOWN_ATTR_SIZES */
+	"srcset", /* LOWDOWN_ATTR_SRCSET */
 	"width", /* LOWDOWN_ATTR_WIDTH */
 	"height", /* LOWDOWN_ATTR_HEIGHT */
 	"rel", /* LOWDOWN_ATTR_REL */
