@@ -1,0 +1,9 @@
+.SH NAME
+\fBfoo\fR \(en xyzzy
+.SH DESCRIPTION
+.LP
+Hi there.
+.SH SEE ALSO
+.MR foo 1 ,
+.MR bar 3p ,
+.MR baz asdf ,

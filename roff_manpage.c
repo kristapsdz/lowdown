@@ -976,7 +976,7 @@ rndr_manpage_see_also(struct nroff *st, const struct lowdown_node *n,
 				goto out;
 			bn = st->type == LOWDOWN_MDOC ?
 			    bqueue_sblock(obq, ".Xr") :
-			    bqueue_sblock(obq, ".MR");
+			    bqueue_block(obq, ".MR");
 			if (bn == NULL) {
 				rc = -1;
 				goto out;
