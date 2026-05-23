@@ -1298,6 +1298,44 @@ roff_manpage_inline_prog(struct nroff *st, struct bnodeq *nq,
 }
 
 /*
+ * Check if the buffer looks like an errno value (all caps, digits, and
+ * starting with E).  If it does, replace it with the correct
+ * invocation.  Returns -1 on failure, 0 if nothing was replaced, 1 if
+ * it was replaced.
+ */
+static int
+roff_manpage_inline_check_errors(struct nroff *st, struct bnodeq *obq,
+    const struct lowdown_buf *buf)
+{
+	size_t	 	 i, sz = buf->size;
+	const char	*data = buf->data;
+
+	if (sz > 2 && data[0] == '[' && data[sz - 1] == ']') {
+		sz -= 2;
+		data++;
+	}
+
+	if (sz < 2 || data[0] != 'E')
+		return 0;
+
+	for (i = 0; i < sz; i++)
+		if (!isupper((unsigned char)data[i]) &&
+		    !isdigit((unsigned char)data[i]))
+			return 0;
+
+	if (st->type == LOWDOWN_MDOC &&
+	    bqueue_sblockn(obq, ".Bq Er", strndup(data, sz)) == NULL)
+		return -1;
+	if (st->type == LOWDOWN_MAN &&
+	    (bqueue_span(obq, "[") == NULL ||
+	     bqueue_spann(obq, strndup(data, sz)) == NULL ||
+	     bqueue_span(obq, "]") == NULL))
+		return -1;
+
+	return 1;
+}
+
+/*
  * Check if the buffer looks like an environment variable (all caps,
  * digits, and underscores).  If it does, replace it with the correct
  * invocation.  Returns -1 on failure, 0 if nothing was replaced, 1 if
@@ -1458,6 +1496,16 @@ roff_manpage_inline(struct nroff *st, const struct lowdown_node *n,
 	/* Look for `Nm` matches.  If found/error, stop. */
 
 	if ((rc = roff_manpage_inline_check_names(st, obq, buf)) != 0)
+		goto out;
+
+	/* Look for `Er' matches in ERRORS pages. */
+
+	if ((st->headers_sec[0] == '2' ||
+	     st->headers_sec[0] == '3' ||
+	     st->headers_sec[0] == '4' ||
+	     st->headers_sec[0] == '9') &&
+	    roff_in_section(st, "ERRORS") &&
+	    (rc = roff_manpage_inline_check_errors(st, obq, buf)) != 0)
 		goto out;
 
 	/* Look for `Ev' matches in ENVIRONMENT pages. */

@@ -1,0 +1,111 @@
+.Sh ERRORS
+.Fn write ,
+.Fn pwrite ,
+.Fn writev ,
+and 
+.Fn pwritev
+will fail and the file pointer will remain unchanged
+if:
+.Bl -tag -width Ds
+.It Bq Er EBADF 
+.Fa d
+is not a valid descriptor open for writing.
+.It Bq Er EFBIG 
+An attempt was made to write a file that exceeds the process\(cqs file size
+limit or the maximum file size.
+.It Bq Er ENOSPC 
+There is no free space remaining on the file system containing the file.
+.It Bq Er EDQUOT 
+The user\(cqs quota of disk blocks on the file system containing the file has
+been exhausted.
+.It Bq Er EINTR 
+A write to a slow device (i.e. one that might block for an arbitrary amount
+of time) was interrupted by the delivery of a signal before any data could
+be written.
+.It Bq Er EIO 
+An I/O error occurred while reading from or writing to the file system.
+.It Bq Er EFAULT 
+Part of buf points outside the process\(cqs allocated address space.
+.El
+.Pp
+In addition, 
+.Fn write
+and 
+.Fn writev
+may return the following errors:
+.Bl -tag -width Ds
+.It Bq Er EPIPE 
+An attempt is made to write to a pipe that is not open for reading by any
+process.
+.It Bq Er EPIPE 
+An attempt is made to write to a socket of type 
+.Fa SOCK_STREAM
+that is not
+connected to a peer socket.
+.It Bq Er EAGAIN 
+The file was marked for non-blocking I/O, and no data could be written
+immediately.
+.It Bq Er ENETDOWN 
+The destination address specified a network that is down.
+.It Bq Er EDESTADDRREQ 
+The destination is no longer available when writing to a Unix-domain
+datagram socket on which 
+.Xr connect 2
+had been used to set a destination
+address.
+.It Bq Er EIO 
+The process is a member of a background process attempting to write to its
+controlling terminal, 
+.Fa TOSTOP
+is set on the terminal, the process isn\(cqt
+ignoring the 
+.Fa SIGTTOUT
+signal and the thread isn\(cqt blocking the 
+.Fa SIGTTOUT
+signal, and either the process was created with 
+.Xr vfork 2
+and hasn\(cqt
+successfully executed one of the exec functions or the process group is
+orphaned.
+.El
+.Pp
+.Fn write
+and 
+.Fn pwrite
+may return the following error:
+.Bl -tag -width Ds
+.It Bq Er EINVAL 
+nbytes was larger than 
+.Fa SSIZE_MAX .
+.El
+.Pp
+.Fn pwrite
+and 
+.Fn pwritev
+may return the following error:
+.Bl -tag -width Ds
+.It Bq Er EINVAL 
+offset was negative.
+.It Bq Er ESPIPE 
+.Fa d
+is associated with a pipe, socket, FIFO, or tty.
+.El
+.Pp
+.Fn writev
+and 
+.Fn pwritev
+may return one of the following errors:
+.Bl -tag -width Ds
+.It Bq Er EINVAL 
+iovcnt was less than or equal to 0, or greater than 
+.Fa IOV_MAX .
+.It Bq Er EINVAL 
+The sum of the 
+.Fa iov_len
+values in the iov array overflowed an 
+.Fa ssize_t .
+.It Bq Er EFAULT 
+Part of iov points outside the process\(cqs allocated address space.
+.It Bq Er ENOBUFS 
+The system lacked sufficient buffer space or a queue was full.
+.El

@@ -1,0 +1,90 @@
+.SH ERRORS
+.LP
+\fBwrite\fP(), \fBpwrite\fP(), \fBwritev\fP(), and \fBpwritev\fP() will fail and the file pointer will remain unchanged
+if:
+.TP 3
+[EBADF]
+\fId\fP is not a valid descriptor open for writing.
+.TP 3
+[EFBIG]
+An attempt was made to write a file that exceeds the process\(cqs file size
+limit or the maximum file size.
+.TP 3
+[ENOSPC]
+There is no free space remaining on the file system containing the file.
+.TP 3
+[EDQUOT]
+The user\(cqs quota of disk blocks on the file system containing the file has
+been exhausted.
+.TP 3
+[EINTR]
+A write to a slow device (i.e. one that might block for an arbitrary amount
+of time) was interrupted by the delivery of a signal before any data could
+be written.
+.TP 3
+[EIO]
+An I/O error occurred while reading from or writing to the file system.
+.TP 3
+[EFAULT]
+Part of buf points outside the process\(cqs allocated address space.
+.LP
+In addition, \fBwrite\fP() and \fBwritev\fP() may return the following errors:
+.TP 3
+[EPIPE]
+An attempt is made to write to a pipe that is not open for reading by any
+process.
+.TP 3
+[EPIPE]
+An attempt is made to write to a socket of type \fISOCK_STREAM\fP that is not
+connected to a peer socket.
+.TP 3
+[EAGAIN]
+The file was marked for non-blocking I/O, and no data could be written
+immediately.
+.TP 3
+[ENETDOWN]
+The destination address specified a network that is down.
+.TP 3
+[EDESTADDRREQ]
+The destination is no longer available when writing to a Unix-domain
+datagram socket on which 
+.MR connect 2
+had been used to set a destination
+address.
+.TP 3
+[EIO]
+The process is a member of a background process attempting to write to its
+controlling terminal, \fITOSTOP\fP is set on the terminal, the process isn\(cqt
+ignoring the \fISIGTTOUT\fP signal and the thread isn\(cqt blocking the \fISIGTTOUT\fP
+signal, and either the process was created with 
+.MR vfork 2
+and hasn\(cqt
+successfully executed one of the exec functions or the process group is
+orphaned.
+.LP
+\fBwrite\fP() and \fBpwrite\fP() may return the following error:
+.TP 3
+[EINVAL]
+nbytes was larger than \fISSIZE_MAX\fP.
+.LP
+\fBpwrite\fP() and \fBpwritev\fP() may return the following error:
+.TP 3
+[EINVAL]
+offset was negative.
+.TP 3
+[ESPIPE]
+\fId\fP is associated with a pipe, socket, FIFO, or tty.
+.LP
+\fBwritev\fP() and \fBpwritev\fP() may return one of the following errors:
+.TP 3
+[EINVAL]
+iovcnt was less than or equal to 0, or greater than \fIIOV_MAX\fP.
+.TP 3
+[EINVAL]
+The sum of the \fIiov_len\fP values in the iov array overflowed an \fIssize_t\fP.
+.TP 3
+[EFAULT]
+Part of iov points outside the process\(cqs allocated address space.
+.TP 3
+[ENOBUFS]
+The system lacked sufficient buffer space or a queue was full.

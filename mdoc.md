@@ -130,6 +130,8 @@ section: 1
 
 progname - one line about what it does
 
+(See per-section documentation, below.)
+
 # LIBRARY
 
 (For sections 2, 3, and 9 only.)
@@ -169,7 +171,8 @@ For sections 2, 3, and 9 function return values only.
 
 # ENVIRONMENT
 
-For sections 1, 6, 7, and 8 only:
+For sections 1, 6, 7, and 8 only, environment variables that affect
+behaviour:
 
 *BLOCKSIZE*
 : If the environment *BLOCKSIZE* is set...
@@ -194,7 +197,18 @@ For sections 1, 4, 6, 7, 8, and 9 printf/stderr messages only.
 
 # ERRORS
 
-For sections 2, 3, 4, and 9 errno settings only.
+For sections 2, 3, 4, and 9 only, relevant errno values (usually set
+within functions):
+
+*[EBADF]*
+: *d* is not a valid descriptor open for writing.
+
+*[EFBIG]*
+: An attempt was made to write a file that exceeds the process's file size
+limit or the maximum file size.
+
+(This will only recognise errno variables as starting with a capital "E"
+and containing only capital alphanumerics.)
 
 # SEE ALSO
 
