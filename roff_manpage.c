@@ -1298,6 +1298,36 @@ roff_manpage_inline_prog(struct nroff *st, struct bnodeq *nq,
 }
 
 /*
+ * Check if the buffer looks like an environment variable (all caps,
+ * digits, and underscores).  If it does, replace it with the correct
+ * invocation.  Returns -1 on failure, 0 if nothing was replaced, 1 if
+ * it was replaced.
+ */
+static int
+roff_manpage_inline_check_env(struct nroff *st, struct bnodeq *obq,
+    const struct lowdown_buf *buf)
+{
+	size_t	 i;
+
+	for (i = 0; i < buf->size; i++)
+		if (!isupper((unsigned char)buf->data[i]) &&
+		    !isdigit((unsigned char)buf->data[i]) &&
+		    buf->data[i] != '_')
+			return 0;
+
+	if (st->type == LOWDOWN_MDOC &&
+	    bqueue_sblockn(obq, ".Ev", hbuf_string(buf)) == NULL)
+		return -1;
+	if (st->type == LOWDOWN_MAN &&
+	    (!bqueue_font_mod(st, obq, 0, NFONT_ITALIC) ||
+	     bqueue_spann(obq, hbuf_string(buf)) == NULL ||
+	     !bqueue_font_mod(st, obq, 1, NFONT_ITALIC)))
+		return -1;
+
+	return 1;
+}
+
+/*
  * Check if the buffer matches any of the names for the manpage.  If it
  * does, replace it with the correct invocation.  Returns -1 on failure,
  * 0 if nothing was replaced, 1 if it was replaced.
@@ -1425,8 +1455,22 @@ roff_manpage_inline(struct nroff *st, const struct lowdown_node *n,
 		return -1;
 	}
 
+	/* Look for `Nm` matches.  If found/error, stop. */
+
 	if ((rc = roff_manpage_inline_check_names(st, obq, buf)) != 0)
 		goto out;
+
+	/* Look for `Ev' matches in ENVIRONMENT pages. */
+
+	if ((st->headers_sec[0] == '1' ||
+	     st->headers_sec[0] == '6' ||
+	     st->headers_sec[0] == '7' ||
+	     st->headers_sec[0] == '8') &&
+	    roff_in_section(st, "ENVIRONMENT") &&
+	    (rc = roff_manpage_inline_check_env(st, obq, buf)) != 0)
+		goto out;
+
+	/* Look for remaining section-specific constructs. */
 
 	if (st->headers_sec[0] == '1' ||
 	    st->headers_sec[0] == '6' ||

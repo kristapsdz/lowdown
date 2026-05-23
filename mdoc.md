@@ -169,7 +169,16 @@ For sections 2, 3, and 9 function return values only.
 
 # ENVIRONMENT
 
-For sections 1, 6, 7, and 8 only.
+For sections 1, 6, 7, and 8 only:
+
+*BLOCKSIZE*
+: If the environment *BLOCKSIZE* is set...
+
+*LC\_CTYPE*
+: The character encoding *locale(1)*.
+
+(This will only recognise environment variables as having capital
+letters, digits, and underscores.)
 
 # FILES
 

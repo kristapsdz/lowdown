@@ -1,0 +1,13 @@
+.SH ENVIRONMENT
+.TP 3
+\fIBLOCKSIZE\fR
+If the environment variable \fIBLOCKSIZE\fR is set, and the \fB\-k\fR option is not
+specified, the block counts (see \fB\-s\fR) will be displayed in units of that size
+block.
+.TP 3
+\fILC_CTYPE\fR
+The character encoding 
+.MR locale 1
+\&.
+.LP
+Blah
