@@ -10,36 +10,37 @@ sinclude Makefile.local
 # while libraries have well-defined semantics of semver change, programs
 # do not.  Let the library guide our versioning until a better way is
 # thought out.
+
 VERSION		 = 3.0.1
 
 # This is the major number of VERSION.  It might later become
 # MAJOR.MINOR, if the library moves a lot.
+
 LIBVER		 = 3
 
-# The usual variables.
-OBJS		 = autolink.o \
-		   buffer.o \
-		   diff.o \
-		   document.o \
-		   entity.o \
-		   ext_attrs.o \
-		   gemini.o \
-		   gemini_escape.o \
-		   html.o \
-		   html_escape.o \
-		   latex.o \
-		   latex_escape.o \
-		   library.o \
-		   libdiff.o \
-		   odt.o \
-		   roff.o \
-		   roff_escape.o \
-		   roff_manpage.o \
-		   smartypants.o \
-		   template.o \
-		   term.o \
-		   tree.o \
-		   util.o
+OBJS		 = src/autolink.o \
+		   src/buffer.o \
+		   src/diff.o \
+		   src/document.o \
+		   src/entity.o \
+		   src/ext_attrs.o \
+		   src/gemini.o \
+		   src/gemini_escape.o \
+		   src/html.o \
+		   src/html_escape.o \
+		   src/latex.o \
+		   src/latex_escape.o \
+		   src/library.o \
+		   src/libdiff.o \
+		   src/odt.o \
+		   src/roff.o \
+		   src/roff_escape.o \
+		   src/roff_manpage.o \
+		   src/smartypants.o \
+		   src/template.o \
+		   src/term.o \
+		   src/tree.o \
+		   src/util.o
 COMPAT_OBJS	 = compats.o
 HTMLS		 = archive.html \
 		   atom.xml \
@@ -87,37 +88,37 @@ MAN3S = 	   man/lowdown.3.html \
 		   man/lowdown_term_new.3.html \
 		   man/lowdown_term_rndr.3.html \
 		   man/lowdown_tree_rndr.3.html
-SOURCES		 = autolink.c \
-		   buffer.c \
-		   compats.c \
-		   diff.c \
-		   document.c \
-		   entity.c \
-		   ext_attrs.c \
-		   gemini.c \
-		   gemini_escape.c \
-		   html.c \
-		   html_escape.c \
-		   latex.c \
-		   latex_escape.c \
-		   libdiff.c \
-		   library.c \
-		   main.c \
-		   odt.c \
-		   roff.c \
-		   roff_escape.c \
-		   roff_manpage.c \
-		   smartypants.c \
-		   template.c \
-		   term.c \
-		   tests.c \
-		   tree.c \
-		   util.c
-HEADERS 	 = extern.h \
-		   libdiff.h \
-		   lowdown.h \
-		   roff.h \
-		   term.h
+SOURCES		 = src/autolink.c \
+		   src/buffer.c \
+		   src/diff.c \
+		   src/document.c \
+		   src/entity.c \
+		   src/ext_attrs.c \
+		   src/gemini.c \
+		   src/gemini_escape.c \
+		   src/html.c \
+		   src/html_escape.c \
+		   src/latex.c \
+		   src/latex_escape.c \
+		   src/libdiff.c \
+		   src/library.c \
+		   src/main.c \
+		   src/odt.c \
+		   src/roff.c \
+		   src/roff_escape.c \
+		   src/roff_manpage.c \
+		   src/smartypants.c \
+		   src/template.c \
+		   src/term.c \
+		   src/tree.c \
+		   src/util.c
+OCONF_SOURCES	 = compats.c \
+		   tests.c
+HEADERS 	 = src/extern.h \
+		   src/libdiff.h \
+		   src/lowdown.h \
+		   src/roff.h \
+		   src/term.h
 PDFS		 = diff.pdf \
 		   diff.diff.pdf \
 		   index.latex.pdf \
@@ -137,7 +138,7 @@ IMAGES		 = screen-mandoc.png \
 THUMBS		 = screen-mandoc.thumb.jpg \
 		   screen-groff.thumb.jpg \
 		   screen-term.thumb.jpg
-CFLAGS		+= -DVERSION=\"$(VERSION)\"
+CFLAGS		+= -DVERSION=\"$(VERSION)\" -I.
 
 # Hack around broken Mac OS X nested sandboxes.
 # If SANDBOX_INIT_ERROR_IGNORE is set to "always", errors from
@@ -145,6 +146,7 @@ CFLAGS		+= -DVERSION=\"$(VERSION)\"
 # also set SANDBOX_INIT_ERROR_IGNORE in their environment to ignore
 # failure.
 # Has no effect unless HAVE_SANDBOX_INIT is defined.
+
 .ifdef SANDBOX_INIT_ERROR_IGNORE
 .if $(SANDBOX_INIT_ERROR_IGNORE) == "always"
 CFLAGS		+= -DSANDBOX_INIT_ERROR_IGNORE=2
@@ -154,6 +156,7 @@ CFLAGS		+= -DSANDBOX_INIT_ERROR_IGNORE=1
 .endif
 
 # Names of shared and static libraries.
+
 LIB_SO		 = liblowdown.$(LINKER_SOSUFFIX)
 LIB_ST		 = liblowdown.a
 
@@ -163,6 +166,7 @@ LIB_ST		 = liblowdown.a
 # (default) or dynamic linking.
 # The dynamic version will also need the compats when building the main
 # object.
+
 LIB_LOWDOWN 	 = $(LIB_ST)
 MAIN_OBJS	 =
 .ifdef LINK_METHOD
@@ -174,6 +178,7 @@ MAIN_OBJS	 = $(COMPAT_OBJS)
 
 # Mac OS X and other Unix systems use different conventions for
 # indicating shared library versions.
+
 .if $(LINKER_SOSUFFIX) == "dylib"
 LIB_SOVER	 = liblowdown.$(LIBVER).$(LINKER_SOSUFFIX)
 .else
@@ -202,24 +207,42 @@ REGRESS_ARGS	+= "--parse-no-deflists"
 
 REGRESS_ENV	 = LC_ALL=C.UTF-8
 
+# Main build rules.
+
 all: bins lowdown.pc $(LIB_SO)
+
 bins: lowdown lowdown-diff
 
-www: all $(HTMLS) $(PDFS) $(THUMBS) $(TEXTS) lowdown.tar.gz lowdown.tar.gz.sha512
+# Build main programs.
 
-installwww: www
-	mkdir -p $(WWWDIR)/snapshots
-	$(INSTALL) -m 0444 $(THUMBS) $(IMAGES) $(MDS) $(TEXTS) $(HTMLS) $(CSSS) $(JSS) $(PDFS) $(WWWDIR)
-	$(INSTALL) -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots/lowdown-$(VERSION).tar.gz
-	$(INSTALL) -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots/lowdown-$(VERSION).tar.gz.sha512
-	$(INSTALL) -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots
-	$(INSTALL) -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots
-
-lowdown: $(LIB_LOWDOWN) $(MAIN_OBJS) main.o
-	$(CC) -o $@ main.o $(MAIN_OBJS) $(LIB_LOWDOWN) $(LDFLAGS) $(LDADD_MD5) -lm $(LDADD)
+lowdown: $(LIB_LOWDOWN) $(MAIN_OBJS) src/main.o
+	$(CC) -o $@ src/main.o $(MAIN_OBJS) $(LIB_LOWDOWN) $(LDFLAGS) $(LDADD_MD5) -lm $(LDADD)
 
 lowdown-diff: lowdown
 	ln -f lowdown lowdown-diff
+
+# Build sources and pkgconfig bits.
+
+.c.o:
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(OBJS) $(COMPAT_OBJS) src/main.o: config.h
+
+$(OBJS): src/extern.h src/lowdown.h
+
+src/term.o: src/term.h
+
+src/roff.o src/roff_manpage.o: src/roff.h
+
+src/main.o: src/lowdown.h
+
+.in.pc.pc:
+	sed -e "s!@PREFIX@!$(PREFIX)!g" \
+	    -e "s!@LIBDIR@!$(LIBDIR)!g" \
+	    -e "s!@INCLUDEDIR@!$(INCLUDEDIR)!g" \
+	    -e "s!@VERSION@!$(VERSION)!g" $< >$@
+
+# Build static/shared libraries.
 
 $(LIB_ST): $(OBJS) $(COMPAT_OBJS)
 	$(AR) rs $@ $(OBJS) $(COMPAT_OBJS)
@@ -230,6 +253,8 @@ $(LIB_SO): $(OBJS) $(COMPAT_OBJS)
 		-Wl,${LINKER_SONAME},$(LIB_SOVER) $(LDLIBS)
 	ln -sf $(LIB_SOVER) $@
 
+# Uninstall routines.
+
 uninstall:
 	rm -rf $(SHAREDIR)/lowdown
 	rm -f $(BINDIR)/lowdown $(BINDIR)/lowdown-diff
@@ -238,6 +263,25 @@ uninstall:
 		section=$${name##*.} ; \
 		rm -f $(MANDIR)/man$$section/$$name ; \
 	done
+
+uninstall_lib_common:
+	rm -f $(LIBDIR)/pkgconfig/lowdown.pc
+	rm -f $(INCLUDEDIR)/lowdown.h
+	for f in $(MAN3S) ; do \
+		name=`basename $$f .html` ; \
+		section=$${name##*.} ; \
+		rm -f $(MANDIR)/man$$section/$$name ; \
+	done
+
+uninstall_shared: uninstall_lib_common
+	rm -f $(LIBDIR)/$(LIB_SOVER) $(LIBDIR)/$(LIB_SO)
+
+uninstall_static: uninstall_lib_common
+	rm -f $(LIBDIR)/$(LIB_ST)
+
+uninstall_libs: uninstall_shared uninstall_static
+
+# Install routines.
 
 install: bins
 	mkdir -p $(DESTDIR)$(BINDIR)
@@ -261,15 +305,6 @@ install: bins
 		$(INSTALL_MAN) man/$$name $(DESTDIR)$(MANDIR)/man$$section ; \
 	done
 
-uninstall_lib_common:
-	rm -f $(LIBDIR)/pkgconfig/lowdown.pc
-	rm -f $(INCLUDEDIR)/lowdown.h
-	for f in $(MAN3S) ; do \
-		name=`basename $$f .html` ; \
-		section=$${name##*.} ; \
-		rm -f $(MANDIR)/man$$section/$$name ; \
-	done
-
 install_lib_common: lowdown.pc
 	mkdir -p $(DESTDIR)$(MANDIR)/man3
 	mkdir -p $(DESTDIR)$(LIBDIR)/pkgconfig
@@ -282,24 +317,18 @@ install_lib_common: lowdown.pc
 		$(INSTALL_MAN) man/$$name $(DESTDIR)$(MANDIR)/man$$section ; \
 	done
 
-uninstall_shared: uninstall_lib_common
-	rm -f $(LIBDIR)/$(LIB_SOVER) $(LIBDIR)/$(LIB_SO)
-
 install_shared: $(LIB_SO) install_lib_common
 	$(INSTALL_LIB) $(LIB_SOVER) $(DESTDIR)$(LIBDIR)
 	( cd $(DESTDIR)$(LIBDIR) && ln -sf $(LIB_SOVER) $(LIB_SO) )
 
-uninstall_static: uninstall_lib_common
-	rm -f $(LIBDIR)/$(LIB_ST)
-
 install_static: $(LIB_ST) install_lib_common
 	$(INSTALL_LIB) $(LIB_ST) $(DESTDIR)$(LIBDIR)
 
-uninstall_libs: uninstall_shared uninstall_static
-
 install_libs: install_shared install_static
 
-distcheck: lowdown.tar.gz.sha512
+# Check that distributed sources are buildable.
+
+distcheck:: lowdown.tar.gz.sha512
 	mandoc -Tlint -Werror man/*.[135]
 	newest=`grep "<h1>" versions.xml | tail -1 | sed 's![ 	]*!!g'` ; \
 	       [ "$$newest" = "<h1>$(VERSION)</h1>" ] || \
@@ -314,6 +343,18 @@ distcheck: lowdown.tar.gz.sha512
 	( cd .distcheck/lowdown-$(VERSION) && $(MAKE) regress )
 	( cd .distcheck/lowdown-$(VERSION) && $(MAKE) install )
 	rm -rf .distcheck
+
+# Build/install www sources.
+
+www: all $(HTMLS) $(PDFS) $(THUMBS) $(TEXTS) lowdown.tar.gz lowdown.tar.gz.sha512
+
+installwww: www
+	mkdir -p $(WWWDIR)/snapshots
+	$(INSTALL) -m 0444 $(THUMBS) $(IMAGES) $(MDS) $(TEXTS) $(HTMLS) $(CSSS) $(JSS) $(PDFS) $(WWWDIR)
+	$(INSTALL) -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots/lowdown-$(VERSION).tar.gz
+	$(INSTALL) -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots/lowdown-$(VERSION).tar.gz.sha512
+	$(INSTALL) -m 0444 lowdown.tar.gz $(WWWDIR)/snapshots
+	$(INSTALL) -m 0444 lowdown.tar.gz.sha512 $(WWWDIR)/snapshots
 
 $(PDFS) index.xml README.xml: lowdown
 
@@ -387,26 +428,33 @@ index.xml: index.md coverage.md coverage-table.md lowdown
 .1.1.html .3.3.html .5.5.html:
 	mandoc -Thtml -Ostyle=https://bsd.lv/css/mandoc.css $< >$@
 
+.png.thumb.jpg:
+	convert $< -thumbnail 350 -quality 50 $@
+
+# Distributed source tarball.
+
 lowdown.tar.gz.sha512: lowdown.tar.gz
 	openssl dgst -sha512 -hex lowdown.tar.gz >$@
 
 lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/
 	mkdir -p .dist/lowdown-$(VERSION)/man
+	mkdir -p .dist/lowdown-$(VERSION)/regress/diff
+	mkdir -p .dist/lowdown-$(VERSION)/regress/html
+	mkdir -p .dist/lowdown-$(VERSION)/regress/manpages
+	mkdir -p .dist/lowdown-$(VERSION)/regress/metadata
+	mkdir -p .dist/lowdown-$(VERSION)/regress/original
+	mkdir -p .dist/lowdown-$(VERSION)/regress/standalone
+	mkdir -p .dist/lowdown-$(VERSION)/regress/template
 	mkdir -p .dist/lowdown-$(VERSION)/share/html
 	mkdir -p .dist/lowdown-$(VERSION)/share/latex
 	mkdir -p .dist/lowdown-$(VERSION)/share/man
 	mkdir -p .dist/lowdown-$(VERSION)/share/ms
 	mkdir -p .dist/lowdown-$(VERSION)/share/odt
-	mkdir -p .dist/lowdown-$(VERSION)/regress/html
-	mkdir -p .dist/lowdown-$(VERSION)/regress/metadata
-	mkdir -p .dist/lowdown-$(VERSION)/regress/original
-	mkdir -p .dist/lowdown-$(VERSION)/regress/standalone
-	mkdir -p .dist/lowdown-$(VERSION)/regress/manpages
-	mkdir -p .dist/lowdown-$(VERSION)/regress/template
-	mkdir -p .dist/lowdown-$(VERSION)/regress/diff
-	$(INSTALL) -m 0644 $(HEADERS) .dist/lowdown-$(VERSION)
-	$(INSTALL) -m 0644 $(SOURCES) .dist/lowdown-$(VERSION)
+	mkdir -p .dist/lowdown-$(VERSION)/src
+	$(INSTALL) -m 0644 $(HEADERS) .dist/lowdown-$(VERSION)/src
+	$(INSTALL) -m 0644 $(SOURCES) .dist/lowdown-$(VERSION)/src
+	$(INSTALL) -m 0644 $(OCONF_SOURCES) .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 0644 share/html/* .dist/lowdown-$(VERSION)/share/html
 	$(INSTALL) -m 0644 share/latex/* .dist/lowdown-$(VERSION)/share/latex
 	$(INSTALL) -m 0644 share/man/* .dist/lowdown-$(VERSION)/share/man
@@ -426,18 +474,10 @@ lowdown.tar.gz:
 	( cd .dist/ && tar zcf ../$@ lowdown-$(VERSION) )
 	rm -rf .dist/
 
-$(OBJS) $(COMPAT_OBJS) main.o: config.h
-
-$(OBJS): extern.h lowdown.h
-
-term.o: term.h
-
-roff.o roff_manpage.o: roff.h
-
-main.o: lowdown.h
+# Cleanup.
 
 clean:
-	rm -f $(OBJS) $(COMPAT_OBJS) main.o
+	rm -f $(OBJS) $(COMPAT_OBJS) src/main.o
 	rm -f lowdown lowdown-diff lowdown.pc
 	rm -f $(LIB_ST) $(LIB_SO) $(LIB_SOVER)
 	rm -f index.xml diff.xml diff.diff.xml README.xml lowdown.tar.gz.sha512 lowdown.tar.gz
@@ -446,6 +486,8 @@ clean:
 
 distclean: clean
 	rm -f Makefile.configure config.h config.log config.h.old config.log.old
+
+# Code coverage.
 
 coverage-table.md:
 	$(MAKE) clean
@@ -461,6 +503,8 @@ coverage-table.md:
 	  	echo "| [$$src]($$link) | $$pct% | " ; \
 	  done ; \
 	) >coverage-table.md
+
+# Re-build regression (TODO: remove this)
 
 regen_regress: bins
 	@tmp1=`mktemp` ; \
@@ -529,6 +573,8 @@ regen_regress: bins
 	rm -f $$tmp1 ; \
 	rm -f $$tmp2
 
+# Regression tests under valgrind.
+
 valgrind::
 	@ulimit -n 1024 ; \
 	tmp=`mktemp` ; \
@@ -538,6 +584,8 @@ valgrind::
 	cat $$tmp ; \
 	rm -f $$tmp ; \
 	exit $$rc
+
+# Regression tests.
 
 regress:: bins
 	@tmp1=`mktemp` ; \
@@ -622,12 +670,3 @@ regress:: bins
 		echo "Failed with $$rc test failures" 1>&2 ; \
 		exit 1 ; \
 	fi
-
-.png.thumb.jpg:
-	convert $< -thumbnail 350 -quality 50 $@
-
-.in.pc.pc:
-	sed -e "s!@PREFIX@!$(PREFIX)!g" \
-	    -e "s!@LIBDIR@!$(LIBDIR)!g" \
-	    -e "s!@INCLUDEDIR@!$(INCLUDEDIR)!g" \
-	    -e "s!@VERSION@!$(VERSION)!g" $< >$@
