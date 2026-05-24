@@ -24,21 +24,21 @@ OBJS		 = src/parse/autolink.o \
 		   src/buffer.o \
 		   src/diff.o \
 		   src/entity.o \
-		   src/gemini.o \
-		   src/gemini_escape.o \
-		   src/html.o \
-		   src/html_escape.o \
-		   src/latex.o \
-		   src/latex_escape.o \
+		   src/format/gemini/gemini.o \
+		   src/format/gemini/gemini_escape.o \
+		   src/format/html/html.o \
+		   src/format/html/html_escape.o \
+		   src/format/latex/latex.o \
+		   src/format/latex/latex_escape.o \
+		   src/format/odt/odt.o \
+		   src/format/roff/roff.o \
+		   src/format/roff/roff_escape.o \
+		   src/format/roff/roff_manpage.o \
+		   src/format/term/term.o \
 		   src/library.o \
 		   src/libdiff.o \
-		   src/odt.o \
-		   src/roff.o \
-		   src/roff_escape.o \
-		   src/roff_manpage.o \
 		   src/smartypants.o \
 		   src/template.o \
-		   src/term.o \
 		   src/tree.o \
 		   src/util.o
 COMPAT_OBJS	 = compats.o
@@ -95,22 +95,23 @@ SOURCES		 = src/parse/autolink.c \
 		   src/buffer.c \
 		   src/diff.c \
 		   src/entity.c \
-		   src/gemini.c \
-		   src/gemini_escape.c \
-		   src/html.c \
-		   src/html_escape.c \
-		   src/latex.c \
-		   src/latex_escape.c \
+		   src/format/gemini/gemini.c \
+		   src/format/gemini/gemini_escape.c \
+		   src/format/html/html.c \
+		   src/format/html/html_escape.c \
+		   src/format/latex/latex.c \
+		   src/format/latex/latex_escape.c \
+		   src/format/odt/odt.c \
+		   src/format/roff/roff.c \
+		   src/format/roff/roff_escape.c \
+		   src/format/roff/roff_manpage.c \
+		   src/format/roff/roff.h \
+		   src/format/term/term.c \
+		   src/smartypants.c \
+		   src/template.c \
 		   src/libdiff.c \
 		   src/library.c \
 		   src/main.c \
-		   src/odt.c \
-		   src/roff.c \
-		   src/roff_escape.c \
-		   src/roff_manpage.c \
-		   src/smartypants.c \
-		   src/template.c \
-		   src/term.c \
 		   src/tree.c \
 		   src/util.c \
 		   compats.c \
@@ -118,7 +119,6 @@ SOURCES		 = src/parse/autolink.c \
 		   src/extern.h \
 		   src/libdiff.h \
 		   src/lowdown.h \
-		   src/roff.h \
 		   src/term.h
 PDFS		 = diff.pdf \
 		   diff.diff.pdf \
@@ -231,9 +231,9 @@ $(OBJS) $(COMPAT_OBJS) src/main.o: config.h
 
 $(OBJS): src/extern.h src/lowdown.h
 
-src/term.o: src/term.h
+src/format/term/term.o: src/format/term/term.h
 
-src/roff.o src/roff_manpage.o: src/roff.h
+src/format/roff/roff.o src/format/roff/roff_manpage.o: src/format/roff/roff.h
 
 src/main.o: src/lowdown.h
 
