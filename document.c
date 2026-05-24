@@ -2180,13 +2180,21 @@ is_hrule(const char *data, size_t size)
 
 /*
  * Check if a line is a code fence; return the end of the code fence.
- * If passed, width of the fence rule and character will be returned.
+ * If non-NULL, width of the fence rule and character will be returned.
+ * Returns TRUE if a fenced code, FALSE if not or if fenced code blocks
+ * aren't supported.
  */
 static size_t
-is_codefence(const char *data, size_t size, size_t *width, char *chr)
+is_fencedcode(const struct lowdown_doc *doc, const char *data,
+    size_t size, size_t *width, char *chr)
 {
 	size_t	 i = 0, n = 1;
 	char	 c;
+
+	/* Return now if fenced code not supported. */
+
+	if (!(doc->ext_flags & LOWDOWN_FENCED))
+		return 0;
 
 	/* Skipping initial spaces. */
 
@@ -2210,9 +2218,9 @@ is_codefence(const char *data, size_t size, size_t *width, char *chr)
 	if (n < 3)
 		return 0;
 
-	if (width)
+	if (width != NULL)
 		*width = n;
-	if (chr)
+	if (chr != NULL)
 		*chr = c;
 
 	return i;
@@ -2220,16 +2228,18 @@ is_codefence(const char *data, size_t size, size_t *width, char *chr)
 
 /*
  * Expects single line, checks if it's a codefence and extracts
- * language.
+ * language.  Assumes code fences are supported.
  * Return zero if not a code-fence, >0 offset otherwise.
  */
 static size_t
-parse_codefence(char *data, size_t size,
-	struct lowdown_buf *lang, size_t *width, char *chr)
+parse_fencedcode_line(const struct lowdown_doc *doc, char *data,
+    size_t size, struct lowdown_buf *lang, size_t *width, char *chr)
 {
 	size_t		 i, w, lang_start;
 
-	i = w = is_codefence(data, size, width, chr);
+	assert(doc->ext_flags & LOWDOWN_FENCED);
+
+	i = w = is_fencedcode(doc, data, size, width, chr);
 
 	if (i == 0)
 		return 0;
@@ -2621,7 +2631,8 @@ parse_paragraph(struct lowdown_doc *doc, char *data, size_t size)
 
 		/* Other ways of ending a paragraph. */
 
-		if (is_atxheader(doc, data + i, size - i) ||
+		if (is_fencedcode(doc, data + i, size - i, NULL, NULL) ||
+		    is_atxheader(doc, data + i, size - i) ||
 		    is_hrule(data + i, size - i) ||
 		    (lines == 1 &&
 		     prefix_dli(doc, data + i, size - i)) ||
@@ -2701,7 +2712,8 @@ parse_paragraph(struct lowdown_doc *doc, char *data, size_t size)
 
 /*
  * Handles parsing of a block-level code fragment.
- * Return <0 on failure, 0 if not a fragment, >0 on success.
+ * Return <0 on failure (memory), 0 if not a fragment OR fenced code
+ * isn't supported, >0 on success.
  */
 static ssize_t
 parse_fencedcode(struct lowdown_doc *doc, char *data, size_t size)
@@ -2712,6 +2724,11 @@ parse_fencedcode(struct lowdown_doc *doc, char *data, size_t size)
 	char	 		 chr, chr2;
 	struct lowdown_node 	*n;
 
+	/* Return now if fenced code not supported. */
+
+	if (!(doc->ext_flags & LOWDOWN_FENCED))
+		return 0;
+
 	memset(&text, 0, sizeof(struct lowdown_buf));
 	memset(&lang, 0, sizeof(struct lowdown_buf));
 
@@ -2719,7 +2736,8 @@ parse_fencedcode(struct lowdown_doc *doc, char *data, size_t size)
 
 	while (i < size && data[i] != '\n')
 		i++;
-	if ((w = parse_codefence(data, i, &lang, &width, &chr)) == 0)
+	w = parse_fencedcode_line(doc, data, i, &lang, &width, &chr);
+	if (w == 0)
 		return 0;
 
 	/* Search for end. */
@@ -2729,7 +2747,7 @@ parse_fencedcode(struct lowdown_doc *doc, char *data, size_t size)
 	while ((line_start = i) < size) {
 		while (i < size && data[i] != '\n')
 			i++;
-		w2 = is_codefence(data + line_start,
+		w2 = is_fencedcode(doc, data + line_start,
 			i - line_start, &width2, &chr2);
 		if (w == w2 &&
 		    width == width2 &&
@@ -2740,17 +2758,16 @@ parse_fencedcode(struct lowdown_doc *doc, char *data, size_t size)
 		i++;
 	}
 
+	/* Actually construct the blockcode. */
+
 	text.data = data + text_start;
 	text.size = line_start - text_start;
 
-	if ((n = pushnode(doc, LOWDOWN_BLOCKCODE)) == NULL)
+	if ((n = pushnode(doc, LOWDOWN_BLOCKCODE)) == NULL ||
+	    !hbuf_createb(&n->rndr_blockcode.text, &text) ||
+	    !hbuf_createb(&n->rndr_blockcode.lang, &lang))
 		return -1;
 
-	if (!hbuf_create(&n->rndr_blockcode.text,
-	    data + text_start, line_start - text_start))
-		return -1;
-	if (!hbuf_createb(&n->rndr_blockcode.lang, &lang))
-		return -1;
 	popnode(doc, n);
 	return i;
 }
@@ -2922,10 +2939,9 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 
 		pre = i = countspaces(data, beg, end, 4) - beg;
 
-		if (doc->ext_flags & LOWDOWN_FENCED)
-			if (is_codefence(data + beg + i,
-			    end - beg - i, NULL, NULL))
-				in_fence = !in_fence;
+		if (is_fencedcode(doc, data + beg + i, end - beg - i,
+		    NULL, NULL))
+			in_fence = !in_fence;
 
 		/*
 		 * Only check for new list items if we are **not**
@@ -3776,7 +3792,8 @@ parse_table_header(struct lowdown_node **np,
 
 /*
  * Parse a table block.
- * Return <0 on failure, zero if not a table, >0 offset otherwise.
+ * Return <0 on failure, 0 if not a table (or tables not supported), >0
+ * offset otherwise.
  */
 static ssize_t
 parse_table(struct lowdown_doc *doc, char *data, size_t size)
@@ -3786,6 +3803,11 @@ parse_table(struct lowdown_doc *doc, char *data, size_t size)
 	struct lowdown_buf 	*header_work = NULL, *body_work = NULL;
 	enum htbl_flags		*col_data = NULL;
 	struct lowdown_node	*n = NULL, *nn;
+
+	/* If tables aren't supported, return now. */
+
+	if (!(doc->ext_flags & LOWDOWN_TABLES))
+		return 0;
 
 	if ((header_work = hbuf_new(64)) == NULL ||
 	    (body_work = hbuf_new(256)) == NULL)
@@ -3903,27 +3925,21 @@ parse_block(struct lowdown_doc *doc, char *data, size_t size)
 
 		/* Fenced code. */
 
-		if (doc->ext_flags & LOWDOWN_FENCED) {
-			rc = parse_fencedcode(doc, txt_data, end);
-			if (rc > 0) {
-				beg += rc;
-				continue;
-			} else if (rc < 0)
-				return 0;
+		rc = parse_fencedcode(doc, txt_data, end);
+		if (rc > 0) {
+			beg += rc;
+			continue;
+		} else if (rc < 0)
+			return 0;
 
-		}
-		
 		/* Table parsing. */
 
-		if (doc->ext_flags & LOWDOWN_TABLES) {
-			rc = parse_table(doc, txt_data, end);
-			if (rc > 0) {
-				beg += rc;
-				continue;
-			} else if (rc < 0)
-				return 0;
-
-		}
+		rc = parse_table(doc, txt_data, end);
+		if (rc > 0) {
+			beg += rc;
+			continue;
+		} else if (rc < 0)
+			return 0;
 
 		/* We're a > block quote. */
 
