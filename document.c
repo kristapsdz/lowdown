@@ -2181,8 +2181,8 @@ is_hrule(const char *data, size_t size)
 /*
  * Check if a line is a code fence; return the end of the code fence.
  * If non-NULL, width of the fence rule and character will be returned.
- * Returns TRUE if a fenced code, FALSE if not or if fenced code blocks
- * aren't supported.
+ * Returns the position after the fenced code if it is fenced code, zero if not
+ * or if fenced code blocks aren't supported.
  */
 static size_t
 is_fencedcode(const struct lowdown_doc *doc, const char *data,
@@ -2224,6 +2224,36 @@ is_fencedcode(const struct lowdown_doc *doc, const char *data,
 		*chr = c;
 
 	return i;
+}
+
+/*
+ * Like is_fencecode(), but testing for the existence of a full block.
+ * Returns TRUE if the fenced code exists, FALSE otherwise.
+ */
+static size_t
+is_fencedcode_block(const struct lowdown_doc *doc, const char *data,
+    size_t size)
+{
+	size_t	 i;
+
+	/* Return now if fenced code not supported. */
+
+	if (!(doc->ext_flags & LOWDOWN_FENCED))
+		return 0;
+
+	if ((i = is_fencedcode(doc, data, size, NULL, NULL)) == 0)
+		return 0;
+
+	while (i < size) {
+		while (i < size && data[i] != '\n')
+			i++;
+		while (i < size && data[i] == '\n')
+			i++;
+		if (is_fencedcode(doc, data + i, size - i, NULL, NULL))
+			return 1;
+	}
+
+	return 0;
 }
 
 /*
@@ -2631,7 +2661,7 @@ parse_paragraph(struct lowdown_doc *doc, char *data, size_t size)
 
 		/* Other ways of ending a paragraph. */
 
-		if (is_fencedcode(doc, data + i, size - i, NULL, NULL) ||
+		if (is_fencedcode_block(doc, data + i, size - i) ||
 		    is_atxheader(doc, data + i, size - i) ||
 		    is_hrule(data + i, size - i) ||
 		    (lines == 1 &&
