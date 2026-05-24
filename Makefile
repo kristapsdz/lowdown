@@ -23,7 +23,7 @@ OBJS		 = src/parse/autolink.o \
 		   src/parse/ext_attrs.o \
 		   src/buffer.o \
 		   src/diff.o \
-		   src/entity.o \
+		   src/format/entity.o \
 		   src/format/gemini/gemini.o \
 		   src/format/gemini/gemini_escape.o \
 		   src/format/html/html.o \
@@ -35,11 +35,11 @@ OBJS		 = src/parse/autolink.o \
 		   src/format/roff/roff_escape.o \
 		   src/format/roff/roff_manpage.o \
 		   src/format/term/term.o \
+		   src/format/tree/tree.o \
+		   src/format/template.o \
 		   src/library.o \
 		   src/libdiff.o \
 		   src/smartypants.o \
-		   src/template.o \
-		   src/tree.o \
 		   src/util.o
 COMPAT_OBJS	 = compats.o
 HTMLS		 = archive.html \
@@ -94,7 +94,8 @@ SOURCES		 = src/parse/autolink.c \
 		   src/parse/parse.h \
 		   src/buffer.c \
 		   src/diff.c \
-		   src/entity.c \
+		   src/format/entity.c \
+		   src/format/format.h \
 		   src/format/gemini/gemini.c \
 		   src/format/gemini/gemini_escape.c \
 		   src/format/html/html.c \
@@ -107,12 +108,12 @@ SOURCES		 = src/parse/autolink.c \
 		   src/format/roff/roff_manpage.c \
 		   src/format/roff/roff.h \
 		   src/format/term/term.c \
+		   src/format/tree/tree.c \
+		   src/format/template.c \
 		   src/smartypants.c \
-		   src/template.c \
 		   src/libdiff.c \
 		   src/library.c \
 		   src/main.c \
-		   src/tree.c \
 		   src/util.c \
 		   compats.c \
 		   tests.c \
@@ -139,7 +140,7 @@ IMAGES		 = screen-mandoc.png \
 THUMBS		 = screen-mandoc.thumb.jpg \
 		   screen-groff.thumb.jpg \
 		   screen-term.thumb.jpg
-CFLAGS		+= -DVERSION=\"$(VERSION)\" -I. -Isrc
+CFLAGS		+= -DVERSION=\"$(VERSION)\" -I. -Isrc -Isrc/format -Isrc/parse
 
 # Hack around broken Mac OS X nested sandboxes.
 # If SANDBOX_INIT_ERROR_IGNORE is set to "always", errors from

@@ -26,6 +26,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
+#include "format.h"
 
 /*
  * Convert newlines to spaces (if "oneline") and elide control

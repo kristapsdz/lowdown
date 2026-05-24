@@ -29,6 +29,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
+#include "format.h"
 
 struct ent {
 	const char 	*iso; /* html entity */

@@ -30,6 +30,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
+#include "format.h"
 
 struct tstack {
 	const struct lowdown_node *n; /* node in question */

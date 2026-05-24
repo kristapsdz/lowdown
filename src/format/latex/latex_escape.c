@@ -25,6 +25,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
+#include "format.h"
 
 /*
  * Escape LaTeX special characters.

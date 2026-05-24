@@ -32,12 +32,6 @@ int		 lowdown_template(const char *, const struct lowdown_buf *,
 
 int	 	 smarty(struct lowdown_node *, size_t, enum lowdown_type);
 
-const char	*entity_find_nroff(const struct lowdown_buf *, int32_t *);
-int32_t	 	 entity_find_iso(const struct lowdown_buf *);
-const char	*entity_find_tex(const struct lowdown_buf *, unsigned char *);
-#define		 TEX_ENT_MATH	 0x01
-#define		 TEX_ENT_ASCII	 0x02
-
 int		 hbuf_eq(const struct lowdown_buf *, const struct lowdown_buf *);
 int		 hbuf_streq(const struct lowdown_buf *, const char *);
 int		 hbuf_strprefix(const struct lowdown_buf *, const char *);
@@ -77,19 +71,6 @@ void		 hentryq_clear(struct hentryq *);
 
 #define 	 HBUF_PUTSL(output, literal) \
 		 hbuf_put(output, literal, sizeof(literal) - 1)
-
-int		 lowdown_gemini_esc(struct lowdown_buf *,
-			const char *, size_t, int);
-int		 lowdown_html_esc(struct lowdown_buf *,
-			const char *, size_t, int, int, int);
-int		 lowdown_html_esc_attr(struct lowdown_buf *,
-			const char *, size_t);
-int		 lowdown_html_esc_href(struct lowdown_buf *,
-			const char *, size_t);
-int		 lowdown_latex_esc(struct lowdown_buf *,
-			const char *, size_t);
-int		 lowdown_roff_esc(struct lowdown_buf *,
-			const char *, size_t, int, int);
 
 char		*rcsdate2str(const char *);
 char		*rcsauthor2str(const char *);

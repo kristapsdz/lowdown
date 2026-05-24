@@ -30,6 +30,7 @@
 #include "lowdown.h"
 #include "extern.h"
 #include "roff.h"
+#include "format.h"
 
 static ssize_t
 roff_manpage_synopsis_prog_fl(struct nroff *, struct bnodeq *, size_t,

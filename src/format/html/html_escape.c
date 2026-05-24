@@ -28,6 +28,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
+#include "format.h"
 
 /*
  * The following characters will not be escaped:

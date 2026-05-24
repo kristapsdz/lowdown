@@ -30,6 +30,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
+#include "format.h"
 
 struct latex {
 	unsigned int	 oflags; /* same as in lowdown_opts */

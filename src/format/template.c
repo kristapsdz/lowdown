@@ -29,6 +29,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
+#include "format.h"
 
 TAILQ_HEAD(opq, op);
 TAILQ_HEAD(op_resq, op_res);

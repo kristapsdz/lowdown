@@ -28,6 +28,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
+#include "format.h"
 
 static	const char *const names[LOWDOWN__MAX] = {
 	"LOWDOWN_ROOT",			/* LOWDOWN_ROOT */

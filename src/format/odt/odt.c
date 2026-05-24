@@ -30,6 +30,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
+#include "format.h"
 
 /*
  * Maximum length of any style.  This should account for fixed prefix

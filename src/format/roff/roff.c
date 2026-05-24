@@ -33,6 +33,7 @@
 #include "lowdown.h"
 #include "extern.h"
 #include "roff.h"
+#include "format.h"
 
 /*
  * Expression for whether this node is after a header.  This is

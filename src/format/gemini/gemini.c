@@ -30,6 +30,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
+#include "format.h"
 
 /*
  * A standalone link is one that lives in its own paragraph.

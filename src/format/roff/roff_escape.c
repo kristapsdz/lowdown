@@ -30,6 +30,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
+#include "format.h"
 
 /*
  * Escape unsafe text into roff output such that no roff features are
