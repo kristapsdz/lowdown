@@ -78,10 +78,6 @@ void		 hentryq_clear(struct hentryq *);
 #define 	 HBUF_PUTSL(output, literal) \
 		 hbuf_put(output, literal, sizeof(literal) - 1)
 
-ssize_t		 halink_email(size_t *, struct lowdown_buf *, char *, size_t, size_t);
-ssize_t		 halink_url(size_t *, struct lowdown_buf *, char *, size_t, size_t);
-ssize_t		 halink_www(size_t *, struct lowdown_buf *, char *, size_t, size_t);
-
 int		 lowdown_gemini_esc(struct lowdown_buf *,
 			const char *, size_t, int);
 int		 lowdown_html_esc(struct lowdown_buf *,
@@ -94,10 +90,6 @@ int		 lowdown_latex_esc(struct lowdown_buf *,
 			const char *, size_t);
 int		 lowdown_roff_esc(struct lowdown_buf *,
 			const char *, size_t, int, int);
-
-void		 lowdown_attrs_free(struct lowdown_attr *, size_t);
-size_t		 lowdown_attrs_parse(const char *, size_t,
-			struct lowdown_attr **, size_t *);
 
 char		*rcsdate2str(const char *);
 char		*rcsauthor2str(const char *);

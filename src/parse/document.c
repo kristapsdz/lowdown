@@ -32,6 +32,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
+#include "parse.h"
 
 /*
  * Make sure these are larger than enum hlist_fl.

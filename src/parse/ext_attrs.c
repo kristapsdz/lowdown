@@ -26,6 +26,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
+#include "parse.h"
 
 /*
  * Standard HTML attributes.

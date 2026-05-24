@@ -31,6 +31,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
+#include "parse.h"
 
 #define VALID_URIS_SZ	6
 

@@ -18,12 +18,12 @@ VERSION		 = 3.0.1
 
 LIBVER		 = 3
 
-OBJS		 = src/autolink.o \
+OBJS		 = src/parse/autolink.o \
+		   src/parse/document.o \
+		   src/parse/ext_attrs.o \
 		   src/buffer.o \
 		   src/diff.o \
-		   src/document.o \
 		   src/entity.o \
-		   src/ext_attrs.o \
 		   src/gemini.o \
 		   src/gemini_escape.o \
 		   src/html.o \
@@ -88,12 +88,13 @@ MAN3S = 	   man/lowdown.3.html \
 		   man/lowdown_term_new.3.html \
 		   man/lowdown_term_rndr.3.html \
 		   man/lowdown_tree_rndr.3.html
-SOURCES		 = src/autolink.c \
+SOURCES		 = src/parse/autolink.c \
+		   src/parse/document.c \
+		   src/parse/ext_attrs.c \
+		   src/parse/parse.h \
 		   src/buffer.c \
 		   src/diff.c \
-		   src/document.c \
 		   src/entity.c \
-		   src/ext_attrs.c \
 		   src/gemini.c \
 		   src/gemini_escape.c \
 		   src/html.c \
@@ -111,10 +112,10 @@ SOURCES		 = src/autolink.c \
 		   src/template.c \
 		   src/term.c \
 		   src/tree.c \
-		   src/util.c
-OCONF_SOURCES	 = compats.c \
-		   tests.c
-HEADERS 	 = src/extern.h \
+		   src/util.c \
+		   compats.c \
+		   tests.c \
+		   src/extern.h \
 		   src/libdiff.h \
 		   src/lowdown.h \
 		   src/roff.h \
@@ -138,7 +139,7 @@ IMAGES		 = screen-mandoc.png \
 THUMBS		 = screen-mandoc.thumb.jpg \
 		   screen-groff.thumb.jpg \
 		   screen-term.thumb.jpg
-CFLAGS		+= -DVERSION=\"$(VERSION)\" -I.
+CFLAGS		+= -DVERSION=\"$(VERSION)\" -I. -Isrc
 
 # Hack around broken Mac OS X nested sandboxes.
 # If SANDBOX_INIT_ERROR_IGNORE is set to "always", errors from
@@ -235,6 +236,8 @@ src/term.o: src/term.h
 src/roff.o src/roff_manpage.o: src/roff.h
 
 src/main.o: src/lowdown.h
+
+src/parse/autolink.o src/parse/document.o src/parse/ext_attrs.o: src/parse/parse.h
 
 .in.pc.pc:
 	sed -e "s!@PREFIX@!$(PREFIX)!g" \
@@ -452,9 +455,7 @@ lowdown.tar.gz:
 	mkdir -p .dist/lowdown-$(VERSION)/share/ms
 	mkdir -p .dist/lowdown-$(VERSION)/share/odt
 	mkdir -p .dist/lowdown-$(VERSION)/src
-	$(INSTALL) -m 0644 $(HEADERS) .dist/lowdown-$(VERSION)/src
-	$(INSTALL) -m 0644 $(SOURCES) .dist/lowdown-$(VERSION)/src
-	$(INSTALL) -m 0644 $(OCONF_SOURCES) .dist/lowdown-$(VERSION)
+	tar cf - $(SOURCES) | tar -xf - -C .dist/lowdown-$(VERSION)
 	$(INSTALL) -m 0644 share/html/* .dist/lowdown-$(VERSION)/share/html
 	$(INSTALL) -m 0644 share/latex/* .dist/lowdown-$(VERSION)/share/latex
 	$(INSTALL) -m 0644 share/man/* .dist/lowdown-$(VERSION)/share/man
