@@ -230,14 +230,14 @@ and static libraries, respectively.
 The code is neatly layed out and heavily documented internally.
 
 First, start in
-[library.c](https://github.com/kristapsdz/lowdown/blob/master/src/library.c).
+[library.c](https://github.com/kristapsdz/lowdown/blob/master/src/library/library.c).
 (The [main.c](https://github.com/kristapsdz/lowdown/blob/master/src/main.c)
 file is just a caller to the library interface.) Both the renderer
 (which renders the parsed document contents in the output format) and
 the document (which generates the parse AST) are initialised.
 
 The parse is started in
-[document.c](https://github.com/kristapsdz/lowdown/blob/master/src/document.c).
+[document.c](https://github.com/kristapsdz/lowdown/blob/master/src/parse/document.c).
 It is preceded by meta-data parsing, if applicable, which occurs before
 document parsing but after the BOM.  The document is parsed into an AST
 (abstract syntax tree) that describes the document as a tree of nodes,
@@ -246,19 +246,19 @@ generated, the AST is passed into the front-end renderers, which
 construct output depth-first.
 
 There are a variety of renderers supported:
-[html.c](https://github.com/kristapsdz/lowdown/blob/master/src/html.c) for
+[html.c](https://github.com/kristapsdz/lowdown/blob/master/src/format/html/html.c) for
 HTML5 output,
-[roff.c](https://github.com/kristapsdz/lowdown/blob/master/src/roff.c) for
+[roff.c](https://github.com/kristapsdz/lowdown/blob/master/src/format/roff/roff.c) for
 **-ms**, **-man**, and **-mdoc** output,
-[latex.c](https://github.com/kristapsdz/lowdown/blob/master/src/latex.c) for
+[latex.c](https://github.com/kristapsdz/lowdown/blob/master/src/format/latex/latex.c) for
 LaTeX,
-[gemini.c](https://github.com/kristapsdz/lowdown/blob/master/src/gemini.c) for
+[gemini.c](https://github.com/kristapsdz/lowdown/blob/master/src/format/gemini/gemini.c) for
 Gemini,
-[odt.c](https://github.com/kristapsdz/lowdown/blob/master/src/odt.c) for
+[odt.c](https://github.com/kristapsdz/lowdown/blob/master/src/format/odt/odt.c) for
 OpenDocument,
-[term.c](https://github.com/kristapsdz/lowdown/blob/master/src/term.c)
+[term.c](https://github.com/kristapsdz/lowdown/blob/master/src/format/term/term.c)
 for terminal output, and a debugging renderer
-[tree.c](https://github.com/kristapsdz/lowdown/blob/master/src/tree.c).
+[tree.c](https://github.com/kristapsdz/lowdown/blob/master/src/format/tree/tree.c).
 
 ### Parsing
 
