@@ -23,15 +23,6 @@ struct	hentry {
 
 TAILQ_HEAD(hentryq, hentry);
 
-struct lowdown_meta
-		*lowdown_get_meta(const struct lowdown_node *,
-			struct lowdown_metaq *);
-int		 lowdown_template(const char *, const struct lowdown_buf *,
-			struct lowdown_buf *, const struct lowdown_metaq *,
-			int);
-
-int	 	 smarty(struct lowdown_node *, size_t, enum lowdown_type);
-
 int		 hbuf_eq(const struct lowdown_buf *, const struct lowdown_buf *);
 int		 hbuf_streq(const struct lowdown_buf *, const char *);
 int		 hbuf_strprefix(const struct lowdown_buf *, const char *);
@@ -71,8 +62,5 @@ void		 hentryq_clear(struct hentryq *);
 
 #define 	 HBUF_PUTSL(output, literal) \
 		 hbuf_put(output, literal, sizeof(literal) - 1)
-
-char		*rcsdate2str(const char *);
-char		*rcsauthor2str(const char *);
 
 #endif /* !EXTERN_H */

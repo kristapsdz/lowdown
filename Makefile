@@ -22,7 +22,8 @@ OBJS		 = src/parse/autolink.o \
 		   src/parse/document.o \
 		   src/parse/ext_attrs.o \
 		   src/buffer.o \
-		   src/diff.o \
+		   src/diff/diff.o \
+		   src/diff/libdiff.o \
 		   src/format/entity.o \
 		   src/format/gemini/gemini.o \
 		   src/format/gemini/gemini_escape.o \
@@ -37,10 +38,9 @@ OBJS		 = src/parse/autolink.o \
 		   src/format/term/term.o \
 		   src/format/tree/tree.o \
 		   src/format/template.o \
-		   src/library.o \
-		   src/libdiff.o \
-		   src/smartypants.o \
-		   src/util.o
+		   src/format/util.o \
+		   src/library/library.o \
+		   src/library/smartypants.o
 COMPAT_OBJS	 = compats.o
 HTMLS		 = archive.html \
 		   atom.xml \
@@ -93,7 +93,9 @@ SOURCES		 = src/parse/autolink.c \
 		   src/parse/ext_attrs.c \
 		   src/parse/parse.h \
 		   src/buffer.c \
-		   src/diff.c \
+		   src/diff/diff.c \
+		   src/diff/libdiff.c \
+		   src/diff/libdiff.h \
 		   src/format/entity.c \
 		   src/format/format.h \
 		   src/format/gemini/gemini.c \
@@ -108,19 +110,18 @@ SOURCES		 = src/parse/autolink.c \
 		   src/format/roff/roff_manpage.c \
 		   src/format/roff/roff.h \
 		   src/format/term/term.c \
+		   src/format/term/term.h \
 		   src/format/tree/tree.c \
 		   src/format/template.c \
-		   src/smartypants.c \
-		   src/libdiff.c \
-		   src/library.c \
+		   src/format/util.c \
+		   src/library/library.c \
+		   src/library/smarty.h \
+		   src/library/smartypants.c \
 		   src/main.c \
-		   src/util.c \
 		   compats.c \
 		   tests.c \
 		   src/extern.h \
-		   src/libdiff.h \
-		   src/lowdown.h \
-		   src/term.h
+		   src/lowdown.h
 PDFS		 = diff.pdf \
 		   diff.diff.pdf \
 		   index.latex.pdf \
@@ -170,11 +171,11 @@ LIB_ST		 = liblowdown.a
 # object.
 
 LIB_LOWDOWN 	 = $(LIB_ST)
-MAIN_OBJS	 =
+MAIN_OBJS	 = src/main.o
 .ifdef LINK_METHOD
 .if $(LINK_METHOD) == "shared"
 LIB_LOWDOWN 	 = $(LIB_SO)
-MAIN_OBJS	 = $(COMPAT_OBJS)
+MAIN_OBJS	 = $(COMPAT_OBJS) src/main.o
 .endif
 .endif
 
@@ -217,8 +218,8 @@ bins: lowdown lowdown-diff
 
 # Build main programs.
 
-lowdown: $(LIB_LOWDOWN) $(MAIN_OBJS) src/main.o
-	$(CC) -o $@ src/main.o $(MAIN_OBJS) $(LIB_LOWDOWN) $(LDFLAGS) $(LDADD_MD5) -lm $(LDADD)
+lowdown: $(LIB_LOWDOWN) $(MAIN_OBJS)
+	$(CC) -o $@ $(MAIN_OBJS) $(LIB_LOWDOWN) $(LDFLAGS) $(LDADD_MD5) -lm $(LDADD)
 
 lowdown-diff: lowdown
 	ln -f lowdown lowdown-diff
@@ -230,15 +231,17 @@ lowdown-diff: lowdown
 
 $(OBJS) $(COMPAT_OBJS) src/main.o: config.h
 
-$(OBJS): src/extern.h src/lowdown.h
+$(OBJS) src/main.o: src/extern.h src/lowdown.h
 
 src/format/term/term.o: src/format/term/term.h
 
 src/format/roff/roff.o src/format/roff/roff_manpage.o: src/format/roff/roff.h
 
-src/main.o: src/lowdown.h
-
 src/parse/autolink.o src/parse/document.o src/parse/ext_attrs.o: src/parse/parse.h
+
+src/library/smartypants.o src/library/library.o: src/library/smarty.h
+
+src/diff/libdiff.c src/diff/diff.c: src/diff/libdiff.h
 
 .in.pc.pc:
 	sed -e "s!@PREFIX@!$(PREFIX)!g" \

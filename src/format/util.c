@@ -27,6 +27,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
+#include "format.h"
 
 /*
  * Convert the "$Date$" string to a simple ISO date in a

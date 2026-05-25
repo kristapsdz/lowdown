@@ -28,6 +28,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
+#include "smarty.h"
 
 enum entity {
 	ENT_COPY,

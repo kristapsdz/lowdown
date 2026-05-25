@@ -46,4 +46,17 @@ lowdown_latex_esc(struct lowdown_buf *, const char *, size_t);
 int
 lowdown_roff_esc(struct lowdown_buf *, const char *, size_t, int, int);
 
+char *
+rcsdate2str(const char *);
+
+char *
+rcsauthor2str(const char *);
+
+struct lowdown_meta *
+lowdown_get_meta(const struct lowdown_node *, struct lowdown_metaq *);
+
+int
+lowdown_template(const char *, const struct lowdown_buf *,
+    struct lowdown_buf *,const struct lowdown_metaq *, int);
+
 #endif /* !FORMAT_H */

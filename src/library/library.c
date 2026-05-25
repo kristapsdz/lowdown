@@ -28,6 +28,7 @@
 
 #include "lowdown.h"
 #include "extern.h"
+#include "smarty.h"
 
 /*
  * Starting size for input and output buffers.
