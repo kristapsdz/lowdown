@@ -2897,7 +2897,7 @@ out:
 
 	lowdown_metaq_free(&metaq);
 	bqueue_free(&bq);
-	hentryq_clear(&st->headers_used);
+	hbuf_entryq_clear(&st->headers_used);
 	return rc;
 }
 

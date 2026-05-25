@@ -39,7 +39,7 @@
  * Our internal state object.
  */
 struct 	html {
-	struct hentryq	 	  headers_used; /* headers we've seen */
+	struct hbuf_entryq	 	  headers_used; /* headers we've seen */
 	ssize_t			  headers_offs; /* header offset */
 	unsigned int 		  flags; /* "oflags" in lowdown_opts */
 	struct lowdown_buf	**foots; /* footnotes */
@@ -1565,7 +1565,7 @@ lowdown_html_rndr(struct lowdown_buf *ob, void *arg,
 	st->footsz = 0;
 	st->foots = NULL;
 	lowdown_metaq_free(&metaq);
-	hentryq_clear(&st->headers_used);
+	hbuf_entryq_clear(&st->headers_used);
 	return rc;
 }
 

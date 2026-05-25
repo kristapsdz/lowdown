@@ -33,11 +33,11 @@
 #include "format.h"
 
 struct latex {
-	unsigned int	 oflags; /* same as in lowdown_opts */
-	struct hentryq	 headers_used; /* headers we've seen */
-	ssize_t		 headers_offs; /* header offset */
-	size_t		 footsz; /* current footnote */
-	const char	*templ; /* output template */
+	unsigned int	   	 oflags; /* same as in lowdown_opts */
+	struct hbuf_entryq	 headers_used; /* headers we've seen */
+	ssize_t			 headers_offs; /* header offset */
+	size_t			 footsz; /* current footnote */
+	const char		*templ; /* output template */
 };
 
 /*
@@ -1045,7 +1045,7 @@ lowdown_latex_rndr(struct lowdown_buf *ob, void *arg,
 	/* Clean up header identifiers and metadata. */
 
 	lowdown_metaq_free(&metaq);
-	hentryq_clear(&st->headers_used);
+	hbuf_entryq_clear(&st->headers_used);
 	return rc;
 }
 

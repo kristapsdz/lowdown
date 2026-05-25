@@ -436,16 +436,16 @@ hbuf_extract_text(struct lowdown_buf *ob, const struct lowdown_node *n)
 /*
  * Return a unique header identifier for "header".  Return zero on
  * failure (memory), non-zero on success.  The new value is appended to
- * the queue, which must be freed with hentryq_clear at some point.
+ * the queue, which must be freed with hbuf_entryyq_clear at some point.
  */
 const struct lowdown_buf *
 hbuf_id(const struct lowdown_buf *header, const struct lowdown_node *n,
-	struct hentryq *q)
+	struct hbuf_entryq *q)
 {
 	struct lowdown_buf		*buf = NULL, *nbuf = NULL;
 	const struct lowdown_node	*child;
 	size_t				 count;
-	struct hentry			*he = NULL, *entry;
+	struct hbuf_entry		*he = NULL, *entry;
 
 	if (header == NULL) {
 		if ((nbuf = hbuf_new(32)) == NULL)
@@ -466,7 +466,7 @@ hbuf_id(const struct lowdown_buf *header, const struct lowdown_node *n,
 			break;
 
 	if (entry == NULL) {
-		he = calloc(1, sizeof(struct hentry));
+		he = calloc(1, sizeof(struct hbuf_entry));
 		if (he == NULL)
 			goto out;
 		TAILQ_INSERT_TAIL(q, he, entries);
@@ -487,7 +487,7 @@ hbuf_id(const struct lowdown_buf *header, const struct lowdown_node *n,
 			if (hbuf_eq(entry->buf, nbuf))
 				break;
 		if (entry == NULL) {
-			he = calloc(1, sizeof(struct hentry));
+			he = calloc(1, sizeof(struct hbuf_entry));
 			if (he == NULL)
 				goto out;
 			TAILQ_INSERT_TAIL(q, he, entries);
@@ -504,9 +504,9 @@ out:
 }
 
 void
-hentryq_clear(struct hentryq *q)
+hbuf_entryq_clear(struct hbuf_entryq *q)
 {
-	struct hentry	*he;
+	struct hbuf_entry	*he;
 
 	if (q == NULL)
 		return;

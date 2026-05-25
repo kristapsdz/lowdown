@@ -85,7 +85,7 @@ struct	odt_chng {
  * keeps output state in terms of the styles that need printing.
  */
 struct 	odt {
-	struct hentryq	 	 headers_used; /* headers we've seen */
+	struct hbuf_entryq	 headers_used; /* headers we've seen */
 	ssize_t			 headers_offs; /* header offset */
 	unsigned int 		 flags; /* "oflags" in lowdown_opts */
 	struct odt_sty		*stys; /* styles for content */
@@ -2205,7 +2205,7 @@ lowdown_odt_rndr(struct lowdown_buf *ob,
 	free(st->stys);
 	free(st->chngs);
 	lowdown_metaq_free(&metaq);
-	hentryq_clear(&st->headers_used);
+	hbuf_entryq_clear(&st->headers_used);
 	return rc;
 }
 

@@ -16,12 +16,12 @@
 #ifndef EXTERN_H
 #define EXTERN_H
 
-struct	hentry {
+struct	hbuf_entry {
 	struct lowdown_buf	*buf;
-	TAILQ_ENTRY(hentry) 	 entries;
+	TAILQ_ENTRY(hbuf_entry)  entries;
 };
 
-TAILQ_HEAD(hentryq, hentry);
+TAILQ_HEAD(hbuf_entryq, hbuf_entry);
 
 int		 hbuf_eq(const struct lowdown_buf *, const struct lowdown_buf *);
 int		 hbuf_streq(const struct lowdown_buf *, const char *);
@@ -36,7 +36,7 @@ struct lowdown_buf
 int		 hbuf_extract_text(struct lowdown_buf *, const struct lowdown_node *);
 const struct lowdown_buf
 		*hbuf_id(const struct lowdown_buf *, const struct lowdown_node *,
-			struct hentryq *);
+			struct hbuf_entryq *);
 struct lowdown_buf
 		*hbuf_new(size_t) __attribute__((malloc));
 struct lowdown_buf
@@ -58,7 +58,7 @@ void		 hbuf_truncate(struct lowdown_buf *);
 int		 hbuf_shortlink(struct lowdown_buf *, const struct lowdown_buf *);
 int		 hbuf_isrellink(const struct lowdown_buf *);
 int		 hbuf_ismanpage(const struct lowdown_buf *);
-void		 hentryq_clear(struct hentryq *);
+void		 hbuf_entryq_clear(struct hbuf_entryq *);
 
 #define 	 HBUF_PUTSL(output, literal) \
 		 hbuf_put(output, literal, sizeof(literal) - 1)

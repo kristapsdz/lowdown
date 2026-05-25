@@ -34,7 +34,7 @@ enum	bscope {
 };
 
 struct 	nroff {
-	struct hentryq	 	   headers_used; /* headers we've seen */
+	struct hbuf_entryq	   headers_used; /* headers we've seen */
 	enum lowdown_type	   type; /* man(7), ms(7), or mdoc(7) */
 	int			   use_lp; /* man(7)/ms(7): use PP/LP */
 	unsigned int		   flags; /* output flags */
