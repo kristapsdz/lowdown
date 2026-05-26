@@ -1942,4 +1942,38 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>3.1.0</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2026-03-18">2026-03-18</time>
+		</header>
+		<aside>
+			<p>
+				Flesh out how attributes are handled for links, images, and headers.
+				Prior to this, only <code>.class</code> and <code>#id</code> were
+				handled, along with some per-type values like <code>width</code>.
+				This is now fully generalised, where any key-value (or value-less)
+				pairs may be given.  <q>Known</q> pairs, like
+				<code>rel=external</code>, may be thus given, depending on the
+				medium.  These are all documented.  If the command-line argument for
+				custom attributes is given, arbitrary key-value pairs may be given.
+			</p>
+			<p>
+				This changed the public API for the library, so the library major
+				number has been bumped.
+			</p>
+			<p>
+				The <b>--roff-manpage</b> output has been improved for
+				<code>ERRORS</code> and <code>ENVIRONMENT</code> sections, along
+				with some other small bugfixes.
+			</p>
+			<p>
+				Improve how fenced code blocks are handled when not in their own
+				block (with prior newline).  Prior to this, fences weren't
+				recognised as being blocks in that situation.  Allow this for both
+				list items and as paragraph breakers.
+			</p>
+		</aside>
+	</article>
 </articles>
