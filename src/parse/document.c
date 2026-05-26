@@ -2873,12 +2873,13 @@ err:
  */
 static ssize_t
 parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
-	char *data, size_t size, enum hlist_fl *flags, size_t num)
+    char *data, size_t size, enum hlist_fl *flags, size_t num)
 {
 	struct lowdown_buf	*work = NULL;
 	size_t			 beg = 0, end, pre, sublist = 0,
 				 orgpre, i, has_next_uli = 0, dli_lines,
-				 has_next_oli = 0, has_next_dli = 0;
+				 has_next_oli = 0, has_next_dli = 0,
+				 contains_fenced = 0;
 	int			 in_empty = 0, has_block = 0,
 				 in_fence = 0, ff, checked = -1,
 				 has_initial_newline = -1;
@@ -2970,10 +2971,34 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 
 		pre = i = countspaces(data, beg, end, 4) - beg;
 
-		if (is_fencedcode(doc, data + beg + i, end - beg - i,
-		    NULL, NULL))
-			in_fence = !in_fence;
+		/*
+		 * If opening or closing a fenced block, update
+		 * "in_fence" with the information and maintain a
+		 * running count, which will be used later to set the
+		 * block status.
+		 */
 
+		if (is_fencedcode(doc, data + beg + i, end - beg - i,
+		    NULL, NULL)) {
+			in_fence = !in_fence;
+			contains_fenced += in_fence;
+			if (!hbuf_put(work, data + beg + i, end - beg - i))
+				goto err;
+			beg = end;
+			in_empty = 0;
+			continue;
+		}
+		
+		if (in_fence) {
+			if (in_empty && !HBUF_PUTSL(work, "\n"))
+				goto err;
+			if (!hbuf_put(work, data + beg + i, end - beg - i))
+				goto err;
+			beg = end;
+			in_empty = 0;
+			continue;
+		}
+		
 		/*
 		 * Only check for new list items if we are **not**
 		 * inside a fenced code block.
@@ -2981,16 +3006,14 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 		 * content beforehand.
 		 */
 
-		if (!in_fence) {
-			has_next_uli = prefix_uli(doc,
-				data + beg + i, end - beg - i, NULL);
-			has_next_dli =  dli_lines <= 2 && prefix_dli
-				(doc, data + beg + i, end - beg - i);
-			has_next_oli = prefix_oli
-				(doc, data + beg + i, end - beg - i, NULL);
-			if (has_next_uli || has_next_dli || has_next_oli)
-				dli_lines = 0;
-		}
+		has_next_uli = prefix_uli(doc,
+			data + beg + i, end - beg - i, NULL);
+		has_next_dli =  dli_lines <= 2 && prefix_dli
+			(doc, data + beg + i, end - beg - i);
+		has_next_oli = prefix_oli
+			(doc, data + beg + i, end - beg - i, NULL);
+		if (has_next_uli || has_next_dli || has_next_oli)
+			dli_lines = 0;
 
 		/* Checking for a new item. */
 
@@ -3090,6 +3113,11 @@ parse_listitem(struct lowdown_buf *ob, struct lowdown_doc *doc,
 			goto err;
 		beg = end;
 	}
+
+	/* Contains a fence? Set that it's a block. */
+
+	if (contains_fenced)
+		has_block = 1;
 
 	/* Increment number of items in parent. */
 
