@@ -1148,6 +1148,282 @@ rndr_stackpos_init(struct term *st, const struct lowdown_node *n)
 	return 1;
 }
 
+/* A single wrapped line from ANSI-aware word wrapping. */
+struct wrapline {
+	size_t	 start;		/* byte offset into source buf */
+	size_t	 len;		/* byte length */
+	size_t	 viscols;	/* visible column count */
+	char	 sgr[32];	/* active SGR at line start (e.g. "\033[3m") */
+	size_t	 sgrlen;	/* length of sgr, 0 if none */
+	int	 styled;	/* nonzero if line has unclosed styles */
+};
+
+/*
+ * Advance past one ANSI escape sequence starting at buf[i].
+ * Returns the new index past the sequence, or i if not an escape.
+ */
+static size_t
+ansi_skip(const char *buf, size_t sz, size_t i)
+{
+	if (i + 1 >= sz || buf[i] != '\033')
+		return i;
+	/* SGR: \033[...m */
+	if (buf[i + 1] == '[') {
+		i += 2;
+		while (i < sz && buf[i] != 'm')
+			i++;
+		if (i < sz)
+			i++;
+		return i;
+	}
+	/* OSC: \033]...ST (\033\\) */
+	if (buf[i + 1] == ']') {
+		i += 2;
+		while (i + 1 < sz &&
+		    !(buf[i] == '\033' && buf[i + 1] == '\\'))
+			i++;
+		if (i + 1 < sz)
+			i += 2;
+		return i;
+	}
+	return i;
+}
+
+/*
+ * Measure the visible column width of one character at buf[i],
+ * advancing i past it.  ANSI escapes contribute 0 visible width.
+ * Returns <0 on memory failure, >=0 visible columns.
+ */
+static ssize_t
+ansi_chwidth(struct term *term, const char *buf, size_t sz, size_t *i)
+{
+	size_t	ni;
+
+	/* ANSI escape: 0 visible width. */
+	ni = ansi_skip(buf, sz, *i);
+	if (ni != *i) {
+		*i = ni;
+		return 0;
+	}
+
+	/* UTF-8 multi-byte. */
+	if ((unsigned char)buf[*i] >= 0x80) {
+		size_t start = *i;
+		(*i)++;
+		while (*i < sz &&
+		    ((unsigned char)buf[*i] & 0xC0) == 0x80)
+			(*i)++;
+		return rndr_mbswidth(term, buf + start, *i - start);
+	}
+
+	/* ASCII. */
+	(*i)++;
+	return 1;
+}
+
+/*
+ * Track SGR state: record the last style-setting SGR sequence.
+ * Reset (\033[0m) clears the state.  Any other SGR replaces it.
+ */
+static void
+sgr_track(const char *buf, size_t start, size_t end,
+	char *sgr, size_t *sgrlen)
+{
+	size_t	i = start;
+
+	while (i < end) {
+		if (buf[i] != '\033' || i + 1 >= end) {
+			i++;
+			continue;
+		}
+		if (buf[i + 1] == '[') {
+			size_t seq_start = i;
+			i += 2;
+			while (i < end && buf[i] != 'm')
+				i++;
+			if (i < end)
+				i++;
+			/* Check if this is a reset (\033[0m). */
+			if (i - seq_start == 4 &&
+			    buf[seq_start + 2] == '0') {
+				*sgrlen = 0;
+			} else {
+				size_t len = i - seq_start;
+				if (len < 32) {
+					memcpy(sgr, buf + seq_start, len);
+					*sgrlen = len;
+				}
+			}
+		} else if (buf[i + 1] == ']') {
+			/* Skip OSC sequences. */
+			i += 2;
+			while (i + 1 < end &&
+			    !(buf[i] == '\033' && buf[i + 1] == '\\'))
+				i++;
+			if (i + 1 < end)
+				i += 2;
+		} else {
+			i++;
+		}
+	}
+}
+
+/*
+ * Emit a wrapline: grow the output array if needed.
+ * Copies the current SGR state into the new line.
+ * Returns zero on failure (memory), non-zero on success.
+ */
+static int
+wrapline_emit(struct wrapline **out, size_t *nlines, size_t *cap,
+	size_t line_start, size_t line_end, size_t viscols,
+	const char *sgr, size_t sgrlen,
+	const char *buf, size_t bufsz)
+{
+	struct wrapline	*wl;
+
+	if (*nlines >= *cap) {
+		*cap *= 2;
+		*out = reallocarray(*out, *cap, sizeof(struct wrapline));
+		if (*out == NULL)
+			return 0;
+	}
+
+	wl = &(*out)[*nlines];
+	wl->start = line_start;
+	wl->len = line_end - line_start;
+	wl->viscols = viscols;
+
+	/* SGR state active at the start of this line. */
+	memcpy(wl->sgr, sgr, sgrlen);
+	wl->sgrlen = sgrlen;
+
+	/* Check if this line has unclosed styles. */
+	{
+		char end_sgr[32];
+		size_t end_sgrlen = sgrlen;
+		memcpy(end_sgr, sgr, sgrlen);
+		sgr_track(buf, line_start, line_end, end_sgr, &end_sgrlen);
+		wl->styled = (end_sgrlen > 0);
+	}
+
+	(*nlines)++;
+	return 1;
+}
+
+/*
+ * Word-wrap buf into lines of at most maxcols visible columns.
+ * Breaks at whitespace boundaries.  ANSI escapes pass through
+ * without consuming visible width.  Tracks SGR state across
+ * line breaks for proper style open/close on continuation lines.
+ *
+ * Allocates *lines (caller must free) and sets *nlines.
+ * Returns zero on failure (memory), non-zero on success.
+ */
+static int
+rndr_buf_ansi_wrap(struct term *term, const struct lowdown_buf *buf,
+	size_t maxcols, struct wrapline **lines, size_t *nlines)
+{
+	size_t		 i = 0, vc = 0;
+	size_t		 line_start = 0;
+	size_t		 last_break_byte = 0, last_break_vc = 0;
+	int		 have_break = 0;
+	size_t		 cap = 4;
+	struct wrapline	*out;
+	ssize_t		 cw;
+	char		 sgr[32];
+	size_t		 sgrlen = 0;
+	char		 line_sgr[32];
+	size_t		 line_sgrlen = 0;
+
+	*lines = NULL;
+	*nlines = 0;
+
+	out = calloc(cap, sizeof(struct wrapline));
+	if (out == NULL)
+		return 0;
+
+	while (i < buf->size) {
+		if (buf->data[i] == ' ') {
+			i++;
+			vc++;
+			last_break_byte = i;
+			last_break_vc = vc;
+			have_break = 1;
+			if (vc > maxcols) {
+				/*
+				 * Emit line with the SGR that was
+				 * active at its start, then advance
+				 * the running SGR state past this
+				 * line for the next one.
+				 */
+				memcpy(line_sgr, sgr, sgrlen);
+				line_sgrlen = sgrlen;
+				sgr_track(buf->data, line_start,
+				    last_break_byte, sgr, &sgrlen);
+				if (!wrapline_emit(&out, nlines, &cap,
+				    line_start, last_break_byte - 1,
+				    last_break_vc - 1,
+				    line_sgr, line_sgrlen,
+				    buf->data, buf->size))
+					return 0;
+				line_start = last_break_byte;
+				vc -= last_break_vc;
+				have_break = 0;
+			}
+			continue;
+		}
+
+		cw = ansi_chwidth(term, buf->data, buf->size, &i);
+		if (cw < 0)
+			goto fail;
+		vc += (size_t)cw;
+
+		if (vc <= maxcols)
+			continue;
+
+		if (have_break) {
+			memcpy(line_sgr, sgr, sgrlen);
+			line_sgrlen = sgrlen;
+			sgr_track(buf->data, line_start,
+			    last_break_byte, sgr, &sgrlen);
+			if (!wrapline_emit(&out, nlines, &cap,
+			    line_start, last_break_byte - 1,
+			    last_break_vc - 1,
+			    line_sgr, line_sgrlen,
+			    buf->data, buf->size))
+				return 0;
+			line_start = last_break_byte;
+			vc -= last_break_vc;
+			have_break = 0;
+		}
+	}
+
+	/* Final line. */
+	if (i > line_start) {
+		if (!wrapline_emit(&out, nlines, &cap,
+		    line_start, i, vc,
+		    sgr, sgrlen,
+		    buf->data, buf->size))
+			return 0;
+	}
+
+	/* Ensure at least one line for empty cells. */
+	if (*nlines == 0) {
+		out[0].start = 0;
+		out[0].len = 0;
+		out[0].viscols = 0;
+		out[0].sgrlen = 0;
+		out[0].styled = 0;
+		*nlines = 1;
+	}
+
+	*lines = out;
+	return 1;
+fail:
+	free(out);
+	return 0;
+}
+
 /*
  * Return zero on failure (memory), non-zero on success.
  */
@@ -1224,16 +1500,92 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 	assert(st->footoff);
 	st->footoff = 0;
 
-	/* Now actually print, row-by-row into the output. */
+	/*
+	 * Clamp column widths to fit within st->width.
+	 * Separator overhead: " │ " = 3 visible cols per boundary.
+	 */
+
+	if (st->width != SIZE_MAX) {
+		size_t ncols, sep_overhead, total, avail;
+
+		ncols = n->rndr_table.columns;
+		sep_overhead = (ncols > 1) ? (ncols - 1) * 3 : 0;
+		avail = st->width - st->hmargin - st->hpadding;
+		if (avail > sep_overhead + ncols)
+			avail -= sep_overhead + ncols;
+		else
+			avail = ncols;
+
+		/*
+		 * widths[i] includes a +1 offset from the
+		 * measurement pass, so subtract ncols to get
+		 * the actual content total.
+		 */
+
+		total = 0;
+		for (i = 0; i < ncols; i++)
+			total += widths[i] - 1;
+
+		/*
+		 * Shrink the widest column by one, repeatedly,
+		 * until the total fits.  This preserves short
+		 * columns and only penalises the widest ones.
+		 */
+
+		while (total > avail) {
+			size_t widest = 0;
+			for (i = 1; i < ncols; i++)
+				if (widths[i] > widths[widest])
+					widest = i;
+			if (widths[widest] <= 2)
+				break;
+			widths[widest]--;
+			total--;
+		}
+	}
+
+	/*
+	 * Now actually print, row-by-row into the output.
+	 * Each cell is rendered, word-wrapped to its column width,
+	 * then rows are assembled line-by-line across all cells.
+	 */
+
+	{
+	size_t			 ncols = n->rndr_table.columns;
+	struct lowdown_buf	**cellbufs = NULL;
+	struct wrapline		**cellwrap = NULL;
+	size_t			*cellnlines = NULL;
+
+	cellbufs = calloc(ncols, sizeof(struct lowdown_buf *));
+	cellwrap = calloc(ncols, sizeof(struct wrapline *));
+	cellnlines = calloc(ncols, sizeof(size_t));
+	if (cellbufs == NULL || cellwrap == NULL || cellnlines == NULL)
+		goto out2;
+
+	for (i = 0; i < ncols; i++) {
+		cellbufs[i] = hbuf_new(128);
+		if (cellbufs[i] == NULL)
+			goto out2;
+	}
 
 	TAILQ_FOREACH(top, &n->children, entries) {
 		assert(top->type == LOWDOWN_TABLE_HEADER ||
 			top->type == LOWDOWN_TABLE_BODY);
 		TAILQ_FOREACH(row, &top->children, entries) {
-			hbuf_truncate(rowtmp);
+			size_t	maxlines = 0;
+
+			/* Render each cell and word-wrap it. */
+
+			for (i = 0; i < ncols; i++) {
+				hbuf_truncate(cellbufs[i]);
+				cellwrap[i] = NULL;
+				cellnlines[i] = 0;
+			}
+
 			TAILQ_FOREACH(cell, &row->children, entries) {
 				i = cell->rndr_table_cell.col;
-				hbuf_truncate(celltmp);
+				hbuf_truncate(cellbufs[i]);
+
 				maxcol = st->width;
 				last_blank = st->last_blank;
 				col = st->col;
@@ -1241,131 +1593,200 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 				st->last_blank = 0;
 				st->width = SIZE_MAX;
 				st->col = 1;
-				if (!rndr(celltmp, st, cell))
-					goto out;
-				assert(widths[i] >= st->col);
-				sz = widths[i] - st->col;
-
-				/*
-				 * Alignment is either beginning,
-				 * ending, or splitting the remaining
-				 * spaces around the word.
-				 * Be careful about uneven splitting in
-				 * the case of centre.
-				 */
-
-				flags = cell->rndr_table_cell.flags &
-					HTBL_FL_ALIGNMASK;
-				if (flags == HTBL_FL_ALIGN_RIGHT)
-					for (j = 0; j < sz; j++)
-						if (!HBUF_PUTSL(rowtmp, " "))
-							goto out;
-				if (flags == HTBL_FL_ALIGN_CENTER)
-					for (j = 0; j < sz / 2; j++)
-						if (!HBUF_PUTSL(rowtmp, " "))
-							goto out;
-				if (!hbuf_putb(rowtmp, celltmp))
-					goto out;
-				if (flags == 0 ||
-				    flags == HTBL_FL_ALIGN_LEFT)
-					for (j = 0; j < sz; j++)
-						if (!HBUF_PUTSL(rowtmp, " "))
-							goto out;
-				if (flags == HTBL_FL_ALIGN_CENTER) {
-					sz = (sz % 2) ?
-						(sz / 2) + 1 : (sz / 2);
-					for (j = 0; j < sz; j++)
-						if (!HBUF_PUTSL(rowtmp, " "))
-							goto out;
-				}
+				if (!rndr(cellbufs[i], st, cell))
+					goto out2;
 
 				st->last_blank = last_blank;
 				st->col = col;
 				st->width = maxcol;
 
-				if (TAILQ_NEXT(cell, entries) == NULL)
-					continue;
-
-				if (!HBUF_PUTSL(rowtmp, " ") ||
-				    !rndr_buf_style(st, rowtmp, &sty_tbl) ||
-				    !hbuf_puts(rowtmp, ifx_tbl_col) ||
-				    !rndr_buf_unstyle(st, rowtmp, &sty_tbl) ||
-				    !HBUF_PUTSL(rowtmp, " "))
-					goto out;
+				if (!rndr_buf_ansi_wrap(st, cellbufs[i],
+				    widths[i] - 1, &cellwrap[i],
+				    &cellnlines[i]))
+					goto out2;
+				if (cellnlines[i] > maxlines)
+					maxlines = cellnlines[i];
 			}
 
-			/*
-			 * Some magic here.
-			 * First, emulate rndr() by setting the
-			 * stackpos to the table, which is required for
-			 * checking the line start.
-			 * Then directly print, as we've already escaped
-			 * all characters, and have embedded escapes of
-			 * our own.  Then end the line.
-			 */
+			/* Output each visual line of this row. */
 
-			st->stackpos++;
-			if (!rndr_stackpos_init(st, n))
-				goto out;
-			if (!rndr_buf_startline(st, ob, n, NULL))
-				goto out;
-			if (!hbuf_putb(ob, rowtmp))
-				goto out;
-			rndr_buf_advance(st, 1);
-			if (!rndr_buf_endline(st, ob, n, NULL))
-				goto out;
-			if (!rndr_buf_vspace(st, ob, n, 1))
-				goto out;
-			st->stackpos--;
+			for (j = 0; j < maxlines; j++) {
+				hbuf_truncate(rowtmp);
+
+				for (i = 0; i < ncols; i++) {
+					struct wrapline	*wl = NULL;
+					size_t		 pad;
+
+					if (j < cellnlines[i])
+						wl = &cellwrap[i][j];
+
+					flags = 0;
+
+					/* Find alignment for this col. */
+
+					TAILQ_FOREACH(cell,
+					    &row->children, entries)
+						if (cell->rndr_table_cell.col
+						    == i) {
+							flags = cell->
+							    rndr_table_cell.
+							    flags &
+							    HTBL_FL_ALIGNMASK;
+							break;
+						}
+
+					pad = (wl != NULL) ?
+					    widths[i] - 1 - wl->viscols :
+					    widths[i] - 1;
+
+					/* Right-align pre-pad. */
+
+					if (flags == HTBL_FL_ALIGN_RIGHT)
+						for (sz = 0; sz < pad; sz++)
+							if (!HBUF_PUTSL(
+							    rowtmp, " "))
+								goto out2;
+
+					/* Centre pre-pad. */
+
+					if (flags == HTBL_FL_ALIGN_CENTER)
+						for (sz = 0;
+						    sz < pad / 2; sz++)
+							if (!HBUF_PUTSL(
+							    rowtmp, " "))
+								goto out2;
+
+					/* Cell content for this line. */
+
+					if (wl != NULL && wl->len > 0) {
+						/*
+						 * Re-open style on
+						 * continuation lines.
+						 */
+						if (j > 0 && wl->sgrlen > 0)
+							if (!hbuf_put(rowtmp,
+							    wl->sgr,
+							    wl->sgrlen))
+								goto out2;
+						if (!hbuf_put(rowtmp,
+						    cellbufs[i]->data +
+						    wl->start, wl->len))
+							goto out2;
+						/*
+						 * Close style if this line
+						 * has unclosed styles.
+						 */
+						if (wl->styled)
+							if (!HBUF_PUTSL(rowtmp,
+							    "\033[0m"))
+								goto out2;
+					}
+
+					/* Left-align or default post-pad. */
+
+					if (flags == 0 ||
+					    flags == HTBL_FL_ALIGN_LEFT)
+						for (sz = 0; sz < pad; sz++)
+							if (!HBUF_PUTSL(
+							    rowtmp, " "))
+								goto out2;
+
+					/* Centre post-pad. */
+
+					if (flags == HTBL_FL_ALIGN_CENTER) {
+						size_t rpad = (pad % 2) ?
+						    (pad / 2) + 1 :
+						    (pad / 2);
+						for (sz = 0;
+						    sz < rpad; sz++)
+							if (!HBUF_PUTSL(
+							    rowtmp, " "))
+								goto out2;
+					}
+
+					/* Column separator. */
+
+					if (i < ncols - 1) {
+						if (!HBUF_PUTSL(
+						    rowtmp, " ") ||
+						    !rndr_buf_style(st,
+						    rowtmp, &sty_tbl) ||
+						    !hbuf_puts(rowtmp,
+						    ifx_tbl_col) ||
+						    !rndr_buf_unstyle(st,
+						    rowtmp, &sty_tbl) ||
+						    !HBUF_PUTSL(
+						    rowtmp, " "))
+							goto out2;
+					}
+				}
+
+				/* Emit the assembled line. */
+
+				st->stackpos++;
+				if (!rndr_stackpos_init(st, n))
+					goto out2;
+				if (!rndr_buf_startline(st, ob, n, NULL))
+					goto out2;
+				if (!hbuf_putb(ob, rowtmp))
+					goto out2;
+				rndr_buf_advance(st, 1);
+				if (!rndr_buf_endline(st, ob, n, NULL))
+					goto out2;
+				if (!rndr_buf_vspace(st, ob, n, 1))
+					goto out2;
+				st->stackpos--;
+			}
+
+			/* Free wrap data for this row. */
+
+			for (i = 0; i < ncols; i++) {
+				free(cellwrap[i]);
+				cellwrap[i] = NULL;
+				cellnlines[i] = 0;
+			}
 		}
 
 		if (top->type == LOWDOWN_TABLE_HEADER) {
 			st->stackpos++;
 			if (!rndr_stackpos_init(st, n))
-				goto out;
+				goto out2;
 			if (!rndr_buf_startline(st, ob, n, &sty_tbl))
-				goto out;
+				goto out2;
 
-			/*
-			 * Output the row line.  This consists of:
-			 *
-			 *   inter    padding
-			 *       |    | |
-			 *       |    | |
-			 *   ----+-----+-----
-			 *   xyz   xyz   xyz
-			 *   |     |
-			 *   content
-			 *
-			 * So starting with the content, ending with a
-			 * padding of one byte (encompassed in the
-			 * width), the inter mark or nothing if at the
-			 * end, then another padding or nothing if at
-			 * the end.
-			 */
 			for (i = 0; i < n->rndr_table.columns; i++) {
 				/* Pre-padding. */
 				if (i > 0 && !hbuf_puts(ob, ifx_tbl_row))
-					goto out;
+					goto out2;
 				/* Content and post-padding. */
 				for (j = 0; j < widths[i]; j++)
 					if (!hbuf_puts(ob, ifx_tbl_row))
-						goto out;
+						goto out2;
 				/* Inter. */
 				if (i < n->rndr_table.columns - 1 &&
 				    !hbuf_puts(ob, ifx_tbl_mcol))
-					goto out;
+					goto out2;
 			}
 			rndr_buf_advance(st, 1);
 			if (!rndr_buf_endline(st, ob, n, &sty_tbl))
-				goto out;
+				goto out2;
 			if (!rndr_buf_vspace(st, ob, n, 1))
-				goto out;
+				goto out2;
 			st->stackpos--;
 		}
 	}
 
 	rc = 1;
+out2:
+	for (i = 0; i < ncols; i++) {
+		free(cellwrap[i]);
+		hbuf_free(cellbufs[i]);
+	}
+	free(cellbufs);
+	free(cellwrap);
+	free(cellnlines);
+	}
+
 out:
 	hbuf_free(celltmp);
 	hbuf_free(rowtmp);
