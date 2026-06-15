@@ -1,0 +1,21 @@
+    Header 1                 [93m│[0m Header 2  [93m│[0m Header 3  [93m│[0m Header 4 
+    [93m─────────────────────────┼───────────┼───────────┼───────────[0m
+    [1;3mBold italic content that[0m [93m│[0m Content 2 [93m│[0m Content 3 [93m│[0m Content 4
+    [1;3mis long enough to force[0m  [93m│[0m           [93m│[0m           [93m│[0m          
+    [1;3mthis table to wrap[0m       [93m│[0m           [93m│[0m           [93m│[0m          
+    
+    Header 1         [93m│[0m Header 2          [93m│[0m Header 3  [93m│[0m Header 4 
+    [93m─────────────────┼───────────────────┼───────────┼───────────[0m
+    [3mItalic cell one[0m  [93m│[0m [1mBold cell two[0m     [93m│[0m Content 3 [93m│[0m Content 4
+    [3mwith enough text[0m [93m│[0m [1malso long enough[0m  [93m│[0m           [93m│[0m          
+    [3mto exceed the[0m    [93m│[0m [1mto wrap across[0m    [93m│[0m           [93m│[0m          
+    [3mseventy two[0m      [93m│[0m [1mlines easily[0m      [93m│[0m           [93m│[0m          
+    [3mcolumn limit[0m     [93m│[0m                   [93m│[0m           [93m│[0m          
+    
+    Header 1       [93m│[0m Header 2       [93m│[0m Header 3       [93m│[0m Header 4 
+    [93m───────────────┼────────────────┼────────────────┼───────────[0m
+    Plain text     [93m│[0m [3mstyled text[0m    [93m│[0m [1mbold text in[0m   [93m│[0m Content 4
+    that is long   [93m│[0m [3malso long[0m      [93m│[0m [1mthird column[0m   [93m│[0m          
+    enough to wrap [93m│[0m [3menough to wrap[0m [93m│[0m                [93m│[0m          
+                   [93m│[0m [3macross the[0m     [93m│[0m                [93m│[0m          
+                   [93m│[0m [3mline boundary[0m  [93m│[0m                [93m│[0m          

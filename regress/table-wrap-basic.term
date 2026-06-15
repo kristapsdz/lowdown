@@ -1,0 +1,8 @@
+    Name  [93m│[0m Status  [93m│[0m Description                                
+    [93m──────┼─────────┼─────────────────────────────────────────────[0m
+    alpha [93m│[0m active  [93m│[0m This is a very long description that should
+          [93m│[0m         [93m│[0m definitely exceed the default seventy two  
+          [93m│[0m         [93m│[0m column width limit                         
+    beta  [93m│[0m pending [93m│[0m Another extremely verbose description that 
+          [93m│[0m         [93m│[0m goes on and on and on past the column      
+          [93m│[0m         [93m│[0m boundary                                   

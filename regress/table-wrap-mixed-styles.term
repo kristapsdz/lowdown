@@ -1,0 +1,9 @@
+    Name  [93m│[0m Status [93m│[0m Description                                 
+    [93m──────┼────────┼──────────────────────────────────────────────[0m
+    [1malpha[0m [93m│[0m [3mactive[0m [93m│[0m This [3mvery important[0m description has [1mbold[0m    
+          [93m│[0m        [93m│[0m [1mtext[0m and [3mitalic text[0m that should wrap       
+          [93m│[0m        [93m│[0m properly across multiple lines to stay      
+          [93m│[0m        [93m│[0m within width                                
+    gamma [93m│[0m done   [93m│[0m Plain text mixed with [1mbold[0m and [3mitalic[0m and   
+          [93m│[0m        [93m│[0m [9mstrikethrough[0m in a cell that also exceeds   
+          [93m│[0m        [93m│[0m the default seventy two column limit        
