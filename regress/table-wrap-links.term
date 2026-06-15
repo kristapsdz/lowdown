@@ -1,0 +1,10 @@
+    Name         [93m│[0m URL                   [93m│[0m Description           
+    [93m─────────────┼───────────────────────┼────────────────────────[0m
+    Example Site [93m│[0m ]8;;https://example.com/path/to/resource\[1;93mA very long link text[0m]8;;\ [93m│[0m This is a detailed    
+                 [93m│[0m ]8;;https://example.com/path/to/resource\[4;32mhttps://example.com/p[0m [93m│[0m description of the    
+                 [93m│[0m [4;32math/to/resource[0m]8;;\       [93m│[0m example site which    
+                 [93m│[0m                       [93m│[0m should wrap           
+    Another Site [93m│[0m ]8;;https://another-example.com/very/long/path/to/demonstrate/wrapping\[4;32mhttps://another-examp[0m [93m│[0m Also has a description
+                 [93m│[0m [4;32mle.com/very/long/path[0m [93m│[0m that exceeds the      
+                 [93m│[0m [4;32m/to/demonstrate/wrapp[0m [93m│[0m seventy two column    
+                 [93m│[0m [4;32ming[0m]8;;\                   [93m│[0m width limit           

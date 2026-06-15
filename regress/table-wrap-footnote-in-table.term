@@ -1,0 +1,20 @@
+    first[1;93m[1][0m
+    
+    Name       [93m│[0m Description                                      
+    [93m───────────┼───────────────────────────────────────────────────[0m
+    item[1;93m[2][0m[1;93m[3][0m [93m│[0m This is a very long description that should      
+               [93m│[0m exceed the seventy two column default width and  
+               [93m│[0m trigger wrapping                                 
+    
+    Now[1;93m[4][0m
+
+    [37m────────────────────────────────────────────────────────────────────[0m
+
+    [92m 1. [0mone
+    [92m 2. [0mtwo
+    [92m 3. [0mthree
+    [92m    [0m
+    [92m    [0mhello
+    [92m    [0m
+    [92m    [0m[93m  · [0mworld 
+    [92m 4. [0mfour

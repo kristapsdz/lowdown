@@ -1,0 +1,6 @@
+                 abc              [93m│[0m                         defghi
+    [93m──────────────────────────────┼────────────────────────────────[0m
+    This is a centered cell that  [93m│[0m   This is a right-aligned cell
+    has a very long line of text  [93m│[0m      with enough text to force
+          which should wrap       [93m│[0m        wrapping at the default
+                                  [93m│[0m       seventy two column limit

@@ -1,0 +1,5 @@
+    abc                                                      [93m│[0m def
+    [93m─────────────────────────────────────────────────────────┼─────[0m
+    bar with a long cell that has plenty of text to exceed   [93m│[0m    
+    the default width                                        [93m│[0m    
+    bar                                                      [93m│[0m baz

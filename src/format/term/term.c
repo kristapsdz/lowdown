@@ -1316,14 +1316,21 @@ wrapline_emit(struct wrapline **out, size_t *nlines, size_t *cap,
  * without consuming visible width.  Tracks SGR state across
  * line breaks for proper style open/close on continuation lines.
  *
+ * When nobrk is zero (default), words wider than maxcols are
+ * force-broken mid-character to keep every line within the
+ * limit.  When nobrk is non-zero, long words are kept whole
+ * and the resulting line may exceed maxcols; the caller is
+ * responsible for truncating the display.
+ *
  * Allocates *lines (caller must free) and sets *nlines.
  * Returns zero on failure (memory), non-zero on success.
  */
 static int
 rndr_buf_ansi_wrap(struct term *term, const struct lowdown_buf *buf,
-	size_t maxcols, struct wrapline **lines, size_t *nlines)
+	size_t maxcols, int nobrk,
+	struct wrapline **lines, size_t *nlines)
 {
-	size_t		 i = 0, vc = 0;
+	size_t		 i = 0, vc = 0, prev_i;
 	size_t		 line_start = 0;
 	size_t		 last_break_byte = 0, last_break_vc = 0;
 	int		 have_break = 0;
@@ -1350,12 +1357,6 @@ rndr_buf_ansi_wrap(struct term *term, const struct lowdown_buf *buf,
 			last_break_vc = vc;
 			have_break = 1;
 			if (vc > maxcols) {
-				/*
-				 * Emit line with the SGR that was
-				 * active at its start, then advance
-				 * the running SGR state past this
-				 * line for the next one.
-				 */
 				memcpy(line_sgr, sgr, sgrlen);
 				line_sgrlen = sgrlen;
 				sgr_track(buf->data, line_start,
@@ -1373,6 +1374,7 @@ rndr_buf_ansi_wrap(struct term *term, const struct lowdown_buf *buf,
 			continue;
 		}
 
+		prev_i = i;
 		cw = ansi_chwidth(term, buf->data, buf->size, &i);
 		if (cw < 0)
 			goto fail;
@@ -1394,6 +1396,25 @@ rndr_buf_ansi_wrap(struct term *term, const struct lowdown_buf *buf,
 				return 0;
 			line_start = last_break_byte;
 			vc -= last_break_vc;
+			have_break = 0;
+		} else if (!nobrk && cw > 0) {
+			/*
+			 * Force mid-word break: emit up to
+			 * just before the character that
+			 * overflowed, start a new line there.
+			 */
+			memcpy(line_sgr, sgr, sgrlen);
+			line_sgrlen = sgrlen;
+			sgr_track(buf->data, line_start,
+			    prev_i, sgr, &sgrlen);
+			if (!wrapline_emit(&out, nlines, &cap,
+			    line_start, prev_i,
+			    vc - (size_t)cw,
+			    line_sgr, line_sgrlen,
+			    buf->data, buf->size))
+				return 0;
+			line_start = prev_i;
+			vc = (size_t)cw;
 			have_break = 0;
 		}
 	}
@@ -1422,6 +1443,42 @@ rndr_buf_ansi_wrap(struct term *term, const struct lowdown_buf *buf,
 fail:
 	free(out);
 	return 0;
+}
+
+/*
+ * Emit at most maxvc visible columns from buf[start..start+len).
+ * ANSI escapes are passed through without counting toward width.
+ * Returns the number of bytes emitted, or -1 on failure.
+ */
+static ssize_t
+hbuf_put_truncated(struct term *term, struct lowdown_buf *ob,
+	const char *buf, size_t start, size_t len, size_t maxvc)
+{
+	size_t	i = start, end = start + len, emitted = 0;
+	size_t	vc = 0;
+
+	while (i < end && vc < maxvc) {
+		size_t ni = ansi_skip(buf, end, i);
+		if (ni != i) {
+			if (!hbuf_put(ob, buf + i, ni - i))
+				return -1;
+			emitted += ni - i;
+			i = ni;
+			continue;
+		}
+		size_t prev = i;
+		ssize_t cw = ansi_chwidth(term, buf, end, &i);
+		if (cw < 0)
+			return -1;
+		if (vc + (size_t)cw > maxvc)
+			break;
+		if (!hbuf_put(ob, buf + prev, i - prev))
+			return -1;
+		emitted += i - prev;
+		vc += (size_t)cw;
+	}
+
+	return (ssize_t)emitted;
 }
 
 /*
@@ -1542,6 +1599,7 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 			widths[widest]--;
 			total--;
 		}
+
 	}
 
 	/*
@@ -1601,8 +1659,9 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 				st->width = maxcol;
 
 				if (!rndr_buf_ansi_wrap(st, cellbufs[i],
-				    widths[i] - 1, &cellwrap[i],
-				    &cellnlines[i]))
+				    widths[i] - 1,
+				    st->opts & LOWDOWN_TERM_NOBRK,
+				    &cellwrap[i], &cellnlines[i]))
 					goto out2;
 				if (cellnlines[i] > maxlines)
 					maxlines = cellnlines[i];
@@ -1635,9 +1694,13 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 							break;
 						}
 
-					pad = (wl != NULL) ?
-					    widths[i] - 1 - wl->viscols :
-					    widths[i] - 1;
+					if (wl != NULL &&
+				    wl->viscols <= widths[i] - 1)
+					pad = widths[i] - 1 - wl->viscols;
+				else if (wl != NULL)
+					pad = 0;
+				else
+					pad = widths[i] - 1;
 
 					/* Right-align pre-pad. */
 
@@ -1659,19 +1722,32 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 					/* Cell content for this line. */
 
 					if (wl != NULL && wl->len > 0) {
-						/*
-						 * Re-open style on
-						 * continuation lines.
-						 */
 						if (j > 0 && wl->sgrlen > 0)
 							if (!hbuf_put(rowtmp,
 							    wl->sgr,
 							    wl->sgrlen))
 								goto out2;
-						if (!hbuf_put(rowtmp,
-						    cellbufs[i]->data +
-						    wl->start, wl->len))
-							goto out2;
+
+						/*
+						 * Truncate if the line
+						 * overflows its column.
+						 */
+						if (wl->viscols >
+						    widths[i] - 1) {
+							if (hbuf_put_truncated(
+							    st, rowtmp,
+							    cellbufs[i]->data,
+							    wl->start, wl->len,
+							    widths[i] - 1) < 0)
+								goto out2;
+						} else {
+							if (!hbuf_put(rowtmp,
+							    cellbufs[i]->data +
+							    wl->start,
+							    wl->len))
+								goto out2;
+						}
+
 						/*
 						 * Close style if this line
 						 * has unclosed styles.

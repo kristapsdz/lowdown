@@ -401,7 +401,7 @@ struct	lowdown_opts {
 #define	LOWDOWN_GEMINI_LINK_ROMAN 0x400000 /* roman link names */
 #define	LOWDOWN_TERM_NOCOLOUR	  0x800000 /* no ANSI colours */
 #define	LOWDOWN_TERM_NOANSI	  0x1000000 /* no ANSI escapes at all */
-/* Missing			  0x2000000 */
+#define	LOWDOWN_TERM_NOBRK	  0x2000000 /* no mid-word breaks */
 #define	LOWDOWN_HTML_TITLEBLOCK	  0x4000000 /* output title block */
 #define LOWDOWN_HTML_CALLOUT_GFM  0x8000000 /* GFM callouts */
 #define LOWDOWN_HTML_CALLOUT_MDN  0x10000000 /* MDN callouts */

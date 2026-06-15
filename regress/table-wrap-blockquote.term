@@ -1,0 +1,9 @@
+    abc                           [93m│[0m def                           
+    [93m──────────────────────────────┼────────────────────────────────[0m
+    bar with lots of extra text   [93m│[0m baz also has extra text that  
+    that goes well past the       [93m│[0m exceeds width                 
+    column limit                  [93m│[0m                               
+    
+    [93m  │ [0mThis blockquote follows a table that should wrap to see that
+    [93m  │ [0mthe transition between wrapped table and blockquote works
+    [93m  │ [0mproperly
