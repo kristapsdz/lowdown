@@ -1012,6 +1012,37 @@ out:
 }
 
 /*
+ * Return non-zero if a dash at pos separates the manual page name from
+ * its one-line description in the NAME section.
+ *
+ * A dash is considered a separator only when it is preceded by
+ * whitespace and followed, after a run of one or more dashes, by
+ * whitespace.  This avoids splitting valid hyphenated page names such
+ * as "git-status".
+ */
+static int
+is_name_dash_sep(const struct lowdown_buf *buf, size_t pos)
+{
+	/* Not first byte, at hyphen, preceded by space. */
+
+	if (pos == 0 ||
+	    pos >= buf->size ||
+	    buf->data[pos] != '-' ||
+	    !isspace((unsigned char)buf->data[pos - 1]))
+		return 0;
+
+	/* Skip past one or more hyphens. */
+
+	while (pos < buf->size && buf->data[pos] == '-')
+		pos++;
+
+	/* Ending on whitespace. */
+
+	return pos < buf->size &&
+	    isspace((unsigned char)buf->data[pos]);
+}
+
+/*
  * The NAME section consists of one or more comma-separated names
  * followed by a dash (or fancy dash) then a description.  Split the
  * names into `Nm` (or bold) statements and, if found, the description
@@ -1055,7 +1086,7 @@ rndr_manpage_name(struct nroff *st, const struct lowdown_node *n,
 	for (start = pos; pos <= buf->size; ) {
 		if (pos != buf->size &&
 		    buf->data[pos] != ',' &&
-		    buf->data[pos] != '-' &&
+		    !is_name_dash_sep(buf, pos) &&
 		    !hbuf_strncasecmpat(buf, "\\(en", pos) &&
 		    !hbuf_strncasecmpat(buf, "\\(em", pos)) {
 			pos++;
