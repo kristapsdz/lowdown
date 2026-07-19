@@ -148,9 +148,14 @@ Do not parse
 .Li mailto ,
 and relative links or link fragments.
 .It Fl -parse-no-cmark
-Do not parse with CommonMark constraints.
-This also disables using the first ordered list value instead of
-starting all lists at one.
+Do not parse with CommonMark constraints and the following features:
+.Pp
+.Bl -dash -compact
+.It
+Using the first ordered list value instead of starting all lists at one.
+.It
+Lists immediately following paragraphs.
+.El
 .It Fl -parse-no-codeindent
 Do not parse indented content as code blocks.
 .It Fl -parse-no-callouts

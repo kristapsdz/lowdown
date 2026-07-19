@@ -202,8 +202,15 @@ Parse MDN/GFM callouts
 .Pq Dq admonitions .
 .It Dv LOWDOWN_COMMONMARK
 Tighten input parsing to the CommonMark specification.
-This also uses the first ordered list value instead of starting all
-lists at one.
+Allows for the following features:
+.Pp
+.Bl -dash -compact
+.It
+Using the first ordered list value instead of starting all lists at one.
+.It
+Lists immediately following paragraphs.
+.El
+.Pp
 This feature is
 .Em experimental
 and
