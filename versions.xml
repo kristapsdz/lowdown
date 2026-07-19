@@ -1976,4 +1976,16 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>3.1.1</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2026-07-19">2026-07-19</time>
+		</header>
+		<aside>
+			<p>
+				Hot fix for install failure.
+			</p>
+		</aside>
+	</article>
 </articles>
