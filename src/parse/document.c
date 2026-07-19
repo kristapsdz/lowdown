@@ -2672,17 +2672,19 @@ parse_paragraph(struct lowdown_doc *doc, char *data, size_t size)
 			break;
 		}
 
-        /*
-         * Commonmark allows lists to interrupt paragraphs, so a list prefix
-         * can also end a paragraph in Commonmark mode
-         */
-        if (doc->ext_flags & LOWDOWN_COMMONMARK){
-            if (prefix_uli(doc, data + i, size - i, NULL) ||
-                prefix_oli(doc, data + i, size - i, NULL)){
-                end = i;
-                break;
-            } 
-        } 
+		/*
+		 * Commonmark allows lists to interrupt paragraphs, so a
+		 * list prefix can also end a paragraph in Commonmark
+		 * mode.
+		 */
+		
+		if (doc->ext_flags & LOWDOWN_COMMONMARK) {
+			if (prefix_uli(doc, data + i, size - i, NULL) ||
+			    prefix_oli(doc, data + i, size - i, NULL)) {
+				end = i;
+				break;
+			} 
+		} 
 
 		lines++;
 		i = end;
