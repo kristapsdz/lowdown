@@ -317,7 +317,7 @@ install_lib_common: lowdown.pc
 	mkdir -p $(DESTDIR)$(LIBDIR)/pkgconfig
 	mkdir -p $(DESTDIR)$(INCLUDEDIR)
 	$(INSTALL_DATA) lowdown.pc $(DESTDIR)$(LIBDIR)/pkgconfig
-	$(INSTALL_DATA) lowdown.h $(DESTDIR)$(INCLUDEDIR)
+	$(INSTALL_DATA) src/lowdown.h $(DESTDIR)$(INCLUDEDIR)
 	for f in $(MAN3S) ; do \
 		name=`basename $$f .html` ; \
 		section=$${name##*.} ; \
