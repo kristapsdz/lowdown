@@ -1984,7 +1984,14 @@
 		</header>
 		<aside>
 			<p>
-				Hot fix for install failure.
+				Fix for install failure via <code>install_lib_common</code>.
+			</p>
+			<p>
+				Allow for CommonMark list-after-paragraph.
+			</p>
+			<p>
+				Use newest <a href="https://kristaps.bsd.lv/oconfigure">oconfigure</a>
+				for use on old macOS machines.
 			</p>
 		</aside>
 	</article>
