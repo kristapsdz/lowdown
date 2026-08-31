@@ -37,9 +37,20 @@ struct tstack {
 	size_t			   lines; /* times emitted */
 };
 
+/*
+ * Used for saving per-line statistics when creating tables.
+ */
+struct table_stats {
+	size_t		 *save_cols; /* optional buf for lines' vis */
+	size_t		  save_colsz; /* lines' vis buf size */
+	size_t		  save_colmax; /* lines' vis max buf size */
+};
+
 struct term {
 	unsigned int		  opts; /* oflags from lowdown_cfg */
 	size_t			  col; /* output column from zero */
+	size_t			  maxvis; /* max visible word in last */
+	struct table_stats	 *table_stats; /* NULL if not collecting */
 	ssize_t			  last_blank; /* line breaks or -1 (start) */
 	struct tstack		 *stack; /* stack of nodes */
 	size_t			  stackmax; /* size of stack */
@@ -171,6 +182,17 @@ rndr_mbswidth(struct term *term, const char *buf, size_t sz)
 	cp = buf;
 	mbsnrtowcs(term->buf, &cp, sz, wsz, &mbs);
 	csz = wcswidth(term->buf, wsz);
+
+	/*
+	 * This is currently only used by table creation to keep tabs on
+	 * the minimum column width, which is the visible size of the
+	 * largest word.  Track this by just setting maxvis to zero and
+	 * seeing what it is after a call to rndr().
+	 */
+
+	if (csz > term->maxvis)
+		term->maxvis = csz;
+
 	return csz == (size_t)-1 ? sz : csz;
 }
 
@@ -482,6 +504,33 @@ rndr_buf_endwords(struct term *term, struct lowdown_buf *out,
 }
 
 /*
+ * If saving lines' visible length (used in table computation), append
+ * the current visible column length to the array of saved lines'
+ * lengths.  Returns false on failure (memory), true on success.
+ */
+static int
+rndr_savecols_append(struct term *term)
+{
+	void			*pp;
+	struct table_stats	*stats = term->table_stats;
+
+	assert(stats!= NULL);
+	assert(stats->save_cols != NULL);
+	assert(stats->save_colmax > 0);
+
+	if (stats->save_colsz + 1 > stats->save_colmax) {
+		pp = reallocarray(stats->save_cols,
+		    stats->save_colsz + 1, sizeof(size_t));
+		if (pp == NULL)
+			return 0;
+		stats->save_cols = pp;
+		stats->save_colmax = stats->save_colsz + 1;
+	}
+	stats->save_cols[stats->save_colsz++] = term->col;
+	return 1;
+}
+
+/*
  * Like rndr_buf_endwords(), but also terminating the line itself.
  * Return zero on failure (memory), non-zero on success.
  */
@@ -489,7 +538,6 @@ static int
 rndr_buf_endline(struct term *term, struct lowdown_buf *out,
 	const struct lowdown_node *n, const struct sty *osty)
 {
-
 	if (!rndr_buf_endwords(term, out, n, osty))
 		return 0;
 
@@ -499,6 +547,9 @@ rndr_buf_endline(struct term *term, struct lowdown_buf *out,
 	 * assert(term->col > 0);
 	 * assert(term->last_blank == 0);
 	 */
+
+	if (term->table_stats != NULL && !rndr_savecols_append(term))
+		return 0;
 
 	term->col = 0;
 	term->last_blank = 1;
@@ -1149,179 +1200,179 @@ rndr_stackpos_init(struct term *st, const struct lowdown_node *n)
 }
 
 /*
- * Get the minimum size for a table column.  This is equivalent to the
- * longest word. Returns zero if there's nothing in the column.
- */
-static size_t
-rndr_table_minwidth(const struct lowdown_buf *b)
-{
-	size_t	 width = 0, /* biggest word length */
-		 i;
-	size_t	 start, /* start of word */
-		 end; /* end of word */
-
-	for (i = 0; i < b->size; i++) {
-		while (i < b->size && isspace((unsigned char)b->data[i]))
-			i++;
-		start = i;
-		while (i < b->size && !isspace((unsigned char)b->data[i]))
-			i++;
-		end = i;
-		if (end > start && end - start > width)
-			width = end - start;
-	}
-
-	return width;
-}
-
-/*
  * Re-compute the width of each column starting with the maximum width
  * and minimum width.  Re-write these widths into the witdhs array.
  */
 static void
-rndr_table_width_algo( const struct term *st, size_t *widths,
-    size_t cols, const size_t *minwidths)
+rndr_table_width_algo(struct term *st, size_t *widths, size_t cols,
+    const size_t *minwidths)
 {
 	size_t	 sz, /* total width */
-		 i; /* temporary */
+		 i, /* temporary */
+		 avail; /* available width */
+	ssize_t	 ssz; /* size of spacer */
 	double	 divisor;
+
+	/* Accumulate width of all columns. */
 
 	for (sz = 0, i = 0; i < cols; i++)
 		sz += widths[i];
 
-	if (sz <= st->width)
+	/*
+	 * Available space is less left-pad (for one column) or the
+	 * column boundary marker.
+	 */
+
+	avail = st->width;
+	if (cols > 1) {
+		ssz = rndr_mbswidth(st, ifx_tbl_col,
+		    strlen(ifx_tbl_col));
+		if (ssz < 0)
+			ssz = 0;
+		avail -= ssz * (cols - 1);
+	} else
+		avail--;
+
+	/* Check if fitting on the current line. */
+
+	if (sz <= avail)
 		return;
 
-	divisor = sz / (double)st->width;
+	/* Divide the visible space. */
+
+	divisor = sz / (double)avail;
 	for (i = 0; i < cols; i++) {
 		if (widths[i] / divisor < (double)minwidths[i])
-			widths[i] = minwidths[i];
+			widths[i] = minwidths[i] + 1;
 		else
 			widths[i] = widths[i] / divisor;
+
+		if (widths[i] < 2)
+			widths[i] = 2;
 	}
 }
 
 /*
  * From the position at "cellpos", compute the size of the current
  * amonut to drain in "cellsz" and set the next position in "cellpos"
- * that has data in "cellpos".  Use "maxwidth" as the maximum size of
- * the column.  Return zero if there's nothing left, else non-zero if
- * there's more (that is, "cellpos" points to an actual bit of data).
+ * that has data in "cellpos".  Set "vissz" to be the visible size of
+ * the line (columns).  Return zero if there's nothing left, else
+ * non-zero if there's more (that is, "cellpos" points to an actual bit
+ * of data).
  */
 static size_t
-rndr_table_drain(const struct lowdown_buf *cell, size_t *cellpos,
-    size_t *cellsz, size_t maxwidth)
+rndr_table_drain(struct term *term, const struct lowdown_buf *cell,
+    size_t *cellpos, size_t *cellsz)
 {
-	size_t	 wend, start, i;
+	const char	*pp;
+	ssize_t		 ssz;
 
-	*cellsz = 0;
+	pp = memchr(&cell->data[*cellpos], '\n', cell->size - *cellpos);
 
-	while (*cellpos < cell->size &&
-	    isspace((unsigned char)cell->data[*cellpos]))
+	if (pp != NULL) {
+		assert(pp > &cell->data[*cellpos]);
+		*cellsz = pp - &cell->data[*cellpos];
+		ssz = rndr_mbswidth(term, &cell->data[*cellpos], *cellsz);
+		assert(ssz >= 0);
+		*cellpos = pp - cell->data;
 		(*cellpos)++;
-
-	start = i = *cellpos;
-	while (i < cell->size) {
-		wend = i;
-		while (wend < cell->size &&
-		    !isspace((unsigned char)cell->data[wend]))
-			wend++;
-		if (wend - start > maxwidth)
-			break;
-		*cellsz = wend - start;
-		i = wend;
-		while (i < cell->size &&
-		    isspace((unsigned char)cell->data[i]))
-			i++;
-		*cellpos = i;
+	} else {
+		*cellsz = cell->size - *cellpos;
+		ssz = rndr_mbswidth(term, &cell->data[*cellpos], *cellsz);
+		assert(ssz >= 0);
+		*cellpos = cell->size;
 	}
 
 	return *cellpos < cell->size;
 }
 
 /*
+ * Render a table.  This is a particularly difficult function because
+ * the table is sized based on its rendered contents, which may need to
+ * be reflowed to fit the terminal width.
  * Return zero on failure (memory), non-zero on success.
  */
 static int
 rndr_table(struct lowdown_buf *ob, struct term *st,
     const struct lowdown_node *n)
 {
-	size_t				 *widths = NULL, /* col widths */
-					 *minwidths = NULL,
-					 *cellwidths = NULL,
-					 *cellposes = NULL;
+	struct table_stats		  table_stats;
+	size_t				 *widths = NULL, /* visible widths */
+					 *minwidths = NULL, /* min visible */
+					 *cellposes = NULL; /* drain pos */
+	size_t				**lines = NULL; /* cell line vis */
 	const struct lowdown_node	 *row, /* row in parse */
 				         *top, /* header/body in parse */
 					 *cell; /* cell in parse */
 	struct lowdown_buf		 *rowtmp = NULL; /* row rndr */
 	struct lowdown_buf		**cells = NULL; /* cell rndr */
 	size_t				  col, /* save: st->col */
-					  i, j, k, l,
-					  cellcount = 0,
+					  i, j,
 					  maxcol, /* save: st->width */
+					  hpad, /* save: st->hpadding */
 					  sz, /* space left in col */
-					  footsz, /* save: st->footsz */
 					  hasnextrow, /* more cell spans */
 					  npos,
-					  nsz;
+					  vsz,
+					  nsz,
+					  currow;
+	const size_t			  footsz = st->footsz; /* saved size */
 	ssize_t			 	  last_blank; /* save: st->last_blank */
 	unsigned int			  flags; /* table flags */
 	int				  rc = 0; /* return code */
 
+
 	assert(n->type == LOWDOWN_TABLE_BLOCK);
-
-	/*
-	 * Compute total number of cells.  This is different from
-	 * multiplying the number of columns by rows, because we might
-	 * not have all cells for every row.
-	 */
-
-	TAILQ_FOREACH(top, &n->children, entries)
-		TAILQ_FOREACH(row, &top->children, entries)
-			TAILQ_FOREACH(cell, &row->children, entries)
-				cellcount++;
 
 	/* Pre-allocate: these are used within loops below. */
 
-	if ((rowtmp = hbuf_new(128)) == NULL)
-		goto out;
-	if ((cellposes = calloc(n->rndr_table.columns, sizeof(size_t))) == NULL)
-		goto out;
+	rowtmp = hbuf_new(128);
+	cellposes = calloc(n->rndr_table.columns, sizeof(size_t));
+	widths = calloc(n->rndr_table.columns, sizeof(size_t));
+	minwidths = calloc(n->rndr_table.columns, sizeof(size_t));
+	cells = calloc(n->rndr_table.columns, sizeof(struct lowdown_buf *));
+	lines = calloc(n->rndr_table.columns, sizeof(size_t *));
 
-	/* Allocate relevant to entire sequence. */
-
-	if ((widths = calloc(n->rndr_table.columns, sizeof(size_t))) == NULL)
-		goto out;
-	if ((minwidths = calloc(n->rndr_table.columns, sizeof(size_t))) == NULL)
-		goto out;
-	if ((cells = calloc(cellcount, sizeof(struct lowdown_buf *))) == NULL)
-		goto out;
-	if ((cellwidths = calloc(cellcount, sizeof(size_t))) == NULL)
+	if (rowtmp == NULL || cellposes == NULL || widths == NULL ||
+	    minwidths == NULL || cells == NULL || lines == NULL)
 		goto out;
 
 	/*
-	 * Begin by counting the number of printable columns in each
-	 * column in each row.  We don't want to collect additional
-	 * footnotes, as we're going to do so in the next iteration, and
-	 * keep the current size (which will otherwise advance).
+	 * Pre-format the algorithm to grab any footers.  FIXME: bubble
+	 * up whether there are any footnotes at all; as if there
+	 * aren't, this is entirely superfluous.
 	 */
 
-	assert(!st->footoff);
-	st->footoff = 1;
-	footsz = st->footsz;
-
-	k = 0;
 	TAILQ_FOREACH(top, &n->children, entries) {
 		assert(top->type == LOWDOWN_TABLE_HEADER ||
 			top->type == LOWDOWN_TABLE_BODY);
 		TAILQ_FOREACH(row, &top->children, entries)
 			TAILQ_FOREACH(cell, &row->children, entries) {
-				i = cell->rndr_table_cell.col;
-				assert(i < n->rndr_table.columns);
-
-				if ((cells[k] = hbuf_new(128)) == NULL)
+				hbuf_truncate(rowtmp);
+				last_blank = st->last_blank;
+				col = st->col;
+				st->last_blank = 0;
+				st->col = 1;
+				if (!rndr(rowtmp, st, cell))
 					goto out;
+				st->last_blank = last_blank;
+				st->col = col;
+			}
+	}
 
+	/*
+	 * Disable footer generation, as the footnotes have already been
+	 * generated above.
+	 */
+
+	assert(!st->footoff);
+	st->footoff = 1;
+
+	/* Count max (and min) visible space in each cell. */
+
+	TAILQ_FOREACH(top, &n->children, entries)
+		TAILQ_FOREACH(row, &top->children, entries)
+			TAILQ_FOREACH(cell, &row->children, entries) {
 				/*
 				 * Simulate that we're starting within
 				 * the line by unsetting last_blank,
@@ -1329,48 +1380,44 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 				 * infinite maximum column to prevent
 				 * line wrapping.
 				 */
-
 				maxcol = st->width;
 				last_blank = st->last_blank;
 				col = st->col;
-
 				st->last_blank = 0;
 				st->width = SIZE_MAX;
 				st->col = 1;
-				if (!rndr(cells[k], st, cell))
+				/* Collect max visible word. */
+				st->maxvis = 0;
+
+				hbuf_truncate(rowtmp);
+				if (!rndr(rowtmp, st, cell))
 					goto out;
 
-				sz = rndr_table_minwidth(cells[k]);
+				i = cell->rndr_table_cell.col;
+				assert(i < n->rndr_table.columns);
 				if (widths[i] < st->col)
 					widths[i] = st->col;
-				if (minwidths[i] < sz)
-					minwidths[i] = sz;
+				if (minwidths[i] < st->maxvis)
+					minwidths[i] = st->maxvis;
 
-				cellwidths[k] = st->col;
+				/* Reset... */
 
 				st->last_blank = last_blank;
 				st->col = col;
 				st->width = maxcol;
-
-				k++;
 			}
-	}
-
-	/* Restore footnotes. */
-
-	st->footsz = footsz;
-	assert(st->footoff);
-	st->footoff = 0;
 	
-	/*
-	 * Algorithm to compute width of columns.  This is currently not
-	 * optimal: hand-wave it by computing the common divisor, then
-	 * resetting each width to that or the minimum width, if the
-	 * greater.
-	 */
+	/* Algorithm to compute width of columns. */
 
 	rndr_table_width_algo(st, widths, n->rndr_table.columns,
 	    minwidths);
+
+	/*
+	 * Re-set the footnote position so that the printed footnote
+	 * count starts at the correct place.
+	 */
+
+	st->footsz = footsz;
 
 	/*
 	 * Now actually print, row-by-row into the output.  Since a row
@@ -1378,30 +1425,70 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 	 * loop that prints lines within the current row's columns.
 	 */
 
-	k = 0;
 	TAILQ_FOREACH(top, &n->children, entries) {
-		assert(top->type == LOWDOWN_TABLE_HEADER ||
-			top->type == LOWDOWN_TABLE_BODY);
 		TAILQ_FOREACH(row, &top->children, entries) {
+			TAILQ_FOREACH(cell, &row->children, entries) {
+				i = cell->rndr_table_cell.col;
+				assert(i < n->rndr_table.columns);
+				if (cells[i] == NULL &&
+				    (cells[i] = hbuf_new(128)) == NULL)
+					goto out;
+				hbuf_truncate(cells[i]);
+
+				hpad = st->hpadding;
+				maxcol = st->width;
+				last_blank = st->last_blank;
+				col = st->col;
+
+				st->hpadding = 0;
+				st->last_blank = 1;
+				st->width = widths[i];
+				st->col = 0;
+
+				/*
+				 * Save per-line visible columns for
+				 * below.
+				 */
+
+				free(lines[i]);
+				lines[i] = malloc(sizeof(size_t));
+				if (lines[i] == NULL)
+					goto out;
+
+				table_stats.save_cols = lines[i];
+				table_stats.save_colsz = 0;
+				table_stats.save_colmax = 1;
+
+				st->table_stats = &table_stats;
+
+				if (!rndr(cells[i], st, cell))
+					goto out;
+				if (!rndr_savecols_append(st))
+					goto out;
+
+				lines[i] = table_stats.save_cols;
+				st->table_stats = NULL;
+
+				st->hpadding = hpad;
+				st->last_blank = last_blank;
+				st->col = col;
+				st->width = maxcol;
+			}
+
 			/*
 			 * While there's any data remaining to be
 			 * drained (in the next pass), continue draining
-			 * from the cells' buffers.  Start with totally
-			 * undrained buffers.
+			 * from the cells' buffers, line by line.  Start
+			 * with totally undrained buffers.
 			 */
 
 			for (i = 0; i < n->rndr_table.columns; i++)
 				cellposes[i] = 0;
 
+			currow = 0;
 			do {
 				hasnextrow = 0;
 				hbuf_truncate(rowtmp);
-				/*
-				 * Save our cell position, because we're
-				 * going to iterate over all cells in
-				 * the row multiple times.
-				 */
-				l = k;
 				TAILQ_FOREACH(cell, &row->children, entries) {
 					i = cell->rndr_table_cell.col;
 					npos = cellposes[i];
@@ -1409,41 +1496,75 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 					 * Is there more data after this
 					 * cell?  If so, increment.
 					 */
-					if (rndr_table_drain(cells[l],
-					    &cellposes[i], &nsz, widths[i]))
+					if (rndr_table_drain(st, cells[i],
+					    &cellposes[i], &nsz))
 						hasnextrow++;
+
+					if (nsz == 0) {
+						vsz = 0;
+					} else {
+						assert(lines[i][currow] > 0);
+						vsz = lines[i][currow];
+					}
 
 					/* Remaining space. */
 
-					sz = widths[i] - nsz;
+					assert(widths[i] >= vsz);
+					sz = widths[i] - vsz;
 
 					/*
-					 * Alignment is either beginning,
-					 * ending, or splitting the remaining
-					 * spaces around the word.
-					 * Be careful about uneven splitting in
-					 * the case of centre.
+					 * Alignment is either
+					 * beginning, ending, or
+					 * splitting the remaining
+					 * spaces around the word.  Be
+					 * careful about uneven
+					 * splitting in the case of
+					 * centre.
 					 */
 
 					flags = cell->rndr_table_cell.flags &
 						HTBL_FL_ALIGNMASK;
+
+					/* Initial left-pad. */
+
+					if (!HBUF_PUTSL(rowtmp, " "))
+						goto out;
+
+					/* Right starts with pad. */
+
 					if (flags == HTBL_FL_ALIGN_RIGHT)
-						for (j = 0; j < sz; j++)
+						for (j = 0; j < sz - 1; j++)
 							if (!HBUF_PUTSL(rowtmp, " "))
 								goto out;
+
+					/* Centre starts with half-pad. */
+
 					if (flags == HTBL_FL_ALIGN_CENTER)
 						for (j = 0; j < sz / 2; j++)
 							if (!HBUF_PUTSL(rowtmp, " "))
 								goto out;
+
+					/* Content... */
+
 					if (!hbuf_put(rowtmp,
-					    cells[l]->data + npos, nsz))
+					    cells[i]->data + npos, nsz))
 						goto out;
-					l++;
+
+					/* Trailing left-pad. */
+
 					if (flags == 0 ||
 					    flags == HTBL_FL_ALIGN_LEFT)
 						for (j = 0; j < sz; j++)
 							if (!HBUF_PUTSL(rowtmp, " "))
 								goto out;
+
+					/* Trailing right-pad. */
+
+					if (flags == HTBL_FL_ALIGN_RIGHT &&
+					    !HBUF_PUTSL(rowtmp, " "))
+						goto out;
+
+					/* Trailing centre-pad. */
 					if (flags == HTBL_FL_ALIGN_CENTER) {
 						sz = (sz % 2) ?
 							(sz / 2) + 1 : (sz / 2);
@@ -1452,16 +1573,17 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 								goto out;
 					}
 
+					/* Nothing after this... */
+
 					if (TAILQ_NEXT(cell, entries) == NULL)
 						continue;
 
-					if (!HBUF_PUTSL(rowtmp, " ") ||
-					    !rndr_buf_style(st, rowtmp, &sty_tbl) ||
-					    !hbuf_puts(rowtmp, ifx_tbl_col) ||
-					    !rndr_buf_unstyle(st, rowtmp, &sty_tbl) ||
-					    !HBUF_PUTSL(rowtmp, " "))
-						goto out;
+					/* Style next and pad. */
 
+					if (!rndr_buf_style(st, rowtmp, &sty_tbl) ||
+					    !hbuf_puts(rowtmp, ifx_tbl_col) ||
+					    !rndr_buf_unstyle(st, rowtmp, &sty_tbl))
+						goto out;
 				}
 
 				/*
@@ -1486,11 +1608,8 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 				if (!rndr_buf_vspace(st, ob, n, 1))
 					goto out;
 				st->stackpos--;
+				currow++;
 			} while (hasnextrow > 0);
-
-			/* Reset the cell index position. */
-
-			k = l;
 		}
 
 		if (top->type == LOWDOWN_TABLE_HEADER) {
@@ -1503,26 +1622,20 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 			/*
 			 * Output the row line.  This consists of:
 			 *
-			 *   inter    padding
-			 *       |    | |
-			 *       |    | |
-			 *   ----+-----+-----
-			 *   xyz   xyz   xyz
-			 *   |     |
-			 *   content
-			 *
-			 * So starting with the content, ending with a
-			 * padding of one byte (encompassed in the
-			 * width), the inter mark or nothing if at the
-			 * end, then another padding or nothing if at
-			 * the end.
+			 *   inter  padding
+			 *        \/
+			 *        ||
+			 *   -----+-----+-----
+			 *    xyz   xyz   xyz
+			 *    |     |     |
+			 *    content width=4
 			 */
 			for (i = 0; i < n->rndr_table.columns; i++) {
-				/* Pre-padding. */
-				if (i > 0 && !hbuf_puts(ob, ifx_tbl_row))
+				/* Pre. */
+				if (!hbuf_puts(ob, ifx_tbl_row))
 					goto out;
-				/* Content and post-padding. */
-				for (j = 0; j <= widths[i]; j++)
+				/* Content. */
+				for (j = 0; j < widths[i]; j++)
 					if (!hbuf_puts(ob, ifx_tbl_row))
 						goto out;
 				/* Inter. */
@@ -1539,17 +1652,25 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 		}
 	}
 
+	/* Reset to collectinf footnotes. */
+
+	assert(st->footoff);
+	st->footoff = 0;
 	rc = 1;
 out:
+
 	if (cells != NULL)
-		for (i = 0; i < cellcount; i++)
+		for (i = 0; i < n->rndr_table.columns; i++)
 			hbuf_free(cells[i]);
+	if (lines != NULL)
+		for (i = 0; i < n->rndr_table.columns; i++)
+			free(lines[i]);
 	hbuf_free(rowtmp);
 	free(cells);
-	free(cellwidths);
 	free(cellposes);
 	free(widths);
 	free(minwidths);
+	free(lines);
 	return rc;
 }
 
