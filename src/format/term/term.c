@@ -54,6 +54,7 @@ struct term {
 	ssize_t			  last_blank; /* line breaks or -1 (start) */
 	struct tstack		 *stack; /* stack of nodes */
 	size_t			  stackmax; /* size of stack */
+	size_t			  stackoffs; /* sub-stack start (tables) */
 	size_t			  stackpos; /* position in stack */
 	size_t			  width; /* soft width of content */
 	size_t			  hmargin; /* left of content */
@@ -617,10 +618,12 @@ rndr_buf_startline_prefixes(struct term *term,
 	 * Look up the current node in the list of node's we're
 	 * servicing so we can get how many times we've output the
 	 * prefix.  This is used for (e.g.) lists, where we only output
-	 * the list prefix once.  XXX: read backwards for faster perf?
+	 * the list prefix once.  The stack offset is used when
+	 * formatting table cells to mark an "inner" stack.
+	 * XXX: read backwards for faster perf?
 	 */
 
-	for (i = 0; i <= term->stackpos; i++)
+	for (i = term->stackoffs; i <= term->stackpos; i++)
 		if (term->stack[i].n == n)
 			break;
 
@@ -1185,7 +1188,7 @@ rndr_stackpos_init(struct term *st, const struct lowdown_node *n)
 {
 	void	*pp;
 
-	if (st->stackpos >= st->stackmax) {
+	if (st->stackoffs + st->stackpos >= st->stackmax) {
 		st->stackmax += 256;
 		pp = reallocarray(st->stack,
 			st->stackmax, sizeof(struct tstack));
@@ -1194,8 +1197,9 @@ rndr_stackpos_init(struct term *st, const struct lowdown_node *n)
 		st->stack = pp;
 	}
 
-	memset(&st->stack[st->stackpos], 0, sizeof(struct tstack));
-	st->stack[st->stackpos].n = n;
+	memset(&st->stack[st->stackpos + st->stackoffs], 0,
+	    sizeof(struct tstack));
+	st->stack[st->stackpos + st->stackoffs].n = n;
 	return 1;
 }
 
@@ -1205,7 +1209,7 @@ rndr_stackpos_init(struct term *st, const struct lowdown_node *n)
  */
 static void
 rndr_table_width_algo(struct term *st, size_t *widths, size_t cols,
-    const size_t *minwidths)
+    const size_t *minwidths, const struct lowdown_node *n)
 {
 	size_t	 sz, /* total width */
 		 i, /* temporary */
@@ -1315,12 +1319,12 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 					  npos,
 					  vsz,
 					  nsz,
+					  stackpos = st->stackpos,
 					  currow;
 	const size_t			  footsz = st->footsz; /* saved size */
 	ssize_t			 	  last_blank; /* save: st->last_blank */
 	unsigned int			  flags; /* table flags */
 	int				  rc = 0; /* return code */
-
 
 	assert(n->type == LOWDOWN_TABLE_BLOCK);
 
@@ -1410,7 +1414,7 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 	/* Algorithm to compute width of columns. */
 
 	rndr_table_width_algo(st, widths, n->rndr_table.columns,
-	    minwidths);
+	    minwidths, n);
 
 	/*
 	 * Re-set the footnote position so that the printed footnote
@@ -1427,6 +1431,16 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 
 	TAILQ_FOREACH(top, &n->children, entries) {
 		TAILQ_FOREACH(row, &top->children, entries) {
+			/*
+			 * Create a sub-stack so that table cells don't
+			 * render the encompassing blocks, if any.  For
+			 * example, a table in a block quote.
+			 */
+			assert(st->stackoffs == 0);
+			st->stackoffs = ++st->stackpos;
+			if (!rndr_stackpos_init(st, st->stack[0].n))
+				goto out;
+
 			TAILQ_FOREACH(cell, &row->children, entries) {
 				i = cell->rndr_table_cell.col;
 				assert(i < n->rndr_table.columns);
@@ -1474,6 +1488,11 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 				st->col = col;
 				st->width = maxcol;
 			}
+
+			/* Reset the sub-stack. */
+
+			st->stackpos = stackpos;
+			st->stackoffs = 0;
 
 			/*
 			 * While there's any data remaining to be
