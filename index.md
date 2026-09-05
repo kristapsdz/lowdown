@@ -4,11 +4,16 @@ author: Kristaps Dzonsons
 
 # [%title]
 
-*lowdown* is a Markdown translator producing HTML5; *roff* documents
-(the **ms**, **man**, and **mdoc** macros), LaTeX, gemini ("gemtext"),
+*lowdown* is a Markdown translator producing HTML5, *roff* documents
+(**ms**, **man**, and **mdoc** macros), LaTeX, gemini ("gemtext"),
 OpenDocument, and ANSI/UTF8 terminal output.
+It's bundled with *lowdown-diff*, a
+[difference tool](https://kristaps.bsd.lv/lowdown/diff.html)
+for comparing two Markdown files.
 The [open source](http://opensource.org/licenses/ISC) C source code has
-no dependencies.
+no dependencies.  It's portable across most modern Unix systems:
+OpenBSD, NetBSD, FreeBSD, Mac OS X, Linux (glibc and musl), Solaris,
+IllumOS, and possibly others.
 
 The tools are documented in
 [lowdown(1)](https://kristaps.bsd.lv/lowdown/lowdown.1.html) and
@@ -30,26 +35,14 @@ make
 doas make install install_libs
 ```
 
-On non-BSD systems, you may need to use `bmake` and `sudo`.
+On non-OpenBSD systems, you may need to use `bmake` and `sudo`.
 
-*lowdown* is a [BSD.lv](https://bsd.lv) project.  Its portability to
-OpenBSD, NetBSD, FreeBSD, Mac OS X, Linux (glibc and musl), Solaris, and
-IllumOS is enabled by
-[oconfigure](https://github.com/kristapsdz/oconfigure).
-
-One major difference between *lowdown* and other Markdown formatters it
-that it internally converts to an AST instead of directly formatting
-output.  This enables some semantic analysis of the content such as with
-the [difference engine](https://kristaps.bsd.lv/lowdown/diff.html),
-which shows the difference between two markdown trees in markdown.
-
-As of version 2.0.0, *lowdown* uses
+*lowdown* uses
 [semantic versioning](https://semver.org/) ("semver").  A major number
 change indicates a change in the
 [lowdown(3)](https://kristaps.bsd.lv/lowdown/lowdown.3.html) API, a
 minor number indicates a change in functionality, and a patch number
-indicates a bug-fix or change without functionality.  The version 2.0.0
-reflects API changes in 1.4.0 that preceded.
+indicates a bug-fix or change without functionality.
 
 ## Output
 
@@ -63,12 +56,9 @@ ANSI terminals with **-tterm**.
 
 The **-tlatex** and **-tms** are commonly used for PDF documents,
 **-tfodt** for document processing, **-tman** and **-tmdoc** for
-manpages, **-thtml** or **-tgemini** for web, and **-tterm** for the
-command line.
+manpages (see [writing manpages](mdoc.html) for details), **-thtml** or
+**-tgemini** for web, and **-tterm** for the command line.
 
-If you're looking to write manpages, please see [writing
-manpages](mdoc.html), which has details on how to best write manpages using
-Markdown.
 
 By way of example: this page,
 [index.md](https://kristaps.bsd.lv/lowdown/index.md), renders as
@@ -109,6 +99,7 @@ following Markdown features and extensions:
 - task lists
 - admonitions
 - templating
+- and much, much more!
 
 *lowdown* is fully compatible with the original Markdown syntax as
 checked by the Markdown test suite, last version 1.0.3.  This suite is
@@ -119,7 +110,7 @@ available as part of the regression suite.
 Want to quickly review your Markdown in a terminal window?
 
 ```sh
-lowdown -t term README.md | less -R
+lowdown -tterm README.md | less -R
 ```
 
 If you just want a straight-up HTML5 file, use standalone mode:
@@ -136,7 +127,7 @@ arguments in the following are for UTF-8 processing (**-k**), tables
 (**-t**), and clickable links and a table of contents (**-mspdf**).
 
 ```sh
-lowdown -s -t ms README.md | pdfroff -itk -mspdf > README.pdf
+lowdown -s -tms README.md | pdfroff -itk -mspdf > README.pdf
 ```
 
 The same can be effected with systems using
