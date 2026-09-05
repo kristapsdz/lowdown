@@ -1206,16 +1206,43 @@ rndr_stackpos_init(struct term *st, const struct lowdown_node *n)
 /*
  * Re-compute the width of each column starting with the maximum width
  * and minimum width.  Re-write these widths into the witdhs array.
+ * Return zero on failure (memory), non-zero on success.
  */
-static void
+static int
 rndr_table_width_algo(struct term *st, size_t *widths, size_t cols,
     const size_t *minwidths, const struct lowdown_node *n)
 {
-	size_t	 sz, /* total width */
-		 i, /* temporary */
-		 avail; /* available width */
-	ssize_t	 ssz; /* size of spacer */
-	double	 divisor;
+	struct lowdown_buf	*ob; /* line prefix */
+	size_t			 sz, /* total width */
+				 i, /* temporary */
+				 avail; /* available width */
+	const size_t 		 last_blank = st->last_blank; /* save */
+	const size_t		 col = st->col; /* save */
+	ssize_t			 ssz; /* size of spacer */
+	double			 divisor;
+
+	avail = st->width;
+
+	/*
+	 * Begin by formatting any line prefixes.  This uses the same
+	 * logic in the rndr_table() function to fake the current output
+	 * position by resetting the last_blank and col.  Subtract the
+	 * line prefix size from total available space.
+	 */
+
+	if ((ob = hbuf_new(128)) == NULL)
+		return 0;
+	st->last_blank = 1;
+	st->col = 0;
+	if (!rndr_buf_startline(st, ob, n, NULL)) {
+		hbuf_free(ob);
+		return 0;
+	}
+	(void)rndr_mbswidth(st, ob->data, ob->size);
+	hbuf_free(ob);
+	avail -= st->col;
+	st->last_blank = last_blank;
+	st->col = col;
 
 	/* Accumulate width of all columns. */
 
@@ -1227,7 +1254,6 @@ rndr_table_width_algo(struct term *st, size_t *widths, size_t cols,
 	 * column boundary marker.
 	 */
 
-	avail = st->width;
 	if (cols > 1) {
 		ssz = rndr_mbswidth(st, ifx_tbl_col,
 		    strlen(ifx_tbl_col));
@@ -1240,7 +1266,7 @@ rndr_table_width_algo(struct term *st, size_t *widths, size_t cols,
 	/* Check if fitting on the current line. */
 
 	if (sz <= avail)
-		return;
+		return 1;
 
 	/* Divide the visible space. */
 
@@ -1254,6 +1280,8 @@ rndr_table_width_algo(struct term *st, size_t *widths, size_t cols,
 		if (widths[i] < 2)
 			widths[i] = 2;
 	}
+
+	return 1;
 }
 
 /*
@@ -1413,8 +1441,9 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 	
 	/* Algorithm to compute width of columns. */
 
-	rndr_table_width_algo(st, widths, n->rndr_table.columns,
-	    minwidths, n);
+	if (!rndr_table_width_algo(st, widths, n->rndr_table.columns,
+	    minwidths, n))
+		goto out;
 
 	/*
 	 * Re-set the footnote position so that the printed footnote
@@ -1437,7 +1466,7 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 			 * example, a table in a block quote.
 			 */
 			assert(st->stackoffs == 0);
-			st->stackoffs = ++st->stackpos;
+			st->stackoffs = st->stackpos++;
 			if (!rndr_stackpos_init(st, st->stack[0].n))
 				goto out;
 
