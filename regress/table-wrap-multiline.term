@@ -1,0 +1,15 @@
+     Field                    [93m│[0m Required [93m│[0m Description                  
+    [93m──────────────────────────┼──────────┼──────────────────────────────[0m
+     [1;94mdisable-model-invocation[0m [93m│[0m No       [93m│[0m Set to true to prevent       
+                              [93m│[0m          [93m│[0m automatic loading of this    
+                              [93m│[0m          [93m│[0m skill by the system.         
+                              [93m│[0m          [93m│[0m Also prevents the skill from 
+                              [93m│[0m          [93m│[0m being preloaded into         
+                              [93m│[0m          [93m│[0m subagents and other          
+                              [93m│[0m          [93m│[0m contexts.                    
+     [1;94muser-invocable[0m           [93m│[0m No       [93m│[0m Set to false to hide from    
+                              [93m│[0m          [93m│[0m the menu so users cannot     
+                              [93m│[0m          [93m│[0m invoke it directly.          
+                              [93m│[0m          [93m│[0m Use for background knowledge 
+                              [93m│[0m          [93m│[0m users should not invoke      
+                              [93m│[0m          [93m│[0m directly as a command.       

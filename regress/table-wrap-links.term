@@ -1,0 +1,16 @@
+     Name    [93m│[0m URL                                                                [93m│[0m Description 
+    [93m─────────┼────────────────────────────────────────────────────────────────────┼─────────────[0m
+     Example [93m│[0m ]8;;https://example.com/path/to/resource\[1;93mA very long link text[0m]8;;\ ]8;;https://example.com/path/to/resource\[4;32mhttps://example.com/path/to/resource[0m]8;;\         [93m│[0m This is a   
+     Site    [93m│[0m                                                                    [93m│[0m detailed    
+             [93m│[0m                                                                    [93m│[0m description 
+             [93m│[0m                                                                    [93m│[0m of the      
+             [93m│[0m                                                                    [93m│[0m example     
+             [93m│[0m                                                                    [93m│[0m site which  
+             [93m│[0m                                                                    [93m│[0m should wrap 
+     Another [93m│[0m ]8;;https://another-example.com/very/long/path/to/demonstrate/wrapping\[4;32mhttps://another-example.com/very/long/path/to/demonstrate/wrapping[0m]8;;\ [93m│[0m Also has a  
+     Site    [93m│[0m                                                                    [93m│[0m description 
+             [93m│[0m                                                                    [93m│[0m that        
+             [93m│[0m                                                                    [93m│[0m exceeds the 
+             [93m│[0m                                                                    [93m│[0m seventy two 
+             [93m│[0m                                                                    [93m│[0m column      
+             [93m│[0m                                                                    [93m│[0m width limit 

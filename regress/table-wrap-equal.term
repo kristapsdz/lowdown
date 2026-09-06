@@ -1,0 +1,8 @@
+     Long Column A         [93m│[0m Long Column B       [93m│[0m Long Column C         
+    [93m───────────────────────┼─────────────────────┼───────────────────────[0m
+     This column has lots  [93m│[0m Also lots of text   [93m│[0m And more text here    
+     of text in it that    [93m│[0m here as well to     [93m│[0m too for good measure  
+     will be quite long    [93m│[0m make it equally     [93m│[0m to match the others   
+                           [93m│[0m wide                [93m│[0m                       
+    
+    [37m────────────────────────────────────────────────────────────────────[0m
