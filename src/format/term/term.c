@@ -1215,11 +1215,18 @@ rndr_table_width_algo(struct term *st, size_t *widths, size_t cols,
 	struct lowdown_buf	*ob; /* line prefix */
 	size_t			 sz, /* total width */
 				 i, /* temporary */
-				 avail; /* available width */
+				 avail, /* available width */
+				 minwidthsz,
+				 minwidthcols;
 	const size_t 		 last_blank = st->last_blank; /* save */
 	const size_t		 col = st->col; /* save */
 	ssize_t			 ssz; /* size of spacer */
 	double			 divisor;
+
+	/*
+	 * Width less one because we overshoot by one when writing the last
+	 * column's header line.
+	 */
 
 	avail = st->width;
 
@@ -1238,7 +1245,6 @@ rndr_table_width_algo(struct term *st, size_t *widths, size_t cols,
 		hbuf_free(ob);
 		return 0;
 	}
-	(void)rndr_mbswidth(st, ob->data, ob->size);
 	hbuf_free(ob);
 	avail -= st->col;
 	st->last_blank = last_blank;
@@ -1249,17 +1255,13 @@ rndr_table_width_algo(struct term *st, size_t *widths, size_t cols,
 	for (sz = 0, i = 0; i < cols; i++)
 		sz += widths[i];
 
-	/*
-	 * Available space is less left-pad (for one column) or the
-	 * column boundary marker.
-	 */
+	/* Less column boundary markers or single right space. */
 
 	if (cols > 1) {
 		ssz = rndr_mbswidth(st, ifx_tbl_col,
 		    strlen(ifx_tbl_col));
-		if (ssz < 0)
-			ssz = 0;
-		avail -= ssz * (cols - 1);
+		if (ssz >= 0)
+			avail -= ssz * cols;
 	} else
 		avail--;
 
@@ -1268,18 +1270,53 @@ rndr_table_width_algo(struct term *st, size_t *widths, size_t cols,
 	if (sz <= avail)
 		return 1;
 
-	/* Divide the visible space. */
+	/*
+	 * Divide the visible space.  Keep track of the number of
+	 * columns that hit their minimum sizing, because we'll reflow
+	 * non-minimum columns after this.
+	 */
 
+	minwidthsz = minwidthcols = 0;
 	divisor = sz / (double)avail;
+	sz = 0;
 	for (i = 0; i < cols; i++) {
-		if (widths[i] / divisor < (double)minwidths[i])
+		if (widths[i] / divisor < (double)minwidths[i]) {
 			widths[i] = minwidths[i] + 1;
-		else
+			minwidthsz += widths[i];
+			minwidthcols++;
+		} else
 			widths[i] = widths[i] / divisor;
 
 		if (widths[i] < 2)
 			widths[i] = 2;
+
+		sz += widths[i];
 	}
+
+	/*
+	 * If there are minimum columns and the page width has been
+	 * overrun, re-reflow the remaining non-minimum columns over the
+	 * remaining space.
+	 */
+
+	if (sz >= avail && minwidthcols < cols) {
+		avail -= minwidthsz + minwidthcols; /* plus padding */
+		sz -= minwidthsz;
+		divisor = sz / (double)avail;
+		sz = 0;
+		for (i = 0; i < cols; i++) {
+			if (widths[i] == minwidths[i] + 1) {
+				sz += widths[i];
+				continue;
+			}
+			widths[i] = widths[i] / divisor;
+			if (widths[i] < 2)
+				widths[i] = 2;
+			sz += widths[i];
+		}
+	}
+
+	/* FIXME: see regress/table-wrap-equal.md. */
 
 	return 1;
 }
