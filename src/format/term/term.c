@@ -49,6 +49,7 @@ struct table_stats {
 struct term {
 	unsigned int		  opts; /* oflags from lowdown_cfg */
 	size_t			  col; /* output column from zero */
+	size_t			  lastspace; /* for maxvis, last space col */
 	size_t			  maxvis; /* max visible word in last */
 	struct table_stats	 *table_stats; /* NULL if not collecting */
 	ssize_t			  last_blank; /* line breaks or -1 (start) */
@@ -183,16 +184,6 @@ rndr_mbswidth(struct term *term, const char *buf, size_t sz)
 	cp = buf;
 	mbsnrtowcs(term->buf, &cp, sz, wsz, &mbs);
 	csz = wcswidth(term->buf, wsz);
-
-	/*
-	 * This is currently only used by table creation to keep tabs on
-	 * the minimum column width, which is the visible size of the
-	 * largest word.  Track this by just setting maxvis to zero and
-	 * seeing what it is after a call to rndr().
-	 */
-
-	if (csz > term->maxvis)
-		term->maxvis = csz;
 
 	return csz == (size_t)-1 ? sz : csz;
 }
@@ -553,6 +544,7 @@ rndr_buf_endline(struct term *term, struct lowdown_buf *out,
 		return 0;
 
 	term->col = 0;
+	term->lastspace = 0;
 	term->last_blank = 1;
 	return HBUF_PUTSL(out, "\n");
 }
@@ -854,6 +846,7 @@ rndr_buf_vspace(struct term *term, struct lowdown_buf *out,
 		}
 		term->last_blank++;
 		term->col = 0;
+		term->lastspace = 0;
 	}
 	return 1;
 }
@@ -1012,6 +1005,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 		if (term->last_blank && len) {
 			if (!rndr_buf_startline(term, out, n, osty))
 				return 0;
+			term->lastspace = term->col;
 			begin = 0;
 			end = 1;
 		} else if (!term->last_blank) {
@@ -1026,6 +1020,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 				if (!HBUF_PUTSL(out, " "))
 					return 0;
 				rndr_buf_advance(term, 1);
+				term->lastspace = term->col;
 			}
 		}
 
@@ -1035,6 +1030,17 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 			return 0;
 		cols = ret;
 		rndr_buf_advance(term, cols);
+
+		/*
+		 * This is currently only used by table creation to keep tabs
+		 * on the minimum column width, which is the visible size of
+		 * the largest word.  Track this by just setting maxvis to zero
+		 * and seeing what it is after a call to rndr().
+		 */
+
+		if (term->col > term->lastspace &&
+		    term->col - term->lastspace >= term->maxvis)
+			term->maxvis = term->col - term->lastspace;
 	}
 
 	if (end) {
@@ -1299,20 +1305,30 @@ rndr_table_width_algo(struct term *st, size_t *widths, size_t cols,
 	 * remaining space.
 	 */
 
-	if (sz >= avail && minwidthcols < cols) {
-		avail -= minwidthsz + minwidthcols; /* plus padding */
-		sz -= minwidthsz;
-		divisor = sz / (double)avail;
-		sz = 0;
-		for (i = 0; i < cols; i++) {
-			if (widths[i] == minwidths[i] + 1) {
+	if (sz > avail && minwidthcols < cols) {
+		/*
+		 * Pre-check: if the available space after adjustment is less
+		 * than or zero, just set all widths to be the minimum.
+		 * Otherwise, reflow the remaining.
+		 */
+		if (minwidthsz + minwidthcols >= avail) {
+			for (i = 0; i < cols; i++)
+				widths[i] = minwidths[i] + 1;
+		} else {
+			avail -= minwidthsz + minwidthcols; /* plus padding */
+			sz -= minwidthsz;
+			divisor = sz / (double)avail;
+			sz = 0;
+			for (i = 0; i < cols; i++) {
+				if (widths[i] == minwidths[i] + 1) {
+					sz += widths[i];
+					continue;
+				}
+				widths[i] = widths[i] / divisor;
+				if (widths[i] < 2)
+					widths[i] = 2;
 				sz += widths[i];
-				continue;
 			}
-			widths[i] = widths[i] / divisor;
-			if (widths[i] < 2)
-				widths[i] = 2;
-			sz += widths[i];
 		}
 	}
 
@@ -1381,6 +1397,7 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 					  hpad, /* save: st->hpadding */
 					  sz, /* space left in col */
 					  hasnextrow, /* more cell spans */
+					  ls, /* save: lastspace */
 					  npos,
 					  vsz,
 					  nsz,
@@ -1452,9 +1469,11 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 				maxcol = st->width;
 				last_blank = st->last_blank;
 				col = st->col;
+				ls = st->lastspace;
 				st->last_blank = 0;
 				st->width = SIZE_MAX;
 				st->col = 1;
+				st->lastspace = 1;
 				/* Collect max visible word. */
 				st->maxvis = 0;
 
@@ -1469,14 +1488,17 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 				if (minwidths[i] < st->maxvis)
 					minwidths[i] = st->maxvis;
 
+
 				/* Reset... */
 
 				st->last_blank = last_blank;
 				st->col = col;
 				st->width = maxcol;
+				st->lastspace = ls;
 			}
 	
 	/* Algorithm to compute width of columns. */
+
 
 	if (!rndr_table_width_algo(st, widths, n->rndr_table.columns,
 	    minwidths, n))
