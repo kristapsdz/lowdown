@@ -946,7 +946,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 					 begin = 1, end = 0;
 	const char			*start;
 	const struct lowdown_node	*nn;
-
+	
 	for (nn = n; nn != NULL; nn = nn->parent)
 		if (nn->type == LOWDOWN_BLOCKCODE ||
 	  	    nn->type == LOWDOWN_BLOCKHTML)
@@ -1488,7 +1488,6 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 				if (minwidths[i] < st->maxvis)
 					minwidths[i] = st->maxvis;
 
-
 				/* Reset... */
 
 				st->last_blank = last_blank;
@@ -1610,14 +1609,26 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 					if (nsz == 0) {
 						vsz = 0;
 					} else {
-						assert(lines[i][currow] > 0);
 						vsz = lines[i][currow];
 					}
 
 					/* Remaining space. */
 
-					assert(widths[i] >= vsz);
-					sz = widths[i] - vsz;
+					/*
+					 * FIXME: this should be an
+					 * assertion that the widths[i]
+					 * is larger than vsz.  However,
+					 * there are conditions where
+					 * rndr_buf() will overrun its
+					 * contents because there are
+					 * multiple nodes in a row
+					 * without spaces.
+					 */
+
+					if (widths[i] >= vsz)
+						sz = widths[i] - vsz;
+					else
+						sz = 0;
 
 					/*
 					 * Alignment is either
@@ -1639,7 +1650,8 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 
 					/* Right starts with pad. */
 
-					if (flags == HTBL_FL_ALIGN_RIGHT)
+					if (flags == HTBL_FL_ALIGN_RIGHT &&
+					    sz > 0)
 						for (j = 0; j < sz - 1; j++)
 							if (!HBUF_PUTSL(rowtmp, " "))
 								goto out;
