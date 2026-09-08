@@ -1659,17 +1659,6 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 
 					/* Remaining space. */
 
-					/*
-					 * FIXME: this should be an
-					 * assertion that the widths[i]
-					 * is larger than vsz.  However,
-					 * there are conditions where
-					 * rndr_buf() will overrun its
-					 * contents because there are
-					 * multiple nodes in a row
-					 * without spaces.
-					 */
-
 					assert(widths[i] >= vsz);
 					sz = widths[i] - vsz;
 
