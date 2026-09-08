@@ -32,6 +32,16 @@
 #include "extern.h"
 #include "format.h"
 
+/*
+ * Node in the stack of nodes in "struct term" for the current line.
+ * For example, normal text in italics in a list.  This is required
+ * because (for example) when a line is broken, the full stack must be
+ * run at both the end and start of the new line.
+ *
+ * The "lines" holds how many times the node has been output.  This is
+ * useful for multi-line displays where only the first line gets special
+ * output treatment.
+ */
 struct tstack {
 	const struct lowdown_node *n; /* node in question */
 	size_t			   lines; /* times emitted */
@@ -46,13 +56,29 @@ struct table_stats {
 	size_t		  save_colmax; /* lines' vis max buf size */
 };
 
+/*
+ * How to style the output on the screen.
+ */
+struct sty {
+	int		 italic; /* italic */
+	int		 strike; /* strikethrough */
+	int		 bold; /* bold */
+	int		 under; /* underline */
+	size_t		 bcolour; /* not inherited */
+	size_t		 colour; /* not inherited */
+	int		 override; /* don't inherit... */
+#define	OSTY_UNDER	 0x01 /* underlining */
+#define	OSTY_BOLD	 0x02 /* bold */
+};
+
 struct term {
 	unsigned int		  opts; /* oflags from lowdown_cfg */
 	size_t			  col; /* output column from zero */
 	size_t			  lastspace; /* for maxvis, last space col */
+	size_t			  lastspacepos; /* byte offs of lastspace */
 	size_t			  maxvis; /* max visible word in last */
 	struct table_stats	 *table_stats; /* NULL if not collecting */
-	ssize_t			  last_blank; /* line breaks or -1 (start) */
+	ssize_t			  last_blank; /* \n preceding or -1 (start) */
 	struct tstack		 *stack; /* stack of nodes */
 	size_t			  stackmax; /* size of stack */
 	size_t			  stackoffs; /* sub-stack start (tables) */
@@ -69,21 +95,6 @@ struct term {
 	int			  footoff; /* don't collect (tables) */
 	struct lowdown_metaq	  metaq; /* metadata */
 	const struct lowdown_node*in_link; /* in an OSC8 hyperlink */
-};
-
-/*
- * How to style the output on the screen.
- */
-struct sty {
-	int		 italic; /* italic */
-	int		 strike; /* strikethrough */
-	int		 bold; /* bold */
-	int		 under; /* underline */
-	size_t		 bcolour; /* not inherited */
-	size_t		 colour; /* not inherited */
-	int		 override; /* don't inherit... */
-#define	OSTY_UNDER	 0x01 /* underlining */
-#define	OSTY_BOLD	 0x02 /* bold */
 };
 
 /*
@@ -544,7 +555,7 @@ rndr_buf_endline(struct term *term, struct lowdown_buf *out,
 		return 0;
 
 	term->col = 0;
-	term->lastspace = 0;
+	term->lastspace = term->lastspacepos = 0;
 	term->last_blank = 1;
 	return HBUF_PUTSL(out, "\n");
 }
@@ -846,7 +857,7 @@ rndr_buf_vspace(struct term *term, struct lowdown_buf *out,
 		}
 		term->last_blank++;
 		term->col = 0;
-		term->lastspace = 0;
+		term->lastspace = term->lastspacepos = 0;
 	}
 	return 1;
 }
@@ -931,21 +942,26 @@ rndr_buf_literal(struct term *term, struct lowdown_buf *out,
 }
 
 /*
- * Emit text in "in" the current line with output "out".
- * Use "n" and its ancestry to determine our context.
- * Return zero on failure, non-zero on success.
+ * Emit text in "in" the current line with output "out".  Use "n" and
+ * its ancestry to determine our context and "osty" if accepting a
+ * custom style for the text.  Return zero on failure, non-zero on
+ * success.
  */
 static int
 rndr_buf(struct term *term, struct lowdown_buf *out,
-	const struct lowdown_node *n, const struct lowdown_buf *in,
-	const struct sty *osty)
+    const struct lowdown_node *n, const struct lowdown_buf *in,
+    const struct sty *osty)
 {
-	size_t				 i = 0, len, cols, nlen;
-	ssize_t				 ret;
-	int				 needspace, hasspace,
-					 begin = 1, end = 0;
-	const char			*start;
-	const struct lowdown_node	*nn;
+	size_t			 i = 0, /* text byte pos */
+				 len, /* byte len of cur word */
+				 nlen; /* len and whitespace */
+	ssize_t			 ret; /* vis len of cur word */
+	int			 needspace, /* space at start of cur word */
+				 begin = 1, /* style must be opened */
+				 end = 0; /* style must be closed */
+	const char		*start;
+	struct lowdown_buf	*tmp;
+	const struct lowdown_node *nn;
 	
 	for (nn = n; nn != NULL; nn = nn->parent)
 		if (nn->type == LOWDOWN_BLOCKCODE ||
@@ -959,8 +975,6 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 		 */
 
 		needspace = isspace((unsigned char)in->data[i]);
-		hasspace = out->size > 0 &&
-			isspace((unsigned char)out->data[out->size - 1]);
 
 		/* Skip to next word, then see how long the word is. */
 
@@ -977,21 +991,51 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 		len = &in->data[i] - start;
 		nlen = len + (needspace ? 1 : 0);
 
-		/*
-		 * If we cross our maximum width and are preceded by a
-		 * space, then break.
-		 * (Leaving out the check for a space will cause
-		 * adjacent text or punctuation to have a preceding
-		 * newline.)
-		 * This will also unset the current style.
-		 */
+		/* The current word overruns the line boundary... */
 
-		if ((needspace || hasspace) &&
-		    term->col > 0 &&
+		if (term->col > 0 &&
 		    term->col + nlen >= term->width) {
-			if (!rndr_buf_endline(term, out, n, osty))
-				return 0;
-			end = 0;
+			if (needspace || term->col == term->lastspace) {
+				/*
+				 * This word starts with a space or the
+				 * last ended with one, and adding the
+				 * word would would overrun the margin,
+				 * so break the line.
+				 */
+				if (!rndr_buf_endline(term, out, n,
+				    osty))
+					return 0;
+				end = 0;
+			} else if (out->size) {
+				/*
+				 * This word doesn't start with a space,
+				 * and adding it overruns the margin, so
+				 * break at the last space.
+				 * This means copying over the remainder
+				 * of the word as the beginning of the
+				 * current one.
+				 */
+				tmp = hbuf_strndup(out->data +
+				    term->lastspacepos + 1, out->size -
+				    (term->lastspacepos + 1));
+				i = term->col - term->lastspace;
+				out->size = term->lastspacepos;
+				term->col = term->lastspace - 1;
+				if (!rndr_buf_endline(term, out, n,
+				    osty))
+					return 0;
+				if (!rndr_buf_startline(term, out, n,
+				    osty))
+					return 0;
+				term->lastspace = term->col;
+				term->lastspacepos = out->size - 1;
+				term->col += i;
+				hbuf_putb(out, tmp);
+				term->last_blank = 0;
+				hbuf_free(tmp);
+				begin = 0;
+				end = 1;
+			}
 		}
 
 		/*
@@ -1006,6 +1050,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 			if (!rndr_buf_startline(term, out, n, osty))
 				return 0;
 			term->lastspace = term->col;
+			term->lastspacepos = out->size - 1;
 			begin = 0;
 			end = 1;
 		} else if (!term->last_blank) {
@@ -1021,6 +1066,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 					return 0;
 				rndr_buf_advance(term, 1);
 				term->lastspace = term->col;
+				term->lastspacepos = out->size - 1;
 			}
 		}
 
@@ -1028,8 +1074,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 
 		if ((ret = rndr_escape(term, out, start, len)) < 0)
 			return 0;
-		cols = ret;
-		rndr_buf_advance(term, cols);
+		rndr_buf_advance(term, (size_t)ret);
 
 		/*
 		 * This is currently only used by table creation to keep tabs
@@ -1625,10 +1670,8 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 					 * without spaces.
 					 */
 
-					if (widths[i] >= vsz)
-						sz = widths[i] - vsz;
-					else
-						sz = 0;
+					assert(widths[i] >= vsz);
+					sz = widths[i] - vsz;
 
 					/*
 					 * Alignment is either
