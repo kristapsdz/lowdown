@@ -1,0 +1,66 @@
+    asdf asdf asdf asdf sadf asdf asdf asdf asdf asdf asdf asdf [0m
+    [3m12345abcdef[0mghijklm[1mnopqrstuv[0m
+    
+    asdf asdf asdf sadf asdf asdf asdf asdf asdf asdf asdf
+    [3m12345abcdef[0mghijklm[1mnopqrstuv[0m
+    
+    asdf asdf sadf asdf asdf asdf asdf asdf asdf asdf
+    [3m12345abcdef[0mghijklm[1mnopqrstuv[0m
+    
+    asdf sadf asdf asdf asdf asdf asdf asdf asdf
+    [3m12345abcdef[0mghijklm[1mnopqrstuv[0m
+    
+    sadf asdf asdf asdf asdf asdf asdf asdf [3m12345abcdef[0mghijklm[1mnopqrstuv[0m
+    
+    ]8;;https://foo.com\[1;93masdf sadf asdf asdf sadf asdf asdf asdf asdf asdf asdf asdf [0m]8;;\[0m]8;;\
+    ]8;;https://foo.com\[1;3;93m12345abcdef[0m]8;;\]8;;https://foo.com\[1;93mghijklm[0m]8;;\]8;;https://foo.com\[1;93mnopqrstuv[0m]8;;\ ]8;;https://foo.com\[4;32mhttps://foo.com[0m]8;;\
+    
+    ]8;;https://foo.com\[1;93msadf asdf asdf sadf asdf asdf asdf asdf asdf asdf asdf[0m]8;;\
+    ]8;;https://foo.com\[1;93m]8;;https://foo.com\[1;93m[0m]8;;\]8;;https://foo.com\[1;3;93m12345abcdef[0m]8;;\]8;;https://foo.com\[1;93mghijklm[0m]8;;\]8;;https://foo.com\[1;93mnopqrstuv[0m]8;;\ ]8;;https://foo.com\[4;32mhttps://foo.com[0m]8;;\
+    
+    ]8;;https://foo.com\[1;93masdf asdf sadf asdf asdf asdf asdf asdf asdf asdf[0m]8;;\
+    ]8;;https://foo.com\[1;93m]8;;https://foo.com\[1;93m[0m]8;;\]8;;https://foo.com\[1;3;93m12345abcdef[0m]8;;\]8;;https://foo.com\[1;93mghijklm[0m]8;;\]8;;https://foo.com\[1;93mnopqrstuv[0m]8;;\ ]8;;https://foo.com\[4;32mhttps://foo.com[0m]8;;\
+    
+    ]8;;https://foo.com\[1;93masdf sadf asdf asdf asdf asdf asdf asdf asdf[0m]8;;\
+    ]8;;https://foo.com\[1;93m]8;;https://foo.com\[1;93m[0m]8;;\]8;;https://foo.com\[1;3;93m12345abcdef[0m]8;;\]8;;https://foo.com\[1;93mghijklm[0m]8;;\]8;;https://foo.com\[1;93mnopqrstuv[0m]8;;\ ]8;;https://foo.com\[4;32mhttps://foo.com[0m]8;;\
+    
+    ]8;;https://foo.com\[1;93msadf asdf asdf asdf asdf asdf asdf asdf [0m]8;;\]8;;https://foo.com\[1;3;93m12345abcdef[0m]8;;\]8;;https://foo.com\[1;93mghijklm[0m]8;;\]8;;https://foo.com\[1;93mnopqrstuv[0m]8;;\[0m]8;;\
+    ]8;;https://foo.com\[4;32mhttps://foo.com[0m]8;;\
+    
+    ]8;;https://foo.com\[1;93masdf asdf asdf [0m]8;;\]8;;https://foo.com\[1;3;93m12345abcdef[0m]8;;\]8;;https://foo.com\[1;93mghijklm[0m]8;;\]8;;https://foo.com\[1;93mnopqrstuv[0m]8;;\ ]8;;https://foo.com\[4;32mhttps://foo.com[0m]8;;\
+    
+    [37m────────────────────────────────────────────────────────────────────[0m
+    
+    [93m  │ [0masdf asdf asdf asdf sadf asdf asdf asdf asdf asdf asdf asdf [0m
+    [93m  │ [0m[3m12345abcdef[0mghijklm[1mnopqrstuv[0m
+    [93m  │ [0m
+    [93m  │ [0masdf asdf asdf sadf asdf asdf asdf asdf asdf asdf asdf [0m
+    [93m  │ [0m[3m12345abcdef[0mghijklm[1mnopqrstuv[0m
+    [93m  │ [0m
+    [93m  │ [0masdf asdf sadf asdf asdf asdf asdf asdf asdf asdf
+    [93m  │ [0m[3m12345abcdef[0mghijklm[1mnopqrstuv[0m
+    [93m  │ [0m
+    [93m  │ [0masdf sadf asdf asdf asdf asdf asdf asdf asdf
+    [93m  │ [0m[3m12345abcdef[0mghijklm[1mnopqrstuv[0m
+    [93m  │ [0m
+    [93m  │ [0msadf asdf asdf asdf asdf asdf asdf asdf
+    [93m  │ [0m[3m12345abcdef[0mghijklm[1mnopqrstuv[0m
+    
+    [37m────────────────────────────────────────────────────────────────────[0m
+    
+    [93m  │ [0m]8;;https://foo.com\[1;93masdf sadf asdf asdf sadf asdf asdf asdf asdf asdf asdf asdf [0m]8;;\[0m]8;;\
+    [93m  │ [0m]8;;https://foo.com\[1;3;93m12345abcdef[0m]8;;\]8;;https://foo.com\[1;93mghijklm[0m]8;;\]8;;https://foo.com\[1;93mnopqrstuv[0m]8;;\ ]8;;https://foo.com\[4;32mhttps://foo.com[0m]8;;\
+    [93m  │ [0m
+    [93m  │ [0m]8;;https://foo.com\[1;93msadf asdf asdf sadf asdf asdf asdf asdf asdf asdf asdf [0m]8;;\[0m]8;;\
+    [93m  │ [0m]8;;https://foo.com\[1;3;93m12345abcdef[0m]8;;\]8;;https://foo.com\[1;93mghijklm[0m]8;;\]8;;https://foo.com\[1;93mnopqrstuv[0m]8;;\ ]8;;https://foo.com\[4;32mhttps://foo.com[0m]8;;\
+    [93m  │ [0m
+    [93m  │ [0m]8;;https://foo.com\[1;93masdf asdf sadf asdf asdf asdf asdf asdf asdf asdf[0m]8;;\
+    [93m  │ [0m]8;;https://foo.com\[1;93m]8;;https://foo.com\[1;93m[0m]8;;\]8;;https://foo.com\[1;3;93m12345abcdef[0m]8;;\]8;;https://foo.com\[1;93mghijklm[0m]8;;\]8;;https://foo.com\[1;93mnopqrstuv[0m]8;;\ ]8;;https://foo.com\[4;32mhttps://foo.com[0m]8;;\
+    [93m  │ [0m
+    [93m  │ [0m]8;;https://foo.com\[1;93masdf sadf asdf asdf asdf asdf asdf asdf asdf[0m]8;;\
+    [93m  │ [0m]8;;https://foo.com\[1;93m]8;;https://foo.com\[1;93m[0m]8;;\]8;;https://foo.com\[1;3;93m12345abcdef[0m]8;;\]8;;https://foo.com\[1;93mghijklm[0m]8;;\]8;;https://foo.com\[1;93mnopqrstuv[0m]8;;\ ]8;;https://foo.com\[4;32mhttps://foo.com[0m]8;;\
+    [93m  │ [0m
+    [93m  │ [0m]8;;https://foo.com\[1;93msadf asdf asdf asdf asdf asdf asdf asdf[0m]8;;\
+    [93m  │ [0m]8;;https://foo.com\[1;93m]8;;https://foo.com\[1;93m[0m]8;;\]8;;https://foo.com\[1;3;93m12345abcdef[0m]8;;\]8;;https://foo.com\[1;93mghijklm[0m]8;;\]8;;https://foo.com\[1;93mnopqrstuv[0m]8;;\ ]8;;https://foo.com\[4;32mhttps://foo.com[0m]8;;\
+    [93m  │ [0m
+    [93m  │ [0m]8;;https://foo.com\[1;93masdf asdf asdf [0m]8;;\]8;;https://foo.com\[1;3;93m12345abcdef[0m]8;;\]8;;https://foo.com\[1;93mghijklm[0m]8;;\]8;;https://foo.com\[1;93mnopqrstuv[0m]8;;\ ]8;;https://foo.com\[4;32mhttps://foo.com[0m]8;;\

@@ -76,6 +76,7 @@ struct term {
 	size_t			  col; /* output column from zero */
 	size_t			  lastspace; /* for maxvis, last space col */
 	size_t			  lastspacepos; /* byte offs of lastspace */
+	const struct lowdown_node*lastspacen; /* node at lastspace */
 	size_t			  maxvis; /* max visible word in last */
 	struct table_stats	 *table_stats; /* NULL if not collecting */
 	ssize_t			  last_blank; /* \n preceding or -1 (start) */
@@ -556,6 +557,7 @@ rndr_buf_endline(struct term *term, struct lowdown_buf *out,
 
 	term->col = 0;
 	term->lastspace = term->lastspacepos = 0;
+	term->lastspacen = n;
 	term->last_blank = 1;
 	return HBUF_PUTSL(out, "\n");
 }
@@ -858,6 +860,7 @@ rndr_buf_vspace(struct term *term, struct lowdown_buf *out,
 		term->last_blank++;
 		term->col = 0;
 		term->lastspace = term->lastspacepos = 0;
+		term->lastspacen = n;
 	}
 	return 1;
 }
@@ -1021,19 +1024,23 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 				i = term->col - term->lastspace;
 				out->size = term->lastspacepos;
 				term->col = term->lastspace - 1;
-				if (!rndr_buf_endline(term, out, n,
-				    osty))
+				if (!rndr_buf_endline(term, out,
+				    term->lastspacen, NULL))
 					return 0;
-				if (!rndr_buf_startline(term, out, n,
-				    osty))
+				if (!rndr_buf_startline(term, out,
+				    term->lastspacen, NULL))
 					return 0;
+				term->col += i;
+				term->last_blank = 0;
+				if (!rndr_buf_startwords(term, out,
+				    term->lastspacen, NULL))
+					return 0;
+				hbuf_putb(out, tmp);
 				term->lastspace = term->col;
 				term->lastspacepos = out->size - 1;
-				term->col += i;
-				hbuf_putb(out, tmp);
-				term->last_blank = 0;
+				term->lastspacen = n;
 				hbuf_free(tmp);
-				begin = 0;
+				begin = 1;
 				end = 1;
 			}
 		}
@@ -1051,6 +1058,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 				return 0;
 			term->lastspace = term->col;
 			term->lastspacepos = out->size - 1;
+			term->lastspacen = n;
 			begin = 0;
 			end = 1;
 		} else if (!term->last_blank) {
@@ -1067,6 +1075,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 				rndr_buf_advance(term, 1);
 				term->lastspace = term->col;
 				term->lastspacepos = out->size - 1;
+				term->lastspacen = n;
 			}
 		}
 
