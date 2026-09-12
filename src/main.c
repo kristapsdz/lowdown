@@ -337,6 +337,7 @@ main(int argc, char *argv[])
 		{ "gemini-link-inline",	no_argument, 	&afl, LOWDOWN_GEMINI_LINK_IN },
 		{ "gemini-metadata",	no_argument, 	&afl, LOWDOWN_GEMINI_METADATA },
 
+		{ "term-no-tablewrap",	no_argument, 	&afl, LOWDOWN_TERM_NOTABLEWRAP },
 		{ "term-no-ansi",	no_argument, 	&afl, LOWDOWN_TERM_NOANSI },
 		{ "term-no-colour",	no_argument, 	&afl, LOWDOWN_TERM_NOCOLOUR },
 		{ "term-no-rellinks",	no_argument, 	&afl, LOWDOWN_NORELLINK },

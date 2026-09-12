@@ -1552,9 +1552,9 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 	
 	/* Algorithm to compute width of columns. */
 
-
-	if (!rndr_table_width_algo(st, widths, n->rndr_table.columns,
-	    minwidths, n))
+	if (!(st->opts & LOWDOWN_TERM_NOTABLEWRAP) &&
+	    !rndr_table_width_algo(st, widths, n->rndr_table.columns,
+	     minwidths, n))
 		goto out;
 
 	/*
