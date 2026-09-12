@@ -1995,4 +1995,19 @@
 			</p>
 		</aside>
 	</article>
+	<article data-sblg-article="1" data-sblg-tags="version">
+		<header>
+			<h1>3.1.2</h1>
+			<address>Kristaps Dzonsons</address>
+			<time datetime="2026-09-12">2026-09-12</time>
+		</header>
+		<aside>
+			<p>
+				Add table wrapping in <b>-tterm</b> mode, where long columns are
+				broken at word boundaries when exceeding the document width.
+				This uses a simple algorithm at the cost of an extra rendering step.
+				Can be disabled with <b>--term-no-tablewrap</b>.
+			</p>
+		</aside>
+	</article>
 </articles>
