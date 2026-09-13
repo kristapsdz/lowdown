@@ -1997,9 +1997,9 @@
 	</article>
 	<article data-sblg-article="1" data-sblg-tags="version">
 		<header>
-			<h1>3.1.2</h1>
+			<h1>3.2.1</h1>
 			<address>Kristaps Dzonsons</address>
-			<time datetime="2026-09-12">2026-09-12</time>
+			<time datetime="2026-09-13">2026-09-13</time>
 		</header>
 		<aside>
 			<p>
@@ -2007,6 +2007,10 @@
 				broken at word boundaries when exceeding the document width.
 				This uses a simple algorithm at the cost of an extra rendering step.
 				Can be disabled with <b>--term-no-tablewrap</b>.
+			</p>
+			<p>
+				Also add <b>--term-no-style</b>, and have <b>--term-no-ansi</b>
+				instead fall back to using backspace encoding instead of ANSI.
 			</p>
 		</aside>
 	</article>

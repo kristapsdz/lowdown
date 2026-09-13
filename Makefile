@@ -11,12 +11,12 @@ sinclude Makefile.local
 # do not.  Let the library guide our versioning until a better way is
 # thought out.
 
-VERSION		 = 3.1.2
+VERSION		 = 3.2.1
 
 # This is the major number of VERSION.  It might later become
 # MAJOR.MINOR, if the library moves a lot.
 
-LIBVER		 = 4
+LIBVER		 = 5
 
 OBJS		 = src/parse/autolink.o \
 		   src/parse/document.o \
