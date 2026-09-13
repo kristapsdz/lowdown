@@ -395,7 +395,7 @@ struct	lowdown_opts {
 #define	LOWDOWN_GEMINI_LINK_IN	  0x10000 /* links inline */
 #define LOWDOWN_NOLINK	  	  0x20000 /* don't show URLs */
 #define LOWDOWN_HTML_CUSTOM_ATTRS 0x40000 /* unknown HTML attrs */
-/* Missing			  0x80000 */
+#define LOWDOWN_TERM_NOSTYLE	  0x80000 /* no terminal styles */
 #define LOWDOWN_GEMINI_METADATA	  0x100000 /* show metadata */
 #define	LOWDOWN_GEMINI_LINK_NOREF 0x200000 /* for !inline, no names */
 #define	LOWDOWN_GEMINI_LINK_ROMAN 0x400000 /* roman link names */

@@ -223,6 +223,8 @@ rndr_escape_buf(const struct term *st, struct lowdown_buf *out,
 
 	if (!(st->opts & LOWDOWN_TERM_NOANSI))
 		return hbuf_put(out, buf, sz);
+	if (st->opts & LOWDOWN_TERM_NOSTYLE)
+		return hbuf_put(out, buf, sz);
 	if (!(st->cursty.bold || st->cursty.under || st->cursty.italic))
 		return hbuf_put(out, buf, sz);
 
@@ -339,6 +341,8 @@ static int
 rndr_buf_unstyle(struct term *st, struct lowdown_buf *out,
     const struct sty *s)
 {
+	if (st->opts & LOWDOWN_TERM_NOSTYLE)
+		return 1;
 	memset(&st->cursty, 0, sizeof(struct sty));
 	if (st->opts & LOWDOWN_TERM_NOANSI)
 		return 1;
@@ -356,7 +360,8 @@ rndr_buf_osc8_open(const struct term *term, struct lowdown_buf *out,
 {
 	const struct lowdown_buf	*uri = NULL;
 
-	if (term->opts & LOWDOWN_TERM_NOANSI)
+	if ((term->opts & LOWDOWN_TERM_NOANSI) ||
+	    (term->opts & LOWDOWN_TERM_NOSTYLE))
 		return 1;
 
 	if (n->type == LOWDOWN_LINK_AUTO)
@@ -386,7 +391,8 @@ static int
 rndr_buf_osc8_close(const struct term *term, struct lowdown_buf *out)
 {
 
-	if (term->opts & LOWDOWN_TERM_NOANSI)
+	if ((term->opts & LOWDOWN_TERM_NOANSI) ||
+	    (term->opts & LOWDOWN_TERM_NOSTYLE))
 		return 1;
 
 	/*
@@ -410,6 +416,9 @@ rndr_buf_style(struct term *st, struct lowdown_buf *out,
     const struct sty *s)
 {
 	int	has = 0;
+
+	if (st->opts & LOWDOWN_TERM_NOSTYLE)
+		return 1;
 
 	st->cursty = *s;
 

@@ -339,6 +339,7 @@ main(int argc, char *argv[])
 
 		{ "term-no-tablewrap",	no_argument, 	&afl, LOWDOWN_TERM_NOTABLEWRAP },
 		{ "term-no-ansi",	no_argument, 	&afl, LOWDOWN_TERM_NOANSI },
+		{ "term-no-style",	no_argument, 	&afl, LOWDOWN_TERM_NOSTYLE },
 		{ "term-no-colour",	no_argument, 	&afl, LOWDOWN_TERM_NOCOLOUR },
 		{ "term-no-rellinks",	no_argument, 	&afl, LOWDOWN_NORELLINK },
 		{ "term-no-links",	no_argument, 	&afl, LOWDOWN_NOLINK },
