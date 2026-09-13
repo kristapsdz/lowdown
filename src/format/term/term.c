@@ -177,6 +177,9 @@ rndr(struct lowdown_buf *, struct term *, const struct lowdown_node *);
  * printable columns.  If the sequence is bad, return the number of raw
  * bytes to print.  Return <0 on failure (memory), >=0 otherwise with
  * the number of printable columns.
+ *
+ * This ONLY affects the lookaside buffer in "term".  It doesn't change
+ * any printing state beyond that.
  */
 static ssize_t
 rndr_mbswidth(struct term *term, const char *buf, size_t sz)
@@ -280,8 +283,8 @@ rndr_escape_buf(const struct term *st, struct lowdown_buf *out,
  * failure (memory), >=0 otherwise.
  */
 static ssize_t
-rndr_escape(struct term *st, struct lowdown_buf *out,
-    const char *buf, size_t sz)
+rndr_escape(struct term *st, struct lowdown_buf *out, const char *buf,
+    size_t sz)
 {
 	size_t		 i, start = 0, cols = 0;
 	ssize_t		 ret;
@@ -1041,18 +1044,23 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 	size_t			 i = 0, /* text byte pos */
 				 len, /* byte len of cur word */
 				 nlen; /* len and whitespace */
-	ssize_t			 ret; /* vis len of cur word */
+	ssize_t			 vis; /* vis len of cur word */
 	int			 needspace, /* space at start of cur word */
 				 begin = 1, /* style must be opened */
-				 end = 0; /* style must be closed */
-	const char		*start;
-	struct lowdown_buf	*tmp;
+				 end = 0, /* style must be closed */
+				 rc = 0; /* return code */
+	const char		*start; /* start of word in bytes */
+	struct lowdown_buf	*tmp = NULL, /* line overrun buffer */
+				*word = NULL; /* current word buffer */
 	const struct lowdown_node *nn;
 	
 	for (nn = n; nn != NULL; nn = nn->parent)
 		if (nn->type == LOWDOWN_BLOCKCODE ||
 	  	    nn->type == LOWDOWN_BLOCKHTML)
 			return rndr_buf_literal(term, out, n, in, osty);
+
+	if ((word = hbuf_new(32)) == NULL)
+		goto out;
 
 	while (i < in->size) {
 		/*
@@ -1074,8 +1082,11 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 
 		/* Get length and adjusted length (includes space). */
 
+		hbuf_truncate(word);
 		len = &in->data[i] - start;
-		nlen = len + (needspace ? 1 : 0);
+		if ((vis = rndr_escape(term, word, start, len)) < 0)
+			goto out;
+		nlen = vis + (needspace ? 1 : 0);
 
 		/* The current word overruns the line boundary... */
 
@@ -1090,7 +1101,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 				 */
 				if (!rndr_buf_endline(term, out, n,
 				    osty))
-					return 0;
+					goto out;
 				end = 0;
 			} else if (out->size) {
 				/*
@@ -1101,6 +1112,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 				 * of the word as the beginning of the
 				 * current one.
 				 */
+				assert(tmp == NULL);
 				tmp = hbuf_strndup(out->data +
 				    term->lastspacepos + 1, out->size -
 				    (term->lastspacepos + 1));
@@ -1109,20 +1121,21 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 				term->col = term->lastspace - 1;
 				if (!rndr_buf_endline(term, out,
 				    term->lastspacen, NULL))
-					return 0;
+					goto out;
 				if (!rndr_buf_startline(term, out,
 				    term->lastspacen, NULL))
-					return 0;
+					goto out;
 				term->col += i;
 				term->last_blank = 0;
 				if (!rndr_buf_startwords(term, out,
 				    term->lastspacen, NULL))
-					return 0;
+					goto out;
 				hbuf_putb(out, tmp);
 				term->lastspace = term->col;
 				term->lastspacepos = out->size - 1;
 				term->lastspacen = n;
 				hbuf_free(tmp);
+				tmp = NULL;
 				begin = 1;
 				end = 1;
 			}
@@ -1138,7 +1151,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 
 		if (term->last_blank && len) {
 			if (!rndr_buf_startline(term, out, n, osty))
-				return 0;
+				goto out;
 			term->lastspace = term->col;
 			term->lastspacepos = out->size - 1;
 			term->lastspacen = n;
@@ -1148,13 +1161,13 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 			if (begin && len) {
 				if (!rndr_buf_startwords
 				    (term, out, n, osty))
-					return 0;
+					goto out;
 				begin = 0;
 				end = 1;
 			}
 			if (needspace) {
 				if (!HBUF_PUTSL(out, " "))
-					return 0;
+					goto out;
 				rndr_buf_advance(term, 1);
 				term->lastspace = term->col;
 				term->lastspacepos = out->size - 1;
@@ -1164,9 +1177,8 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 
 		/* Emit the word itself. */
 
-		if ((ret = rndr_escape(term, out, start, len)) < 0)
-			return 0;
-		rndr_buf_advance(term, (size_t)ret);
+		hbuf_putb(out, word);
+		rndr_buf_advance(term, vis);
 
 		/*
 		 * This is currently only used by table creation to keep tabs
@@ -1183,10 +1195,14 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 	if (end) {
 		assert(begin == 0);
 		if (!rndr_buf_endwords(term, out, n, osty))
-			return 0;
+			goto out;
 	}
 
-	return 1;
+	rc = 1;
+out:
+	hbuf_free(word);
+	hbuf_free(tmp);
+	return rc;
 }
 
 /*
