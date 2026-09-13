@@ -71,8 +71,16 @@ struct sty {
 #define	OSTY_BOLD	 0x02 /* bold */
 };
 
+/*
+ * The main terminal state-holding structure.  This is strongly tied to
+ * what's currently being printed in the rndr_buf() routine.  Thus,
+ * directly or indirectly calling rndr_buf() out-of-band, like in
+ * formatting tables, should involve saving and subsequently restoring
+ * the state.
+ */
 struct term {
 	unsigned int		  opts; /* oflags from lowdown_cfg */
+	struct sty		  cursty; /* current style being output */
 	size_t			  col; /* output column from zero */
 	size_t			  lastspace; /* for maxvis, last space col */
 	size_t			  lastspacepos; /* byte offs of lastspace */
@@ -200,16 +208,78 @@ rndr_mbswidth(struct term *term, const char *buf, size_t sz)
 	return csz == (size_t)-1 ? sz : csz;
 }
 
+/*
+ * Send the UTF-8 encoded buffer "buf" of size "sz" to the output
+ * buffer.  If not ANSI encoding, fall back to using old-school
+ * backspace encoding.  Return zero on failure (memory), non-zero on
+ * success.
+ */
+static int
+rndr_escape_buf(const struct term *st, struct lowdown_buf *out,
+    const char *buf, size_t sz)
+{
+	char	mb[5];
+	size_t	i, j, mbsz;
+
+	if (!(st->opts & LOWDOWN_TERM_NOANSI))
+		return hbuf_put(out, buf, sz);
+	if (!(st->cursty.bold || st->cursty.under || st->cursty.italic))
+		return hbuf_put(out, buf, sz);
+
+	mbsz = 1;
+
+	for (i = 0; i < sz; ) {
+		/*
+		 * See how many bytes are going to be in the sequence by
+		 * looking at the UTF-8 initial bits.  If zero, it's
+		 * ASCII.  Fall back to a single-byte sequence if we've
+		 * jumped into a multi-byte.
+		 */
+		if (!((unsigned char)buf[i] & (1u << 7)))
+			mbsz = 1;
+		else if (!((unsigned char)buf[i] & (1u << 5)))
+			mbsz = 2;
+		else if (!((unsigned char)buf[i] & (1u << 4)))
+			mbsz = 3;
+		else if (!((unsigned char)buf[i] & (1u << 3)))
+			mbsz = 4;
+		else
+			mbsz = 1;
+
+		/* Record the multibyte. */
+
+		assert(mbsz < sizeof(mb));
+		for (j = 0; j < mbsz && i < sz; j++, i++) 
+			mb[j] = buf[i];
+		mb[j] = '\0';
+
+		/*
+		 * Pring the byte sequence around a backspace.  If this
+		 * is multibyte, print all multibytes around the
+		 * backspace (don't break up the multibyte sequence).
+		 */
+
+		if (st->cursty.bold && !hbuf_puts(out, mb))
+			return 0;
+		else if (!st->cursty.bold && !HBUF_PUTSL(out, "_"))
+			return 0;
+		if (!HBUF_PUTSL(out, "\b") || !hbuf_puts(out, mb))
+			return 0;
+	}
+
+	return 1;
+}
 
 /*
- * Copy the buffer into "out", escaping along the width.
+ * Copy the buffer into "out", escaping along the width.  Only called by
+ * rndr_buf() and rndr_buf_literal(), so possibly affecting "term".
  * Returns the number of actual printed columns, which in the case of
- * multi-byte glyphs, may be less than the given bytes.
- * Return <0 on failure (memory), >= 0 otherwise.
+ * multi-byte glyphs, may be less than the given bytes.  Return <0 on
+ * failure (memory), >=0 otherwise.
  */
 static ssize_t
-rndr_escape(struct term *term, struct lowdown_buf *out,
-	const char *buf, size_t sz)
+rndr_escape(struct term *st, struct lowdown_buf *out,
+    const char *buf, size_t sz)
 {
 	size_t		 i, start = 0, cols = 0;
 	ssize_t		 ret;
@@ -220,12 +290,13 @@ rndr_escape(struct term *term, struct lowdown_buf *out,
 	for (i = 0; i < sz; i++) {
 		ch = (unsigned char)buf[i];
 		if (ch < 0x80 && iscntrl(ch)) {
-			ret = rndr_mbswidth (term, buf + start,
+			ret = rndr_mbswidth (st, buf + start,
 				i - start);
 			if (ret < 0)
 				return -1;
 			cols += ret;
-			if (!hbuf_put(out, buf + start, i - start))
+			if (!rndr_escape_buf(st, out, buf + start,
+			    i - start))
 				return -1;
 			start = i + 1;
 		}
@@ -234,11 +305,11 @@ rndr_escape(struct term *term, struct lowdown_buf *out,
 	/* Remaining bytes. */
 
 	if (start < sz) {
-		ret = rndr_mbswidth(term, buf + start, sz - start);
+		ret = rndr_mbswidth(st, buf + start, sz - start);
 		if (ret < 0)
 			return -1;
 		cols += ret;
-		if (!hbuf_put(out, buf + start, sz - start))
+		if (!rndr_escape_buf(st, out, buf + start, sz - start))
 			return -1;
 	}
 
@@ -260,16 +331,16 @@ rndr_free_footnotes(struct term *st)
 }
 
 /*
- * If there's an active style in "s" or s is NULL), then emit an
- * unstyling escape sequence.  Return zero on failure (memory), non-zero
- * on success.
+ * Unset the current terminal style "cursty", and if there's an active
+ * style in "s" or s is NULL), then emit an unstyling escape sequence.
+ * Return zero on failure (memory), non-zero on success.
  */
 static int
-rndr_buf_unstyle(const struct term *term,
-	struct lowdown_buf *out, const struct sty *s)
+rndr_buf_unstyle(struct term *st, struct lowdown_buf *out,
+    const struct sty *s)
 {
-
-	if (term->opts & LOWDOWN_TERM_NOANSI)
+	memset(&st->cursty, 0, sizeof(struct sty));
+	if (st->opts & LOWDOWN_TERM_NOANSI)
 		return 1;
 	if (s != NULL && !STY_NONEMPTY(s))
 		return 1;
@@ -329,17 +400,20 @@ rndr_buf_osc8_close(const struct term *term, struct lowdown_buf *out)
 }
 
 /*
- * Output style "s" into "out" as an ANSI escape.  If "s" does not have
- * any style information or is NULL, output nothing.  Return zero on
- * failure (memory), non-zero on success.
+ * Output style "s" into "out" as an ANSI escape (if requested).  Saves
+ * the current style in "cursty" of the terminal struct.  If "s" does
+ * not have any style information or is NULL, output nothing.  Return
+ * zero on failure (memory), non-zero on success.
  */
 static int
-rndr_buf_style(const struct term *term,
-	struct lowdown_buf *out, const struct sty *s)
+rndr_buf_style(struct term *st, struct lowdown_buf *out,
+    const struct sty *s)
 {
 	int	has = 0;
 
-	if (term->opts & LOWDOWN_TERM_NOANSI)
+	st->cursty = *s;
+
+	if (st->opts & LOWDOWN_TERM_NOANSI)
 		return 1;
 	if (s == NULL || !STY_NONEMPTY(s))
 		return 1;
@@ -369,7 +443,7 @@ rndr_buf_style(const struct term *term,
 		if (!HBUF_PUTSL(out, "9"))
 			return 0;
 	}
-	if (s->bcolour && !(term->opts & LOWDOWN_TERM_NOCOLOUR) &&
+	if (s->bcolour && !(st->opts & LOWDOWN_TERM_NOCOLOUR) &&
 	    ((s->bcolour >= 40 && s->bcolour <= 47) ||
 	     (s->bcolour >= 100 && s->bcolour <= 107))) {
 		if (has++ && !HBUF_PUTSL(out, ";"))
@@ -377,7 +451,7 @@ rndr_buf_style(const struct term *term,
 		if (!hbuf_printf(out, "%zu", s->bcolour))
 			return 0;
 	}
-	if (s->colour && !(term->opts & LOWDOWN_TERM_NOCOLOUR) &&
+	if (s->colour && !(st->opts & LOWDOWN_TERM_NOCOLOUR) &&
 	    ((s->colour >= 30 && s->colour <= 37) ||
 	     (s->colour >= 90 && s->colour <= 97))) {
 		if (has++ && !HBUF_PUTSL(out, ";"))
@@ -490,19 +564,19 @@ rndr_buf_endstyle(const struct lowdown_node *n)
  * on success.
  */
 static int
-rndr_buf_endwords(struct term *term, struct lowdown_buf *out,
-	const struct lowdown_node *n, const struct sty *osty)
+rndr_buf_endwords(struct term *st, struct lowdown_buf *out,
+    const struct lowdown_node *n, const struct sty *osty)
 {
 	/*
 	 * If an OSC8 hyperlink should be closed, do it now (it doesn't
 	 * matter where this appears in relation to other styling).
 	 */
 
-	if (rndr_buf_endstyle(n) && !rndr_buf_unstyle(term, out, NULL))
+	if (rndr_buf_endstyle(n) && !rndr_buf_unstyle(st, out, NULL))
         	return 0;
-	if (osty != NULL && !rndr_buf_unstyle(term, out, osty))
+	if (osty != NULL && !rndr_buf_unstyle(st, out, osty))
         	return 0;
-	if (term->in_link && !rndr_buf_osc8_close(term, out))
+	if (st->in_link && !rndr_buf_osc8_close(st, out))
         	return 0;
 	return 1;
 }
