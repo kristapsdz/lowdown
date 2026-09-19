@@ -958,7 +958,6 @@ rndr_buf_vspace(struct term *term, struct lowdown_buf *out,
 static void
 rndr_buf_startwords_style(const struct lowdown_node *n, struct sty *s)
 {
-
 	if (n->parent != NULL)
 		rndr_buf_startwords_style(n->parent, s);
 	rndr_node_style(s, n);
@@ -1042,6 +1041,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
     const struct sty *osty)
 {
 	size_t			 i = 0, /* text byte pos */
+				 sz, /* temporary */
 				 len, /* byte len of cur word */
 				 nlen; /* len and whitespace */
 	ssize_t			 vis; /* vis len of cur word */
@@ -1116,7 +1116,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 				tmp = hbuf_strndup(out->data +
 				    term->lastspacepos + 1, out->size -
 				    (term->lastspacepos + 1));
-				i = term->col - term->lastspace;
+				sz = term->col - term->lastspace;
 				out->size = term->lastspacepos;
 				term->col = term->lastspace - 1;
 				if (!rndr_buf_endline(term, out,
@@ -1125,7 +1125,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 				if (!rndr_buf_startline(term, out,
 				    term->lastspacen, NULL))
 					goto out;
-				term->col += i;
+				term->col += sz;
 				term->last_blank = 0;
 				if (!rndr_buf_startwords(term, out,
 				    term->lastspacen, NULL))
