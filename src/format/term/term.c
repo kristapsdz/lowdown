@@ -1439,12 +1439,12 @@ rndr_table_width_algo(struct term *st, size_t *widths, size_t cols,
 	divisor = sz / (double)avail;
 	sz = 0;
 	for (i = 0; i < cols; i++) {
-		if (widths[i] / divisor < (double)minwidths[i]) {
+		widths[i] = widths[i] / divisor;
+		if (widths[i] <= minwidths[i] + 1) {
 			widths[i] = minwidths[i] + 1;
 			minwidthsz += widths[i];
 			minwidthcols++;
-		} else
-			widths[i] = widths[i] / divisor;
+		}
 
 		if (widths[i] < 2)
 			widths[i] = 2;
@@ -1478,6 +1478,8 @@ rndr_table_width_algo(struct term *st, size_t *widths, size_t cols,
 					continue;
 				}
 				widths[i] = widths[i] / divisor;
+				if (widths[i] < minwidths[i] + 1)
+					widths[i] = minwidths[i] + 1;
 				if (widths[i] < 2)
 					widths[i] = 2;
 				sz += widths[i];
@@ -1525,6 +1527,41 @@ rndr_table_drain(struct term *term, const struct lowdown_buf *cell,
 }
 
 /*
+ * For tables, set the "struct term" conditions as if this were a blank
+ * page, with zero padding, and the given width with nothing prior.
+ * Save the current situation first in "stsv".  This lets us calculate
+ * widths without any extra information.
+ */
+static void
+rndr_table_reset(struct term *st, struct term *stsv, size_t width)
+{
+	*stsv = *st;
+	st->last_blank = 0;
+	st->width = width;
+	st->col = 1;
+	st->lastspace = 1;
+	st->lastspacepos = 1;
+	st->lastspacen = NULL;
+	st->hpadding = 0;
+}
+
+/*
+ * Restore the values reset in rndr_table_reset() to those in the saved
+ * structure.
+ */
+static void
+rndr_table_restore(struct term *st, const struct term *saved)
+{
+	st->last_blank = saved->last_blank;
+	st->lastspace = saved->lastspace;
+	st->lastspacepos = saved->lastspacepos;
+	st->lastspacen = saved->lastspacen;
+	st->col = saved->col;
+	st->width = saved->width;
+	st->hpadding = saved->hpadding;
+}
+
+/*
  * Render a table.  This is a particularly difficult function because
  * the table is sized based on its rendered contents, which may need to
  * be reflowed to fit the terminal width.
@@ -1534,6 +1571,7 @@ static int
 rndr_table(struct lowdown_buf *ob, struct term *st,
     const struct lowdown_node *n)
 {
+	struct term			  stsv; /* saved table state */
 	struct table_stats		  table_stats;
 	size_t				 *widths = NULL, /* visible widths */
 					 *minwidths = NULL, /* min visible */
@@ -1544,20 +1582,15 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 					 *cell; /* cell in parse */
 	struct lowdown_buf		 *rowtmp = NULL; /* row rndr */
 	struct lowdown_buf		**cells = NULL; /* cell rndr */
-	size_t				  col, /* save: st->col */
-					  i, j,
-					  maxcol, /* save: st->width */
-					  hpad, /* save: st->hpadding */
+	size_t				  i, j, /* temporary */
 					  sz, /* space left in col */
 					  hasnextrow, /* more cell spans */
-					  ls, /* save: lastspace */
 					  npos,
 					  vsz,
 					  nsz,
 					  stackpos = st->stackpos,
 					  currow;
 	const size_t			  footsz = st->footsz; /* saved size */
-	ssize_t			 	  last_blank; /* save: st->last_blank */
 	unsigned int			  flags; /* table flags */
 	int				  rc = 0; /* return code */
 
@@ -1588,14 +1621,10 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 		TAILQ_FOREACH(row, &top->children, entries)
 			TAILQ_FOREACH(cell, &row->children, entries) {
 				hbuf_truncate(rowtmp);
-				last_blank = st->last_blank;
-				col = st->col;
-				st->last_blank = 0;
-				st->col = 1;
+				rndr_table_reset(st, &stsv, st->width);
 				if (!rndr(rowtmp, st, cell))
 					goto out;
-				st->last_blank = last_blank;
-				st->col = col;
+				rndr_table_restore(st, &stsv);
 			}
 	}
 
@@ -1612,41 +1641,19 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 	TAILQ_FOREACH(top, &n->children, entries)
 		TAILQ_FOREACH(row, &top->children, entries)
 			TAILQ_FOREACH(cell, &row->children, entries) {
-				/*
-				 * Simulate that we're starting within
-				 * the line by unsetting last_blank,
-				 * having a non-zero column, and an
-				 * infinite maximum column to prevent
-				 * line wrapping.
-				 */
-				maxcol = st->width;
-				last_blank = st->last_blank;
-				col = st->col;
-				ls = st->lastspace;
-				st->last_blank = 0;
-				st->width = SIZE_MAX;
-				st->col = 1;
-				st->lastspace = 1;
+				hbuf_truncate(rowtmp);
 				/* Collect max visible word. */
 				st->maxvis = 0;
-
-				hbuf_truncate(rowtmp);
+				rndr_table_reset(st, &stsv, SIZE_MAX);
 				if (!rndr(rowtmp, st, cell))
 					goto out;
-
 				i = cell->rndr_table_cell.col;
 				assert(i < n->rndr_table.columns);
 				if (widths[i] < st->col)
 					widths[i] = st->col;
 				if (minwidths[i] < st->maxvis)
 					minwidths[i] = st->maxvis;
-
-				/* Reset... */
-
-				st->last_blank = last_blank;
-				st->col = col;
-				st->width = maxcol;
-				st->lastspace = ls;
+				rndr_table_restore(st, &stsv);
 			}
 	
 	/* Algorithm to compute width of columns. */
@@ -1688,15 +1695,10 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 				    (cells[i] = hbuf_new(128)) == NULL)
 					goto out;
 				hbuf_truncate(cells[i]);
+				rndr_table_reset(st, &stsv, widths[i]);
 
-				hpad = st->hpadding;
-				maxcol = st->width;
-				last_blank = st->last_blank;
-				col = st->col;
-
-				st->hpadding = 0;
+				/* Normal line operation. */
 				st->last_blank = 1;
-				st->width = widths[i];
 				st->col = 0;
 
 				/*
@@ -1722,11 +1724,7 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 
 				lines[i] = table_stats.save_cols;
 				st->table_stats = NULL;
-
-				st->hpadding = hpad;
-				st->last_blank = last_blank;
-				st->col = col;
-				st->width = maxcol;
+				rndr_table_restore(st, &stsv);
 			}
 
 			/* Reset the sub-stack. */
