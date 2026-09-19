@@ -567,7 +567,7 @@ parse_inline(struct lowdown_doc *doc, char *data, size_t size)
 	struct lowdown_node 	*n;
 
 	memset(&work, 0, sizeof(struct lowdown_buf));
-	
+
 	while (i < size) {
 		/* Copying non-macro chars into the output. */
 
@@ -2228,36 +2228,6 @@ is_fencedcode(const struct lowdown_doc *doc, const char *data,
 }
 
 /*
- * Like is_fencecode(), but testing for the existence of a full block.
- * Returns TRUE if the fenced code exists, FALSE otherwise.
- */
-static size_t
-is_fencedcode_block(const struct lowdown_doc *doc, const char *data,
-    size_t size)
-{
-	size_t	 i;
-
-	/* Return now if fenced code not supported. */
-
-	if (!(doc->ext_flags & LOWDOWN_FENCED))
-		return 0;
-
-	if ((i = is_fencedcode(doc, data, size, NULL, NULL)) == 0)
-		return 0;
-
-	while (i < size) {
-		while (i < size && data[i] != '\n')
-			i++;
-		while (i < size && data[i] == '\n')
-			i++;
-		if (is_fencedcode(doc, data + i, size - i, NULL, NULL))
-			return 1;
-	}
-
-	return 0;
-}
-
-/*
  * Expects single line, checks if it's a codefence and extracts
  * language.  Assumes code fences are supported.
  * Return zero if not a code-fence, >0 offset otherwise.
@@ -2621,6 +2591,70 @@ parse_blockquote(struct lowdown_doc *doc, char *data, size_t size)
 }
 
 /*
+ * Handles parsing of a block-level code fragment.  If "create" is
+ * non-zero, actually create the new nodes; otherwise, just parse them.
+ * Return <0 on failure (memory), 0 if not a fragment OR fenced code
+ * isn't supported, >0 on success.
+ */
+static ssize_t
+parse_fencedcode(struct lowdown_doc *doc, char *data, size_t size,
+    int create)
+{
+	struct lowdown_buf	 text, lang;
+	size_t	 		 i = 0, text_start, line_start,
+				 w, w2, width, width2;
+	char	 		 chr, chr2;
+	struct lowdown_node 	*n;
+
+	/* Return now if fenced code not supported. */
+
+	if (!(doc->ext_flags & LOWDOWN_FENCED))
+		return 0;
+
+	memset(&lang, 0, sizeof(struct lowdown_buf));
+
+	/* Parse codefence line. */
+
+	while (i < size && data[i] != '\n')
+		i++;
+	w = parse_fencedcode_line(doc, data, i, &lang, &width, &chr);
+	if (w == 0)
+		return 0;
+
+	/* Search for end. */
+
+	i++;
+	text_start = i;
+	while ((line_start = i) < size) {
+		while (i < size && data[i] != '\n')
+			i++;
+		w2 = is_fencedcode(doc, data + line_start,
+			i - line_start, &width2, &chr2);
+		if (w == w2 &&
+		    width == width2 &&
+		    chr == chr2 &&
+		    is_empty(data +
+		    (line_start+w), i - (line_start+w)))
+			break;
+		i++;
+	}
+
+	/* Conditionally construct the blockcode. */
+
+	if (create) {
+		memset(&text, 0, sizeof(struct lowdown_buf));
+		text.data = data + text_start;
+		text.size = line_start - text_start;
+		if ((n = pushnode(doc, LOWDOWN_BLOCKCODE)) == NULL ||
+		    !hbuf_createb(&n->rndr_blockcode.text, &text) ||
+		    !hbuf_createb(&n->rndr_blockcode.lang, &lang))
+			return -1;
+		popnode(doc, n);
+	}
+	return i;
+}
+
+/*
  * Handles parsing of a regular paragraph, which terminates at sections
  * or blank lines.
  * Returns <0 on failure or the number of characters parsed from the
@@ -2662,7 +2696,7 @@ parse_paragraph(struct lowdown_doc *doc, char *data, size_t size)
 
 		/* Other ways of ending a paragraph. */
 
-		if (is_fencedcode_block(doc, data + i, size - i) ||
+		if (parse_fencedcode(doc, data + i, size - i, 0) > 0 ||
 		    is_atxheader(doc, data + i, size - i) ||
 		    is_hrule(data + i, size - i) ||
 		    (lines == 1 &&
@@ -2755,67 +2789,6 @@ parse_paragraph(struct lowdown_doc *doc, char *data, size_t size)
 	return end;
 }
 
-/*
- * Handles parsing of a block-level code fragment.
- * Return <0 on failure (memory), 0 if not a fragment OR fenced code
- * isn't supported, >0 on success.
- */
-static ssize_t
-parse_fencedcode(struct lowdown_doc *doc, char *data, size_t size)
-{
-	struct lowdown_buf	 text, lang;
-	size_t	 		 i = 0, text_start, line_start,
-				 w, w2, width, width2;
-	char	 		 chr, chr2;
-	struct lowdown_node 	*n;
-
-	/* Return now if fenced code not supported. */
-
-	if (!(doc->ext_flags & LOWDOWN_FENCED))
-		return 0;
-
-	memset(&text, 0, sizeof(struct lowdown_buf));
-	memset(&lang, 0, sizeof(struct lowdown_buf));
-
-	/* Parse codefence line. */
-
-	while (i < size && data[i] != '\n')
-		i++;
-	w = parse_fencedcode_line(doc, data, i, &lang, &width, &chr);
-	if (w == 0)
-		return 0;
-
-	/* Search for end. */
-
-	i++;
-	text_start = i;
-	while ((line_start = i) < size) {
-		while (i < size && data[i] != '\n')
-			i++;
-		w2 = is_fencedcode(doc, data + line_start,
-			i - line_start, &width2, &chr2);
-		if (w == w2 &&
-		    width == width2 &&
-		    chr == chr2 &&
-		    is_empty(data +
-		    (line_start+w), i - (line_start+w)))
-			break;
-		i++;
-	}
-
-	/* Actually construct the blockcode. */
-
-	text.data = data + text_start;
-	text.size = line_start - text_start;
-
-	if ((n = pushnode(doc, LOWDOWN_BLOCKCODE)) == NULL ||
-	    !hbuf_createb(&n->rndr_blockcode.text, &text) ||
-	    !hbuf_createb(&n->rndr_blockcode.lang, &lang))
-		return -1;
-
-	popnode(doc, n);
-	return i;
-}
 
 static ssize_t
 parse_blockcode(struct lowdown_doc *doc, char *data, size_t size)
@@ -3998,7 +3971,7 @@ parse_block(struct lowdown_doc *doc, char *data, size_t size)
 
 		/* Fenced code. */
 
-		rc = parse_fencedcode(doc, txt_data, end);
+		rc = parse_fencedcode(doc, txt_data, end, 1);
 		if (rc > 0) {
 			beg += rc;
 			continue;
