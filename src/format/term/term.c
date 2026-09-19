@@ -628,7 +628,7 @@ static int
 rndr_buf_endline(struct term *term, struct lowdown_buf *out,
 	const struct lowdown_node *n, const struct sty *osty)
 {
-	if (!rndr_buf_endwords(term, out, n, osty))
+	if (n != NULL && !rndr_buf_endwords(term, out, n, osty))
 		return 0;
 
 	/*
@@ -897,7 +897,8 @@ rndr_buf_startline(struct term *term, struct lowdown_buf *out,
 	assert(term->col == 0);
 
 	memset(&s, 0, sizeof(struct sty));
-	if (!rndr_buf_startline_prefixes(term, &s, n, out, &depth))
+	if (n != NULL &&
+	    !rndr_buf_startline_prefixes(term, &s, n, out, &depth))
 		return 0;
 
 	/*
@@ -988,7 +989,8 @@ rndr_buf_startwords(struct term *term, struct lowdown_buf *out,
 	assert(term->col > 0);
 
 	memset(&s, 0, sizeof(struct sty));
-	rndr_buf_startwords_style(n, &s);
+	if (n != NULL)
+		rndr_buf_startwords_style(n, &s);
 	if (osty != NULL)
 		rndr_node_style_apply(&s, osty);
 	return rndr_buf_style(term, out, &s);
