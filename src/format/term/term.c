@@ -642,7 +642,8 @@ rndr_buf_endline(struct term *term, struct lowdown_buf *out,
 		return 0;
 
 	term->col = 0;
-	term->lastspace = term->lastspacepos = 0;
+	term->lastspace = 0;
+	term->lastspacepos = 0;
 	term->lastspacen = n;
 	term->last_blank = 1;
 	return HBUF_PUTSL(out, "\n");
@@ -781,6 +782,14 @@ rndr_buf_startline_prefixes(struct term *term,
 		}
 		break;
 	case LOWDOWN_FOOTNOTE:
+		/*
+		 * Don't print the footnote prefix if suppressing
+		 * footnotes.  This is because of rndr_table(), which
+		 * will re-render its content, including internal
+		 * footnotes.
+		 */
+		if (term->footoff)
+			break;
 		rndr_node_style_apply(&sinner, &sty_fdef_pfx);
 		if (!rndr_buf_style(term, out, &sinner))
 			return 0;
@@ -946,7 +955,8 @@ rndr_buf_vspace(struct term *term, struct lowdown_buf *out,
 		}
 		term->last_blank++;
 		term->col = 0;
-		term->lastspace = term->lastspacepos = 0;
+		term->lastspace = 0;
+		term->lastspacepos = 0;
 		term->lastspacen = n;
 	}
 	return 1;
@@ -1105,7 +1115,7 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 				    osty))
 					goto out;
 				end = 0;
-			} else if (out->size) {
+			} else if (out->size && term->lastspacepos) {
 				/*
 				 * This word doesn't start with a space,
 				 * and adding it overruns the margin, so
@@ -1115,9 +1125,12 @@ rndr_buf(struct term *term, struct lowdown_buf *out,
 				 * current one.
 				 */
 				assert(tmp == NULL);
+				assert(out->size >=
+				    (term->lastspacepos + 1));
 				tmp = hbuf_strndup(out->data +
 				    term->lastspacepos + 1, out->size -
 				    (term->lastspacepos + 1));
+				assert(tmp != NULL);
 				sz = term->col - term->lastspace;
 				out->size = term->lastspacepos;
 				term->col = term->lastspace - 1;
@@ -1538,11 +1551,18 @@ static void
 rndr_table_reset(struct term *st, struct term *stsv, size_t width)
 {
 	*stsv = *st;
+	/*
+	 * FIXME: these values are wonky.  They should be last_blank of
+	 * -1, then everything else at zero.  However, the offset in
+	 * (for example) the width algorithm assume this wonkiness.
+	 * These should be fixed so they all have nice zero values to
+	 * start with.
+	 */
 	st->last_blank = 0;
 	st->width = width;
 	st->col = 1;
 	st->lastspace = 1;
-	st->lastspacepos = 1;
+	st->lastspacepos = 0;
 	st->lastspacen = NULL;
 	st->hpadding = 0;
 }
@@ -1555,11 +1575,11 @@ static void
 rndr_table_restore(struct term *st, const struct term *saved)
 {
 	st->last_blank = saved->last_blank;
+	st->width = saved->width;
+	st->col = saved->col;
 	st->lastspace = saved->lastspace;
 	st->lastspacepos = saved->lastspacepos;
 	st->lastspacen = saved->lastspacen;
-	st->col = saved->col;
-	st->width = saved->width;
 	st->hpadding = saved->hpadding;
 }
 
@@ -1719,6 +1739,7 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 
 				st->table_stats = &table_stats;
 
+				assert(st->footoff == 1);
 				if (!rndr(cells[i], st, cell))
 					goto out;
 				if (!rndr_savecols_append(st))
@@ -1759,11 +1780,7 @@ rndr_table(struct lowdown_buf *ob, struct term *st,
 					    &cellposes[i], &nsz))
 						hasnextrow++;
 
-					if (nsz == 0) {
-						vsz = 0;
-					} else {
-						vsz = lines[i][currow];
-					}
+					vsz = nsz == 0 ? 0 : lines[i][currow];
 
 					/* Remaining space. */
 
@@ -2038,11 +2055,11 @@ static int
 rndr(struct lowdown_buf *ob, struct term *st,
 	const struct lowdown_node *n)
 {
+	struct term			 stsv;
 	const struct lowdown_node	*child, *nn, *in_link = st->in_link;
 	struct lowdown_buf		*metatmp;
 	void				*pp;
-	size_t				 i, col, vs;
-	ssize_t			 	 last_blank;
+	size_t				 i, vs;
 	int32_t				 entity;
 
 	/* Current nodes we're servicing. */
@@ -2135,13 +2152,19 @@ rndr(struct lowdown_buf *ob, struct term *st,
 
 	switch (n->type) {
 	case LOWDOWN_FOOTNOTE:
+		/*
+		 * When rendering tables, don't actually render the
+		 * footnote contents.  This is because the tables only
+		 * care about footnote references.  However, keep track
+		 * of what would have been printed (this value is saved
+		 * and reset).
+		 */
 		if (st->footoff) {
 			st->footsz++;
 			break;
 		}
-		last_blank = st->last_blank;
+		rndr_table_reset(st, &stsv, st->width);
 		st->last_blank = -1;
-		col = st->col;
 		st->col = 0;
 		if ((metatmp = hbuf_new(128)) == NULL)
 			return 0;
@@ -2151,8 +2174,7 @@ rndr(struct lowdown_buf *ob, struct term *st,
 				return 0;
 			st->stackpos--;
 		}
-		st->last_blank = last_blank;
-		st->col = col;
+		rndr_table_restore(st, &stsv);
 		pp = recallocarray(st->foots, st->footsz,
 			st->footsz + 1, sizeof(struct lowdown_buf *));
 		if (pp == NULL)
@@ -2190,6 +2212,10 @@ rndr(struct lowdown_buf *ob, struct term *st,
 			return 0;
 		break;
 	case LOWDOWN_FOOTNOTE:
+		/*
+		 * This is just the footnote number, not the footnote
+		 * contents itself.
+		 */
 		hbuf_truncate(st->tmp);
 		if (!hbuf_printf(st->tmp, "%s%zu%s", ifx_fref_left,
 		    st->footsz, ifx_fref_right))
