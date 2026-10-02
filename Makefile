@@ -143,20 +143,24 @@ THUMBS		 = screen-mandoc.thumb.jpg \
 		   screen-term.thumb.jpg
 CFLAGS		+= -DVERSION=\"$(VERSION)\" -I. -Isrc -Isrc/format -Isrc/parse
 
-# Hack around broken Mac OS X nested sandboxes.
+# Linux, Debian and derivatives specifically, need libbsd to compile
+UNAME_S := $(shell uname -s)
+LIBBSD_TEST := $(if $(filter Linux,$(UNAME_S)),$(shell cc -xc /dev/null -o /dev/null -lbsd 2>&1))
+$(if $(filter %cannot find -lbsd% %not found%,$(LIBBSD_TEST)),$(error ERROR: libbsd is missing! Install 'libbsd-dev' similar))
+LDFLAGS += $(if $(filter Linux,$(UNAME_S)),-lbsd)
+
+# Hack around broken Mac OS X nested sandboxes, but remain compatible with Make
 # If SANDBOX_INIT_ERROR_IGNORE is set to "always", errors from
 # sandbox_init() are ignored.  If set to anything else, the user must
 # also set SANDBOX_INIT_ERROR_IGNORE in their environment to ignore
 # failure.
 # Has no effect unless HAVE_SANDBOX_INIT is defined.
 
-.ifdef SANDBOX_INIT_ERROR_IGNORE
-.if $(SANDBOX_INIT_ERROR_IGNORE) == "always"
-CFLAGS		+= -DSANDBOX_INIT_ERROR_IGNORE=2
-.else
-CFLAGS		+= -DSANDBOX_INIT_ERROR_IGNORE=1
-.endif
-.endif
+sandbox_flag_          =
+sandbox_flag_always    = -DSANDBOX_INIT_ERROR_IGNORE=2
+sandbox_flag_defined   = -DSANDBOX_INIT_ERROR_IGNORE=1
+SELECTED_SANDBOX_FLAG  = $(if $(SANDBOX_INIT_ERROR_IGNORE),if $(filter always,$(SANDBOX_INIT_ERROR_IGNORE),$(sandbox_flag_always),$(sandbox_flag_defined)),$(sandbox_flag_))
+CFLAGS                += $(SELECTED_SANDBOX_FLAG)
 
 # Names of shared and static libraries.
 
@@ -170,23 +174,18 @@ LIB_ST		 = liblowdown.a
 # The dynamic version will also need the compats when building the main
 # object.
 
-LIB_LOWDOWN 	 = $(LIB_ST)
-MAIN_OBJS	 = src/main.o
-.ifdef LINK_METHOD
-.if $(LINK_METHOD) == "shared"
-LIB_LOWDOWN 	 = $(LIB_SO)
-MAIN_OBJS	 = $(COMPAT_OBJS) src/main.o
-.endif
-.endif
+LIB_LOWDOWN	 = $(LIB_ST)
+
+LIB_OPT_ADDON    = $(if $(filter shared,$(LINK_METHOD)),$(LIB_SO))
+MAIN_OBJ_ADDON   = $(if $(filter shared,$(LINK_METHOD)),$($(COMPAT_OBJS) src/main.o),src/main.o)
+LIB_LOWDOWN      = $(LIB_OPT_ADDON)
+MAIN_OBJS        = $(MAIN_OBJ_ADDON)
 
 # Mac OS X and other Unix systems use different conventions for
 # indicating shared library versions.
 
-.if $(LINKER_SOSUFFIX) == "dylib"
-LIB_SOVER	 = liblowdown.$(LIBVER).$(LINKER_SOSUFFIX)
-.else
-LIB_SOVER	 = liblowdown.$(LINKER_SOSUFFIX).$(LIBVER)
-.endif
+SEL_LIB_SOVER    = $(if $(filter dylib,$(LINKER_SOSUFFIX),$(liblowdown.$(LIBVER).$(LINKER_SOSUFFIX))),$(liblowdown.$(LINKER_SOSUFFIX).$(LIBVER)))
+LIB_SOVER	 = $(SEL_LIB_SOVER)
 
 # Because the objects will be compiled into a shared library:
 CFLAGS		+= -fPIC
@@ -219,7 +218,7 @@ bins: lowdown lowdown-diff
 # Build main programs.
 
 lowdown: $(LIB_LOWDOWN) $(MAIN_OBJS)
-	$(CC) -o $@ $(MAIN_OBJS) $(LIB_LOWDOWN) $(LDFLAGS) $(LDADD_MD5) -lm $(LDADD)
+	$(CC) -o $@ $(OBJS) $(MAIN_OBJS) $(LIB_LOWDOWN) $(LDFLAGS) $(LDADD_MD5) -lm $(LDADD)
 
 lowdown-diff: lowdown
 	ln -f lowdown lowdown-diff
@@ -232,6 +231,8 @@ lowdown-diff: lowdown
 $(OBJS) $(COMPAT_OBJS) src/main.o: config.h
 
 $(OBJS) src/main.o: src/extern.h src/lowdown.h
+
+src/main.o: $(OBJS)
 
 src/format/term/term.o: src/format/term/term.h
 
