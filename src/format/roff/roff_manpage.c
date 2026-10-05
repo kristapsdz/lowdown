@@ -931,7 +931,7 @@ rndr_manpage_see_also(struct nroff *st, const struct lowdown_node *n,
 	struct lowdown_buf	*buf = NULL;
 	struct bnodeq		 nq;
 	size_t			 pos, end, start;
-	const char		*openp;
+	const char		*openp, *delim;
 	struct bnode		*bn;
 
 	TAILQ_INIT(&nq);
@@ -949,7 +949,10 @@ rndr_manpage_see_also(struct nroff *st, const struct lowdown_node *n,
 	 * contents to see if it matches foo(section).  If a single
 	 * token doesn't, then bail out and assume this is a regular
 	 * paragraph.  Otherwise, format the link in an Xr.  Skip over
-	 * empty tokens.
+	 * empty tokens.  The last token may end with a full stop.
+	 * Links are staged in nq and only appended to the output once
+	 * the whole paragraph has matched, so a regular paragraph
+	 * doesn't repeat its leading links.
 	 */
 
 	for (start = pos; pos <= buf->size; ) {
@@ -968,6 +971,13 @@ rndr_manpage_see_also(struct nroff *st, const struct lowdown_node *n,
 				if (!isspace((unsigned char)
 				    buf->data[pos]))
 					break;
+			/* Allow a full stop after the last link. */
+			delim = end < buf->size ? " ," : "";
+			if (end == buf->size && pos > start &&
+			    buf->data[pos] == '.') {
+				delim = " .";
+				pos--;
+			}
 			/* Make sure there are parentheses. */
 			if (buf->data[pos] != ')')
 				goto out;
@@ -976,8 +986,8 @@ rndr_manpage_see_also(struct nroff *st, const struct lowdown_node *n,
 			if (openp == NULL)
 				goto out;
 			bn = st->type == LOWDOWN_MDOC ?
-			    bqueue_sblock(obq, ".Xr") :
-			    bqueue_block(obq, ".MR");
+			    bqueue_sblock(&nq, ".Xr") :
+			    bqueue_block(&nq, ".MR");
 			if (bn == NULL) {
 				rc = -1;
 				goto out;
@@ -986,8 +996,7 @@ rndr_manpage_see_also(struct nroff *st, const struct lowdown_node *n,
 			    (int)(openp - &buf->data[start]),
 			    &buf->data[start],
 			    (int)(&buf->data[pos] - openp - 1),
-			    openp + 1,
-			    end < buf->size ? " ," : "") == -1) {
+			    openp + 1, delim) == -1) {
 				bn->nargs = NULL;
 				rc = -1;
 				goto out;
