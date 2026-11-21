@@ -43,6 +43,18 @@
 # endif
 #endif
 
+/*
+ * The message argument to the deprecated attribute is only understood
+ * by GCC 4.5 and later.  Clang claims to be GCC 4.2 but has always
+ * supported it.
+ */
+#if defined(__GNUC__) && !defined(__clang__) && \
+    (__GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 5))
+# define LOWDOWN_DEPRECATED(_msg)
+#else
+# define LOWDOWN_DEPRECATED(_msg)	__attribute__((deprecated(_msg)))
+#endif
+
 enum	lowdown_type {
 	LOWDOWN_GEMINI,
 	LOWDOWN_HTML,
@@ -479,12 +491,12 @@ int 	 lowdown_term_rndr(struct lowdown_buf *, void *,
 		const struct lowdown_node *);
 
 void	 lowdown_nroff_free(void *)
-		__attribute__((deprecated("Use lowdown_roff_free() instead")));
+		LOWDOWN_DEPRECATED("Use lowdown_roff_free() instead");
 void	*lowdown_nroff_new(const struct lowdown_opts *)
-		__attribute__((deprecated("Use lowdown_roff_new() instead")));
+		LOWDOWN_DEPRECATED("Use lowdown_roff_new() instead");
 int 	 lowdown_nroff_rndr(struct lowdown_buf *, void *, 
 		const struct lowdown_node *)
-		__attribute__((deprecated("Use lowdown_roff_rndr() instead")));
+		LOWDOWN_DEPRECATED("Use lowdown_roff_rndr() instead");
 
 void	 lowdown_roff_free(void *);
 void	*lowdown_roff_new(const struct lowdown_opts *);
